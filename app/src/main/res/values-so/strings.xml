@@ -722,6 +722,14 @@
     <string name="syncing_data_please_wait">Dib-u-hagreeska macluumaadka, fadlan sug…</string>
     <string name="sync_failed">Dib-u-hagreeska khaatimay</string>
     <string name="sync_completed">Dib-u-hagreeska la kahadsanayaa</string>
+    <string name="sync_phase_account_data">Dib-u-hagreeska xogta akawnka…</string>
+    <string name="sync_phase_resources">Dib-u-hagreeska khayraadka…</string>
+    <string name="sync_phase_library">Dib-u-hagreeska maktabadda…</string>
+    <string name="sync_phase_finalizing">Dhamaynta…</string>
+    <string name="sync_step_of">Tallaabo %1$d ka mid ah %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d miisas</string>
+    <string name="sync_shelves_progress">%1$d / %2$d raafooyin</string>
     <string name="team_leader">Xoghayaha kooxda</string>
     <string name="select_resource">Xulo khadka</string>
     <string name="add">Ku dar</string>
@@ -1034,6 +1042,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">furista habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
     <string name="chart_description">Shaxda Waxqabadka Gelitaanka</string>
     <string name="chart_label">Tirada galitaanka</string>
+    <string name="no_login_activity">Weli ma jirto wax waxqabad galitaan ah oo la duubay</string>
     <string name="copied_to_clipboard">waxaa lagu koobay clipboard-ka</string>
     <string name="mark_all_as_read">Calaamadee dhammaan sidii la aqriyay</string>
     <string name="no_notifications">Wax ogeysiis ah ma jiro</string>
@@ -1223,5 +1232,10 @@
     <string name="file_not_found">Faylka lama helin: %s</string>
     <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
     <string name="already_shared">Hore loo wadaagay</string>
+    <string name="read_aloud">Kor u akhri</string>
+    <string name="stop_reading">Jooji akhrinta</string>
+    <string name="tts_not_available">Qoraal-u-hadalka lagama heli karo qalabkan</string>
+    <string name="pdf_no_text_layer">PDF-kan kuma jiro qoraal la akhrin karo</string>
+    <string name="pdf_extracting_text">Diyaarinta qoraalka, fadlan sug…</string>
 
 </resources>

@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
-import io.mockk.mockk
-import io.mockk.verify
-import io.mockk.slot
 import io.mockk.invoke
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import kotlinx.coroutines.ExperimentalCoroutinesApi

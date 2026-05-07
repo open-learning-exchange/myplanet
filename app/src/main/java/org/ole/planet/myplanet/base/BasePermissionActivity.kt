@@ -10,12 +10,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,7 +48,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             }
             mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "Error checking usages permission", e)
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {
@@ -115,7 +115,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             packageInfo.requestedPermissions?.contains(permission) == true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
             false
         }
     }
@@ -248,7 +248,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleFilePermissionsResult(permissions: Array<out String>, grantResults: IntArray) {
+    open fun handleFilePermissionsResult(permissions: Array<out String>, grantResults: IntArray) {
         val deniedPermissions = mutableListOf<String>()
         val grantedPermissions = mutableListOf<String>()
 
@@ -281,7 +281,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleMediaPermissionsResult(permissions: Array<out String>, grantResults: IntArray) {
+    open fun handleMediaPermissionsResult(permissions: Array<out String>, grantResults: IntArray) {
         val deniedPermissions = mutableListOf<String>()
 
         for (i in permissions.indices) {
@@ -297,7 +297,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleNotificationPermissionResult(permissions: Array<out String>, grantResults: IntArray) {
+    open fun handleNotificationPermissionResult(permissions: Array<out String>, grantResults: IntArray) {
         val notificationPermissionIndex = permissions.indexOf(Manifest.permission.POST_NOTIFICATIONS)
 
         if (notificationPermissionIndex >= 0) {
@@ -309,7 +309,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         }
     }
 
-    private fun showMediaPermissionsDeniedDialog(deniedPermissions: List<String>) {
+    open fun showMediaPermissionsDeniedDialog(deniedPermissions: List<String>) {
         val permissionNames = deniedPermissions.map { permission ->
             getPermissionDisplayName(permission)
         }.distinct().joinToString(", ")
@@ -343,7 +343,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
         }
     }
 
@@ -355,7 +355,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 
@@ -433,16 +433,15 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     fun checkNotificationPermissionStatus() {
         lifecycleScope.launch {
             val currentTime = System.currentTimeMillis()
-            val (lastCheck, prefs) = withContext(Dispatchers.IO) {
-                val p = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-                Pair(p.getLong("last_notification_check", 0), p)
+            val lastCheck = withContext(Dispatchers.IO) {
+                org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).getRawLong("last_notification_check", 0)
             }
             if (currentTime - lastCheck > 24 * 60 * 60 * 1000) {
-                if (!areNotificationsEnabled()) {
+                if (!NotificationManagerCompat.from(this@BasePermissionActivity).areNotificationsEnabled()) {
                     onNotificationPermissionChanged(false)
                 }
                 withContext(Dispatchers.IO) {
-                    prefs.edit { putLong("last_notification_check", currentTime) }
+                    org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).setRawLong("last_notification_check", currentTime)
                 }
             }
         }

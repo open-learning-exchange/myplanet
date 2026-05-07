@@ -29,10 +29,10 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.TeamResourceDto
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.UploadManager
@@ -1464,11 +1464,18 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun insertTeamLogs(logs: List<JsonObject>) {
         executeTransaction { realm ->
+            val ids = logs.map { JsonUtils.getString("_id", it) }.toTypedArray()
+            val existingLogs = if (ids.isNotEmpty()) {
+                realm.where(RealmTeamLog::class.java).`in`("_id", ids).findAll().associateBy { it._id }.toMutableMap()
+            } else {
+                mutableMapOf()
+            }
             for (json in logs) {
-                var tag = realm.where(RealmTeamLog::class.java)
-                    .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
+                val id = JsonUtils.getString("_id", json)
+                var tag = existingLogs[id]
                 if (tag == null) {
-                    tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
+                    tag = realm.createObject(RealmTeamLog::class.java, id)
+                    existingLogs[id] = tag
                 }
                 if (tag != null) {
                     tag._rev = JsonUtils.getString("_rev", json)
@@ -1524,6 +1531,10 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override fun insertMyTeam(realm: Realm, doc: JsonObject) {
+        insertMyTeam(realm, doc, null)
+    }
+
+    private fun insertMyTeam(realm: Realm, doc: JsonObject, existingTeams: MutableMap<String, RealmMyTeam>?) {
         val status = JsonUtils.getString("status", doc)
         if (status == "archived") {
             return
@@ -1552,9 +1563,16 @@ class TeamsRepositoryImpl @Inject constructor(
             if (alreadyMember) return
         }
 
-        var myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        var myTeams: RealmMyTeam? = null
+        if (existingTeams != null) {
+            myTeams = existingTeams[teamId]
+        } else {
+            myTeams = realm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
+        }
+
         if (myTeams == null) {
             myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
+            existingTeams?.put(teamId, myTeams!!)
         }
         myTeams?.let {
             RealmMyTeam.populateTeamFields(doc, it, true)
@@ -1564,16 +1582,27 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                ids.add(id)
             }
         }
+        val existingTeams = if (ids.isNotEmpty()) {
+            realm.where(RealmMyTeam::class.java)
+                .`in`("_id", ids.toTypedArray())
+                .findAll()
+                .associateBy { it._id!! }
+                .toMutableMap()
+        } else {
+            mutableMapOf<String, RealmMyTeam>()
+        }
         documentList.forEach { jsonDoc ->
-            insertMyTeam(realm, jsonDoc)
+            insertMyTeam(realm, jsonDoc, existingTeams)
         }
     }
     override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
@@ -1600,11 +1629,18 @@ class TeamsRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
+        val ids = documentList.map { JsonUtils.getString("_id", it) }.toTypedArray()
+        val existingLogs = if (ids.isNotEmpty()) {
+            realm.where(RealmTeamLog::class.java).`in`("_id", ids).findAll().associateBy { it._id }.toMutableMap()
+        } else {
+            mutableMapOf()
+        }
         for (json in documentList) {
-            var tag = realm.where(RealmTeamLog::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
+            val id = JsonUtils.getString("_id", json)
+            var tag = existingLogs[id]
             if (tag == null) {
-                tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
+                tag = realm.createObject(RealmTeamLog::class.java, id)
+                existingLogs[id] = tag
             }
             if (tag != null) {
                 tag._rev = JsonUtils.getString("_rev", json)

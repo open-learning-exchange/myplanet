@@ -67,7 +67,6 @@ class CoursesAdapter(
     private val config: ChipCloudConfig
     private var isAscending = true
     private var isTitleAscending = false
-    private var areAllSelected = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
 
     companion object {
@@ -236,8 +235,7 @@ class CoursesAdapter(
 
     fun areAllSelected(): Boolean {
         val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
-        return areAllSelected
+        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
     }
 
     fun selectAllItems(selectAll: Boolean) {

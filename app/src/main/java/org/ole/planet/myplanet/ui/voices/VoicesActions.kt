@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -139,7 +138,6 @@ object VoicesActions {
         val imagesToRemoveCopy = imagesToRemove.toSet()
         imagesToRemove.clear()
         dialog.dismiss()
-        listener?.clearImages()
         try {
             if (isEdit) {
                 news?.id?.let {
@@ -150,6 +148,7 @@ object VoicesActions {
                     repository.postReply(s, news, currentUser, imageList)
                 }
             }
+            listener?.clearImages()
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
             onSuccess()
         } catch (e: Exception) {

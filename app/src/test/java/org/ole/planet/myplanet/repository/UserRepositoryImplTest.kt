@@ -82,6 +82,8 @@ class UserRepositoryImplTest {
             settings,
             sharedPrefManager,
             apiInterface,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
             uploadToShelfService,
             context,
             configurationsRepository,
@@ -150,7 +152,7 @@ class UserRepositoryImplTest {
         // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
         val spyRepository = spyk(repository)
         val mockRealmUser = mockk<org.ole.planet.myplanet.model.RealmUser>(relaxed = true)
-        coEvery { spyRepository.saveUser(any(), any(), any(), any()) } returns mockRealmUser
+        coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
         val result = spyRepository.becomeMember(userObj)
         advanceUntilIdle()

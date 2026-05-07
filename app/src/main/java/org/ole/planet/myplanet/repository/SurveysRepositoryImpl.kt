@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.text.TextUtils
+import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
 import java.util.concurrent.TimeUnit
-import androidx.core.content.edit
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.delay
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
@@ -400,18 +402,10 @@ class SurveysRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
+            RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
         }
     }
 
-    /**
-     * Polling flow for survey reminders.
-     * Note: While WorkManager is used elsewhere in the project and is generally preferred for
-     * robust, persistent background scheduling, this flow maintains the legacy behavior of the
-     * in-memory `while(isActive)` loop from the Fragment. Since the reminders are short-lived
-     * and only relevant while the user is active in the app, a simple polling flow is used
-     * here rather than rewriting the scheduling mechanism.
-     */
     override fun dueRemindersFlow(): Flow<List<String>> = flow {
         val prefs = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
         while (true) {

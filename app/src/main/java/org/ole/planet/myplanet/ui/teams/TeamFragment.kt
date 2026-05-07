@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
+import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -10,18 +13,13 @@ import android.view.ViewGroup
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnTeamActionsListener
-import org.ole.planet.myplanet.callback.OnTeamEditListener
-import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
 import org.ole.planet.myplanet.model.RealmUser
@@ -29,12 +27,11 @@ import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
-    OnTeamActionsListener {
+class TeamFragment : Fragment() {
     private var _binding: FragmentTeamBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertCreateTeamBinding: AlertCreateTeamBinding
@@ -251,24 +248,64 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
 
     private fun setupRecyclerView() {
         binding.rvTeamList.layoutManager = LinearLayoutManager(activity)
+        (binding.rvTeamList.itemAnimator as? SimpleItemAnimator)?.supportsChangeAnimations = false
         teamListAdapter = TeamsAdapter(
-            requireActivity(),
-            childFragmentManager,
-            user,
-            sharedPrefManager
+            isGuestUser = user?.isGuest() == true,
+            onItemClick = { team ->
+                val activity = getActivity() as? AppCompatActivity ?: return@TeamsAdapter
+                val fragment = TeamDetailFragment.newInstance(
+                    teamId = team._id.orEmpty(),
+                    teamName = "${team.name}",
+                    teamType = "${team.type}",
+                    isMyTeam = team.teamStatus?.isMember == true
+                )
+                FragmentNavigator.replaceFragment(
+                    activity.supportFragmentManager,
+                    R.id.fragment_container,
+                    fragment,
+                    addToBackStack = true,
+                    tag = "TeamDetailFragment"
+                )
+                sharedPrefManager.setTeamName(team.name)
+            },
+            onFeedbackClick = { team ->
+                val feedbackFragment = FeedbackFragment()
+                feedbackFragment.show(childFragmentManager, "")
+                feedbackFragment.arguments = getBundle(team)
+            },
+            onEditTeamClick = { team ->
+                createTeamAlert(team)
+            },
+            onLeaveTeamClick = { team ->
+                AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
+                    .setMessage(R.string.confirm_exit)
+                    .setPositiveButton(R.string.yes) { _, _ ->
+                        viewModel.leaveTeam(team._id!!, user?.id)
+                    }
+                    .setNegativeButton(R.string.no, null)
+                    .show()
+            },
+            onRequestToJoinClick = { team ->
+                viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+            }
         ).apply {
             setType(type)
-            setTeamListener(this@TeamFragment)
-            setUpdateCompleteListener(this@TeamFragment)
-            setTeamActionsListener(this@TeamFragment)
         }
         binding.rvTeamList.adapter = teamListAdapter
+    }
+
+    private fun getBundle(team: TeamDetails): Bundle {
+        return Bundle().apply {
+            putString("state", if (team.type?.isEmpty() == true) "teams" else "${team.type}s")
+            putString("item", team._id)
+            putString("parentCode", "dev")
+        }
     }
 
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
             teamListAdapter.submitList(teamDataList)
-            onUpdateComplete(teamDataList.size)
+            showNoResultsMessage(teamDataList.isEmpty())
             listContentDescription(conditionApplied)
         }
     }
@@ -284,31 +321,7 @@ class TeamFragment : Fragment(), OnTeamEditListener, OnUpdateCompleteListener,
         binding.etSearch.addTextChangedListener(textWatcher)
     }
 
-    override fun onEditTeam(team: TeamDetails?) {
-        team?.let { createTeamAlert(it) }
-    }
 
-    override fun onLeaveTeam(team: TeamDetails, user: RealmUser?) {
-        AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
-            .setMessage(R.string.confirm_exit)
-            .setPositiveButton(R.string.yes) { _, _ ->
-                viewModel.leaveTeam(team._id!!, user?.id)
-            }
-            .setNegativeButton(R.string.no, null)
-            .show()
-    }
-
-    override fun onRequestToJoin(team: TeamDetails, user: RealmUser?) {
-        viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
-    }
-
-    override fun onUpdateComplete(itemCount: Int) {
-        if (itemCount == 0) {
-            showNoResultsMessage(true)
-        } else {
-            showNoResultsMessage(false)
-        }
-    }
 
     private fun listContentDescription(conditionApplied: Boolean) {
         if (conditionApplied) {

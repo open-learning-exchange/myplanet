@@ -83,8 +83,9 @@ import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
-import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
@@ -153,6 +154,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (handleGuestAccess()) {
                 isReady = true
                 binding.root.invalidate()
+                unregisterSystemNotificationReceiver()
                 return@launch
             }
 
@@ -172,7 +174,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupDashboardDataObserver()
 
         binding.root.post {
-            setupSystemNotificationReceiver()
+            registerSystemNotificationReceiver()
             checkIfShouldShowNotifications()
 
             val validUrls = listOf(
@@ -562,6 +564,16 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun updateLastSyncStatus() {
+        val lastSyncMillis = prefData.getLastSync()
+        val statusText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        } else {
+            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis)
+        }
+        binding.dashboardLastSyncStatus.text = statusText
+    }
+
     private fun onRealmDataChange() {
         if (notificationsShownThisSession) {
             val currentTime = System.currentTimeMillis()
@@ -572,7 +584,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun setupSystemNotificationReceiver() {
+    private fun registerSystemNotificationReceiver() {
         systemNotificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val pendingResult = goAsync()
@@ -606,11 +618,27 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         
         val filter = IntentFilter("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-        if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(systemNotificationReceiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(systemNotificationReceiver, filter)
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(systemNotificationReceiver, filter, RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                registerReceiver(systemNotificationReceiver, filter)
+            }
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+            systemNotificationReceiver = null
+        }
+    }
+
+    private fun unregisterSystemNotificationReceiver() {
+        systemNotificationReceiver?.let {
+            try {
+                unregisterReceiver(it)
+            } catch (e: IllegalArgumentException) {
+                e.printStackTrace()
+            }
+            systemNotificationReceiver = null
         }
     }
 
@@ -892,10 +920,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
         }
 
-        systemNotificationReceiver?.let {
-            unregisterReceiver(it)
-            systemNotificationReceiver = null
-        }
+        unregisterSystemNotificationReceiver()
 
         super.onDestroy()
     }
@@ -1007,6 +1032,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onResume() {
         super.onResume()
         checkNotificationPermissionStatus()
+        updateLastSyncStatus()
     }
 
     override fun onNewIntent(intent: Intent?) {

@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey

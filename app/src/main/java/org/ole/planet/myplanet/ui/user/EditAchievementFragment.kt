@@ -107,15 +107,49 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     private fun setListeners() {
-        fragmentEditAchievementBinding.toolbar.setNavigationOnClickListener {
-            FragmentNavigator.popBackStack(requireActivity().supportFragmentManager)
-        }
         fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
+            val firstName = fragmentEditAchievementBinding.etFname.text.toString().trim()
+            val lastName = fragmentEditAchievementBinding.etLname.text.toString().trim()
+            val birthDate = fragmentEditAchievementBinding.txtDob.text.toString().trim()
+
+            val missingFields = mutableListOf<String>()
+
+            // Validation FIRST
+            if (firstName.isEmpty()) {
+                fragmentEditAchievementBinding.etFname.error = "First name is required"
+                missingFields.add("First Name")
+            } else {
+                fragmentEditAchievementBinding.etFname.error = null
+            }
+
+            if (lastName.isEmpty()) {
+                fragmentEditAchievementBinding.etLname.error = "Last name is required"
+                missingFields.add("Last Name")
+            } else {
+                fragmentEditAchievementBinding.etLname.error = null
+            }
+
+            if (birthDate.isEmpty() || birthDate == getString(R.string.birth_date)) {
+                fragmentEditAchievementBinding.txtDob.error = "Birth date is required"
+                missingFields.add("Birth Date")
+            } else {
+                fragmentEditAchievementBinding.txtDob.error = null
+            }
+
+            // STOP here if there are missing fields
+            if (missingFields.isNotEmpty()) {
+                val message = "Please fill required fields: ${missingFields.joinToString(", ")}"
+                Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+                return@setOnClickListener  // DON'T SAVE
+            }
+
+            // ONLY continue saving if no missing fields
             val achievementId = user?.id + "@" + user?.planetCode
-            val header = fragmentEditAchievementBinding.etAchievement.text.toString().trim { it <= ' ' }
-            val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim { it <= ' ' }
-            val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim { it <= ' ' }
-            val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString() + ""
+            val header = fragmentEditAchievementBinding.etAchievement.text.toString().trim()
+            val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim()
+            val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim()
+            val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString()
+
             fragmentEditAchievementBinding.btnUpdate.isEnabled = false
             Utilities.toast(activity, getString(R.string.saving))
 

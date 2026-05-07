@@ -18,6 +18,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
@@ -93,7 +94,7 @@ class SyncManager @Inject constructor(
             _syncStatus.value = SyncStatus.Idle
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
-            _syncStatus.value = SyncStatus.Syncing
+            _syncStatus.value = SyncStatus.Syncing()
 
             // Use improved sync manager if beta sync is enabled
             val useImproved = sharedPrefManager.getUseImprovedSync()
@@ -113,7 +114,14 @@ class SyncManager @Inject constructor(
 
     sealed class SyncStatus {
         object Idle : SyncStatus()
-        object Syncing : SyncStatus()
+        data class Syncing(
+            val phase: String = "",
+            val phaseIndex: Int = 0,
+            val totalPhases: Int = 4,
+            val itemsDone: Int = 0,
+            val itemsTotal: Int = 0,
+            val countLabel: String = ""
+        ) : SyncStatus()
         data class Success(val message: String) : SyncStatus()
         data class Error(val message: String) : SyncStatus()
     }
@@ -199,7 +207,7 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -207,118 +215,46 @@ class SyncManager @Inject constructor(
 
             // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
+            val parallelTables = listOf(
+                "tablet_users", "exams", "ratings", "courses_progress", "achievements",
+                "tags", "submissions", "news", "feedback", "tasks", "login_activities",
+                "health", "certifications", "team_activities", "chat_history", "teams",
+                "meetups", "courses", "notifications"
+            )
+            val completedTables = AtomicInteger(0)
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_account_data), 1, 4,
+                0, parallelTables.size)
             coroutineScope {
-                val syncJobs = listOf(
+                val syncJobs = parallelTables.map { tableName ->
                     async {
-                        logger.startProcess("tablet_users_sync")
-                        transactionSyncManager.syncDb("tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                    },
-                    async {
-                        logger.startProcess("exams_sync")
-                        transactionSyncManager.syncDb("exams")
-                        logger.endProcess("exams_sync")
-                    },
-                    async {
-                        logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb("ratings")
-                        logger.endProcess("ratings_sync")
-                    },
-                    async {
-                        logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb("courses_progress")
-                        logger.endProcess("courses_progress_sync")
-                    },
-                    async {
-                        logger.startProcess("achievements_sync")
-                        transactionSyncManager.syncDb("achievements")
-                        logger.endProcess("achievements_sync")
-                    },
-                    async {
-                        logger.startProcess("tags_sync")
-                        transactionSyncManager.syncDb("tags")
-                        logger.endProcess("tags_sync")
-                    },
-                    async {
-                        logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb("submissions")
-                        logger.endProcess("submissions_sync")
-                    },
-                    async {
-                        logger.startProcess("news_sync")
-                        transactionSyncManager.syncDb("news")
-                        logger.endProcess("news_sync")
-                    },
-                    async {
-                        logger.startProcess("feedback_sync")
-                        transactionSyncManager.syncDb("feedback")
-                        logger.endProcess("feedback_sync")
-                    },
-                    async {
-                        logger.startProcess("tasks_sync")
-                        transactionSyncManager.syncDb("tasks")
-                        logger.endProcess("tasks_sync")
-                    },
-                    async {
-                        logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb("login_activities")
-                        logger.endProcess("login_activities_sync")
-                    },
-                    async {
-                        logger.startProcess("health_sync")
-                        transactionSyncManager.syncDb("health")
-                        logger.endProcess("health_sync")
-                    },
-                    async {
-                        logger.startProcess("certifications_sync")
-                        transactionSyncManager.syncDb("certifications")
-                        logger.endProcess("certifications_sync")
-                    },
-                    async {
-                        logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb("team_activities")
-                        logger.endProcess("team_activities_sync")
-                    },
-                    async {
-                        logger.startProcess("chat_history_sync")
-                        transactionSyncManager.syncDb("chat_history")
-                        logger.endProcess("chat_history_sync")
-                    },
-                    async {
-                        logger.startProcess("teams_sync")
-                        transactionSyncManager.syncDb("teams")
-                        logger.endProcess("teams_sync")
-                    },
-                    async {
-                        logger.startProcess("meetups_sync")
-                        transactionSyncManager.syncDb("meetups")
-                        logger.endProcess("meetups_sync")
-                    },
-                    async {
-                        logger.startProcess("courses_sync")
-                        transactionSyncManager.syncDb("courses")
-                        logger.endProcess("courses_sync")
-                    },
-                    async {
-                        logger.startProcess("notifications_sync")
-                        transactionSyncManager.syncDb("notifications")
-                        logger.endProcess("notifications_sync")
+                        logger.startProcess("${tableName}_sync")
+                        transactionSyncManager.syncDb(tableName)
+                        logger.endProcess("${tableName}_sync")
+                        val done = completedTables.incrementAndGet()
+                        _syncStatus.value = SyncStatus.Syncing(
+                            context.getString(R.string.sync_phase_account_data), 1, 4,
+                            done, parallelTables.size,
+                            context.getString(R.string.sync_table_progress, tableName, done, parallelTables.size)
+                        )
                     }
-                )
+                }
                 syncJobs.awaitAll()
             }
 
             // Phase 2: Sync resources base table (must run before library to establish base records)
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
             logger.startProcess("resource_sync")
             resourceTransactionSync()
             logger.endProcess("resource_sync")
 
             // Phase 3: Sync library (augments courses, resources, teams, meetups with shelf data)
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_library), 3, 4)
             logger.startProcess("library_sync")
             myLibraryTransactionSync()
             logger.endProcess("library_sync")
 
             // Phase 4: Admin and finalization
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_finalizing), 4, 4)
             logger.startProcess("admin_sync")
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
@@ -338,7 +274,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {
@@ -686,7 +622,6 @@ class SyncManager @Inject constructor(
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        val idsWeAreProcessing = validDocuments.map { it.second }
                         val docs = validDocuments.map { it.first }
 
                         val realmInsertStartTime = System.currentTimeMillis()
@@ -702,6 +637,12 @@ class SyncManager @Inject constructor(
                     }
 
                     skip += rows.size()
+                    val resourcesDone = skip.coerceAtMost(totalRows)
+                    _syncStatus.value = SyncStatus.Syncing(
+                        context.getString(R.string.sync_phase_resources), 2, 4,
+                        resourcesDone, totalRows,
+                        context.getString(R.string.sync_items_of, resourcesDone, totalRows)
+                    )
 
                     val batchEndTime = System.currentTimeMillis()
                     val batchTime = batchEndTime - batchStartTime
@@ -874,8 +815,8 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("library_process_shelves")
-            val processStartTime = System.currentTimeMillis()
 
+            val completedShelves = AtomicInteger(0)
             coroutineScope {
                 val semaphore = Semaphore(6)
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
@@ -887,6 +828,12 @@ class SyncManager @Inject constructor(
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")
                             }
+                            val completed = completedShelves.incrementAndGet()
+                            _syncStatus.value = SyncStatus.Syncing(
+                                context.getString(R.string.sync_phase_library), 3, 4,
+                                completed, shelvesWithData.size,
+                                context.getString(R.string.sync_shelves_progress, completed, shelvesWithData.size)
+                            )
                             items
                         }
                     }
@@ -895,7 +842,6 @@ class SyncManager @Inject constructor(
                 processedItems = shelfJobs.awaitAll().sum()
             }
 
-            val processDuration = System.currentTimeMillis() - processStartTime
             logger.endProcess("library_process_shelves", processedItems)
 
             saveConcatenatedLinksToPrefs(sharedPrefManager)
@@ -1058,5 +1004,4 @@ class SyncManager @Inject constructor(
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
         return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }
-
 }

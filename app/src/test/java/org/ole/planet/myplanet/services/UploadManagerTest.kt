@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
@@ -40,6 +41,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -60,6 +62,7 @@ class UploadManagerTest {
     private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
+    private lateinit var photoUploader: PhotoUploader
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -73,6 +76,8 @@ class UploadManagerTest {
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
+
+        photoUploader = PhotoUploader(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher), testScope)
 
         uploadManager = spyk(
             UploadManager(
@@ -92,7 +97,8 @@ class UploadManagerTest {
                 apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
-                testScope
+                testScope,
+                photoUploader
             )
         )
     }
@@ -179,6 +185,14 @@ class UploadManagerTest {
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
         assert(!result)
+    }
+
+    @Test
+    fun `uploadTeamTask delegates to uploadCoordinator`() = testScope.runTest {
+        coEvery { uploadCoordinator.upload<RealmTeamTask>(any()) } returns UploadResult.Success(1, emptyList())
+        uploadManager.uploadTeamTask()
+        advanceUntilIdle()
+        coVerify { uploadCoordinator.upload(uploadConfigs.TeamTask) }
     }
 
     @Test

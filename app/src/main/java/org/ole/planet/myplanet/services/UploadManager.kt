@@ -12,13 +12,8 @@ import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
@@ -37,13 +32,14 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.services.upload.PhotoUploader
+import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
 
-private const val BATCH_SIZE = 50
 
 private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
     chunked(BATCH_SIZE).forEach { chunk ->
@@ -72,7 +68,8 @@ class UploadManager @Inject constructor(
     private val apiInterface: ApiInterface,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-    @ApplicationScope private val scope: CoroutineScope
+    @ApplicationScope private val scope: CoroutineScope,
+    private val photoUploader: PhotoUploader
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -98,34 +95,7 @@ class UploadManager @Inject constructor(
             }
 
             try {
-                apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/myplanet_activities",
-                    MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
-                )
-
-                val response = apiInterface.getJsonObject(
-                    UrlUtils.header,
-                    "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
-                )
-
-                var `object` = response.body()
-
-                if (`object` != null) {
-                    val usages = `object`.getAsJsonArray("usages")
-                    usages.addAll(MyPlanet.getTabletUsages(context))
-                    `object`.add("usages", usages)
-                } else {
-                    `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, model)
-                }
-
-                apiInterface.postDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/myplanet_activities",
-                    `object`
-                )
+                activitiesRepository.uploadMyPlanetActivities(model)
                 notifyListener(listener, "My planet activities uploaded successfully")
             } catch (e: Exception) {
                 Log.e(TAG, "Exception in UploadManager", e)
@@ -224,53 +194,9 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        val photosToUpload = submissionsRepository.getUnuploadedPhotos()
-
-        if (photosToUpload.isEmpty()) {
-            notifyListener(listener, "No photos to upload")
-            return
-        }
-
-        withContext(dispatcherProvider.io) {
-            data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
-
-            photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUploads = mutableListOf<UploadedPhotoInfo>()
-
-                batch.forEach { (photoId, serialized) ->
-                    try {
-                        val `object` = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/submissions", serialized
-                        ).body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-
-                            submissionsRepository.markPhotoUploaded(photoId, rev, id)
-
-                            if (listener != null && photoId != null) {
-                                successfulUploads.add(UploadedPhotoInfo(photoId, rev, id))
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Exception in UploadManager", e)
-                    }
-                }
-
-                if (listener != null && successfulUploads.isNotEmpty()) {
-                    val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
-                    val photos = submissionsRepository.getPhotosByIds(photoIds)
-
-                    photos.forEach { photo ->
-                        val uploadInfo = successfulUploads.find { it.photoId == photo.id }
-                        if (uploadInfo != null) {
-                            uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
-                        }
-                    }
-                }
-            }
+        val resultMessage = photoUploader.uploadSubmitPhotos(listener)
+        resultMessage?.let {
+            notifyListener(listener, it)
         }
     }
 
