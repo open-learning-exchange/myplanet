@@ -1233,5 +1233,23 @@
     <string name="tts_not_available">La synthèse vocale n\'est pas disponible sur cet appareil</string>
     <string name="pdf_no_text_layer">Ce PDF ne contient pas de texte lisible</string>
     <string name="pdf_extracting_text">Préparation du texte, veuillez patienter…</string>
+    <string name="storage_breakdown">utilisation du stockage</string>
+    <string name="storage_breakdown_summary">voir et gérer l\'espace utilisé par les téléchargements</string>
+    <string name="storage_breakdown_title">Contenu téléchargé</string>
+    <string name="storage_total_downloaded">Total téléchargé</string>
+    <string name="storage_videos">Vidéos</string>
+    <string name="storage_audio">Audio</string>
+    <string name="storage_pdfs">PDFs</string>
+    <string name="storage_images">Images</string>
+    <string name="storage_other">Autres fichiers</string>
+    <string name="storage_empty">Aucun contenu téléchargé trouvé</string>
+    <string name="storage_delete_confirm">Supprimer tous les téléchargements de %1$s ?</string>
+    <string name="storage_delete_selected_confirm">Supprimer %1$d élément(s) sélectionné(s) ?</string>
+    <string name="storage_delete_selected">Supprimer la sélection</string>
+    <string name="storage_delete_all">Tout supprimer</string>
+    <string name="storage_selected_count">%1$d sélectionné(s)</string>
+    <string name="storage_unknown_resource">Ressource inconnue</string>
+    <string name="file_count_one">1 fichier</string>
+    <string name="file_count_many">%1$d fichiers</string>
 
 </resources>
