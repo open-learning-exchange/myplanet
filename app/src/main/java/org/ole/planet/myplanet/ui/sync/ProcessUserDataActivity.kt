@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    open lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefData: SharedPrefManager
