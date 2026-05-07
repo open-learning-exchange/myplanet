@@ -5,6 +5,7 @@ import android.text.Spannable
 import android.text.SpannableStringBuilder
 import android.text.style.ForegroundColorSpan
 import android.view.View
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -22,24 +23,28 @@ import org.ole.planet.myplanet.databinding.ActivityCsvviewerBinding
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.TTSManager
 
 @AndroidEntryPoint
 class CSVViewerActivity : AppCompatActivity() {
     private lateinit var binding: ActivityCsvviewerBinding
 
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    @Inject lateinit var dispatcherProvider: DispatcherProvider
+    @Inject lateinit var ttsManager: TTSManager
+
+    private val csvRows = mutableListOf<Array<String>>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityCsvviewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
         renderCSVFile()
+        setupTts()
     }
 
     private fun renderCSVFile() {
-        val csvFileOpenIntent = intent
-        val fileName = csvFileOpenIntent.getStringExtra("TOUCHED_FILE")
+        val fileName = intent.getStringExtra("TOUCHED_FILE")
         if (!fileName.isNullOrEmpty()) {
             binding.csvFileName.text = FileUtils.nameWithoutExtension(fileName)
             binding.csvFileName.visibility = View.VISIBLE
@@ -69,6 +74,7 @@ class CSVViewerActivity : AppCompatActivity() {
                 reader.use { csvReader ->
                     for (row in csvReader) {
                         chunk.add(row)
+                        csvRows.add(row)
                         if (chunk.size >= chunkSize) {
                             val spannableChunk = buildSpannableForChunk(chunk)
                             withContext(dispatcherProvider.main) {
@@ -111,5 +117,34 @@ class CSVViewerActivity : AppCompatActivity() {
             )
         }
         return spannableContent
+    }
+
+    private fun setupTts() {
+        binding.fabTts.setOnClickListener {
+            if (ttsManager.isSpeaking) {
+                ttsManager.stop()
+            } else {
+                if (csvRows.isEmpty()) {
+                    Toast.makeText(this, getString(R.string.tts_not_available), Toast.LENGTH_SHORT).show()
+                    return@setOnClickListener
+                }
+                ttsManager.speak(TTSManager.formatCsvForSpeech(csvRows))
+            }
+        }
+        lifecycleScope.launch {
+            ttsManager.state.collect { state ->
+                binding.fabTts.setImageResource(
+                    if (state == TTSManager.State.SPEAKING) R.drawable.ic_stop else R.drawable.ic_play
+                )
+                binding.fabTts.contentDescription = getString(
+                    if (state == TTSManager.State.SPEAKING) R.string.stop_reading else R.string.read_aloud
+                )
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        ttsManager.stop()
     }
 }

@@ -60,7 +60,7 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
                         existingUser._id?.contains("org.couchdb.user:") == true -> showUserAlreadyMemberDialog(username)
                     }
                 } else {
-                    val model = userRepository.createGuestUser(username, settings)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@showGuestLoginDialog, getString(R.string.unable_to_login))
                     } else {
