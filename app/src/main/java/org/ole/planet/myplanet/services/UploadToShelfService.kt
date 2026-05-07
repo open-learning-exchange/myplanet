@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -45,6 +46,7 @@ class UploadToShelfService @Inject constructor(
     @AppPreferences private val sharedPreferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
     private val healthRepository: HealthRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
@@ -375,7 +377,7 @@ class UploadToShelfService @Inject constructor(
                         async {
                             semaphore.withPermit {
                                 try {
-                                    userRepository.uploadShelfData(model)
+                                    userSyncRepository.uploadShelfData(model)
                                 } catch (e: Throwable) {
                                     e.printStackTrace()
                                 }
@@ -401,7 +403,7 @@ class UploadToShelfService @Inject constructor(
                 val model = userName?.let { userRepository.getSyncedUserByName(it) }
 
                 if (model != null) {
-                    userRepository.uploadShelfData(model)
+                    userSyncRepository.uploadShelfData(model)
                 }
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Single user shelf sync completed successfully")

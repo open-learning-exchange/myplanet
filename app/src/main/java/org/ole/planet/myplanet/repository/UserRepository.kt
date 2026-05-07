@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Sort
@@ -22,7 +21,7 @@ interface UserRepository {
     suspend fun getSyncedUsers(): List<RealmUser>
     suspend fun getUsersForHealthSync(): List<RealmUser>
     suspend fun getSyncedUserByName(name: String): RealmUser?
-    suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser?
+    suspend fun createGuestUser(username: String): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
     suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
     suspend fun getPendingSyncUsers(limit: Int): List<RealmUser>
@@ -31,10 +30,8 @@ interface UserRepository {
         startMillis: Long,
         endMillis: Long,
     ): Map<Int, Int>
-    fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser?
     suspend fun isUserExists(name: String?): Boolean
     fun parseLeadersJson(jsonString: String): List<RealmUser>
-    suspend fun saveUser(jsonDoc: JsonObject?, settings: SharedPreferences, key: String? = null, iv: String? = null): RealmUser?
     suspend fun ensureUserSecurityKeys(userId: String): RealmUser?
     suspend fun fetchUserSecurityData(name: String)
     suspend fun updateSecurityData(
@@ -107,7 +104,4 @@ interface UserRepository {
     suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
     suspend fun getAchievementsForUpload(): List<JsonObject>
     suspend fun markAchievementUploaded(id: String, rev: String?)
-    fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences)
-    suspend fun uploadShelfData(user: RealmUser)
 }
