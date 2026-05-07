@@ -1,1 +1,0 @@
-echo "Testing NotificationsFragment fix"
