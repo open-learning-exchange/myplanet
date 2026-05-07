@@ -367,13 +367,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 if (courseIds.isEmpty()) {
                     return@runCatching
                 }
-                executeTransaction { realm ->
-                    val team = realm.where(RealmMyTeam::class.java)
-                        .equalTo("_id", teamId)
-                        .findFirst()
-                    if (team == null) {
-                        return@executeTransaction
-                    }
+                update(RealmMyTeam::class.java, "_id", teamId) { team ->
                     courseIds.forEach { courseId ->
                         if (team.courses?.contains(courseId) != true) {
                             team.courses?.add(courseId)
