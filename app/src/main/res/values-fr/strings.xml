@@ -1228,6 +1228,9 @@
     <string name="no_references_added">Aucune référence ajoutée</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
     <string name="already_shared">Déjà partagé</string>
+    <string name="status_not_started">Non commencé</string>
+    <string name="status_in_progress">En cours</string>
+    <string name="status_completed">Terminé</string>
     <string name="read_aloud">Lire à haute voix</string>
     <string name="stop_reading">Arrêter la lecture</string>
     <string name="tts_not_available">La synthèse vocale n\'est pas disponible sur cet appareil</string>

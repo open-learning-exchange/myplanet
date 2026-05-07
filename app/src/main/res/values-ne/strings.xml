@@ -1224,6 +1224,9 @@
     <string name="no_references_added">कुनै सन्दर्भ थपिएको छैन</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
+    <string name="status_not_started">सुरु भएको छैन</string>
+    <string name="status_in_progress">प्रगतिमा छ</string>
+    <string name="status_completed">पूरा भयो</string>
     <string name="read_aloud">स्वरमा पढ्नुहोस्</string>
     <string name="stop_reading">पढ्न रोक्नुहोस्</string>
     <string name="tts_not_available">यस उपकरणमा टेक्स्ट-टू-स्पीच उपलब्ध छैन</string>

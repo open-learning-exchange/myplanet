@@ -1227,6 +1227,9 @@
     <string name="no_references_added">No se agregaron referencias</string>
     <string name="chat_already_shared_to_destination">Este chat ya ha sido compartido a este destino</string>
     <string name="already_shared">Ya compartido</string>
+    <string name="status_not_started">No iniciado</string>
+    <string name="status_in_progress">En progreso</string>
+    <string name="status_completed">Completado</string>
     <string name="read_aloud">Leer en voz alta</string>
     <string name="stop_reading">Detener lectura</string>
     <string name="tts_not_available">La función de texto a voz no está disponible en este dispositivo</string>
