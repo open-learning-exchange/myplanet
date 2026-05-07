@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
 import com.google.gson.Gson
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -194,6 +196,32 @@ class SharedPrefManagerTest {
     }
 
     @Test
+    fun testClearPreferences() {
+        mockkStatic(PreferenceManager::class)
+        val mockDefaultSharedPreferences: SharedPreferences = mockk()
+        val mockDefaultEditor: SharedPreferences.Editor = mockk(relaxed = true)
+
+        every { PreferenceManager.getDefaultSharedPreferences(mockContext) } returns mockDefaultSharedPreferences
+        every { mockDefaultSharedPreferences.edit() } returns mockDefaultEditor
+        every { mockDefaultEditor.clear() } returns mockDefaultEditor
+
+        // First launch and manual config boolean mocks
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.FIRST_LAUNCH, false) } returns true
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.MANUAL_CONFIG, false) } returns false
+
+        every { mockEditor.clear() } returns mockEditor
+        every { mockEditor.commit() } returns true
+
+        sharedPrefManager.clearPreferences()
+
+        verify { mockEditor.clear() }
+        verify { mockEditor.putBoolean(SharedPrefManager.FIRST_LAUNCH, true) }
+        verify { mockEditor.putBoolean(SharedPrefManager.MANUAL_CONFIG, false) }
+        verify { mockEditor.commit() }
+
+        verify { mockDefaultEditor.clear() }
+    }
+
     fun testGetCachedMyLifeItems_validJson() {
         val userId = "123"
         val expectedItems = listOf(
