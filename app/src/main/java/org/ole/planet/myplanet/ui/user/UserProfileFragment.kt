@@ -140,6 +140,14 @@ class UserProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        initializeDependencies()
+        binding.btProfilePic.setOnClickListener { searchForPhoto() }
+        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
+        setupStatsRecycler()
+        observeUserProfile()
+        viewModel.loadUserProfile(sharedPrefManager.getUserId())
+        viewModel.getOfflineVisits()
+
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(
@@ -159,13 +167,6 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-        initializeDependencies()
-        binding.btProfilePic.setOnClickListener { searchForPhoto() }
-        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
-        setupStatsRecycler()
-        observeUserProfile()
-        viewModel.loadUserProfile(sharedPrefManager.getUserId())
-        viewModel.getOfflineVisits()
 
         return binding.root
     }
