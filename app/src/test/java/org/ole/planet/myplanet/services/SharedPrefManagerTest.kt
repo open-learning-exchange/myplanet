@@ -224,4 +224,10 @@ class SharedPrefManagerTest {
 
         assertNull(result)
     }
+
+    fun testRemoveKey() {
+        sharedPrefManager.removeKey("some_key")
+        verify { mockEditor.remove("some_key") }
+        verify { mockEditor.apply() }
+    }
 }

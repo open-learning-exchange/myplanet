@@ -722,6 +722,14 @@
     <string name="syncing_data_please_wait">डाटा सिंक गरिंदै, कृपया प्रतीक्षा गर्नुहोस्…</string>
     <string name="sync_failed">सिंक असफल भयो</string>
     <string name="sync_completed">सिंक सम्पन्न भयो</string>
+    <string name="sync_phase_account_data">खाता डाटा सिंक गरिंदै…</string>
+    <string name="sync_phase_resources">स्रोतहरू सिंक गरिंदै…</string>
+    <string name="sync_phase_library">पुस्तकालय सिंक गरिंदै…</string>
+    <string name="sync_phase_finalizing">अन्तिम रूप दिंदै…</string>
+    <string name="sync_step_of">चरण %1$d मध्ये %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d तालिकाहरू</string>
+    <string name="sync_shelves_progress">%1$d / %2$d शेल्फहरू</string>
     <string name="team_leader">टिम नेता</string>
     <string name="select_resource">"स्रोत छान्नुहोस्: "</string>
     <string name="add">थप्नुहोस्</string>
@@ -1034,6 +1042,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">म्यानुअल कन्फिगरेसन सुरु गर्दा सबै डाटा मेटिनेछ, के तपाईं निश्चित रूपमा जारी राख्न चाहनुहुन्छ?</string>
     <string name="chart_description">लगइन गतिविधि चार्ट</string>
     <string name="chart_label">लगइनहरूको संख्या</string>
+    <string name="no_login_activity">अहिलेसम्म कुनै लगइन गतिविधि रेकर्ड गरिएको छैन</string>
     <string name="copied_to_clipboard">क्लिपबोर्डमा प्रति लिइयो</string>
     <string name="mark_all_as_read">सबैलाई पढिएको रूपमा चिन्ह लगाउनुहोस्</string>
     <string name="no_notifications">कुनै सूचना छैन</string>
@@ -1215,5 +1224,10 @@
     <string name="no_references_added">कुनै सन्दर्भ थपिएको छैन</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
+    <string name="read_aloud">स्वरमा पढ्नुहोस्</string>
+    <string name="stop_reading">पढ्न रोक्नुहोस्</string>
+    <string name="tts_not_available">यस उपकरणमा टेक्स्ट-टू-स्पीच उपलब्ध छैन</string>
+    <string name="pdf_no_text_layer">यस PDF मा पढ्न योग्य पाठ छैन</string>
+    <string name="pdf_extracting_text">पाठ तयार गर्दै, कृपया पर्खनुहोस्…</string>
 
 </resources>
