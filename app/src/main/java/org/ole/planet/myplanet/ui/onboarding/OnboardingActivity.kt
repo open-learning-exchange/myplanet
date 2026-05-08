@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.onboarding
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -42,12 +43,10 @@ class OnboardingActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         copyAssets(this)
+        handleDeepLinkIntent(intent)
+
         if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
-            startActivity(
-                Intent(applicationContext, DashboardActivity::class.java)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    .putExtra("from_login", true)
-            )
+            startActivity(buildDashboardIntent())
             finish()
             return
         }
@@ -69,11 +68,7 @@ class OnboardingActivity : AppCompatActivity() {
                 prefData.setLoggedIn(true)
             }
             if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
-                startActivity(
-                    Intent(applicationContext, DashboardActivity::class.java)
-                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                        .putExtra("from_login", true)
-                )
+                startActivity(buildDashboardIntent())
                 finish()
             }
         }
@@ -170,9 +165,61 @@ class OnboardingActivity : AppCompatActivity() {
         dots[0]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.selected_item_dot))
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLinkIntent(intent)
+    }
+
+    private fun handleDeepLinkIntent(intent: Intent) {
+        if (intent.action != Intent.ACTION_VIEW) return
+        val uri: Uri = intent.data ?: return
+        val (section, contentId) = when (uri.scheme) {
+            // myplanet://courses  or  myplanet://courses/abc123
+            "myplanet" -> {
+                val sec = uri.host ?: return
+                Pair(sec, uri.pathSegments.firstOrNull())
+            }
+            // https://planet.learning.ole.org/app/courses  or  /app/courses/abc123
+            "http", "https" -> {
+                val segments = uri.pathSegments
+                val appIndex = segments.indexOf("app")
+                val sec = segments.getOrNull(appIndex + 1) ?: return
+                val id = segments.getOrNull(appIndex + 2)
+                Pair(sec, id)
+            }
+            else -> return
+        }
+        prefData.setRawString(DEEP_LINK_SECTION_KEY, section)
+        if (contentId != null) prefData.setRawString(DEEP_LINK_ID_KEY, contentId)
+        else prefData.removeKey(DEEP_LINK_ID_KEY)
+    }
+
+    private fun buildDashboardIntent(): Intent {
+        val dashIntent = Intent(applicationContext, DashboardActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            .putExtra("from_login", true)
+        val section = prefData.getRawString(DEEP_LINK_SECTION_KEY)
+        if (section.isNotEmpty()) {
+            dashIntent.putExtra("fragmentToOpen", section)
+            prefData.removeKey(DEEP_LINK_SECTION_KEY)
+            val contentId = prefData.getRawString(DEEP_LINK_ID_KEY)
+            if (contentId.isNotEmpty()) {
+                dashIntent.putExtra("contentId", contentId)
+                prefData.removeKey(DEEP_LINK_ID_KEY)
+            }
+        }
+        return dashIntent
+    }
+
     private fun finishTutorial() {
         prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
         finish()
+    }
+
+    companion object {
+        const val DEEP_LINK_SECTION_KEY = "pending_deep_link_section"
+        const val DEEP_LINK_ID_KEY = "pending_deep_link_id"
     }
 }

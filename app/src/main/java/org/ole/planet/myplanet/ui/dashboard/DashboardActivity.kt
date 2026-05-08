@@ -68,6 +68,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
+import org.ole.planet.myplanet.ui.onboarding.OnboardingActivity
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
@@ -366,14 +367,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun handleInitialFragment() {
-        if (intent != null && intent.hasExtra("fragmentToOpen")) {
-            val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
+        var fragmentToOpen = intent?.getStringExtra("fragmentToOpen")
+        var contentId = intent?.getStringExtra("contentId")
+
+        if (fragmentToOpen == null) {
+            val pendingSection = prefData.getRawString(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+            if (pendingSection.isNotEmpty()) {
+                fragmentToOpen = pendingSection
+                contentId = prefData.getRawString(OnboardingActivity.DEEP_LINK_ID_KEY).ifEmpty { null }
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_ID_KEY)
             }
-        } else {
-            openCallFragment(BellDashboardFragment())
-            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+        }
+
+        when (fragmentToOpen) {
+            "feedbackList" -> openMyFragment(FeedbackListFragment())
+            "courses" -> openCallFragment(CoursesFragment())
+            "resources" -> openCallFragment(ResourcesFragment())
+            "teams" -> openCallFragment(TeamFragment())
+            "surveys" -> openCallFragment(SurveyFragment())
+            else -> {
+                openCallFragment(BellDashboardFragment())
+                binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            }
         }
     }
 
