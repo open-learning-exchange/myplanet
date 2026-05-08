@@ -47,6 +47,7 @@ open class RealmNews : RealmObject() {
     var newsUpdatedDate: Long = 0
     var chat: Boolean = false
     var isEdited: Boolean = false
+    var reactions: String? = null
     var editedTime: Long = 0
     var sharedBy: String? = null
     @Ignore
@@ -76,6 +77,50 @@ open class RealmNews : RealmObject() {
             return array
         }
 
+    val reactionsMap: Map<String, List<String>>
+        get() {
+            if (reactions.isNullOrEmpty()) return emptyMap()
+            return try {
+                val result = mutableMapOf<String, MutableList<String>>()
+                val obj = JsonUtils.gson.fromJson(reactions, JsonObject::class.java)
+                obj.keySet().forEach { emoji ->
+                    result[emoji] = obj.get(emoji).asJsonArray.map { it.asString }.toMutableList()
+                }
+                result
+            } catch (e: Exception) {
+                emptyMap()
+            }
+        }
+
+    fun updateReaction(emoji: String, userId: String) {
+        val currentMap = mutableMapOf<String, MutableList<String>>()
+        reactionsMap.forEach { (e, users) -> currentMap[e] = users.toMutableList() }
+
+        val existingEmoji = currentMap.entries.find { it.value.contains(userId) }?.key
+
+        when {
+            existingEmoji == emoji -> {
+                currentMap[emoji]?.remove(userId)
+                if (currentMap[emoji].isNullOrEmpty()) currentMap.remove(emoji)
+            }
+            existingEmoji != null -> {
+                currentMap[existingEmoji]?.remove(userId)
+                if (currentMap[existingEmoji].isNullOrEmpty()) currentMap.remove(existingEmoji)
+                currentMap.getOrPut(emoji) { mutableListOf() }.add(userId)
+            }
+            else -> {
+                currentMap.getOrPut(emoji) { mutableListOf() }.add(userId)
+            }
+        }
+
+        val obj = JsonObject()
+        currentMap.forEach { (e, users) ->
+            val arr = JsonArray()
+            users.forEach { arr.add(it) }
+            obj.add(e, arr)
+        }
+        reactions = JsonUtils.gson.toJson(obj)
+    }
     fun updateMessage(newMessage: String) {
         this.message = newMessage
         this.isEdited = true

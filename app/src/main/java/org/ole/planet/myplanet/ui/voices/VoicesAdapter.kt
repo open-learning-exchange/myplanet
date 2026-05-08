@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.makeExpandable
+import android.widget.TextView
 
 class VoicesAdapter(
     var context: Context,
@@ -211,6 +212,7 @@ class VoicesAdapter(
                 labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
                 news.let { labelManager.showChips(holder.binding, it, canManageLabels) }
                 handleChat(holder, news)
+                showReactions(holder, news)
                 val currentLeader = getCurrentLeader(userModel, news)
                 setMemberClickListeners(holder, userModel, currentLeader)
             }
@@ -265,6 +267,8 @@ class VoicesAdapter(
             llNewsImages.removeAllViews()
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
+            flReactions.removeAllViews()
+            btnReact.text = "😶"
         }
     }
 
@@ -662,7 +666,71 @@ class VoicesAdapter(
         return if (parentNews == null) currentList.size else currentList.size + 1
     }
 
+    private fun showReactions(holder: VoicesViewHolder, news: RealmNews) {
+        val userId = currentUser?._id ?: return
+        val binding = holder.binding
+        val reactionsMap = news.reactionsMap
 
+        binding.flReactions.removeAllViews()
+
+        if (reactionsMap.isEmpty()) {
+            binding.flReactions.visibility = View.GONE
+        } else {
+            binding.flReactions.visibility = View.VISIBLE
+            reactionsMap.forEach { (emoji, users) ->
+                val chip = TextView(context).apply {
+                    text = "$emoji ${users.size}"
+                    textSize = 14f
+                    setPadding(16, 8, 16, 8)
+                    setBackgroundResource(
+                        if (users.contains(userId)) R.drawable.reaction_chip_active
+                        else R.drawable.reaction_chip_inactive
+                    )
+                    val params = ViewGroup.MarginLayoutParams(
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT
+                    )
+                    params.setMargins(4, 4, 4, 4)
+                    layoutParams = params
+                    setOnClickListener {
+                        news.updateReaction(emoji, userId)
+                        val index = currentList.indexOfFirst { it?.id == news.id }
+                        if (index >= 0) {
+                            currentList[index]?.reactions = news.reactions
+                            notifyItemChanged(if (parentNews != null) index + 1 else index)
+                        }
+                    }
+                }
+                binding.flReactions.addView(chip)
+            }
+        }
+
+        // React button always triggers picker
+        binding.btnReact.setOnClickListener {
+            showEmojiPicker(news, userId)
+        }
+    }
+
+    private fun showEmojiPicker(news: RealmNews, userId: String) {
+        val emojis = listOf("😀", "❤️", "👍", "😂", "😮", "😢")
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(context, R.style.AlertDialogTheme)
+            .setTitle("React")
+            .setItems(emojis.toTypedArray<String>()) { _, which ->
+                val emoji = emojis[which]
+                news.updateReaction(emoji, userId)
+                val index = currentList.indexOfFirst { it?.id == news.id }
+                if (index >= 0) {
+                    currentList[index]?.reactions = news.reactions
+                    notifyItemChanged(if (parentNews != null) index + 1 else index)
+                }
+                launchCoroutine {
+                    voicesRepository.updateReaction(news.id ?: return@launchCoroutine, emoji, userId)
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .create()
+        dialog.show()
+    }
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as VoicesViewHolder
 

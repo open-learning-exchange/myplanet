@@ -647,6 +647,15 @@ class VoicesRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
+    override suspend fun updateReaction(newsId: String, emoji: String, userId: String) {
+        databaseService.executeTransactionAsync { realm ->
+            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            if (news != null) {
+                news.updateReaction(emoji, userId)
+            }
+        }
+    }
+
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
         val imageList = queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", true)

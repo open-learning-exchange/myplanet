@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.textChanges
+import androidx.recyclerview.widget.LinearLayoutManager
 
 @AndroidEntryPoint
 class VoicesFragment : BaseVoicesFragment() {
@@ -179,8 +180,13 @@ class VoicesFragment : BaseVoicesFragment() {
             val sortedList = sortNews(list)
             setupVoicesAdapter(sortedList)
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list)
+        val layoutManager = binding.rvNews.layoutManager as? LinearLayoutManager
+        val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+        val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+        (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list) {
+            layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
         }
+    }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
     }
 
