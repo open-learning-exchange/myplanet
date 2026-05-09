@@ -966,7 +966,7 @@
     <string name="no_teams">teams not available</string>
     <string name="no_chats">no previous chats</string>
     <string name="no_feedback">no feedback available</string>
-    <string name="empty_text" />
+    <string name="empty_text" translatable="false" />
     <string name="message_placeholder">%s</string>
     <string name="reports">Reports</string>
     <string name="number_placeholder">%d</string>
