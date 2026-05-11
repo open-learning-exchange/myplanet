@@ -178,6 +178,12 @@ class DownloadService : Service() {
                 return
             }
 
+            if (FileUtils.checkFileExist(this, url)) {
+                DownloadUtils.updateResourceOfflineStatus(url)
+                onDownloadComplete(url)
+                return
+            }
+
             val authHeader = header
             if (authHeader.isBlank()) {
                 downloadFailed("Authentication header not available", fromSync)

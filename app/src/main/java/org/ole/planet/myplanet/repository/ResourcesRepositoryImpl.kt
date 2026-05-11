@@ -383,7 +383,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
@@ -395,7 +395,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
