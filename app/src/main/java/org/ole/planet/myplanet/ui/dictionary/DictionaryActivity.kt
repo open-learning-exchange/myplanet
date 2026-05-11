@@ -7,11 +7,13 @@ import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utils.Constants
@@ -20,9 +22,6 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
-
-import org.ole.planet.myplanet.data.DatabaseService
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
