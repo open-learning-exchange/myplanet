@@ -71,6 +71,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private var selectedCvUri: Uri? = null
     private var pendingCvFilename: String? = null
     private var deleteCv = false
+    private var selectedDobIso: String? = null
     private lateinit var pickCvLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -168,6 +169,17 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     parentCode = user?.parentCode ?: "",
                     resumeFileName = cvFilename
                 )
+
+                val middleName = fragmentEditAchievementBinding.etMname.text.toString().trim()
+                val birthPlace = fragmentEditAchievementBinding.etBirthplace.text.toString().trim()
+                val userPayload = JsonObject().apply {
+                    addProperty("firstName", firstName)
+                    addProperty("lastName", lastName)
+                    if (middleName.isNotEmpty()) addProperty("middleName", middleName)
+                    if (birthPlace.isNotEmpty()) addProperty("birthPlace", birthPlace)
+                    selectedDobIso?.let { addProperty("birthDate", it) }
+                }
+                userRepository.updateProfileFields(user?.id, userPayload)
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
                 fragmentEditAchievementBinding.btnUpdate.isEnabled = true
@@ -392,8 +404,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     override fun onDateSet(datePicker: DatePicker, i: Int, i1: Int, i2: Int) {
-        fragmentEditAchievementBinding.txtDob.text =
-            String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+        val iso = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
+        fragmentEditAchievementBinding.txtDob.text = iso
+        selectedDobIso = iso
     }
 
     private fun initializeData() {
