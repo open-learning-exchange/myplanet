@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
@@ -15,9 +16,9 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.time.Instant
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -38,13 +39,19 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
@@ -97,9 +104,9 @@ class AchievementFragment : BaseContainerFragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 startSyncManager()
             }
         }
@@ -173,6 +180,7 @@ class AchievementFragment : BaseContainerFragment() {
             setupAchievementHeader(it)
             populateAchievements(it)
             setupReferences(it)
+            setupCv(it)
         }
     }
 
@@ -304,6 +312,25 @@ class AchievementFragment : BaseContainerFragment() {
             }
         }
         return btnBinding.root
+    }
+
+    private fun setupCv(data: AchievementData) {
+        val cvFilename = data.resumeFileName
+        if (cvFilename.isEmpty()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$cvFilename")
+        if (!cvFile.exists()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        binding.cvCard.visibility = View.VISIBLE
+        binding.btnViewCv.setOnClickListener {
+            val intent = Intent(requireContext(), PDFReaderActivity::class.java)
+            intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            startActivity(intent)
+        }
     }
 
     private fun setupReferences(data: AchievementData) {
