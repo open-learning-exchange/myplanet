@@ -225,6 +225,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
             MarkdownUtils.warmUp(this@MainApplication)
+            runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
             initApp()
