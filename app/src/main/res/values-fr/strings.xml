@@ -1233,5 +1233,6 @@
     <string name="tts_not_available">La synthèse vocale n\'est pas disponible sur cet appareil</string>
     <string name="pdf_no_text_layer">Ce PDF ne contient pas de texte lisible</string>
     <string name="pdf_extracting_text">Préparation du texte, veuillez patienter…</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

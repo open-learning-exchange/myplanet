@@ -1229,5 +1229,6 @@
     <string name="tts_not_available">Text-to-speech is not available on this device</string>
     <string name="pdf_no_text_layer">This PDF doesn\'t contain readable text</string>
     <string name="pdf_extracting_text">Preparing text, please wait…</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>
