@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< fix-dashboard-activity-ondestroy-12121313779886316537
         versionCode = 5506
         versionName = "0.55.6"
+=======
+        versionCode = 5505
+        versionName = "0.55.5"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
