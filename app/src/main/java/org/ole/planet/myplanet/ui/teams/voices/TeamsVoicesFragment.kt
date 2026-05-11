@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -186,8 +187,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
                         viewLifecycleOwner.lifecycleScope.launch {
-                            val result = voicesViewModel.isTeamLeader(teamId, user?._id)
-                            onResult(result)
+                            val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
+                                voicesViewModel.isTeamLeader(teamId, user?._id)
+                            }
+                            onResult(result ?: false)
                         }
                     },
                     getUserFn = { userId, onResult ->
@@ -197,10 +200,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         }
                     },
                     getReplyCountFn = { newsId, onResult ->
-                        viewLifecycleOwner.lifecycleScope.launch {
+                        val job = viewLifecycleOwner.lifecycleScope.launch {
                             val result = voicesViewModel.getReplyCount(newsId)
                             onResult(result)
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     deletePostFn = { newsId ->
                         voicesViewModel.deletePost(newsId, getEffectiveTeamName()) {
@@ -209,11 +213,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                         voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
-                            if (result.isSuccess) {
-                                org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), requireContext().getString(R.string.shared_to_community))
-                            } else {
-                                org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), "Failed to share news")
-                            }
+                            VoicesAdapterHelper.handleShareNewsResult(requireContext(), result)
                         }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
@@ -225,22 +225,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onEditAction = { action ->
                         viewLifecycleOwner.lifecycleScope.launch { action() }
                     },
-                    onAnimateTyping = { response, onUpdate, onComplete ->
-                        var cancelJob: (() -> Unit)? = null
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            cancelJob = { }
-                            var currentIndex = 0
-                            while (currentIndex < response.length) {
-                                if (!isActive) return@launch
-                                onUpdate(response.substring(0, currentIndex + 1))
-                                currentIndex++
-                                kotlinx.coroutines.delay(10L)
-                            }
-                            onComplete()
-                        }
-                        cancelJob = { job.cancel() }
-                        cancelJob
-                    },
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
                     userRepository = userRepository

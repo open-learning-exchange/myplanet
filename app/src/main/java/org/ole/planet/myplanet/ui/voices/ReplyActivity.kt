@@ -117,10 +117,11 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                         }
                     },
                     getReplyCountFn = { newsId, onResult ->
-                        lifecycleScope.launch {
+                        val job = lifecycleScope.launch {
                             val result = voicesViewModel.getReplyCount(newsId)
                             onResult(result)
                         }
+                        return@VoicesAdapter { job.cancel() }
                     },
                     deletePostFn = { newsId ->
                         voicesViewModel.deletePost(newsId, "") {
@@ -129,11 +130,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                         voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
-                            if (result.isSuccess) {
-                                org.ole.planet.myplanet.utils.Utilities.toast(this@ReplyActivity, getString(R.string.shared_to_community))
-                            } else {
-                                org.ole.planet.myplanet.utils.Utilities.toast(this@ReplyActivity, "Failed to share news")
-                            }
+                            VoicesAdapterHelper.handleShareNewsResult(this@ReplyActivity, result)
                         }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
@@ -145,22 +142,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     onEditAction = { action ->
                         lifecycleScope.launch { action() }
                     },
-                    onAnimateTyping = { response, onUpdate, onComplete ->
-                        var cancelJob: (() -> Unit)? = null
-                        val job = lifecycleScope.launch {
-                            cancelJob = { }
-                            var currentIndex = 0
-                            while (currentIndex < response.length) {
-                                if (!isActive) return@launch
-                                onUpdate(response.substring(0, currentIndex + 1))
-                                currentIndex++
-                                kotlinx.coroutines.delay(10L)
-                            }
-                            onComplete()
-                        }
-                        cancelJob = { job.cancel() }
-                        cancelJob
-                    },
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
                     userRepository = userRepository

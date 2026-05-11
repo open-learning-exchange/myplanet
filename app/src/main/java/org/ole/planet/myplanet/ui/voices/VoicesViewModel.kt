@@ -4,9 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -24,18 +21,11 @@ class VoicesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _shareNewsResult = MutableSharedFlow<Result<Unit>>()
-    val shareNewsResult: SharedFlow<Result<Unit>> = _shareNewsResult.asSharedFlow()
-
-    private val _deletePostComplete = MutableSharedFlow<String>()
-    val deletePostComplete: SharedFlow<String> = _deletePostComplete.asSharedFlow()
-
     fun deletePost(newsId: String, teamName: String, onComplete: () -> Unit) {
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 voicesRepository.deletePost(newsId, teamName)
             }
-            _deletePostComplete.emit(newsId)
             onComplete()
         }
     }
@@ -52,11 +42,12 @@ class VoicesViewModel @Inject constructor(
             val result = withContext(dispatcherProvider.io) {
                 voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
             }
-            _shareNewsResult.emit(result)
             onResult(result)
         }
     }
 
+    // Note: The following are read-only suspend functions designed to be called directly from
+    // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
     suspend fun getUserById(userId: String): RealmUser? {
         return withContext(dispatcherProvider.io) {
             userRepository.getUserById(userId)

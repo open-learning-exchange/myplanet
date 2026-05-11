@@ -237,10 +237,11 @@ class VoicesFragment : BaseVoicesFragment() {
                 }
             },
             getReplyCountFn = { newsId, onResult ->
-                viewLifecycleOwner.lifecycleScope.launch {
+                val job = viewLifecycleOwner.lifecycleScope.launch {
                     val result = voicesViewModel.getReplyCount(newsId)
                     onResult(result)
                 }
+                return@VoicesAdapter { job.cancel() }
             },
             deletePostFn = { newsId ->
                 voicesViewModel.deletePost(newsId, "") {
@@ -249,11 +250,7 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
                 voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
-                    if (result.isSuccess) {
-                        org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), requireContext().getString(R.string.shared_to_community))
-                    } else {
-                        org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), "Failed to share news")
-                    }
+                    VoicesAdapterHelper.handleShareNewsResult(requireContext(), result)
                 }
             },
             getLibraryResourceFn = { resourceId, onResult ->
@@ -265,22 +262,7 @@ class VoicesFragment : BaseVoicesFragment() {
             onEditAction = { action ->
                 viewLifecycleOwner.lifecycleScope.launch { action() }
             },
-            onAnimateTyping = { response, onUpdate, onComplete ->
-                var cancelJob: (() -> Unit)? = null
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    cancelJob = { }
-                    var currentIndex = 0
-                    while (currentIndex < response.length) {
-                        if (!isActive) return@launch
-                        onUpdate(response.substring(0, currentIndex + 1))
-                        currentIndex++
-                        kotlinx.coroutines.delay(10L)
-                    }
-                    onComplete()
-                }
-                cancelJob = { job.cancel() }
-                cancelJob
-            },
+            onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope),
             labelManager = labelManager,
             voicesRepository = voicesRepository,
             userRepository = userRepository

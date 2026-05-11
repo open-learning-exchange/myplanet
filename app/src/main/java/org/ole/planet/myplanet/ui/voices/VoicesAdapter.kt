@@ -63,7 +63,7 @@ class VoicesAdapter(
     private val userSessionManager: UserSessionManager,
     private val isTeamLeaderFn: ((Boolean) -> Unit) -> Unit,
     private val getUserFn: (String, (RealmUser?) -> Unit) -> Unit,
-    private val getReplyCountFn: (String, (Int) -> Unit) -> Unit,
+    private val getReplyCountFn: (String, (Int) -> Unit) -> (() -> Unit),
     private val deletePostFn: (String) -> Unit,
     private val shareNewsFn: (String, String, String, String, String) -> Unit,
     private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> Unit,
@@ -583,7 +583,8 @@ class VoicesAdapter(
             applyReplyCount(viewHolder.binding, cached, position)
             return
         }
-        getReplyCountFn(newsId) { replyCount ->
+        viewHolder.cancelJob?.invoke()
+        viewHolder.cancelJob = getReplyCountFn(newsId) { replyCount ->
             try {
                 replyCountCache[newsId] = replyCount
                 applyReplyCount(viewHolder.binding, replyCount, position)
