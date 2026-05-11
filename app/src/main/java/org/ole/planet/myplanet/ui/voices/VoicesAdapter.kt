@@ -54,6 +54,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.makeExpandable
 import android.widget.TextView
+import android.widget.LinearLayout
 
 class VoicesAdapter(
     var context: Context,
@@ -268,7 +269,7 @@ class VoicesAdapter(
             recyclerGchat.visibility = View.GONE
             sharedChat.visibility = View.GONE
             flReactions.removeAllViews()
-            btnReact.text = "😶"
+            btnReact.text = context.getString(R.string.react)
         }
     }
 
@@ -670,9 +671,7 @@ class VoicesAdapter(
         val userId = currentUser?._id ?: return
         val binding = holder.binding
         val reactionsMap = news.reactionsMap
-
         binding.flReactions.removeAllViews()
-
         if (reactionsMap.isEmpty()) {
             binding.flReactions.visibility = View.GONE
         } else {
@@ -681,6 +680,7 @@ class VoicesAdapter(
                 val chip = TextView(context).apply {
                     text = "$emoji ${users.size}"
                     textSize = 14f
+                    setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
                     setPadding(16, 8, 16, 8)
                     setBackgroundResource(
                         if (users.contains(userId)) R.drawable.reaction_chip_active
@@ -707,30 +707,49 @@ class VoicesAdapter(
 
         // React button always triggers picker
         binding.btnReact.setOnClickListener {
-            showEmojiPicker(news, userId)
+            showEmojiPicker(news, userId, binding.btnReact)
         }
     }
 
-    private fun showEmojiPicker(news: RealmNews, userId: String) {
+    private fun showEmojiPicker(news: RealmNews, userId: String, anchorView: View) {
         val emojis = listOf("😀", "❤️", "👍", "😂", "😮", "😢")
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(context, R.style.AlertDialogTheme)
-            .setTitle("React")
-            .setItems(emojis.toTypedArray<String>()) { _, which ->
-                val emoji = emojis[which]
-                news.updateReaction(emoji, userId)
-                val index = currentList.indexOfFirst { it?.id == news.id }
-                if (index >= 0) {
-                    currentList[index]?.reactions = news.reactions
-                    notifyItemChanged(if (parentNews != null) index + 1 else index)
-                }
-                launchCoroutine {
-                    voicesRepository.updateReaction(news.id ?: return@launchCoroutine, emoji, userId)
+        val popupView = LayoutInflater.from(context).inflate(R.layout.popup_emoji_picker, null)
+        val container = popupView.findViewById<LinearLayout>(R.id.ll_emoji_container)
+        val popup = android.widget.PopupWindow(
+            popupView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            true
+        )
+        popup.elevation = 10f
+        emojis.forEach { emoji ->
+            val tv = TextView(context).apply {
+                text = emoji
+                textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+                setPadding(
+                    context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_small),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                    context.resources.getDimensionPixelSize(R.dimen.padding_small)
+                )
+                setOnClickListener {
+                    popup.dismiss()
+                    news.updateReaction(emoji, userId)
+                    val index = currentList.indexOfFirst { it?.id == news.id }
+                    if (index >= 0) {
+                        currentList[index]?.reactions = news.reactions
+                        notifyItemChanged(if (parentNews != null) index + 1 else index)
+                    }
+                    launchCoroutine {
+                        voicesRepository.updateReaction(news.id ?: return@launchCoroutine, emoji, userId)
+                    }
                 }
             }
-            .setNegativeButton(R.string.cancel, null)
-            .create()
-        dialog.show()
+            container.addView(tv)
+        }
+        popup.showAsDropDown(anchorView, 0, -context.resources.getDimensionPixelSize(R.dimen._40dp))
     }
+
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as VoicesViewHolder
 

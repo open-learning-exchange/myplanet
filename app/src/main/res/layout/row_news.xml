@@ -141,6 +141,7 @@
             android:padding="@dimen/padding_normal"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/linearLayout5" />
+
         <com.google.android.flexbox.FlexboxLayout
             android:id="@+id/fl_reactions"
             android:layout_width="match_parent"
@@ -152,102 +153,99 @@
             app:justifyContent="flex_start"
             app:layout_constraintStart_toStartOf="parent"
             app:layout_constraintTop_toBottomOf="@+id/fb_chips" />
-        <androidx.constraintlayout.widget.ConstraintLayout
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            app:layout_constraintTop_toBottomOf="@+id/fl_reactions"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/fl_reactions">
+            app:layout_constraintEnd_toEndOf="parent">
 
             <Button
                 android:id="@+id/btn_reply"
-                android:layout_width="0dp"
+                android:minWidth="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/reply"
                 android:textColor="@color/daynight_textColor"
-                android:theme="@style/PrimaryFlatButton"
-                app:layout_constraintEnd_toStartOf="@+id/btn_show_reply"
-                app:layout_constraintHorizontal_chainStyle="spread_inside"
-                app:layout_constraintStart_toEndOf="@+id/btn_react"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:theme="@style/PrimaryFlatButton" />
+
             <Button
                 android:id="@+id/btn_react"
-                android:layout_width="0dp"
+                android:minWidth="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="😶"
-                android:textSize="18sp"
-                android:theme="@style/PrimaryFlatButton"
-                app:layout_constraintEnd_toStartOf="@+id/btn_reply"
-                app:layout_constraintHorizontal_chainStyle="spread_inside"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:text="@string/react"
+                android:textColor="@color/daynight_textColor"
+                android:theme="@style/PrimaryFlatButton" />
+
             <Button
                 android:id="@+id/btn_show_reply"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:minWidth="0dp"
-                android:paddingStart="8dp"
-                android:paddingEnd="8dp"
+                android:paddingStart="@dimen/padding_normal"
+                android:paddingEnd="@dimen/padding_normal"
                 android:drawableStart="@drawable/show_replies"
-                android:drawablePadding="4dp"
+                android:drawablePadding="@dimen/padding_small"
                 android:drawableTint="@color/daynight_textColor"
                 android:textColor="@color/daynight_textColor"
-                android:theme="@style/PrimaryFlatButton"
-                app:layout_constraintEnd_toStartOf="@+id/btn_add_label"
-                app:layout_constraintStart_toEndOf="@+id/btn_reply"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:theme="@style/PrimaryFlatButton" />
+
             <Button
                 android:id="@+id/btn_add_label"
-                android:layout_width="0dp"
+                android:minWidth="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/add_label"
                 android:textColor="@color/daynight_textColor"
-                android:theme="@style/PrimaryFlatButton"
-                app:layout_constraintEnd_toStartOf="@+id/btn_share"
-                app:layout_constraintStart_toEndOf="@+id/btn_show_reply"
-                app:layout_constraintTop_toTopOf="parent" />
+                android:theme="@style/PrimaryFlatButton" />
+
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+
             <ImageButton
                 android:id="@+id/btn_share"
-                android:layout_width="0dp"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:background="?attr/selectableItemBackground"
                 android:contentDescription="@string/share_with_community"
-                android:gravity="center"
                 android:src="@drawable/baseline_share_24"
                 android:theme="@style/PrimaryFlatButton"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toStartOf="@+id/ll_edit_delete"
-                app:layout_constraintStart_toEndOf="@+id/btn_add_label"
-                app:layout_constraintTop_toTopOf="parent"
                 app:tint="@color/daynight_textColor" />
+
             <LinearLayout
                 android:id="@+id/ll_edit_delete"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/btn_share"
-                app:layout_constraintTop_toTopOf="parent">
+                android:gravity="center">
 
                 <ImageView
                     android:id="@+id/img_edit"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_width="@dimen/_20dp"
+                    android:layout_height="@dimen/_20dp"
+                    android:layout_marginStart="@dimen/padding_normal"
                     android:background="?attr/selectableItemBackground"
                     android:visibility="visible"
                     app:srcCompat="@drawable/ic_edit"
                     app:tint="@color/daynight_textColor" />
+
                 <ImageView
                     android:id="@+id/img_delete"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginStart="8dp"
+                    android:layout_width="@dimen/_20dp"
+                    android:layout_height="@dimen/_20dp"
+                    android:layout_marginStart="@dimen/padding_normal"
                     android:background="?attr/selectableItemBackground"
                     app:srcCompat="@drawable/ic_delete"
-                    app:tint="@color/daynight_textColor" />
+                    app:tint="@color/daynight_textColor"
+                    android:layout_marginEnd="@dimen/padding_small"/>
             </LinearLayout>
-        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </LinearLayout>
+
     </androidx.constraintlayout.widget.ConstraintLayout>
 </androidx.cardview.widget.CardView>
