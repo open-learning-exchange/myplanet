@@ -105,6 +105,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
+    override suspend fun postAddRefresh() {
+        loadDataAsync()
+    }
+
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
         val hostActivity = activity ?: throw CancellationException("Fragment detached")
 
@@ -339,9 +343,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         orderByDate.isEnabled = false
         orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
+            if (!::adapterCourses.isInitialized) return@setOnClickListener
             adapterCourses.toggleSortOrder { scrollToTop() }
         }
         orderByTitle.setOnClickListener {
+            if (!::adapterCourses.isInitialized) return@setOnClickListener
             adapterCourses.toggleTitleSortOrder { scrollToTop() }
         }
     }
