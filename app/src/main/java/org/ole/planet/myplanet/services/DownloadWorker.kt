@@ -76,6 +76,10 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+        if (FileUtils.checkFileExist(context, url)) {
+            DownloadUtils.updateResourceOfflineStatus(url)
+            return true
+        }
         return try {
             val response = apiInterface.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {
