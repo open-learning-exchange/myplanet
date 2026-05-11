@@ -97,11 +97,13 @@ class VoicesAdapter(
         }
     )
 ) {
+    private var originalList: List<RealmNews> = emptyList()
 
 
 
 
-    override fun submitList(list: List<RealmNews>?) {
+        override fun submitList(list: List<RealmNews>?) {
+        originalList = list ?: emptyList()
         val finalList = mutableListOf<RealmNews>()
         parentNews?.let {
             preParseNews(it)
@@ -115,6 +117,7 @@ class VoicesAdapter(
     }
 
     override fun submitList(list: List<RealmNews>?, commitCallback: Runnable?) {
+        originalList = list ?: emptyList()
         val finalList = mutableListOf<RealmNews>()
         parentNews?.let {
             preParseNews(it)
@@ -214,7 +217,7 @@ class VoicesAdapter(
     fun updateReplyBadge(newsId: String?) {
         if (newsId.isNullOrEmpty()) return
         replyCountCache.remove(newsId)
-        val index = currentList.indexOfFirst { it?.id == newsId }
+        val index = currentList.indexOfFirst { it.id == newsId }
         if (index >= 0) {
             notifyItemChanged(index)
         }
@@ -282,7 +285,7 @@ class VoicesAdapter(
                     userCache[userId] = userModel
                     fetchingUserIds.remove(userId)
                     currentList.forEachIndexed { index, item ->
-                        if (item?.userId == userId) {
+                        if (item.userId == userId) {
                             notifyItemChanged(index)
                         }
                     }
@@ -330,13 +333,14 @@ class VoicesAdapter(
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         newsToDelete?.id?.let { id ->
                             deletePostFn(id) {
-                                if (!isParent && pos >= 0 && pos < snapshotList.size) {
-                                    snapshotList.removeAt(pos)
-                                    // Remove parentNews from snapshotList if it's there so we don't duplicate it in submitList
-                                    if (parentNews != null && snapshotList.isNotEmpty() && snapshotList[0]?.id == parentNews?.id) {
-                                        snapshotList.removeAt(0)
+                                if (!isParent) {
+                                    val newOriginal = originalList.toMutableList()
+                                    val offset = if (parentNews != null) 1 else 0
+                                    val origPos = pos - offset
+                                    if (origPos >= 0 && origPos < newOriginal.size) {
+                                        newOriginal.removeAt(origPos)
+                                        submitList(newOriginal)
                                     }
-                                    submitList(snapshotList)
                                 }
                                 parentNews?.id?.let { pid ->
                                     val current = replyCountCache[pid]
@@ -436,11 +440,9 @@ class VoicesAdapter(
     }
 
     fun updateParentNews(news: RealmNews?) {
-        val contentChanged = parentNews?.message != news?.message ||
-            parentNews?.isEdited != news?.isEdited
         parentNews = news
         preParseNews(parentNews)
-        if (contentChanged) notifyItemChanged(0)
+        submitList(originalList)
     }
 
     private fun parseViewIn(viewIn: String?): JsonArray? {
