@@ -164,9 +164,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        withContext(dispatcherProvider.io) {
+        val result = withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
+            val alternativeReachable = mapping.alternativeUrl?.let {
+                checkServerAvailability(it)
+            } == true
 
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
@@ -181,17 +183,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         sharedPrefManager.rawPreferences
                     )
                 }
+                alternativeReachable
+            } else {
+                primaryReachable
             }
         }
 
-        return try {
-            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(sharedPrefManager))
-            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-            isAvailable
-        } catch (e: Exception) {
-            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-            false
-        }
+        serverAvailabilityCache[updateUrl] = Pair(result, System.currentTimeMillis())
+        return result
     }
 
     override suspend fun clearAllData() {

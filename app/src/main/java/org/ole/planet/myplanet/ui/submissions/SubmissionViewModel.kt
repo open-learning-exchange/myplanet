@@ -39,6 +39,7 @@ class SubmissionViewModel @Inject constructor(
     private val _query = MutableStateFlow("")
 
     private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
+        .shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
         submissionsRepository.getSubmissionsFlow(uid)
