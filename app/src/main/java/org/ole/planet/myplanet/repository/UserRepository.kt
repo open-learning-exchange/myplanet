@@ -96,7 +96,8 @@ interface UserRepository {
         references: JsonArray,
         createdOn: String,
         username: String,
-        parentCode: String
+        parentCode: String,
+        resumeFileName: String = ""
     )
     suspend fun markUserUploaded(userId: String, id: String, rev: String)
     suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)

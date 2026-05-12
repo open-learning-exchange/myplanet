@@ -562,6 +562,7 @@ class UserRepositoryImpl @Inject constructor(
                     "language" -> model.language = payload.get(key).asString
                     "phoneNumber" -> model.phoneNumber = payload.get(key).asString
                     "birthDate" -> model.dob = payload.get(key).asString
+                    "birthPlace" -> model.birthPlace = payload.get(key).asString
                     "level" -> model.level = payload.get(key).asString
                     "gender" -> model.gender = payload.get(key).asString
                     "age" -> model.age = payload.get(key).asString
@@ -947,7 +948,8 @@ class UserRepositoryImpl @Inject constructor(
         references: JsonArray,
         createdOn: String,
         username: String,
-        parentCode: String
+        parentCode: String,
+        resumeFileName: String
     ) {
         executeTransaction { transactionRealm ->
             val achievement = transactionRealm.where(RealmAchievement::class.java)
@@ -963,6 +965,7 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.parentCode = parentCode
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
+                achievement.resumeFileName = resumeFileName
                 achievement.isUpdated = true
             }
         }
@@ -1024,7 +1027,8 @@ class UserRepositoryImpl @Inject constructor(
                 achievementsHeader = achievementCopy.achievementsHeader ?: "",
                 achievements = achievementCopy.achievements ?: emptyList(),
                 achievementResources = resources,
-                references = achievementCopy.references ?: emptyList()
+                references = achievementCopy.references ?: emptyList(),
+                resumeFileName = achievementCopy.resumeFileName ?: ""
             )
         } else {
             AchievementData()
@@ -1111,6 +1115,7 @@ class UserRepositoryImpl @Inject constructor(
             achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
             achievement?.setLinks(JsonUtils.getJsonArray("links", act))
             achievement?.setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
+            achievement?.resumeFileName = JsonUtils.getString("resumeFileName", act)
         }
     }
 
