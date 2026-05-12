@@ -1107,6 +1107,7 @@
     <string name="unable_to_save_user_please_sync">Lama kaydin karo isticmaalaha, fadlan isku dheelli tir.</string>
     <string name="server_sync_successfully">Adeegaha si guul leh ayuu u hagaagay.</string>
     <string name="server_sync_has_failed">Isku-dubbaridka server-ka wuu fashilmay.</string>
+    <string name="syncing_notifications">Ogeysiisyada waa la isku waafajinayaa…</string>
     <string name="response">Jawaab</string>
     <string name="full_conversation_response">Jawaabta wada hadalka oo dhameystiran</string>
     <string name="add_new_event">+ Dhacdo cusub</string>

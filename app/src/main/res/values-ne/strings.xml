@@ -1107,6 +1107,7 @@
     <string name="unable_to_save_user_please_sync">प्रयोगकर्ता बचत गर्न सकिएन, कृपया सिंक गर्नुहोस्।</string>
     <string name="server_sync_successfully">सर्भर सफलतापूर्वक समिकरण गरियो।</string>
     <string name="server_sync_has_failed">सर्भर समिकरण असफल भयो।</string>
+    <string name="syncing_notifications">सूचनाहरू सिङ्क गर्दै…</string>
     <string name="response">उत्तर</string>
     <string name="full_conversation_response">पूर्ण वार्तालाप उत्तर</string>
     <string name="add_new_event">+ नयाँ कार्यक्रम</string>

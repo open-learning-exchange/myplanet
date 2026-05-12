@@ -24,4 +24,5 @@ interface NotificationsRepository {
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     suspend fun insert(doc: com.google.gson.JsonObject)
+    suspend fun fetchAndSaveNotificationsForUser(userId: String): Boolean
 }
