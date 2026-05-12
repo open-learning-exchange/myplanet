@@ -705,7 +705,6 @@ class VoicesAdapter(
             }
         }
 
-        // React button always triggers picker
         binding.btnReact.setOnClickListener {
             showEmojiPicker(news, userId, binding.btnReact)
         }
@@ -713,6 +712,7 @@ class VoicesAdapter(
 
     private fun showEmojiPicker(news: RealmNews, userId: String, anchorView: View) {
         val emojis = listOf("😀", "❤️", "👍", "😂", "😮", "😢")
+        val moreEmojis = listOf("😅", "😍", "🔥", "👏", "🙏", "😭", "😤", "😎", "🤩", "💀", "🤣", "💪", "👀", "🎉", "✨", "💯","🤔", "✅", "🤯", "🥳" )
         val popupView = LayoutInflater.from(context).inflate(R.layout.popup_emoji_picker, null)
         val container = popupView.findViewById<LinearLayout>(R.id.ll_emoji_container)
         val popup = android.widget.PopupWindow(
@@ -747,9 +747,65 @@ class VoicesAdapter(
             }
             container.addView(tv)
         }
+        // Add + button at the end
+        val plusBtn = TextView(context).apply {
+            text = "+"
+            textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+            setTextColor(ContextCompat.getColor(context, R.color.daynight_textColor))
+            setPadding(
+                context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                context.resources.getDimensionPixelSize(R.dimen.padding_small),
+                context.resources.getDimensionPixelSize(R.dimen.padding_normal),
+                context.resources.getDimensionPixelSize(R.dimen.padding_small)
+            )
+            setOnClickListener {
+                popup.dismiss()
+                val gridView = android.widget.GridView(context)
+                gridView.numColumns = 5
+                gridView.adapter = object : android.widget.BaseAdapter() {
+                    override fun getCount() = moreEmojis.size
+                    override fun getItem(p: Int) = moreEmojis[p]
+                    override fun getItemId(p: Int) = p.toLong()
+                    override fun getView(p: Int, v: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                        val tv = TextView(context)
+                        tv.text = moreEmojis[p]
+                        tv.textSize = context.resources.getDimension(R.dimen.text_size_large) / context.resources.displayMetrics.scaledDensity
+                        tv.gravity = android.view.Gravity.CENTER
+                        tv.setPadding(
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large),
+                            context.resources.getDimensionPixelSize(R.dimen.padding_large)
+                        )
+                        return tv
+                    }
+                }
+                AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.react))
+                    .setView(gridView)
+                    .setNegativeButton(R.string.cancel, null)
+                    .show()
+                    .also { dialog ->
+                        gridView.setOnItemClickListener { _, _, position, _ ->
+                            val emoji = moreEmojis[position]
+                            dialog.dismiss()
+                            news.updateReaction(emoji, userId)
+                            val index = currentList.indexOfFirst { it?.id == news.id }
+                            if (index >= 0) {
+                                currentList[index]?.reactions = news.reactions
+                                notifyItemChanged(if (parentNews != null) index + 1 else index)
+                            }
+                            launchCoroutine {
+                                voicesRepository.updateReaction(news.id ?: return@launchCoroutine, emoji, userId)
+                            }
+                        }
+                    }
+            }
+        }
+        container.addView(plusBtn)
+
         popup.showAsDropDown(anchorView, 0, -context.resources.getDimensionPixelSize(R.dimen._40dp))
     }
-
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as VoicesViewHolder
 
