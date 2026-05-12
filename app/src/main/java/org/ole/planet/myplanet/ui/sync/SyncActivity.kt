@@ -260,10 +260,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     }
 
                     currentDialog?.dismiss()
+                    onAfterBetaConfigSaved()
                 }
             }
         )
     }
+
+    open fun onAfterBetaConfigSaved() {}
 
     fun checkMinApk(url: String, pin: String, callerActivity: String) {
         val callerContext = when (callerActivity) {

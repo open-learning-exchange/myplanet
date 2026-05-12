@@ -714,6 +714,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         loadTeamsAsync()
     }
 
+    override fun onAfterBetaConfigSaved() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            teamsRepository.fetchAndSaveAllTeams()
+            withContext(Dispatchers.Main) { invalidateTeamsCacheAndReload() }
+        }
+    }
+
     private fun resetGuestAsMember(username: String?) {
         val existingUsers = prefData.getSavedUsers().toMutableList()
         var newUserExists = false
