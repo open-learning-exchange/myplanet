@@ -61,6 +61,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -250,6 +251,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 launch {
                     dashboardViewModel.challengeDialogEvent.collect { data ->
                         challengeManager.showChallengeDialog(data)
+                    }
+                }
+
+                launch {
+                    syncManager.syncStatus.collect { status ->
+                        if (status is SyncManager.SyncStatus.Success) {
+                            updateLastSyncStatus()
+                        }
                     }
                 }
             }
