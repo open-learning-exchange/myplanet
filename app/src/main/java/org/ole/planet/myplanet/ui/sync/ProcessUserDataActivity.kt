@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
@@ -47,12 +46,11 @@ import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
-import org.ole.planet.myplanet.utils.SecurePrefs
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    open lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefData: SharedPrefManager

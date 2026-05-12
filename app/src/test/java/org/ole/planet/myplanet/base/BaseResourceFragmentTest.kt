@@ -25,9 +25,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BaseResourceFragmentTest {
