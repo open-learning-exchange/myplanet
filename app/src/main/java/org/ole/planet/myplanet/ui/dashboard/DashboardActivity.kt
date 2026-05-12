@@ -109,6 +109,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository
     @Inject
+    lateinit var progressRepository: org.ole.planet.myplanet.repository.ProgressRepository
+    @Inject
     lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
@@ -170,6 +172,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (!prefData.isSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.NOTIFICATIONS)) {
                         val success = notificationsRepository.fetchAndSaveNotificationsForUser(userId)
                         if (success) prefData.setSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.NOTIFICATIONS, true)
+                    }
+                    if (!prefData.isSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.COURSES_PROGRESS)) {
+                        val success = progressRepository.fetchAndSaveCourseProgressForUser(userId)
+                        if (success) prefData.setSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.COURSES_PROGRESS, true)
                     }
                     withContext(Dispatchers.Main) {
                         dashboardViewModel.loadUserContent(userId)
