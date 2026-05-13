@@ -6,5 +6,6 @@ data class AchievementData(
     val achievementsHeader: String = "",
     val achievements: List<String> = emptyList(),
     val achievementResources: List<RealmMyLibrary> = emptyList(),
-    val references: List<String> = emptyList()
+    val references: List<String> = emptyList(),
+    val resumeFileName: String = ""
 )
