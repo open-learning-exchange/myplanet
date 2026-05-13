@@ -65,6 +65,7 @@ class DownloadService : Service() {
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
+    private var isQueueRunning = false
 
     private val downloadJob = SupervisorJob()
     private lateinit var downloadScope: CoroutineScope
@@ -88,7 +89,14 @@ class DownloadService : Service() {
 
         downloadScope.launch {
             preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            processDownloadQueue()
+            if (!isQueueRunning) {
+                isQueueRunning = true
+                try {
+                    processDownloadQueue()
+                } finally {
+                    isQueueRunning = false
+                }
+            }
         }
 
         return START_STICKY
@@ -101,11 +109,6 @@ class DownloadService : Service() {
             if (nextUrl == null) {
                 if (sessionCompletedCount > 0) {
                     showCompletionNotification(false)
-                }
-
-                preferences.edit {
-                    remove(PENDING_DOWNLOADS_KEY)
-                    remove(PRIORITY_DOWNLOADS_KEY)
                 }
                 stopSelf()
                 return
@@ -124,7 +127,7 @@ class DownloadService : Service() {
         }
     }
 
-    internal data class QueuedUrl(val url: String, val isPriority: Boolean)
+    internal data class QueuedUrl(val url: String, val isPriority: Boolean, val priority: Int = 0)
 
     internal fun getNextPriorityUrl(): QueuedUrl? {
         return Companion.getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
@@ -172,6 +175,12 @@ class DownloadService : Service() {
         try {
             if (url.isBlank()) {
                 downloadFailed("Invalid URL - empty or blank", fromSync)
+                return
+            }
+
+            if (FileUtils.checkFileExist(this, url)) {
+                DownloadUtils.updateResourceOfflineStatus(url)
+                onDownloadComplete(url)
                 return
             }
 
@@ -392,6 +401,11 @@ class DownloadService : Service() {
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
 
+        internal fun getNextPriorityUrl(downloadQueue: List<QueuedUrl>): QueuedUrl? {
+            if (downloadQueue.isEmpty()) return null
+            return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
+        }
+
         @androidx.annotation.VisibleForTesting
         internal fun getNextUrl(
             preferences: SharedPreferences,
@@ -400,8 +414,10 @@ class DownloadService : Service() {
             isPriority: Boolean
         ): QueuedUrl? {
             val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
-            val next = urls.sorted().firstOrNull { it !in processedUrls && it.isNotBlank() }
-            return next?.let { QueuedUrl(it, isPriority) }
+            val queue = urls.sorted()
+                .filter { it !in processedUrls && it.isNotBlank() }
+                .map { QueuedUrl(it, isPriority) }
+            return getNextPriorityUrl(queue)
         }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {

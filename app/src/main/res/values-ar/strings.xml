@@ -1046,6 +1046,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">سيؤدي تشغيل التكوين اليدوي إلى مسح جميع البيانات، هل أنت متأكد أنك تريد المتابعة؟</string>
     <string name="chart_description">مخطط نشاط تسجيل الدخول</string>
     <string name="chart_label">عدد مرات تسجيل الدخول</string>
+    <string name="no_login_activity">لم يتم تسجيل أي نشاط تسجيل دخول بعد</string>
     <string name="copied_to_clipboard">تم نسخه إلى الحافظة</string>
     <string name="mark_all_as_read">وضع علامة "مقروء" على الجميع</string>
     <string name="no_notifications">لا توجد إشعارات</string>
@@ -1237,10 +1238,26 @@
     <string name="no_goal_added">لم يتم تحديد أي أهداف بعد</string>
     <string name="no_achievement_added">ملخص الإنجازات</string>
     <string name="no_references_added">لم تتم إضافة مراجع</string>
+    <string name="upload_cv_label">قم بتحميل سيرتك الذاتية أدناه (PDF فقط)</string>
+    <string name="no_file_chosen">لم يتم اختيار ملف</string>
+    <string name="delete_cv">حذف السيرة الذاتية</string>
+    <string name="cv_resume">السيرة الذاتية</string>
+    <string name="view_cv">عرض السيرة الذاتية</string>
+    <string name="current_cv">السيرة الذاتية الحالية: %s</string>
+    <string name="select_pdf_only">يرجى اختيار ملف PDF</string>
+    <string name="file_not_found">الملف غير موجود: %s</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
     <string name="guest_visit_limit_warning">لديك محاولة تسجيل دخول واحدة متبقية قبل حظر حسابك.</string>
     <string name="warning_icon">أيقونة التحذير</string>
     <string name="close_banner">إغلاق لافتة التحذير</string>
+    <string name="status_not_started">لم يبدأ</string>
+    <string name="status_in_progress">قيد التنفيذ</string>
+    <string name="status_completed">مكتمل</string>
+    <string name="read_aloud">اقرأ بصوت عالٍ</string>
+    <string name="stop_reading">توقف عن القراءة</string>
+    <string name="tts_not_available">ميزة تحويل النص إلى كلام غير متوفرة على هذا الجهاز</string>
+    <string name="pdf_no_text_layer">لا يحتوي ملف PDF هذا على نص قابل للقراءة</string>
+    <string name="pdf_extracting_text">جارٍ تحضير النص، يرجى الانتظار…</string>
 
 </resources>

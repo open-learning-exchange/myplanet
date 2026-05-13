@@ -18,13 +18,12 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
@@ -44,6 +43,7 @@ class TransactionSyncManager @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
@@ -110,7 +110,7 @@ class TransactionSyncManager @Inject constructor(
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
-                    if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
+                    if (key.isNotEmpty() || iv.isNotEmpty()) {
                         userModel.id?.let {
                             userRepository.markUserKeyIvSaved(it, key, iv)
                         }
@@ -234,8 +234,8 @@ class TransactionSyncManager @Inject constructor(
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                                                when (table) {
-                            "tablet_users" -> userRepository.bulkInsertUsersFromSync(mRealm, arr, sharedPrefManager.rawPreferences)
+                        when (table) {
+                            "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                             "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
                             "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
@@ -247,7 +247,7 @@ class TransactionSyncManager @Inject constructor(
                                 coursesRepository.bulkInsertFromSync(mRealm, arr)
                                 org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                             }
-                            "achievements" -> userRepository.bulkInsertAchievementsFromSync(mRealm, arr)
+                            "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
                             "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
                             "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
@@ -259,7 +259,10 @@ class TransactionSyncManager @Inject constructor(
                         }
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
-                            android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
+                            android.util.Log.d(
+                                "SyncPerf",
+                                "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items"
+                            )
                         }
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
@@ -268,6 +271,10 @@ class TransactionSyncManager @Inject constructor(
                             arr.size()
                         )
                     }
+                }
+
+                if (table == "achievements") {
+                    downloadCvAttachmentsFromBatch(arr)
                 }
                 totalDocs += arr.size()
                 skip += arr.size()
@@ -291,6 +298,39 @@ class TransactionSyncManager @Inject constructor(
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
         }
+    }
+
+    private suspend fun downloadCvAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
+        for (j in arr) {
+            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val docId = getString("_id", jsonDoc)
+            if (docId.startsWith("_design")) continue
+            val resumeFileName = getString("resumeFileName", jsonDoc)
+            val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
+            if (resumeFileName.isNotEmpty() && hasAttachment) {
+                val destFile = java.io.File(
+                    org.ole.planet.myplanet.utils.FileUtils.getOlePath(context) + "cv/$resumeFileName"
+                )
+                if (!destFile.exists()) {
+                    downloadCvAttachment(docId, destFile)
+                }
+            }
+        }
+    }
+
+    private suspend fun downloadCvAttachment(docId: String, destFile: java.io.File) {
+        try {
+            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    destFile.parentFile?.mkdirs()
+                    destFile.outputStream().use { out ->
+                        body.byteStream().use { it.copyTo(out) }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {

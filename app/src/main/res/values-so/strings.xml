@@ -1042,6 +1042,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">furista habka gacanta ah waxay tirtiri doontaa dhammaan xogta, ma hubtaa inaad rabto inaad sii waddo?</string>
     <string name="chart_description">Shaxda Waxqabadka Gelitaanka</string>
     <string name="chart_label">Tirada galitaanka</string>
+    <string name="no_login_activity">Weli ma jirto wax waxqabad galitaan ah oo la duubay</string>
     <string name="copied_to_clipboard">waxaa lagu koobay clipboard-ka</string>
     <string name="mark_all_as_read">Calaamadee dhammaan sidii la aqriyay</string>
     <string name="no_notifications">Wax ogeysiis ah ma jiro</string>
@@ -1221,10 +1222,26 @@
     <string name="no_goal_added">Weli hadaf lama dejin</string>
     <string name="no_achievement_added">Soo koobidda guulaha</string>
     <string name="no_references_added">Tixraac lama darin</string>
+    <string name="upload_cv_label">Soo geli CV/taariikhdaada shaqada hoos (PDF kaliya)</string>
+    <string name="no_file_chosen">Fayl lama dooran</string>
+    <string name="delete_cv">Tirtir CV-ga</string>
+    <string name="cv_resume">CV / Taariikhdaada shaqada</string>
+    <string name="view_cv">Arag CV-ga</string>
+    <string name="current_cv">CV-ga hadda: %s</string>
+    <string name="select_pdf_only">Fadlan dooro fayl PDF ah</string>
+    <string name="file_not_found">Faylka lama helin: %s</string>
     <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
     <string name="already_shared">Hore loo wadaagay</string>
     <string name="guest_visit_limit_warning">Waxaad leedahay isku day hal oo login ah kahor inta aad joojin tahay.</string>
     <string name="warning_icon">Astaan digacaska</string>
     <string name="close_banner">Xir digacaska astaan</string>
+    <string name="status_not_started">Lama bilaaban</string>
+    <string name="status_in_progress">Socda</string>
+    <string name="status_completed">Dhammaystay</string>
+    <string name="read_aloud">Kor u akhri</string>
+    <string name="stop_reading">Jooji akhrinta</string>
+    <string name="tts_not_available">Qoraal-u-hadalka lagama heli karo qalabkan</string>
+    <string name="pdf_no_text_layer">PDF-kan kuma jiro qoraal la akhrin karo</string>
+    <string name="pdf_extracting_text">Diyaarinta qoraalka, fadlan sug…</string>
 
 </resources>

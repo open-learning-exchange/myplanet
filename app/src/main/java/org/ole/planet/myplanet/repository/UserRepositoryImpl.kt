@@ -56,7 +56,7 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher), UserRepository {
+) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
@@ -113,7 +113,7 @@ class UserRepositoryImpl @Inject constructor(
         }.firstOrNull()
     }
 
-    override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
+    override suspend fun createGuestUser(username: String): RealmUser? {
         return withRealm { realm ->
             val `object` = JsonObject()
             `object`.addProperty("_id", "guest_$username")
@@ -124,7 +124,7 @@ class UserRepositoryImpl @Inject constructor(
             `object`.add("roles", rolesArray)
             val startedTransaction = !realm.isInTransaction
             if (startedTransaction) realm.beginTransaction()
-            val user = populateUser(`object`, realm, settings)
+            val user = populateUser(`object`, realm)
             if (startedTransaction && realm.isInTransaction) {
                 realm.commitTransaction()
             }
@@ -336,7 +336,7 @@ class UserRepositoryImpl @Inject constructor(
         return null
     }
 
-    override fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser? {
+    private fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?): RealmUser? {
         if (jsonDoc == null || mRealm == null) return null
         try {
             val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
@@ -410,15 +410,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveUser(
         jsonDoc: JsonObject?,
-        settings: SharedPreferences,
         key: String?,
-        iv: String?,
+        iv: String?
     ): RealmUser? {
         if (jsonDoc == null) return null
 
         var userId: String? = null
         withRealm { realm ->
-            val managedUser = populateUser(jsonDoc, realm, settings)
+            val managedUser = populateUser(jsonDoc, realm)
             userId = managedUser?.id
         }
 
@@ -563,6 +562,7 @@ class UserRepositoryImpl @Inject constructor(
                     "language" -> model.language = payload.get(key).asString
                     "phoneNumber" -> model.phoneNumber = payload.get(key).asString
                     "birthDate" -> model.dob = payload.get(key).asString
+                    "birthPlace" -> model.birthPlace = payload.get(key).asString
                     "level" -> model.level = payload.get(key).asString
                     "gender" -> model.gender = payload.get(key).asString
                     "age" -> model.age = payload.get(key).asString
@@ -649,7 +649,7 @@ class UserRepositoryImpl @Inject constructor(
 
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
-            saveUser(obj, settings, keyString, iv)
+            saveUser(obj, keyString, iv)
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
@@ -674,7 +674,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.let { saveUser(it, settings) }
+                    response.body()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -683,7 +683,7 @@ class UserRepositoryImpl @Inject constructor(
             if (userModel != null) {
                 try {
                     uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
-                } catch (keyIvException: Exception) { }
+                } catch (_: Exception) { }
                 Result.success(userModel)
             } else {
                 Result.failure(Exception("Failed to save user or user model was null"))
@@ -948,7 +948,8 @@ class UserRepositoryImpl @Inject constructor(
         references: JsonArray,
         createdOn: String,
         username: String,
-        parentCode: String
+        parentCode: String,
+        resumeFileName: String
     ) {
         executeTransaction { transactionRealm ->
             val achievement = transactionRealm.where(RealmAchievement::class.java)
@@ -964,6 +965,7 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.parentCode = parentCode
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
+                achievement.resumeFileName = resumeFileName
                 achievement.isUpdated = true
             }
         }
@@ -1025,7 +1027,8 @@ class UserRepositoryImpl @Inject constructor(
                 achievementsHeader = achievementCopy.achievementsHeader ?: "",
                 achievements = achievementCopy.achievements ?: emptyList(),
                 achievementResources = resources,
-                references = achievementCopy.references ?: emptyList()
+                references = achievementCopy.references ?: emptyList(),
+                resumeFileName = achievementCopy.resumeFileName ?: ""
             )
         } else {
             AchievementData()
@@ -1051,13 +1054,13 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
                 ids.add(id)
@@ -1095,16 +1098,17 @@ class UserRepositoryImpl @Inject constructor(
             achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
             achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
             achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
+            achievement?.resumeFileName = org.ole.planet.myplanet.utils.JsonUtils.getString("resumeFileName", act)
         }
     }
 
-    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
                 val docId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
@@ -1120,7 +1124,6 @@ class UserRepositoryImpl @Inject constructor(
             mutableMapOf()
         }
 
-        // Iterate with pre-assigned IDs to avoid random UUID generation issues
         for (i in documentList.indices) {
             val jsonDoc = documentList[i]
             try {

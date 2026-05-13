@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -110,14 +111,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         return queryList(RealmMyLibrary::class.java) {
             equalTo("isPrivate", false)
         }
-    }
-
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str, Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-            .lowercase(Locale.ROOT)
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
@@ -390,7 +383,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
@@ -402,7 +395,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
@@ -638,5 +631,16 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
         return tagsRepository.getTagsForResources(ids)
+    }
+
+    companion object {
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+
+        @VisibleForTesting
+        internal fun normalizeText(str: String): String {
+            return Normalizer.normalize(str, Normalizer.Form.NFD)
+                .replace(DIACRITICS_REGEX, "")
+                .lowercase(Locale.ROOT)
+        }
     }
 }

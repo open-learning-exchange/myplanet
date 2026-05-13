@@ -8,6 +8,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -100,6 +101,12 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             course?.let { realm.copyFromRealm(it) }
         }
+    }
+
+    override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
+        return queryListFlow(RealmMyCourse::class.java) {
+            equalTo("courseId", courseId)
+        }.map { it.firstOrNull() }
     }
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {

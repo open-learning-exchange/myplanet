@@ -577,7 +577,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(user.name ?: "", settings)
+                    val model = userRepository.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
@@ -601,7 +601,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch {
             AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
         }
     }
@@ -619,7 +619,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(username, settings)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
