@@ -12,7 +12,6 @@ import androidx.lifecycle.lifecycleScope
 import com.mikepenz.materialdrawer.Drawer
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
@@ -23,10 +22,14 @@ import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.dashboard.DashboardElementActivity
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
 @AndroidEntryPoint
 class MarkdownDialogFragment : DialogFragment() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     @Inject
     lateinit var userRepository: UserRepository
     private lateinit var dialogCampaignChallengeBinding: DialogCampaignChallengeBinding
@@ -146,7 +149,7 @@ class MarkdownDialogFragment : DialogFragment() {
                         (activity as DashboardActivity).openCallFragment(CommunityTabFragment())
                     }
                     context.getString(R.string.sync) -> {
-                        viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
+                        viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             (activity as DashboardElementActivity).logSyncInSharedPrefs()
                         }
                     }

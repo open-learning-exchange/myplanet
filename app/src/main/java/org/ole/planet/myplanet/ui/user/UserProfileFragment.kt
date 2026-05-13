@@ -94,9 +94,11 @@ class UserProfileFragment : Fragment() {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 photoURI  = uri
                 startIntent(photoURI)
+                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
                 Glide.with(this)
                     .load(uri)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .override(imageSize, imageSize)
                     .circleCrop()
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
@@ -231,9 +233,11 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
+        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(imageSize, imageSize)
             .circleCrop()
             .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
             .listener(object : RequestListener<Drawable> {
