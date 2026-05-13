@@ -100,7 +100,7 @@ open class RealmRepository(
                 }
             }
 
-            results = realm.where(clazz).apply(builder).findAllAsync()
+            results = initialResults
             listener = RealmChangeListener<RealmResults<T>> { changedResults ->
                 if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
                     try {

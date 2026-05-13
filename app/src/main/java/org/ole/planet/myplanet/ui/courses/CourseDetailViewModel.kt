@@ -7,6 +7,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -32,16 +34,6 @@ sealed interface CourseDetailUiState {
     data class Error(val message: String) : CourseDetailUiState
 }
 
-private data class CourseDetailData(
-    val course: RealmMyCourse,
-    val examCount: Int,
-    val resources: List<RealmMyLibrary>,
-    val downloadedResources: List<RealmMyLibrary>,
-    val stepItems: List<StepItem>,
-    val ratingSummaryObject: JsonObject?,
-    val user: RealmUser?
-)
-
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
@@ -57,70 +49,63 @@ class CourseDetailViewModel @Inject constructor(
     private val _stepItems = MutableStateFlow<List<StepItem>>(emptyList())
     val stepItems: StateFlow<List<StepItem>> = _stepItems
 
+    private var loadJob: kotlinx.coroutines.Job? = null
+
     fun loadCourseDetail(courseId: String) {
-        viewModelScope.launch {
-            try {
-                _uiState.value = CourseDetailUiState.Loading
-                val result = withContext(dispatcherProvider.io) {
-                    val user = userSessionManager.getUserModel()
-                    val course = coursesRepository.getCourseByCourseId(courseId)
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            _uiState.value = CourseDetailUiState.Loading
+
+            coursesRepository.getCourseByCourseIdFlow(courseId)
+                .map { course ->
                     if (course == null) {
-                        return@withContext null
+                        return@map CourseDetailUiState.Error("Course not found")
                     }
 
-                    val examCount = coursesRepository.getCourseExamCount(courseId)
-                    val resources = coursesRepository.getCourseOnlineResources(courseId)
-                    val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
-                    val steps = coursesRepository.getCourseSteps(courseId)
+                    withContext(dispatcherProvider.io) {
+                        val user = userSessionManager.getUserModel()
+                        val examCount = coursesRepository.getCourseExamCount(courseId)
+                        val resources = coursesRepository.getCourseOnlineResources(courseId)
+                        val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
+                        val steps = coursesRepository.getCourseSteps(courseId)
 
-                    val stepItems = steps.map { step ->
-                        val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
-                        StepItem(
-                            id = step.id,
-                            stepTitle = step.stepTitle,
-                            questionCount = count
+                        val stepItems = steps.map { step ->
+                            val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
+                            StepItem(
+                                id = step.id,
+                                stepTitle = step.stepTitle,
+                                questionCount = count
+                            )
+                        }
+                        _stepItems.value = stepItems
+
+                        var ratingSummaryObject: JsonObject? = null
+                        val userId = user?.id
+                        if (userId != null) {
+                            val ratingSummary = ratingsRepository.getRatingSummary("course", courseId, userId)
+                            ratingSummaryObject = JsonObject().apply {
+                                addProperty("averageRating", ratingSummary.averageRating)
+                                addProperty("total", ratingSummary.totalRatings)
+                                ratingSummary.userRating?.let { addProperty("userRating", it) }
+                            }
+                        }
+
+                        CourseDetailUiState.Success(
+                            course = course,
+                            examCount = examCount,
+                            resources = resources,
+                            downloadedResources = downloadedResources,
+                            ratingSummary = ratingSummaryObject,
+                            user = user
                         )
                     }
-
-                    var ratingSummaryObject: JsonObject? = null
-                    val userId = user?.id
-                    if (userId != null) {
-                        val ratingSummary = ratingsRepository.getRatingSummary("course", courseId, userId)
-                        ratingSummaryObject = JsonObject().apply {
-                            addProperty("averageRating", ratingSummary.averageRating)
-                            addProperty("total", ratingSummary.totalRatings)
-                            ratingSummary.userRating?.let { addProperty("userRating", it) }
-                        }
-                    }
-
-                    CourseDetailData(
-                        course = course,
-                        examCount = examCount,
-                        resources = resources,
-                        downloadedResources = downloadedResources,
-                        stepItems = stepItems,
-                        ratingSummaryObject = ratingSummaryObject,
-                        user = user
-                    )
                 }
-
-                if (result == null) {
-                    _uiState.value = CourseDetailUiState.Error("Course not found")
-                    return@launch
+                .catch { e ->
+                    emit(CourseDetailUiState.Error(e.message ?: "An error occurred"))
                 }
-
-                _stepItems.value = result.stepItems
-                _uiState.value = CourseDetailUiState.Success(
-                    course = result.course,
-                    examCount = result.examCount,
-                    resources = result.resources,
-                    downloadedResources = result.downloadedResources,
-                    ratingSummary = result.ratingSummaryObject,
-                    user = result.user
-                )
-            } catch (e: Exception) {
-                _uiState.value = CourseDetailUiState.Error(e.message ?: "An error occurred")
-            }
+                .collect { state ->
+                    _uiState.value = state
+                }
         }
     }
 
