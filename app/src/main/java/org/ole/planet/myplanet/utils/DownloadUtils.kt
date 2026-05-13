@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.ActivityManager
+import android.util.Log
 import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
@@ -140,6 +141,7 @@ object DownloadUtils {
     @RequiresApi(Build.VERSION_CODES.S)
     fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
         context?.let { ctx ->
+            Log.d("DL_TIMER", "openPriorityDownloadService urls=${urls.size} t=${System.currentTimeMillis()}")
             val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
             val existingPriority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
@@ -148,7 +150,9 @@ object DownloadUtils {
             preferences.edit {
                 putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
             }
+            Log.d("DL_TIMER", "openPriorityDownloadService prefs written, starting service t=${System.currentTimeMillis()}")
             startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
+            Log.d("DL_TIMER", "openPriorityDownloadService startService returned t=${System.currentTimeMillis()}")
         }
     }
 

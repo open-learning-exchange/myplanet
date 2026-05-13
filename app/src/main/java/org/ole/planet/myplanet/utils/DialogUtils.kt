@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.util.Log
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -30,6 +31,7 @@ object DialogUtils {
         prgDialog.setTitle(context.getString(R.string.downloading_file))
         prgDialog.setMax(100)
         prgDialog.setNegativeButton(context.getString(R.string.stop_download), isVisible = true) {
+            Log.d("DL_TIMER", "stopDownload button tapped, dismissing dialog t=${System.currentTimeMillis()}")
             context.stopService(Intent(context, DownloadService::class.java))
             prgDialog.dismiss()
         }
