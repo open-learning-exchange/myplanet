@@ -69,7 +69,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var nameWatcher2: TextWatcher
+    private lateinit var usernameWatcher: TextWatcher
     private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
@@ -347,7 +347,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 toast(this@LoginActivity, message)
             }
         }
-        nameWatcher2 = object : TextWatcher {
+        usernameWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -358,25 +358,23 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
 
-            override fun afterTextChanged(s: Editable) {}
+            override fun afterTextChanged(s: Editable?) {
+                val input = s?.toString() ?: ""
+                if (input.isNotEmpty()) {
+                    binding.inputName.error = validateUsernameInput(input)
+                } else {
+                    binding.inputName.error = null
+                }
+                updateSignInButtonState()
+            }
         }
-        binding.inputName.addTextChangedListener(nameWatcher2)
+        binding.inputName.addTextChangedListener(usernameWatcher)
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
     }
 
     private fun setupFormValidation() {
-        binding.inputName.doAfterTextChanged { text ->
-            val input = text?.toString() ?: ""
-            if (input.isNotEmpty()) {
-                binding.inputName.error = validateUsernameInput(input)
-            } else {
-                binding.inputName.error = null
-            }
-            updateSignInButtonState()
-        }
-
         passwordWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -601,7 +599,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch {
             AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
         }
     }
@@ -742,8 +740,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::nameWatcher2.isInitialized) {
-            binding.inputName.removeTextChangedListener(nameWatcher2)
+        if (this::usernameWatcher.isInitialized) {
+            binding.inputName.removeTextChangedListener(usernameWatcher)
         }
         if (this::passwordWatcher.isInitialized) {
             binding.inputPassword.removeTextChangedListener(passwordWatcher)

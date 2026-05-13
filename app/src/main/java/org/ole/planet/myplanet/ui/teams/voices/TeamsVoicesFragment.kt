@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -39,6 +40,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
 
     private var filteredNewsList: List<RealmNews?> = listOf()
 
@@ -181,20 +184,21 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+            val effectiveTeamName = getEffectiveTeamName()
             val adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,
                     parentNews = null,
-                    teamName = getEffectiveTeamName(),
+                    teamName = effectiveTeamName,
                     teamId = teamId,
                     userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
                                 viewModel.isTeamLeader(teamId, user?._id)
                             }
-                            onResult(result ?: false)
+                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
                         }
                         return@VoicesAdapter { job.cancel() }
                     },
