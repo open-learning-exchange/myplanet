@@ -31,7 +31,6 @@
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Panel de control</string>
     <string name="menu_mydashboard">miPanel</string>
-    <string name="menu_home">Inicio</string>
     <string name="menu_library">Nuestra biblioteca</string>
     <string name="menu_courses">Nuestros cursos</string>
     <string name="menu_surveys">Encuestas</string>
