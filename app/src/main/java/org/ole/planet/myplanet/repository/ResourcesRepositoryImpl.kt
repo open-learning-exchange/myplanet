@@ -570,6 +570,27 @@ class ResourcesRepositoryImpl @Inject constructor(
         )
     }
 
+    override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            RealmMyLibrary.insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
+    }
+
     override suspend fun batchInsertResources(documents: List<JsonObject>): List<String> {
         return try {
             withRealm { realm ->
