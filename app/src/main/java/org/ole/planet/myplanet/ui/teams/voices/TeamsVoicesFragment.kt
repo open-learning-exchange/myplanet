@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -40,6 +41,8 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var voicesRepository: VoicesRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
 
     private val voicesViewModel: VoicesViewModel by viewModels()
     private var filteredNewsList: List<RealmNews?> = listOf()
@@ -126,14 +129,15 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(resources.configuration.orientation, binding.rvDiscussion)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val realmNewsList = voicesRepository.getFilteredNews(getEffectiveTeamId())
+            val effectiveTeamId = getEffectiveTeamId()
+            val realmNewsList = voicesRepository.getFilteredNews(effectiveTeamId)
             val count = realmNewsList.size
-            voicesRepository.updateTeamNotification(getEffectiveTeamId(), count)
+            voicesRepository.updateTeamNotification(effectiveTeamId, count)
             showRecyclerView(realmNewsList)
 
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    voicesRepository.getDiscussionsByTeamIdFlow(getEffectiveTeamId()).collect {
+                    voicesRepository.getDiscussionsByTeamIdFlow(effectiveTeamId).collect {
                         setData(it)
                     }
                 }
@@ -177,32 +181,37 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+            val effectiveTeamName = getEffectiveTeamName()
             val adapterNews = activity?.let {
                 VoicesAdapter(
                     context = it,
                     currentUser = user,
                     parentNews = null,
-                    teamName = getEffectiveTeamName(),
+                    teamName = effectiveTeamName,
                     teamId = teamId,
                     userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
-                        viewLifecycleOwner.lifecycleScope.launch {
+                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
                                 voicesViewModel.isTeamLeader(teamId, user?._id)
                             }
-                            onResult(result ?: false)
+                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
                         }
                     },
                     getUserFn = { userId, onResult ->
-                        viewLifecycleOwner.lifecycleScope.launch {
+                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             val result = voicesViewModel.getUserById(userId)
-                            onResult(result)
+                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result) }
                         }
                     },
                     getReplyCountFn = { newsId, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
-                            val result = voicesViewModel.getReplyCount(newsId)
-                            onResult(result)
+                        val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                            try {
+                                val result = voicesViewModel.getReplyCount(newsId)
+                                kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result) }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
                         }
                         return@VoicesAdapter { job.cancel() }
                     },
@@ -217,9 +226,9 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
-                        viewLifecycleOwner.lifecycleScope.launch {
+                        viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             val result = voicesViewModel.getLibraryResource(resourceId)
-                            onResult(result)
+                            kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result) }
                         }
                     },
                     onEditAction = { action ->

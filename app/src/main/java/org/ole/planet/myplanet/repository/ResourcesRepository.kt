@@ -79,6 +79,7 @@ interface ResourcesRepository {
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
     suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
+    suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceRatings(resourceId: String): JsonObject?
     suspend fun getResourceTags(resourceId: String): List<RealmTag>
     suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
