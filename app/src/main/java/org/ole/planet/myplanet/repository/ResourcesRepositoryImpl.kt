@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.annotation.VisibleForTesting
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -12,7 +13,6 @@ import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
-import androidx.annotation.VisibleForTesting
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -383,7 +383,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
@@ -395,7 +395,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }

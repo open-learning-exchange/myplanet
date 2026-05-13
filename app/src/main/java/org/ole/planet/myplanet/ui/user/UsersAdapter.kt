@@ -42,9 +42,11 @@ class UsersAdapter(
             } else {
                 binding.userNameTextView.text = account.fullName
             }
+            val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
             Glide.with(binding.userProfile.context)
                 .load(account.image)
                 .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(avatarSize, avatarSize)
                 .circleCrop()
                 .placeholder(R.drawable.profile)
                 .error(R.drawable.profile)
