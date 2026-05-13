@@ -1524,6 +1524,27 @@ class TeamsRepositoryImpl @Inject constructor(
         org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
     }
 
+    override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            insertMyTeam(realmTx, doc)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
+    }
+
     override fun insertMyTeam(realm: Realm, doc: JsonObject) {
         insertMyTeam(realm, doc, null)
     }

@@ -26,4 +26,8 @@
     <dimen name="dialog_min_width_major">65%</dimen>
     <dimen name="dialog_min_width_minor">95%</dimen>
     <dimen name="survey_radio_text_size">12sp</dimen>
+    <dimen name="status_badge_text_size">12sp</dimen>
+    <dimen name="status_badge_padding_horizontal">10dp</dimen>
+    <dimen name="status_badge_padding_vertical">4dp</dimen>
+    <dimen name="status_badge_margin_start">8dp</dimen>
 </resources>

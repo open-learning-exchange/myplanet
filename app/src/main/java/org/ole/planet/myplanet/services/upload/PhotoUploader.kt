@@ -1,18 +1,18 @@
 package org.ole.planet.myplanet.services.upload
 
 import android.util.Log
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
-import javax.inject.Inject
-import org.ole.planet.myplanet.di.ApplicationScope
 
 class PhotoUploader @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
