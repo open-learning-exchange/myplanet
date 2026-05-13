@@ -65,6 +65,7 @@ class DownloadService : Service() {
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
+    private var isQueueRunning = false
 
     private val downloadJob = SupervisorJob()
     private lateinit var downloadScope: CoroutineScope
@@ -88,7 +89,14 @@ class DownloadService : Service() {
 
         downloadScope.launch {
             preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            processDownloadQueue()
+            if (!isQueueRunning) {
+                isQueueRunning = true
+                try {
+                    processDownloadQueue()
+                } finally {
+                    isQueueRunning = false
+                }
+            }
         }
 
         return START_STICKY
@@ -101,11 +109,6 @@ class DownloadService : Service() {
             if (nextUrl == null) {
                 if (sessionCompletedCount > 0) {
                     showCompletionNotification(false)
-                }
-
-                preferences.edit {
-                    remove(PENDING_DOWNLOADS_KEY)
-                    remove(PRIORITY_DOWNLOADS_KEY)
                 }
                 stopSelf()
                 return
@@ -172,6 +175,12 @@ class DownloadService : Service() {
         try {
             if (url.isBlank()) {
                 downloadFailed("Invalid URL - empty or blank", fromSync)
+                return
+            }
+
+            if (FileUtils.checkFileExist(this, url)) {
+                DownloadUtils.updateResourceOfflineStatus(url)
+                onDownloadComplete(url)
                 return
             }
 
