@@ -11,7 +11,6 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
-import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
@@ -29,15 +28,10 @@ class ResourcesAdapter(
     private val isGuest: Boolean,
     private var openedResourceIds: Set<String>
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(
-    object : DiffUtil.ItemCallback<ResourceListModel>() {
-        override fun areItemsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-            return oldItem.item.id == newItem.item.id
-        }
-
-        override fun areContentsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-            return oldItem == newItem
-        }
-    }
+    org.ole.planet.myplanet.utils.DiffUtils.itemCallback<ResourceListModel>(
+        { oldItem, newItem -> oldItem.item.id == newItem.item.id },
+        { oldItem, newItem -> oldItem == newItem }
+    )
 ) {
 
     private val selectedItems: MutableList<ResourceListModel> = ArrayList()

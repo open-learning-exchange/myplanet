@@ -315,6 +315,19 @@ class ChatDetailFragment : Fragment() {
                         _rev = selectedRev
                     }
                 }
+                launch {
+                    sharedViewModel.conversationSaveSuccess.collect { success ->
+                        if (success) {
+                            if (isAdded && activity is DashboardActivity) {
+                                (activity as DashboardActivity).refreshChatHistory()
+                            }
+                        } else {
+                            if (isAdded) {
+                                Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -624,22 +637,7 @@ class ChatDetailFragment : Fragment() {
 
         if (query.isBlank() && chatResponse.isBlank()) return
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                chatRepository.continueConversation(realmChatId, query, chatResponse, _rev)
-                withContext(Dispatchers.Main) {
-                    if (isAdded && activity is DashboardActivity) {
-                        (activity as DashboardActivity).refreshChatHistory()
-                    }
-                }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    if (isAdded) {
-                        Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-                    }
-                }
-            }
-        }
+        sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
     }
 
     private fun clearChatDetail() {

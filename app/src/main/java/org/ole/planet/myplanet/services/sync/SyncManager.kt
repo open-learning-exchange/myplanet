@@ -73,7 +73,9 @@ class SyncManager @Inject constructor(
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
+    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
+    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+    private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -963,26 +965,11 @@ class SyncManager @Inject constructor(
 
                 if (documentsToProcess.isNotEmpty()) {
                     val realmStartTime = System.currentTimeMillis()
-                    // Batch insert documents in chunks to reduce transaction overhead
-                    val chunkSize = 50  // Increased from processing one batch at a time
-                    documentsToProcess.chunked(chunkSize).forEach { chunk ->
-                        safeRealmOperation { realm ->
-                            realm.executeTransaction { realmTx ->
-                                chunk.forEach { doc ->
-                                    try {
-                                        when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
-                                            "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
-                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
-                                        }
-                                        processedCount++
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-                            }
-                        }
+                    when (shelfData.type) {
+                        "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
+                        "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
+                        "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
+                        "teams" -> processedCount += teamsRepository.batchInsertMyTeams(documentsToProcess)
                     }
                     val realmDuration = System.currentTimeMillis() - realmStartTime
                     logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)

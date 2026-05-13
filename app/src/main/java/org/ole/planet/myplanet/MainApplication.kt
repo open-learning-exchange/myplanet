@@ -14,7 +14,9 @@ import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration as WorkManagerConfiguration
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
@@ -24,6 +26,7 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CompletableDeferred
@@ -98,7 +101,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
-        var isSyncRunning = false
+        val isSyncRunning = AtomicBoolean(false)
         var listener: OnTeamPageListener? = null
         val androidId: String get() {
             try {
@@ -153,21 +156,30 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             urlString: String,
             ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
         ): Boolean {
+            if (urlString.isBlank()) return false
             val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
-            return try {
-                if (urlString.isBlank()) return false
+            for (url in urlsToTry) {
+                val reachable = tryConnect(url, ioDispatcher)
+                if (reachable) return true
+            }
+            return false
+        }
 
+        private suspend fun tryConnect(
+            urlString: String,
+            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher
+        ): Boolean {
+            return try {
                 val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
                     "http://$urlString"
                 } else {
                     urlString
                 }
-
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
                     TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
@@ -185,7 +197,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
-                e.printStackTrace()
                 false
             }
         }
@@ -225,6 +236,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
             MarkdownUtils.warmUp(this@MainApplication)
+            runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
         }
         applicationScope.launch {
             initApp()
@@ -306,9 +318,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private suspend fun scheduleWorkersOnStart() {
         withContext(dispatcherProvider.default) {
-            if (sharedPrefManager.getAutoSync() && sharedPrefManager.rawPreferences.contains("autoSyncInterval")) {
-                val syncInterval = sharedPrefManager.getAutoSyncInterval()
-                scheduleAutoSyncWork(syncInterval)
+            if (sharedPrefManager.getAutoSync()) {
+                scheduleAutoSyncWork(sharedPrefManager.getAutoSyncInterval())
             } else {
                 cancelAutoSyncWork()
             }
@@ -376,17 +387,28 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
-    private fun scheduleAutoSyncWork(syncInterval: Int?) {
-        val autoSyncWork: PeriodicWorkRequest? = syncInterval?.let { PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, it.toLong(), TimeUnit.SECONDS).build() }
-        val workManager = WorkManager.getInstance(this)
-        if (autoSyncWork != null) {
-            workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+    fun applyAutoSyncSettings() {
+        if (sharedPrefManager.getAutoSync()) {
+            scheduleAutoSyncWork(sharedPrefManager.getAutoSyncInterval())
+        } else {
+            cancelAutoSyncWork()
         }
     }
 
+    private fun scheduleAutoSyncWork(syncInterval: Int?) {
+        if (syncInterval == null) return
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val autoSyncWork = PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, syncInterval.toLong(), TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(this)
+            .enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+    }
+
     private fun cancelAutoSyncWork() {
-        val workManager = WorkManager.getInstance(this)
-        workManager.cancelUniqueWork(AUTO_SYNC_WORK_TAG)
+        WorkManager.getInstance(this).cancelUniqueWork(AUTO_SYNC_WORK_TAG)
     }
 
     private fun scheduleTaskNotificationWork() {
