@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.base
 
+import java.lang.reflect.Field
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.lang.reflect.Field
 
 class BaseResourceFragmentTrackTest {
 
