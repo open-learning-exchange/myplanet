@@ -66,6 +66,7 @@ class SubmissionViewModelTest {
         val subList = listOf(s1, s2, s3)
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
         `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
@@ -121,6 +122,7 @@ class SubmissionViewModelTest {
         )
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
         `when`(submissionsRepository.getExamMap(subList)).thenReturn(examMap)
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
@@ -163,6 +165,7 @@ class SubmissionViewModelTest {
         val subList = listOf(s1, s2, s3)
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
         `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
