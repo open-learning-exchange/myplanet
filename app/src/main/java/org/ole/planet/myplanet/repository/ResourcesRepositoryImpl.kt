@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.annotation.VisibleForTesting
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -20,7 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -28,17 +26,16 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import kotlin.math.ceil
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
-    @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
@@ -188,10 +185,25 @@ class ResourcesRepositoryImpl @Inject constructor(
         return getLibraryListForUser(userId)
     }
 
-    override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+    override fun getMyLibraryFlow(userId: String?): Flow<List<RealmMyLibrary>> {
+        return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
         }
+    }
+
+    override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
+        val total = queryList(RealmMyLibrary::class.java).size
+        val result = queryList(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+        }
+        android.util.Log.d("DashboardSync", "getMyLibrary — querying userId=$userId | matched=${result.size} / total=$total in Realm")
+        if (result.isEmpty() && total > 0) {
+            val sample = queryList(RealmMyLibrary::class.java).take(3)
+            sample.forEach { lib ->
+                android.util.Log.d("DashboardSync", "  sample resource userId list: ${lib.userId?.joinToString()}")
+            }
+        }
+        return result
     }
 
     override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
@@ -388,7 +400,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -400,7 +412,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -620,7 +632,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
         val allRatings = ratingsRepository.getResourceRatings(userId)
-        val filteredRatings = HashMap<String?, JsonObject>(Math.ceil(ids.size / 0.75).toInt())
+        val filteredRatings = HashMap<String?, JsonObject>(ceil(ids.size / 0.75).toInt())
         for (id in ids) {
             allRatings[id]?.let {
                 filteredRatings[id] = it

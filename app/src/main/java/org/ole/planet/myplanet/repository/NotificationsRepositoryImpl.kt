@@ -1,12 +1,16 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
@@ -17,9 +21,10 @@ import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
 class NotificationsRepositoryImpl @Inject constructor(
-        databaseService: DatabaseService,
+    databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val userRepository: Lazy<UserRepository>
+    private val userRepository: Lazy<UserRepository>,
+    private val apiInterface: ApiInterface
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
@@ -452,6 +457,30 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
             createdAt = doc.get("time")?.let { java.util.Date(it.asLong) } ?: java.util.Date()
             isFromServer = true
+        }
+    }
+
+    override suspend fun fetchAndSaveNotificationsForUser(userId: String): Boolean {
+        return try {
+            val url = "${UrlUtils.getUrl()}/notifications/_find"
+            val selector = JsonObject().apply {
+                add("selector", JsonObject().apply { addProperty("user", userId) })
+            }
+            val response = apiInterface.findDocs(UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) return false
+            val docs = JsonUtils.getJsonArray("docs", response.body())
+            executeTransaction { realm ->
+                for (element in docs) {
+                    val doc = element.asJsonObject
+                    if (!JsonUtils.getString("_id", doc).startsWith("_design")) {
+                        internalInsert(realm, doc)
+                    }
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
         }
     }
 

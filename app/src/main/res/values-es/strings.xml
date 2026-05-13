@@ -1107,6 +1107,7 @@
     <string name="unable_to_save_user_please_sync">No se pudo guardar el usuario, por favor sincronice.</string>
     <string name="server_sync_successfully">Sincronización del servidor con éxito.</string>
     <string name="server_sync_has_failed">La sincronización del servidor ha fallado.</string>
+    <string name="syncing_notifications">Sincronizando notificaciones…</string>
     <string name="response">Respuesta</string>
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
     <string name="add_new_event">+ nuevo evento</string>

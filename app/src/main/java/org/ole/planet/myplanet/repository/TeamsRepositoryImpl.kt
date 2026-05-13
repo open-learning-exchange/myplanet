@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -56,6 +57,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
+    private val apiInterface: ApiInterface,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -1528,6 +1530,33 @@ class TeamsRepositoryImpl @Inject constructor(
             concatenatedLinks.add(concatenatedLink)
         }
         org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
+    }
+
+    override suspend fun fetchAndSaveAllTeams(): Boolean {
+        return try {
+            val baseUrl = org.ole.planet.myplanet.utils.UrlUtils.getUrl()
+            val pageSize = 1000
+            var skip = 0
+            while (true) {
+                val url = "$baseUrl/teams/_all_docs?include_docs=true&limit=$pageSize&skip=$skip"
+                val response = apiInterface.findDocs(
+                    org.ole.planet.myplanet.utils.UrlUtils.header,
+                    "application/json",
+                    url,
+                    JsonObject()
+                )
+                if (!response.isSuccessful || response.body() == null) break
+                val rows = JsonUtils.getJsonArray("rows", response.body())
+                if (rows.size() == 0) break
+                executeTransaction { realm -> bulkInsertFromSync(realm, rows) }
+                skip += rows.size()
+                if (rows.size() < pageSize) break
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 
     override fun insertMyTeam(realm: Realm, doc: JsonObject) {

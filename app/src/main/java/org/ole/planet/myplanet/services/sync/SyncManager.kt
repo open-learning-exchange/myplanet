@@ -1001,6 +1001,46 @@ class SyncManager @Inject constructor(
         return processedCount
     }
 
+    suspend fun syncUserShelfFast(): Int {
+        val userName = sharedPrefManager.getUserName()
+        val shelfId = "org.couchdb.user:$userName"
+        return try {
+            val url = "${UrlUtils.getUrl()}/shelf/_find"
+            val selector = JsonObject().apply {
+                add("selector", JsonObject().apply { addProperty("_id", shelfId) })
+            }
+            val response = apiInterface.findDocs(UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) {
+                Log.w("ShelfSync", "fetch failed — HTTP ${response.code()}")
+                return 0
+            }
+            val docs = getJsonArray("docs", response.body())
+            if (docs.size() == 0) {
+                return 0
+            }
+            val shelfDoc = docs[0].asJsonObject
+
+            var processedItems = 0
+            coroutineScope {
+                val jobs = Constants.shelfDataList.mapNotNull { shelfData ->
+                    val array = getJsonArray(shelfData.key, shelfDoc)
+                    if (array.size() > 0) {
+                        async(dispatcherProvider.io) {
+                            val count = processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
+                            count
+                        }
+                    } else {
+                        null
+                    }
+                }
+                processedItems = jobs.awaitAll().sum()
+            }
+            processedItems
+        } catch (_: Exception) {
+            0
+        }
+    }
+
     private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
         return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }

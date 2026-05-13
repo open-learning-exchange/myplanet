@@ -1111,6 +1111,7 @@
     <string name="unable_to_save_user_please_sync">تعذّر حفظ المستخدم، يرجى المزامنة.</string>
     <string name="server_sync_successfully">تمت مزامنة الخادم بنجاح.</string>
     <string name="server_sync_has_failed">فشلت مزامنة الخادم.</string>
+    <string name="syncing_notifications">جارٍ مزامنة الإشعارات…</string>
     <string name="response">استجابة</string>
     <string name="full_conversation_response">استجابة المحادثة الكاملة</string>
     <string name="add_new_event">+ حدث جديد</string>

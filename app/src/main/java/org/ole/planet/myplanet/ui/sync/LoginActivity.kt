@@ -601,8 +601,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        lifecycleScope.launch {
-            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
+        lifecycleScope.launch(Dispatchers.Main) {
+            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password, sharedPrefManager.getFastSync())
         }
     }
 
@@ -712,6 +712,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     fun invalidateTeamsCacheAndReload() {
         cachedTeams = null
         loadTeamsAsync()
+    }
+
+    override fun onAfterBetaConfigSaved() {
+        lifecycleScope.launch(Dispatchers.IO) {
+            teamsRepository.fetchAndSaveAllTeams()
+            withContext(Dispatchers.Main) { invalidateTeamsCacheAndReload() }
+        }
     }
 
     private fun resetGuestAsMember(username: String?) {

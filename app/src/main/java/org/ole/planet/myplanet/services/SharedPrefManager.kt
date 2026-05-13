@@ -82,7 +82,10 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         HEALTH("health_synced"),
         COURSES("courses_synced"),
         RESOURCES("resources_synced"),
-        EXAMS("exams_synced")
+        EXAMS("exams_synced"),
+        NOTIFICATIONS("notifications_synced"),
+        COURSES_PROGRESS("courses_progress_synced"),
+        TASKS("tasks_synced")
     }
 
     fun getSavedUsers(): List<User> {

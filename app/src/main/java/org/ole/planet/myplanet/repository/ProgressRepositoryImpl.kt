@@ -9,7 +9,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -26,7 +28,8 @@ class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
-    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
+    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
+    private val apiInterface: ApiInterface
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
         val mycourses = queryList(RealmMyCourse::class.java) {
@@ -251,6 +254,30 @@ class ProgressRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
             equalTo("actionType", "sync")
         } > 0
+    }
+
+    override suspend fun fetchAndSaveCourseProgressForUser(userId: String): Boolean {
+        return try {
+            val url = "${UrlUtils.getUrl()}/courses_progress/_find"
+            val selector = JsonObject().apply {
+                add("selector", JsonObject().apply { addProperty("userId", userId) })
+            }
+            val response = apiInterface.findDocs(UrlUtils.header, "application/json", url, selector)
+            if (!response.isSuccessful || response.body() == null) return false
+            val docs = JsonUtils.getJsonArray("docs", response.body())
+            executeTransaction { realm ->
+                for (element in docs) {
+                    val doc = element.asJsonObject
+                    if (!JsonUtils.getString("_id", doc).startsWith("_design")) {
+                        insertCourseProgress(realm, doc)
+                    }
+                }
+            }
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 
     private fun insertCourseProgress(mRealm: Realm, act: JsonObject?) {

@@ -1108,6 +1108,7 @@
     <string name="unable_to_save_user_please_sync">Impossible d\'enregistrer l\'utilisateur, veuillez synchroniser.</string>
     <string name="server_sync_successfully">Synchronisation du serveur réussie.</string>
     <string name="server_sync_has_failed">La synchronisation du serveur a échoué.</string>
+    <string name="syncing_notifications">Synchronisation des notifications…</string>
     <string name="response">Réponse</string>
     <string name="full_conversation_response">Réponse complète de la conversation</string>
     <string name="add_new_event">+ Nouvel événement</string>

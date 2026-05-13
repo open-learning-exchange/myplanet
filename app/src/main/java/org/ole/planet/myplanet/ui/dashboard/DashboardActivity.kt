@@ -46,6 +46,7 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -108,6 +109,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
+    lateinit var notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository
+    @Inject
+    lateinit var progressRepository: org.ole.planet.myplanet.repository.ProgressRepository
+    @Inject
     lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
@@ -160,6 +165,24 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 binding.root.invalidate()
                 unregisterSystemNotificationReceiver()
                 return@launch
+            }
+
+            if (isFirstLaunch && prefData.getFastSync()) {
+                val userId = prefData.getUserId()
+                lifecycleScope.launch(Dispatchers.IO) {
+                    syncManager.syncUserShelfFast()
+                    if (!prefData.isSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.NOTIFICATIONS)) {
+                        val success = notificationsRepository.fetchAndSaveNotificationsForUser(userId)
+                        if (success) prefData.setSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.NOTIFICATIONS, true)
+                    }
+                    if (!prefData.isSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.COURSES_PROGRESS)) {
+                        val success = progressRepository.fetchAndSaveCourseProgressForUser(userId)
+                        if (success) prefData.setSynced(org.ole.planet.myplanet.services.SharedPrefManager.SyncKey.COURSES_PROGRESS, true)
+                    }
+                    withContext(Dispatchers.Main) {
+                        dashboardViewModel.loadUserContent(userId)
+                    }
+                }
             }
 
             initializeDashboard()

@@ -1109,6 +1109,7 @@
     <string name="user_created_successfully">User created successfully.</string>
     <string name="unable_to_save_user_please_sync">Unable to save user, please sync.</string>
     <string name="server_sync_successfully">Server synced successfully.</string>
+    <string name="server_configuration_saved">Server configuration saved.</string>
     <string name="server_sync_has_failed">Server synced has failed.</string>
     <string name="response">Response</string>
     <string name="full_conversation_response">Full conversation response</string>
@@ -1167,6 +1168,7 @@
     <string name="syncing_health_data">Syncing health data…</string>
     <string name="syncing_resources">Syncing resources…</string>
     <string name="syncing_achievements">Syncing achievements…</string>
+    <string name="syncing_notifications">Syncing notifications…</string>
     <string name="nation_leaders">nation leaders</string>
     <string name="filter_by_label">filter by label</string>
     <string name="is_available">%1$s is available. Tap to continue learning</string>
