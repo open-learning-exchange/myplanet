@@ -39,6 +39,7 @@ class SubmissionViewModel @Inject constructor(
     private val _query = MutableStateFlow("")
 
     private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
+        .shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
         submissionsRepository.getSubmissionsFlow(uid)
@@ -66,16 +67,19 @@ class SubmissionViewModel @Inject constructor(
 
         val groupedSubmissions = filtered.groupBy { it.parentId }
 
-        val uniqueSubmissions = groupedSubmissions
+        val uniqueRawSubmissions = groupedSubmissions
             .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
             .values
             .filterNotNull()
-            .map { sub ->
-                val name = submissionsRepository.getNormalizedSubmitterName(sub)
-                val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
-                SubmissionViewData(sub, name ?: fallback ?: "")
-            }
-            .sortedByDescending { it.submission.lastUpdateTime }
+
+        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
+        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
+
+        val uniqueSubmissions = uniqueRawSubmissions.map { sub ->
+            val name = submissionsRepository.getNormalizedSubmitterName(sub)
+            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
+            SubmissionViewData(sub, name ?: fallback ?: "")
+        }.sortedByDescending { it.submission.lastUpdateTime }
 
         val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
             .mapKeys { entry ->

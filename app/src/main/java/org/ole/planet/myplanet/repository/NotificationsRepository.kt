@@ -20,6 +20,7 @@ interface NotificationsRepository {
     suspend fun getTaskTeamName(taskTitle: String): String?
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
+    suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
     suspend fun getPendingSyncNotifications(): List<org.ole.planet.myplanet.model.RealmNotification>
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)

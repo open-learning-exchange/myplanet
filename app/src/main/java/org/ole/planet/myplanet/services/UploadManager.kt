@@ -153,11 +153,28 @@ class UploadManager @Inject constructor(
                     if (response.isSuccessful) {
                         val rev = response.body()?.get("rev")?.asString
                         userRepository.markAchievementUploaded(id, rev)
+                        val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
+                        if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
+                            uploadCvAttachment(id, rev, resumeFileName)
+                        }
                     }
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in UploadManager", e)
                 }
             }
+        }
+    }
+
+    private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
+        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
+        if (!cvFile.exists()) return
+        try {
+            val body = cvFile.readBytes().toRequestBody("application/pdf".toMediaTypeOrNull())
+            // CouchDB attachment key is always "resume.pdf"
+            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
+            apiInterface.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upload CV attachment", e)
         }
     }
 
