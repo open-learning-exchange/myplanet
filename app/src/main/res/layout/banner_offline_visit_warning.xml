@@ -24,7 +24,6 @@
             android:contentDescription="@string/warning_icon"
             android:src="@android:drawable/ic_dialog_info"
             android:tint="@android:color/white" />
-
         <TextView
             android:id="@+id/banner_message"
             android:layout_width="0dp"
@@ -34,7 +33,6 @@
             android:textColor="@android:color/white"
             android:textSize="14sp"
             android:textStyle="bold" />
-
         <ImageButton
             android:id="@+id/banner_close"
             android:layout_width="32dp"
@@ -45,7 +43,5 @@
             android:scaleType="centerInside"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:tint="@android:color/white" />
-
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>
