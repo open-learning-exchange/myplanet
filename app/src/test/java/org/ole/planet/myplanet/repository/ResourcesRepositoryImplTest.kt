@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import dagger.Lazy
 import io.mockk.every
 import io.mockk.mockk
+import java.lang.reflect.Method
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.Assert.assertEquals
@@ -13,7 +14,6 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
-import java.lang.reflect.Method
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryImplTest {

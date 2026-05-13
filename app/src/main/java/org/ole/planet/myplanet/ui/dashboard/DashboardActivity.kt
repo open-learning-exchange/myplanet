@@ -15,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -45,7 +46,6 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,6 +62,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -84,6 +85,7 @@ import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -100,6 +102,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var dl: DrawerLayout? = null
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var tabSelectedListener: OnTabSelectedListener
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
@@ -161,7 +165,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
-            notificationManager = withContext(Dispatchers.IO) {
+            notificationManager = withContext(dispatcherProvider.io) {
                 NotificationUtils.getInstance(this@DashboardActivity)
             }
         }
@@ -248,6 +252,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 launch {
                     dashboardViewModel.challengeDialogEvent.collect { data ->
                         challengeManager.showChallengeDialog(data)
+                    }
+                }
+
+                launch {
+                    syncManager.syncStatus.collect { status ->
+                        if (status is SyncManager.SyncStatus.Success) {
+                            updateLastSyncStatus()
+                        }
                     }
                 }
             }
@@ -596,7 +608,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                 if (userId != null) {
                                     val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                                     if (fragment is NotificationsFragment) {
-                                        withContext(Dispatchers.Main) {
+                                        withContext(dispatcherProvider.main) {
                                             fragment.view?.post {
                                                 fragment.refreshNotificationsList()
                                             }
@@ -696,8 +708,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         lifecycleScope.launch {
             val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-            if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
-                showGuestDialog()
+            if (user?.id?.startsWith("guest") == true) {
+                when {
+                    offlineVisits >= 3 -> showGuestDialog()
+                    offlineVisits == 2 -> showVisitLimitWarning()
+                }
             }
         }
     }
@@ -729,6 +744,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
+    }
+
+    private fun showVisitLimitWarning() {
+        // Clear any existing banner first
+        binding.bannerContainer.removeAllViews()
+        
+        // Inflate the banner layout
+        val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
+        
+        // Set up close button
+        val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
+        closeButton.setOnClickListener {
+            binding.bannerContainer.removeView(bannerView.parent as? android.view.View ?: bannerView)
+        }
+        
+        // Auto-dismiss after 10 seconds
+        lifecycleScope.launch {
+            delay(10000)
+            if (binding.bannerContainer.childCount > 0) {
+                binding.bannerContainer.removeAllViews()
+            }
+        }
     }
 
     private fun topBarVisible(){
@@ -790,12 +827,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             val paddingVerticalDp = (paddingVerticalPx / density).toInt()
             val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
-            val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-            val statusBarHeight = if (resourceId > 0) {
-                resources.getDimensionPixelSize(resourceId)
-            } else {
-                ceil(25 * density).toInt()
-            }
+            val statusBarHeight = ViewCompat.getRootWindowInsets(binding.root)
+                ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
+                ?: ceil(25 * density).toInt()
 
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
@@ -823,12 +857,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        val statusBarHeight = if (resourceId > 0) {
-            resources.getDimensionPixelSize(resourceId)
-        } else {
-            ceil(25 * resources.displayMetrics.density).toInt()
-        }
+        val statusBarHeight = ViewCompat.getRootWindowInsets(binding.root)
+            ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
+            ?: ceil(25 * resources.displayMetrics.density).toInt()
 
         val headerHeight = 160 + (statusBarHeight / resources.displayMetrics.density).toInt()
         val dimenHolder = DimenHolder.fromDp(headerHeight)
@@ -916,8 +947,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             tabLayout.removeOnTabSelectedListener(tabSelectedListener)
         }
 
-        onGlobalLayoutListener?.let {
-            binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+        if (::binding.isInitialized) {
+            onGlobalLayoutListener?.let {
+                binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+            }
         }
 
         unregisterSystemNotificationReceiver()
