@@ -1244,4 +1244,23 @@
     <string name="pdf_no_text_layer">PDF-kan kuma jiro qoraal la akhrin karo</string>
     <string name="pdf_extracting_text">Diyaarinta qoraalka, fadlan sug…</string>
 
+    <string name="skip">Ka gudub</string>
+    <string name="add_meetup">Ku dar kulan</string>
+    <string name="download_report">Soo deji warbixinta</string>
+    <string name="view_details">Fiiri faahfaahinta</string>
+    <string name="download_pdf">Soo deji PDF</string>
+    <string name="label_answer">Jawaab:</string>
+    <string name="label_link">Xiriirka: </string>
+    <string name="number_of_visits">Tirada booqashooyinka</string>
+    <string name="label_name_with_colon">Magaca:</string>
+    <string name="label_relationship">Xiriirka:</string>
+    <string name="label_phone_no">Lambarka taleefanka:</string>
+    <string name="label_email_with_colon">Iimayl:</string>
+    <string name="track_title">Cinwaanka heesta</string>
+    <string name="unknown_artist">Fannaan aan la garanayn</string>
+    <string name="markdown_filename">Magaca faylka Markdown</string>
+    <string name="type_nodots">Nooca</string>
+    <string name="enterprise_reports">Warbixinnada shirkadda</string>
+    <string name="label_add_references">Ku dar tixraac kasta xagga hoose</string>
+    <string name="link">Xiriirka</string>
 </resources>

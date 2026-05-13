@@ -120,7 +120,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Number of Visits"
+                android:text="@string/number_of_visits"
                 android:textColor="@color/daynight_textColor"
                 android:textStyle="bold" />
             <TextView
