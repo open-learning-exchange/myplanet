@@ -1248,6 +1248,9 @@
     <string name="file_not_found">الملف غير موجود: %s</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
+    <string name="guest_visit_limit_warning">لديك محاولة تسجيل دخول واحدة متبقية قبل حظر حسابك.</string>
+    <string name="warning_icon">أيقونة التحذير</string>
+    <string name="close_banner">إغلاق لافتة التحذير</string>
     <string name="status_not_started">لم يبدأ</string>
     <string name="status_in_progress">قيد التنفيذ</string>
     <string name="status_completed">مكتمل</string>

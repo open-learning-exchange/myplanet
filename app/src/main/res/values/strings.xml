@@ -921,6 +921,9 @@
     <string name="select_date_of_birth">select date of birth</string>
     <string name="confirm_membership">confirm to become a member</string>
     <string name="trial_period_ended">Trial period ended! Kindly complete registration to continue</string>
+    <string name="guest_visit_limit_warning">You have 1 login remaining before you are blocked from logging in.</string>
+    <string name="warning_icon">Warning icon</string>
+    <string name="close_banner">Close warning banner</string>
     <string name="drag">drag %1$s</string>
     <string name="visibility_of">toggle visibility of %1$s</string>
     <string name="icon">%1$s icon</string>

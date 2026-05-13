@@ -1232,6 +1232,9 @@
     <string name="file_not_found">फाइल फेला परेन: %s</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
+    <string name="guest_visit_limit_warning">तपाईंको खाता ब्लक हुनु अघि १ लगइन बाकी छ।</string>
+    <string name="warning_icon">चेतावनी आइकन</string>
+    <string name="close_banner">चेतावनी ब्यानर बन्द गर्नुहोस्</string>
     <string name="status_not_started">सुरु भएको छैन</string>
     <string name="status_in_progress">प्रगतिमा छ</string>
     <string name="status_completed">पूरा भयो</string>
