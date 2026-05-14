@@ -1,6 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="resource_not_found">Ressource introuvable</string>
+    <string name="share">Partager</string>
+    <string name="p2p_title">Partage de ressources P2P</string>
+    <string name="send_resource">Envoyer une ressource</string>
+    <string name="receive_resource">Recevoir une ressource</string>
+    <string name="status_idle">État : Inactif</string>
+    <string name="available_peers">Pairs disponibles :</string>
+    <string name="p2p_permission_required">Autorisations requises pour le partage P2P</string>
+    <string name="status_discovering">État : Découverte en cours…</string>
+    <string name="status_discovery_failed">État : Échec de la découverte (%1$d)</string>
+    <string name="file_not_found_locally">Fichier non trouvé localement</string>
+    <string name="status_sending">État : Envoi de %1$s…</string>
+    <string name="status_sent_success">État : Envoyé avec succès !</string>
+    <string name="status_send_failed">État : Échec de l'envoi</string>
+    <string name="status_waiting_receive">État : En attente de réception…</string>
+    <string name="status_received_imported">État : Reçu et importé !</string>
+    <string name="status_receive_failed">État : Échec de la réception</string>
+    <string name="imported_resource">Importé : %1$s</string>
+    <string name="status_connecting">État : Connexion à %1$s…</string>
+    <string name="status_connection_failed">État : Échec de la connexion (%1$d)</string>
+    <string name="resource_not_found">Ressource non trouvée</string>
     <string name="resource_not_found_message">La ressource demandée est introuvable</string>
     <string name="community_earnings">Revenus totaux de la communauté: **$%1$d** /$500</string>
     <string name="your_earnings">Vos gains totaux: **$%1$d** /$11</string>

@@ -31,6 +31,9 @@
     <uses-permission android:name="android.permission.SEND_DOWNLOAD_COMPLETED_INTENTS" />
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.CAMERA" />
@@ -84,6 +87,9 @@
             android:theme="@style/AppTheme" />
         <activity
             android:name=".ui.resources.AddResourceActivity"
+            android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.resources.P2pTransferActivity"
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.viewer.AudioPlayerActivity"
             android:configChanges="orientation|screenSize" />
