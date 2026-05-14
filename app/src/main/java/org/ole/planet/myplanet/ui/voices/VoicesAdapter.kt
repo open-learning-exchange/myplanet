@@ -125,12 +125,10 @@ class VoicesAdapter(
     val currentList: List<RealmNews?> get() = mDiffer.currentList
 
     fun submitList(list: List<RealmNews?>?) {
-        list?.forEach { preParseNews(it) }
         mDiffer.submitList(list as List<RealmNews>?)
     }
 
     fun submitList(list: List<RealmNews?>?, commitCallback: Runnable?) {
-        list?.forEach { preParseNews(it) }
         mDiffer.submitList(list as List<RealmNews>?, commitCallback)
     }
 
@@ -197,6 +195,7 @@ class VoicesAdapter(
         if (holder is VoicesViewHolder) {
             holder.bind(position)
             val news = getNews(holder, position)
+            preParseNews(news)
 
             if (news?.isValid == true) {
                 val sharedTeamName = extractSharedTeamName(news)

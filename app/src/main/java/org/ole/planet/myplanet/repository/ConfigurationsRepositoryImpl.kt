@@ -86,6 +86,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
         val baseUrl = UrlUtils.baseUrl(spm)
         if (baseUrl.isEmpty()) {
+            callback.onError(context.getString(R.string.server_url_not_configured), true)
             return
         }
 
