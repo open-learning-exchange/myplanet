@@ -1259,7 +1259,6 @@
     <string name="tts_not_available">ميزة تحويل النص إلى كلام غير متوفرة على هذا الجهاز</string>
     <string name="pdf_no_text_layer">لا يحتوي ملف PDF هذا على نص قابل للقراءة</string>
     <string name="pdf_extracting_text">جارٍ تحضير النص، يرجى الانتظار…</string>
-
     <string name="skip">تخطي</string>
     <string name="add_meetup">إضافة لقاء</string>
     <string name="download_report">تحميل التقرير</string>
@@ -1279,4 +1278,5 @@
     <string name="enterprise_reports">تقارير المؤسسة</string>
     <string name="label_add_references">أضف أي مراجع أدناه</string>
     <string name="link">الرابط</string>
+
 </resources>
