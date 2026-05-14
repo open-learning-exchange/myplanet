@@ -1243,5 +1243,6 @@
     <string name="tts_not_available">Qoraal-u-hadalka lagama heli karo qalabkan</string>
     <string name="pdf_no_text_layer">PDF-kan kuma jiro qoraal la akhrin karo</string>
     <string name="pdf_extracting_text">Diyaarinta qoraalka, fadlan sug…</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

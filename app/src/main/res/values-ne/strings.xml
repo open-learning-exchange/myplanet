@@ -1243,5 +1243,6 @@
     <string name="tts_not_available">यस उपकरणमा टेक्स्ट-टू-स्पीच उपलब्ध छैन</string>
     <string name="pdf_no_text_layer">यस PDF मा पढ्न योग्य पाठ छैन</string>
     <string name="pdf_extracting_text">पाठ तयार गर्दै, कृपया पर्खनुहोस्…</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

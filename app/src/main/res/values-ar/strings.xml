@@ -1259,5 +1259,6 @@
     <string name="tts_not_available">ميزة تحويل النص إلى كلام غير متوفرة على هذا الجهاز</string>
     <string name="pdf_no_text_layer">لا يحتوي ملف PDF هذا على نص قابل للقراءة</string>
     <string name="pdf_extracting_text">جارٍ تحضير النص، يرجى الانتظار…</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

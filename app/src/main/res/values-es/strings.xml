@@ -1246,5 +1246,6 @@
     <string name="tts_not_available">La función de texto a voz no está disponible en este dispositivo</string>
     <string name="pdf_no_text_layer">Este PDF no contiene una capa de texto legible</string>
     <string name="pdf_extracting_text">Preparando texto, por favor espere…</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>
