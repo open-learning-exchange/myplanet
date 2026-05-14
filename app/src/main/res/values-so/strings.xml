@@ -1243,7 +1243,6 @@
     <string name="tts_not_available">Qoraal-u-hadalka lagama heli karo qalabkan</string>
     <string name="pdf_no_text_layer">PDF-kan kuma jiro qoraal la akhrin karo</string>
     <string name="pdf_extracting_text">Diyaarinta qoraalka, fadlan sug…</string>
-
     <string name="skip">Ka gudub</string>
     <string name="add_meetup">Ku dar kulan</string>
     <string name="download_report">Soo deji warbixinta</string>
@@ -1263,4 +1262,5 @@
     <string name="enterprise_reports">Warbixinnada shirkadda</string>
     <string name="label_add_references">Ku dar tixraac kasta xagga hoose</string>
     <string name="link">Xiriirka</string>
+
 </resources>
