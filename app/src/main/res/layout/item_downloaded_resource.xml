@@ -17,7 +17,6 @@
         android:layout_height="wrap_content"
         android:clickable="false"
         android:focusable="false" />
-
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -33,7 +32,6 @@
             android:textSize="14sp"
             android:maxLines="2"
             android:ellipsize="end" />
-
         <TextView
             android:id="@+id/resourceSize"
             android:layout_width="wrap_content"
@@ -41,7 +39,5 @@
             android:layout_marginTop="2dp"
             android:textColor="@color/md_grey_500"
             android:textSize="12sp" />
-
     </LinearLayout>
-
 </LinearLayout>
