@@ -123,7 +123,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_returnsSuccessImmediately_whenSyncIsRunning() = runTest {
-        MainApplication.isSyncRunning = true
+        MainApplication.isSyncRunning.set(true)
 
         val result = worker.doWork()
 
@@ -133,7 +133,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_returnsSuccessImmediately_whenQueueIsProcessing() = runTest {
-        MainApplication.isSyncRunning = false
+        MainApplication.isSyncRunning.set(false)
         coEvery { retryQueue.isCurrentlyProcessing() } returns true
 
         val result = worker.doWork()
@@ -144,7 +144,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_callsCleanup_afterProcessingNonEmptyQueue() = runTest {
-        MainApplication.isSyncRunning = false
+        MainApplication.isSyncRunning.set(false)
         coEvery { retryQueue.isCurrentlyProcessing() } returns false
         coEvery { retryQueue.setProcessing(any()) } returns Unit
         coEvery { retryQueue.cleanup() } returns Unit
@@ -160,7 +160,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_returnsRetry_onUnexpectedException() = runTest {
-        MainApplication.isSyncRunning = false
+        MainApplication.isSyncRunning.set(false)
         val e = Exception("Unexpected error")
         coEvery { retryQueue.isCurrentlyProcessing() } returns false
         coEvery { retryQueue.getPendingOperations() } throws e

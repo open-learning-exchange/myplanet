@@ -90,7 +90,7 @@ class RetryQueueWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
-        if (MainApplication.isSyncRunning) {
+        if (MainApplication.isSyncRunning.get()) {
             Log.d(TAG, "Sync is running, skipping retry processing")
             return Result.success()
         }
@@ -120,7 +120,7 @@ class RetryQueueWorker @AssistedInject constructor(
             withTimeout(5 * 60 * 1000L) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
                     // Check if sync started while we're processing
-                    if (MainApplication.isSyncRunning) {
+                    if (MainApplication.isSyncRunning.get()) {
                         Log.d(TAG, "Sync started, pausing retry processing")
                         return@withTimeout
                     }
