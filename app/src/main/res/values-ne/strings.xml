@@ -1243,7 +1243,6 @@
     <string name="tts_not_available">यस उपकरणमा टेक्स्ट-टू-स्पीच उपलब्ध छैन</string>
     <string name="pdf_no_text_layer">यस PDF मा पढ्न योग्य पाठ छैन</string>
     <string name="pdf_extracting_text">पाठ तयार गर्दै, कृपया पर्खनुहोस्…</string>
-
     <string name="skip">छोड्नुहोस्</string>
     <string name="add_meetup">भेटघाट थप्नुहोस्</string>
     <string name="download_report">रिपोर्ट डाउनलोड गर्नुहोस्</string>
@@ -1263,4 +1262,5 @@
     <string name="enterprise_reports">इन्टरप्राइज रिपोर्टहरू</string>
     <string name="label_add_references">तल कुनै पनि सन्दर्भहरू थप्नुहोस्</string>
     <string name="link">लिङ्क</string>
+
 </resources>
