@@ -114,7 +114,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="@dimen/_10dp"
                 android:background="@drawable/buttonyellow"
-                android:text="take survey"
+                android:text="@string/take_survey"
                 android:visibility="gone"
                 android:textAllCaps="false"
                 app:layout_constraintEnd_toEndOf="parent"
