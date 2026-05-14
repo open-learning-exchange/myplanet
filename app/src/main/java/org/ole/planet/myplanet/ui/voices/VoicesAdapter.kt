@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -58,16 +57,19 @@ class VoicesAdapter(
     private val teamName: String = "",
     private val teamId: String? = null,
     private val userSessionManager: UserSessionManager,
-    private val isTeamLeaderFn: ((Boolean) -> Unit) -> (() -> Unit),
-    private val getUserFn: (String, (RealmUser?) -> Unit) -> (() -> Unit),
+    private val isTeamLeaderFn: ((Boolean) -> Unit) -> Unit,
+    private val getUserFn: (String, (RealmUser?) -> Unit) -> Unit,
     private val getReplyCountFn: (String, (Int) -> Unit) -> (() -> Unit),
-    private val deletePostFn: (String, () -> Unit) -> (() -> Unit),
-    private val shareNewsFn: (String, String, String, String, String, (Result<Unit>) -> Unit) -> (() -> Unit),
-    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> (() -> Unit),
-    private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
+    private val deletePostFn: (String) -> Unit,
+    private val shareNewsFn: (String, String, String, String, String) -> Unit,
+    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> Unit,
+    private val onEditAction: (suspend () -> Unit) -> Unit,
+    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?,
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
-    private val userRepository: org.ole.planet.myplanet.repository.UserRepository
+    private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
+    private val getCommunityLeadersFn: () -> String,
+    private val setRepliedNewsIdFn: (String?) -> Unit
 ) : androidx.recyclerview.widget.ListAdapter<RealmNews, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<RealmNews>(
         areItemsTheSame = { oldItem, newItem ->
@@ -126,8 +128,6 @@ class VoicesAdapter(
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
     private var listener: OnNewsItemClickListener? = null
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: List<String>? = null
     private var fromLogin = false
     private var nonTeamMember = false
@@ -137,7 +137,7 @@ class VoicesAdapter(
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
-        val raw = sharedPrefManager.getCommunityLeaders()
+        val raw = getCommunityLeadersFn()
         userRepository.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
@@ -207,6 +207,23 @@ class VoicesAdapter(
                 setMemberClickListeners(holder, userModel, currentLeader)
             }
         }
+    }
+
+    fun removePost(newsId: String) {
+        val snapshotList = currentList.toMutableList()
+        val pos = snapshotList.indexOfFirst { it?.id == newsId }
+        if (pos != -1) {
+            snapshotList.removeAt(pos)
+            submitList(snapshotList)
+        } else if (parentNews?.id == newsId) {
+            submitList(emptyList())
+        }
+        parentNews?.id?.let { pid ->
+            val current = replyCountCache[pid]
+            replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
+            notifyItemChanged(0)
+        }
+        listener?.onDataChanged()
     }
 
     fun updateReplyBadge(newsId: String?) {
@@ -327,23 +344,7 @@ class VoicesAdapter(
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
                         newsToDelete?.id?.let { id ->
-                            deletePostFn(id) {
-                                if (!isParent) {
-                                    val newOriginal = originalList.toMutableList()
-                                    val offset = if (parentNews != null) 1 else 0
-                                    val origPos = pos - offset
-                                    if (origPos >= 0 && origPos < newOriginal.size) {
-                                        newOriginal.removeAt(origPos)
-                                        submitList(newOriginal)
-                                    }
-                                }
-                                parentNews?.id?.let { pid ->
-                                    val current = replyCountCache[pid]
-                                    replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
-                                    notifyItemChanged(0)
-                                }
-                                listener?.onDataChanged()
-                            }
+                            deletePostFn(id)
                         }
                     }
                     .setNegativeButton(R.string.cancel, null)
@@ -353,7 +354,7 @@ class VoicesAdapter(
 
         if (news.userId == currentUser?._id) {
             holder.binding.imgEdit.setOnClickListener {
-                launchCoroutine {
+                onEditAction {
                     VoicesActions.showEditAlert(
                         context,
                         news.id,
@@ -366,7 +367,7 @@ class VoicesAdapter(
                             showReplyButton(h, updatedNews, pos)
                             notifyItemChanged(pos)
                         },
-                        { action -> launchCoroutine(action) }
+                        onEditAction
                     )
                 }
             }
@@ -378,19 +379,7 @@ class VoicesAdapter(
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = news.parsedConversations!!
-            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat) { response, onUpdate, onComplete ->
-                val cancelJob = launchCoroutine {
-                    var currentIndex = 0
-                    while (currentIndex < response.length) {
-                        if (!kotlin.coroutines.coroutineContext.isActive) return@launchCoroutine
-                        onUpdate(response.substring(0, currentIndex + 1))
-                        currentIndex++
-                        kotlinx.coroutines.delay(10L)
-                    }
-                    onComplete()
-                }
-                return@ChatAdapter { cancelJob() }
-            }
+            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, onAnimateTyping)
 
             if (currentUser?.id?.startsWith("guest") == false) {
                 chatAdapter.setOnChatItemClickListener(object : OnChatItemClickListener {
@@ -610,7 +599,7 @@ class VoicesAdapter(
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
             viewHolder.binding.btnReply.setOnClickListener {
-                launchCoroutine {
+                onEditAction {
                     VoicesActions.showEditAlert(
                         context,
                         finalNews?.id,
@@ -620,7 +609,7 @@ class VoicesAdapter(
                         viewHolder,
                         voicesRepository,
                         { _, _, _ -> },
-                        { action -> launchCoroutine(action) }
+                        onEditAction
                     )
                 }
             }
@@ -631,7 +620,7 @@ class VoicesAdapter(
         updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            sharedPrefManager.setRepliedNewsId(finalNews?.id)
+            setRepliedNewsIdFn(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }
@@ -655,14 +644,7 @@ class VoicesAdapter(
                      val parentCode = currentUser?.parentCode ?: ""
 
                      if (newsId != null && userId != null) {
-                         shareNewsFn(newsId, userId, planetCode, parentCode, teamName) { result ->
-                             if (result.isSuccess) {
-                                 Utilities.toast(context, context.getString(R.string.shared_to_community))
-                                 viewHolder.binding.btnShare.visibility = View.GONE
-                             } else {
-                                 Utilities.toast(context, "Failed to share news")
-                             }
-                         }
+                         shareNewsFn(newsId, userId, planetCode, parentCode, teamName)
                      }
                 }
                 .setNegativeButton(R.string.cancel, null)
