@@ -23,8 +23,10 @@ import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Date
+import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
@@ -229,9 +232,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
-            val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                 val user = userRepository.getUserById(assigneeId)
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onNameFetched(user?.name) }
+                withContext(dispatcherProvider.main) { onNameFetched(user?.name) }
             }
             return@TeamsTasksAdapter { job.cancel() }
         }

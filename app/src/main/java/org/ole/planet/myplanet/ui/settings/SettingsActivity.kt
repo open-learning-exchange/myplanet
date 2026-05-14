@@ -26,7 +26,6 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -48,6 +47,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -105,6 +105,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var retryQueue: RetryQueue
         @Inject
         lateinit var configurationsRepository: ConfigurationsRepository
+        @Inject
+        lateinit var dispatcherProvider: DispatcherProvider
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -224,7 +226,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     val dialog = AlertDialog.Builder(requireActivity())
                         .setTitle(R.string.retry_queue_status)
                         .setMessage(details)
@@ -254,7 +256,7 @@ class SettingsActivity : AppCompatActivity() {
                         clearButton.setOnClickListener {
                             lifecycleScope.launch {
                                 val cleared = retryQueue.safeClearQueue()
-                                withContext(Dispatchers.Main) {
+                                withContext(dispatcherProvider.main) {
                                     if (cleared) {
                                         Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
                                     } else {
@@ -277,10 +279,10 @@ class SettingsActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            lifecycleScope.launch(Dispatchers.IO) {
+                            lifecycleScope.launch(dispatcherProvider.io) {
                                 configurationsRepository.clearAllData()
                                 sharedPrefManager.clearPreferences()
-                                withContext(Dispatchers.Main) {
+                                withContext(dispatcherProvider.main) {
                                     restartApp()
                                 }
                             }
