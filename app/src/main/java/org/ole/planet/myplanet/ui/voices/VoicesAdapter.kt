@@ -16,10 +16,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
-import androidx.recyclerview.widget.AsyncDifferConfig
-import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListUpdateCallback
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -99,10 +96,7 @@ class VoicesAdapter(
 ) {
     private var originalList: List<RealmNews> = emptyList()
 
-
-
-
-        override fun submitList(list: List<RealmNews>?) {
+    override fun submitList(list: List<RealmNews>?) {
         originalList = list ?: emptyList()
         val finalList = mutableListOf<RealmNews>()
         parentNews?.let {
@@ -193,6 +187,7 @@ class VoicesAdapter(
         if (holder is VoicesViewHolder) {
             holder.bind(position)
             val news = getNews(holder, position)
+            preParseNews(news)
 
             if (news?.isValid == true) {
                 val sharedTeamName = extractSharedTeamName(news)
