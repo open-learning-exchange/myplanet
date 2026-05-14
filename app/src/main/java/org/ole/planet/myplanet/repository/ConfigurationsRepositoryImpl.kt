@@ -86,6 +86,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
         val baseUrl = UrlUtils.baseUrl(spm)
         if (baseUrl.isEmpty()) {
+            callback.onError(context.getString(R.string.server_url_not_configured), true)
             return
         }
 
@@ -164,9 +165,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        withContext(dispatcherProvider.io) {
+        val result = withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
+            val alternativeReachable = mapping.alternativeUrl?.let {
+                checkServerAvailability(it)
+            } == true
 
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
@@ -181,17 +184,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         sharedPrefManager.rawPreferences
                     )
                 }
+                alternativeReachable
+            } else {
+                primaryReachable
             }
         }
 
-        return try {
-            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(sharedPrefManager))
-            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-            isAvailable
-        } catch (e: Exception) {
-            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-            false
-        }
+        serverAvailabilityCache[updateUrl] = Pair(result, System.currentTimeMillis())
+        return result
     }
 
     override suspend fun clearAllData() {
