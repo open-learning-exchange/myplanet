@@ -1235,6 +1235,9 @@
     <string name="file_not_found">Archivo no encontrado: %s</string>
     <string name="chat_already_shared_to_destination">Este chat ya ha sido compartido a este destino</string>
     <string name="already_shared">Ya compartido</string>
+    <string name="guest_visit_limit_warning">Tienes 1 intento de inicio de sesión restante antes de ser bloqueado.</string>
+    <string name="warning_icon">Icono de advertencia</string>
+    <string name="close_banner">Cerrar banner de advertencia</string>
     <string name="status_not_started">No iniciado</string>
     <string name="status_in_progress">En progreso</string>
     <string name="status_completed">Completado</string>
@@ -1243,5 +1246,25 @@
     <string name="tts_not_available">La función de texto a voz no está disponible en este dispositivo</string>
     <string name="pdf_no_text_layer">Este PDF no contiene una capa de texto legible</string>
     <string name="pdf_extracting_text">Preparando texto, por favor espere…</string>
+    <string name="skip">Omitir</string>
+    <string name="add_meetup">Agregar reunión</string>
+    <string name="download_report">Descargar informe</string>
+    <string name="view_details">Ver detalles</string>
+    <string name="download_pdf">Descargar PDF</string>
+    <string name="label_answer">Respuesta:</string>
+    <string name="label_link">Enlace: </string>
+    <string name="number_of_visits">Número de visitas</string>
+    <string name="label_name_with_colon">Nombre:</string>
+    <string name="label_relationship">Relación:</string>
+    <string name="label_phone_no">Teléfono:</string>
+    <string name="label_email_with_colon">Correo electrónico:</string>
+    <string name="track_title">Título de la pista</string>
+    <string name="unknown_artist">Artista desconocido</string>
+    <string name="markdown_filename">Nombre de archivo Markdown</string>
+    <string name="type_nodots">Tipo</string>
+    <string name="enterprise_reports">Informes empresariales</string>
+    <string name="label_add_references">Añada referencias abajo</string>
+    <string name="link">Enlace</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

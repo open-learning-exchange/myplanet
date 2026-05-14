@@ -144,7 +144,6 @@
                 android:id="@+id/personnelValue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="$2000"
                 android:textColor="@color/daynight_textColor"
                 android:textSize="16sp" />
         </TableRow>
