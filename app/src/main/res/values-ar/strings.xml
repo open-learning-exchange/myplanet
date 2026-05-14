@@ -1278,5 +1278,6 @@
     <string name="enterprise_reports">تقارير المؤسسة</string>
     <string name="label_add_references">أضف أي مراجع أدناه</string>
     <string name="link">الرابط</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

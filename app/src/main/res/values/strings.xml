@@ -1262,5 +1262,6 @@
     <string name="link">Link</string>
     <string name="enterprise_reports">Enterprise Reports</string>
     <string name="label_add_references">Add any references below</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

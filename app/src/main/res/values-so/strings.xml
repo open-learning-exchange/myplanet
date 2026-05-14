@@ -1262,5 +1262,6 @@
     <string name="enterprise_reports">Warbixinnada shirkadda</string>
     <string name="label_add_references">Ku dar tixraac kasta xagga hoose</string>
     <string name="link">Xiriirka</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

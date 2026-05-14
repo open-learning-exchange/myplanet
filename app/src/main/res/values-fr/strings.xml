@@ -1266,5 +1266,6 @@
     <string name="enterprise_reports">Rapports d\'entreprise</string>
     <string name="label_add_references">Ajouter des références ci-dessous</string>
     <string name="link">Lien</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>
