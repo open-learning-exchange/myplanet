@@ -1246,7 +1246,6 @@
     <string name="tts_not_available">La función de texto a voz no está disponible en este dispositivo</string>
     <string name="pdf_no_text_layer">Este PDF no contiene una capa de texto legible</string>
     <string name="pdf_extracting_text">Preparando texto, por favor espere…</string>
-
     <string name="skip">Omitir</string>
     <string name="add_meetup">Agregar reunión</string>
     <string name="download_report">Descargar informe</string>
@@ -1266,4 +1265,5 @@
     <string name="enterprise_reports">Informes empresariales</string>
     <string name="label_add_references">Añada referencias abajo</string>
     <string name="link">Enlace</string>
+
 </resources>
