@@ -157,9 +157,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
-                    userRepository = userRepository
+                    userRepository = userRepository,
+                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
-                newsAdapter.sharedPrefManager = sharedPrefManager
                 newsAdapter.setListener(this@ReplyActivity)
                 newsAdapter.setFromLogin(intent.getBooleanExtra("fromLogin", false))
                 newsAdapter.setNonTeamMember(intent.getBooleanExtra("nonTeamMember", false))

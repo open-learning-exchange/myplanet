@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -70,7 +69,9 @@ class VoicesAdapter(
     private val launchCoroutine: (suspend () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
-    private val userRepository: org.ole.planet.myplanet.repository.UserRepository
+    private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
+    private val getCommunityLeadersFn: () -> String,
+    private val setRepliedNewsIdFn: (String?) -> Unit
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder?>() {
     private val diffCallback = DiffUtils.itemCallback<RealmNews>(
         areItemsTheSame = { oldItem, newItem ->
@@ -133,8 +134,6 @@ class VoicesAdapter(
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
     private var listener: OnNewsItemClickListener? = null
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     private var imageList: List<String>? = null
     private var fromLogin = false
     private var nonTeamMember = false
@@ -144,7 +143,7 @@ class VoicesAdapter(
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
-        val raw = sharedPrefManager.getCommunityLeaders()
+        val raw = getCommunityLeadersFn()
         userRepository.parseLeadersJson(raw)
     }
     private var _isTeamLeader: Boolean? = null
@@ -652,7 +651,7 @@ class VoicesAdapter(
         updateReplyCount(viewHolder, finalNews, position)
 
         viewHolder.binding.btnShowReply.setOnClickListener {
-            sharedPrefManager.setRepliedNewsId(finalNews?.id)
+            setRepliedNewsIdFn(finalNews?.id)
             listener?.showReply(finalNews, fromLogin, nonTeamMember)
         }
     }

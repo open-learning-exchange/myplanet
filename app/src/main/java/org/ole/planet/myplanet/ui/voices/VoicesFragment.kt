@@ -275,9 +275,10 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             labelManager = labelManager,
             voicesRepository = voicesRepository,
-            userRepository = userRepository
+            userRepository = userRepository,
+            getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+            setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
         )
-        adapterNews?.sharedPrefManager = sharedPrefManager
         adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
         adapterNews?.setListener(this)
         adapterNews?.registerAdapterDataObserver(observer)
