@@ -19,7 +19,9 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.resume
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
@@ -134,6 +136,21 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             sub = submissionsRepository.createExamSubmission(
                                 user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                             )
+                        } else {
+                            val resume = askResumeOrRestart()
+                            if (resume) {
+                                populateCacheFromSavedAnswers(sub)
+                                currentIndex = findFirstUnansweredIndex()
+                            } else {
+                                submissionsRepository.deleteExamSubmissions(
+                                    exam?.id ?: id ?: "", exam?.courseId, user?.id
+                                )
+                                answerCache.clear()
+                                currentIndex = 0
+                                sub = submissionsRepository.createExamSubmission(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, null
+                                )
+                            }
                         }
                         startExam(questions?.get(currentIndex))
                         updateNavButtons()
@@ -650,6 +667,76 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             }
         }
         return false
+    }
+
+    private suspend fun askResumeOrRestart(): Boolean = suspendCancellableCoroutine { cont ->
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setTitle(R.string.resume_survey)
+            .setMessage(R.string.resume_survey_message)
+            .setPositiveButton(R.string.continuation) { _, _ -> if (cont.isActive) cont.resume(true) }
+            .setNegativeButton(R.string.start_over) { _, _ -> if (cont.isActive) cont.resume(false) }
+            .setCancelable(false)
+            .show()
+        cont.invokeOnCancellation { dialog.dismiss() }
+    }
+
+    private fun populateCacheFromSavedAnswers(sub: org.ole.planet.myplanet.model.RealmSubmission?) {
+        val answers = sub?.answers ?: return
+        answers.forEach { answer ->
+            val questionId = answer.questionId ?: return@forEach
+            val question = questions?.find { it.id == questionId } ?: return@forEach
+            val answerData = AnswerData()
+            when (question.type) {
+                "select" -> {
+                    val choices = answer.valueChoices
+                    if (!choices.isNullOrEmpty()) {
+                        try {
+                            val choiceJson = JsonUtils.gson.fromJson(choices[0], JsonObject::class.java)
+                            val choiceId = getString("id", choiceJson)
+                            if (choiceId == "other") {
+                                answerData.singleAnswer = "other"
+                                answerData.otherText = answer.value ?: ""
+                            } else {
+                                answerData.singleAnswer = choiceId
+                            }
+                        } catch (_: Exception) {
+                            answerData.singleAnswer = answer.value ?: ""
+                        }
+                    }
+                }
+                "selectMultiple" -> {
+                    answer.valueChoices?.forEach { choiceStr ->
+                        try {
+                            val choiceJson = JsonUtils.gson.fromJson(choiceStr, JsonObject::class.java)
+                            val choiceId = getString("id", choiceJson)
+                            val choiceText = getString("text", choiceJson)
+                            if (choiceId == "other") {
+                                answerData.multipleAnswers["Other"] = "other"
+                                answerData.otherText = choiceText
+                            } else {
+                                answerData.multipleAnswers[choiceText] = choiceId
+                            }
+                        } catch (_: Exception) {}
+                    }
+                }
+                "ratingScale", "input", "textarea" -> {
+                    answerData.singleAnswer = answer.value ?: ""
+                }
+            }
+            answerCache[questionId] = answerData
+        }
+    }
+
+    private fun findFirstUnansweredIndex(): Int {
+        val questionsList = questions ?: return 0
+        val idx = questionsList.indexOfFirst { question ->
+            val cached = answerCache[question.id]
+            when (question.type) {
+                "selectMultiple" -> cached?.multipleAnswers?.isNotEmpty() != true
+                else -> cached?.singleAnswer?.isNotEmpty() != true
+            }
+        }
+        return if (idx < 0) (questionsList.size - 1).coerceAtLeast(0) else idx
     }
 
     override fun onDestroyView() {
