@@ -3,16 +3,20 @@ package org.ole.planet.myplanet.services
 import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
+import java.util.Date
+import java.util.concurrent.CancellationException
+import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -22,10 +26,10 @@ import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionC
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import java.util.Date
-import java.util.concurrent.CancellationException
+import kotlin.coroutines.resume
 
 @HiltWorker
 class AutoSyncWorker @AssistedInject constructor(
@@ -35,33 +39,36 @@ class AutoSyncWorker @AssistedInject constructor(
     private val syncManager: SyncManager,
     private val uploadManager: UploadManager,
     private val uploadToShelfService: UploadToShelfService,
-    private val configurationsRepository: ConfigurationsRepository
+    private val configurationsRepository: ConfigurationsRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
 
-    private val workComplete = CompletableDeferred<Unit>()
+    private lateinit var workerScope: CoroutineScope
+    private var syncContinuation: CancellableContinuation<Unit>? = null
 
-    override suspend fun doWork(): Result {
-        if (isStopped) return Result.success()
+    override suspend fun doWork(): Result = coroutineScope {
+        if (isStopped) return@coroutineScope Result.success()
+        workerScope = this
 
         val currentTime = System.currentTimeMillis()
         val lastSync = sharedPrefManager.getLastSync()
         val syncInterval = sharedPrefManager.getAutoSyncInterval()
-        val elapsed = currentTime - lastSync
-        if (elapsed <= syncInterval * 1000L) {
-            return Result.success()
+        if (currentTime - lastSync > syncInterval * 1000) {
+            val serverReachable = configurationsRepository.checkServerAvailability()
+            if (!serverReachable) {
+                return@coroutineScope Result.success()
+            }
+            if (isAppInForeground(context)) {
+                withContext(dispatcherProvider.main) {
+                    Utilities.toast(context, "Syncing started...")
+                }
+            }
+            suspendCancellableCoroutine { continuation ->
+                syncContinuation = continuation
+                configurationsRepository.checkVersion(this@AutoSyncWorker, sharedPrefManager)
+            }
         }
-
-        val serverReachable = configurationsRepository.checkServerAvailability()
-        if (!serverReachable) {
-            return Result.success()
-        }
-
-        if (isAppInForeground(context)) {
-            withContext(Dispatchers.Main) { Utilities.toast(context, "Syncing started...") }
-        }
-        configurationsRepository.checkVersion(this, sharedPrefManager)
-        withTimeoutOrNull(10_000L) { workComplete.await() }
-        return Result.success()
+        return@coroutineScope Result.success()
     }
 
     override fun onSyncStarted() {}
@@ -69,7 +76,8 @@ class AutoSyncWorker @AssistedInject constructor(
     override fun onSyncComplete() {}
 
     override fun onSyncFailed(msg: String?) {
-        workComplete.complete(Unit)
+        syncContinuation?.takeIf { it.isActive }?.resume(Unit)
+        syncContinuation = null
         if (MainApplication.syncFailedCount > 3) {
             context.startActivity(
                 Intent(context, LoginActivity::class.java)
@@ -80,59 +88,69 @@ class AutoSyncWorker @AssistedInject constructor(
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        workComplete.complete(Unit)
-        MainApplication.applicationScope.launch(Dispatchers.Main) {
-            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, MainApplication.applicationScope, configurationsRepository)
+        workerScope.launch(dispatcherProvider.main) {
+            startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
         }
+        syncContinuation?.takeIf { it.isActive }?.resume(Unit)
+        syncContinuation = null
     }
 
     override fun onCheckingVersion() {}
 
     override fun onError(msg: String, blockSync: Boolean) {
         if (blockSync) {
-            workComplete.complete(Unit)
+            syncContinuation?.takeIf { it.isActive }?.resume(Unit)
+            syncContinuation = null
             return
         }
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
-            try {
-                syncManager.start(this@AutoSyncWorker, "upload")
-                uploadToShelfService.uploadUserData {
-                    MainApplication.applicationScope.launch {
-                        uploadToShelfService.uploadHealth()
+        workerScope.launch(dispatcherProvider.io) {
+            syncManager.start(this@AutoSyncWorker, "upload")
+            launch {
+                suspendCancellableCoroutine { cont ->
+                    uploadToShelfService.uploadUserData {
+                        workerScope.launch {
+                            val status = configurationsRepository.checkHealth()
+                            Log.d("AutoSyncWorker", "Health check completed with status: $status")
+                            uploadToShelfService.uploadHealth()
+                        }
+                        cont.resume(Unit)
                     }
                 }
-                if (MainApplication.isSyncRunning.compareAndSet(false, true)) {
-                    try {
-                        uploadManager.uploadExamResult(this@AutoSyncWorker)
-                        uploadManager.uploadFeedback()
-                        uploadManager.uploadAchievement()
-                        uploadManager.uploadResourceActivities("")
-                        uploadManager.uploadUserActivities(this@AutoSyncWorker)
-                        uploadManager.uploadCourseActivities()
-                        uploadManager.uploadSearchActivity()
-                        uploadManager.uploadRating()
-                        uploadManager.uploadResource(this@AutoSyncWorker)
-                        uploadManager.uploadNews()
-                        uploadManager.uploadTeams()
-                        uploadManager.uploadTeamTask()
-                        uploadManager.uploadMeetups()
-                        uploadManager.uploadAdoptedSurveys()
-                        uploadManager.uploadCrashLog()
-                        uploadManager.uploadSubmissions()
-                        uploadManager.uploadActivities(null)
-                        sharedPrefManager.setLastSync(Date().time)
-                    } catch (e: CancellationException) {
-                        throw e
-                    } catch (e: Exception) {
+            }
+            if (MainApplication.isSyncRunning.compareAndSet(false, true)) {
+                try {
+                    uploadManager.uploadExamResult(this@AutoSyncWorker)
+                    uploadManager.uploadFeedback()
+                    uploadManager.uploadAchievement()
+                    uploadManager.uploadResourceActivities("")
+                    uploadManager.uploadUserActivities(this@AutoSyncWorker)
+                    uploadManager.uploadCourseActivities()
+                    uploadManager.uploadSearchActivity()
+                    uploadManager.uploadRating()
+                    uploadManager.uploadResource(this@AutoSyncWorker)
+                    uploadManager.uploadNews()
+                    uploadManager.uploadTeams()
+                    uploadManager.uploadTeamTask()
+                    uploadManager.uploadMeetups()
+                    uploadManager.uploadAdoptedSurveys()
+                    uploadManager.uploadCrashLog()
+                    uploadManager.uploadSubmissions()
+                    uploadManager.uploadActivities(null)
+                    sharedPrefManager.setLastSync(Date().time)
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    Log.e("AutoSyncWorker", "error: ${e.message}")
+                    withContext(dispatcherProvider.main) {
                         onSyncFailed(e.message)
-                    } finally {
-                        MainApplication.isSyncRunning.set(false)
                     }
+                } finally {
+                    MainApplication.isSyncRunning.set(false)
                 }
-            } finally {
-                workComplete.complete(Unit)
             }
         }
+        syncContinuation?.takeIf { it.isActive }?.resume(Unit)
+        syncContinuation = null
     }
 
     override fun onSuccess(success: String?) {

@@ -7,6 +7,7 @@ import android.text.TextUtils
 import android.view.View
 import android.widget.ImageView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.createBitmap
 import androidx.lifecycle.lifecycleScope
@@ -19,6 +20,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.ui.resources.AddResourceViewModel
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.ActivityPdfreaderBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -47,6 +49,8 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
     @Inject lateinit var userSessionManager: UserSessionManager
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
+
+    private val addResourceViewModel: AddResourceViewModel by viewModels()
 
     private lateinit var library: RealmMyLibrary
     private var pdfText: String = ""
@@ -179,10 +183,10 @@ class PDFReaderActivity : AppCompatActivity(), OnAudioRecordListener {
                 AddResourceFragment.showAlert(
                     this@PDFReaderActivity,
                     outputFile,
-                    personalsRepository,
                     userModel.id,
                     userModel.name,
-                    lifecycleScope
+                    addResourceViewModel,
+                    this@PDFReaderActivity
                 ) {}
             }
         }
