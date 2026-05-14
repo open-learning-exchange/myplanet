@@ -121,7 +121,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                     CoreDependenciesEntryPoint::class.java
                 )
                 val userSessionManager = entryPoint.userSessionManager()
-                val spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+                val spm = entryPoint.sharedPrefManager()
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
                     val model = userSessionManager.getUserModel()
