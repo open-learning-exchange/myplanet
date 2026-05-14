@@ -1243,6 +1243,25 @@
     <string name="tts_not_available">यस उपकरणमा टेक्स्ट-टू-स्पीच उपलब्ध छैन</string>
     <string name="pdf_no_text_layer">यस PDF मा पढ्न योग्य पाठ छैन</string>
     <string name="pdf_extracting_text">पाठ तयार गर्दै, कृपया पर्खनुहोस्…</string>
+    <string name="skip">छोड्नुहोस्</string>
+    <string name="add_meetup">भेटघाट थप्नुहोस्</string>
+    <string name="download_report">रिपोर्ट डाउनलोड गर्नुहोस्</string>
+    <string name="view_details">विवरण हेर्नुहोस्</string>
+    <string name="download_pdf">PDF डाउनलोड गर्नुहोस्</string>
+    <string name="label_answer">उत्तर:</string>
+    <string name="label_link">लिङ्क: </string>
+    <string name="number_of_visits">भ्रमण संख्या</string>
+    <string name="label_name_with_colon">नाम:</string>
+    <string name="label_relationship">सम्बन्ध:</string>
+    <string name="label_phone_no">फोन नम्बर:</string>
+    <string name="label_email_with_colon">इमेल:</string>
+    <string name="track_title">ट्र्याक शीर्षक</string>
+    <string name="unknown_artist">अज्ञात कलाकार</string>
+    <string name="markdown_filename">मार्कडाउन फाइलको नाम</string>
+    <string name="type_nodots">प्रकार</string>
+    <string name="enterprise_reports">इन्टरप्राइज रिपोर्टहरू</string>
+    <string name="label_add_references">तल कुनै पनि सन्दर्भहरू थप्नुहोस्</string>
+    <string name="link">लिङ्क</string>
     <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

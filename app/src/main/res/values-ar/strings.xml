@@ -1259,6 +1259,25 @@
     <string name="tts_not_available">ميزة تحويل النص إلى كلام غير متوفرة على هذا الجهاز</string>
     <string name="pdf_no_text_layer">لا يحتوي ملف PDF هذا على نص قابل للقراءة</string>
     <string name="pdf_extracting_text">جارٍ تحضير النص، يرجى الانتظار…</string>
+    <string name="skip">تخطي</string>
+    <string name="add_meetup">إضافة لقاء</string>
+    <string name="download_report">تحميل التقرير</string>
+    <string name="view_details">عرض التفاصيل</string>
+    <string name="download_pdf">تحميل PDF</string>
+    <string name="label_answer">الإجابة:</string>
+    <string name="label_link">الرابط: </string>
+    <string name="number_of_visits">عدد الزيارات</string>
+    <string name="label_name_with_colon">الاسم:</string>
+    <string name="label_relationship">العلاقة:</string>
+    <string name="label_phone_no">رقم الهاتف:</string>
+    <string name="label_email_with_colon">البريد الإلكتروني:</string>
+    <string name="track_title">عنوان المسار</string>
+    <string name="unknown_artist">فنان غير معروف</string>
+    <string name="markdown_filename">اسم ملف Markdown</string>
+    <string name="type_nodots">النوع</string>
+    <string name="enterprise_reports">تقارير المؤسسة</string>
+    <string name="label_add_references">أضف أي مراجع أدناه</string>
+    <string name="link">الرابط</string>
     <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

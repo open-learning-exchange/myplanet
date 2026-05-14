@@ -1247,6 +1247,25 @@
     <string name="tts_not_available">La synthèse vocale n\'est pas disponible sur cet appareil</string>
     <string name="pdf_no_text_layer">Ce PDF ne contient pas de texte lisible</string>
     <string name="pdf_extracting_text">Préparation du texte, veuillez patienter…</string>
+    <string name="skip">Passer</string>
+    <string name="add_meetup">Ajouter une rencontre</string>
+    <string name="download_report">Télécharger le rapport</string>
+    <string name="view_details">Voir les détails</string>
+    <string name="download_pdf">Télécharger le PDF</string>
+    <string name="label_answer">Réponse :</string>
+    <string name="label_link">Lien : </string>
+    <string name="number_of_visits">Nombre de visites</string>
+    <string name="label_name_with_colon">Nom :</string>
+    <string name="label_relationship">Relation :</string>
+    <string name="label_phone_no">N° de tél. :</string>
+    <string name="label_email_with_colon">E-mail :</string>
+    <string name="track_title">Titre de la piste</string>
+    <string name="unknown_artist">Artiste inconnu</string>
+    <string name="markdown_filename">Nom du fichier Markdown</string>
+    <string name="type_nodots">Type</string>
+    <string name="enterprise_reports">Rapports d\'entreprise</string>
+    <string name="label_add_references">Ajouter des références ci-dessous</string>
+    <string name="link">Lien</string>
     <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>
