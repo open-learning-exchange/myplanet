@@ -94,9 +94,11 @@ class UserProfileFragment : Fragment() {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 photoURI  = uri
                 startIntent(photoURI)
+                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
                 Glide.with(this)
                     .load(uri)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .override(imageSize, imageSize)
                     .circleCrop()
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
@@ -140,6 +142,14 @@ class UserProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        initializeDependencies()
+        binding.btProfilePic.setOnClickListener { searchForPhoto() }
+        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
+        setupStatsRecycler()
+        observeUserProfile()
+        viewModel.loadUserProfile(sharedPrefManager.getUserId())
+        viewModel.getOfflineVisits()
+
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(
@@ -159,13 +169,6 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-        initializeDependencies()
-        binding.btProfilePic.setOnClickListener { searchForPhoto() }
-        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
-        setupStatsRecycler()
-        observeUserProfile()
-        viewModel.loadUserProfile(sharedPrefManager.getUserId())
-        viewModel.getOfflineVisits()
 
         return binding.root
     }
@@ -230,9 +233,11 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
+        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(imageSize, imageSize)
             .circleCrop()
             .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
             .listener(object : RequestListener<Drawable> {

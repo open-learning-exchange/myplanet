@@ -1,13 +1,14 @@
 package org.ole.planet.myplanet.services.retry
 
-import android.content.Context
 import android.util.Log
+import androidx.work.BackoffPolicy
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ListenableWorker.Result
+import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
+import androidx.work.Operation
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
-import androidx.work.Operation
 import androidx.work.WorkerParameters
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
@@ -18,7 +19,6 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -58,6 +58,7 @@ class RetryQueueWorkerTest {
         every { Log.d(any<String>(), any<String>()) } returns 0
         every { Log.i(any<String>(), any<String>()) } returns 0
         every { Log.w(any<String>(), any<String>()) } returns 0
+        every { Log.e(any<String>(), any<String>()) } returns 0
         every { Log.e(any<String>(), any<String>(), any<Throwable>()) } returns 0
 
         every { context.applicationContext } returns context
@@ -94,6 +95,15 @@ class RetryQueueWorkerTest {
     }
 
     @Test
+    fun schedule_workRequestHasConnectedNetworkConstraint() {
+        val workRequest = RetryQueueWorker.createScheduleWorkRequest()
+
+        assertEquals(NetworkType.CONNECTED, workRequest.workSpec.constraints.requiredNetworkType)
+        assertEquals(BackoffPolicy.EXPONENTIAL, workRequest.workSpec.backoffPolicy)
+        assertEquals(15 * 60 * 1000L, workRequest.workSpec.intervalDuration)
+    }
+
+    @Test
     fun triggerImmediateRetry_enqueuesOneTimeWork() {
         every { workManagerImpl.enqueue(any<OneTimeWorkRequest>()) } returns mockk<Operation>(relaxed = true)
 
@@ -105,8 +115,15 @@ class RetryQueueWorkerTest {
     }
 
     @Test
+    fun triggerImmediateRetry_workRequestHasConnectedNetworkConstraint() {
+        val workRequest = RetryQueueWorker.createImmediateRetryWorkRequest()
+
+        assertEquals(NetworkType.CONNECTED, workRequest.workSpec.constraints.requiredNetworkType)
+    }
+
+    @Test
     fun doWork_returnsSuccessImmediately_whenSyncIsRunning() = runTest {
-        MainApplication.isSyncRunning = true
+        MainApplication.isSyncRunning.set(true)
 
         val result = worker.doWork()
 
@@ -116,7 +133,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_returnsSuccessImmediately_whenQueueIsProcessing() = runTest {
-        MainApplication.isSyncRunning = false
+        MainApplication.isSyncRunning.set(false)
         coEvery { retryQueue.isCurrentlyProcessing() } returns true
 
         val result = worker.doWork()
@@ -127,7 +144,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_callsCleanup_afterProcessingNonEmptyQueue() = runTest {
-        MainApplication.isSyncRunning = false
+        MainApplication.isSyncRunning.set(false)
         coEvery { retryQueue.isCurrentlyProcessing() } returns false
         coEvery { retryQueue.setProcessing(any()) } returns Unit
         coEvery { retryQueue.cleanup() } returns Unit
@@ -143,7 +160,7 @@ class RetryQueueWorkerTest {
 
     @Test
     fun doWork_returnsRetry_onUnexpectedException() = runTest {
-        MainApplication.isSyncRunning = false
+        MainApplication.isSyncRunning.set(false)
         val e = Exception("Unexpected error")
         coEvery { retryQueue.isCurrentlyProcessing() } returns false
         coEvery { retryQueue.getPendingOperations() } throws e
