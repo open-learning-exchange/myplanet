@@ -241,10 +241,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
-                    userRepository = userRepository
+                    userRepository = userRepository,
+                    getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+                    setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
                 )
             }
-            adapterNews?.sharedPrefManager = sharedPrefManager
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.submitList(it) }
