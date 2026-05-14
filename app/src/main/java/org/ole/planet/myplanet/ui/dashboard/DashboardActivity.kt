@@ -887,7 +887,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun handleDrawerSelection(selectedMenuId: Int) {
         when (selectedMenuId) {
-            R.string.menu_myplanet -> openCallFragment(BellDashboardFragment())
+            R.string.menu_mydashboard -> openCallFragment(BellDashboardFragment())
             R.string.menu_library -> openCallFragment(ResourcesFragment())
             R.string.menu_surveys -> openCallFragment(SurveyFragment())
             R.string.menu_courses -> openCallFragment(CoursesFragment())
@@ -993,7 +993,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ResourcesCompat.getDrawable(resources, R.drawable.community, null)?.let { menuImageList.add(it) }
             ResourcesCompat.getDrawable(resources, R.drawable.survey, null)?.let { menuImageList.add(it) }
             return arrayOf(
-                changeUX(R.string.menu_myplanet, menuImageList[0]).withIdentifier(0),
+                changeUX(R.string.menu_mydashboard, menuImageList[0]).withIdentifier(0),
                 changeUX(R.string.txt_myLibrary, menuImageList[1]).withIdentifier(1),
                 changeUX(R.string.txt_myCourses, menuImageList[2]).withIdentifier(2),
                 changeUX(R.string.menu_library, menuImageList[3]).withIdentifier(3),
