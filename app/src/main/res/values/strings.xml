@@ -1243,5 +1243,25 @@
     <string name="tts_not_available">Text-to-speech is not available on this device</string>
     <string name="pdf_no_text_layer">This PDF doesn\'t contain readable text</string>
     <string name="pdf_extracting_text">Preparing text, please wait…</string>
+    <string name="skip">Skip</string>
+    <string name="add_meetup">Add Meetup</string>
+    <string name="download_report">Download Report</string>
+    <string name="view_details">View Details</string>
+    <string name="download_pdf">Download PDF</string>
+    <string name="label_answer">Answer:</string>
+    <string name="label_link">Link: </string>
+    <string name="number_of_visits">Number of Visits</string>
+    <string name="label_name_with_colon">Name:</string>
+    <string name="label_relationship">Relationship:</string>
+    <string name="label_phone_no">Phone No.:</string>
+    <string name="label_email_with_colon">Email:</string>
+    <string name="track_title">Track Title</string>
+    <string name="unknown_artist">Unknown Artist</string>
+    <string name="markdown_filename">Markdown Filename</string>
+    <string name="type_nodots">Type</string>
+    <string name="link">Link</string>
+    <string name="enterprise_reports">Enterprise Reports</string>
+    <string name="label_add_references">Add any references below</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

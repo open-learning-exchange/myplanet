@@ -39,6 +39,9 @@ class TTSManager @Inject constructor(
                     override fun onError(utteranceId: String?) {
                         _state.value = State.IDLE
                     }
+                    override fun onError(utteranceId: String?, errorCode: Int) {
+                        _state.value = State.IDLE
+                    }
                 })
             }
         }
