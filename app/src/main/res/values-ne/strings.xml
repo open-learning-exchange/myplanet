@@ -1179,6 +1179,9 @@
     <string name="please_enter_a_valid_year_of_birth">कृपया मान्य जन्म वर्ष प्रविष्ट गर्नुहोस्</string>
     <string name="please_enter_a_valid_year_between_1900_and">कृपया 1900 र %1$d बीचको मान्य वर्ष प्रविष्ट गर्नुहोस्</string>
     <string name="redo_survey">सर्वे पुनः गर्नुहोस्</string>
+    <string name="resume_survey">सर्वे जारी राख्नुहोस्?</string>
+    <string name="resume_survey_message">यो सर्वेमा तपाईंको प्रगति सुरक्षित छ। के तपाईं जहाँ छोड्नुभएको थियो त्यहाँबाट जारी राख्न चाहनुहुन्छ?</string>
+    <string name="start_over">सुरुदेखि सुरु गर्नुहोस्</string>
     <string name="resource_not_found_in_database">डाटाबेसमा स्रोत फेला परेन</string>
     <string name="resource_has_no_attachments">स्रोतसँग कुनै डाउनलोड योग्य फाइलहरू छैनन्</string>
     <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>

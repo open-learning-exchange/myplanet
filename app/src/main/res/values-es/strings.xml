@@ -1182,6 +1182,9 @@
     <string name="please_enter_a_valid_year_of_birth">por favor ingrese un año de nacimiento válido</string>
     <string name="please_enter_a_valid_year_between_1900_and">por favor ingrese un año válido entre 1900 y %1$d</string>
     <string name="redo_survey">volver a hacer la encuesta</string>
+    <string name="resume_survey">¿Reanudar la encuesta?</string>
+    <string name="resume_survey_message">Tienes progreso guardado en esta encuesta. ¿Te gustaría continuar desde donde lo dejaste?</string>
+    <string name="start_over">Empezar de nuevo</string>
     <string name="resource_not_found_in_database">Recurso no encontrado en la base de datos</string>
     <string name="resource_has_no_attachments">El recurso no tiene archivos descargables</string>
     <string name="unable_to_download_resource">No se puede descargar el recurso</string>
