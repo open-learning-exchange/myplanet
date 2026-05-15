@@ -63,9 +63,9 @@ object ServiceModule {
     @Singleton
     fun provideUploadRepository(
         databaseService: DatabaseService,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+        @RealmDispatcher realmDispatcher: kotlinx.coroutines.CoroutineDispatcher
     ): org.ole.planet.myplanet.repository.UploadRepository {
-        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
+        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, realmDispatcher)
     }
 
     @Provides
