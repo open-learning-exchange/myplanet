@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.content.BroadcastReceiver
+import android.util.Log
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -88,10 +89,14 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     internal fun showProgressDialog() {
+        Log.d("DL_TIMER", "showProgressDialog called pendingUrls=${pendingDownloadUrls.size} t=${System.currentTimeMillis()}")
         viewLifecycleOwner.lifecycleScope.launch {
-            if (isFragmentActive()) {
+            val active = isFragmentActive()
+            Log.d("DL_TIMER", "showProgressDialog isFragmentActive=$active t=${System.currentTimeMillis()}")
+            if (active) {
                 prgDialog.setIndeterminateMode(true)
                 prgDialog.show()
+                Log.d("DL_TIMER", "showProgressDialog prgDialog.show() called t=${System.currentTimeMillis()}")
             }
         }
     }
@@ -117,10 +122,16 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
     private val pendingDownloadUrls = mutableSetOf<String>()
+    private val pendingLibraryResourceIds = mutableListOf<String>()
 
     protected fun trackDownloadUrls(urls: Collection<String>) {
         pendingDownloadUrls.clear()
         pendingDownloadUrls.addAll(urls)
+        if (pendingDownloadUrls.isEmpty()) {
+            Log.w("DL_TIMER", "trackDownloadUrls: pendingDownloadUrls is EMPTY — dialog will never auto-dismiss t=${System.currentTimeMillis()}")
+        } else {
+            Log.d("DL_TIMER", "trackDownloadUrls: tracking ${pendingDownloadUrls.size} url(s) t=${System.currentTimeMillis()}")
+        }
     }
 
     private val broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
@@ -136,6 +147,7 @@ abstract class BaseResourceFragment : Fragment() {
                     if (pendingDownloadUrls.isNotEmpty()) {
                         val fileUrl = download.fileUrl
                         if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
+                            Log.d("DL_TIMER", "broadcastReceiver: progress=${download.progress} completeAll will=${pendingDownloadUrls.size - (if (download.progress == 100) 1 else 0) == 0} file=${fileUrl.substringAfterLast('/')} t=${System.currentTimeMillis()}")
                             if (download.progress == 100) {
                                 pendingDownloadUrls.remove(fileUrl)
                             }
@@ -143,7 +155,9 @@ abstract class BaseResourceFragment : Fragment() {
                         }
                     }
                 } else {
+                    Log.d("DL_TIMER", "broadcastReceiver: download failed msg=${download?.message}, dismissing dialog t=${System.currentTimeMillis()}")
                     pendingDownloadUrls.clear()
+                    pendingLibraryResourceIds.clear()
                     prgDialog.dismiss()
                     download?.message?.let { showError(prgDialog, it) }
                 }
@@ -156,6 +170,7 @@ abstract class BaseResourceFragment : Fragment() {
         if (dbMyLibrary.isEmpty()) {
             return
         }
+        Log.d("DL_TIMER", "showDownloadDialog count=${dbMyLibrary.size} t=${System.currentTimeMillis()}")
 
         activity?.let { fragmentActivity ->
             val inflater = fragmentActivity.layoutInflater
@@ -168,28 +183,35 @@ abstract class BaseResourceFragment : Fragment() {
                 setPadding(48, 40, 48, 0)
                 textSize = 18f
                 maxLines = 5
-                setSingleLine(false)
+                isSingleLine = false
                 setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             }
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)
-
-
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                    val t0 = System.currentTimeMillis()
+                    Log.d("DL_TIMER", "positiveButton clicked t=$t0")
                     lifecycleScope.launch {
+                        Log.d("DL_TIMER", "serverCheck start dt=${System.currentTimeMillis()-t0}ms")
                         val serverAvailable = serverCheckDeferred?.await()
                             ?: configurationsRepository.checkServerAvailability()
-                        if (serverAvailable) {
+                        val serviceRunning = DownloadService.isRunning
+                        val canProceed = serverAvailable || serviceRunning
+                        Log.d("DL_TIMER", "serverCheck done available=$serverAvailable serviceRunning=$serviceRunning canProceed=$canProceed dt=${System.currentTimeMillis()-t0}ms")
+                        if (canProceed) {
                             val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
                             selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, ArrayList(it))
                                 val selectedLibraries = it.mapNotNull { index ->
-                                    dbMyLibrary.getOrNull(
-                                        index
-                                    ) }
+                                    dbMyLibrary.getOrNull(index)
+                                }
+                                pendingLibraryResourceIds.clear()
+                                pendingLibraryResourceIds.addAll(selectedLibraries.mapNotNull { lib -> lib.resourceId })
                                 if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                    showProgressDialog()
+                                    Log.d("DL_TIMER", "downloadResources returned true count=${selectedLibraries.size} dt=${System.currentTimeMillis()-t0}ms")
+                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                    if (pendingDownloadUrls.isNotEmpty()) {
+                                        showProgressDialog()
+                                    }
                                 }
                             }
                         } else {
@@ -198,12 +220,16 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (serverCheckDeferred?.await() ?: configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(dbMyLibrary)
+                        val available = serverCheckDeferred?.await() ?: configurationsRepository.checkServerAvailability()
+                        if (available || DownloadService.isRunning) {
                             val filtered = dbMyLibrary.filterNotNull()
+                            pendingLibraryResourceIds.clear()
+                            pendingLibraryResourceIds.addAll(filtered.mapNotNull { it.resourceId })
                             if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                showProgressDialog()
+                                trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                if (pendingDownloadUrls.isNotEmpty()) {
+                                    showProgressDialog()
+                                }
                             }
                         } else {
                             showNotConnectedToast()
@@ -220,8 +246,7 @@ abstract class BaseResourceFragment : Fragment() {
                     serverCheckDeferred = null
                 }
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
-                    ?: 0) > 0
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
             }
         }
     }
@@ -269,6 +294,7 @@ abstract class BaseResourceFragment : Fragment() {
     private fun showResourceNotFoundDialog() {
         if (isAdded) {
             if (prgDialog.isShowing()) {
+                Log.d("DL_TIMER", "showResourceNotFoundDialog: dismissing prgDialog t=${System.currentTimeMillis()}")
                 prgDialog.dismiss()
             }
 
@@ -292,6 +318,7 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun setProgress(download: Download) {
+        Log.d("DL_TIMER", "fragment setProgress progress=${download.progress} completeAll=${download.completeAll} file=${download.fileName} t=${System.currentTimeMillis()}")
         prgDialog.setProgress(download.progress)
         if (!TextUtils.isEmpty(download.fileName)) {
             prgDialog.setTitle(download.fileName)
@@ -302,7 +329,19 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     open fun onDownloadComplete() {
+        Log.d("DL_TIMER", "fragment onDownloadComplete t=${System.currentTimeMillis()}")
         prgDialog.dismiss()
+
+        val resourceIds = pendingLibraryResourceIds.toList()
+        pendingLibraryResourceIds.clear()
+        if (resourceIds.isNotEmpty()) {
+            lifecycleScope.launch {
+                val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+                resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                    .onSuccess { Utilities.toast(activity, getString(R.string.added_to_my_library)) }
+                    .onFailure { Utilities.toast(activity, getString(R.string.error, it.message)) }
+            }
+        }
 
         if (sharedPrefManager.isAlternativeUrl()) {
             sharedPrefManager.setAlternativeUrl("")
@@ -382,36 +421,6 @@ abstract class BaseResourceFragment : Fragment() {
         tvSelected?.text = selected
     }
 
-    fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
-        lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
-            val resourceIds = selectedItems.mapNotNull { index ->
-                libraryItems.getOrNull(index)?.resourceId
-            }
-            resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-                .onSuccess {
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                }
-                .onFailure {
-                    Utilities.toast(activity, getString(R.string.error, it.message))
-                }
-        }
-    }
-
-    fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
-        lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
-            val userId = user?.id ?: return@launch
-            val validLibraryItems = libraryItems.filterNotNull()
-            resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
-                .onSuccess {
-                    Utilities.toast(activity, getString(R.string.added_to_my_library))
-                }
-                .onFailure {
-                    Utilities.toast(activity, getString(R.string.error, it.message))
-                }
-        }
-    }
 
     override fun onDestroyView() {
         downloadSuggestionDialog?.dismiss()

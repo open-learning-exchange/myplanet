@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
+import android.util.Log
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -383,9 +384,17 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+            Log.d("DL_TIMER", "downloadResources entry count=${resources.size} t=${System.currentTimeMillis()}")
+            resources.forEach { lib ->
+                if (lib.resourceRemoteAddress == null) {
+                    Log.w("DL_TIMER", "downloadResources: NO remoteAddress — id=${lib.resourceId} title=${lib.title} type=${lib.resourceType} mediaType=${lib.mediaType} localAddress=${lib.resourceLocalAddress} resourceOffline=${lib.resourceOffline}")
+                }
+            }
+            val urls = resources.mapNotNull { it.resourceRemoteAddress }
+            Log.d("DL_TIMER", "downloadResources urls=${urls.size} t=${System.currentTimeMillis()}")
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+                Log.d("DL_TIMER", "downloadResources openPriorityDownloadService done t=${System.currentTimeMillis()}")
             }
             true
         } catch (e: Exception) {
@@ -395,7 +404,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+            val urls = resources.mapNotNull { it.resourceRemoteAddress }
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }

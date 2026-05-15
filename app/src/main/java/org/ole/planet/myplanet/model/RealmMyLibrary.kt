@@ -176,7 +176,8 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     fun needToUpdate(): Boolean {
-        return !resourceOffline || resourceLocalAddress != null && _rev != downloadedRev
+        if (resourceLocalAddress == null) return false
+        return !resourceOffline || _rev != downloadedRev
     }
 
     companion object {

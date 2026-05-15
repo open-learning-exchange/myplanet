@@ -66,6 +66,7 @@ class DownloadService : Service() {
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
+    @Volatile private var interruptCurrentDownload = false
 
     private val downloadJob = SupervisorJob()
     private lateinit var downloadScope: CoroutineScope
@@ -74,10 +75,12 @@ class DownloadService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        isRunning = true
         downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Log.d("DL_TIMER", "DownloadService onStartCommand t=${System.currentTimeMillis()}")
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         DownloadUtils.createChannels(this)
@@ -86,6 +89,7 @@ class DownloadService : Service() {
         startForeground(ONGOING_NOTIFICATION_ID, initialNotification)
 
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
+        val urlsKey = intent?.getStringExtra("urls_key") ?: PENDING_DOWNLOADS_KEY
 
         downloadScope.launch {
             preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
@@ -96,6 +100,9 @@ class DownloadService : Service() {
                 } finally {
                     isQueueRunning = false
                 }
+            } else if (urlsKey == PRIORITY_DOWNLOADS_KEY && !isCurrentDownloadPriority) {
+                Log.d("DL_TIMER", "priority url arrived mid-background-download, interrupting")
+                interruptCurrentDownload = true
             }
         }
 
@@ -103,10 +110,12 @@ class DownloadService : Service() {
     }
 
     private suspend fun processDownloadQueue() {
+        Log.d("DL_TIMER", "processDownloadQueue started t=${System.currentTimeMillis()}")
         while (true) {
             val nextUrl = getNextPriorityUrl() ?: getNextPendingUrl()
 
             if (nextUrl == null) {
+                Log.d("DL_TIMER", "processDownloadQueue no more urls, stopping t=${System.currentTimeMillis()}")
                 if (sessionCompletedCount > 0) {
                     showCompletionNotification(false)
                 }
@@ -114,14 +123,25 @@ class DownloadService : Service() {
                 return
             }
 
+            Log.d("DL_TIMER", "processDownloadQueue dequeued file=${nextUrl.url.substringAfterLast('/')} t=${System.currentTimeMillis()}")
             processedUrls.add(nextUrl.url)
             sessionTotalCount++
 
             isCurrentDownloadPriority = nextUrl.isPriority
+            interruptCurrentDownload = false
             updateNotificationForBatchDownload()
             initDownload(nextUrl.url, fromSync)
 
-            sessionCompletedCount++
+            if (interruptCurrentDownload) {
+                Log.d("DL_TIMER", "download interrupted, re-queuing file=${nextUrl.url.substringAfterLast('/')}")
+                interruptCurrentDownload = false
+                processedUrls.remove(nextUrl.url)
+                val pending = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet())?.toMutableSet() ?: mutableSetOf()
+                pending.add(nextUrl.url)
+                preferences.edit { putStringSet(PENDING_DOWNLOADS_KEY, pending) }
+            } else {
+                sessionCompletedCount++
+            }
 
             cleanupProcessedUrls()
         }
@@ -171,6 +191,8 @@ class DownloadService : Service() {
     }
 
     private suspend fun initDownload(url: String, fromSync: Boolean) {
+        val t0 = System.currentTimeMillis()
+        Log.d("DL_TIMER", "initDownload start file=${url.substringAfterLast('/')} t=$t0")
         currentDownloadUrl = url
         try {
             if (url.isBlank()) {
@@ -179,6 +201,7 @@ class DownloadService : Service() {
             }
 
             if (FileUtils.checkFileExist(this, url)) {
+                Log.d("DL_TIMER", "initDownload already cached dt=${System.currentTimeMillis()-t0}ms")
                 DownloadUtils.updateResourceOfflineStatus(url)
                 onDownloadComplete(url)
                 return
@@ -190,8 +213,10 @@ class DownloadService : Service() {
                 return
             }
 
+            Log.d("DL_TIMER", "initDownload HTTP request sent dt=${System.currentTimeMillis()-t0}ms")
             when (val result = downloadRepository.downloadFileResponse(url, authHeader)) {
                 is DownloadResult.Success -> {
+                    Log.d("DL_TIMER", "initDownload HTTP response received dt=${System.currentTimeMillis()-t0}ms")
                     try {
                         val contentLength = result.body.contentLength()
                         if (contentLength > 0 && !checkStorage(contentLength)) {
@@ -206,6 +231,7 @@ class DownloadService : Service() {
                     }
                 }
                 is DownloadResult.Error -> {
+                    Log.d("DL_TIMER", "initDownload HTTP error=${result.message} dt=${System.currentTimeMillis()-t0}ms")
                     downloadFailed(result.message, fromSync)
                 }
             }
@@ -232,23 +258,27 @@ class DownloadService : Service() {
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                downloadScope.launch {
-                    val broadcastService = getBroadcastService(this@DownloadService)
-                    broadcastService.sendBroadcast(intent)
-                }
+                getBroadcastService(this).trySendBroadcast(intent)
             }
         }
     }
 
     @Throws(IOException::class)
     private fun downloadFile(body: ResponseBody, url: String) {
+        val t0 = System.currentTimeMillis()
+        Log.d("DL_TIMER", "downloadFile start file=${url.substringAfterLast('/')} t=$t0")
         val fileSize = body.contentLength()
         outputFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         var total: Long = 0
+        var interrupted = false
 
         BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
             FileOutputStream(outputFile).use { output ->
                 while (true) {
+                    if (interruptCurrentDownload) {
+                        interrupted = true
+                        break
+                    }
                     val readCount = bis.read(data)
                     if (readCount == -1) break
 
@@ -283,6 +313,11 @@ class DownloadService : Service() {
                     }
                 }
             }
+        }
+        if (interrupted) {
+            outputFile?.delete()
+            outputFile = null
+            return
         }
         onDownloadComplete(url)
     }
@@ -337,13 +372,11 @@ class DownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        downloadScope.launch {
-            val broadcastService = getBroadcastService(this@DownloadService)
-            broadcastService.sendBroadcast(intent)
-        }
+        getBroadcastService(this).trySendBroadcast(intent)
     }
 
     private fun onDownloadComplete(url: String) {
+        Log.d("DL_TIMER", "service onDownloadComplete file=${url.substringAfterLast('/')} t=${System.currentTimeMillis()}")
         if ((outputFile?.length() ?: 0) > 0) {
             DownloadUtils.updateResourceOfflineStatus(url)
         }
@@ -380,6 +413,7 @@ class DownloadService : Service() {
     }
 
     override fun onDestroy() {
+        isRunning = false
         try {
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
         } catch (e: Exception) {
@@ -419,6 +453,8 @@ class DownloadService : Service() {
                 .map { QueuedUrl(it, isPriority) }
             return getNextPriorityUrl(queue)
         }
+
+        @Volatile var isRunning = false
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, DownloadService::class.java).apply {
