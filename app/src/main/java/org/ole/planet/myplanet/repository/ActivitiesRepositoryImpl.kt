@@ -235,6 +235,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
 
+    override suspend fun recordSyncAction(userId: String) {
+        executeTransaction { realm ->
+            val action = realm.createObject(
+                org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java,
+                UUID.randomUUID().toString()
+            )
+            action.userId = userId
+            action.actionType = "sync"
+            action.resourceId = null
+            action.time = System.currentTimeMillis()
+        }
+    }
+
     override suspend fun recordSyncActivity(userId: String) {
         val user = userRepository.get().getUserById(userId)
         if (user == null || user.id?.startsWith("guest") == true) {

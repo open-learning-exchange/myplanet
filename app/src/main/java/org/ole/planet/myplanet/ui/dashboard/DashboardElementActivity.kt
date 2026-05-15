@@ -16,9 +16,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
@@ -33,7 +31,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     lateinit var navigationView: BottomNavigationView
     private lateinit var goOnline: MenuItem
     var c = 0
@@ -138,7 +136,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         checkMinApk(url, serverPin, "DashboardActivity")
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
-            createActionAsync(databaseService, "${userModel?.id}", null, "sync")
+            activitiesRepository.recordSyncAction("${userModel?.id}")
         }
     }
 
