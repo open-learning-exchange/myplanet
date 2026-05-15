@@ -8,7 +8,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -17,6 +16,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -27,6 +27,10 @@ import org.ole.planet.myplanet.utils.Utilities
 class DictionaryActivity : BaseActivity() {
     @Inject
     lateinit var databaseService: DatabaseService
+
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
+
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,7 +65,7 @@ class DictionaryActivity : BaseActivity() {
         if (isEmpty) {
             val context = this@DictionaryActivity
             val json = try {
-                val data = withContext(Dispatchers.IO) {
+                val data = withContext(dispatcherProvider.io) {
                     FileUtils.getStringFromFile(
                         FileUtils.getSDPathFromUrl(context, Constants.DICTIONARY_URL)
                     )
