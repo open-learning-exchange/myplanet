@@ -625,9 +625,6 @@ class VoicesAdapter(
         }
     }
 
-
-
-
     private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
         val viewHolder = holder as VoicesViewHolder
 
