@@ -357,7 +357,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     private suspend fun getCourseProgress(): Int {
         val user = userSessionManager.getUserModel()
-        val courseProgressMap = coursesRepository.getCourseProgress(user?.id)
+        val courseProgressMap = coursesRepository.getCourseProgress(user?.id, listOfNotNull(courseId))
         return courseProgressMap[courseId]?.asJsonObject?.get("current")?.asInt ?: 0
     }
 

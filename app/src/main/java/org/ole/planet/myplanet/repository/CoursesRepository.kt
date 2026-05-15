@@ -60,7 +60,7 @@ interface CoursesRepository {
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
-    suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, com.google.gson.JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTags(courseId: String): List<RealmTag>
