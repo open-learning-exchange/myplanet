@@ -22,6 +22,7 @@ interface ActivitiesRepository {
     suspend fun getUnuploadedLoginActivities(): List<org.ole.planet.myplanet.model.LoginActivityData>
     suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, com.google.gson.JsonObject?>)
     suspend fun recordSyncActivity(userId: String)
+    suspend fun recordSyncAction(userId: String)
     suspend fun insertActivity(json: JsonObject)
     suspend fun getRecentLogin(): RealmOfflineActivity?
     suspend fun insertSearchActivityFromNewsLog(log: org.ole.planet.myplanet.model.RealmNewsLog)
