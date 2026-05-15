@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadWorker
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -50,6 +51,9 @@ class DownloadService : Service() {
 
     @Inject
     lateinit var downloadRepository: DownloadRepository
+
+    @Inject
+    lateinit var resourcesRepository: ResourcesRepository
 
     private var data = ByteArray(1024 * 4)
     private var outputFile: File? = null
@@ -179,7 +183,6 @@ class DownloadService : Service() {
             }
 
             if (FileUtils.checkFileExist(this, url)) {
-                DownloadUtils.updateResourceOfflineStatus(url)
                 onDownloadComplete(url)
                 return
             }
@@ -241,7 +244,7 @@ class DownloadService : Service() {
     }
 
     @Throws(IOException::class)
-    private fun downloadFile(body: ResponseBody, url: String) {
+    private suspend fun downloadFile(body: ResponseBody, url: String) {
         val fileSize = body.contentLength()
         outputFile = FileUtils.getSDPathFromUrl(this@DownloadService, url)
         var total: Long = 0
@@ -343,9 +346,11 @@ class DownloadService : Service() {
         }
     }
 
-    private fun onDownloadComplete(url: String) {
-        if ((outputFile?.length() ?: 0) > 0) {
-            DownloadUtils.updateResourceOfflineStatus(url)
+    private suspend fun onDownloadComplete(url: String) {
+        try {
+            resourcesRepository.markResourceOfflineByUrl(url)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
 
         val remainingPriority = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet())?.count { it !in processedUrls } ?: 0

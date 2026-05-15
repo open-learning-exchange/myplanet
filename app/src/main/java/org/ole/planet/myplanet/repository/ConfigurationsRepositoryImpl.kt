@@ -13,6 +13,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
@@ -166,27 +167,29 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         val result = withContext(dispatcherProvider.io) {
-            val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let {
-                checkServerAvailability(it)
-            } == true
+            coroutineScope {
+                val primaryDeferred = async { checkServerAvailability(mapping.primaryUrl) }
+                val alternativeDeferred = mapping.alternativeUrl?.let { url -> async { checkServerAvailability(url) } }
+                val primaryReachable = primaryDeferred.await()
+                val alternativeReachable = alternativeDeferred?.await() == true
 
-            if (!primaryReachable && alternativeReachable) {
-                mapping.alternativeUrl.let { alternativeUrl ->
-                    val uri = updateUrl.toUri()
-                    val editor = sharedPrefManager.rawPreferences.edit()
+                if (!primaryReachable && alternativeReachable) {
+                    mapping.alternativeUrl.let { alternativeUrl ->
+                        val uri = updateUrl.toUri()
+                        val editor = sharedPrefManager.rawPreferences.edit()
 
-                    serverUrlMapper.updateUrlPreferences(
-                        editor,
-                        uri,
-                        alternativeUrl,
-                        mapping.primaryUrl,
-                        sharedPrefManager.rawPreferences
-                    )
+                        serverUrlMapper.updateUrlPreferences(
+                            editor,
+                            uri,
+                            alternativeUrl,
+                            mapping.primaryUrl,
+                            sharedPrefManager.rawPreferences
+                        )
+                    }
+                    alternativeReachable
+                } else {
+                    primaryReachable
                 }
-                alternativeReachable
-            } else {
-                primaryReachable
             }
         }
 
@@ -201,16 +204,20 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override suspend fun checkServerAvailability(url: String): Boolean {
         return withContext(dispatcherProvider.io) {
             try {
-                val response = apiInterface.isPlanetAvailable(url)
-                val code = response.code()
-                if (response.isSuccessful) {
-                    val ss = response.body()?.string()
-                    val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
-                    val dbCount = myList?.size ?: 0
-                    dbCount >= 8
-                } else {
-                    code == 401
+                withTimeout(5000) {
+                    val response = apiInterface.isPlanetAvailable(url)
+                    val code = response.code()
+                    if (response.isSuccessful) {
+                        val ss = response.body()?.string()
+                        val myList = ss?.split(",")?.dropLastWhile { it.isEmpty() }
+                        val dbCount = myList?.size ?: 0
+                        dbCount >= 8
+                    } else {
+                        code == 401
+                    }
                 }
+            } catch (e: TimeoutCancellationException) {
+                false
             } catch (e: Exception) {
                 false
             }

@@ -965,7 +965,7 @@
     <string name="share_chat">شارك الدردشة</string>
     <string name="shared_chat">دردشة مشتركة</string>
     <string name="check_apk_version">جارٍ فحص إصدار apk</string>
-    <string name="checking_server">جارٍ فحص الخادم</string>
+    <string name="checking_server">جارٍ فحص الخادم…</string>
     <string name="add_note">إضافة ملاحظة (اختياري)</string>
     <string name="no_teams">الفرق غير متوفرة</string>
     <string name="no_chats">لا توجد محادثات سابقة</string>

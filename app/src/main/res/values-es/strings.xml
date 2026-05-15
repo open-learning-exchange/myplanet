@@ -961,7 +961,7 @@
     <string name="share_chat">compartir chat</string>
     <string name="shared_chat">chat compartido</string>
     <string name="check_apk_version">verificando versión de la aplicación</string>
-    <string name="checking_server">verificando el servidor</string>
+    <string name="checking_server">verificando el servidor…</string>
     <string name="add_note">Agregar una nota (opcional)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
