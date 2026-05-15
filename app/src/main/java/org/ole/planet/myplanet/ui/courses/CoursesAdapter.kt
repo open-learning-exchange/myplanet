@@ -10,6 +10,7 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.SelectionUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
-import androidx.core.content.ContextCompat
 
 class CoursesAdapter(
     private val context: Context,

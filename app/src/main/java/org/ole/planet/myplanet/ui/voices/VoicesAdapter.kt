@@ -28,7 +28,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
-import javax.inject.Inject
 import kotlinx.coroutines.isActive
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
@@ -50,7 +49,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.makeExpandable
 
 class VoicesAdapter(

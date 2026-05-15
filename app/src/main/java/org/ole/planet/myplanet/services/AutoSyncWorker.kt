@@ -11,6 +11,7 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.Date
 import java.util.concurrent.CancellationException
+import kotlin.coroutines.resume
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
@@ -29,7 +30,6 @@ import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import kotlin.coroutines.resume
 
 @HiltWorker
 class AutoSyncWorker @AssistedInject constructor(
