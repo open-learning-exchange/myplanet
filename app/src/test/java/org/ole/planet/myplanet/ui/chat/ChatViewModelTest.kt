@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.chat
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -66,7 +67,7 @@ class ChatViewModelTest {
             assertTrue(success)
         }
 
-        viewModel.continueConversation("id1", "query", "response", "rev1")
+        viewModel.continueConversation("id1", null, null, "query", "response", "rev1")
         job.join()
         coVerify { chatRepository.continueConversation("id1", "query", "response", "rev1") }
     }
@@ -80,9 +81,49 @@ class ChatViewModelTest {
             assertFalse(success)
         }
 
-        viewModel.continueConversation("id2", "query", "response", "rev2")
+        viewModel.continueConversation("id2", null, null, "query", "response", "rev2")
         job.join()
         coVerify { chatRepository.continueConversation("id2", "query", "response", "rev2") }
+    }
+
+    @Test
+    fun `continueConversation uses fragmentId if id is blank`() = runTest {
+        coEvery { chatRepository.continueConversation("fragId", "query", "response", "rev1") } returns Unit
+
+        val job = launch(testDispatcher) {
+            val success = viewModel.conversationSaveSuccess.first()
+            assertTrue(success)
+        }
+
+        viewModel.continueConversation("", "fragId", "fragCurId", "query", "response", "rev1")
+        job.join()
+        coVerify { chatRepository.continueConversation("fragId", "query", "response", "rev1") }
+    }
+
+    @Test
+    fun `continueConversation uses fragmentCurrentId if id and fragmentId are blank`() = runTest {
+        coEvery { chatRepository.continueConversation("fragCurId", "query", "response", "rev1") } returns Unit
+
+        val job = launch(testDispatcher) {
+            val success = viewModel.conversationSaveSuccess.first()
+            assertTrue(success)
+        }
+
+        viewModel.continueConversation(null, "", "fragCurId", "query", "response", "rev1")
+        job.join()
+        coVerify { chatRepository.continueConversation("fragCurId", "query", "response", "rev1") }
+    }
+
+    @Test
+    fun `continueConversation returns early if all ids are blank`() = runTest {
+        viewModel.continueConversation(null, "", null, "query", "response", "rev1")
+        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun `continueConversation returns early if both query and response are blank`() = runTest {
+        viewModel.continueConversation("id", "fragId", "fragCurId", "", "  ", "rev1")
+        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
     }
 
     @Test

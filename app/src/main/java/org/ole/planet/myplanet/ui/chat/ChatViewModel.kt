@@ -42,10 +42,19 @@ class ChatViewModel @Inject constructor(
     private val _conversationSaveSuccess = MutableSharedFlow<Boolean>()
     val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
 
-    fun continueConversation(id: String, query: String, response: String, rev: String) {
+    fun continueConversation(id: String?, fragmentId: String?, fragmentCurrentId: String?, query: String, response: String, rev: String) {
+        val realmChatId = when {
+            !id.isNullOrBlank() -> id
+            !fragmentId.isNullOrBlank() -> fragmentId
+            !fragmentCurrentId.isNullOrBlank() -> fragmentCurrentId
+            else -> return
+        }
+
+        if (query.isBlank() && response.isBlank()) return
+
         viewModelScope.launch {
             try {
-                chatRepository.continueConversation(id, query, response, rev)
+                chatRepository.continueConversation(realmChatId, query, response, rev)
                 _conversationSaveSuccess.emit(true)
             } catch (e: Exception) {
                 _conversationSaveSuccess.emit(false)
