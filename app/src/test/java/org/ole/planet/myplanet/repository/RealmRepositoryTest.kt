@@ -57,6 +57,11 @@ class RealmRepositoryTest {
         every { databaseService.ioDispatcher } returns testDispatcher
         every { databaseService.createManagedRealmInstance() } returns realm
 
+        // Mock RealmLog to prevent UnsatisfiedLinkError during tests when exceptions are caught
+        io.mockk.mockkStatic(io.realm.log.RealmLog::class)
+        every { io.realm.log.RealmLog.error(any<Throwable>(), any<String>(), *anyVararg()) } just Runs
+        every { io.realm.log.RealmLog.error(any<String>(), *anyVararg()) } just Runs
+
         repository = TestRealmRepository(databaseService, testDispatcher)
     }
 
@@ -169,5 +174,42 @@ class RealmRepositoryTest {
         }
 
         assertEquals(exceptionMessage, caughtException?.message)
+    }
+
+    @Test
+    fun `queryListFlow safeCloseRealm exception during listener removal still closes realm`() = runTest {
+        val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
+        val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenInitial = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenRealmInitial = mockk<Realm>(relaxed = true)
+        val listenerSlot = slot<RealmChangeListener<RealmResults<TestRealmObject>>>()
+
+        every { realm.where(TestRealmObject::class.java) } returns realmQuery
+        every { realmQuery.findAll() } returns initialResults
+
+        every { initialResults.isValid } returns true
+        every { initialResults.isLoaded } returns true
+        every { initialResults.freeze() } returns frozenInitial
+        every { frozenInitial.realm } returns frozenRealmInitial
+        every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns listOf()
+        every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
+
+        // Set up the listener removal to throw an exception
+        every { initialResults.removeChangeListener(any<RealmChangeListener<RealmResults<TestRealmObject>>>()) } throws RuntimeException("listener removal failed")
+        every { realm.isClosed } returns false
+
+        val job = launch(testDispatcher) {
+            repository.queryFlow().collect {
+                // Collect elements
+            }
+        }
+
+        // Trigger awaitClose
+        job.cancel()
+        job.join()
+
+        // Even though removeChangeListener threw, realm.close() should still be called
+        verify(exactly = 1) { initialResults.removeChangeListener(listenerSlot.captured) }
+        verify(exactly = 1) { realm.close() }
     }
 }
