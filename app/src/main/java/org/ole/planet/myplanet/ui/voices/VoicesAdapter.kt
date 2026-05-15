@@ -138,7 +138,7 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     private val profileDbHandler = userSessionManager
-    private val userCache = mutableMapOf<String, RealmUser?>()
+    private val userCache = object : LinkedHashMap<String, RealmUser?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, RealmUser?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
@@ -686,6 +686,8 @@ class VoicesAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
+        userCache.clear()
+        fetchingUserIds.clear()
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
