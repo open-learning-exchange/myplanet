@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -383,7 +384,14 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+            val t0 = System.currentTimeMillis()
+            val base = UrlUtils.baseUrl(sharedPrefManager)
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { resource ->
+                val id = resource.resourceId ?: return@mapNotNull null
+                val addr = resource.resourceLocalAddress ?: return@mapNotNull null
+                "$base/resources/$id/$addr"
+            }
+            Log.d(TAG, "downloadResources: base=$base filtered ${resources.size} → ${urls.size} urls in ${System.currentTimeMillis() - t0}ms")
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
@@ -395,7 +403,14 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
         return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
+            val t0 = System.currentTimeMillis()
+            val base = UrlUtils.baseUrl(sharedPrefManager)
+            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { resource ->
+                val id = resource.resourceId ?: return@mapNotNull null
+                val addr = resource.resourceLocalAddress ?: return@mapNotNull null
+                "$base/resources/$id/$addr"
+            }
+            Log.d(TAG, "downloadResources: base=$base filtered ${resources.size} → ${urls.size} urls in ${System.currentTimeMillis() - t0}ms")
             if (urls.isNotEmpty()) {
                 DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             }
@@ -655,6 +670,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "LibDownload"
         private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
         @VisibleForTesting

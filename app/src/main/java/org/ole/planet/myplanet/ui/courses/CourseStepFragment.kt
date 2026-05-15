@@ -194,6 +194,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
 
             if (serverAvailable) {
                 resourcesRepository.downloadResourcesPriority(notDownloaded)
+                val base = UrlUtils.baseUrl(sharedPrefManager)
+                trackDownloadUrls(notDownloaded.mapNotNull { resource ->
+                    val id = resource.resourceId ?: return@mapNotNull null
+                    val addr = resource.resourceLocalAddress ?: return@mapNotNull null
+                    "$base/resources/$id/$addr"
+                })
             } else {
                 fragmentCourseStepBinding.resourceDownloadProgress.visibility = View.GONE
             }

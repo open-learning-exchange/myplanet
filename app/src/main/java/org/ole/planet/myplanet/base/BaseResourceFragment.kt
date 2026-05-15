@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -50,10 +51,15 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
+    companion object {
+        private const val TAG = "LibDownload"
+    }
+
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
     var lv: RecyclerView? = null
@@ -103,11 +109,20 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
+    private fun showServerCheckProgress() {
+        if (isFragmentActive()) {
+            prgDialog.setTitle(getString(R.string.checking_server))
+            prgDialog.setIndeterminateMode(true)
+            prgDialog.show()
+        }
+    }
+
     private var receiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val pendingResult = goAsync()
             this@BaseResourceFragment.lifecycleScope.launch {
                 try {
+                    serverCheckDeferred = async { configurationsRepository.checkServerAvailability() }
                     val list = resourcesRepository.getDownloadSuggestionList()
                     showDownloadDialog(list)
                 } finally {
@@ -119,6 +134,7 @@ abstract class BaseResourceFragment : Fragment() {
     private val pendingDownloadUrls = mutableSetOf<String>()
 
     protected fun trackDownloadUrls(urls: Collection<String>) {
+        Log.d(TAG, "trackDownloadUrls: tracking ${urls.size} urls, first=${urls.firstOrNull()}")
         pendingDownloadUrls.clear()
         pendingDownloadUrls.addAll(urls)
     }
@@ -135,14 +151,18 @@ abstract class BaseResourceFragment : Fragment() {
                 if (download?.failed == false) {
                     if (pendingDownloadUrls.isNotEmpty()) {
                         val fileUrl = download.fileUrl
+                        Log.d(TAG, "broadcastReceiver: progress=${download.progress} pending=${pendingDownloadUrls.size} fileUrl=$fileUrl")
                         if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
                             if (download.progress == 100) {
                                 pendingDownloadUrls.remove(fileUrl)
                             }
                             setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
+                        } else {
+                            Log.d(TAG, "broadcastReceiver: URL not in pending set. pending=${pendingDownloadUrls.take(2)}")
                         }
                     }
                 } else {
+                    Log.d(TAG, "broadcastReceiver: download failed, msg=${download?.message}")
                     pendingDownloadUrls.clear()
                     prgDialog.dismiss()
                     download?.message?.let { showError(prgDialog, it) }
@@ -176,6 +196,7 @@ abstract class BaseResourceFragment : Fragment() {
 
 
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
+                    showServerCheckProgress()
                     lifecycleScope.launch {
                         val serverAvailable = serverCheckDeferred?.await()
                             ?: configurationsRepository.checkServerAvailability()
@@ -184,28 +205,52 @@ abstract class BaseResourceFragment : Fragment() {
                             selectedItemsList?.let {
                                 addToLibrary(dbMyLibrary, ArrayList(it))
                                 val selectedLibraries = it.mapNotNull { index ->
-                                    dbMyLibrary.getOrNull(
-                                        index
-                                    ) }
+                                    dbMyLibrary.getOrNull(index)
+                                }
+                                val base = UrlUtils.baseUrl(sharedPrefManager)
+                                val toDownload = selectedLibraries.filter { lib -> lib?.isResourceOffline() == false }
+                                Log.d(TAG, "download_selected: ${toDownload.size} to download, base=$base")
                                 if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                    showProgressDialog()
+                                    val urls = toDownload.mapNotNull { lib ->
+                                        val id = lib?.resourceId ?: return@mapNotNull null
+                                        val addr = lib.resourceLocalAddress ?: return@mapNotNull null
+                                        "$base/resources/$id/$addr"
+                                    }
+                                    if (urls.isEmpty()) {
+                                        prgDialog.dismiss()
+                                    } else {
+                                        trackDownloadUrls(urls)
+                                    }
                                 }
                             }
                         } else {
+                            prgDialog.dismiss()
                             showNotConnectedToast()
                         }
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
+                    showServerCheckProgress()
                     lifecycleScope.launch {
                         if (serverCheckDeferred?.await() ?: configurationsRepository.checkServerAvailability()) {
                             addAllToLibrary(dbMyLibrary)
                             val filtered = dbMyLibrary.filterNotNull()
+                            val base = UrlUtils.baseUrl(sharedPrefManager)
+                            val toDownload = filtered.filter { lib -> !lib.isResourceOffline() }
+                            Log.d(TAG, "download_all: ${toDownload.size} to download, base=$base")
                             if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                showProgressDialog()
+                                val urls = toDownload.mapNotNull { lib ->
+                                    val id = lib.resourceId ?: return@mapNotNull null
+                                    val addr = lib.resourceLocalAddress ?: return@mapNotNull null
+                                    "$base/resources/$id/$addr"
+                                }
+                                if (urls.isEmpty()) {
+                                    prgDialog.dismiss()
+                                } else {
+                                    trackDownloadUrls(urls)
+                                }
                             }
                         } else {
+                            prgDialog.dismiss()
                             showNotConnectedToast()
                         }
                     }
@@ -292,7 +337,12 @@ abstract class BaseResourceFragment : Fragment() {
     }
 
     fun setProgress(download: Download) {
-        prgDialog.setProgress(download.progress)
+        if (!prgDialog.isShowing()) { prgDialog.show() }
+        if (download.progress < 0) {
+            prgDialog.setIndeterminateMode(true)
+        } else {
+            prgDialog.setProgress(download.progress)
+        }
         if (!TextUtils.isEmpty(download.fileName)) {
             prgDialog.setTitle(download.fileName)
         }
