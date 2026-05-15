@@ -412,30 +412,28 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
+        return runCatching {
+            if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
 
-                executeTransaction { realm ->
-                    val chunkSize = 1000
-                    resourceIds.chunked(chunkSize).forEach { chunk ->
-                        val libraryItems = realm.where(RealmMyLibrary::class.java)
-                            .`in`("resourceId", chunk.toTypedArray())
-                            .not().equalTo("userId", userId)
-                            .findAll()
+            executeTransaction { realm ->
+                val chunkSize = 1000
+                resourceIds.chunked(chunkSize).forEach { chunk ->
+                    val libraryItems = realm.where(RealmMyLibrary::class.java)
+                        .`in`("resourceId", chunk.toTypedArray())
+                        .not().equalTo("userId", userId)
+                        .findAll()
 
-                        libraryItems.forEach { libraryItem ->
-                            libraryItem.setUserId(userId)
-                        }
-
-                        val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
-                            .equalTo("type", "resources")
-                            .equalTo("userId", userId)
-                            .`in`("docId", chunk.toTypedArray())
-                            .findAll()
-
-                        removedLogs.deleteAllFromRealm()
+                    libraryItems.forEach { libraryItem ->
+                        libraryItem.setUserId(userId)
                     }
+
+                    val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                        .equalTo("type", "resources")
+                        .equalTo("userId", userId)
+                        .`in`("docId", chunk.toTypedArray())
+                        .findAll()
+
+                    removedLogs.deleteAllFromRealm()
                 }
             }
         }
