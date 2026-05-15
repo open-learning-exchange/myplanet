@@ -181,9 +181,9 @@ class VoicesFragment : BaseVoicesFragment() {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             downloadResourcesForNews(list)
             val sortedList = sortNews(list)
-            setupVoicesAdapter(sortedList)
+            setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list)
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list?.filterNotNull())
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
     }
@@ -219,7 +219,7 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun setupVoicesAdapter(sortedList: List<RealmNews?>) {
+    private fun setupVoicesAdapter(sortedList: List<RealmNews>) {
         val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
         adapterNews = VoicesAdapter(
             context = requireActivity(),
