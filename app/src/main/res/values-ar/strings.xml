@@ -265,8 +265,8 @@
     <string name="pulse_rate">معدل النبض (نبضة في الدقيقة)</string>
     <string name="blood_pressure">ضغط الدم (الضغط الانقباضي/الانبساطي)</string>
     <string name="save">حفظ</string>
-    <string name="task">المهمة (مطلوبة)</string>
-    <string name="deadline_required">الموعد النهائي (مطلوب)</string>
+    <string name="task">* المهمة</string>
+    <string name="deadline_required">"* الموعد النهائي   "</string>
     <string name="click_here_to_pick_date">انقر هنا لاختيار التاريخ</string>
     <string name="enterprises">الشركات</string>
     <string name="select_member">اختر عضو الفريق</string>
@@ -1200,7 +1200,7 @@
     <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
     <string name="hide_new_message">إخفاء الرسالة الجديدة</string>
     <string name="cannot_assign_completed_task">لا يمكن تعيين مهمة مكتملة</string>
-    <string name="assign_to">تعيين إلى (اختياري)</string>
+    <string name="assign_to">"تعيين إلى "</string>
     <string name="click_to_assign_member">انقر لتعيين عضو الفريق</string>
     <string name="saving">جار الحفظ…</string>
     <string name="achievement_saved">تم تحديث الإنجاز</string>
@@ -1297,5 +1297,6 @@
     <string name="label_add_references">أضف أي مراجع أدناه</string>
     <string name="link">الرابط</string>
     <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="desc_is_required">الوصف مطلوب</string>
 
 </resources>

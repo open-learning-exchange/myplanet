@@ -265,8 +265,8 @@
     <string name="pulse_rate">Dhererka Calaamadda (bpm)</string>
     <string name="blood_pressure">Dhererka Dhiiga (Xiran/Hoostooda)</string>
     <string name="save">Keyd</string>
-    <string name="task">Hawlo (lazim)</string>
-    <string name="deadline_required">Dib-u-heshiisi (lazim)</string>
+    <string name="task">Hawlo *</string>
+    <string name="deadline_required">Dib-u-heshiisi</string>
     <string name="click_here_to_pick_date">Si aad u doorato taariikhda</string>
     <string name="enterprises">Shirkado</string>
     <string name="select_member">Dooro Xubin Kooxda</string>
@@ -1184,7 +1184,7 @@
     <string name="unable_to_download_resource">Lama soo dejin karo kheyraadka</string>
     <string name="hide_new_message">Qari fariinta cusub</string>
     <string name="cannot_assign_completed_task">Lama xil saari karo shaqo la dhammeeyay</string>
-    <string name="assign_to">U xilsaar (Ikhtiyaari)</string>
+    <string name="assign_to">U xilsaar</string>
     <string name="click_to_assign_member">Guji si aad u doorato xubin koox</string>
     <string name="saving">Keydinaya…</string>
     <string name="achievement_saved">Guusha waa la cusbooneysiiyay</string>
@@ -1281,5 +1281,6 @@
     <string name="label_add_references">Ku dar tixraac kasta xagga hoose</string>
     <string name="link">Xiriirka</string>
     <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="desc_is_required">Sharaxaadda waa loo baahan yahay</string>
 
 </resources>
