@@ -156,6 +156,7 @@
     <string name="select_gallery">اختيار من المعرض</string>
     <string name="add_resource">إضافة مصدر:</string>
     <string name="reply">الرد</string>
+    <string name="react">تفاعل</string>
     <string name="https_protocol">https://</string>
     <string name="http_protocol">http://</string>
     <string name="showing_reply_of">عرض الرد على:</string>

@@ -58,5 +58,12 @@ class RealmMigrations : RealmMigration {
                 ?.addField("isDeletePending", Boolean::class.java)
             version++
         }
+
+        if (version == 9L) {
+            schema.get("RealmNews")
+                ?.addField("reactions", String::class.java)
+                ?.setNullable("reactions", true)
+            version++
+        }
     }
 }

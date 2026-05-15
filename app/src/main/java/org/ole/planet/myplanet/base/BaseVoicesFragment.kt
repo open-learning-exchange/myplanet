@@ -72,13 +72,25 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.submitList(adapterNews?.currentList?.toList())
+                val recyclerView = view?.findViewById<RecyclerView>(R.id.rv_news)
+                val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+                val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+                val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+                adapterNews?.submitList(adapterNews?.currentList?.toList()) {
+                    layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
+                }
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.submitList(adapterNews?.currentList?.toList())
+        val recyclerView = view?.findViewById<RecyclerView>(R.id.rv_news)
+        val layoutManager = recyclerView?.layoutManager as? LinearLayoutManager
+        val scrollPosition = layoutManager?.findFirstVisibleItemPosition() ?: 0
+        val scrollOffset = layoutManager?.findViewByPosition(scrollPosition)?.top ?: 0
+        adapterNews?.submitList(adapterNews?.currentList?.toList()) {
+            layoutManager?.scrollToPositionWithOffset(scrollPosition, scrollOffset)
+        }
     }
 
     override fun onReplyPosted(newsId: String?) {
