@@ -10,6 +10,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -22,6 +23,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
@@ -33,6 +35,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -45,6 +48,7 @@ class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
+    private val voicesViewModel: VoicesViewModel by viewModels()
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -224,55 +228,40 @@ class VoicesFragment : BaseVoicesFragment() {
             teamName = "",
             teamId = null,
             userSessionManager = userSessionManager,
-            isTeamLeaderFn = { onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    onResult(false)
-                }
-                return@VoicesAdapter { job.cancel() }
-            },
+            isTeamLeaderFn = { onResult -> onResult(false) },
             getUserFn = { userId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    val result = userRepository.getUserById(userId)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = voicesViewModel.getUserById(userId)
                     onResult(result)
                 }
-                return@VoicesAdapter { job.cancel() }
             },
             getReplyCountFn = { newsId, onResult ->
                 val job = viewLifecycleOwner.lifecycleScope.launch {
-                    try {
-                        val result = voicesRepository.getReplyCount(newsId)
-                        onResult(result)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-                return@VoicesAdapter { job.cancel() }
-            },
-            deletePostFn = { newsId, onComplete ->
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    voicesRepository.deletePost(newsId, "")
-                    onComplete()
-                }
-                return@VoicesAdapter { job.cancel() }
-            },
-            shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+                    val result = voicesViewModel.getReplyCount(newsId)
                     onResult(result)
                 }
                 return@VoicesAdapter { job.cancel() }
+            },
+            deletePostFn = { newsId ->
+                voicesViewModel.deletePost(newsId, "") {
+                    adapterNews?.removePost(newsId)
+                }
+            },
+            shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
+                    VoicesAdapterHelper.handleShareNewsResult(requireContext(), result)
+                }
             },
             getLibraryResourceFn = { resourceId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    val result = voicesRepository.getLibraryResource(resourceId)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = voicesViewModel.getLibraryResource(resourceId)
                     onResult(result)
                 }
-                return@VoicesAdapter { job.cancel() }
             },
-            launchCoroutine = { action ->
-                val job = viewLifecycleOwner.lifecycleScope.launch { action() }
-                return@VoicesAdapter { job.cancel() }
+            onEditAction = { action ->
+                viewLifecycleOwner.lifecycleScope.launch { action() }
             },
+            onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope),
             labelManager = labelManager,
             voicesRepository = voicesRepository,
             userRepository = userRepository,

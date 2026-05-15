@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesAdapter
+import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -42,8 +43,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
-
-    private var filteredNewsList: List<RealmNews?> = listOf()
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentDiscussionListBinding.inflate(inflater, container, false)
@@ -200,14 +199,12 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             }
                             kotlinx.coroutines.withContext(dispatcherProvider.main) { onResult(result ?: false) }
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getUserFn = { userId, onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.getUserById(userId)
                             onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getReplyCountFn = { newsId, onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch {
@@ -220,31 +217,28 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                         }
                         return@VoicesAdapter { job.cancel() }
                     },
-                    deletePostFn = { newsId, onComplete ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                    deletePostFn = { newsId ->
+                        viewLifecycleOwner.lifecycleScope.launch {
                             viewModel.deletePost(newsId, getEffectiveTeamName())
-                            onComplete()
+                            (binding.rvDiscussion.adapter as? VoicesAdapter)?.removePost(newsId)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
-                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch {
+                    shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                        viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                            onResult(result)
+                            VoicesAdapterHelper.handleShareNewsResult(requireContext(), result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
                     getLibraryResourceFn = { resourceId, onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch {
                             val result = viewModel.getLibraryResource(resourceId)
                             onResult(result)
                         }
-                        return@VoicesAdapter { job.cancel() }
                     },
-                    launchCoroutine = { action ->
-                        val job = viewLifecycleOwner.lifecycleScope.launch { action() }
-                        return@VoicesAdapter { job.cancel() }
+                    onEditAction = { action ->
+                        viewLifecycleOwner.lifecycleScope.launch { action() }
                     },
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
                     userRepository = userRepository,
