@@ -40,15 +40,15 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private var extensions: Set<String> = emptySet()
     private var allKnownExtensions: Set<String> = emptySet()
 
-    private data class ResourceItem(
+    data class ResourceItem(
         val resourceId: String,
         val title: String,
         val files: List<File>,
         val totalSizeBytes: Long,
-        var isChecked: Boolean = false
+        val isChecked: Boolean = false
     )
 
-    private val items = mutableListOf<ResourceItem>()
+    private var items: List<ResourceItem> = emptyList()
     private lateinit var adapter: ResourceAdapter
 
     companion object {
@@ -103,14 +103,20 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.categoryTitle.text = categoryLabel
         binding.closeButton.setOnClickListener { dismiss() }
 
-        adapter = ResourceAdapter()
+        adapter = ResourceAdapter { clickedItem ->
+            items = items.map {
+                if (it.resourceId == clickedItem.resourceId) it.copy(isChecked = !it.isChecked) else it
+            }
+            adapter.submitList(items)
+            updateSelectionState()
+        }
         binding.resourceList.layoutManager = LinearLayoutManager(requireContext())
         binding.resourceList.adapter = adapter
 
         binding.selectAllRow.setOnClickListener {
             val allChecked = items.all { it.isChecked }
-            items.forEach { it.isChecked = !allChecked }
-            adapter.notifyDataSetChanged()
+            items = items.map { it.copy(isChecked = !allChecked) }
+            adapter.submitList(items)
             updateSelectionState()
         }
 
@@ -147,9 +153,8 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 return@launch
             }
 
-            items.clear()
-            items.addAll(loaded)
-            adapter.notifyDataSetChanged()
+            items = loaded
+            adapter.submitList(items)
 
             binding.resourceList.visibility = View.VISIBLE
             binding.actionButtons.visibility = View.VISIBLE
@@ -245,7 +250,9 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
-    inner class ResourceAdapter : RecyclerView.Adapter<ResourceAdapter.ViewHolder>() {
+    inner class ResourceAdapter(
+        private val onItemClicked: (ResourceItem) -> Unit
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(ResourceDiffCallback()) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
@@ -258,18 +265,45 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
+            val item = getItem(position)
             holder.binding.resourceTitle.text = item.title
             holder.binding.resourceSize.text = FileUtils.formatSize(requireContext(), item.totalSizeBytes)
             holder.binding.checkBox.isChecked = item.isChecked
             holder.binding.root.setOnClickListener {
-                item.isChecked = !item.isChecked
-                holder.binding.checkBox.isChecked = item.isChecked
-                updateSelectionState()
+                onItemClicked(item)
+            }
+            holder.binding.checkBox.setOnClickListener {
+                onItemClicked(item)
             }
         }
 
-        override fun getItemCount() = items.size
+        override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+            if (payloads.isNotEmpty()) {
+                val item = getItem(position)
+                holder.binding.checkBox.isChecked = item.isChecked
+                holder.binding.root.setOnClickListener { onItemClicked(item) }
+                holder.binding.checkBox.setOnClickListener { onItemClicked(item) }
+            } else {
+                super.onBindViewHolder(holder, position, payloads)
+            }
+        }
+    }
+
+    private class ResourceDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<ResourceItem>() {
+        override fun areItemsTheSame(oldItem: ResourceItem, newItem: ResourceItem): Boolean {
+            return oldItem.resourceId == newItem.resourceId
+        }
+
+        override fun areContentsTheSame(oldItem: ResourceItem, newItem: ResourceItem): Boolean {
+            return oldItem == newItem
+        }
+
+        override fun getChangePayload(oldItem: ResourceItem, newItem: ResourceItem): Any? {
+            if (oldItem.copy(isChecked = newItem.isChecked) == newItem) {
+                return true
+            }
+            return null
+        }
     }
 
     override fun onDestroyView() {
