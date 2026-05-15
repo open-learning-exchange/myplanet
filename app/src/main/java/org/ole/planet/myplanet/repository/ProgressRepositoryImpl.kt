@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
@@ -28,40 +27,33 @@ class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
-    override suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
-        val mycourses = queryList(RealmMyCourse::class.java) {
-            equalTo("userId", userId)
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
+        val courseIdsArray = courseIds.toTypedArray()
+        val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
+            `in`("courseId", courseIdsArray)
         }
-        val courseIds = mycourses.mapNotNull { it.courseId }.toTypedArray()
-        val allSteps = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
-            `in`("courseId", courseIds)
-        }
-        val allProgresses = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
+        val allProgresses = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
-            `in`("courseId", courseIds)
+            `in`("courseId", courseIdsArray)
         }
 
         val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
 
         val map = HashMap<String?, JsonObject>()
-        for (course in mycourses) {
-            course.courseId?.let { courseId ->
-                val progressObject = JsonObject()
-                val steps = stepsByCourseId[courseId] ?: emptyList()
-                val progresses = progressesByCourseId[courseId] ?: emptyList()
-                progressObject.addProperty("max", steps.size)
-                progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
-                map[courseId] = progressObject
-            }
+        for (courseId in courseIds) {
+            val progressObject = JsonObject()
+            val steps = stepsByCourseId[courseId] ?: emptyList()
+            val progresses = progressesByCourseId[courseId] ?: emptyList()
+            progressObject.addProperty("max", steps.size)
+            progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
+            map[courseId] = progressObject
         }
         map
     }
 
     override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(dispatcherProvider.io) {
-        val mycourses = queryList(RealmMyCourse::class.java) {
-            equalTo("userId", userId)
-        }
+        val mycourses = coursesRepositoryLazy.get().getMyCourses(userId ?: "")
         val arr = JsonArray()
         val courseProgress = getCourseProgressMap(userId, mycourses)
         mycourses.forEach { course ->
@@ -120,7 +112,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getCourseProgressMap(
-        userId: String?, mycourses: List<RealmMyCourse>
+        userId: String?, mycourses: List<org.ole.planet.myplanet.model.RealmMyCourse>
     ): HashMap<String?, JsonObject> {
         val courseIds = mycourses.mapNotNull { it.courseId }.toTypedArray()
         val allProgresses = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {

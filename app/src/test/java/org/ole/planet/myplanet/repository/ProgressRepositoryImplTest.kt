@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -36,18 +35,19 @@ class ProgressRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
+    private lateinit var mockCoursesRepository: CoursesRepository
 
     @Before
     fun setUp() {
         every { dispatcherProvider.io } returns testDispatcher
-        val mockCoursesRepository = mockk<CoursesRepository>()
+        mockCoursesRepository = mockk<CoursesRepository>()
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
         repository = spyk(ProgressRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             { mockCoursesRepository }
         ), recordPrivateCalls = true)
-        coEvery { repository["queryList"](RealmMyCourse::class.java, any<Function1<*, *>>()) } returns emptyList<RealmMyCourse>()
     }
 
     @After
@@ -141,7 +141,7 @@ class ProgressRepositoryImplTest {
     @Test
     fun testFetchCourseData_PopulatesFieldsCorrectly() = testScope.runTest {
         val myCourses = listOf(
-            RealmMyCourse().apply {
+            org.ole.planet.myplanet.model.RealmMyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Test Course"
             }
@@ -181,9 +181,7 @@ class ProgressRepositoryImplTest {
             examId = "exam1"
         }
 
-        coEvery {
-            repository["queryList"](RealmMyCourse::class.java, any<Function1<RealmQuery<RealmMyCourse>, Unit>>())
-        } returns myCourses
+        coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
 
         coEvery {
             repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
