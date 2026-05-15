@@ -1,14 +1,20 @@
 package org.ole.planet.myplanet.ui.exam
 
+import android.graphics.Color
+import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.StateListDrawable
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CompoundButton
+import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.Toast
 import androidx.core.content.ContextCompat
@@ -310,7 +316,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             }
             question?.type.equals("ratingScale", ignoreCase = true) -> {
                 binding.llRatingScale.visibility = View.VISIBLE
-                setupRatingScale(ans)
+                setupRatingScale(question, ans)
             }
         }
         binding.tvHeader.text = question?.header
@@ -360,28 +366,49 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private var selectedRatingButton: Button? = null
-    
-    private fun setupRatingScale(oldAnswer: String) {
-        val ratingButtons = listOf(
-            binding.rbRating1,
-            binding.rbRating2,
-            binding.rbRating3,
-            binding.rbRating4,
-            binding.rbRating5,
-            binding.rbRating6,
-            binding.rbRating7,
-            binding.rbRating8,
-            binding.rbRating9
-        )
-        
-        ratingButtons.forEachIndexed { index, button ->
+    private var dynamicRatingButtons: List<Button> = emptyList()
+
+    private fun setupRatingScale(question: RealmExamQuestion?, oldAnswer: String) {
+        val scaleMax = (question?.scaleMax ?: 0).let { if (it <= 0) 9 else it }
+        binding.llRatingScale.removeAllViews()
+        dynamicRatingButtons = emptyList()
+
+        val buttonSizePx = (60 * resources.displayMetrics.density).toInt()
+        val marginPx = (8 * resources.displayMetrics.density).toInt()
+        val buttonsPerRow = 3
+        val buttons = mutableListOf<Button>()
+        var currentRow: LinearLayout? = null
+
+        val useGradient = scaleMax == 9
+
+        for (i in 1..scaleMax) {
+            val positionInRow = (i - 1) % buttonsPerRow
+            if (positionInRow == 0) {
+                currentRow = LinearLayout(requireContext()).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER
+                    layoutParams = LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    ).also { it.bottomMargin = marginPx }
+                }
+                binding.llRatingScale.addView(currentRow)
+            }
+            val isLastInRow = positionInRow == buttonsPerRow - 1 || i == scaleMax
+            val ratio = if (scaleMax > 1) (i - 1).toFloat() / (scaleMax - 1) else 0f
+            val button = createRatingButton(i, ratio, buttonSizePx, if (isLastInRow) 0 else marginPx, useGradient)
+            currentRow?.addView(button)
+            buttons.add(button)
+        }
+
+        dynamicRatingButtons = buttons
+
+        buttons.forEachIndexed { index, button ->
             button.setOnClickListener {
                 selectedRatingButton?.isSelected = false
-
                 button.isSelected = true
                 selectedRatingButton = button
                 ans = (index + 1).toString()
-                
                 updateNavButtons()
             }
         }
@@ -390,24 +417,62 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             selectRatingValue(oldAnswer.toIntOrNull() ?: 1)
         }
     }
-    
-    private fun selectRatingValue(value: Int) {
-        val ratingButtons = listOf(
-            binding.rbRating1,
-            binding.rbRating2,
-            binding.rbRating3,
-            binding.rbRating4,
-            binding.rbRating5,
-            binding.rbRating6,
-            binding.rbRating7,
-            binding.rbRating8,
-            binding.rbRating9
-        )
 
+    private fun createRatingButton(number: Int, colorRatio: Float, sizePx: Int, marginEndPx: Int, useGradient: Boolean): Button {
+        val selectedColor = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
+        val cornerPx = 8 * resources.displayMetrics.density
+        val strokePx = (2 * resources.displayMetrics.density).toInt()
+
+        val unselectedBg: Int
+        val unselectedStroke: Int
+        if (useGradient) {
+            unselectedBg = interpolateColor(0xFFFFE9EA.toInt(), 0xFFE9FBE9.toInt(), colorRatio)
+            unselectedStroke = unselectedBg
+        } else {
+            unselectedBg = ContextCompat.getColor(requireContext(), R.color.card_bg)
+            unselectedStroke = ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+        }
+
+        fun makeShape(fillColor: Int, strokeColor: Int) = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = cornerPx
+            setColor(fillColor)
+            setStroke(strokePx, strokeColor)
+        }
+
+        val stateList = StateListDrawable().apply {
+            addState(intArrayOf(android.R.attr.state_selected), makeShape(selectedColor, selectedColor))
+            addState(intArrayOf(android.R.attr.state_pressed), makeShape(selectedColor, selectedColor))
+            addState(intArrayOf(), makeShape(unselectedBg, unselectedStroke))
+        }
+
+        return Button(requireContext()).apply {
+            text = number.toString()
+            textSize = 16f
+            setTypeface(null, Typeface.BOLD)
+            setTextColor(ContextCompat.getColorStateList(requireContext(), R.color.rating_button_text_color))
+            background = stateList
+            minHeight = 0
+            minWidth = 0
+            setPadding(0, 0, 0, 0)
+            layoutParams = LinearLayout.LayoutParams(sizePx, sizePx).apply {
+                marginEnd = marginEndPx
+            }
+        }
+    }
+
+    private fun interpolateColor(start: Int, end: Int, ratio: Float): Int {
+        val r = (Color.red(start) + (Color.red(end) - Color.red(start)) * ratio).toInt()
+        val g = (Color.green(start) + (Color.green(end) - Color.green(start)) * ratio).toInt()
+        val b = (Color.blue(start) + (Color.blue(end) - Color.blue(start)) * ratio).toInt()
+        return Color.rgb(r, g, b)
+    }
+
+    private fun selectRatingValue(value: Int) {
         selectedRatingButton?.isSelected = false
-        
-        if (value in 1..9) {
-            val button = ratingButtons[value - 1]
+        val buttons = dynamicRatingButtons
+        if (value in 1..buttons.size) {
+            val button = buttons[value - 1]
             button.isSelected = true
             selectedRatingButton = button
         }
@@ -662,6 +727,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
         selectedRatingButton = null
+        dynamicRatingButtons = emptyList()
         _binding = null
     }
 }
