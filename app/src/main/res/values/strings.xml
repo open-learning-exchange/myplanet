@@ -265,8 +265,8 @@
     <string name="pulse_rate">Pulse Rate (bpm)</string>
     <string name="blood_pressure">Blood Pressure (Systolic/Diastolic)</string>
     <string name="save">Save</string>
-    <string name="task">Task (required)</string>
-    <string name="deadline_required">Deadline (required)</string>
+    <string name="task">Task *</string>
+    <string name="deadline_required">Deadline *</string>
     <string name="click_here_to_pick_date">Click here to pick date</string>
     <string name="enterprises">Enterprises</string>
     <string name="select_member">Select Team Member</string>
@@ -1187,7 +1187,7 @@
     <string name="unable_to_download_resource">Unable to download resource</string>
     <string name="hide_new_message">Hide new message</string>
     <string name="cannot_assign_completed_task">Cannot assign completed task</string>
-    <string name="assign_to">Assign To (Optional)</string>
+    <string name="assign_to">"Assign To "</string>
     <string name="click_to_assign_member">Click to assign a team member</string>
     <string name="saving">Saving…</string>
     <string name="achievement_saved">Achievement updated</string>
@@ -1281,5 +1281,6 @@
     <string name="enterprise_reports">Enterprise Reports</string>
     <string name="label_add_references">Add any references below</string>
     <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="desc_is_required">Description is required</string>
 
 </resources>

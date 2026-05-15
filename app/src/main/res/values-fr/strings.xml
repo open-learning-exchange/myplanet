@@ -265,8 +265,8 @@
     <string name="pulse_rate">Fréquence cardiaque (bpm)</string>
     <string name="blood_pressure">Pression artérielle (Systolique/Diastolique)</string>
     <string name="save">Enregistrer</string>
-    <string name="task">Tâche (obligatoire)</string>
-    <string name="deadline_required">Date limite (obligatoire)</string>
+    <string name="task">Tâche *</string>
+    <string name="deadline_required">"Date limite "</string>
     <string name="click_here_to_pick_date">Cliquez ici pour choisir la date</string>
     <string name="enterprises">Entreprises</string>
     <string name="select_member">Sélectionnez un membre de l\'équipe</string>
@@ -1188,7 +1188,7 @@
     <string name="unable_to_download_resource">Impossible de télécharger la ressource</string>
     <string name="hide_new_message">Masquer le nouveau message</string>
     <string name="cannot_assign_completed_task">Impossible d\'attribuer une tâche terminée</string>
-    <string name="assign_to">Attribuer à (Optionnel)</string>
+    <string name="assign_to">"Attribuer à "</string>
     <string name="click_to_assign_member">Cliquez pour attribuer un membre de l\'équipe</string>
     <string name="saving">Enregistrement…</string>
     <string name="achievement_saved">Réalisation mise à jour</string>
@@ -1285,5 +1285,6 @@
     <string name="label_add_references">Ajouter des références ci-dessous</string>
     <string name="link">Lien</string>
     <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="desc_is_required">La description est obligatoire</string>
 
 </resources>
