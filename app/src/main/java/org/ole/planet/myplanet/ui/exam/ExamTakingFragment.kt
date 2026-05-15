@@ -279,6 +279,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
     override fun startExam(question: RealmExamQuestion?) {
         binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
+        binding.progressBar.max = questions?.size ?: 1
+        binding.progressBar.progress = currentIndex + 1
         setButtonText()
         binding.groupChoices.removeAllViews()
         binding.llCheckbox.removeAllViews()

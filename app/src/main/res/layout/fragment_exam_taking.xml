@@ -78,6 +78,14 @@
                         app:tint="@color/md_black_1000" />
                 </androidx.constraintlayout.widget.ConstraintLayout>
 
+                <ProgressBar
+                    android:id="@+id/progress_bar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:progress="0"
+                    android:progressTint="@color/colorAccent" />
+
                 <androidx.core.widget.NestedScrollView
                     android:id="@+id/container"
                     android:layout_width="match_parent"
