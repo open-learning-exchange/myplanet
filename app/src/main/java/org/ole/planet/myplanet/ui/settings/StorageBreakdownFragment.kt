@@ -15,13 +15,13 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -32,6 +32,9 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     internal data class CategoryData(
         @StringRes val nameRes: Int,
@@ -86,7 +89,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         binding.emptyText.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val totalBytes = withContext(Dispatchers.IO) { scanStorage() }
+            val totalBytes = withContext(dispatcherProvider.io) { scanStorage() }
 
             binding.progressBar.visibility = View.GONE
 
