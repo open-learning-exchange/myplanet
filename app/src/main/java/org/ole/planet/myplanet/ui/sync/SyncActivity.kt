@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Constants.autoSynFeature
 import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
@@ -144,6 +145,9 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -526,7 +530,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         createLog("synced successfully", "")
                     }
 
-                    lifecycleScope.launch(Dispatchers.IO) {
+                    lifecycleScope.launch(dispatcherProvider.io) {
                         val pendingLanguage = prefData.getPendingLanguageChange()
                         if (pendingLanguage != null) {
                             withContext(Dispatchers.Main) {
@@ -550,7 +554,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
                     if (betaAutoDownload) {
-                        withContext(Dispatchers.IO) {
+                        withContext(dispatcherProvider.io) {
                             resourceDownloadCoordinator.startBackgroundDownload(
                                 downloadAllFiles(resourcesRepository.getAllLibrariesToSync())
                             )
@@ -761,7 +765,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     continueSyncProcess()
                 }
             } else {
-                lifecycleScope.launch(Dispatchers.IO) {
+                lifecycleScope.launch(dispatcherProvider.io) {
                     configurationsRepository.clearAllData()
                 }
             }
