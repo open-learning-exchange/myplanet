@@ -97,6 +97,8 @@
     <string name="settings">Paramètres</string>
     <string name="edit_profile">Modifier le profil</string>
     <string name="profile">Profil</string>
+    <string name="mic_button_content_description">Voix vers texte</string>
+    <string name="voice_to_text">Voix vers texte…</string>
     <string name="user">Utilisateur</string>
     <string name="remove_selected">Supprimer\nla sélection</string>
     <string name="stop_download">Arrêter le téléchargement</string>

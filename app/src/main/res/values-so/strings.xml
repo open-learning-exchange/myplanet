@@ -97,6 +97,8 @@
     <string name="settings">Settings</string>
     <string name="edit_profile">wax ka beddel xogta</string>
     <string name="profile">Profile</string>
+    <string name="mic_button_content_description">Codka qoraalka</string>
+    <string name="voice_to_text">Codka oo qoraal loo beddelo...</string>
     <string name="user">Isticmaal</string>
     <string name="remove_selected">saar\nla xushay</string>
     <string name="stop_download">jooji soo dejinta</string>
