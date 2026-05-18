@@ -235,7 +235,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun recordSyncAction(userId: String) {
+    override suspend fun recordSyncUserChallengeAction(userId: String) {
         executeTransaction { realm ->
             val action = realm.createObject(
                 org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java,

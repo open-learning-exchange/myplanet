@@ -136,7 +136,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         checkMinApk(url, serverPin, "DashboardActivity")
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
-            activitiesRepository.recordSyncAction("${userModel?.id}")
+            activitiesRepository.recordSyncUserChallengeAction("${userModel?.id}")
         }
     }
 
