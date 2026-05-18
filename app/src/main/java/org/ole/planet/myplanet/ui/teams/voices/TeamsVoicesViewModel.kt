@@ -93,4 +93,16 @@ class TeamsVoicesViewModel @Inject constructor(
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? = withContext(dispatcherProvider.io) {
         voicesRepository.getLibraryResource(resourceId)
     }
+
+    suspend fun addLabel(newsId: String, label: String) {
+        withContext(dispatcherProvider.io) {
+            voicesRepository.addLabel(newsId, label)
+        }
+    }
+
+    suspend fun removeLabel(newsId: String, label: String) {
+        withContext(dispatcherProvider.io) {
+            voicesRepository.removeLabel(newsId, label)
+        }
+    }
 }

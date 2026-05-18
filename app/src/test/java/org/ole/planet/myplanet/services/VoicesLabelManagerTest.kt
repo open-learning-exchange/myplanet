@@ -15,19 +15,20 @@ import io.mockk.verify
 import io.realm.RealmList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.Dispatchers
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class VoicesLabelManagerTest {
 
     private lateinit var context: Context
-    private lateinit var voicesRepository: VoicesRepository
+    private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var scope: CoroutineScope
     private lateinit var voicesLabelManager: VoicesLabelManager
     private lateinit var binding: RowNewsBinding
@@ -38,13 +39,20 @@ class VoicesLabelManagerTest {
     @Before
     fun setUp() {
         context = mockk(relaxed = true)
-        voicesRepository = mockk(relaxed = true)
+        dispatcherProvider = mockk(relaxed = true)
+        every { dispatcherProvider.main } returns Dispatchers.Unconfined
         scope = TestScope()
 
         mockkObject(org.ole.planet.myplanet.utils.Utilities)
         every { org.ole.planet.myplanet.utils.Utilities.getCloudConfig() } returns mockk(relaxed = true)
 
-        voicesLabelManager = VoicesLabelManager(context, voicesRepository, scope)
+        voicesLabelManager = VoicesLabelManager(
+            context = context,
+            scope = scope,
+            dispatcherProvider = dispatcherProvider,
+            addLabelFn = mockk(relaxed = true),
+            removeLabelFn = mockk(relaxed = true)
+        )
 
         mockkConstructor(ChipCloud::class)
         every { anyConstructed<ChipCloud>().addChip(any<String>()) } answers { }

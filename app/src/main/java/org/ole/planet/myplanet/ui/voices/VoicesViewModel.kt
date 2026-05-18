@@ -79,4 +79,16 @@ class VoicesViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun addLabel(newsId: String, label: String) {
+        withContext(dispatcherProvider.io) {
+            voicesRepository.addLabel(newsId, label)
+        }
+    }
+
+    suspend fun removeLabel(newsId: String, label: String) {
+        withContext(dispatcherProvider.io) {
+            voicesRepository.removeLabel(newsId, label)
+        }
+    }
 }
