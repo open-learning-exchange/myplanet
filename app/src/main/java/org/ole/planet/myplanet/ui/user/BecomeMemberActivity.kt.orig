@@ -37,7 +37,7 @@ class BecomeMemberActivity : BaseActivity() {
     lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
+    lateinit var dispatcherProvider: DispatcherProvider
 
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
