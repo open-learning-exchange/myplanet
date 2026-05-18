@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
@@ -29,6 +27,16 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
+import android.util.Base64
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmList
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
+import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -38,7 +46,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -340,7 +348,7 @@ class CoursesRepositoryImpl @Inject constructor(
             activity.parentCode = parentCode
             activity.text = searchText
             activity.type = "courses"
-            val filter = com.google.gson.JsonObject()
+            val filter = JsonObject()
 
             filter.add("tags", RealmTag.getTagsArray(tags))
             filter.addProperty("doc.gradeLevel", grade)
@@ -473,7 +481,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val array = JsonArray()
             stepsList.forEach { step ->
-                val ob = com.google.gson.JsonObject()
+                val ob = JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
                 getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
@@ -485,7 +493,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private fun getExamObject(
         exams: Iterable<RealmStepExam>,
-        ob: com.google.gson.JsonObject,
+        ob: JsonObject,
         questionsByExamId: Map<String, List<RealmExamQuestion>>,
         submissionsByExamId: Map<String, List<RealmSubmission>>,
         answersBySubmissionId: Map<String, List<RealmAnswer>>
@@ -609,7 +617,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
+    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, JsonObject> {
         return progressRepository.getCourseProgress(userId)
     }
 
@@ -629,7 +637,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForCourses(courseIds)
     }
 
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
+    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
     }
 
@@ -709,8 +717,8 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
@@ -737,8 +745,8 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
     }
-    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertCertificationsFromSync(realm: Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
@@ -752,7 +760,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
+    override fun insertCertification(realm: Realm, doc: JsonObject) {
         val id = JsonUtils.getString("_id", doc)
         var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
         if (certification == null) {
@@ -762,79 +770,79 @@ class CoursesRepositoryImpl @Inject constructor(
         certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", doc))
     }
 
-    private fun insertMyCourse(shelfId: String, doc: JsonObject, realmTx: io.realm.Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
-        var myMyCoursesDB = realmTx.where(org.ole.planet.myplanet.model.RealmMyCourse::class.java).equalTo("id", id).findFirst()
+    private fun insertMyCourse(shelfId: String, doc: JsonObject, realmTx: Realm, spm: SharedPrefManager) {
+        val id = JsonUtils.getString("_id", doc)
+        var myMyCoursesDB = realmTx.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
         if (myMyCoursesDB == null) {
-            myMyCoursesDB = realmTx.createObject(org.ole.planet.myplanet.model.RealmMyCourse::class.java, id)
+            myMyCoursesDB = realmTx.createObject(RealmMyCourse::class.java, id)
         }
         myMyCoursesDB?.setUserId(shelfId)
-        myMyCoursesDB?.courseId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
-        myMyCoursesDB?.courseRev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", doc)
-        myMyCoursesDB?.languageOfInstruction = org.ole.planet.myplanet.utils.JsonUtils.getString("languageOfInstruction", doc)
-        myMyCoursesDB?.courseTitle = org.ole.planet.myplanet.utils.JsonUtils.getString("courseTitle", doc)
-        myMyCoursesDB?.memberLimit = org.ole.planet.myplanet.utils.JsonUtils.getInt("memberLimit", doc)
-        val description = org.ole.planet.myplanet.utils.JsonUtils.getString("description", doc)
+        myMyCoursesDB?.courseId = JsonUtils.getString("_id", doc)
+        myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", doc)
+        myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc)
+        myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", doc)
+        myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", doc)
+        val description = JsonUtils.getString("description", doc)
         myMyCoursesDB?.description = description
-        val links = org.ole.planet.myplanet.utils.DownloadUtils.extractLinks(description)
-        val baseUrl = org.ole.planet.myplanet.utils.UrlUtils.getUrl()
+        val links = extractLinks(description)
+        val baseUrl = UrlUtils.getUrl()
         for (link in links) {
-            org.ole.planet.myplanet.model.RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
+            RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
         }
-        myMyCoursesDB?.method = org.ole.planet.myplanet.utils.JsonUtils.getString("method", doc)
-        myMyCoursesDB?.gradeLevel = org.ole.planet.myplanet.utils.JsonUtils.getString("gradeLevel", doc)
-        myMyCoursesDB?.subjectLevel = org.ole.planet.myplanet.utils.JsonUtils.getString("subjectLevel", doc)
-        myMyCoursesDB?.createdDate = org.ole.planet.myplanet.utils.JsonUtils.getLong("createdDate", doc)
-        val courseStepsJsonArray = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("steps", doc)
+        myMyCoursesDB?.method = JsonUtils.getString("method", doc)
+        myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", doc)
+        myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", doc)
+        myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", doc)
+        val courseStepsJsonArray = JsonUtils.getJsonArray("steps", doc)
         val stepsSize = courseStepsJsonArray.size()
         myMyCoursesDB?.setNumberOfSteps(stepsSize)
-        val courseStepsList = mutableListOf<org.ole.planet.myplanet.model.RealmCourseStep>()
+        val courseStepsList = mutableListOf<RealmCourseStep>()
 
         for (i in 0 until stepsSize) {
             val stepElement = courseStepsJsonArray[i]
-            val stepId = android.util.Base64.encodeToString(stepElement.toString().toByteArray(), android.util.Base64.NO_WRAP)
+            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
             val stepJson = stepElement.asJsonObject
-            val step = org.ole.planet.myplanet.model.RealmCourseStep()
+            val step = RealmCourseStep()
             step.id = stepId
-            step.stepTitle = org.ole.planet.myplanet.utils.JsonUtils.getString("stepTitle", stepJson)
-            val stepDescription = org.ole.planet.myplanet.utils.JsonUtils.getString("description", stepJson)
+            step.stepTitle = JsonUtils.getString("stepTitle", stepJson)
+            val stepDescription = JsonUtils.getString("description", stepJson)
             step.description = stepDescription
-            val stepLinks = org.ole.planet.myplanet.utils.DownloadUtils.extractLinks(stepDescription)
+            val stepLinks = extractLinks(stepDescription)
             for (stepLink in stepLinks) {
-                org.ole.planet.myplanet.model.RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
+                RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
             }
-            insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
+            insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
             insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId)
             insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate)
-            step.noOfResources = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("resources", stepJson).size()
+            step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
             step.courseId = myMyCoursesDB?.courseId
             courseStepsList.add(step)
         }
-        myMyCoursesDB?.courseSteps = io.realm.RealmList()
+        myMyCoursesDB?.courseSteps = RealmList()
         myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
     }
 
-    private fun insertExam(stepContainer: com.google.gson.JsonObject, mRealm: io.realm.Realm, stepId: String, i: Int, myCoursesID: String?) {
+    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
         if (stepContainer.has("exam")) {
             val obj = stepContainer.getAsJsonObject("exam")
             obj.addProperty("stepNumber", i)
-            org.ole.planet.myplanet.model.RealmStepExam.insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
+            insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
         }
     }
 
-    private fun insertSurvey(stepContainer: com.google.gson.JsonObject, mRealm: io.realm.Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
+    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
         if (stepContainer.has("survey")) {
             val obj = stepContainer.getAsJsonObject("survey")
             obj.addProperty("stepNumber", i)
             obj.addProperty("createdDate", createdDate)
-            org.ole.planet.myplanet.model.RealmStepExam.insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
+            insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
         }
     }
 
-    private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: com.google.gson.JsonArray, mRealm: io.realm.Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
+    private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
         resources.forEach { resource ->
             if (mRealm != null) {
-                org.ole.planet.myplanet.model.RealmMyLibrary.createStepResource(mRealm, resource.asJsonObject, myCoursesID, stepId, spm)
+                createStepResource(mRealm, resource.asJsonObject, myCoursesID, stepId, spm)
             }
         }
     }

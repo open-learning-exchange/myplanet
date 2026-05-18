@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
@@ -9,12 +8,8 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.UrlUtils
 
 open class RealmMyCourse : RealmObject() {
     @PrimaryKey
