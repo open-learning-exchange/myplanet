@@ -8,7 +8,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 
 interface ResourcesRepository {
-    suspend fun markResourceUploaded(libraryId: String, id: String, rev: String)
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?

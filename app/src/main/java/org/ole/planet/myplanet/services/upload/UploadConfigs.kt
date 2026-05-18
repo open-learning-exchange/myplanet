@@ -237,36 +237,36 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-        val Resources = UploadConfig(
-        modelClass = RealmMyLibrary::class,
-        endpoint = "resources",
-        queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.AsyncContext { library, _ ->
-            val user = userRepository.getUserModelSuspending()
-            RealmMyLibrary.serialize(library, user)
-        },
-        idExtractor = { it.id },
-        additionalUpdates = { realm, library, uploadedItem ->
-            val user = realm.where(RealmUser::class.java).findFirst()
-            val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                ?: sharedPrefManager.getPlanetCode()
+    fun getResourcesConfig(user: RealmUser?): UploadConfig<RealmMyLibrary> {
+        return UploadConfig(
+            modelClass = RealmMyLibrary::class,
+            endpoint = "resources",
+            queryBuilder = { query -> query.isNull("_rev") },
+            serializer = UploadSerializer.Simple { library ->
+                RealmMyLibrary.serialize(library, user)
+            },
+            idExtractor = { it.id },
+            additionalUpdates = { realm, library, uploadedItem ->
+                val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                    ?: sharedPrefManager.getPlanetCode()
 
-            if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
-                val teamResource = realm.createObject(
-                    RealmMyTeam::class.java,
-                    UUID.randomUUID().toString()
-                )
-                teamResource.teamId = library.privateFor
-                teamResource.title = library.title
-                teamResource.resourceId = uploadedItem.remoteId
-                teamResource.docType = "resourceLink"
-                teamResource.updated = true
-                teamResource.teamType = "local"
-                teamResource.teamPlanetCode = planetCode
-                teamResource.sourcePlanet = planetCode
+                if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
+                    val teamResource = realm.createObject(
+                        RealmMyTeam::class.java,
+                        UUID.randomUUID().toString()
+                    )
+                    teamResource.teamId = library.privateFor
+                    teamResource.title = library.title
+                    teamResource.resourceId = uploadedItem.remoteId
+                    teamResource.docType = "resourceLink"
+                    teamResource.updated = true
+                    teamResource.teamType = "local"
+                    teamResource.teamPlanetCode = planetCode
+                    teamResource.sourcePlanet = planetCode
+                }
             }
-        }
-    )
+        )
+    }
 
     val Rating = UploadConfig(
         modelClass = RealmRating::class,

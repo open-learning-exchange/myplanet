@@ -45,13 +45,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
-    override suspend fun markResourceUploaded(libraryId: String, id: String, rev: String) {
-        update(RealmMyLibrary::class.java, "id", libraryId) { library ->
-            library._id = id
-            library._rev = rev
-        }
-    }
-
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java)
     }

@@ -197,10 +197,10 @@ class UploadManager @Inject constructor(
             notifyListener(listener, it)
         }
     }
-
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
-            val result = uploadCoordinator.upload(uploadConfigs.Resources)
+            val user = userRepository.getUserModelSuspending()
+            val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
                 is org.ole.planet.myplanet.services.upload.UploadResult.Success -> {
