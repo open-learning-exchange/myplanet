@@ -6,7 +6,12 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.ResourceListModel
+
+data class LibraryWithMetadata(
+    val library: RealmMyLibrary,
+    val rating: JsonObject?,
+    val tags: List<RealmTag>
+)
 
 data class ResourceUploadData(
     val libraryId: String?,
@@ -85,7 +90,7 @@ interface ResourcesRepository {
     suspend fun getResourceTags(resourceId: String): List<RealmTag>
     suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
     suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
-    suspend fun getEnrichedLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
+    suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
 }
 
 sealed class ResourceUrlsResponse {

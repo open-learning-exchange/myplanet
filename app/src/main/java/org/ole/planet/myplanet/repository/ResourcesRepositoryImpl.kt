@@ -28,9 +28,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.ResourceItem
-import org.ole.planet.myplanet.model.ResourceListModel
-import org.ole.planet.myplanet.model.TagItem
+import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -657,12 +655,12 @@ class ResourcesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForResources(ids)
     }
 
-    override suspend fun getEnrichedLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
+    override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else {
             getAllLibraryItems().filter {
-                !it.isPrivate && it.userId?.contains(modelId) == false
+                it.userId?.contains(modelId) == false
             }
         }
 
@@ -673,22 +671,9 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         return allLibraryItems.map { library ->
             val resourceId = library.resourceId ?: library.id
-            val item = ResourceItem(
-                id = library.id,
-                title = library.title,
-                description = library.description,
-                createdDate = library.createdDate,
-                averageRating = library.averageRating,
-                timesRated = library.timesRated,
-                resourceId = library.resourceId,
-                isOffline = library.isResourceOffline(),
-                _rev = library._rev,
-                uploadDate = library.uploadDate,
-                filename = library.filename
-            )
             val rating = resourceId?.let { map[it] }
-            val tags = resourceId?.let { tagsMap[it]?.map { tag -> TagItem(tag.id, tag.name) } } ?: emptyList()
-            ResourceListModel(library, item, rating, tags)
+            val tags = resourceId?.let { tagsMap[it] } ?: emptyList()
+            LibraryWithMetadata(library, rating, tags)
         }
     }
 
