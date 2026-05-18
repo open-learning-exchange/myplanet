@@ -195,6 +195,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     }
 
     private fun updateSelectionState() {
+        if (_binding == null) return
         val checkedCount = items.count { it.isChecked }
         val allChecked = checkedCount == items.size && items.isNotEmpty()
 
@@ -219,6 +220,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     }
 
     private fun deleteItems(toDelete: List<ResourceItem>) {
+        if (_binding == null) return
         binding.deleteSelectedButton.isEnabled = false
         binding.deleteAllButton.isEnabled = false
 
