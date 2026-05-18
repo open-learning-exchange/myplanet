@@ -184,6 +184,10 @@ class ProgressRepositoryImplTest {
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
 
         coEvery {
+            repository["queryList"](RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
+        } returns steps
+
+        coEvery {
             repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
         } returns listOf(RealmCourseProgress().apply {
             stepNum = 1

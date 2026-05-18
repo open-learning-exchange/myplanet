@@ -55,7 +55,8 @@ class ProgressRepositoryImpl @Inject constructor(
     override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(dispatcherProvider.io) {
         val mycourses = coursesRepositoryLazy.get().getMyCourses(userId ?: "")
         val arr = JsonArray()
-        val courseProgress = getCourseProgressMap(userId, mycourses)
+        val courseIds = mycourses.mapNotNull { it.courseId }
+        val courseProgress = getCourseProgressMap(userId, courseIds)
         mycourses.forEach { course ->
             val obj = JsonObject()
             obj.addProperty("courseName", course.courseTitle)
@@ -112,25 +113,30 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getCourseProgressMap(
-        userId: String?, mycourses: List<org.ole.planet.myplanet.model.RealmMyCourse>
+        userId: String?, courseIds: List<String>
     ): HashMap<String?, JsonObject> {
-        val courseIds = mycourses.mapNotNull { it.courseId }.toTypedArray()
-        val allProgresses = if (courseIds.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
-            equalTo("userId", userId)
-            `in`("courseId", courseIds)
+        val courseIdsArray = courseIds.toTypedArray()
+        val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
+            `in`("courseId", courseIdsArray)
         }
+        val allProgresses = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
+            equalTo("userId", userId)
+            `in`("courseId", courseIdsArray)
+        }
+
+        val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
 
         val map = HashMap<String?, JsonObject>()
-        for (course in mycourses) {
+        for (courseId in courseIds) {
             val progressObject = JsonObject()
-            val steps = course.courseSteps ?: emptyList()
-            val progresses = progressesByCourseId[course.courseId] ?: emptyList()
+            val steps = stepsByCourseId[courseId] ?: emptyList()
+            val progresses = progressesByCourseId[courseId] ?: emptyList()
             progressObject.addProperty("max", steps.size)
             progressObject.addProperty(
                 "current", calculateCurrentProgress(steps, progresses)
             )
-            map[course.courseId] = progressObject
+            map[courseId] = progressObject
         }
         return map
     }
