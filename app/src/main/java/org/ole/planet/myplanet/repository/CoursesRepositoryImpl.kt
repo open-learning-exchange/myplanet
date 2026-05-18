@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsEx
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.model.CourseProgressData
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -410,7 +411,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }.isNotEmpty()
     }
 
-    override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData {
+    override suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData {
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         return withRealm { realm ->
@@ -487,7 +488,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
                 array.add(ob)
             }
-            org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
+            CourseProgressData(title, current, max, array)
         }
     }
 
