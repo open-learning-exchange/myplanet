@@ -119,6 +119,14 @@
                         android:visibility="gone" />
                 </LinearLayout>
 
+                <ProgressBar
+                    android:id="@+id/course_step_progress_bar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:progress="0"
+                    android:progressTint="@color/colorAccent" />
+
                 <androidx.viewpager2.widget.ViewPager2
                     android:id="@+id/viewPager2"
                     android:layout_width="match_parent"
