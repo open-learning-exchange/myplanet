@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/resource_viewer_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <FrameLayout
+        android:id="@+id/viewer_container"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <ViewStub
+            android:id="@+id/stub_video"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout="@layout/viewer_video" />
+
+        <ViewStub
+            android:id="@+id/stub_audio"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout="@layout/viewer_audio" />
+
+        <ViewStub
+            android:id="@+id/stub_pdf"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout="@layout/viewer_pdf" />
+
+        <ViewStub
+            android:id="@+id/stub_image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout="@layout/viewer_image" />
+
+        <ViewStub
+            android:id="@+id/stub_text"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout="@layout/viewer_text" />
+    </FrameLayout>
+
+    <com.github.clans.fab.FloatingActionMenu
+        android:id="@+id/fab_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/padding_large"
+        android:visibility="gone">
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_record"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_mic"
+            android:contentDescription="@string/record_audio"
+            app:fab_label="Record Audio" />
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_play"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play_white"
+            android:contentDescription="@string/play_audio"
+            app:fab_label="Play Audio" />
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_read_aloud"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play"
+            android:contentDescription="@string/read_aloud"
+            app:fab_label="Read Aloud" />
+    </com.github.clans.fab.FloatingActionMenu>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
