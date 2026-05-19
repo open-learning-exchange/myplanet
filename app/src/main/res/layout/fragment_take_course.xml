@@ -89,7 +89,6 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/colorPrimary"
-                    android:gravity="center"
                     android:orientation="horizontal"
                     android:padding="8dp">
 
@@ -104,6 +103,10 @@
                         android:text="@string/previous"
                         android:textColor="@color/md_white_1000"
                         app:drawableLeftCompat="@drawable/ic_left_arrow" />
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1" />
                     <TextView
                         android:id="@+id/next_step"
                         android:layout_width="wrap_content"
