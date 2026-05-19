@@ -36,7 +36,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -77,6 +76,7 @@ import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -160,7 +160,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
 
                 is SyncManager.SyncStatus.Syncing -> {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         val s = status
                         if (s.phase.isEmpty()) {
                             onSyncStarted()
@@ -181,14 +181,14 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 is SyncManager.SyncStatus.Success -> {
                     syncManager.resetSyncStatus()
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         onSyncComplete()
                     }
                 }
 
                 is SyncManager.SyncStatus.Error -> {
                     syncManager.resetSyncStatus()
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         onSyncFailed(status.message)
                     }
                 }
@@ -464,7 +464,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private suspend fun onSyncStarted() {
-        withContext(Dispatchers.Main) {
+        withContext(dispatcherProvider.main) {
             customProgressDialog.resetSyncProgress()
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
@@ -473,7 +473,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private suspend fun onSyncFailed(msg: String?) {
-        withContext(Dispatchers.Main) {
+        withContext(dispatcherProvider.main) {
             if (isProgressDialogShowing) {
                 customProgressDialog.dismiss()
             }
@@ -506,7 +506,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
             }
 
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 forceSyncTrigger()
                     val syncedUrl = prefData.getServerUrl().takeIf { it.isNotEmpty() }?.let { ServerConfigUtils.removeProtocol(it) }
                     if (
@@ -533,7 +533,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     lifecycleScope.launch(dispatcherProvider.io) {
                         val pendingLanguage = prefData.getPendingLanguageChange()
                         if (pendingLanguage != null) {
-                            withContext(Dispatchers.Main) {
+                            withContext(dispatcherProvider.main) {
                                 prefData.setPendingLanguageChange(null)
 
                                 LocaleUtils.setLocale(this@SyncActivity, pendingLanguage)
@@ -662,7 +662,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                     MainApplication.applicationScope.launch {
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
-                            withContext(Dispatchers.Main) {
+                            withContext(dispatcherProvider.main) {
                                 startUpload("login")
                             }
                             transactionSyncManager.syncDb("login_activities")
