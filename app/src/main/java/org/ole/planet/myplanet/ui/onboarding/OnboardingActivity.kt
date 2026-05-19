@@ -11,7 +11,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -21,6 +20,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -34,6 +34,8 @@ class OnboardingActivity : AppCompatActivity() {
     private lateinit var dots: Array<ImageView?>
     @Inject
     lateinit var prefData: SharedPrefManager
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,7 +61,7 @@ class OnboardingActivity : AppCompatActivity() {
         }
 
         lifecycleScope.launch {
-            val (savedUser, savedPass) = withContext(Dispatchers.IO) {
+            val (savedUser, savedPass) = withContext(dispatcherProvider.io) {
                 Pair(
                     SecurePrefs.getUserName(this@OnboardingActivity, prefData.rawPreferences),
                     SecurePrefs.getPassword(this@OnboardingActivity, prefData.rawPreferences)
