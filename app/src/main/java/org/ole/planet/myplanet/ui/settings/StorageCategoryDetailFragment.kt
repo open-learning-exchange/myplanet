@@ -18,13 +18,13 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
@@ -35,6 +35,9 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     private var categoryLabel: String = ""
     private var extensions: Set<String> = emptySet()
@@ -139,7 +142,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.selectAllDivider.visibility = View.GONE
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val loaded = withContext(Dispatchers.IO) { buildResourceItems() }
+            val loaded = withContext(dispatcherProvider.io) { buildResourceItems() }
             binding.progressBar.visibility = View.GONE
 
             if (loaded.isEmpty()) {
@@ -218,7 +221,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.deleteAllButton.isEnabled = false
 
         viewLifecycleOwner.lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 val oleDir = File(FileUtils.getOlePath(requireContext()))
 
                 toDelete.forEach { item ->
