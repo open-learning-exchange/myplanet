@@ -1280,6 +1280,13 @@
     <string name="enterprise_reports">इन्टरप्राइज रिपोर्टहरू</string>
     <string name="label_add_references">तल कुनै पनि सन्दर्भहरू थप्नुहोस्</string>
     <string name="link">लिङ्क</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">सर्भर URL कन्फिगर गरिएको छैन</string>
+    <string name="welcome_back">फेरि स्वागत छ</string>
+    <string name="welcome_new">स्वागत छ</string>
+    <string name="sign_in_to_continue">जारी राख्न साइन इन गर्नुहोस्</string>
+    <string name="sign_in_to_get_started">सुरु गर्न साइन इन गर्नुहोस्</string>
+    <string name="sync_chip_synced">सिङ्क भयो</string>
+    <string name="sync_chip_syncing">सिङ्क हुँदैछ…</string>
+    <string name="sync_chip_offline">अफलाइन</string>
 
 </resources>

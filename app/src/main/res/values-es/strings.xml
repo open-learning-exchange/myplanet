@@ -1283,6 +1283,13 @@
     <string name="enterprise_reports">Informes empresariales</string>
     <string name="label_add_references">Añada referencias abajo</string>
     <string name="link">Enlace</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">URL del servidor no configurada</string>
+    <string name="welcome_back">Bienvenido de nuevo</string>
+    <string name="welcome_new">Bienvenido</string>
+    <string name="sign_in_to_continue">Inicia sesión para continuar</string>
+    <string name="sign_in_to_get_started">Inicia sesión para comenzar</string>
+    <string name="sync_chip_synced">Sincronizado</string>
+    <string name="sync_chip_syncing">Sincronizando…</string>
+    <string name="sync_chip_offline">Sin conexión</string>
 
 </resources>
