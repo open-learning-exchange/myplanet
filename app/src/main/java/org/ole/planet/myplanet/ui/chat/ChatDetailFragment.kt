@@ -67,6 +67,13 @@ class ChatDetailFragment : Fragment() {
     private var isAiUnavailable = false
     private var newsId: String? = null
     private var loadingJob: Job? = null
+    private var courseTitle: String? = null
+    private var stepTitle: String? = null
+    private var stepDescription: String? = null
+    private var stepNumber: Int = 0
+    private var selectedText: String? = null
+    private var hasCourseContext = false
+    private var contextIncluded = false
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
@@ -81,6 +88,12 @@ class ChatDetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        courseTitle = arguments?.getString(ARG_COURSE_TITLE)
+        stepTitle = arguments?.getString(ARG_STEP_TITLE)
+        stepDescription = arguments?.getString(ARG_STEP_DESCRIPTION)
+        stepNumber = arguments?.getInt(ARG_STEP_NUMBER, 0) ?: 0
+        selectedText = arguments?.getString(ARG_SELECTED_TEXT)
+        hasCourseContext = !courseTitle.isNullOrBlank() || !stepTitle.isNullOrBlank()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -91,6 +104,9 @@ class ChatDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (hasCourseContext) {
+            sharedViewModel.clearChatState()
+        }
         initChatComponents()
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
@@ -104,6 +120,15 @@ class ChatDetailFragment : Fragment() {
             observeViewModelData()
         }
         view.post { clearChatDetail() }
+        if (hasCourseContext) {
+            binding.courseContextBanner.visibility = View.VISIBLE
+            binding.courseContextBanner.text = buildBannerText()
+        }
+        val prefill = selectedText
+        if (!prefill.isNullOrBlank()) {
+            binding.editGchatMessage.setText(prefill)
+            binding.editGchatMessage.setSelection(prefill.length)
+        }
     }
 
     private fun initChatComponents() {
@@ -451,9 +476,15 @@ class ChatDetailFragment : Fragment() {
     private fun launchNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         disableUI()
         val mapping = processServerUrl()
+        val contextualQuery = if (hasCourseContext && !contextIncluded) {
+            contextIncluded = true
+            buildContextPrefix() + query
+        } else {
+            query
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            sendNewChatRequest(query, userName, aiProvider)
+            sendNewChatRequest(contextualQuery, userName, aiProvider)
         }
     }
 
@@ -662,5 +693,38 @@ class ChatDetailFragment : Fragment() {
         loadingJob?.cancel()
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun buildContextPrefix(): String {
+        val sb = StringBuilder("[Context: ")
+        if (!courseTitle.isNullOrBlank()) sb.append("Course \"$courseTitle\"")
+        if (stepNumber > 0) sb.append(", Step $stepNumber")
+        if (!stepTitle.isNullOrBlank()) sb.append(": \"$stepTitle\"")
+        if (!selectedText.isNullOrBlank()) {
+            val passage = selectedText!!.take(300)
+            sb.append(". Highlighted passage: \"$passage${if (selectedText!!.length > 300) "..." else ""}\"")
+        } else if (!stepDescription.isNullOrBlank()) {
+            val desc = stepDescription!!.take(400)
+            sb.append(". Content: $desc${if (stepDescription!!.length > 400) "..." else ""}")
+        }
+        sb.append("]\n\n")
+        return sb.toString()
+    }
+
+    private fun buildBannerText(): String {
+        val label = when {
+            stepNumber > 0 && !stepTitle.isNullOrBlank() -> "Step $stepNumber: $stepTitle"
+            !stepTitle.isNullOrBlank() -> stepTitle!!
+            else -> courseTitle ?: ""
+        }
+        return getString(R.string.course_context_banner, label)
+    }
+
+    companion object {
+        const val ARG_COURSE_TITLE = "course_title"
+        const val ARG_STEP_TITLE = "step_title"
+        const val ARG_STEP_DESCRIPTION = "step_description"
+        const val ARG_STEP_NUMBER = "step_number"
+        const val ARG_SELECTED_TEXT = "selected_text"
     }
 }

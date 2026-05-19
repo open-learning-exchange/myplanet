@@ -35,6 +35,20 @@
             android:orientation="horizontal" />
     </LinearLayout>
 
+    <TextView
+        android:id="@+id/course_context_banner"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="6dp"
+        android:textSize="13sp"
+        android:background="@color/daynight_grey"
+        android:textColor="@color/daynight_textColor"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_gchat"
         android:layout_width="0dp"
@@ -47,7 +61,7 @@
         app:layout_constraintBottom_toTopOf="@+id/text_gchat_indicator"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
+        app:layout_constraintTop_toBottomOf="@+id/course_context_banner" />
     <TextView
         android:id="@+id/text_gchat_indicator"
         android:layout_width="wrap_content"
