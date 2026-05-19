@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration as WorkManagerConfiguration
@@ -95,6 +96,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             .build()
 
     companion object {
+        const val TAG = "ChatUrlSwitch"
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
@@ -154,17 +156,22 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
         suspend fun isServerReachable(
             urlString: String,
-            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
+            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO,
+            tryAlternatives: Boolean = true
         ): Boolean {
             if (urlString.isBlank()) return false
-            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-            val serverUrlMapper = entryPoint.serverUrlMapper()
-            val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
-            mapping.alternativeUrl?.let { urlsToTry.add(it) }
+            if (tryAlternatives) {
+                val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+                val serverUrlMapper = entryPoint.serverUrlMapper()
+                val mapping = serverUrlMapper.processUrl(urlString)
+                mapping.alternativeUrl?.let { urlsToTry.add(it) }
+            }
+            Log.d(TAG, "isServerReachable: checking urls=$urlsToTry tryAlternatives=$tryAlternatives")
 
             for (url in urlsToTry) {
                 val reachable = tryConnect(url, ioDispatcher)
+                Log.d(TAG, "isServerReachable: tryConnect('$url') -> $reachable")
                 if (reachable) return true
             }
             return false
@@ -195,8 +202,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         TrafficStats.clearThreadStatsTag()
                     }
                 }
+                Log.d(TAG, "tryConnect: '$formattedUrl' -> HTTP $responseCode")
                 responseCode in 200..299
             } catch (e: Exception) {
+                Log.d(TAG, "tryConnect: '$urlString' -> exception: ${e.message}")
                 false
             }
         }

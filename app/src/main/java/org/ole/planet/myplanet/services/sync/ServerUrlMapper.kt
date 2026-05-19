@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
 import android.net.Uri
+import android.util.Log
 import androidx.core.net.toUri
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.MainApplication
 
 @Singleton
 class ServerUrlMapper @Inject constructor() {
@@ -23,11 +25,11 @@ class ServerUrlMapper @Inject constructor() {
 
     private fun extractBaseUrl(url: String): String? {
         return try {
-            val uri = url.toUri()
-            val baseUrl = "${uri.scheme}://${uri.authority}"
-            baseUrl
+            val normalized = if (url.contains("://")) url else "http://$url"
+            val uri = normalized.toUri()
+            "${uri.scheme}://${uri.host}"
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(MainApplication.TAG, "extractBaseUrl failed for '$url': ${e.message}")
             null
         }
     }
@@ -38,7 +40,7 @@ class ServerUrlMapper @Inject constructor() {
             val mappedUrl = serverMappings[baseUrl]
             mappedUrl
         }
-
+        Log.d(MainApplication.TAG, "processUrl: input='$url' extractedBase='$extractedUrl' alternative='$alternativeUrl'")
         val result = UrlMapping(url, alternativeUrl, extractedUrl)
         return result
     }
@@ -88,14 +90,20 @@ class ServerUrlMapper @Inject constructor() {
         settings: SharedPreferences,
         isServerReachable: suspend (String) -> Boolean
     ) {
+        Log.d(MainApplication.TAG, "updateServerIfNecessary: checking primary='${mapping.primaryUrl}' alternative='${mapping.alternativeUrl}'")
         val primaryAvailable = isServerReachable(mapping.primaryUrl)
+        Log.d(MainApplication.TAG, "updateServerIfNecessary: primaryAvailable=$primaryAvailable")
         val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        Log.d(MainApplication.TAG, "updateServerIfNecessary: alternativeAvailable=$alternativeAvailable")
 
         if (!primaryAvailable && alternativeAvailable) {
+            Log.d(MainApplication.TAG, "updateServerIfNecessary: switching to alternative '${mapping.alternativeUrl}'")
             mapping.alternativeUrl.let { alternativeUrl ->
                 val editor = settings.edit()
                 updateUrlPreferences(editor, mapping.primaryUrl.toUri(), alternativeUrl, mapping.primaryUrl, settings)
             }
+        } else {
+            Log.d(MainApplication.TAG, "updateServerIfNecessary: no switch (primary=$primaryAvailable, alternative=$alternativeAvailable)")
         }
     }
 

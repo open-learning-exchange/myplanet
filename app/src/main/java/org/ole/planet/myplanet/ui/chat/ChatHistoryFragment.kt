@@ -19,6 +19,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
@@ -76,7 +77,7 @@ class ChatHistoryFragment : Fragment() {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
-        get() = sharedPrefManager.getServerUrl()
+        get() = UrlUtils.hostUrl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -239,7 +240,7 @@ class ChatHistoryFragment : Fragment() {
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
         serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
+            isServerReachable(url, tryAlternatives = false)
         }
     }
 
@@ -361,7 +362,7 @@ class ChatHistoryFragment : Fragment() {
         sharedViewModel.setAiProvidersError(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
+            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url, tryAlternatives = false) }
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 sharedViewModel.setAiProvidersError(true)

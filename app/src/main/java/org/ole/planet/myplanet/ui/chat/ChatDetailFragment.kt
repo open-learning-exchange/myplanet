@@ -33,6 +33,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
@@ -48,6 +49,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
 @AndroidEntryPoint
@@ -77,7 +79,7 @@ class ChatDetailFragment : Fragment() {
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
     private val serverUrl: String
-        get() = sharedPrefManager.getServerUrl()
+        get() = UrlUtils.hostUrl
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -341,7 +343,7 @@ class ChatDetailFragment : Fragment() {
         sharedViewModel.setAiProvidersError(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
+            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url, tryAlternatives = false) }
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 val cachedProviders = getCachedProviderAvailability()
@@ -449,19 +451,23 @@ class ChatDetailFragment : Fragment() {
     }
 
     private fun launchNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
+        android.util.Log.d(MainApplication.TAG, "launchNewChatRequest: hostUrl=${serverUrl} provider=${aiProvider.name}")
         disableUI()
         val mapping = processServerUrl()
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
+            android.util.Log.d(MainApplication.TAG, "launchNewChatRequest: post-switch hostUrl=${serverUrl}")
             sendNewChatRequest(query, userName, aiProvider)
         }
     }
 
     private fun launchContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
+        android.util.Log.d(MainApplication.TAG, "launchContinueChatRequest: hostUrl=${serverUrl} id=$id provider=${aiProvider.name}")
         disableUI()
         val mapping = processServerUrl()
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
+            android.util.Log.d(MainApplication.TAG, "launchContinueChatRequest: post-switch hostUrl=${serverUrl}")
             sendContinueChatRequest(query, userName, aiProvider, id, rev)
         }
     }
@@ -494,7 +500,7 @@ class ChatDetailFragment : Fragment() {
 
     private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
         serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
+            isServerReachable(url, tryAlternatives = false)
         }
     }
 
@@ -528,10 +534,13 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         viewLifecycleOwner.lifecycleScope.launch {
+            android.util.Log.d(MainApplication.TAG, "sendNewChatRequest: firing to hostUrl=${UrlUtils.hostUrl}")
             try {
                 val response = chatRepository.sendNewChatRequest(query, userName, aiProvider)
+                android.util.Log.d(MainApplication.TAG, "sendNewChatRequest: response code=${response.code()} success=${response}")
                 handleResponse(response, query, null)
             } catch (t: Exception) {
+                android.util.Log.e(MainApplication.TAG, "sendNewChatRequest: exception: ${t.message}")
                 handleFailure(t.message, query, null)
             }
         }
@@ -539,10 +548,13 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
         viewLifecycleOwner.lifecycleScope.launch {
+            android.util.Log.d(MainApplication.TAG, "sendContinueChatRequest: firing to hostUrl=${UrlUtils.hostUrl} id=$id")
             try {
                 val response = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+                android.util.Log.d(MainApplication.TAG, "sendContinueChatRequest: response code=${response.code()} success=${response}")
                 handleResponse(response, query, id)
             } catch (t: Exception) {
+                android.util.Log.e(MainApplication.TAG, "sendContinueChatRequest: exception: ${t.message}")
                 handleFailure(t.message, query, id)
             }
         }
