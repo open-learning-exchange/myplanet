@@ -97,6 +97,8 @@
     <string name="settings">الإعدادات</string>
     <string name="edit_profile">تحرير الملف الشخصي</string>
     <string name="profile">الملف الشخصي</string>
+    <string name="mic_button_content_description">تحويل الكلام إلى نص</string>
+    <string name="voice_to_text">جاري تحويل الصوت إلى نص...</string>
     <string name="user">مستخدم</string>
     <string name="remove_selected">إزالة المحدد</string>
     <string name="stop_download">إيقاف التنزيل</string>
