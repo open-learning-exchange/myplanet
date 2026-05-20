@@ -85,7 +85,6 @@
                     android:layout_height="4dp"
                     android:progress="0"
                     android:progressTint="@color/colorAccent" />
-
                 <androidx.core.widget.NestedScrollView
                     android:id="@+id/container"
                     android:layout_width="match_parent"
