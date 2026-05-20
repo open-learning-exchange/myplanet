@@ -9,4 +9,5 @@ interface EventsRepository {
     suspend fun getMeetupById(meetupId: String): RealmMeetup?
     suspend fun getJoinedMembers(meetupId: String): List<RealmUser>
     suspend fun toggleAttendance(meetupId: String, currentUserId: String?): RealmMeetup?
+    suspend fun batchInsertMeetups(documents: List<com.google.gson.JsonObject>): Int
 }

@@ -45,6 +45,10 @@
             app:itemTextColor="@drawable/drawable_nav_color"
             app:menu="@menu/menu_topbar" />
         <FrameLayout
+            android:id="@+id/banner_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <FrameLayout
             android:id="@+id/fragment_container"
             android:layout_width="match_parent"
             android:layout_height="0dp"

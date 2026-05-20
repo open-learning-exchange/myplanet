@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
@@ -29,6 +30,7 @@ interface CoursesRepository {
     suspend fun getCourseSteps(courseId: String): List<RealmCourseStep>
     suspend fun getCourseStepIds(courseId: String): List<String?>
     suspend fun markCourseAdded(courseId: String, userId: String?): Result<Boolean>
+    suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean>
     suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>

@@ -9,8 +9,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequest
-import androidx.work.PeriodicWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
@@ -90,7 +90,7 @@ class RetryQueueWorker @AssistedInject constructor(
     }
 
     override suspend fun doWork(): Result {
-        if (MainApplication.isSyncRunning) {
+        if (MainApplication.isSyncRunning.get()) {
             Log.d(TAG, "Sync is running, skipping retry processing")
             return Result.success()
         }
@@ -120,7 +120,7 @@ class RetryQueueWorker @AssistedInject constructor(
             withTimeout(5 * 60 * 1000L) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
                     // Check if sync started while we're processing
-                    if (MainApplication.isSyncRunning) {
+                    if (MainApplication.isSyncRunning.get()) {
                         Log.d(TAG, "Sync started, pausing retry processing")
                         return@withTimeout
                     }

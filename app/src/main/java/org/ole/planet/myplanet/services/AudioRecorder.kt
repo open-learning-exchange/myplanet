@@ -142,7 +142,6 @@ class AudioRecorder {
             toggleRecording()
         } else {
             permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-            println(permissionLauncher)
         }
     }
 

@@ -28,22 +28,11 @@ sealed interface CourseDetailUiState {
         val examCount: Int,
         val resources: List<RealmMyLibrary>,
         val downloadedResources: List<RealmMyLibrary>,
-        val stepItems: List<StepItem>,
         val ratingSummary: JsonObject?,
         val user: RealmUser?
     ) : CourseDetailUiState
     data class Error(val message: String) : CourseDetailUiState
 }
-
-private data class CourseDetailData(
-    val course: RealmMyCourse,
-    val examCount: Int,
-    val resources: List<RealmMyLibrary>,
-    val downloadedResources: List<RealmMyLibrary>,
-    val stepItems: List<StepItem>,
-    val ratingSummaryObject: JsonObject?,
-    val user: RealmUser?
-)
 
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
@@ -56,6 +45,9 @@ class CourseDetailViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
     val uiState: StateFlow<CourseDetailUiState> = _uiState
+
+    private val _stepItems = MutableStateFlow<List<StepItem>>(emptyList())
+    val stepItems: StateFlow<List<StepItem>> = _stepItems
 
     private var loadJob: kotlinx.coroutines.Job? = null
 
@@ -85,6 +77,7 @@ class CourseDetailViewModel @Inject constructor(
                                 questionCount = count
                             )
                         }
+                        _stepItems.value = stepItems
 
                         var ratingSummaryObject: JsonObject? = null
                         val userId = user?.id
@@ -102,7 +95,6 @@ class CourseDetailViewModel @Inject constructor(
                             examCount = examCount,
                             resources = resources,
                             downloadedResources = downloadedResources,
-                            stepItems = stepItems,
                             ratingSummary = ratingSummaryObject,
                             user = user
                         )
@@ -114,6 +106,16 @@ class CourseDetailViewModel @Inject constructor(
                 .collect { state ->
                     _uiState.value = state
                 }
+        }
+    }
+
+    fun toggleStepDescription(stepId: String) {
+        _stepItems.value = _stepItems.value.map { step ->
+            if (step.id == stepId) {
+                step.copy(isDescriptionVisible = !step.isDescriptionVisible)
+            } else {
+                if (step.isDescriptionVisible) step.copy(isDescriptionVisible = false) else step
+            }
         }
     }
 
