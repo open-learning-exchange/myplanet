@@ -688,7 +688,7 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    saveKeyIv(apiInterface, userModel, obj)
+                    saveKeyIv(userModel, obj)
                 } catch (_: Exception) { }
                 Result.success(userModel)
             } else {
@@ -724,7 +724,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveKeyIv(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject) {
+    override suspend fun saveKeyIv(model: RealmUser, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -773,7 +773,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun replacedUrl(model: RealmUser): String {
+    private fun replacedUrl(model: RealmUser): String {
         val url = UrlUtils.getUrl()
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
@@ -782,7 +782,7 @@ class UserRepositoryImpl @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    override suspend fun checkIfUserExists(apiInterface: ApiInterface, header: String, model: RealmUser): Boolean {
+    override suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean {
         try {
             val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
             val exists = res.body() != null
@@ -793,7 +793,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun processUserAfterCreation(apiInterface: ApiInterface, model: RealmUser, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
+    override suspend fun processUserAfterCreation(model: RealmUser, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -820,7 +820,7 @@ class UserRepositoryImpl @Inject constructor(
                     iterations
                 )
 
-                saveKeyIv(apiInterface, model, obj)
+                saveKeyIv(model, obj)
 
                 updateHealthFn(model.id ?: "", model._id ?: "")
             }
@@ -829,7 +829,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun uploadNewUser(apiInterface: ApiInterface, model: RealmUser, updateHealthFn: suspend (String, String) -> Unit) {
+    override suspend fun uploadNewUser(model: RealmUser, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val obj = model.serialize()
             val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
@@ -843,14 +843,14 @@ class UserRepositoryImpl @Inject constructor(
                 // Persist _id and _rev to database
                 markUserUploaded(model.id ?: "", id ?: "", rev ?: "")
 
-                processUserAfterCreation(apiInterface, model, obj, updateHealthFn)
+                processUserAfterCreation(model, obj, updateHealthFn)
             }
         } catch (e: Exception) {
             e.printStackTrace()
         }
     }
 
-    override suspend fun updateExistingUser(apiInterface: ApiInterface, header: String, model: RealmUser) {
+    override suspend fun updateExistingUser(header: String, model: RealmUser) {
         try {
             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
