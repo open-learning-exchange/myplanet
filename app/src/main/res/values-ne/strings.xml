@@ -97,6 +97,8 @@
     <string name="settings">सेटिङ्स</string>
     <string name="edit_profile">प्रोफाइल सम्पादन गर्नुहोस्</string>
     <string name="profile">प्रोफाइल</string>
+    <string name="mic_button_content_description">बोलीलाई पाठमा</string>
+    <string name="voice_to_text">बोलीबाट पाठ...</string>
     <string name="user">प्रयोगकर्ता</string>
     <string name="remove_selected">चयनित\nहटाउनुहोस्</string>
     <string name="stop_download">डाउनलोड रोक्नुहोस्</string>
