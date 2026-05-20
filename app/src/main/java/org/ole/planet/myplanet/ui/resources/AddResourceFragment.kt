@@ -25,6 +25,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -33,8 +35,6 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -66,6 +66,9 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     lateinit var personalsRepository: PersonalsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
+
+    private val viewModel: AddResourceViewModel by viewModels()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (arguments != null) {
@@ -270,10 +273,10 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                 showAlert(
                     requireContext(),
                     path,
-                    personalsRepository,
                     userModel.id,
                     userModel.name,
-                    viewLifecycleOwner.lifecycleScope
+                    viewModel,
+                    viewLifecycleOwner
                 ) {
                     dismiss()
                 }
@@ -288,15 +291,25 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         fun showAlert(
             context: Context,
             path: String?,
-            repository: PersonalsRepository,
             userId: String?,
             userName: String?,
-            scope: CoroutineScope,
+            viewModel: AddResourceViewModel,
+            lifecycleOwner: LifecycleOwner,
             onDismiss: () -> Unit
         ) {
             val v = LayoutInflater.from(context).inflate(R.layout.alert_my_personal, null)
             val etTitle = v.findViewById<EditText>(R.id.et_title)
             val etDesc = v.findViewById<EditText>(R.id.et_description)
+            etTitle.setOnFocusChangeListener { _, hasFocus ->
+                if (hasFocus) {
+                    etTitle.error = null
+                } else {
+                    val title = etTitle.text.toString().trim()
+                    if (title.isNotEmpty()) {
+                        viewModel.checkTitleExists(title, userId)
+                    }
+                }
+            }
             val dialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 .setTitle(R.string.enter_resource_detail)
                 .setView(v)
@@ -314,15 +327,33 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     }
                     val desc = etDesc.text.toString().trim { it <= ' ' }
                     positiveButton.isEnabled = false
-                    scope.launch(Dispatchers.IO) {
-                        repository.savePersonalResource(title, userId, userName, path, desc)
-                        withContext(Dispatchers.Main) {
-                            Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
-                            positiveButton.isEnabled = true
-                            dialog.dismiss()
-                            onDismiss.invoke()
+                    viewModel.saveResource(title, userId, userName, path, desc)
+                }
+
+                val job = lifecycleOwner.lifecycleScope.launch {
+                    viewModel.state.collect { state ->
+                        when (state) {
+                            is AddResourceState.TitleExists -> {
+                                etTitle.error = context.getString(R.string.resource_title_already_exists)
+                                positiveButton.isEnabled = true
+                                viewModel.resetState()
+                            }
+                            is AddResourceState.Success -> {
+                                Utilities.toast(context, context.getString(R.string.resource_saved_to_my_personal))
+                                positiveButton.isEnabled = true
+                                dialog.dismiss()
+                                onDismiss.invoke()
+                                viewModel.resetState()
+                            }
+                            is AddResourceState.Idle -> {
+                                // Do nothing
+                            }
                         }
                     }
+                }
+
+                dialog.setOnDismissListener {
+                    job.cancel()
                 }
             }
             dialog.show()

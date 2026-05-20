@@ -6,29 +6,28 @@ import android.content.DialogInterface
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Realm
 import io.realm.RealmObject
-import io.realm.RealmResults
 import javax.inject.Inject
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -45,7 +44,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.components.CheckboxListView
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -57,8 +56,7 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
-    private lateinit var mRealm: Realm
-    var lv: CheckboxListView? = null
+    var lv: RecyclerView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
@@ -74,8 +72,6 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
-    lateinit var databaseService: DatabaseService
-    @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -84,18 +80,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
-    private var stayOnlineDialog: AlertDialog? = null
-
-    protected fun requireRealmInstance(): Realm {
-        if (!isRealmInitialized()) {
-            mRealm = databaseService.createManagedRealmInstance()
-        }
-        return mRealm
-    }
-
-    protected fun isRealmInitialized(): Boolean {
-        return ::mRealm.isInitialized && !mRealm.isClosed
-    }
+    private var serverCheckDeferred: Deferred<Boolean>? = null
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -129,37 +114,6 @@ abstract class BaseResourceFragment : Fragment() {
                     pendingResult.finish()
                 }
             }
-        }
-    }
-
-    private var stateReceiver: BroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context, intent: Intent) {
-            val pendingResult = goAsync()
-            stayOnlineDialog?.dismiss()
-            stayOnlineDialog = AlertDialog.Builder(requireContext())
-                .setMessage(R.string.do_you_want_to_stay_online)
-                .setPositiveButton(R.string.yes) { _, _ ->
-                    pendingResult.finish()
-                }
-                .setNegativeButton(R.string.no) { _, _ ->
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                        val panelIntent = Intent(Settings.Panel.ACTION_WIFI)
-                        try {
-                            startActivity(panelIntent)
-                        } catch (_: Exception) {
-                            startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                        }
-                    } else {
-                        startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-                    }
-                    pendingResult.finish()
-                }
-                .setCancelable(false)
-                .create()
-            stayOnlineDialog?.setOnDismissListener {
-                stayOnlineDialog = null
-            }
-            stayOnlineDialog?.show()
         }
     }
     private val pendingDownloadUrls = mutableSetOf<String>()
@@ -209,19 +163,32 @@ abstract class BaseResourceFragment : Fragment() {
             convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            val titleView = TextView(requireContext()).apply {
+                text = getString(R.string.download_suggestion)
+                setPadding(48, 40, 48, 0)
+                textSize = 18f
+                maxLines = 5
+                setSingleLine(false)
+                setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            }
             alertDialogBuilder.setView(convertView)
-                .setTitle(R.string.download_suggestion)
+                .setCustomTitle(titleView)
+
+
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            lv?.selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, it)
+                        val serverAvailable = serverCheckDeferred?.await()
+                            ?: configurationsRepository.checkServerAvailability()
+                        if (serverAvailable) {
+                            val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
+                            selectedItemsList?.let {
+                                addToLibrary(dbMyLibrary, ArrayList(it))
                                 val selectedLibraries = it.mapNotNull { index ->
                                     dbMyLibrary.getOrNull(
                                         index
                                     ) }
                                 if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
                                     showProgressDialog()
                                 }
                             }
@@ -231,11 +198,11 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
+                        if (serverCheckDeferred?.await() ?: configurationsRepository.checkServerAvailability()) {
                             addAllToLibrary(dbMyLibrary)
                             val filtered = dbMyLibrary.filterNotNull()
                             if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib.resourceRemoteAddress })
+                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
                                 showProgressDialog()
                             }
                         } else {
@@ -245,13 +212,15 @@ abstract class BaseResourceFragment : Fragment() {
                 }.setNegativeButton(R.string.txt_cancel, null)
             downloadSuggestionDialog?.dismiss()
             downloadSuggestionDialog = alertDialogBuilder.create()
+            serverCheckDeferred = lifecycleScope.async { configurationsRepository.checkServerAvailability() }
             downloadSuggestionDialog?.let { dialog ->
                 createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
                     downloadSuggestionDialog = null
+                    serverCheckDeferred = null
                 }
                 dialog.show()
-                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
                     ?: 0) > 0
             }
         }
@@ -344,12 +313,12 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
-        val names = dbMyLibrary.map { it?.title }
-        val adapter = ArrayAdapter(requireActivity().baseContext, R.layout.rowlayout, R.id.checkBoxRowLayout, names)
-        lv?.choiceMode = ListView.CHOICE_MODE_MULTIPLE
-        lv?.setCheckChangeListener {
-            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv?.selectedItemsList?.size ?: 0) > 0
+        val names = dbMyLibrary.map { it?.title ?: "" }
+        val adapter = CheckboxAdapter {
+            alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size ?: 0) > 0
         }
+        adapter.submitList(names)
+        lv?.layoutManager = LinearLayoutManager(requireActivity().baseContext)
         lv?.adapter = adapter
     }
 
@@ -361,7 +330,6 @@ abstract class BaseResourceFragment : Fragment() {
                         when (intent.action) {
                             DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
                             "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
-                            "SHOW_WIFI_ALERT" -> stateReceiver.onReceive(requireContext(), intent)
                             DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                         }
                     }
@@ -378,7 +346,6 @@ abstract class BaseResourceFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRealm = databaseService.createManagedRealmInstance()
         prgDialog = getProgressDialog(requireActivity())
     }
 
@@ -408,10 +375,6 @@ abstract class BaseResourceFragment : Fragment() {
                 }
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
     }
 
     fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
@@ -455,41 +418,9 @@ abstract class BaseResourceFragment : Fragment() {
         downloadSuggestionDialog = null
         pendingSurveyDialog?.dismiss()
         pendingSurveyDialog = null
-        stayOnlineDialog?.dismiss()
-        stayOnlineDialog = null
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null
         super.onDestroyView()
-    }
-
-    override fun onDestroy() {
-        cleanupRealm()
-        super.onDestroy()
-    }
-
-    private fun cleanupRealm() {
-        if (isRealmInitialized()) {
-            try {
-                mRealm.removeAllChangeListeners()
-                if (mRealm.isInTransaction) {
-                    try {
-                        mRealm.commitTransaction()
-                    } catch (_: Exception) {
-                        mRealm.cancelTransaction()
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            } finally {
-                if (!mRealm.isClosed) {
-                    mRealm.close()
-                }
-            }
-        }
-    }
-
-    companion object {
-        var auth = ""
     }
 }

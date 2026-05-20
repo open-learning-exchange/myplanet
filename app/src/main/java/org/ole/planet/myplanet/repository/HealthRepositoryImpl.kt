@@ -2,17 +2,21 @@ package org.ole.planet.myplanet.repository
 
 import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class HealthRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), HealthRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val dispatcherProvider: DispatcherProvider
+) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
         val userCopy = findByField(RealmUser::class.java, "id", userId)
         val pojoCopy = findByField(RealmHealthExamination::class.java, "_id", userId)
@@ -26,7 +30,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun initHealth(): RealmMyHealth {
-        return withContext(Dispatchers.Default) {
+        return withContext(dispatcherProvider.default) {
             val health = RealmMyHealth()
             val profile = RealmMyHealth.RealmMyHealthProfile()
             health.lastExamination = Date().time
@@ -67,10 +71,31 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             user?.let { realm.copyToRealmOrUpdate(it) }
             pojo?.let { realm.copyToRealmOrUpdate(it) }
             examination?.let { realm.copyToRealmOrUpdate(it) }
+        }
+    }
+
+    override suspend fun updateExaminationUserId(id: String, userId: String) {
+        update(RealmHealthExamination::class.java, "_id", id) { examination ->
+            examination.userId = userId
+        }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmHealthExamination.insert(realm, jsonDoc)
         }
     }
 }

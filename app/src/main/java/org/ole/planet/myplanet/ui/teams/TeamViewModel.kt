@@ -4,18 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -32,81 +30,99 @@ class TeamViewModel @Inject constructor(
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
-    private var currentTeams: List<TeamSummary> = emptyList()
 
+    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
+    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
 
-    fun prepareTeamData(teams: List<TeamSummary>, userId: String?) {
-        currentTeams = teams
+    fun loadTasks(teamId: String) {
         viewModelScope.launch {
-            val processedTeams = withContext(dispatcherProvider.io) {
-                val validTeams = teams.filter {
-                    !it._id.isBlank() && (it.status == null || it.status != "archived")
-                }
-
-                if (validTeams.isEmpty()) {
-                    return@withContext emptyList<TeamDetails>()
-                }
-
-                val teamIds = validTeams.map { it._id }
-
-                val visitCountsDeferred = async { teamsRepository.getRecentVisitCounts(teamIds) }
-                val memberStatusesDeferred = async { teamsRepository.getTeamMemberStatuses(userId, teamIds) }
-
-                val visitCounts = visitCountsDeferred.await()
-                val memberStatuses = memberStatusesDeferred.await()
-
-                val teamDataList = validTeams.map { team ->
-                    val teamId = team._id
-                    val status = memberStatuses[teamId]
-                    TeamDetails(
-                        _id = team._id,
-                        name = team.name,
-                        teamType = team.teamType,
-                        createdDate = team.createdDate,
-                        type = team.type,
-                        status = team.status,
-                        visitCount = visitCounts[teamId] ?: 0L,
-                        teamStatus = status?.let {
-                            TeamStatus(
-                                isMember = it.isMember,
-                                isLeader = it.isLeader,
-                                hasPendingRequest = it.hasPendingRequest
-                            )
-                        },
-                        description = team.description,
-                        services = team.services,
-                        rules = team.rules,
-                        teamId = team.teamId
-                    )
-                }
-
-                teamDataList.sortedWith(
-                    compareByDescending<TeamDetails> {
-                        when {
-                            it.teamStatus?.isLeader == true -> 3
-                            it.teamStatus?.isMember == true -> 2
-                            else -> 1
-                        }
-                    }.thenByDescending { it.visitCount }
-                )
+            teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+                _taskList.value = tasks
             }
-            _teamData.value = processedTeams
         }
     }
 
+    private var currentTeamsDetails: List<TeamDetails> = emptyList()
+    private var currentSearchQuery: String = ""
+    private var currentUserId: String? = null
+    private var currentFromDashboard: Boolean = false
+    private var currentType: String? = null
+    private var loadJob: kotlinx.coroutines.Job? = null
+
+
+    fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
+        currentFromDashboard = fromDashboard
+        currentType = type
+        currentUserId = userId
+        loadJob?.cancel()
+        loadJob = viewModelScope.launch {
+            when {
+                fromDashboard -> {
+                    if (userId != null) {
+                        teamsRepository.getMyTeamDetailsFlow(userId).collectLatest { list ->
+                            applyFilters(list, currentSearchQuery)
+                        }
+                    }
+                }
+                type == "enterprise" -> {
+                    val teamList = teamsRepository.getShareableEnterpriseDetails(userId)
+                    applyFilters(teamList, currentSearchQuery)
+                }
+                else -> {
+                    val teamList = teamsRepository.getTeamDetails(userId)
+                    applyFilters(teamList, currentSearchQuery)
+                }
+            }
+        }
+    }
+
+    fun searchTeams(query: String) {
+        currentSearchQuery = query
+        applyFilters(currentTeamsDetails, currentSearchQuery)
+    }
+
+    private fun applyFilters(teams: List<TeamDetails>, searchQuery: String) {
+        currentTeamsDetails = teams
+        val filteredList = if (searchQuery.isEmpty()) {
+            teams
+        } else {
+            teams.filter {
+                it.name?.contains(searchQuery, ignoreCase = true) == true
+            }
+        }
+        _teamData.value = filteredList
+    }
+
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
+        val currentList = _teamData.value.toMutableList()
+        val index = currentList.indexOfFirst { it._id == teamId }
+        if (index != -1) {
+            val team = currentList[index]
+            val newStatus = TeamStatus(
+                isMember = false,
+                isLeader = false,
+                hasPendingRequest = true
+            )
+            currentList[index] = team.copy(teamStatus = newStatus)
+            _teamData.value = currentList
+        }
+
         viewModelScope.launch {
-            teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-            teamsRepository.syncTeamActivities()
-            prepareTeamData(currentTeams, userId)
+            withContext(dispatcherProvider.io) {
+                teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+                teamsRepository.syncTeamActivities()
+            }
+            loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
-            teamsRepository.leaveTeam(teamId, userId)
-            teamsRepository.syncTeamActivities()
-            prepareTeamData(currentTeams, userId)
+            withContext(dispatcherProvider.io) {
+                teamsRepository.leaveTeam(teamId, userId)
+                teamsRepository.syncTeamActivities()
+            }
+            loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 

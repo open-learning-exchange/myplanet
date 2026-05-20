@@ -14,11 +14,15 @@ import com.google.crypto.tink.integration.android.AndroidKeysetManager
 import java.security.GeneralSecurityException
 
 object SecurePrefs {
-    private const val PREFS_FILE_NAME = "secure_store"
+    private const val ENCRYPTED_PREFS_FILE_NAME = "secure_store_v2"
+    private const val PLAIN_PREFS_FILE_NAME = "secure_store"
     private const val LEGACY_FILE_NAME = "secure_prefs"
     private const val KEYSET_NAME = "master_keyset"
     private const val PREF_FILE_NAME = "master_key_preference"
     private const val MASTER_KEY_URI = "android-keystore://master_key"
+
+    @Volatile private var cachedAead: Aead? = null
+    @Volatile private var cachedSecureStore: SharedPreferences? = null
 
     init {
         try {
@@ -30,7 +34,7 @@ object SecurePrefs {
 
     @Suppress("DEPRECATION")
     // Tink 1.20.0 deprecates getPrimitive(Class), but Registry.getPrimitiveWrapper seems unavailable in this environment.
-    private fun getAead(context: Context): Aead {
+    private fun buildAead(context: Context): Aead {
         return AndroidKeysetManager.Builder()
             .withSharedPref(context, KEYSET_NAME, PREF_FILE_NAME)
             .withKeyTemplate(KeyTemplate.createFrom(PredefinedAeadParameters.AES256_GCM))
@@ -40,8 +44,88 @@ object SecurePrefs {
             .getPrimitive(Aead::class.java)
     }
 
+    private fun getAead(context: Context): Aead {
+        return cachedAead ?: synchronized(this) {
+            cachedAead ?: buildAead(context.applicationContext).also { cachedAead = it }
+        }
+    }
+    
+    fun warmUp(context: Context) {
+        if (cachedAead == null) getAead(context)
+        if (cachedSecureStore == null) getSecureStore(context)
+    }
+
+    @Suppress("DEPRECATION")
+    private fun buildSecureStore(context: Context): SharedPreferences {
+        return try {
+            val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                .build()
+            val encryptedPrefs = EncryptedSharedPreferences.create(
+                context,
+                ENCRYPTED_PREFS_FILE_NAME,
+                masterKey,
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+
+            val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+            if (plainPrefs.all.isNotEmpty()) {
+                encryptedPrefs.edit(commit = true) {
+                    plainPrefs.all.forEach { (key, value) ->
+                        when (value) {
+                            is String -> putString(key, value)
+                            is Boolean -> putBoolean(key, value)
+                            is Int -> putInt(key, value)
+                            is Long -> putLong(key, value)
+                            is Float -> putFloat(key, value)
+                            is Set<*> -> {
+                                @Suppress("UNCHECKED_CAST")
+                                putStringSet(key, value as Set<String>)
+                            }
+                        }
+                    }
+                }
+                plainPrefs.edit(commit = true) { clear() }
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                }
+            }
+            encryptedPrefs
+        } catch (e: Exception) {
+            android.util.Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
+            try {
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(ENCRYPTED_PREFS_FILE_NAME)
+                }
+                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                keyStore.load(null)
+                keyStore.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+            } catch (cleanupEx: Exception) {
+                android.util.Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
+            }
+
+            try {
+                val masterKey = MasterKey.Builder(context, MasterKey.DEFAULT_MASTER_KEY_ALIAS)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+                EncryptedSharedPreferences.create(
+                    context,
+                    ENCRYPTED_PREFS_FILE_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            } catch (retryEx: Exception) {
+                throw IllegalStateException("Unable to initialize secure storage after retry", retryEx)
+            }
+        }
+    }
+
     private fun getSecureStore(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREFS_FILE_NAME, Context.MODE_PRIVATE)
+        return cachedSecureStore ?: synchronized(this) {
+            cachedSecureStore ?: buildSecureStore(context.applicationContext).also { cachedSecureStore = it }
+        }
     }
 
     @Suppress("DEPRECATION")

@@ -12,14 +12,14 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 
 object Constants {
+    const val HTTP_PROTOCOL = "http://"
+    const val HTTPS_PROTOCOL = "https://"
     const val KEY_LOGIN = "isLoggedIn"
     const val DICTIONARY_URL = "http://157.245.241.39:8000/output.json"
     var shelfDataList = mutableListOf<ShelfData>()
@@ -54,9 +54,7 @@ object Constants {
     private fun initClasses() {
         classList["news"] = RealmNews::class.java
         classList["tags"] = RealmTag::class.java
-        classList["login_activities"] = RealmOfflineActivity::class.java
         classList["ratings"] = RealmRating::class.java
-        classList["submissions"] = RealmSubmission::class.java
         classList["courses"] = RealmMyCourse::class.java
         classList["achievements"] = RealmAchievement::class.java
         classList["feedback"] = RealmFeedback::class.java

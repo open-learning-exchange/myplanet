@@ -13,14 +13,12 @@ import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadService
@@ -30,6 +28,7 @@ object DownloadUtils {
     private const val DOWNLOAD_CHANNEL = "DownloadChannel"
     private const val COMPLETION_CHANNEL = "DownloadCompletionChannel"
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
+    private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
     @JvmStatic
     fun createChannels(context: Context) {
@@ -149,11 +148,7 @@ object DownloadUtils {
             preferences.edit {
                 putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
             }
-
-            val serviceRunning = isDownloadServiceRunning(ctx)
-            if (!serviceRunning) {
-                startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
-            }
+            startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
         }
     }
 
@@ -169,22 +164,8 @@ object DownloadUtils {
                 putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
             }
 
-            val serviceRunning = isDownloadServiceRunning(ctx)
-            if (!serviceRunning) {
-                startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
-            }
+            startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
         }
-    }
-
-    private fun isDownloadServiceRunning(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        @Suppress("DEPRECATION")
-        for (service in activityManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (DownloadService::class.java.name == service.service.className) {
-                return true
-            }
-        }
-        return false
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -259,8 +240,7 @@ object DownloadUtils {
 
     fun extractLinks(text: String?): ArrayList<String> {
         val links = ArrayList<String>()
-        val pattern = Pattern.compile("!\\[.*?]\\((.*?)\\)")
-        val matcher = text?.let { pattern.matcher(it) }
+        val matcher = text?.let { LINK_PATTERN.matcher(it) }
         if (matcher != null) {
             while (matcher.find()) {
                 val link = matcher.group(1)
@@ -288,14 +268,10 @@ object DownloadUtils {
     private val resourcesRepository: ResourcesRepository by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(
             MainApplication.context,
-            DownloadUtilsEntryPoint::class.java
+            RepositoryDependenciesEntryPoint::class.java
         )
         entryPoint.resourcesRepository()
     }
 
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface DownloadUtilsEntryPoint {
-        fun resourcesRepository(): ResourcesRepository
-    }
+
 }

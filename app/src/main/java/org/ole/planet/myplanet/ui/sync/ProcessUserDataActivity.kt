@@ -27,32 +27,31 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.api.ApiClient.client
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
-import org.ole.planet.myplanet.utils.SecurePrefs
-import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
+    @Inject
+    open lateinit var dispatcherProvider: DispatcherProvider
+
     @Inject
     lateinit var prefData: SharedPrefManager
 
@@ -184,7 +183,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
-        if (url == "http://" || url == "https://") {
+        if (url == Constants.HTTP_PROTOCOL || url == Constants.HTTPS_PROTOCOL) {
             showAlert(this, getString(R.string.invalid_url), getString(R.string.please_enter_valid_url_to_continue))
             return false
         }
@@ -192,38 +191,47 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun startUpload(source: String, userName: String? = null, securityCallback: OnSecurityDataListener? = null) {
-        if (source == "becomeMember") {
-            uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
-                        override fun onSuccess(success: String?) {
-                            userName?.let { name ->
-                                fetchAndLogUserSecurityData(name, securityCallback)
-                            } ?: run {
-                                securityCallback?.onSecurityDataUpdated()
-                            }
-                        }
-                    })
-                }
-            })
-            return
-        } else if (source == "login") {
-            applicationScope.launch(Dispatchers.IO) {
-                uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
-            }
-            return
+        when (source) {
+            "becomeMember" -> uploadMemberData(userName, securityCallback)
+            "login" -> uploadLoginData()
+            else -> uploadBulkData()
         }
+    }
+
+    private fun uploadMemberData(userName: String?, securityCallback: OnSecurityDataListener?) {
+        uploadToShelfService.uploadSingleUserData(userName, object : OnSuccessListener {
+            override fun onSuccess(success: String?) {
+                uploadToShelfService.uploadSingleUserHealth("org.couchdb.user:${userName}", object : OnSuccessListener {
+                    override fun onSuccess(success: String?) {
+                        userName?.let { name ->
+                            fetchAndLogUserSecurityData(name, securityCallback)
+                        } ?: run {
+                            securityCallback?.onSecurityDataUpdated()
+                        }
+                    }
+                })
+            }
+        })
+    }
+
+    private fun uploadLoginData() {
+        applicationScope.launch(dispatcherProvider.io) {
+            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+        }
+    }
+
+    private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             val asyncOperationsCounter = AtomicInteger(0)
             val totalAsyncOperations = 6
             val activity = this@ProcessUserDataActivity
 
             suspend fun checkAllOperationsComplete() {
                 if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         if (!activity.isFinishing && !activity.isDestroyed) {
                             customProgressDialog.dismiss()
                             Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
@@ -267,14 +275,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 }
             })
 
-            applicationScope.launch(Dispatchers.IO) {
+            applicationScope.launch(dispatcherProvider.io) {
                 val success = uploadManager.uploadFeedback()
                 checkAllOperationsComplete()
             }
 
             uploadManager.uploadResource(object : OnSuccessListener {
                 override fun onSuccess(success: String?) {
-                    applicationScope.launch(Dispatchers.IO) {
+                    applicationScope.launch(dispatcherProvider.io) {
                         uploadManager.uploadTeams()
                         checkAllOperationsComplete()
                     }
@@ -304,21 +312,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        SecurePrefs.saveCredentials(this, settings, user?.name, password)
-        this.settings = settings
-        prefData.setUserId(user?.id ?: "")
-        prefData.setUserName(user?.name ?: "")
-        prefData.rawPreferences.edit().apply {
-            remove("password")
-            putString("firstName", user?.firstName)
-            putString("lastName", user?.lastName)
-            putString("middleName", user?.middleName)
-            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", System.currentTimeMillis())
-            apply()
-        }
-    }
 
     fun alertDialogOkay(message: String?) {
         val builder1 = AlertDialog.Builder(this, R.style.AlertDialogTheme)
@@ -345,54 +338,13 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     fun fetchAndLogUserSecurityData(name: String, securityCallback: OnSecurityDataListener? = null) {
         lifecycleScope.launch {
             try {
-                val apiInterface = client.create(ApiInterface::class.java)
-                val userDocUrl = "${UrlUtils.getUrl()}/tablet_users/org.couchdb.user:$name"
-                val response = apiInterface.getJsonObject(UrlUtils.header, userDocUrl)
-
-                if (response.isSuccessful && response.body() != null) {
-                    val userDoc = response.body()
-                    val derivedKey = userDoc?.get("derived_key")?.asString
-                    val salt = userDoc?.get("salt")?.asString
-                    val passwordScheme = userDoc?.get("password_scheme")?.asString
-                    val iterations = userDoc?.get("iterations")?.asString
-                    val userId = userDoc?.get("_id")?.asString
-                    val rev = userDoc?.get("_rev")?.asString
-                    updateRealmUserSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations, securityCallback)
-
-                } else {
-                    withContext(Dispatchers.Main) {
-                        securityCallback?.onSecurityDataUpdated()
-                    }
-                }
-
+                userRepository.fetchUserSecurityData(name)
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    e.printStackTrace()
+                e.printStackTrace()
+            } finally {
+                withContext(dispatcherProvider.main) {
                     securityCallback?.onSecurityDataUpdated()
                 }
-            }
-        }
-    }
-
-    private suspend fun updateRealmUserSecurityData(
-        name: String,
-        userId: String?,
-        rev: String?,
-        derivedKey: String?,
-        salt: String?,
-        passwordScheme: String?,
-        iterations: String?,
-        securityCallback: OnSecurityDataListener? = null,
-    ) {
-        try {
-            userRepository.updateSecurityData(name, userId, rev, derivedKey, salt, passwordScheme, iterations)
-            withContext(Dispatchers.Main) {
-                securityCallback?.onSecurityDataUpdated()
-            }
-        } catch (e: Exception) {
-            withContext(Dispatchers.Main) {
-                e.printStackTrace()
-                securityCallback?.onSecurityDataUpdated()
             }
         }
     }

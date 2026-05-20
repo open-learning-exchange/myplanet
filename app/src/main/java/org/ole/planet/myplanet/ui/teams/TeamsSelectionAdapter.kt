@@ -11,8 +11,11 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class TeamsSelectionAdapter(private val section: String, private val onClick: (TeamSummary) -> Unit) :
-    ListAdapter<TeamSummary, TeamsSelectionAdapter.TeamSelectionViewHolder>(
+class TeamsSelectionAdapter(
+    private val section: String,
+    private val sharedIds: Set<String> = emptySet(),
+    private val onClick: (TeamSummary) -> Unit
+) : ListAdapter<TeamSummary, TeamsSelectionAdapter.TeamSelectionViewHolder>(
         DiffUtils.itemCallback<TeamSummary>(
             { old, new -> old._id == new._id },
             { old, new -> old.name == new.name }
@@ -21,6 +24,7 @@ class TeamsSelectionAdapter(private val section: String, private val onClick: (T
     inner class TeamSelectionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val textView: TextView = itemView.findViewById(R.id.textView)
         private val teamIcon: ImageView = itemView.findViewById(R.id.teamIcon)
+        private val sharedIcon: ImageView = itemView.findViewById(R.id.sharedIcon)
 
         fun bind(item: TeamSummary) {
             textView.text = item.name
@@ -29,7 +33,15 @@ class TeamsSelectionAdapter(private val section: String, private val onClick: (T
             } else {
                 teamIcon.setImageResource(R.drawable.business)
             }
-            itemView.setOnClickListener { onClick(item) }
+            val alreadyShared = item._id in sharedIds
+            sharedIcon.visibility = if (alreadyShared) View.VISIBLE else View.GONE
+            if (alreadyShared) {
+                itemView.setOnClickListener(null)
+                itemView.isClickable = false
+            } else {
+                itemView.isClickable = true
+                itemView.setOnClickListener { onClick(item) }
+            }
         }
     }
 

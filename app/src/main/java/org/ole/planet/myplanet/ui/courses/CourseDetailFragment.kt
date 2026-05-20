@@ -6,21 +6,17 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
@@ -29,6 +25,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var id: String? = null
     private val viewModel: CourseDetailViewModel by viewModels()
     private var isRatingViewInitialized = false
+    private var stepsAdapter: CoursesStepsAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,24 +46,24 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             viewModel.loadCourseDetail(it)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.uiState.collect { state ->
-                    when (state) {
-                        is CourseDetailUiState.Loading -> {
-                            // Show loading indicator if needed
-                        }
-                        is CourseDetailUiState.Success -> {
-                            bindCourseData(state)
-                        }
-                        is CourseDetailUiState.Error -> {
-                            context?.let { ctx ->
-                                android.widget.Toast.makeText(ctx, state.message, android.widget.Toast.LENGTH_LONG).show()
-                            }
-                        }
+        collectWhenStarted(viewModel.uiState) { state ->
+            when (state) {
+                is CourseDetailUiState.Loading -> {
+                    // Show loading indicator if needed
+                }
+                is CourseDetailUiState.Success -> {
+                    bindCourseData(state)
+                }
+                is CourseDetailUiState.Error -> {
+                    context?.let { ctx ->
+                        android.widget.Toast.makeText(ctx, state.message, android.widget.Toast.LENGTH_LONG).show()
                     }
                 }
             }
+        }
+
+        collectWhenStarted(viewModel.stepItems) { steps ->
+            setStepsList(steps)
         }
     }
 
@@ -92,7 +89,6 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
         setResourceButton(state.resources, binding.btnResources)
         setOpenResourceButton(state.downloadedResources, binding.btnOpen)
-        setStepsList(state.stepItems)
 
         if (!isRatingViewInitialized) {
             initRatingView("course", course.courseId, course.courseTitle, this@CourseDetailFragment)
@@ -111,10 +107,14 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList(steps: List<StepItem>) {
-        binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = CoursesStepsAdapter(requireActivity())
-        binding.stepsList.adapter = adapter
-        adapter.submitList(steps)
+        if (stepsAdapter == null) {
+            binding.stepsList.layoutManager = LinearLayoutManager(activity)
+            stepsAdapter = CoursesStepsAdapter(requireActivity()) { stepId ->
+                viewModel.toggleStepDescription(stepId)
+            }
+            binding.stepsList.adapter = stepsAdapter
+        }
+        stepsAdapter?.submitList(steps)
     }
 
     override fun onRatingChanged() {
@@ -132,6 +132,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDestroyView() {
         _binding = null
+        stepsAdapter = null
         super.onDestroyView()
     }
 }

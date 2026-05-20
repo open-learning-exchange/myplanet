@@ -1,11 +1,9 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmCourseProgress : RealmObject() {
     @PrimaryKey
@@ -38,22 +36,5 @@ open class RealmCourseProgress : RealmObject() {
         }
 
 
-        @JvmStatic
-        fun insert(mRealm: Realm, act: JsonObject?) {
-            var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (courseProgress == null) {
-                courseProgress = mRealm.createObject(RealmCourseProgress::class.java, JsonUtils.getString("_id", act))
-            }
-            courseProgress?._rev = JsonUtils.getString("_rev", act)
-            courseProgress?._id = JsonUtils.getString("_id", act)
-            courseProgress?.passed = JsonUtils.getBoolean("passed", act)
-            courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
-            courseProgress?.userId = JsonUtils.getString("userId", act)
-            courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
-            courseProgress?.courseId = JsonUtils.getString("courseId", act)
-            courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
-            courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
-            courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
-        }
     }
 }

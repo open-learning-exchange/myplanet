@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import kotlin.coroutines.coroutineContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
@@ -23,7 +22,7 @@ class ChatAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
 ) : ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
-        { old, new -> old == new },
+        { old, new -> old.message == new.message && old.viewType == new.viewType },
         { old, new -> old == new }
     )
 ) {

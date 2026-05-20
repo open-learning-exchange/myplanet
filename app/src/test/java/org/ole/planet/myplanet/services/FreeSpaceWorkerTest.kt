@@ -1,20 +1,19 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import androidx.work.ListenableWorker.Result
 import androidx.work.WorkerParameters
-import androidx.work.workDataOf
+import io.mockk.clearAllMocks
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.unmockkAll
 import io.mockk.spyk
-import java.io.File
+import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -60,16 +59,13 @@ class FreeSpaceWorkerTest {
         // Mock application context for getOlePath
         every { context.applicationContext } returns context
 
-        // Ensure File.delete() returns true to allow code path
-        val mockFile = mockk<File>(relaxed = true)
-        every { mockFile.exists() } returns false
-        every { mockFile.isDirectory } returns false
-        every { mockFile.delete() } returns true
-        every { mockFile.length() } returns 0L
+        mockkStatic(Log::class)
+        every { Log.e(any(), any(), any()) } returns 0
     }
 
     @After
     fun tearDown() {
+        clearAllMocks()
         unmockkAll()
     }
 
@@ -87,5 +83,14 @@ class FreeSpaceWorkerTest {
         val outputData = (result as Result.Success).outputData
         assertEquals(0, outputData.getInt("deletedFiles", -1))
         assertEquals(0L, outputData.getLong("freedBytes", -1L))
+    }
+
+    @Test
+    fun `doWork should return failure on exception`() = runTest(testDispatcher) {
+        coEvery { resourcesRepository.markAllResourcesOffline(false) } throws RuntimeException("Simulated exception")
+
+        val result = worker.doWork()
+
+        assertTrue(result is Result.Failure)
     }
 }

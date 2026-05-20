@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.ratings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,10 +13,13 @@ import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
+@HiltViewModel
 class RatingsViewModel @Inject constructor(
     private val ratingsRepository: RatingsRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _ratingState = MutableStateFlow<RatingUiState>(RatingUiState.Loading)
@@ -46,7 +50,7 @@ class RatingsViewModel @Inject constructor(
     }
 
     fun loadRatingData(type: String, itemId: String, userId: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             try {
                 _ratingState.value = RatingUiState.Loading
 
@@ -69,7 +73,7 @@ class RatingsViewModel @Inject constructor(
         rating: Float,
         comment: String
     ) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             try {
                 _submitState.value = SubmitState.Submitting
 
@@ -95,8 +99,6 @@ class RatingsViewModel @Inject constructor(
                 _submitState.value = SubmitState.Success
             } catch (e: Exception) {
                 _submitState.value = SubmitState.Error(e.message ?: "Failed to submit rating")
-            } finally {
-                _submitState.value = SubmitState.Idle
             }
         }
     }

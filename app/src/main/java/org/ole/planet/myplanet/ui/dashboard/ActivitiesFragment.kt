@@ -16,10 +16,12 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
@@ -29,7 +31,8 @@ class ActivitiesFragment : Fragment() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var activitiesRepository: ActivitiesRepository
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
         return binding.root
@@ -43,16 +46,43 @@ class ActivitiesFragment : Fragment() {
         val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userModel = userSessionManager.getUserModel()
-            val userId = userModel?.id ?: return@launch
-            val monthlyCounts = userRepository.getMonthlyLoginCounts(userId, startMillis, endMillis)
-            renderChart(monthlyCounts, daynightTextColor)
+            val userName = userSessionManager.getUserModel()?.name ?: return@launch
+            activitiesRepository.getOfflineLogins(userName).collectLatest { logins ->
+                val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+                renderChart(monthlyCounts, daynightTextColor)
+            }
         }
     }
 
+    private fun computeMonthlyCounts(
+        logins: List<RealmOfflineActivity>,
+        startMillis: Long,
+        endMillis: Long
+    ): Map<Int, Int> {
+        val calendar = Calendar.getInstance()
+        return logins
+            .mapNotNull { it.loginTime }
+            .filter { it in startMillis..endMillis }
+            .map { loginTime ->
+                calendar.timeInMillis = loginTime
+                calendar.get(Calendar.MONTH)
+            }
+            .groupingBy { it }
+            .eachCount()
+            .toSortedMap()
+    }
+
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
+        if (monthlyCounts.isEmpty()) {
+            binding.chart.visibility = View.GONE
+            binding.emptyState.visibility = View.VISIBLE
+            return
+        }
+
+        binding.chart.visibility = View.VISIBLE
+        binding.emptyState.visibility = View.GONE
+
         val entries = monthlyCounts.entries
-            .sortedBy { it.key }
             .map { (month, count) -> BarEntry(month.toFloat(), count.toFloat()) }
 
         val label = getString(R.string.chart_label)

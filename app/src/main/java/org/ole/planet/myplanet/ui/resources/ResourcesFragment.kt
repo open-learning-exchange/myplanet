@@ -10,7 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
-import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -22,16 +22,15 @@ import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnFilterListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -41,15 +40,14 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelectedListener,
@@ -73,24 +71,22 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
-    private var allLibraryItems: List<RealmMyLibrary> = emptyList()
+    private var allResourceModels: List<org.ole.planet.myplanet.model.ResourceListModel> = emptyList()
+    private var searchJob: Job? = null
 
     @Inject
     lateinit var prefManager: SharedPrefManager
 
     @Inject
-    lateinit var syncManager: SyncManager
+    lateinit var dispatcherProvider: DispatcherProvider
 
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-    private val serverUrl: String
-        get() = prefManager.getServerUrl()
+    private val viewModel: ResourcesViewModel by viewModels()
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startResourcesSync()
+        viewModel.startResourcesSync()
     }
 
     override fun getLayout(): Int {
@@ -103,147 +99,28 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return view
     }
 
-    private fun startResourcesSync() {
-        val isFastSync = prefManager.getFastSync()
-        if (isFastSync && !prefManager.isResourcesSynced()) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing && view != null) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_resources))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                lifecycleScope.launch {
-                    if (isAdded && view != null) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshResourcesData()
-                        prefManager.setResourcesSynced(true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                lifecycleScope.launch {
-                    if (isAdded && view != null) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(requireView(), "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG
-                        ).setAction("Retry") {
-                            startResourcesSync()
-                        }.show()
-                    }
-                }
-            }
-        }, "full", listOf("resources"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
-            isServerReachable(url)
-        }
-    }
-
-    private suspend fun loadRatingsAndTags(allResourceIds: List<String>, userId: String?) {
-        map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, userId))
-        tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
-    }
-
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
+        val binding = _binding ?: return
 
         lifecycleScope.launch {
             try {
-                allLibraryItems = if (isMyCourseLib) {
-                    resourcesRepository.getMyLibrary(model?.id)
-                } else {
-                    resourcesRepository.getAllLibraryItems().filter {
-                        !it.isPrivate && it.userId?.contains(model?.id) == false
-                    }
-                }
-
-                val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
-
-                loadRatingsAndTags(allResourceIds, model?.id)
-
-                val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
-                val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
-
-                val filteredLibraryList = applyFilter(filterLocalLibraryByTag(searchQuery, currentSearchTags))
-
-                if (::adapterLibrary.isInitialized) {
-                    adapterLibrary.setLibraryList(filteredLibraryList.map { it.toResourceItem() })
-                    adapterLibrary.setRatingMap(map!!)
-                    adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
-                }
-                checkList(filteredLibraryList.size)
-                showNoData(tvMessage, filteredLibraryList.size, "resources")
-
+                allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
+                applyFiltersAndUpdateUI(scrollToTop = false)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
 
-    private fun RealmMyLibrary.toResourceItem(): ResourceItem {
-        return ResourceItem(
-            id = id,
-            title = title,
-            description = description,
-            createdDate = createdDate,
-            averageRating = averageRating,
-            timesRated = timesRated,
-            resourceId = resourceId,
-            isOffline = isResourceOffline(),
-            _rev = _rev,
-            uploadDate = uploadDate,
-            filename = filename
-        )
-    }
-
-    private fun RealmTag.toTagItem(): TagItem {
-        return TagItem(id = id, name = name)
-    }
-
-    override suspend fun getAdapter(): RecyclerView.Adapter<*> {
-        allLibraryItems = if (isMyCourseLib) {
-            resourcesRepository.getMyLibrary(model?.id)
-        } else {
-            resourcesRepository.getAllLibraryItems().filter {
-                !it.isPrivate && it.userId?.contains(model?.id) == false
-            }
-        }
-
-        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
-
-        loadRatingsAndTags(allResourceIds, model?.id)
+    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+        allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(requireActivity(), map!!, user?.isGuest() == true, emptyMap(), emptySet())
+        adapterLibrary = ResourcesAdapter(requireActivity(), user?.isGuest() == true, emptySet())
 
-        val filteredList = filterLocalLibraryByTag(etSearch.text?.toString()?.trim().orEmpty(), searchTags)
-        adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() })
-        adapterLibrary.setTagsMap(tagsMap.mapValues { entry -> entry.value.map { it.toTagItem() } })
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
+        adapterLibrary.setLibraryList(filteredList)
 
         adapterLibrary.setRatingChangeListener(this)
         adapterLibrary.setListener(this)
@@ -265,13 +142,44 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         initArrays()
         hideButton()
 
+        collectWhenStarted(viewModel.syncState) { state ->
+            when (state) {
+                is org.ole.planet.myplanet.model.SyncState.Syncing -> {
+                    if (!requireActivity().isFinishing) {
+                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
+                        customProgressDialog?.setText(getString(R.string.syncing_resources))
+                        customProgressDialog?.show()
+                    }
+                }
+                is org.ole.planet.myplanet.model.SyncState.Success -> {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                    refreshResourcesData()
+                    viewModel.resetSyncState()
+                }
+                is org.ole.planet.myplanet.model.SyncState.Failed -> {
+                    customProgressDialog?.dismiss()
+                    customProgressDialog = null
+                    Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
+                    ).setAction("Retry") {
+                        viewModel.startResourcesSync()
+                    }.show()
+                    viewModel.resetSyncState()
+                }
+                is org.ole.planet.myplanet.model.SyncState.Idle -> {
+                    // Do nothing
+                }
+            }
+        }
+
         lifecycleScope.launch {
             userModel = profileDbHandler.getUserModel()
             setupGuestUserRestrictions()
 
-            if (userModel?.id != null) {
+            val userId = userModel?.id
+            if (userId != null) {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userModel!!.id!!).collect { openedResourceIds ->
+                    resourcesRepository.observeOpenedResourceIds(userId).collect { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
@@ -346,19 +254,36 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                if (!::adapterLibrary.isInitialized) return
-                lifecycleScope.launch {
-                    val filteredList = applyFilter(filterLocalLibraryByTag(etSearch.text.toString().trim(), searchTags))
-                    adapterLibrary.setLibraryList(filteredList.map { it.toResourceItem() }) {
-                        recyclerView.scrollToPosition(0)
-                    }
-                    showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(300)
+                    if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@launch
+                    applyFiltersAndUpdateUI()
                 }
             }
 
             override fun afterTextChanged(s: Editable) {}
         }
         etSearch.addTextChangedListener(searchTextWatcher)
+    }
+
+    private suspend fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {
+        if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return
+        val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
+
+        val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+        val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
+
+        if (scrollToTop) {
+            adapterLibrary.setLibraryList(filteredList) {
+                recyclerView.scrollToPosition(0)
+            }
+        } else {
+            adapterLibrary.setLibraryList(filteredList)
+        }
+
+        checkList(filteredList.size)
+        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
     }
 
     private fun setupCollectionsButton() {
@@ -402,9 +327,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun hideButton(){
-        tvDelete?.isEnabled = selectedItems?.size!! != 0
-        tvAddToLib.isEnabled = selectedItems?.size!! != 0
-        if(selectedItems?.size!! != 0){
+        val count = selectedItems?.size ?: 0
+        tvDelete?.isEnabled = count != 0
+        tvAddToLib.isEnabled = count != 0
+        if(count != 0){
             if(isMyCourseLib) tvDelete?.visibility = View.VISIBLE
             else tvAddToLib.visibility = View.VISIBLE
         } else {
@@ -413,8 +339,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private fun checkList(listSize: Int = adapterLibrary.getLibraryList().size) {
-        if (listSize == 0) {
+    private fun checkList(listSize: Int = if (::adapterLibrary.isInitialized) adapterLibrary.getLibraryList().size else 0) {
+        val hasAnyLibraryData = allResourceModels.isNotEmpty()
+
+        if (!hasAnyLibraryData && listSize == 0) {
             selectAll.visibility = View.GONE
             etSearch.visibility = View.GONE
             tvAddToLib.visibility = View.GONE
@@ -428,7 +356,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             etSearch.visibility = View.VISIBLE
             binding.btnCollections.visibility = View.VISIBLE
             filter.visibility = View.VISIBLE
+            clearTags.visibility = if (hasActiveFilters()) View.VISIBLE else View.GONE
         }
+    }
+
+    private fun hasActiveFilters(): Boolean {
+        val hasSearchText = etSearch.text?.toString()?.trim()?.isNotEmpty() == true
+        val hasTagFilter = ::searchTags.isInitialized && searchTags.isNotEmpty()
+        return hasSearchText || hasTagFilter || subjects.isNotEmpty() || languages.isNotEmpty() || mediums.isNotEmpty() || levels.isNotEmpty()
     }
 
     private fun initArrays() {
@@ -464,21 +399,23 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun buildAlertMessage(): String {
-        var msg = getString(R.string.success_you_have_added_these_resources_to_your_mylibrary)
-        if ((selectedItems?.size ?: 0) <= 5) {
-            for (i in selectedItems?.indices ?: emptyList()) {
-                msg += " - " + selectedItems!![i]?.title + "\n"
+        return buildString {
+            append(getString(R.string.success_you_have_added_these_resources_to_your_mylibrary))
+            val itemsSize = selectedItems?.size ?: 0
+            if (itemsSize <= 5) {
+                selectedItems?.forEach { item ->
+                    append(" - ").append(item?.title).append("\n")
+                }
+            } else {
+                for (i in 0..4) {
+                    append(" - ").append(selectedItems?.get(i)?.title).append("\n")
+                }
+                append(getString(R.string.and)).append(itemsSize - 5)
+                    .append(getString(R.string.more_resource_s))
             }
-        } else {
-            for (i in 0..4) {
-                msg += " - " + selectedItems?.get(i)?.title + "\n"
-            }
-            msg += getString(R.string.and) + ((selectedItems?.size ?: 0) - 5) +
-                getString(R.string.more_resource_s)
+            append(getString(R.string.return_to_the_home_tab_to_access_mylibrary))
+            append(getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources))
         }
-        msg += getString(R.string.return_to_the_home_tab_to_access_mylibrary) +
-            getString(R.string.note_you_may_still_need_to_download_the_newly_added_resources)
-        return msg
     }
 
     private fun clearTagsButton() {
@@ -492,17 +429,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             subjects.clear()
             languages.clear()
             viewLifecycleOwner.lifecycleScope.launch {
-                adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag("", searchTags)).map { it.toResourceItem() }) {
-                    recyclerView.scrollToPosition(0)
-                }
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                applyFiltersAndUpdateUI()
             }
         }
     }
 
     override fun onSelectedListChange(list: List<ResourceItem>) {
         val newSelected = list.mapNotNull { item ->
-            allLibraryItems.find { it.id == item.id }
+            allResourceModels.find { it.item.id == item.id }?.library
         }
         selectedItems?.clear()
         selectedItems?.addAll(newSelected)
@@ -511,16 +445,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onTagClicked(tag: TagItem) {
-        val realmTag = tagsMap.values.flatten().find { it.id == tag.id }
+        val realmTag = allResourceModels.flatMap { it.tags }.find { it.id == tag.id }
         if (realmTag != null) {
-            onTagClicked(realmTag)
+            val rTag = searchTags.find { it.id == realmTag.id } ?: org.ole.planet.myplanet.model.RealmTag().apply {
+                id = realmTag.id
+                name = realmTag.name
+            }
+            onTagClicked(rTag)
         }
     }
 
     override fun onResourceClicked(item: ResourceItem) {
-        val library = allLibraryItems.find { it.id == item.id }
-        if (library != null) {
-            homeItemClickListener?.openLibraryDetailFragment(library)
+        val model = allResourceModels.find { it.item.id == item.id }
+        if (model != null) {
+            homeItemClickListener?.openLibraryDetailFragment(model.library)
         }
     }
 
@@ -531,12 +469,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         chipCloud.setDeleteListener(this)
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         chipCloud.addChips(searchTags)
+        showTagText(searchTags, tvSelected)
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), searchTags)).map { it.toResourceItem() }) {
-                recyclerView.scrollToPosition(0)
-            }
-            showTagText(searchTags, tvSelected)
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            applyFiltersAndUpdateUI()
         }
     }
 
@@ -547,10 +482,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), li)).map { it.toResourceItem() }) {
-                recyclerView.scrollToPosition(0)
-            }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            applyFiltersAndUpdateUI()
         }
     }
 
@@ -558,10 +490,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (list?.isEmpty() == true) {
             searchTags.clear()
             viewLifecycleOwner.lifecycleScope.launch {
-                adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), searchTags)).map { it.toResourceItem() }) {
-                    recyclerView.scrollToPosition(0)
-                }
-                showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+                applyFiltersAndUpdateUI()
             }
         } else {
             for (tag in list ?: emptyList()) {
@@ -584,10 +513,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun chipDeleted(i: Int, s: String) {
         searchTags.removeAt(i)
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString(), searchTags)).map { it.toResourceItem() }) {
-                recyclerView.scrollToPosition(0)
-            }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            applyFiltersAndUpdateUI()
         }
     }
 
@@ -597,17 +523,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         this.mediums = mediums
         this.levels = levels
         viewLifecycleOwner.lifecycleScope.launch {
-            adapterLibrary.setLibraryList(applyFilter(filterLocalLibraryByTag(etSearch.text.toString().trim { it <= ' ' }, searchTags)).map { it.toResourceItem() }) {
-                recyclerView.scrollToPosition(0)
-            }
-            showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+            applyFiltersAndUpdateUI()
         }
     }
 
     override suspend fun getData(): Map<String, Set<String>> {
-        val currentIds = adapterLibrary.getLibraryList().mapNotNull { it.id }.toSet()
-        val libraryList = allLibraryItems.filter { it.id in currentIds }
-        return resourcesRepository.getFilterFacets(libraryList)
+        // Keep facet options stable so applying one filter does not hide other available options.
+        return resourcesRepository.getFilterFacets(allResourceModels.map { it.library })
     }
 
     override fun getSelectedFilter(): Map<String, Set<String>> {
@@ -664,7 +586,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val planetCode = model?.planetCode
         val parentCode = model?.parentCode
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             if (!filterApplied(searchText) || userName == null || planetCode == null || parentCode == null) {
                 return@launch
             }
@@ -726,16 +648,53 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return if (::recyclerView.isInitialized) recyclerView else null
     }
 
-    private suspend fun filterLocalLibraryByTag(s: String, tags: List<RealmTag>): List<RealmMyLibrary> {
-        var filteredList = resourcesRepository.search(s, isMyCourseLib, model?.id)
+    private fun normalizeText(text: String): String {
+        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+            .replace("\\p{Mn}+".toRegex(), "")
+            .lowercase(java.util.Locale.ROOT)
+    }
+
+    private fun searchLocalModels(models: List<org.ole.planet.myplanet.model.ResourceListModel>, query: String): List<org.ole.planet.myplanet.model.ResourceListModel> {
+        if (query.isEmpty()) return models
+
+        val queryParts = query.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
+        val normalizedQuery = normalizeText(query)
+
+        val startsWithQuery = mutableListOf<org.ole.planet.myplanet.model.ResourceListModel>()
+        val containsQuery = mutableListOf<org.ole.planet.myplanet.model.ResourceListModel>()
+
+        for (model in models) {
+            val title = model.item.title?.let { normalizeText(it) } ?: continue
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(model)
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                containsQuery.add(model)
+            }
+        }
+        return startsWithQuery + containsQuery
+    }
+
+    private fun filterLocalLibraryByTag(models: List<org.ole.planet.myplanet.model.ResourceListModel>, s: String, tags: List<RealmTag>): List<org.ole.planet.myplanet.model.ResourceListModel> {
+        var filteredList = searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
-            filteredList = filteredList.filter { library ->
-                val libraryTags = library.id?.let { tagsMap[it] } ?: emptyList()
-                tags.any { searchTag -> libraryTags.any { it.id == searchTag.id } }
+            filteredList = filteredList.filter { model ->
+                tags.any { searchTag -> model.tags.any { it.id == searchTag.id } }
             }
         }
         return filteredList
+    }
+
+    private fun applyFilterModels(models: List<org.ole.planet.myplanet.model.ResourceListModel>): List<org.ole.planet.myplanet.model.ResourceListModel> {
+        return models.filter { model ->
+            val l = model.library
+            val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
+            val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
+            val lan = languages.isEmpty() || languages.contains(l.language)
+            val med = mediums.isEmpty() || mediums.contains(l.mediaType)
+            sub && lev && lan && med
+        }
     }
 
     override suspend fun deleteSelected(deleteProgress: Boolean) {
@@ -743,12 +702,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
-            lifecycleScope.launch(Dispatchers.IO) {
+            lifecycleScope.launch(dispatcherProvider.io) {
                 itemsToDelete.forEach { resourceId ->
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                 }
-                withContext(Dispatchers.Main) {
-                    if (_binding == null) return@withContext
+                withContext(dispatcherProvider.main) {
+                    _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                     refreshResourcesData()
                     selectedItems?.clear()
@@ -767,7 +726,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             lifecycleScope.launch {
                 resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
-                        if (_binding == null) return@onSuccess
+                        _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))
                         refreshResourcesData()
                         selectedItems?.clear()
@@ -775,7 +734,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                         hideButton()
                     }
                     .onFailure {
-                        if (_binding == null) return@onFailure
+                        _binding ?: return@onFailure
                         Utilities.toast(activity, getString(R.string.error, it.message))
                     }
             }

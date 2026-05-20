@@ -7,9 +7,9 @@ import android.view.View
 import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import io.realm.RealmObject
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.ui.events.EventsDetailFragment
@@ -33,7 +32,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 open class DashboardPluginFragment : BaseContainerFragment() {
 
-    @Inject lateinit var teamsRepository: TeamsRepository
+    private val dashboardViewModel: DashboardViewModel by activityViewModels()
 
     private val imageResourceMap by lazy {
         mapOf(
@@ -53,7 +52,7 @@ open class DashboardPluginFragment : BaseContainerFragment() {
             if (homeItemClickListener != null) {
                 if (f is TeamDetailFragment) {
                     viewLifecycleOwner.lifecycleScope.launch {
-                        val teamType = id?.let { teamsRepository.getTeamType(it) }
+                        val teamType = id?.let { dashboardViewModel.getTeamType(it) }
                         val optimizedFragment = TeamDetailFragment.newInstance(
                             teamId = id ?: "",
                             teamName = title ?: "",

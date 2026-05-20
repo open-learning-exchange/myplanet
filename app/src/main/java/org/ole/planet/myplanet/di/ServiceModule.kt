@@ -12,7 +12,6 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -35,8 +34,8 @@ object ServiceModule {
     @Provides
     @Singleton
     @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    fun provideApplicationScope(dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
     }
 
     @Provides
@@ -50,9 +49,23 @@ object ServiceModule {
         transactionSyncManager: TransactionSyncManager,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         loginSyncManager: org.ole.planet.myplanet.services.sync.LoginSyncManager,
-        @ApplicationScope scope: CoroutineScope
+        @ApplicationScope scope: CoroutineScope,
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository, coursesRepository, eventsRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUploadRepository(
+        databaseService: DatabaseService,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+    ): org.ole.planet.myplanet.repository.UploadRepository {
+        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
     }
 
     @Provides
@@ -71,11 +84,13 @@ object ServiceModule {
         uploadConfigs: org.ole.planet.myplanet.services.upload.UploadConfigs,
         resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
         teamsRepository: Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
-        apiInterface: ApiInterface,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-        @ApplicationScope scope: CoroutineScope
+        apiInterface: ApiInterface,
+        @ApplicationScope scope: CoroutineScope,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        photoUploader: org.ole.planet.myplanet.services.upload.PhotoUploader
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, scope)
+        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader)
     }
 
     @Provides
@@ -85,14 +100,14 @@ object ServiceModule {
         databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-        resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
-        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
         healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, resourcesRepository, coursesRepository, userRepository, healthRepository, appScope, dispatcherProvider)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
     }
 
     @Provides
@@ -104,8 +119,23 @@ object ServiceModule {
         voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
-        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+        sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+        userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+        teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
+        notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
+        tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
+        ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
+        submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
+        healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+        progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+        surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
+        @ApplicationScope scope: CoroutineScope,
+        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
     }
 }

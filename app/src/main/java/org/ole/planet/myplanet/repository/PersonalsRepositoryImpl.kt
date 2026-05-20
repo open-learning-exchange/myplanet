@@ -3,14 +3,24 @@ package org.ole.planet.myplanet.repository
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
 class PersonalsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService
-) : RealmRepository(databaseService), PersonalsRepository {
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
+
+    override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
+        return count(RealmMyPersonal::class.java) {
+            equalTo("title", title, io.realm.Case.INSENSITIVE)
+            if (!userId.isNullOrBlank()) equalTo("userId", userId)
+        } > 0
+    }
 
     override suspend fun savePersonalResource(
         title: String,

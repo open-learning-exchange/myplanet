@@ -9,8 +9,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.ole.planet.myplanet.repository.retry.RetryRepository
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
 @Singleton
@@ -27,7 +27,7 @@ class RetryQueue @Inject constructor(
 
     fun isCurrentlyProcessing(): Boolean = isProcessing.get()
 
-    fun setProcessing(processing: Boolean) {
+    internal fun setProcessing(processing: Boolean) {
         isProcessing.set(processing)
     }
 

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
@@ -14,9 +15,9 @@ import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -32,7 +33,6 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
-import android.util.Log
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
@@ -78,9 +78,12 @@ class UserRepositoryImplTest {
 
         repository = UserRepositoryImpl(
             databaseService,
+            UnconfinedTestDispatcher(),
             settings,
             sharedPrefManager,
             apiInterface,
+            mockk(relaxed = true),
+            mockk(relaxed = true),
             uploadToShelfService,
             context,
             configurationsRepository,
@@ -149,12 +152,42 @@ class UserRepositoryImplTest {
         // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
         val spyRepository = spyk(repository)
         val mockRealmUser = mockk<org.ole.planet.myplanet.model.RealmUser>(relaxed = true)
-        coEvery { spyRepository.saveUser(any(), any(), any(), any()) } returns mockRealmUser
+        coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
         val result = spyRepository.becomeMember(userObj)
         advanceUntilIdle()
 
         assertEquals(true, result.first)
         assertEquals(successMessage, result.second)
+    }
+
+    @Test
+    fun `hasAtLeastOneUser returns true when user exists`() = runTest {
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        coEvery { databaseService.withRealmAsync<Boolean>(any()) } answers {
+            val block = firstArg<(io.realm.Realm) -> Boolean>()
+            block(mockRealm)
+        }
+        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealmQuery.findFirst() } returns mockk()
+
+        val result = repository.hasAtLeastOneUser()
+        assertEquals(true, result)
+    }
+
+    @Test
+    fun `hasAtLeastOneUser returns false when no user exists`() = runTest {
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        coEvery { databaseService.withRealmAsync<Boolean>(any()) } answers {
+            val block = firstArg<(io.realm.Realm) -> Boolean>()
+            block(mockRealm)
+        }
+        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealmQuery.findFirst() } returns null
+
+        val result = repository.hasAtLeastOneUser()
+        assertEquals(false, result)
     }
 }

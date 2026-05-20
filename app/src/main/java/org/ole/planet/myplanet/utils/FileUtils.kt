@@ -22,9 +22,21 @@ import java.nio.charset.StandardCharsets
 import java.util.UUID
 
 object FileUtils {
+    @Volatile private var cachedExternalFilesDir: File? = null
+
+    fun warmUp(context: Context) {
+        if (cachedExternalFilesDir == null) {
+            cachedExternalFilesDir = context.applicationContext.getExternalFilesDir(null)
+        }
+    }
+
+    fun getExternalFilesDir(context: Context): File? {
+        return cachedExternalFilesDir ?: context.getExternalFilesDir(null).also { cachedExternalFilesDir = it }
+    }
+
     @JvmStatic
     fun getOlePath(context: Context): String {
-        return context.getExternalFilesDir(null)?.let { "${it}/ole/" } ?: ""
+        return getExternalFilesDir(context)?.let { "$it/ole/" } ?: ""
     }
 
     @JvmStatic
@@ -32,7 +44,7 @@ object FileUtils {
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
 
     private fun createFilePath(context: Context, folder: String, filename: String): File {
-        val baseDirectory = File(context.getExternalFilesDir(null), folder)
+        val baseDirectory = File(getExternalFilesDir(context), folder)
 
         if (filename.contains("/")) {
             val subDirPath = filename.substring(0, filename.lastIndexOf('/'))

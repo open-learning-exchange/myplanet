@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -12,6 +11,7 @@ import io.realm.RealmQuery
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -40,7 +40,13 @@ class ProgressRepositoryImplTest {
     @Before
     fun setUp() {
         every { dispatcherProvider.io } returns testDispatcher
-        repository = spyk(ProgressRepositoryImpl(databaseService, dispatcherProvider), recordPrivateCalls = true)
+        val mockCoursesRepository = mockk<CoursesRepository>()
+        repository = spyk(ProgressRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            dispatcherProvider,
+            { mockCoursesRepository }
+        ), recordPrivateCalls = true)
         coEvery { repository["queryList"](RealmMyCourse::class.java, any<Function1<*, *>>()) } returns emptyList<RealmMyCourse>()
     }
 
@@ -181,7 +187,10 @@ class ProgressRepositoryImplTest {
 
         coEvery {
             repository["queryList"](RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
-        } returns listOf(RealmCourseProgress().apply { stepNum = 1 })
+        } returns listOf(RealmCourseProgress().apply {
+            stepNum = 1
+            courseId = "course1"
+        })
 
         coEvery {
             repository["queryList"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
@@ -192,12 +201,12 @@ class ProgressRepositoryImplTest {
         } returns exams
 
         coEvery {
-            repository["queryList"](RealmAnswer::class.java, any<Function1<RealmQuery<RealmAnswer>, Unit>>())
+            repository["queryList"](RealmAnswer::class.java, any<Function1<*, *>>())
         } returns answers
 
         coEvery {
-            repository["findByField"](RealmExamQuestion::class.java, "id", "q1", false)
-        } returns question
+            repository["queryList"](RealmExamQuestion::class.java, any<Function1<*, *>>())
+        } returns listOf(question)
 
         val data = repository.fetchCourseData("user1")
         advanceUntilIdle()

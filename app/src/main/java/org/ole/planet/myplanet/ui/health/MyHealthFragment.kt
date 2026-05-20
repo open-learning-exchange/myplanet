@@ -27,11 +27,9 @@ import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
@@ -49,11 +47,15 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
+
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -96,7 +98,7 @@ class MyHealthFragment : Fragment() {
 
     private fun startHealthSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isHealthSynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.HEALTH)) {
             checkServerAndStartSync()
         }
     }
@@ -128,7 +130,7 @@ class MyHealthFragment : Fragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshHealthData()
-                        sharedPrefManager.setHealthSynced(true)
+                        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.HEALTH, true)
                     }
                 }
             }
@@ -251,7 +253,7 @@ class MyHealthFragment : Fragment() {
             }
             userModel = fetchedUser
             setupButtons()
-            binding.lblHealthName.text = userModel?.getFullName() ?: getString(R.string.empty_text)
+            binding.lblHealthName.text = getDisplayName(userModel)
             binding.addNewRecord.setOnClickListener {
                 startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
             }
@@ -320,7 +322,7 @@ class MyHealthFragment : Fragment() {
                 searchJob?.cancel()
                 searchJob = viewLifecycleOwner.lifecycleScope.launch {
                     delay(300)
-                    val loadingJob = launch(Dispatchers.Main) {
+                    val loadingJob = launch(dispatcherProvider.main) {
                         delay(100)
                         alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
                         rv.visibility = View.GONE
@@ -375,7 +377,7 @@ class MyHealthFragment : Fragment() {
 
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
-            binding.txtFullName.text = getString(R.string.three_strings, currentUser.firstName, currentUser.middleName, currentUser.lastName)
+            binding.txtFullName.text = getDisplayName(currentUser)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
@@ -434,6 +436,17 @@ class MyHealthFragment : Fragment() {
                 binding.tvDataPlaceholder.visibility = View.GONE
             }
         }
+    }
+
+    private fun getDisplayName(user: RealmUser?): String {
+        if (user == null) return getString(R.string.n_a)
+
+        val fullName = listOfNotNull(user.firstName, user.middleName, user.lastName)
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .joinToString(" ")
+
+        return fullName.ifEmpty { user.name.orEmpty() }
     }
 
     private fun disableDobField() {

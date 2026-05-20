@@ -11,10 +11,7 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.provider.Settings
 import androidx.core.net.toUri
-import dagger.hilt.EntryPoint
-import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
-import dagger.hilt.components.SingletonComponent
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -24,25 +21,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 object NetworkUtils {
-    private val coroutineScope: CoroutineScope by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(context, NetworkUtilsEntryPoint::class.java)
-        entryPoint.applicationScope()
-    }
+    private val coroutineScope: CoroutineScope
+        get() {
+            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+            return entryPoint.applicationScope()
+        }
 
-    @EntryPoint
-    @InstallIn(SingletonComponent::class)
-    interface NetworkUtilsEntryPoint {
-        @ApplicationScope
-        fun applicationScope(): CoroutineScope
-    }
-
-    private val connectivityManager: ConnectivityManager by lazy {
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    }
+    private val connectivityManager: ConnectivityManager
+        get() = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
 
@@ -186,13 +175,13 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = EntryPointAccessors.fromApplication(context.applicationContext, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        val spm = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
         return spm.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {
-        val uri = url.toUri()
+        val uri = url.trim().toUri()
         val scheme = uri.scheme
-        return if (scheme != null) "$scheme://" else null
+        return if (scheme != null && !scheme.contains(" ")) "$scheme://" else null
     }
 }

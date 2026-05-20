@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
@@ -113,7 +112,7 @@ open class RealmExamQuestion : RealmObject() {
         }
 
         @JvmStatic
-        fun serializeQuestions(question: RealmResults<RealmExamQuestion>): JsonArray {
+        fun serializeQuestions(question: List<RealmExamQuestion>): JsonArray {
             val array = JsonArray()
             for (que in question) {
                 val `object` = JsonObject()

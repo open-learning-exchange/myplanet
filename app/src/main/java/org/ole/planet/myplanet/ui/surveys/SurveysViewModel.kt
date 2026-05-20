@@ -10,15 +10,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
@@ -28,7 +31,8 @@ class SurveysViewModel @Inject constructor(
     private val syncManager: SyncManager,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper
+    private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     enum class SortOption {
@@ -166,7 +170,7 @@ class SurveysViewModel @Inject constructor(
 
     fun startExamSync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        val isExamsSynced = sharedPrefManager.isExamsSynced()
+        val isExamsSynced = sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS)
 
         if (isFastSync && !isExamsSynced) {
             checkServerAndStartSync()
@@ -178,8 +182,10 @@ class SurveysViewModel @Inject constructor(
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
         viewModelScope.launch {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                MainApplication.isServerReachable(url)
+            withContext(dispatcherProvider.io) {
+                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                    MainApplication.isServerReachable(url)
+                }
             }
             startSyncManager()
         }
@@ -192,7 +198,7 @@ class SurveysViewModel @Inject constructor(
             }
 
             override fun onSyncComplete() {
-                sharedPrefManager.setExamsSynced(true)
+                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true)
                 _isLoading.value = false
                 loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
             }

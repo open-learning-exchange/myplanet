@@ -10,22 +10,21 @@ import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
-import kotlin.reflect.KClass
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.retry.RetryQueue
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadCoordinator @Inject constructor(
-    private val databaseService: DatabaseService,
+    private val uploadRepository: org.ole.planet.myplanet.repository.UploadRepository,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
-    private val retryQueue: RetryQueue
+    private val retryQueue: RetryQueue,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     companion object {
@@ -34,7 +33,7 @@ class UploadCoordinator @Inject constructor(
 
     suspend fun <T : RealmObject> upload(
         config: UploadConfig<T>
-    ): UploadResult<Int> = withContext(Dispatchers.IO) {
+    ): UploadResult<Int> = withContext(dispatcherProvider.io) {
         try {
             val itemsToUpload = queryItemsToUpload(config)
 
@@ -52,12 +51,24 @@ class UploadCoordinator @Inject constructor(
 
                 val (succeeded, failed) = uploadBatch(batch, config)
 
+                var dbFailedErrors = emptyList<UploadError>()
                 if (succeeded.isNotEmpty()) {
-                    updateDatabaseBatch(succeeded, config)
+                    val dbFailed = updateDatabaseBatch(succeeded, config)
+
+                    dbFailedErrors = dbFailed.map { failedItem ->
+                        UploadError(
+                            itemId = failedItem.localId,
+                            exception = Exception("Local DB update failed"),
+                            retryable = false
+                        )
+                    }
+
+                    val actuallySucceeded = succeeded.filter { it !in dbFailed }
+                    allSucceeded.addAll(actuallySucceeded)
                 }
 
-                allSucceeded.addAll(succeeded)
                 allFailed.addAll(failed)
+                allFailed.addAll(dbFailedErrors)
             }
 
             if (allFailed.isNotEmpty()) {
@@ -83,14 +94,10 @@ class UploadCoordinator @Inject constructor(
 
     private suspend fun <T : RealmObject> queryItemsToUpload(
         config: UploadConfig<T>
-    ): List<PreparedUpload<T>> = databaseService.withRealmAsync { realm ->
-        val query = realm.where(config.modelClass.java)
-        val filteredQuery = config.queryBuilder(query)
-        val results = filteredQuery.findAll()
+    ): List<PreparedUpload<T>> {
+        val items = uploadRepository.queryPending(config)
 
-        results.mapNotNull { item ->
-            val copiedItem = realm.copyFromRealm(item)
-
+        val tempResults = items.mapNotNull { copiedItem ->
             if (config.filterGuests && config.guestUserIdExtractor != null) {
                 val userId = config.guestUserIdExtractor.invoke(copiedItem)
                 if (userId?.startsWith("guest") == true) {
@@ -102,16 +109,30 @@ class UploadCoordinator @Inject constructor(
             val serialized = try {
                 when (val serializer = config.serializer) {
                     is UploadSerializer.Simple -> serializer.serialize(copiedItem)
-                    is UploadSerializer.WithRealm -> serializer.serialize(realm, copiedItem)
                     is UploadSerializer.WithContext -> serializer.serialize(copiedItem, context)
-                    is UploadSerializer.Full -> serializer.serialize(realm, copiedItem, context)
+                    is UploadSerializer.Async -> null
+                    is UploadSerializer.AsyncContext -> null
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Serialization failed for item", e)
                 return@mapNotNull null
             }
 
-            val localId = config.idExtractor(copiedItem) ?: ""
+            Triple(copiedItem, serialized, config.idExtractor(copiedItem) ?: "")
+        }
+
+        return tempResults.mapNotNull { (copiedItem, preSerialized, localId) ->
+            val serialized = try {
+                when (val serializer = config.serializer) {
+                    is UploadSerializer.Async -> serializer.serialize(copiedItem)
+                    is UploadSerializer.AsyncContext -> serializer.serialize(copiedItem, context)
+                    else -> preSerialized ?: return@mapNotNull null
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Serialization failed for item", e)
+                return@mapNotNull null
+            }
+
             val dbId = config.dbIdExtractor?.invoke(copiedItem)
             val jsonString = serialized.toString()
             val chunkSize = 3000
@@ -154,8 +175,8 @@ class UploadCoordinator @Inject constructor(
                     apiInterface.putDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
                 }
 
-                if (response.isSuccessful && response.body() != null) {
-                    val responseBody = response.body()!!
+                val responseBody = response.body()
+                if (response.isSuccessful && responseBody != null) {
                     val (idField, revField) = when (config.responseHandler) {
                         is ResponseHandler.Standard -> "id" to "rev"
                         is ResponseHandler.Custom -> config.responseHandler.idField to config.responseHandler.revField
@@ -177,8 +198,8 @@ class UploadCoordinator @Inject constructor(
                             UrlUtils.header,
                             "${UrlUtils.getUrl()}/${config.endpoint}/$docId"
                         )
-                        if (getResponse.isSuccessful && getResponse.body() != null) {
-                            val existingDoc = getResponse.body()!!
+                        val existingDoc = getResponse.body()
+                        if (getResponse.isSuccessful && existingDoc != null) {
                             val uploadedItem = UploadedItem(
                                 localId = preparedItem.localId,
                                 remoteId = getString("_id", existingDoc),
@@ -228,37 +249,8 @@ class UploadCoordinator @Inject constructor(
     private suspend fun <T : RealmObject> updateDatabaseBatch(
         succeeded: List<UploadedItem>,
         config: UploadConfig<T>
-    ) {
-        databaseService.executeTransactionAsync { realm ->
-            val localIds = succeeded.map { it.localId }
-            val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
-
-            val itemsById = mutableMapOf<String, T>()
-            localIds.chunked(1000).forEach { chunk ->
-                val results = realm.where(config.modelClass.java)
-                    .`in`(idFieldName, chunk.toTypedArray())
-                    .findAll()
-
-                results.forEach { item ->
-                    val localId = config.idExtractor(item) ?: ""
-                    itemsById[localId] = item
-                }
-            }
-
-            succeeded.forEach { uploadedItem ->
-                try {
-                    val item = itemsById[uploadedItem.localId]
-
-                    item?.let {
-                        setRealmField(it, "_id", uploadedItem.remoteId)
-                        setRealmField(it, "_rev", uploadedItem.remoteRev)
-                        config.additionalUpdates?.invoke(realm, it, uploadedItem)
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Failed to update item ${uploadedItem.localId}", e)
-                }
-            }
-        }
+    ): List<UploadedItem> {
+        return uploadRepository.markUploaded(config, succeeded)
     }
 
     private suspend fun <T : RealmObject> queueRetryableFailures(

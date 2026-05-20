@@ -7,7 +7,6 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,6 +17,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 
@@ -29,7 +30,9 @@ class ImprovedSyncManager @Inject constructor(
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val transactionSyncManager: TransactionSyncManager,
     private val standardStrategy: StandardSyncStrategy,
-    private val loginSyncManager: LoginSyncManager
+    private val loginSyncManager: LoginSyncManager,
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
@@ -37,7 +40,7 @@ class ImprovedSyncManager @Inject constructor(
 
     private var isSyncing = false
     private var listener: OnSyncListener? = null
-    private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
@@ -125,11 +128,9 @@ class ImprovedSyncManager @Inject constructor(
         loginSyncManager.syncAdmin()
         logger.endProcess("admin_sync")
 
-        poolManager.useRealm { realm ->
-            logger.startProcess("on_synced")
-            org.ole.planet.myplanet.model.RealmResourceActivity.onSynced(realm, settings)
-            logger.endProcess("on_synced")
-        }
+        logger.startProcess("on_synced")
+        activitiesRepository.recordSyncActivity(settings.getString("userId", "") ?: "")
+        logger.endProcess("on_synced")
 
         logger.stopLogging()
     }
@@ -141,9 +142,7 @@ class ImprovedSyncManager @Inject constructor(
             logger.startProcess("${table}_sync")
 
             if (strategy.isSupported(table)) {
-                poolManager.useRealm { realm ->
-                    strategy.syncTable(table, realm, config).collect()
-                }
+                strategy.syncTable(table, config).collect()
             } else {
                 // Fallback to standard sync
                 transactionSyncManager.syncDb(table)

@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -17,36 +18,36 @@ import androidx.core.content.edit
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.workDataOf
+import dagger.hilt.android.AndroidEntryPoint
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
+import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.services.DownloadWorker
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.availableExternalMemorySize
 import org.ole.planet.myplanet.utils.FileUtils.externalMemoryAvailable
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.UrlUtils.header
-import org.ole.planet.myplanet.model.DownloadResult
-import org.ole.planet.myplanet.repository.DownloadRepository
-import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class DownloadService : Service() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     @Inject
     lateinit var downloadRepository: DownloadRepository
 
@@ -58,22 +59,25 @@ class DownloadService : Service() {
     private lateinit var preferences: SharedPreferences
     private var currentDownloadUrl: String = ""
     private var fromSync = false
-    private var totalDownloadsCount = 0
-    private var completedDownloadsCount = 0
     private var lastNotificationUpdateTime = 0L
     private var currentFileProgress = 0
     private val processedUrls = mutableSetOf<String>()
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
+    private var isQueueRunning = false
 
     private val downloadJob = SupervisorJob()
-    private val downloadScope = CoroutineScope(downloadJob + Dispatchers.IO)
+    private lateinit var downloadScope: CoroutineScope
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    override fun onCreate() {
+        super.onCreate()
+        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
         DownloadUtils.createChannels(this)
@@ -84,7 +88,15 @@ class DownloadService : Service() {
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
 
         downloadScope.launch {
-            processDownloadQueue()
+            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+            if (!isQueueRunning) {
+                isQueueRunning = true
+                try {
+                    processDownloadQueue()
+                } finally {
+                    isQueueRunning = false
+                }
+            }
         }
 
         return START_STICKY
@@ -98,42 +110,31 @@ class DownloadService : Service() {
                 if (sessionCompletedCount > 0) {
                     showCompletionNotification(false)
                 }
-
-                preferences.edit {
-                    remove(PENDING_DOWNLOADS_KEY)
-                    remove(PRIORITY_DOWNLOADS_KEY)
-                }
                 stopSelf()
                 return
             }
 
             processedUrls.add(nextUrl.url)
             sessionTotalCount++
-            totalDownloadsCount = getRemainingCount() + 1
 
             isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
             initDownload(nextUrl.url, fromSync)
 
-            completedDownloadsCount++
             sessionCompletedCount++
 
             cleanupProcessedUrls()
         }
     }
 
-    private data class QueuedUrl(val url: String, val isPriority: Boolean)
+    internal data class QueuedUrl(val url: String, val isPriority: Boolean, val priority: Int = 0)
 
-    private fun getNextPriorityUrl(): QueuedUrl? {
-        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val next = priorityUrls.firstOrNull { it !in processedUrls && it.isNotBlank() }
-        return next?.let { QueuedUrl(it, isPriority = true) }
+    internal fun getNextPriorityUrl(): QueuedUrl? {
+        return Companion.getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
     }
 
-    private fun getNextPendingUrl(): QueuedUrl? {
-        val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val next = pendingUrls.firstOrNull { it !in processedUrls && it.isNotBlank() }
-        return next?.let { QueuedUrl(it, isPriority = false) }
+    internal fun getNextPendingUrl(): QueuedUrl? {
+        return Companion.getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
     }
 
     private fun getRemainingCount(): Int {
@@ -158,7 +159,7 @@ class DownloadService : Service() {
         DownloadUtils.createChannels(this)
         notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
-            .setContentText("Starting downloads (0/$totalDownloadsCount)")
+            .setContentText("Starting downloads (0/${getRemainingCount() + 1})")
             .setSmallIcon(R.drawable.ic_download)
             .setProgress(100, 0, true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -174,6 +175,12 @@ class DownloadService : Service() {
         try {
             if (url.isBlank()) {
                 downloadFailed("Invalid URL - empty or blank", fromSync)
+                return
+            }
+
+            if (FileUtils.checkFileExist(this, url)) {
+                DownloadUtils.updateResourceOfflineStatus(url)
+                onDownloadComplete(url)
                 return
             }
 
@@ -203,7 +210,7 @@ class DownloadService : Service() {
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Download initialization failed", e)
             downloadFailed("Download initialization failed: ${e.localizedMessage ?: "Unknown error"}", fromSync)
         }
     }
@@ -363,8 +370,8 @@ class DownloadService : Service() {
     private fun showCompletionNotification(hadErrors: Boolean) {
         val notification = DownloadUtils.buildCompletionNotification(
             this,
-            completedDownloadsCount,
-            totalDownloadsCount,
+            sessionCompletedCount,
+            sessionTotalCount,
             hadErrors,
             forWorker = false
         )
@@ -375,7 +382,8 @@ class DownloadService : Service() {
     override fun onDestroy() {
         try {
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping foreground service", e)
         }
         downloadJob.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
@@ -383,6 +391,7 @@ class DownloadService : Service() {
     }
 
     companion object {
+        private const val TAG = "DownloadService"
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"
@@ -391,6 +400,25 @@ class DownloadService : Service() {
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
+
+        internal fun getNextPriorityUrl(downloadQueue: List<QueuedUrl>): QueuedUrl? {
+            if (downloadQueue.isEmpty()) return null
+            return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
+        }
+
+        @androidx.annotation.VisibleForTesting
+        internal fun getNextUrl(
+            preferences: SharedPreferences,
+            key: String,
+            processedUrls: Set<String>,
+            isPriority: Boolean
+        ): QueuedUrl? {
+            val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
+            val queue = urls.sorted()
+                .filter { it !in processedUrls && it.isNotBlank() }
+                .map { QueuedUrl(it, isPriority) }
+            return getNextPriorityUrl(queue)
+        }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, DownloadService::class.java).apply {
@@ -411,7 +439,7 @@ class DownloadService : Service() {
                     try {
                         ContextCompat.startForegroundService(context, intent)
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Failed to start foreground service", e)
                         handleForegroundServiceError(context, urlsKey, fromSync)
                     }
                 } else {
@@ -421,7 +449,7 @@ class DownloadService : Service() {
                 try {
                     ContextCompat.startForegroundService(context, intent)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Failed to start foreground service", e)
                     handleForegroundServiceError(context, urlsKey, fromSync)
                 }
             }
@@ -441,7 +469,7 @@ class DownloadService : Service() {
                 }
                 context.startService(intent)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Failed to start service", e)
                 startDownloadWork(context, urlsKey, fromSync)
             }
         }

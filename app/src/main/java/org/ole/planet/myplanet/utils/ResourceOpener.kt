@@ -6,7 +6,6 @@ import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseResourceFragment
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.viewer.AudioPlayerActivity
@@ -22,16 +21,20 @@ object ResourceOpener {
         return "${item.id}/${item.resourceLocalAddress}"
     }
 
-    fun openIntent(activity: Activity, items: RealmMyLibrary, typeClass: Class<*>) {
+    fun openIntent(activity: Activity, items: RealmMyLibrary, typeClass: Class<*>, type: String = "offline") {
         val fileOpenIntent = Intent(activity, typeClass)
-        if (items.resourceLocalAddress?.contains("ole/audio") == true ||
-            items.resourceLocalAddress?.contains("ole/video") == true) {
-            fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
-            fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
+        if (type == "online") {
+            fileOpenIntent.putExtra("TOUCHED_FILE", UrlUtils.getUrl(items))
+            fileOpenIntent.putExtra("isOnline", true)
         } else {
-            fileOpenIntent.putExtra("TOUCHED_FILE", resourcePath(items))
-            fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
+            if (items.resourceLocalAddress?.contains("ole/audio") == true ||
+                items.resourceLocalAddress?.contains("ole/video") == true) {
+                fileOpenIntent.putExtra("TOUCHED_FILE", items.resourceLocalAddress)
+            } else {
+                fileOpenIntent.putExtra("TOUCHED_FILE", resourcePath(items))
+            }
         }
+        fileOpenIntent.putExtra("RESOURCE_TITLE", items.title)
         activity.startActivity(fileOpenIntent)
     }
 
@@ -53,7 +56,7 @@ object ResourceOpener {
         }
     }
 
-    fun checkFileExtension(activity: Activity, items: RealmMyLibrary) {
+    fun checkFileExtension(activity: Activity, items: RealmMyLibrary, type: String = "offline") {
         val filenameArray = items.resourceLocalAddress?.split(".")?.toTypedArray()
         val extension = filenameArray?.get(filenameArray.size - 1)
         val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
@@ -62,7 +65,7 @@ object ResourceOpener {
             when {
                 mimetype.contains("image") -> openIntent(activity, items, ImageViewerActivity::class.java)
                 mimetype.contains("pdf") -> openPdf(activity, items)
-                mimetype.contains("audio") -> openIntent(activity, items, AudioPlayerActivity::class.java)
+                mimetype.contains("audio") -> openIntent(activity, items, AudioPlayerActivity::class.java, type)
                 else -> checkMoreFileExtensions(activity, extension, items)
             }
         }
@@ -74,7 +77,7 @@ object ResourceOpener {
         bundle.putString("videoType", videoType)
         if (videoType == "online") {
             bundle.putString("videoURL", "${UrlUtils.getUrl(items)}")
-            bundle.putString("Auth", "${BaseResourceFragment.auth}")
+            bundle.putString("Auth", "")
         } else if (videoType == "offline") {
             if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
                 bundle.putString("videoURL", items.resourceLocalAddress)
@@ -112,7 +115,7 @@ object ResourceOpener {
         if (mimetype.startsWith("video")) {
             playVideo(activity, videoType, items)
         } else {
-            checkFileExtension(activity, items)
+            checkFileExtension(activity, items, videoType)
         }
     }
 }

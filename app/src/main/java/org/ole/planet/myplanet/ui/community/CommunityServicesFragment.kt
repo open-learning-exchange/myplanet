@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,6 +15,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.FragmentNavigator.replaceFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
@@ -104,7 +106,13 @@ class CommunityServicesFragment : BaseTeamFragment() {
                             tag = ""
                         )
                     }
-                }
+                } else {
+                    val url = team.route ?: return@setOnClickListener
+                    val intent = Intent(requireContext(), WebViewActivity::class.java).apply {
+                        putExtra("link", url)
+                        putExtra("title", team.title)
+                    }
+                    startActivity(intent)}
             }
             parent.addView(b)
         }

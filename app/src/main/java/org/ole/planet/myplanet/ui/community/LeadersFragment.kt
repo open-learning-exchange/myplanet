@@ -10,7 +10,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @AndroidEntryPoint
@@ -18,6 +18,8 @@ class LeadersFragment : Fragment() {
     private var binding: FragmentMembersBinding? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var userRepository: UserRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         binding = FragmentMembersBinding.inflate(inflater, container, false)
@@ -30,7 +32,7 @@ class LeadersFragment : Fragment() {
         if (leaders.isEmpty()) {
             binding?.tvNodata?.let { it.text = getString(R.string.no_data_available) }
         } else {
-            val leadersList = RealmUser.parseLeadersJson(leaders)
+            val leadersList = userRepository.parseLeadersJson(leaders)
             binding?.rvMember?.layoutManager = GridLayoutManager(activity, 2)
             val adapter = CommunityLeadersAdapter(requireActivity())
             binding?.rvMember?.adapter = adapter

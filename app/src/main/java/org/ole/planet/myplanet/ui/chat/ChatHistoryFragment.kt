@@ -12,12 +12,10 @@ import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.HashMap
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -26,14 +24,13 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -76,8 +73,6 @@ class ChatHistoryFragment : Fragment() {
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var chatApiService: ChatApiService
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
@@ -184,7 +179,7 @@ class ChatHistoryFragment : Fragment() {
 
     private fun startChatHistorySync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isChatHistorySynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.CHAT_HISTORY)) {
             checkServerAndStartSync()
         }
     }
@@ -218,7 +213,7 @@ class ChatHistoryFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-                            sharedPrefManager.setChatHistorySynced(true)
+                            sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
 
                             refreshChatHistory()
                         }
@@ -258,7 +253,8 @@ class ChatHistoryFragment : Fragment() {
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
             val targets = cachedTargets ?: loadShareTargets(
                 sharedPrefManager.getParentCode(),
-                sharedPrefManager.getCommunityName()
+                sharedPrefManager.getCommunityName(),
+                currentUser?._id
             )
 
             user = currentUser
@@ -280,6 +276,13 @@ class ChatHistoryFragment : Fragment() {
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
                         val currentUser = user
+                        val chatId = chat._id ?: ""
+                        val viewInId = map["viewInId"] ?: ""
+                        if (chatId.isNotEmpty() && viewInId.isNotEmpty() &&
+                            voicesRepository.isAlreadyShared(chatId, viewInId)) {
+                            Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
+                            return@launch
+                        }
                         val createdNews = voicesRepository.createNews(map, currentUser, null)
                         if (currentUser?.planetCode != null) {
                             sharedNewsMessages = sharedNewsMessages + createdNews
@@ -323,15 +326,29 @@ class ChatHistoryFragment : Fragment() {
         return userRepository.getUserById(userId)
     }
 
-    private suspend fun loadShareTargets(parentCode: String?, communityName: String?): ChatShareTargets {
-        val teams = teamsRepository.getTeamSummaries()
-        val enterprises = teamsRepository.getShareableEnterpriseSummaries()
+    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
+        val teams = teamsRepository.getTeamSummaries(userId)
+        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
         val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
             "$communityName@$parentCode"
         } else {
             null
         }
-        val community = communityId?.let { teamsRepository.getTeamSummaryById(it) }
+        val community = communityId?.let { id ->
+            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
+                _id = id,
+                name = communityName ?: "",
+                teamType = null,
+                teamPlanetCode = null,
+                createdDate = null,
+                type = null,
+                status = null,
+                teamId = null,
+                description = null,
+                services = null,
+                rules = null
+            )
+        }
         return ChatShareTargets(community, teams, enterprises)
     }
 
@@ -343,11 +360,8 @@ class ChatHistoryFragment : Fragment() {
         sharedViewModel.setAiProvidersLoading(true)
         sharedViewModel.setAiProvidersError(false)
 
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
         viewLifecycleOwner.lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            val providers = chatApiService.fetchAiProviders()
+            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 sharedViewModel.setAiProvidersError(true)

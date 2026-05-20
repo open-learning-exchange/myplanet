@@ -95,7 +95,7 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
             val courseName = item.asJsonObject["courseName"]?.asString
             val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt
             val progressMax = item.asJsonObject["progress"]?.asJsonObject?.get("max")?.asInt
-            val mistakes = item.asJsonObject["mistakes"]?.asJsonObject
+            val mistakes = item.asJsonObject["mistakes"]?.asInt
             val stepMistake = item.asJsonObject["stepMistake"]?.asJsonObject
             return listOf(courseName, progressCurrent, progressMax, mistakes, stepMistake)
         }

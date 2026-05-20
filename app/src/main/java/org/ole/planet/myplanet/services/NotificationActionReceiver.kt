@@ -6,7 +6,6 @@ import android.content.Intent
 import android.provider.Settings
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -14,8 +13,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.NotificationUtils
 
 @AndroidEntryPoint
 class NotificationActionReceiver : BroadcastReceiver() {

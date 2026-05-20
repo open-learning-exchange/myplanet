@@ -13,7 +13,9 @@ import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -32,9 +34,11 @@ import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
+import org.ole.planet.myplanet.services.CachedMyLifeItem
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
@@ -110,14 +114,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
             now[Calendar.YEAR] = i
             now[Calendar.MONTH] = i1
             now[Calendar.DAY_OF_MONTH] = i2
-            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis) { urls ->
-                if (urls.isNotEmpty()) {
-                    Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
-                    DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
-                } else {
-                    Utilities.toast(activity, getString(R.string.no_images_to_download))
-                }
-            }
+            newsViewModel.getPrivateImageUrlsCreatedAfter(now.timeInMillis)
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
@@ -168,6 +165,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
                         view?.findViewById<TextView>(R.id.txtFullName)?.text =
                             getString(R.string.user_name, fullName, offlineLogins)
                     }
+            }
+            launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    newsViewModel.privateImageUrls.collect { urls ->
+                        if (urls.isNotEmpty()) {
+                            Utilities.toast(activity, getString(R.string.downloading_images_please_check_notification))
+                            DownloadUtils.openDownloadService(activity, ArrayList(urls), false)
+                        } else {
+                            Utilities.toast(activity, getString(R.string.no_images_to_download))
+                        }
+                    }
+                }
             }
         }
     }
@@ -268,26 +277,50 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
     }
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
-        val user = profileDbHandler.getUserModel()
         val userId = prefData.getUserId().ifEmpty { "--" }
 
-        val allForUser = lifeRepository.getMyLifeByUserId(userId)
-        var visibleItems = allForUser.filter { it.isVisible }
+        val cached = prefData.getCachedMyLifeItems(userId)
+        if (cached != null) {
+            renderCachedMyLifeItems(flexboxLayout, cached.filter { it.isVisible })
+            updateMyLifeSurveyCount()
 
-        if (allForUser.isEmpty()) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                val realmItems = lifeRepository.getMyLifeByUserId(userId, ensureLatest = false)
+                if (realmItems.isNotEmpty()) {
+                    prefData.cacheMyLifeItems(userId, realmItems)
+                }
+            }
+            return
+        }
+
+        val allForUser = lifeRepository.getMyLifeByUserId(userId, ensureLatest = false)
+        val visibleItems = if (allForUser.isEmpty()) {
             lifeRepository.seedMyLifeIfEmpty(userId, getMyLifeListBase(userId))
-            visibleItems = lifeRepository.getMyLifeByUserId(userId).filter { it.isVisible }
+            val seeded = lifeRepository.getMyLifeByUserId(userId, ensureLatest = true)
+            prefData.cacheMyLifeItems(userId, seeded)
+            seeded.filter { it.isVisible }
+        } else {
+            prefData.cacheMyLifeItems(userId, allForUser)
+            allForUser.filter { it.isVisible }
         }
 
         for ((itemCnt, items) in visibleItems.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
         }
-
-        val surveyCount = viewModel.getSurveySubmissionCount(user?.id)
-        updateMyLifeSurveyCount(flexboxLayout, surveyCount)
+        updateMyLifeSurveyCount()
     }
 
-    private fun updateMyLifeSurveyCount(flexboxLayout: FlexboxLayout, surveyCount: Int) {
+    private fun renderCachedMyLifeItems(flexboxLayout: FlexboxLayout, items: List<CachedMyLifeItem>) {
+        items.forEachIndexed { itemCnt, item ->
+            val realmMyLife = RealmMyLife(item.imageId, null, item.title).apply {
+                isVisible = item.isVisible
+                weight = item.weight
+            }
+            flexboxLayout.addView(getLayout(itemCnt, realmMyLife, 0), params)
+        }
+    }
+
+    private fun updateMyLifeSurveyCount() {
         // Update views with survey count if needed
     }
 

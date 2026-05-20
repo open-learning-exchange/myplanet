@@ -34,7 +34,7 @@
                 android:paddingLeft="12dp"
                 android:paddingTop="8dp"
                 android:paddingRight="12dp"
-                android:textColor="#ffffff"
+                android:textColor="@color/chat_user_message_text"
                 android:textIsSelectable="true"
                 android:textSize="16sp" />
         </LinearLayout>

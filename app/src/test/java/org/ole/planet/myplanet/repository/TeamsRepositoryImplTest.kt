@@ -10,11 +10,11 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import kotlinx.coroutines.test.resetMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -31,6 +31,7 @@ class TeamsRepositoryImplTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -57,8 +58,12 @@ class TeamsRepositoryImplTest {
         coEvery { serverUrlMapper.processUrl(any()) } returns serverUrlMapping
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
+        val mockUserRepository = mockk<UserRepository>(relaxed = true)
+
         teamsRepository = TeamsRepositoryImpl(
+            activitiesRepository,
             databaseService,
+            UnconfinedTestDispatcher(),
             userSessionManager,
             uploadManager,
             gson,
@@ -66,7 +71,7 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            apiInterfaceMock
+            mockUserRepository
         )
     }
 
@@ -84,7 +89,7 @@ class TeamsRepositoryImplTest {
 
         coEvery { uploadManager.uploadResource(any()) } returns Unit
         coEvery { uploadManager.uploadTeams() } returns Unit
-        coEvery { uploadManager.uploadTeamActivities(any()) } returns Unit
+        coEvery { uploadManager.uploadTeamActivities() } returns Unit
 
         teamsRepository.syncTeamActivities()
 
@@ -93,7 +98,7 @@ class TeamsRepositoryImplTest {
         // Verify that the methods on uploadManager were called
         coVerify { uploadManager.uploadResource(null) }
         coVerify { uploadManager.uploadTeams() }
-        coVerify { uploadManager.uploadTeamActivities(apiInterfaceMock) }
+        coVerify { uploadManager.uploadTeamActivities() }
 
         // Unmock static objects
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)

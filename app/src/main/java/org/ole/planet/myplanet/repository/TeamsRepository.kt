@@ -1,13 +1,17 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import com.google.gson.JsonObject
+import io.realm.Realm
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamDetails
+import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 
@@ -34,19 +38,28 @@ data class JoinRequestNotification(
 
 data class TeamUploadData(
     val teamId: String?,
-    val serialized: JsonObject
+    val serialized: JsonObject,
+    val isDeletePending: Boolean = false
 )
 
 interface TeamsRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)
+    suspend fun deleteLocalTeamRecord(teamId: String?)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
-    suspend fun getTeamSummaries(): List<TeamSummary>
+    suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam>
+    suspend fun getResourceIds(teamId: String): List<String>
+    suspend fun getResourceIdsByUser(userId: String?): List<String>
+    suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
     suspend fun getShareableEnterprises(): List<RealmMyTeam>
-    suspend fun getShareableEnterpriseSummaries(): List<TeamSummary>
+    suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary>
+    fun getMyTeamDetailsFlow(userId: String): Flow<List<TeamDetails>>
+    suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails>
+    suspend fun getTeamDetails(userId: String?): List<TeamDetails>
+
     suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
-    suspend fun getTeamCourses(teamId: String): List<RealmMyCourse>
+    suspend fun getTeamCourseIds(teamId: String): List<String>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
     suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam?
     suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam?
@@ -57,7 +70,7 @@ interface TeamsRepository {
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
-    suspend fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
+    fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
     suspend fun getTasks(userId: String?): List<RealmTeamTask>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
@@ -67,7 +80,7 @@ interface TeamsRepository {
     suspend fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?)
     suspend fun leaveTeam(teamId: String, userId: String?)
     suspend fun removeMember(teamId: String, userId: String)
-    suspend fun addResourceLinks(teamId: String, resources: List<RealmMyLibrary>, user: RealmUser?)
+    suspend fun addResourceLinks(teamId: String, resources: List<TeamResourceDto>, userId: String?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
     suspend fun deleteTask(taskId: String)
     suspend fun upsertTask(task: RealmTeamTask)
@@ -86,7 +99,6 @@ interface TeamsRepository {
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
         userParentCode: String?, teamType: String?
     )
-
     suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String>
     suspend fun updateTeam(teamId: String, name: String, description: String, services: String,
         rules: String, updatedBy: String?
@@ -107,6 +119,7 @@ interface TeamsRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
     suspend fun getJoinedMembers(teamId: String): List<RealmUser>
+    suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
     suspend fun getAssignee(userId: String): RealmUser?
@@ -115,10 +128,19 @@ interface TeamsRepository {
     suspend fun createEnterprise(name: String, description: String, services: String,
         rules: String, isPublic: Boolean, user: RealmUser
     ): Result<String>
-
     suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean
     suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser?
     suspend fun getTeamCreator(teamId: String): String?
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
+
+    suspend fun insertTeamLog(json: JsonObject)
+    suspend fun insertTeamLogs(logs: List<JsonObject>)
+    suspend fun getLastVisit(userName: String?, teamId: String?): Long?
+    fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
+    fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
+    suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertTasksFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertTeamActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

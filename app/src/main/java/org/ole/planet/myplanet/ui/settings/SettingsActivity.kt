@@ -26,16 +26,15 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -46,9 +45,9 @@ import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.clearSharedPref
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -105,7 +104,9 @@ class SettingsActivity : AppCompatActivity() {
         @Inject
         lateinit var retryQueue: RetryQueue
         @Inject
-        lateinit var databaseService: DatabaseService
+        lateinit var configurationsRepository: ConfigurationsRepository
+        @Inject
+        lateinit var dispatcherProvider: DispatcherProvider
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -176,6 +177,14 @@ class SettingsActivity : AppCompatActivity() {
 
             clearDataButtonInit()
             initRetryQueueDebug()
+            initStorageBreakdown()
+        }
+
+        private fun initStorageBreakdown() {
+            findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
+                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                true
+            }
         }
 
         private fun initRetryQueueDebug() {
@@ -217,7 +226,7 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     val dialog = AlertDialog.Builder(requireActivity())
                         .setTitle(R.string.retry_queue_status)
                         .setMessage(details)
@@ -247,7 +256,7 @@ class SettingsActivity : AppCompatActivity() {
                         clearButton.setOnClickListener {
                             lifecycleScope.launch {
                                 val cleared = retryQueue.safeClearQueue()
-                                withContext(Dispatchers.Main) {
+                                withContext(dispatcherProvider.main) {
                                     if (cleared) {
                                         Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
                                     } else {
@@ -270,10 +279,10 @@ class SettingsActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                databaseService.clearAll()
-                                clearSharedPref()
-                                withContext(Dispatchers.Main) {
+                            lifecycleScope.launch(dispatcherProvider.io) {
+                                configurationsRepository.clearAllData()
+                                sharedPrefManager.clearPreferences()
+                                withContext(dispatcherProvider.main) {
                                     restartApp()
                                 }
                             }
@@ -345,19 +354,19 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun setAutoSyncToggleOn() {
-            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server")
-            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync")
-            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync")
+            val autoSync = findPreference<SwitchPreference>("auto_sync_with_server") ?: return
+            val autoForceWeeklySync = findPreference<SwitchPreference>("force_weekly_sync") ?: return
+            val autoForceMonthlySync = findPreference<SwitchPreference>("force_monthly_sync") ?: return
             val lastSyncDate = findPreference<Preference>("lastSyncDate")
-            autoSync!!.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
+            autoSync.onPreferenceChangeListener = OnPreferenceChangeListener { _: Preference?, _: Any? ->
                 if (autoSync.isChecked) {
-                    if (autoForceWeeklySync!!.isChecked) {
-                        autoForceMonthlySync!!.isChecked = false
-                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync!!.isChecked
+                    if (autoForceWeeklySync.isChecked) {
+                        autoForceMonthlySync.isChecked = false
+                    } else autoForceWeeklySync.isChecked = !autoForceMonthlySync.isChecked
                 }
                 true
             }
-            autoForceSync(autoSync, autoForceWeeklySync!!, autoForceMonthlySync!!)
+            autoForceSync(autoSync, autoForceWeeklySync, autoForceMonthlySync)
             autoForceSync(autoSync, autoForceMonthlySync, autoForceWeeklySync)
             val lastSynced = sharedPrefManager.getLastSync()
             if (lastSynced == 0L) {

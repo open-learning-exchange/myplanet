@@ -7,16 +7,18 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -25,24 +27,27 @@ class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     fun login(userName: String?, password: String?, listener: OnSyncListener) {
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 if (userName.isNullOrBlank() || password.isNullOrBlank()) {
-                    withContext(Dispatchers.Main) { listener.onSyncFailed("Username and password are required.") }
+                    withContext(dispatcherProvider.main) { listener.onSyncFailed("Username and password are required.") }
                     return@launch
                 }
 
-                withContext(Dispatchers.Main) { listener.onSyncStarted() }
+                withContext(dispatcherProvider.main) { listener.onSyncStarted() }
 
                 val authHeader = try {
                     "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    withContext(Dispatchers.Main) { listener.onSyncFailed("Authentication encoding failed.") }
+                    withContext(dispatcherProvider.main) { listener.onSyncFailed("Authentication encoding failed.") }
                     return@launch
                 }
 
@@ -50,7 +55,7 @@ class LoginSyncManager @Inject constructor(
                     String.format("%s/_users/%s", UrlUtils.getUrl(), "org.couchdb.user:$userName")
                 } catch (e: Exception) {
                     e.printStackTrace()
-                    withContext(Dispatchers.Main) { listener.onSyncFailed("Invalid server URL.") }
+                    withContext(dispatcherProvider.main) { listener.onSyncFailed("Invalid server URL.") }
                     return@launch
                 }
 
@@ -64,12 +69,12 @@ class LoginSyncManager @Inject constructor(
                                 500 -> "Server error. Please try again later."
                                 else -> "Login failed. Error code: ${response.code()}"
                             }
-                            withContext(Dispatchers.Main) { listener.onSyncFailed(errorMsg) }
+                            withContext(dispatcherProvider.main) { listener.onSyncFailed(errorMsg) }
                             return@launch
                         }
 
                         response.body() == null -> {
-                            withContext(Dispatchers.Main) { listener.onSyncFailed("Empty response from server.") }
+                            withContext(dispatcherProvider.main) { listener.onSyncFailed("Empty response from server.") }
                             return@launch
                         }
                     }
@@ -79,25 +84,25 @@ class LoginSyncManager @Inject constructor(
                         try {
                             val derivedKey = jsonDoc["derived_key"].asString
                             val salt = jsonDoc["salt"].asString
-                            val isAuthenticated = withContext(Dispatchers.Default) {
+                            val isAuthenticated = withContext(dispatcherProvider.default) {
                                 androidDecrypter(userName, password, derivedKey, salt)
                             }
 
                             if (isAuthenticated) {
                                 checkManagerAndInsert(jsonDoc, listener)
                             } else {
-                                withContext(Dispatchers.Main) {
+                                withContext(dispatcherProvider.main) {
                                     listener.onSyncFailed("Authentication failed. Invalid credentials.")
                                 }
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            withContext(Dispatchers.Main) {
+                            withContext(dispatcherProvider.main) {
                                 listener.onSyncFailed("Authentication processing failed.")
                             }
                         }
                     } else {
-                        withContext(Dispatchers.Main) { listener.onSyncFailed("Server response missing authentication data.") }
+                        withContext(dispatcherProvider.main) { listener.onSyncFailed("Server response missing authentication data.") }
                     }
                 } catch (t: Exception) {
                     try {
@@ -108,21 +113,21 @@ class LoginSyncManager @Inject constructor(
                             is java.net.ConnectException -> "Unable to connect to server."
                             else -> "Network error: ${t.message ?: "Unknown error"}"
                         }
-                        withContext(Dispatchers.Main) { listener.onSyncFailed(errorMsg) }
+                        withContext(dispatcherProvider.main) { listener.onSyncFailed(errorMsg) }
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        withContext(Dispatchers.Main) { listener.onSyncFailed("Network error occurred.") }
+                        withContext(dispatcherProvider.main) { listener.onSyncFailed("Network error occurred.") }
                     }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(Dispatchers.Main) { listener.onSyncFailed("Login initialization failed.") }
+                withContext(dispatcherProvider.main) { listener.onSyncFailed("Login initialization failed.") }
             }
         }
     }
 
     fun syncAdmin() {
-        MainApplication.applicationScope.launch {
+        applicationScope.launch {
             try {
                 val `object` = JsonObject()
                 val selector = JsonObject()
@@ -167,14 +172,14 @@ class LoginSyncManager @Inject constructor(
 
     private suspend fun checkManagerAndInsert(jsonDoc: JsonObject?, listener: OnSyncListener) {
         if (!isManager(jsonDoc)) {
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 listener.onSyncFailed(context.getString(R.string.user_verification_in_progress))
             }
             return
         }
 
-        userRepository.saveUser(jsonDoc, sharedPrefManager.rawPreferences)
-        withContext(Dispatchers.Main) {
+        userSyncRepository.saveUser(jsonDoc)
+        withContext(dispatcherProvider.main) {
             listener.onSyncComplete()
         }
     }

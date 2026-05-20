@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.queryList
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUser
 
 class EventsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-) : RealmRepository(databaseService), EventsRepository {
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+) : RealmRepository(databaseService, realmDispatcher), EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup> {
         return queryList(RealmMeetup::class.java) {
@@ -58,6 +62,27 @@ class EventsRepositoryImpl @Inject constructor(
             }
         }
         return getMeetupById(meetupId)
+    }
+
+    override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            RealmMeetup.insert(realmTx, doc)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
     }
 
     override suspend fun createMeetup(meetup: RealmMeetup): Boolean {

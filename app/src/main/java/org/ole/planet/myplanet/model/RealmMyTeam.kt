@@ -1,20 +1,14 @@
 package org.ole.planet.myplanet.model
 
-import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
-import org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 
 open class RealmMyTeam : RealmObject() {
     @PrimaryKey
@@ -50,6 +44,7 @@ open class RealmMyTeam : RealmObject() {
     var date: Long = 0
     var isPublic = false
     var updated = false
+    var isDeletePending = false
     var beginningBalance = 0
     var sales = 0
     var otherIncome = 0
@@ -130,17 +125,6 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
-        private fun processDescription(description: String?) {
-            val links = extractLinks(description ?: "")
-            val baseUrl = getUrl()
-            val concatenatedLinks = LinkedHashSet<String>()
-            for (link in links) {
-                val concatenatedLink = "$baseUrl/$link"
-                concatenatedLinks.add(concatenatedLink)
-            }
-            openDownloadService(context, ArrayList(concatenatedLinks), true)
-        }
-
         @JvmStatic
         fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
             team.description = JsonUtils.getString("description", doc)
@@ -156,110 +140,16 @@ open class RealmMyTeam : RealmObject() {
         }
 
         @JvmStatic
-        fun insertMyTeams(doc: JsonObject, mRealm: Realm) {
-            val status = JsonUtils.getString("status", doc)
-            if (status == "archived") {
-                return
-            }
-
-            val teamId = JsonUtils.getString("_id", doc)
-            val docType = JsonUtils.getString("docType", doc)
-            val userId = JsonUtils.getString("userId", doc)
-            val teamIdField = JsonUtils.getString("teamId", doc)
-
-            if (docType == "membership" && userId.isNotBlank() && teamIdField.isNotBlank()) {
-                // Server accepted the request (possibly as a new doc); remove any stale request records
-                mRealm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamIdField)
-                    .equalTo("userId", userId)
-                    .equalTo("docType", "request")
-                    .findAll()
-                    .deleteAllFromRealm()
-            } else if (docType == "request" && userId.isNotBlank() && teamIdField.isNotBlank()) {
-                // Skip stale request record if the user is already a member
-                val alreadyMember = mRealm.where(RealmMyTeam::class.java)
-                    .equalTo("teamId", teamIdField)
-                    .equalTo("userId", userId)
-                    .equalTo("docType", "membership")
-                    .count() > 0
-                if (alreadyMember) return
-            }
-
-            var myTeams = mRealm.where(RealmMyTeam::class.java).equalTo("_id", teamId).findFirst()
-            if (myTeams == null) {
-                myTeams = mRealm.createObject(RealmMyTeam::class.java, teamId)
-            }
-            myTeams?.let {
-                populateTeamFields(doc, it, true)
-                processDescription(it.description)
-            }
-        }
-
-        @JvmStatic
-        fun getResourceIds(teamId: String?, realm: Realm): MutableList<String> {
-            val teams = realm.where(RealmMyTeam::class.java).equalTo("teamId", teamId).findAll()
-            val ids = mutableListOf<String>()
-            for (team in teams) {
-                if (!team.resourceId.isNullOrBlank()) {
-                    ids.add(team.resourceId!!)
-                }
-            }
-            return ids
-        }
-
-        @JvmStatic
-        fun getResourceIdsByUser(userId: String?, realm: Realm): MutableList<String> {
-            val list = realm.where(RealmMyTeam::class.java)
-                .equalTo("userId", userId)
-                .equalTo("docType", "membership")
-                .findAll()
-            val teamIds = mutableListOf<String>()
-            for (team in list) {
-                if (!team.teamId.isNullOrBlank()) {
-                    teamIds.add(team.teamId!!)
-                }
-            }
-            val l2 = realm.where(RealmMyTeam::class.java)
-                .`in`("teamId", teamIds.toTypedArray())
-                .equalTo("docType", "resourceLink")
-                .findAll()
-            val ids = mutableListOf<String>()
-            for (team in l2) {
-                if (!team.resourceId.isNullOrBlank()) {
-                    ids.add(team.resourceId!!)
-                }
-            }
-            return ids
-        }
-
-        @JvmStatic
-        fun getTeamCreator(teamId: String?, realm: Realm?): String {
-            val teams = realm?.where(RealmMyTeam::class.java)?.equalTo("teamId", teamId)?.findFirst()
-            return teams?.userId ?: ""
-        }
-
-        @JvmStatic
-        fun insert(mRealm: Realm, doc: JsonObject) {
-            insertMyTeams(doc, mRealm)
-        }
-
-        @JvmStatic
-        fun isTeamLeader(teamId: String?, userId: String?, realm: Realm): Boolean {
-            val team = realm.where(RealmMyTeam::class.java)
-                .equalTo("teamId", teamId)
-                .equalTo("docType", "membership")
-                .equalTo("userId", userId)
-                .equalTo("isLeader", true)
-                .findFirst()
-            return team != null
-        }
-
-        @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
             val `object` = JsonObject()
 
             JsonUtils.addString(`object`, "_id", team._id)
             JsonUtils.addString(`object`, "_rev", team._rev)
+
+            if (team.isDeletePending) {
+                `object`.addProperty("_deleted", true)
+                return `object`
+            }
 
             if (team.docType == "resourceLink") {
                 `object`.addProperty("resourceId", team.resourceId)
@@ -343,20 +233,6 @@ open class RealmMyTeam : RealmObject() {
                 `object`.add("courses", coursesArray)
             }
             return `object`
-        }
-
-        fun getMyTeamsByUserId(mRealm: Realm, settings: SharedPreferences?): RealmResults<RealmMyTeam> {
-            val userId = settings?.getString("userId", "--") ?: "--"
-            val list = mRealm.where(RealmMyTeam::class.java)
-                .equalTo("userId", userId)
-                .equalTo("docType", "membership")
-                .findAll()
-
-            val teamIds = list.map { it.teamId }.toTypedArray()
-            return mRealm.where(RealmMyTeam::class.java)
-                .`in`("_id", teamIds)
-                .notEqualTo("status", "archived")
-                .findAll()
         }
     }
 

@@ -1,0 +1,338 @@
+package org.ole.planet.myplanet.services
+
+import android.content.Context
+import android.content.SharedPreferences
+import androidx.preference.PreferenceManager
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.slot
+import io.mockk.verify
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+
+class SharedPrefManagerTest {
+
+    private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var mockContext: Context
+    private lateinit var mockSharedPreferences: SharedPreferences
+    private lateinit var mockEditor: SharedPreferences.Editor
+
+    @Before
+    fun setup() {
+        mockContext = mockk()
+        mockSharedPreferences = mockk()
+        mockEditor = mockk(relaxed = true)
+
+        every { mockContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE) } returns mockSharedPreferences
+        every { mockSharedPreferences.edit() } returns mockEditor
+
+        // Chainable editor mock
+        every { mockEditor.putString(any(), any()) } returns mockEditor
+        every { mockEditor.putBoolean(any(), any()) } returns mockEditor
+        every { mockEditor.putInt(any(), any()) } returns mockEditor
+        every { mockEditor.putLong(any(), any()) } returns mockEditor
+        every { mockEditor.remove(any()) } returns mockEditor
+
+        sharedPrefManager = SharedPrefManager(mockContext)
+    }
+
+    @Test
+    fun testGetAndSetSavedUsers() {
+        // Testing with empty state first
+        every { mockSharedPreferences.getString("savedUsers", null) } returns null
+        assertTrue(sharedPrefManager.getSavedUsers().isEmpty())
+
+        // Set users
+        val users = listOf(User(name = "Test User"))
+        val jsonSlot = slot<String>()
+        sharedPrefManager.setSavedUsers(users)
+        verify { mockEditor.putString("savedUsers", capture(jsonSlot)) }
+        verify { mockEditor.apply() }
+
+        val expectedJson = Gson().toJson(users)
+        assertEquals(expectedJson, jsonSlot.captured)
+
+        // Retrieve mocked using the generated JSON
+        every { mockSharedPreferences.getString("savedUsers", null) } returns expectedJson
+        val retrievedUsers = sharedPrefManager.getSavedUsers()
+        assertEquals(1, retrievedUsers.size)
+        assertEquals("Test User", retrievedUsers[0].name)
+    }
+
+    @Test
+    fun testGetSelectedTeamId() {
+        // Test non-empty string
+        every { mockSharedPreferences.getString("selectedTeamId", "") } returns "team123"
+        assertEquals("team123", sharedPrefManager.getSelectedTeamId())
+
+        // Test null return from SharedPreferences
+        every { mockSharedPreferences.getString("selectedTeamId", "") } returns null
+        assertEquals("", sharedPrefManager.getSelectedTeamId())
+
+        // Test empty string return from SharedPreferences
+        every { mockSharedPreferences.getString("selectedTeamId", "") } returns ""
+        assertEquals("", sharedPrefManager.getSelectedTeamId())
+    }
+
+    @Test
+    fun testGetTeamName() {
+        // Test non-empty string
+        every { mockSharedPreferences.getString("teamName", "") } returns "My Team"
+        assertEquals("My Team", sharedPrefManager.getTeamName())
+
+        // Test null return from SharedPreferences
+        every { mockSharedPreferences.getString("teamName", "") } returns null
+        assertEquals("", sharedPrefManager.getTeamName())
+
+        // Test empty string return from SharedPreferences
+        every { mockSharedPreferences.getString("teamName", "") } returns ""
+        assertEquals("", sharedPrefManager.getTeamName())
+    }
+
+    @Test
+    fun testSetPendingLanguageChange() {
+        // Test with non-null value
+        sharedPrefManager.setPendingLanguageChange("fr")
+        verify { mockEditor.putString("pendingLanguageChange", "fr") }
+        verify(exactly = 0) { mockEditor.remove("pendingLanguageChange") }
+        verify { mockEditor.apply() }
+
+        // Test with null value
+        sharedPrefManager.setPendingLanguageChange(null)
+        verify { mockEditor.remove("pendingLanguageChange") }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testSetSynced() {
+        // Test false synced
+        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, false)
+        verify { mockEditor.putBoolean("chat_history_synced", false) }
+        verify(exactly = 0) { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
+        verify { mockEditor.apply() }
+
+        // Test true synced
+        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
+        verify { mockEditor.putBoolean("chat_history_synced", true) }
+        verify { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetSyncTime() {
+        val testTime = 1634567890L
+        every { mockSharedPreferences.getLong("chat_history_synced_time", 0L) } returns testTime
+        assertEquals(testTime, sharedPrefManager.getSyncTime(SharedPrefManager.SyncKey.CHAT_HISTORY))
+    }
+
+    @Test
+    fun testGetAndSetRepliedNewsId() {
+        every { mockSharedPreferences.getString("repliedNewsId", null) } returns "123"
+        assertEquals("123", sharedPrefManager.getRepliedNewsId())
+
+        sharedPrefManager.setRepliedNewsId("456")
+        verify { mockEditor.putString("repliedNewsId", "456") }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetAndSetManualConfig() {
+        every { mockSharedPreferences.getBoolean("manualConfig", false) } returns true
+        assertTrue(sharedPrefManager.getManualConfig())
+
+        sharedPrefManager.setManualConfig(true)
+        verify { mockEditor.putBoolean("manualConfig", true) }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetAndSetUrlHost() {
+        every { mockSharedPreferences.getString("url_Host", "") } returns "example.com"
+        assertEquals("example.com", sharedPrefManager.getUrlHost())
+
+        sharedPrefManager.setUrlHost("new.example.com")
+        verify { mockEditor.putString("url_Host", "new.example.com") }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetAndSetUrlPort() {
+        every { mockSharedPreferences.getInt("url_Port", 443) } returns 8080
+        assertEquals(8080, sharedPrefManager.getUrlPort())
+
+        sharedPrefManager.setUrlPort(8081)
+        verify { mockEditor.putInt("url_Port", 8081) }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testGetAndSetLoggedIn() {
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.KEY_LOGIN, false) } returns true
+        assertTrue(sharedPrefManager.isLoggedIn())
+
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.KEY_LOGIN, false) } returns false
+        assertEquals(false, sharedPrefManager.isLoggedIn())
+
+        sharedPrefManager.setLoggedIn(true)
+        verify { mockEditor.putBoolean(SharedPrefManager.KEY_LOGIN, true) }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testRawString() {
+        every { mockSharedPreferences.getString("test_key", "") } returns "test_val"
+        assertEquals("test_val", sharedPrefManager.getRawString("test_key", ""))
+
+        sharedPrefManager.setRawString("test_key", "new_val")
+        verify { mockEditor.putString("test_key", "new_val") }
+        verify { mockEditor.apply() }
+    }
+
+    @Test
+    fun testCacheMyLifeItems() {
+        val userId = "user123"
+        val myLifeItems = listOf(
+            RealmMyLife("img1", "user123", "Title 1").apply {
+                _id = "id1"
+                weight = 1
+            },
+            RealmMyLife("img2", "user123", "Title 2").apply {
+                _id = "id2"
+                weight = 2
+            }
+        )
+
+        val jsonSlot = slot<String>()
+        sharedPrefManager.cacheMyLifeItems(userId, myLifeItems)
+
+        verify { mockEditor.putString("myLifeCache_$userId", capture(jsonSlot)) }
+        verify { mockEditor.apply() }
+
+        val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
+        val cachedItems: List<CachedMyLifeItem> = Gson().fromJson(jsonSlot.captured, type)
+
+        assertEquals(2, cachedItems.size)
+        assertEquals("img1", cachedItems[0].imageId)
+        assertEquals("Title 1", cachedItems[0].title)
+        assertTrue(cachedItems[0].isVisible)
+        assertEquals(1, cachedItems[0].weight)
+
+        assertEquals("img2", cachedItems[1].imageId)
+        assertEquals("Title 2", cachedItems[1].title)
+        assertTrue(cachedItems[1].isVisible)
+        assertEquals(2, cachedItems[1].weight)
+    }
+
+    @Test
+    fun testGetCachedMyLifeItems() {
+        val userId = "user123"
+
+        // Test with empty/null state
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
+        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
+
+        // Test with valid JSON
+        val cachedItems = listOf(
+            CachedMyLifeItem("img1", "Title 1", true, 1),
+            CachedMyLifeItem("img2", "Title 2", false, 2)
+        )
+        val json = Gson().toJson(cachedItems)
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
+
+        val retrievedItems = sharedPrefManager.getCachedMyLifeItems(userId)
+        assertEquals(2, retrievedItems?.size)
+        assertEquals("img1", retrievedItems?.get(0)?.imageId)
+        assertEquals("Title 1", retrievedItems?.get(0)?.title)
+        assertEquals(true, retrievedItems?.get(0)?.isVisible)
+        assertEquals(1, retrievedItems?.get(0)?.weight)
+
+        // Test with invalid JSON
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
+        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
+    }
+
+    fun testClearPreferences() {
+        mockkStatic(PreferenceManager::class)
+        val mockDefaultSharedPreferences: SharedPreferences = mockk()
+        val mockDefaultEditor: SharedPreferences.Editor = mockk(relaxed = true)
+
+        every { PreferenceManager.getDefaultSharedPreferences(mockContext) } returns mockDefaultSharedPreferences
+        every { mockDefaultSharedPreferences.edit() } returns mockDefaultEditor
+        every { mockDefaultEditor.clear() } returns mockDefaultEditor
+
+        // First launch and manual config boolean mocks
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.FIRST_LAUNCH, false) } returns true
+        every { mockSharedPreferences.getBoolean(SharedPrefManager.MANUAL_CONFIG, false) } returns false
+
+        every { mockEditor.clear() } returns mockEditor
+        every { mockEditor.commit() } returns true
+
+        sharedPrefManager.clearPreferences()
+
+        verify { mockEditor.clear() }
+        verify { mockEditor.putBoolean(SharedPrefManager.FIRST_LAUNCH, true) }
+        verify { mockEditor.putBoolean(SharedPrefManager.MANUAL_CONFIG, false) }
+        verify { mockEditor.commit() }
+
+        verify { mockDefaultEditor.clear() }
+    }
+
+    fun testGetCachedMyLifeItems_validJson() {
+        val userId = "123"
+        val expectedItems = listOf(
+            CachedMyLifeItem("img1", "Title 1", true, 1),
+            CachedMyLifeItem("img2", "Title 2", false, 2)
+        )
+        val json = Gson().toJson(expectedItems)
+
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
+
+        val result = sharedPrefManager.getCachedMyLifeItems(userId)
+
+        assertEquals(2, result?.size)
+        assertEquals("img1", result?.get(0)?.imageId)
+        assertEquals("Title 1", result?.get(0)?.title)
+        assertEquals(true, result?.get(0)?.isVisible)
+        assertEquals(1, result?.get(0)?.weight)
+
+        assertEquals("img2", result?.get(1)?.imageId)
+        assertEquals("Title 2", result?.get(1)?.title)
+        assertEquals(false, result?.get(1)?.isVisible)
+        assertEquals(2, result?.get(1)?.weight)
+    }
+
+    @Test
+    fun testGetCachedMyLifeItems_nullJson() {
+        val userId = "456"
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
+
+        val result = sharedPrefManager.getCachedMyLifeItems(userId)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testGetCachedMyLifeItems_invalidJson() {
+        val userId = "789"
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
+
+        val result = sharedPrefManager.getCachedMyLifeItems(userId)
+
+        assertNull(result)
+    }
+
+    fun testRemoveKey() {
+        sharedPrefManager.removeKey("some_key")
+        verify { mockEditor.remove("some_key") }
+        verify { mockEditor.apply() }
+    }
+}

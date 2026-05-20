@@ -97,6 +97,8 @@
     <string name="settings">Configuraciones</string>
     <string name="edit_profile">Editar perfil</string>
     <string name="profile">Perfil</string>
+    <string name="mic_button_content_description">Voz a texto</string>
+    <string name="voice_to_text">Voz a texto…</string>
     <string name="user">Usuario</string>
     <string name="remove_selected">Eliminar\nseleccionados</string>
     <string name="stop_download">Detener descarga</string>
@@ -634,6 +636,7 @@
     <string name="invalid_resource_url">URL de recurso no válida</string>
     <string name="my_library">" miBiblioteca"</string>
     <string name="link_not_available">Enlace no disponible</string>
+    <string name="link_optional">Enlace (opcional)</string>
     <string name="success_you_have_added_these_resources_to_your_mylibrary">¡Éxito! Has agregado estos recursos a tu miBiblioteca:\n\n</string>
     <string name="more_resource_s">" más recurso(s)…\n"</string>
     <string name="return_to_the_home_tab_to_access_mylibrary">\n\nRegresa a la pestaña de Inicio para acceder a miBiblioteca.\n</string>
@@ -694,6 +697,8 @@
     <string name="turning_on_wifi_please_wait">Activando wifi. Por favor espera…</string>
     <string name="you_are_now_connected">"Ahora estás conectado "</string>
     <string name="press_back_again_to_exit">Presiona ATRÁS de nuevo para salir</string>
+    <string name="press_back_again_to_logout">Presiona ATRÁS de nuevo para cerrar sesión</string>
+    <string name="exit">Salir</string>
     <string name="it_has_been_more_than">"Han pasado más de "</string>
     <string name="days_since_you_last_synced_this_device">" días desde la última sincronización de este dispositivo."</string>
     <string name="connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet">\n Conéctalo al servidor a través de wifi y sincronízalo para reactivar esta tableta</string>
@@ -718,6 +723,14 @@
     <string name="syncing_data_please_wait">Sincronizando datos, por favor espera…</string>
     <string name="sync_failed">Sincronización fallida</string>
     <string name="sync_completed">Sincronización completada</string>
+    <string name="sync_phase_account_data">Sincronizando datos de cuenta…</string>
+    <string name="sync_phase_resources">Sincronizando recursos…</string>
+    <string name="sync_phase_library">Sincronizando biblioteca…</string>
+    <string name="sync_phase_finalizing">Finalizando…</string>
+    <string name="sync_step_of">Paso %1$d de %2$d</string>
+    <string name="sync_items_of">%1$d / %2$d</string>
+    <string name="sync_table_progress">%1$s  ·  %2$d / %3$d tablas</string>
+    <string name="sync_shelves_progress">%1$d / %2$d estantes</string>
     <string name="team_leader">Líder de equipo</string>
     <string name="select_resource">"Seleccionar recurso: "</string>
     <string name="add">Agregar</string>
@@ -982,6 +995,8 @@
     <string name="dark_mode_off">Desactivado</string>
     <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>
+    <string name="theme_mode_light">Claro</string>
+    <string name="theme_mode_dark">Oscuro</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">¿Estás seguro de que deseas archivar estos cursos?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">¿Estás seguro de que deseas archivar este curso?</string>
     <string name="manual">manual</string>
@@ -1028,6 +1043,7 @@
     <string name="switching_on_manual_configuration_to_clear_data">Activar la configuración manual borrará todos los datos, ¿Está seguro de que desea continuar?</string>
     <string name="chart_description">Gráfico de actividad de inicio de sesión</string>
     <string name="chart_label">N.º de inicios de sesión</string>
+    <string name="no_login_activity">Aún no se ha registrado ninguna actividad de inicio de sesión</string>
     <string name="copied_to_clipboard">copiado al portapapeles</string>
     <string name="mark_all_as_read">Marcar todo como leído</string>
     <string name="no_notifications">Sin notificaciones</string>
@@ -1106,16 +1122,19 @@
 
     <plurals name="minutes">
         <item quantity="one">%d minuto</item>
+        <item quantity="many">%d minutos</item>
         <item quantity="other">%d minutos</item>
     </plurals>
 
     <plurals name="hours">
         <item quantity="one">%d hora</item>
+        <item quantity="many">%d horas</item>
         <item quantity="other">%d horas</item>
     </plurals>
 
     <plurals name="days">
         <item quantity="one">%d día</item>
+        <item quantity="many">%d días</item>
         <item quantity="other">%d días</item>
     </plurals>
 
@@ -1164,6 +1183,9 @@
     <string name="please_enter_a_valid_year_of_birth">por favor ingrese un año de nacimiento válido</string>
     <string name="please_enter_a_valid_year_between_1900_and">por favor ingrese un año válido entre 1900 y %1$d</string>
     <string name="redo_survey">volver a hacer la encuesta</string>
+    <string name="resume_survey">¿Reanudar la encuesta?</string>
+    <string name="resume_survey_message">Tienes progreso guardado en esta encuesta. ¿Te gustaría continuar desde donde lo dejaste?</string>
+    <string name="start_over">Empezar de nuevo</string>
     <string name="resource_not_found_in_database">Recurso no encontrado en la base de datos</string>
     <string name="resource_has_no_attachments">El recurso no tiene archivos descargables</string>
     <string name="unable_to_download_resource">No se puede descargar el recurso</string>
@@ -1205,5 +1227,70 @@
     <string name="select_open_with">Abrir</string>
     <string name="select_media">Medios</string>
     <string name="select_resource_type">Tipo de recurso</string>
+    <string name="no_results_for_filter">No hay resultados que coincidan con tu filtro actual</string>
+    <string name="resource_title_already_exists">Ya existe un recurso con este título</string>
+    <string name="no_purpose_added">No se agregó propósito</string>
+    <string name="no_goal_added">Aún no se han establecido objetivos</string>
+    <string name="no_achievement_added">Resumen de logros</string>
+    <string name="no_references_added">No se agregaron referencias</string>
+    <string name="upload_cv_label">Sube tu CV/currículum a continuación (solo PDF)</string>
+    <string name="no_file_chosen">Ningún archivo seleccionado</string>
+    <string name="delete_cv">Eliminar CV</string>
+    <string name="cv_resume">CV / Currículum</string>
+    <string name="view_cv">Ver CV/Currículum</string>
+    <string name="current_cv">CV/Currículum actual: %s</string>
+    <string name="select_pdf_only">Por favor selecciona un archivo PDF</string>
+    <string name="file_not_found">Archivo no encontrado: %s</string>
+    <string name="chat_already_shared_to_destination">Este chat ya ha sido compartido a este destino</string>
+    <string name="already_shared">Ya compartido</string>
+    <string name="guest_visit_limit_warning">Tienes 1 intento de inicio de sesión restante antes de ser bloqueado.</string>
+    <string name="warning_icon">Icono de advertencia</string>
+    <string name="close_banner">Cerrar banner de advertencia</string>
+    <string name="status_not_started">No iniciado</string>
+    <string name="status_in_progress">En progreso</string>
+    <string name="status_completed">Completado</string>
+    <string name="read_aloud">Leer en voz alta</string>
+    <string name="stop_reading">Detener lectura</string>
+    <string name="tts_not_available">La función de texto a voz no está disponible en este dispositivo</string>
+    <string name="pdf_no_text_layer">Este PDF no contiene una capa de texto legible</string>
+    <string name="pdf_extracting_text">Preparando texto, por favor espere…</string>
+    <string name="storage_breakdown">desglose de almacenamiento</string>
+    <string name="storage_breakdown_summary">ver y gestionar el espacio usado por las descargas</string>
+    <string name="storage_breakdown_title">Contenido descargado</string>
+    <string name="storage_total_downloaded">Total descargado</string>
+    <string name="storage_videos">Videos</string>
+    <string name="storage_audio">Audio</string>
+    <string name="storage_pdfs">PDFs</string>
+    <string name="storage_images">Imágenes</string>
+    <string name="storage_other">Otros archivos</string>
+    <string name="storage_empty">No se encontró contenido descargado</string>
+    <string name="storage_delete_confirm">¿Eliminar todas las descargas de %1$s?</string>
+    <string name="storage_delete_selected_confirm">¿Eliminar %1$d elemento(s) seleccionado(s)?</string>
+    <string name="storage_delete_selected">Eliminar seleccionados</string>
+    <string name="storage_delete_all">Eliminar todo</string>
+    <string name="storage_selected_count">%1$d seleccionado(s)</string>
+    <string name="storage_unknown_resource">Recurso desconocido</string>
+    <string name="file_count_one">1 archivo</string>
+    <string name="file_count_many">%1$d archivos</string>
+    <string name="skip">Omitir</string>
+    <string name="add_meetup">Agregar reunión</string>
+    <string name="download_report">Descargar informe</string>
+    <string name="view_details">Ver detalles</string>
+    <string name="download_pdf">Descargar PDF</string>
+    <string name="label_answer">Respuesta:</string>
+    <string name="label_link">Enlace: </string>
+    <string name="number_of_visits">Número de visitas</string>
+    <string name="label_name_with_colon">Nombre:</string>
+    <string name="label_relationship">Relación:</string>
+    <string name="label_phone_no">Teléfono:</string>
+    <string name="label_email_with_colon">Correo electrónico:</string>
+    <string name="track_title">Título de la pista</string>
+    <string name="unknown_artist">Artista desconocido</string>
+    <string name="markdown_filename">Nombre de archivo Markdown</string>
+    <string name="type_nodots">Tipo</string>
+    <string name="enterprise_reports">Informes empresariales</string>
+    <string name="label_add_references">Añada referencias abajo</string>
+    <string name="link">Enlace</string>
+    <string name="server_url_not_configured">Server URL not configured</string>
 
 </resources>

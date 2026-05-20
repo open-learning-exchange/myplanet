@@ -7,4 +7,5 @@ interface CommunityRepository {
     suspend fun replaceAll(rows: JsonArray)
     suspend fun getAllSorted(): List<RealmCommunity>
     suspend fun syncCommunityDocs(): Boolean
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

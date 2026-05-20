@@ -1,37 +1,90 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
 import com.google.gson.Gson
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Case
+import io.realm.Realm
 import io.realm.Sort
 import java.util.Calendar
 import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.data.findCopyByField
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.model.RealmUser
-import android.text.TextUtils
-import io.realm.Realm
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService), VoicesRepository {
+) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
+
+    override suspend fun getNewsForUpload(): List<NewsUploadData> {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .findAll()
+                .mapNotNull { news ->
+                    if (news.userId?.startsWith("guest") == true) null
+                    else NewsUploadData(
+                        id = news.id,
+                        _id = news._id,
+                        message = news.message,
+                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                        videoUrls = news.videoUrls?.toList() ?: emptyList(),
+                        newsJson = serializeNews(news)
+                    )
+                }
+        }
+    }
+
+    override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {
+        databaseService.executeTransactionAsync { realm ->
+            val ids = updates.mapNotNull { it.id }
+            val managedNewsMap = mutableMapOf<String, RealmNews>()
+
+            if (ids.isNotEmpty()) {
+                ids.chunked(999).forEach { chunk ->
+                    val results = realm.where(RealmNews::class.java)
+                        .`in`("id", chunk.toTypedArray())
+                        .findAll()
+                    results.forEach { n ->
+                        n.id?.let { id -> managedNewsMap[id] = n }
+                    }
+                }
+            }
+
+            updates.forEach { update ->
+                update.id?.let { id ->
+                    managedNewsMap[id]?.let { managedNews ->
+                        managedNews.imageUrls?.clear()
+                        managedNews.videoUrls?.clear()
+                        managedNews._id = update._id
+                        managedNews._rev = update._rev
+                        managedNews.images = gson.toJson(update.imagesArray)
+                        managedNews.videos = gson.toJson(update.videosArray)
+                    }
+                }
+            }
+        }
+    }
 
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
         return withRealm { realm ->
@@ -63,6 +116,15 @@ class VoicesRepositoryImpl @Inject constructor(
 
         return allNews.filter { news ->
             isVisibleToUser(news, userIdentifier)
+        }
+    }
+
+    override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
+        return withRealm { realm ->
+            realm.where(RealmNews::class.java)
+                .equalTo("newsId", chatId)
+                .contains("viewIn", "\"_id\":\"$viewInId\"", Case.INSENSITIVE)
+                .findFirst() != null
         }
     }
 
@@ -147,7 +209,7 @@ class VoicesRepositoryImpl @Inject constructor(
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
-        .flowOn(Dispatchers.Main) // Realm async queries require a Looper thread.
+        .flowOn(realmDispatcher) // Realm async queries require a Looper thread.
 
         return allNewsFlow.map { allNews ->
             // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
@@ -158,7 +220,7 @@ class VoicesRepositoryImpl @Inject constructor(
                 news.sortDate = news.calculateSortDate()
                 news
             }
-        }.flowOn(Dispatchers.Default)
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
@@ -187,7 +249,7 @@ class VoicesRepositoryImpl @Inject constructor(
 
                 viewableByTeams || viewInTeam
             }
-        }.flowOn(Dispatchers.Default)
+        }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
@@ -252,7 +314,7 @@ class VoicesRepositoryImpl @Inject constructor(
                     }
 
                     if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
-                        deleteRepliesOf(news.id!!, transactionRealm)
+                        news.id?.let { id -> deleteRepliesOf(id, transactionRealm) }
                         news.deleteFromRealm()
                     } else {
                         val filtered = JsonArray().apply {
@@ -316,7 +378,8 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun deleteRepliesOf(newsId: String, realm: io.realm.Realm) {
         val replies = realm.where(RealmNews::class.java).equalTo("replyTo", newsId).findAll()
         replies.forEach { reply ->
-            deleteRepliesOf(reply.id!!, realm)
+            val replyId = reply.id ?: return@forEach
+            deleteRepliesOf(replyId, realm)
             reply.deleteFromRealm()
         }
     }
@@ -363,7 +426,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val userId = currentUser.id
         val viewableBy = news.viewableBy
         val viewableId = news.viewableId
-        val newsId = news.id
+        val newsId = news._id ?: news.id
         val messageType = news.messageType
         val messagePlanetCode = news.messagePlanetCode
         val viewIn = news.viewIn
@@ -513,7 +576,7 @@ class VoicesRepositoryImpl @Inject constructor(
         news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
     }
 
-    override fun serializeNews(news: RealmNews): JsonObject {
+    private fun serializeNews(news: RealmNews): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("chat", news.chat)
         `object`.addProperty("message", news.message)
@@ -560,20 +623,41 @@ class VoicesRepositoryImpl @Inject constructor(
     private fun saveConcatenatedLinksToPrefs() {
         val existingJsonLinks = sharedPrefManager.getConcatenatedLinks()
         val existingConcatenatedLinks = if (existingJsonLinks != null) {
-            JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toMutableList()
+            LinkedHashSet(JsonUtils.gson.fromJson(existingJsonLinks, Array<String>::class.java).toList())
         } else {
-            mutableListOf()
+            LinkedHashSet()
         }
         val linksToProcess: List<String>
         synchronized(concatenatedLinks) {
             linksToProcess = concatenatedLinks.toList()
         }
-        for (link in linksToProcess) {
-            if (!existingConcatenatedLinks.contains(link)) {
-                existingConcatenatedLinks.add(link)
-            }
-        }
+        existingConcatenatedLinks.addAll(linksToProcess)
         val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            insertNewsToRealm(realm, jsonDoc)
+        }
+        saveConcatenatedLinksToPrefs()
+    }
+
+    override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
+        val imageList = queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+                .greaterThan("createdDate", timestamp)
+                .equalTo("mediaType", "image")
+        }
+        return imageList.mapNotNull { it.resourceRemoteAddress }
     }
 }

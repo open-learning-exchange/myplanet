@@ -16,15 +16,11 @@ import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -142,7 +138,6 @@ object VoicesActions {
         val imagesToRemoveCopy = imagesToRemove.toSet()
         imagesToRemove.clear()
         dialog.dismiss()
-        listener?.clearImages()
         try {
             if (isEdit) {
                 news?.id?.let {
@@ -153,6 +148,7 @@ object VoicesActions {
                     repository.postReply(s, news, currentUser, imageList)
                 }
             }
+            listener?.clearImages()
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
             onSuccess()
         } catch (e: Exception) {
@@ -203,7 +199,7 @@ object VoicesActions {
 
     suspend fun showMemberDetails(
         userModel: RealmUser?,
-        profileDbHandler: UserSessionManager
+        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
@@ -213,8 +209,8 @@ object VoicesActions {
             userModel.dob.toString().substringBefore("T"),
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
-            profileDbHandler.getOfflineVisits(userModel).toString(),
-            profileDbHandler.getLastVisit(userModel),
+            (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
+            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage

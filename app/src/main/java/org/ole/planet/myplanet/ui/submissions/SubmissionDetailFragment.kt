@@ -43,7 +43,6 @@ class SubmissionDetailFragment : Fragment() {
             }
 
             override fun onMeasure(recycler: RecyclerView.Recycler, state: RecyclerView.State, widthSpec: Int, heightSpec: Int) {
-                // Use state.itemCount for more reliable count
                 val count = state.itemCount
                 if (count == 0 || adapter.itemCount == 0) {
                     super.onMeasure(recycler, state, widthSpec, heightSpec)

@@ -47,6 +47,21 @@
             android:textColor="@color/daynight_textColor" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_normal"
+        android:textColorHint="@color/hint_color">
+
+        <EditText
+            android:id="@+id/et_link"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/link_optional"
+            android:inputType="textUri"
+            android:textColor="@color/daynight_textColor" />
+    </com.google.android.material.textfield.TextInputLayout>
+
     <Button
         android:id="@+id/btn_add_resources"
         style="@style/GreyButtons"

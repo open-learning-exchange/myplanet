@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import kotlinx.coroutines.Dispatchers
+import java.io.IOException
+import javax.inject.Inject
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DownloadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import java.io.IOException
-import javax.inject.Inject
 
 class DownloadRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,

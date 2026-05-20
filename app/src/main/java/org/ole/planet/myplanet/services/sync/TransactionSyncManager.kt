@@ -3,30 +3,29 @@ package org.ole.planet.myplanet.services.sync
 import android.content.Context
 import android.content.SharedPreferences
 import android.util.Base64
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Realm
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmChatHistory.Companion.insert
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUser.Companion.populateUsersTable
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -42,7 +41,22 @@ class TransactionSyncManager @Inject constructor(
     private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val chatRepository: ChatRepository,
     private val feedbackRepository: FeedbackRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
+    private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
+    private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
+    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+    private val communityRepository: org.ole.planet.myplanet.repository.CommunityRepository,
+    private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
+    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
+    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
+    @ApplicationScope private val applicationScope: CoroutineScope,
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
 ) {
     suspend fun authenticate(): Boolean {
         try {
@@ -65,19 +79,17 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
-                val users = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { realm.copyFromRealm(it) }
-                }
-                users.forEach { userModel ->
+                val usersToSync = userRepository.getUsersForHealthSync()
+                usersToSync.forEach { userModel ->
                     syncHealthData(userModel, header)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncComplete()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncFailed(e.message)
                 }
             }
@@ -98,11 +110,9 @@ class TransactionSyncManager @Inject constructor(
                     val key = getString("key", jsonDoc)
                     val iv = getString("iv", jsonDoc)
 
-                    if (!key.isNullOrEmpty() || !iv.isNullOrEmpty()) {
-                        databaseService.executeTransactionAsync { realm ->
-                            val managedUser = realm.where(RealmUser::class.java).equalTo("id", userModel.id).findFirst()
-                            managedUser?.key = key
-                            managedUser?.iv = iv
+                    if (key.isNotEmpty() || iv.isNotEmpty()) {
+                        userModel.id?.let {
+                            userRepository.markUserKeyIvSaved(it, key, iv)
                         }
                     }
                 }
@@ -122,28 +132,26 @@ class TransactionSyncManager @Inject constructor(
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
 
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()
             val id = model?.id
             try {
-                val userModel = databaseService.withRealm { realm ->
-                    realm.where(RealmUser::class.java).equalTo("id", id).findFirst()?.let { realm.copyFromRealm(it) }
-                }
+                val userModel = id?.let { userRepository.getUserById(it) }
                 if (userModel != null) {
                     syncHealthData(userModel, header)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncComplete()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     listener.onSyncFailed(e.message)
                 }
             }
         }
     }
 
-    suspend fun syncDb(table: String) = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+    suspend fun syncDb(table: String): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = System.currentTimeMillis()
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -186,7 +194,7 @@ class TransactionSyncManager @Inject constructor(
                 )
                 if (table == "news") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
+                    val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
@@ -205,7 +213,7 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else if (table == "feedback") {
                     val insertStartTime = System.currentTimeMillis()
-                    val docs = mutableListOf<JsonObject>()
+                    val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
                         jsonDoc = getJsonObject("doc", jsonDoc)
@@ -226,13 +234,35 @@ class TransactionSyncManager @Inject constructor(
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
                         val insertStartTime = System.currentTimeMillis()
-                        if (table == "chat_history") {
-                            insertToChat(arr, mRealm)
+                        when (table) {
+                            "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
+                            "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
+                            "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
+                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
+                            "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
+                            "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
+                            "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
+                            "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
+                            "courses" -> {
+                                coursesRepository.bulkInsertFromSync(mRealm, arr)
+                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+                            }
+                            "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
+                            "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
+                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
+                            "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
+                            "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
+                            "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
+                            "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)
+                            "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
+                            else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
                         }
-                        insertDocs(arr, mRealm, table)
                         val insertDuration = System.currentTimeMillis() - insertStartTime
                         if (table == "courses") {
-                            android.util.Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
+                            android.util.Log.d(
+                                "SyncPerf",
+                                "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items"
+                            )
                         }
                         org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                             "insert_batch",
@@ -241,6 +271,10 @@ class TransactionSyncManager @Inject constructor(
                             arr.size()
                         )
                     }
+                }
+
+                if (table == "achievements") {
+                    downloadCvAttachmentsFromBatch(arr)
                 }
                 totalDocs += arr.size()
                 skip += arr.size()
@@ -257,117 +291,86 @@ class TransactionSyncManager @Inject constructor(
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
+            totalDocs
         } catch (e: Exception) {
             e.printStackTrace()
             val failDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
+            0
         }
     }
 
-    private fun insertToChat(arr: JsonArray, mRealm: Realm) {
-        val chatHistoryList = mutableListOf<JsonObject>()
+    private suspend fun downloadCvAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
         for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            chatHistoryList.add(jsonDoc)
-        }
-        chatHistoryList.forEach { jsonDoc ->
-            insert(mRealm, jsonDoc)
+            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val docId = getString("_id", jsonDoc)
+            if (docId.startsWith("_design")) continue
+            val resumeFileName = getString("resumeFileName", jsonDoc)
+            val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
+            if (resumeFileName.isNotEmpty() && hasAttachment) {
+                val destFile = java.io.File(
+                    org.ole.planet.myplanet.utils.FileUtils.getOlePath(context) + "cv/$resumeFileName"
+                )
+                if (!destFile.exists()) {
+                    downloadCvAttachment(docId, destFile)
+                }
+            }
         }
     }
 
-    private fun insertDocs(arr: JsonArray, mRealm: Realm, table: String) {
-        val documentList = mutableListOf<JsonObject>()
-        for (j in arr) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = getJsonObject("doc", jsonDoc)
-            val id = getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            continueInsert(mRealm, table, jsonDoc)
-        }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
-    }
-
-    private fun continueInsert(mRealm: Realm, table: String, jsonDoc: JsonObject) {
-        when (table) {
-            "exams" -> {
-                insertCourseStepsExams("", "", jsonDoc, mRealm)
-            }
-            "tablet_users" -> {
-                populateUsersTable(jsonDoc, mRealm, sharedPrefManager.rawPreferences)
-            }
-            else -> {
-                callMethod(mRealm, jsonDoc, table)
-            }
-        }
-        saveConcatenatedLinksToPrefs(sharedPrefManager)
-    }
-
-    private fun callMethod(mRealm: Realm, jsonDoc: JsonObject, type: String) {
+    private suspend fun downloadCvAttachment(docId: String, destFile: java.io.File) {
         try {
-            val methods = Constants.classList[type]?.methods
-            methods?.let {
-                for (m in it) {
-                    if ("insert" == m.name) {
-                        m.invoke(null, mRealm, jsonDoc)
-                        break
+            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    destFile.parentFile?.mkdirs()
+                    destFile.outputStream().use { out ->
+                        body.byteStream().use { it.copyTo(out) }
                     }
                 }
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        } catch (_: Exception) { }
     }
 
-    suspend fun syncNotificationReads() = withContext(Dispatchers.IO) {
-        val pending = databaseService.withRealm { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("needsSync", true)
-                .isNotNull("rev")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
+    suspend fun syncNotificationReads() = withContext(dispatcherProvider.io) {
+        val pending = notificationsRepository.getPendingSyncNotifications()
         if (pending.isEmpty()) return@withContext
 
-        for (notification in pending) {
-            val rev = notification.rev ?: continue
-            val body = JsonObject().apply {
-                addProperty("_id", notification.id)
-                addProperty("_rev", rev)
-                addProperty("status", "read")
-                addProperty("user", notification.userId)
-                addProperty("message", notification.message)
-                addProperty("type", notification.type)
-                notification.link?.let { addProperty("link", it) }
-                addProperty("priority", notification.priority)
-                addProperty("time", notification.createdAt.time)
-            }
-            try {
-                val response = apiInterface.putDoc(
-                    UrlUtils.header,
-                    "application/json",
-                    "${UrlUtils.getUrl()}/notifications/${notification.id}",
-                    body
-                )
-                if (response.isSuccessful) {
-                    val newRev = response.body()?.get("rev")?.asString
-                    databaseService.executeTransactionAsync { realm ->
-                        realm.where(RealmNotification::class.java)
-                            .equalTo("id", notification.id)
-                            .findFirst()
-                            ?.apply {
-                                needsSync = false
-                                if (newRev != null) this.rev = newRev
-                            }
-                    }
+        val successfulSyncs = pending.map { notification ->
+            async {
+                val rev = notification.rev ?: return@async null
+                val body = JsonObject().apply {
+                    addProperty("_id", notification.id)
+                    addProperty("_rev", rev)
+                    addProperty("status", "read")
+                    addProperty("user", notification.userId)
+                    addProperty("message", notification.message)
+                    addProperty("type", notification.type)
+                    notification.link?.let { addProperty("link", it) }
+                    addProperty("priority", notification.priority)
+                    addProperty("time", notification.createdAt.time)
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+                try {
+                    val response = apiInterface.putDoc(
+                        UrlUtils.header,
+                        "application/json",
+                        "${UrlUtils.getUrl()}/notifications/${notification.id}",
+                        body
+                    )
+                    if (response.isSuccessful) {
+                        val newRev = response.body()?.get("rev")?.asString
+                        Pair(notification.id, newRev)
+                    } else null
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    null
+                }
             }
+        }.awaitAll().filterNotNull()
+
+        if (successfulSyncs.isNotEmpty()) {
+            notificationsRepository.markNotificationsSynced(successfulSyncs)
         }
     }
 }

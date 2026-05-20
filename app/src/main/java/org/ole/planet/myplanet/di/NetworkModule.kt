@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.di
 
+import android.net.TrafficStats
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
@@ -7,9 +8,12 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import java.lang.reflect.Modifier
+import java.net.InetAddress
+import java.net.Socket
 import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import javax.net.SocketFactory
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -17,6 +21,15 @@ import org.ole.planet.myplanet.data.api.RetryInterceptor
 import org.ole.planet.myplanet.services.BroadcastService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+
+private class TaggedSocketFactory(private val delegate: SocketFactory) : SocketFactory() {
+    private fun tag() = TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+    override fun createSocket(): Socket { tag(); return delegate.createSocket() }
+    override fun createSocket(host: String, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
+    override fun createSocket(host: String, port: Int, localHost: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(host, port, localHost, localPort) }
+    override fun createSocket(host: InetAddress, port: Int): Socket { tag(); return delegate.createSocket(host, port) }
+    override fun createSocket(address: InetAddress, port: Int, localAddress: InetAddress, localPort: Int): Socket { tag(); return delegate.createSocket(address, port, localAddress, localPort) }
+}
 
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
@@ -44,6 +57,7 @@ object NetworkModule {
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)
+            .socketFactory(TaggedSocketFactory(SocketFactory.getDefault()))
 
         if (retryInterceptor != null) {
             builder.addInterceptor(retryInterceptor)

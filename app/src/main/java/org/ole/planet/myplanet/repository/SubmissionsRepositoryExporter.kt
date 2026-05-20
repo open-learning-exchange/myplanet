@@ -11,13 +11,18 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class SubmissionsRepositoryExporter @Inject constructor(private val databaseService: DatabaseService) {
+class SubmissionsRepositoryExporter @Inject constructor(
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher) {
 
     companion object {
         private const val PAGE_WIDTH = 595
@@ -29,7 +34,7 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
     suspend fun generateSubmissionPdf(
         context: Context,
         submissionId: String
-    ): File? = databaseService.withRealmAsync { realm ->
+    ): File? = withRealmAsync { realm ->
         try {
             val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
                 ?: return@withRealmAsync null
@@ -70,6 +75,8 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
                     .equalTo("examId", examId)
                     .findAll()
 
+                val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
+
                 questions.forEachIndexed { index, question ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
                         document.finishPage(page)
@@ -84,7 +91,7 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
                     yPosition = drawMultilineText(canvas, questionText, MARGIN, yPosition, headerPaint, PAGE_WIDTH - (2 * MARGIN))
                     yPosition += LINE_HEIGHT / 2
 
-                    val answer = submission.answers?.find { it.questionId == question.id }
+                    val answer = answersMap[question.id]
                     val answerText = formatAnswer(answer)
                     canvas.drawText("A: $answerText", MARGIN + 20, yPosition, normalPaint)
                     yPosition += LINE_HEIGHT * 2
@@ -115,7 +122,7 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
         context: Context,
         submissionIds: List<String>,
         examTitle: String
-    ): File? = databaseService.withRealmAsync { realm ->
+    ): File? = withRealmAsync { realm ->
         try {
             val submissions = submissionIds.mapNotNull { id ->
                 realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
@@ -176,6 +183,8 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
                     canvas.drawText("Status: ${submission.status}", MARGIN + 20, yPosition, normalPaint)
                     yPosition += LINE_HEIGHT * 2
 
+                    val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
+
                     questions.forEachIndexed { index, question ->
                         if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
                             document.finishPage(page)
@@ -190,7 +199,7 @@ class SubmissionsRepositoryExporter @Inject constructor(private val databaseServ
                         yPosition = drawMultilineText(canvas, questionText, MARGIN + 20, yPosition, normalPaint, PAGE_WIDTH - (2 * MARGIN) - 20)
                         yPosition += LINE_HEIGHT / 2
 
-                        val answer = submission.answers?.find { it.questionId == question.id }
+                        val answer = answersMap[question.id]
                         val answerText = formatAnswer(answer)
                         yPosition = drawMultilineText(canvas, "A: $answerText", MARGIN + 40, yPosition, normalPaint, PAGE_WIDTH - (2 * MARGIN) - 40)
                         yPosition += LINE_HEIGHT * 1.5f

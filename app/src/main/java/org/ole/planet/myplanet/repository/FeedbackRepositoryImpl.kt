@@ -8,16 +8,19 @@ import io.realm.Sort
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class FeedbackRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val gson: Gson
-) : RealmRepository(databaseService), FeedbackRepository {
+) : RealmRepository(databaseService, realmDispatcher), FeedbackRepository {
 
     override fun createFeedback(
         user: String?,
@@ -127,5 +130,20 @@ class FeedbackRepositoryImpl @Inject constructor(
         feedback?.item = JsonUtils.getString("item", act)
         feedback?.state = JsonUtils.getString("state", act)
         feedback?._rev = JsonUtils.getString("_rev", act)
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            insertFeedbackToRealm(realm, jsonDoc)
+        }
     }
 }

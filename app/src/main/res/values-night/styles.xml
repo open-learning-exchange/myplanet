@@ -141,6 +141,7 @@
         <item name="android:textColor">@color/daynight_textColor</item>
         <item name="buttonBarNegativeButtonStyle">@style/NegativeButtonStyle</item>
         <item name="buttonBarPositiveButtonStyle">@style/NegativeButtonStyle</item>
+        <item name="buttonBarNeutralButtonStyle">@style/NegativeButtonStyleHealth</item>
         <item name="android:buttonStyle">@style/NegativeButtonStyle</item>
     </style>
 

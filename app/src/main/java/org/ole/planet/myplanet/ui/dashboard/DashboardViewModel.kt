@@ -6,22 +6,21 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Sort
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -76,16 +75,16 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    private val _surveyNavigationEvent = MutableSharedFlow<String>()
+    private val _surveyNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
 
-    private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>()
+    private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>(extraBufferCapacity = 1)
     val taskNavigationEvent: SharedFlow<Triple<String, String, String>> = _taskNavigationEvent.asSharedFlow()
 
-    private val _joinRequestNavigationEvent = MutableSharedFlow<String>()
+    private val _joinRequestNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val joinRequestNavigationEvent: SharedFlow<String> = _joinRequestNavigationEvent.asSharedFlow()
 
-    private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>()
+    private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>(extraBufferCapacity = 1)
     val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
     private var userContentJob: Job? = null
@@ -133,38 +132,59 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
-            val libraryDeferred = async {
-                resourcesRepository.getMyLibrary(userId)
+            val libraryDeferred = async(dispatcherProvider.io) {
+                val result = resourcesRepository.getMyLibrary(userId)
+                result
             }
 
-            val coursesFlowJob = launch {
-                coursesRepository.getMyCoursesFlow(userId).collect { courses ->
-                    _uiState.update { it.copy(courses = courses) }
+            launch(dispatcherProvider.main) {
+                var isFirstEmission = true
+                coursesRepository.getMyCoursesFlow(userId)
+                    .flowOn(dispatcherProvider.io)
+                    .collect { courses ->
+                        if (isFirstEmission) {
+                            isFirstEmission = false
+                        }
+                        _uiState.update { it.copy(courses = courses) }
+                    }
+            }
+
+            launch(dispatcherProvider.main) {
+                var isFirstEmission = true
+                teamsRepository.getMyTeamsFlow(userId)
+                    .flowOn(dispatcherProvider.io)
+                    .collect { teams ->
+                        if (isFirstEmission) {
+                            isFirstEmission = false
+                        }
+                        _uiState.update { it.copy(teams = teams) }
+                    }
+            }
+
+            launch(dispatcherProvider.main) {
+                val (userName, fullName) = withContext(dispatcherProvider.io) {
+                    val user = userRepository.getUserById(userId)
+                    val userName = user?.name
+                    val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+                    Pair(userName, fullName)
                 }
-            }
-
-            val teamsFlowJob = launch {
-                teamsRepository.getMyTeamsFlow(userId).collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
-                }
-            }
-
-            launch {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
                 _uiState.update { it.copy(fullName = fullName) }
 
                 if (userName != null) {
-                    activitiesRepository.getOfflineLogins(userName).collect { logins ->
-                        _uiState.update { it.copy(offlineLogins = logins.size) }
+                    val count = withContext(dispatcherProvider.io) {
+                        activitiesRepository.getOfflineLoginCount(userName)
                     }
+                    _uiState.update { it.copy(offlineLogins = count) }
                 }
             }
 
             val myLibrary = libraryDeferred.await()
             _uiState.update { it.copy(library = myLibrary) }
         }
+    }
+
+    suspend fun getTeamType(teamId: String): String? {
+        return teamsRepository.getTeamType(teamId)
     }
 
     suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
@@ -181,12 +201,14 @@ class DashboardViewModel @Inject constructor(
 
     fun loadUsers() {
         viewModelScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            val users = withContext(dispatcherProvider.io) {
+                userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            }
             _uiState.update { it.copy(users = users) }
         }
     }
 
-    suspend fun dashboardDataFlow(userId: String?): Flow<Unit> {
+    fun dashboardDataFlow(userId: String?): Flow<Unit> {
         return merge(
             resourcesRepository.getRecentResources(userId ?: "").map {},
             resourcesRepository.getPendingDownloads(userId ?: "").map {},
@@ -197,7 +219,9 @@ class DashboardViewModel @Inject constructor(
 
     fun handleTaskNavigation(taskId: String) {
         viewModelScope.launch {
-            val teamData = teamsRepository.getTaskTeamInfo(taskId)
+            val teamData = withContext(dispatcherProvider.io) {
+                teamsRepository.getTaskTeamInfo(taskId)
+            }
             if (teamData != null) {
                 _taskNavigationEvent.emit(teamData)
             }
@@ -206,7 +230,9 @@ class DashboardViewModel @Inject constructor(
 
     fun handleJoinRequestNavigation(requestId: String) {
         viewModelScope.launch {
-            val teamId = teamsRepository.getJoinRequestTeamId(requestId)
+            val teamId = withContext(dispatcherProvider.io) {
+                teamsRepository.getJoinRequestTeamId(requestId)
+            }
             if (teamId != null) {
                 _joinRequestNavigationEvent.emit(teamId)
             }
@@ -218,8 +244,10 @@ class DashboardViewModel @Inject constructor(
             var lastException: Exception? = null
             repeat(maxRetries) { attempt ->
                 try {
-                    notificationsRepository.refresh()
-                    val unreadCount = getUnreadNotificationsSize(userId)
+                    val unreadCount = withContext(dispatcherProvider.io) {
+                        notificationsRepository.refresh()
+                        getUnreadNotificationsSize(userId)
+                    }
                     setUnreadNotifications(unreadCount)
                     return@launch
                 } catch (e: Exception) {
@@ -237,7 +265,9 @@ class DashboardViewModel @Inject constructor(
     fun markNotificationAsRead(notificationId: String, userId: String?) {
         viewModelScope.launch {
             try {
-                notificationsRepository.markNotificationAsRead(notificationId, userId)
+                withContext(dispatcherProvider.io) {
+                    notificationsRepository.markNotificationAsRead(notificationId, userId)
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -248,8 +278,10 @@ class DashboardViewModel @Inject constructor(
         viewModelScope.launch {
             kotlinx.coroutines.delay(100)
             try {
-                notificationsRepository.refresh()
-                val unreadCount = getUnreadNotificationsSize(userId)
+                val unreadCount = withContext(dispatcherProvider.io) {
+                    notificationsRepository.refresh()
+                    getUnreadNotificationsSize(userId)
+                }
                 setUnreadNotifications(unreadCount)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -259,7 +291,9 @@ class DashboardViewModel @Inject constructor(
 
     fun handleSurveyNavigation(surveyId: String) {
         viewModelScope.launch {
-            val survey = surveysRepository.getSurvey(surveyId)
+            val survey = withContext(dispatcherProvider.io) {
+                surveysRepository.getSurvey(surveyId)
+            }
             if (survey != null && survey.id != null) {
                 _surveyNavigationEvent.emit(survey.id!!)
             }
@@ -278,11 +312,11 @@ class DashboardViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val courseData = progressRepository.fetchCourseData(userId)
-                val uniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, userId)
-                val allUniqueDates = voicesRepository.getCommunityVoiceDates(startTime, endTime, null)
-                val courseName = coursesRepository.getCourseTitleById(courseId)
-                val hasUnfinishedSurvey = hasPendingSurvey(courseId, userId)
+                val courseData = withContext(dispatcherProvider.io) { progressRepository.fetchCourseData(userId) }
+                val uniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
+                val allUniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
+                val courseName = withContext(dispatcherProvider.io) { coursesRepository.getCourseTitleById(courseId) }
+                val hasUnfinishedSurvey = submissionsRepository.hasPendingSurvey(courseId, userId)
 
                 val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
 
@@ -298,7 +332,7 @@ class DashboardViewModel @Inject constructor(
                     val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
                     var hasValidSync = false
                     if (prereqsMet) {
-                        hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                        hasValidSync = withContext(dispatcherProvider.io) { progressRepository.hasUserCompletedSync(userId ?: "") }
                     }
                     _challengeDialogEvent.emit(
                         ChallengeDialogData(
@@ -316,16 +350,6 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean {
-        val surveys = submissionsRepository.getSurveysByCourseId(courseId)
-        for (survey in surveys) {
-            if (!submissionsRepository.hasSubmission(survey.id, survey.courseId, userId, "survey")) {
-                return true
-            }
-        }
-        return false
-    }
-
     private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {
         return if (progress != null) {
             val max = progress.get("max").asInt
@@ -340,10 +364,12 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    suspend fun checkAndCreateNewNotifications(userId: String?, isAdmin: Boolean = false) = withContext(dispatcherProvider.io) {
+    suspend fun checkAndCreateNewNotifications(userId: String?, isAdmin: Boolean = false) {
         try {
-            updateResourceNotification(userId)
-            val unreadCount = getUnreadNotificationsSize(userId, isAdmin)
+            val unreadCount = withContext(dispatcherProvider.io) {
+                updateResourceNotification(userId)
+                getUnreadNotificationsSize(userId, isAdmin)
+            }
             _uiState.update { it.copy(unreadNotifications = unreadCount) }
         } catch (e: Exception) {
             e.printStackTrace()

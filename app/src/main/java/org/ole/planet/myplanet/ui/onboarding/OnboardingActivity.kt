@@ -7,9 +7,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
 import org.ole.planet.myplanet.model.OnboardingItem
@@ -17,6 +20,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.MapTileUtils.copyAssets
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -30,6 +34,8 @@ class OnboardingActivity : AppCompatActivity() {
     private lateinit var dots: Array<ImageView?>
     @Inject
     lateinit var prefData: SharedPrefManager
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -38,16 +44,12 @@ class OnboardingActivity : AppCompatActivity() {
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
 
         copyAssets(this)
-        val savedUser = SecurePrefs.getUserName(this, prefData.rawPreferences)
-        val savedPass = SecurePrefs.getPassword(this, prefData.rawPreferences)
-        if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !prefData.isLoggedIn()) {
-            prefData.setLoggedIn(true)
-        }
         if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
-            val dashboard = Intent(applicationContext, DashboardActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                .putExtra("from_login", true)
-            startActivity(dashboard)
+            startActivity(
+                Intent(applicationContext, DashboardActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    .putExtra("from_login", true)
+            )
             finish()
             return
         }
@@ -55,6 +57,27 @@ class OnboardingActivity : AppCompatActivity() {
         if (prefData.getFirstLaunch()) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
+            return
+        }
+
+        lifecycleScope.launch {
+            val (savedUser, savedPass) = withContext(dispatcherProvider.io) {
+                Pair(
+                    SecurePrefs.getUserName(this@OnboardingActivity, prefData.rawPreferences),
+                    SecurePrefs.getPassword(this@OnboardingActivity, prefData.rawPreferences)
+                )
+            }
+            if (!savedUser.isNullOrEmpty() && !savedPass.isNullOrEmpty() && !prefData.isLoggedIn()) {
+                prefData.setLoggedIn(true)
+            }
+            if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
+                startActivity(
+                    Intent(applicationContext, DashboardActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        .putExtra("from_login", true)
+                )
+                finish()
+            }
         }
 
         loadData()
@@ -65,7 +88,7 @@ class OnboardingActivity : AppCompatActivity() {
             override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
 
             override fun onPageSelected(position: Int) {
-                for (i in 0 until dotsCount) {
+                for (i in dots.indices) {
                     dots[i]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.non_selected_item_dot))
                 }
                 dots[position]?.setImageDrawable(ContextCompat.getDrawable(this@OnboardingActivity, R.drawable.selected_item_dot))
@@ -115,9 +138,7 @@ class OnboardingActivity : AppCompatActivity() {
 
         val items = imageIds.zip(headers).mapIndexed { index, (imageRes, headerRes) ->
             val descResourceArray = descriptionResourceLists.getOrNull(index).orEmpty()
-            val description = descResourceArray
-                .map { getString(it) }
-                .joinToString(separator = "\n")
+            val description = descResourceArray.joinToString(separator = "\n") { getString(it) }
                 .let { if (it.isEmpty()) it else "$it\n" }
 
             OnboardingItem().apply {
@@ -133,9 +154,10 @@ class OnboardingActivity : AppCompatActivity() {
 
     private fun setUiPageViewController() {
         dotsCount = mAdapter.count
+        if (dotsCount <= 0) return
         dots = arrayOfNulls(dotsCount)
 
-        for (i in 0 until dotsCount) {
+        for (i in dots.indices) {
             dots[i] = ImageView(this)
             dots[i]?.setImageDrawable(ContextCompat.getDrawable(this, R.drawable.non_selected_item_dot))
 
@@ -153,5 +175,6 @@ class OnboardingActivity : AppCompatActivity() {
     private fun finishTutorial() {
         prefData.setFirstLaunch(true)
         startActivity(Intent(this, LoginActivity::class.java))
+        finish()
     }
 }

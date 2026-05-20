@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -18,6 +17,7 @@ import org.ole.planet.myplanet.databinding.RowReferenceBinding
 import org.ole.planet.myplanet.model.Reference
 import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
 import org.ole.planet.myplanet.ui.maps.OfflineMapsActivity
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class ReferencesFragment : Fragment() {
     private var _binding: FragmentReferenceBinding? = null

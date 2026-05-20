@@ -10,7 +10,6 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import okio.Buffer
@@ -19,6 +18,7 @@ import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
@@ -27,13 +27,14 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
-    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService
+    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService,
+    private val dispatcherProvider: DispatcherProvider
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(dispatcherProvider.io) {
         try {
             val urlsKey = inputData.getString("urls_key") ?: "url_list_key"
             val fromSync = inputData.getBoolean("fromSync", false)
@@ -75,6 +76,10 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+        if (FileUtils.checkFileExist(context, url)) {
+            DownloadUtils.updateResourceOfflineStatus(url)
+            return true
+        }
         return try {
             val response = apiInterface.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {

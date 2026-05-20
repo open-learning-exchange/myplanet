@@ -10,7 +10,6 @@ import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -18,7 +17,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -50,57 +48,51 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 ) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
-    override fun checkHealth(listener: OnSuccessListener) {
-        serviceScope.launch {
-            try {
-                val healthUrl = UrlUtils.getHealthAccessUrl(sharedPrefManager)
-                if (healthUrl.isBlank()) {
-                    withContext(dispatcherProvider.main) { listener.onSuccess("") }
-                    return@launch
-                }
-
-                try {
-                    val response = withContext(dispatcherProvider.io) { apiInterface.healthAccess(healthUrl) }
-                    withContext(dispatcherProvider.main) {
-                        when (response.code()) {
-                            200 -> listener.onSuccess(context.getString(R.string.server_sync_successfully))
-                            401 -> listener.onSuccess("Unauthorized - Invalid credentials")
-                            404 -> listener.onSuccess("Server endpoint not found")
-                            500 -> listener.onSuccess("Server internal error")
-                            502 -> listener.onSuccess("Bad gateway - Server unavailable")
-                            503 -> listener.onSuccess("Service temporarily unavailable")
-                            504 -> listener.onSuccess("Gateway timeout")
-                            else -> listener.onSuccess("Server error: ${response.code()}")
-                        }
-                    }
-                } catch (t: Exception) {
-                    t.printStackTrace()
-                    val errorMsg = when (t) {
-                        is java.net.UnknownHostException -> "Server not reachable"
-                        is java.net.SocketTimeoutException -> "Connection timeout"
-                        is java.net.ConnectException -> "Unable to connect to server"
-                        is IOException -> "Network connection error"
-                        else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
-                    }
-                    withContext(dispatcherProvider.main) { listener.onSuccess(errorMsg) }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(dispatcherProvider.main) { listener.onSuccess("Health access initialization failed") }
+    override suspend fun checkHealth(): String {
+        return try {
+            val healthUrl = UrlUtils.getHealthAccessUrl(sharedPrefManager)
+            if (healthUrl.isBlank()) {
+                return ""
             }
+
+            try {
+                val response = withContext(dispatcherProvider.io) { apiInterface.healthAccess(healthUrl) }
+                when (response.code()) {
+                    200 -> context.getString(R.string.server_sync_successfully)
+                    401 -> "Unauthorized - Invalid credentials"
+                    404 -> "Server endpoint not found"
+                    500 -> "Server internal error"
+                    502 -> "Bad gateway - Server unavailable"
+                    503 -> "Service temporarily unavailable"
+                    504 -> "Gateway timeout"
+                    else -> "Server error: ${response.code()}"
+                }
+            } catch (t: Exception) {
+                t.printStackTrace()
+                when (t) {
+                    is java.net.UnknownHostException -> "Server not reachable"
+                    is java.net.SocketTimeoutException -> "Connection timeout"
+                    is java.net.ConnectException -> "Unable to connect to server"
+                    is IOException -> "Network connection error"
+                    else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "Health access initialization failed"
         }
     }
 
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
         val baseUrl = UrlUtils.baseUrl(spm)
         if (baseUrl.isEmpty()) {
+            callback.onError(context.getString(R.string.server_url_not_configured), true)
             return
         }
 
-        serviceScope.launch {
-            withContext(dispatcherProvider.main) {
-                callback.onCheckingVersion()
-            }
+        serviceScope.launch(dispatcherProvider.io) {
+            callback.onCheckingVersion()
+
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
@@ -121,11 +113,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = withContext(dispatcherProvider.io) { fetchVersionInfo(spm) }
+                val planetInfo = fetchVersionInfo(spm)
                 if (planetInfo == null) {
-                    withContext(dispatcherProvider.main) {
-                        callback.onError(context.getString(R.string.version_not_found), true)
-                    }
+                    callback.onError(context.getString(R.string.version_not_found), true)
                     return@launch
                 }
 
@@ -138,20 +128,16 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val rawApkVersion = fetchApkVersionString(spm)
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    withContext(dispatcherProvider.main) {
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                    }
+                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     return@launch
                 }
 
                 val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
-                        withContext(dispatcherProvider.main) {
-                            callback.onError(
-                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                                false
-                            )
-                        }
+                        callback.onError(
+                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                            false
+                        )
                         return@launch
                     }
 
@@ -179,9 +165,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        withContext(dispatcherProvider.io) {
+        val result = withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
+            val alternativeReachable = mapping.alternativeUrl?.let {
+                checkServerAvailability(it)
+            } == true
 
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
@@ -196,17 +184,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         sharedPrefManager.rawPreferences
                     )
                 }
+                alternativeReachable
+            } else {
+                primaryReachable
             }
         }
 
-        return try {
-            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(sharedPrefManager))
-            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-            isAvailable
-        } catch (e: Exception) {
-            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-            false
-        }
+        serverAvailabilityCache[updateUrl] = Pair(result, System.currentTimeMillis())
+        return result
     }
 
     override suspend fun clearAllData() {
@@ -392,7 +377,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             currentUrl
         } else {
             val urlUser = "satellite"
-            "${uri.scheme}://$urlUser:$pin@${uri.host}:${if (uri.port == -1) if (uri.scheme == "http") 80 else 443 else uri.port}"
+            val scheme = uri.scheme
+            val host = uri.host
+            val port = if (uri.port == -1) {
+                if (scheme == "http") 80 else 443
+            } else {
+                uri.port
+            }
+            "$scheme://$urlUser:$pin@$host:$port"
         }
     }
 

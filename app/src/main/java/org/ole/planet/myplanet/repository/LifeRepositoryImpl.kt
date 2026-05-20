@@ -2,10 +2,12 @@ package org.ole.planet.myplanet.repository
 
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLife
 
-class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) : RealmRepository(databaseService), LifeRepository {
+class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService, @RealmDispatcher realmDispatcher: CoroutineDispatcher) : RealmRepository(databaseService, realmDispatcher), LifeRepository {
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
         executeTransaction { realm ->
             val myLife = realm.where(RealmMyLife::class.java).equalTo("_id", myLifeId).findFirst()
@@ -29,8 +31,8 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService) :
         }
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?): List<RealmMyLife> {
-        return queryList(RealmMyLife::class.java, true) {
+    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<RealmMyLife> {
+        return queryList(RealmMyLife::class.java, ensureLatest) {
             equalTo("userId", userId)
         }.sortedBy { it.weight }
     }

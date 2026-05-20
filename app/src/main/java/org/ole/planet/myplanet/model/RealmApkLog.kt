@@ -21,27 +21,24 @@ open class RealmApkLog : RealmObject() {
     var time: String? = null
 
     fun setError(e: Throwable) {
-        error += "--------- Stack trace ---------\n\n"
-        appendReport(e)
-        error += "--------- Cause ---------\n\n"
+        val builder = StringBuilder(error ?: "")
+        builder.append("--------- Stack trace ---------\n\n")
+        appendReport(builder, e)
+        builder.append("--------- Cause ---------\n\n")
         val cause = e.cause
-        appendReport(cause)
+        appendReport(builder, cause)
+        error = builder.toString()
     }
 
-    private fun appendReport(cause: Throwable?) {
+    private fun appendReport(builder: StringBuilder, cause: Throwable?) {
         if (cause != null) {
-            error += """
-                $cause
-                
-                
-                """.trimIndent()
+            builder.append(cause.toString()).append("\n\n\n")
             val arr = cause.stackTrace
             for (i in arr.indices) {
-                error += """    ${arr[i]}
-"""
+                builder.append("    ").append(arr[i]).append("\n")
             }
         }
-        error += "-------------------------------\n\n"
+        builder.append("-------------------------------\n\n")
     }
 
     companion object {

@@ -1,29 +1,28 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.SecurePrefs
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val realmService: DatabaseService,
     private val sharedPrefManager: SharedPrefManager,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) {
     private val fullName: String
 
@@ -35,16 +34,25 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModel() suspend function instead")
-    val userModel: RealmUser? get() = userRepository.getUserModel()
-
-    @Deprecated("Use getUserModel() suspend function instead")
-    fun getUserModelCopy(): RealmUser? {
-        return userRepository.getUserModel()
-    }
-
     suspend fun getUserModel(): RealmUser? {
         return userRepository.getUserModelSuspending()
+    }
+
+    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+        withContext(dispatcherProvider.io) {
+            SecurePrefs.saveCredentials(context, settings, user?.name, password)
+        }
+        sharedPrefManager.setUserId(user?.id ?: "")
+        sharedPrefManager.setUserName(user?.name ?: "")
+        sharedPrefManager.rawPreferences.edit().apply {
+            remove("password")
+            putString("firstName", user?.firstName)
+            putString("lastName", user?.lastName)
+            putString("middleName", user?.middleName)
+            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
+            putLong("lastLogin", System.currentTimeMillis())
+            apply()
+        }
     }
 
     fun onLogin() {
@@ -52,7 +60,7 @@ class UserSessionManager @Inject constructor(
     }
 
     fun onLoginAsync(callback: (() -> Unit)? = null, onError: ((Throwable) -> Unit)? = null) {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val model = getUserModel()
                 activitiesRepository.logLogin(
@@ -61,11 +69,11 @@ class UserSessionManager @Inject constructor(
                     parentCode = model?.parentCode,
                     planetCode = model?.planetCode
                 )
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback?.invoke()
                 }
             } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     onError?.invoke(e)
                 }
             }
@@ -73,31 +81,13 @@ class UserSessionManager @Inject constructor(
     }
 
     fun logoutAsync() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val model = getUserModel()
                 activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in logoutAsync", e)
             }
-        }
-    }
-
-    suspend fun getGlobalLastVisit(): Long? {
-        return activitiesRepository.getGlobalLastVisit()
-    }
-
-    suspend fun getOfflineVisits(m: RealmUser?): Int {
-        return m?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-    }
-
-    suspend fun getLastVisit(m: RealmUser): String {
-        val lastLogoutTimestamp = activitiesRepository.getLastVisit(m.name ?: "")
-        return if (lastLogoutTimestamp != null) {
-            val date = Date(lastLogoutTimestamp)
-            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-        } else {
-            "No logout record found"
         }
     }
 
@@ -109,7 +99,7 @@ class UserSessionManager @Inject constructor(
         val itemTitle = item.title
         val itemResourceId = item.resourceId
 
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             try {
                 val model = getUserModel()
                 if (model?.id?.startsWith("guest") == true) {
@@ -126,26 +116,13 @@ class UserSessionManager @Inject constructor(
                 )
 
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e(TAG, "Error in setResourceOpenCount", e)
             }
         }
     }
 
-    suspend fun getNumberOfResourceOpen(): String {
-        val count = activitiesRepository.getResourceOpenCount(fullName, KEY_RESOURCE_OPEN)
-        return if (count == 0L) "" else "Resource opened $count times."
-    }
-
-    suspend fun maxOpenedResource(): String {
-        val result = activitiesRepository.getMostOpenedResource(fullName, KEY_RESOURCE_OPEN)
-        return if (result == null) {
-            ""
-        } else {
-            "${result.first} opened ${result.second} times"
-        }
-    }
-
     companion object {
+        private const val TAG = "UserSessionManager"
         const val KEY_LOGIN = "login"
         const val KEY_RESOURCE_OPEN = "visit"
         const val KEY_RESOURCE_DOWNLOAD = "download"

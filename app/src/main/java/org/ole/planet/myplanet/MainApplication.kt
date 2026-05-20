@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
+import android.net.TrafficStats
 import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
@@ -13,7 +14,9 @@ import android.provider.Settings
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration as WorkManagerConfiguration
+import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
@@ -23,6 +26,7 @@ import java.net.URL
 import java.util.Date
 import java.util.UUID
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CompletableDeferred
@@ -34,32 +38,30 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.ApiClientEntryPoint
-import org.ole.planet.myplanet.di.ApplicationScopeEntryPoint
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.di.RetryQueueEntryPoint
-import org.ole.planet.myplanet.di.ServerUrlMapperEntryPoint
-import org.ole.planet.myplanet.di.WorkerDependenciesEntryPoint
+import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
-import org.ole.planet.myplanet.services.StayOnlineWorker
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltAndroidApp
 class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
@@ -94,13 +96,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
-        private const val STAY_ONLINE_WORK_TAG = "stayOnlineWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         lateinit var context: Context
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
-        var isSyncRunning = false
+        val isSyncRunning = AtomicBoolean(false)
         var listener: OnTeamPageListener? = null
         val androidId: String get() {
             try {
@@ -117,10 +118,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             applicationScope.launch {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     context,
-                    WorkerDependenciesEntryPoint::class.java
+                    CoreDependenciesEntryPoint::class.java
                 )
                 val userSessionManager = entryPoint.userSessionManager()
-                val spm = EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+                val spm = entryPoint.sharedPrefManager()
                 try {
                     val databaseService = (context.applicationContext as MainApplication).databaseService
                     val model = userSessionManager.getUserModel()
@@ -155,23 +156,33 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             urlString: String,
             ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
         ): Boolean {
-            val entryPoint = EntryPointAccessors.fromApplication(context, ServerUrlMapperEntryPoint::class.java)
+            if (urlString.isBlank()) return false
+            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
-            return try {
-                if (urlString.isBlank()) return false
+            for (url in urlsToTry) {
+                val reachable = tryConnect(url, ioDispatcher)
+                if (reachable) return true
+            }
+            return false
+        }
 
+        private suspend fun tryConnect(
+            urlString: String,
+            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher
+        ): Boolean {
+            return try {
                 val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {
                     "http://$urlString"
                 } else {
                     urlString
                 }
-
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
+                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
@@ -181,11 +192,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
                         connection.responseCode
                     } finally {
                         connection.disconnect()
+                        TrafficStats.clearThreadStatsTag()
                     }
                 }
                 responseCode in 200..299
             } catch (e: Exception) {
-                e.printStackTrace()
                 false
             }
         }
@@ -202,6 +213,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
+    private var mainThreadRealm: io.realm.Realm? = null
     private var activityReferences = 0
     private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
@@ -211,6 +223,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         super.onCreate()
         context = this
         setupCriticalProperties()
+        LocaleUtils.preload(this)
+        warmUpMainThreadRealm()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
@@ -218,6 +232,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun performDeferredInitialization() {
+        applicationScope.launch(Dispatchers.IO) {
+            FileUtils.warmUp(this@MainApplication)
+            SecurePrefs.warmUp(this@MainApplication)
+            MarkdownUtils.warmUp(this@MainApplication)
+            runCatching { Class.forName("pl.droidsonroids.gif.GifInfoHandle") }
+        }
         applicationScope.launch {
             initApp()
             loadAndApplyTheme()
@@ -237,15 +257,23 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private fun setupCriticalProperties() {
         applicationScope = EntryPointAccessors.fromApplication(
             this,
-            ApplicationScopeEntryPoint::class.java
+            CoreDependenciesEntryPoint::class.java
         ).applicationScope()
+    }
+
+    private fun warmUpMainThreadRealm() {
+        try {
+            mainThreadRealm = databaseService.createManagedRealmInstance()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 
     private suspend fun ensureApiClientInitialized() {
         withContext(dispatcherProvider.io) {
             EntryPointAccessors.fromApplication(
                 this@MainApplication,
-                ApiClientEntryPoint::class.java
+                NetworkDependenciesEntryPoint::class.java
             ).apiClient()
             apiClientInitialized.complete(Unit)
         }
@@ -273,26 +301,28 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
 
     private suspend fun setupAnrWatchdog() {
         withContext(dispatcherProvider.default) {
-            anrWatchdog = ANRWatchdog(timeout = 5000L, listener = object : ANRWatchdog.ANRListener {
-                override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
-                    applicationScope.launch {
-                        createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+            anrWatchdog = ANRWatchdog(
+                timeout = 5000L,
+                listener = object : ANRWatchdog.ANRListener {
+                    override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
+                        applicationScope.launch {
+                            createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                        }
                     }
-                }
-            })
+                },
+                dispatcherProvider = dispatcherProvider
+            )
             anrWatchdog.start()
         }
     }
 
     private suspend fun scheduleWorkersOnStart() {
         withContext(dispatcherProvider.default) {
-            if (sharedPrefManager.getAutoSync() && sharedPrefManager.rawPreferences.contains("autoSyncInterval")) {
-                val syncInterval = sharedPrefManager.getAutoSyncInterval()
-                scheduleAutoSyncWork(syncInterval)
+            if (sharedPrefManager.getAutoSync()) {
+                scheduleAutoSyncWork(sharedPrefManager.getAutoSyncInterval())
             } else {
                 cancelAutoSyncWork()
             }
-            scheduleStayOnlineWork()
             scheduleTaskNotificationWork()
             startNetworkMonitoring()
             scheduleRetryQueueWork()
@@ -305,7 +335,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             try {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     this@MainApplication,
-                    RetryQueueEntryPoint::class.java
+                    NetworkDependenciesEntryPoint::class.java
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
@@ -357,23 +387,28 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
-    private fun scheduleAutoSyncWork(syncInterval: Int?) {
-        val autoSyncWork: PeriodicWorkRequest? = syncInterval?.let { PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, it.toLong(), TimeUnit.SECONDS).build() }
-        val workManager = WorkManager.getInstance(this)
-        if (autoSyncWork != null) {
-            workManager.enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
+    fun applyAutoSyncSettings() {
+        if (sharedPrefManager.getAutoSync()) {
+            scheduleAutoSyncWork(sharedPrefManager.getAutoSyncInterval())
+        } else {
+            cancelAutoSyncWork()
         }
     }
 
-    private fun cancelAutoSyncWork() {
-        val workManager = WorkManager.getInstance(this)
-        workManager.cancelUniqueWork(AUTO_SYNC_WORK_TAG)
+    private fun scheduleAutoSyncWork(syncInterval: Int?) {
+        if (syncInterval == null) return
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+        val autoSyncWork = PeriodicWorkRequest.Builder(AutoSyncWorker::class.java, syncInterval.toLong(), TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
+        WorkManager.getInstance(this)
+            .enqueueUniquePeriodicWork(AUTO_SYNC_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, autoSyncWork)
     }
 
-    private fun scheduleStayOnlineWork() {
-        val stayOnlineWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(StayOnlineWorker::class.java, 900, TimeUnit.SECONDS).build()
-        val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniquePeriodicWork(STAY_ONLINE_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, stayOnlineWork)
+    private fun cancelAutoSyncWork() {
+        WorkManager.getInstance(this).cancelUniqueWork(AUTO_SYNC_WORK_TAG)
     }
 
     private fun scheduleTaskNotificationWork() {
@@ -450,6 +485,8 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
+        mainThreadRealm?.close()
+        mainThreadRealm = null
         super.onTerminate()
         stopListenNetworkState()
     }

@@ -29,44 +29,50 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
-                <ImageView
-                    android:id="@+id/syncIcon"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:layout_alignParentStart="true"
-                    android:layout_marginTop="@dimen/_10dp"
-                    android:background="@drawable/file_upload_animation_login"
-                    android:contentDescription="@string/sync"
-                    android:scaleType="fitCenter"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
-                <TextView
-                    android:id="@+id/lblLastSyncDate"
-                    android:layout_width="wrap_content"
+                <LinearLayout
+                    android:id="@+id/sync"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="@dimen/_10dp"
-                    android:padding="@dimen/padding_normal"
-                    android:text="@string/dash_4"
-                    android:textAlignment="center"
-                    app:layout_constraintEnd_toStartOf="@+id/imgBtnSetting"
-                    app:layout_constraintStart_toEndOf="@+id/syncIcon"
-                    app:layout_constraintTop_toTopOf="parent"
-                    android:textColor="@color/daynight_textColor" />
-                <ImageButton
-                    android:id="@+id/imgBtnSetting"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_marginTop="@dimen/_10dp"
-                    android:background="@null"
-                    android:contentDescription="@string/settings"
-                    android:paddingStart="@dimen/_10dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="10dp"
+                    android:layout_weight="0.1"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:srcCompat="@drawable/ic_settings_black_24dp"
-                    app:tint="@color/daynight_textColor"/>
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent">
+
+                    <ImageView
+                        android:id="@+id/syncIcon"
+                        android:layout_width="30dp"
+                        android:layout_height="30dp"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/file_upload_animation_login"
+                        android:contentDescription="@string/sync"
+                        android:scaleType="fitCenter" />
+                    <TextView
+                        android:id="@+id/lblLastSyncDate"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:padding="@dimen/padding_normal"
+                        android:text="@string/dash_4"
+                        android:textAlignment="center"
+                        android:textColor="@color/daynight_textColor" />
+                    <ImageButton
+                        android:id="@+id/imgBtnSetting"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="center_vertical"
+                        android:background="@null"
+                        android:contentDescription="@string/settings"
+                        android:paddingStart="@dimen/_10dp"
+                        android:paddingTop="6dp"
+                        android:paddingEnd="@dimen/_10dp"
+                        app:srcCompat="@drawable/ic_settings_black_24dp"
+                        app:tint="@color/daynight_textColor" />
+                </LinearLayout>
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"

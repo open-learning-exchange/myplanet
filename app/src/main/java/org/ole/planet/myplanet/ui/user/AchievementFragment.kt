@@ -1,19 +1,24 @@
 package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
+import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
+import java.time.Instant
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -26,22 +31,27 @@ import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
+import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
+
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
@@ -86,7 +96,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     private fun startAchievementSync() {
         val isFastSync = prefData.getFastSync()
-        if (isFastSync && !prefData.isAchievementsSynced()) {
+        if (isFastSync && !prefData.isSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS)) {
             checkServerAndStartSync()
         }
     }
@@ -94,9 +104,9 @@ class AchievementFragment : BaseContainerFragment() {
     private fun checkServerAndStartSync() {
         val mapping = serverUrlMapper.processUrl(serverUrl)
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        lifecycleScope.launch(dispatcherProvider.io) {
             updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 startSyncManager()
             }
         }
@@ -120,7 +130,7 @@ class AchievementFragment : BaseContainerFragment() {
                         customProgressDialog?.dismiss()
                         customProgressDialog = null
                         refreshAchievementData()
-                        prefData.setAchievementsSynced(true)
+                        prefData.setSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS, true)
                     }
                 }
             }
@@ -170,6 +180,7 @@ class AchievementFragment : BaseContainerFragment() {
             setupAchievementHeader(it)
             populateAchievements(it)
             setupReferences(it)
+            setupCv(it)
         }
     }
 
@@ -185,9 +196,24 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-        binding.tvFirstName.text = user?.firstName
-        binding.tvName.text =
-            String.format("%s %s %s", user?.firstName, user?.middleName, user?.lastName)
+
+        if (!TextUtils.isEmpty(user?.userImage)) {
+            Glide.with(requireActivity())
+                .load(user?.userImage)
+                .diskCacheStrategy(DiskCacheStrategy.ALL)
+                .override(200, 200)
+                .circleCrop()
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.imageView)
+        } else {
+            binding.imageView.setImageResource(R.drawable.profile)
+        }
+        val fullName = listOfNotNull(user?.firstName, user?.middleName, user?.lastName)
+            .filter { it.isNotBlank() }
+            .joinToString(" ")
+
+        binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
     }
 
 
@@ -205,9 +231,10 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
-        binding.tvGoals.text = a.goals
-        binding.tvPurpose.text = a.purpose
-        binding.tvAchievementHeader.text = a.achievementsHeader
+        binding.tvGoals.text = a.goals.ifBlank { getString(R.string.no_goal_added) }
+        binding.tvPurpose.text = a.purpose.ifBlank { getString(R.string.no_purpose_added) }
+        binding.tvAchievementHeader.text =
+            a.achievementsHeader.ifBlank { getString(R.string.no_achievement_added) }
     }
 
     private fun populateAchievements(data: AchievementData) {
@@ -231,8 +258,18 @@ class AchievementFragment : BaseContainerFragment() {
         val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
-        binding.tvDate.text = getString("date", ob)
+        binding.tvDate.text = try {
+            val epochMillis = Instant.parse(getString("date", ob)).toEpochMilli()
+            getFormattedDateWithTime(epochMillis)
+        } catch (e: Exception) {
+            getString("date", ob)
+        }
         binding.tvTitle.text = getString("title", ob)
+        val link = getString("link", ob)
+        if (link.isNotEmpty()) {
+            binding.tvLink.visibility = View.VISIBLE
+            binding.tvLink.text = link
+        }
 
         val resourceIds = ob.getAsJsonArray("resources")?.mapNotNull {
             it.asJsonObject?.get("_id")?.asString
@@ -253,10 +290,8 @@ class AchievementFragment : BaseContainerFragment() {
     private fun toggleDescription(binding: RowAchievementBinding) {
         binding.llDesc.visibility = if (binding.llDesc.isGone) View.VISIBLE else View.GONE
         binding.tvTitle.setCompoundDrawablesWithIntrinsicBounds(
-            0,
-            0,
-            if (binding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up,
-            0
+            0, 0,
+            if (binding.llDesc.isGone) R.drawable.ic_down else R.drawable.ic_up, 0
         )
     }
 
@@ -264,10 +299,8 @@ class AchievementFragment : BaseContainerFragment() {
         val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(
-            0,
-            0,
-            if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download,
-            0
+            0, 0,
+            if (lib.isResourceOffline()) R.drawable.ic_eye else R.drawable.ic_download, 0
         )
         btnBinding.root.setOnClickListener {
             if (lib.isResourceOffline()) {
@@ -281,10 +314,33 @@ class AchievementFragment : BaseContainerFragment() {
         return btnBinding.root
     }
 
+    private fun setupCv(data: AchievementData) {
+        val cvFilename = data.resumeFileName
+        if (cvFilename.isEmpty()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$cvFilename")
+        if (!cvFile.exists()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        binding.cvCard.visibility = View.VISIBLE
+        binding.btnViewCv.setOnClickListener {
+            val intent = Intent(requireContext(), PDFReaderActivity::class.java)
+            intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            startActivity(intent)
+        }
+    }
+
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
+        val hasReferences = data.references.isNotEmpty()
+        binding.rvOtherInfo.visibility = if (hasReferences) View.VISIBLE else View.GONE
+        binding.tvReferencesHeader.visibility = if (hasReferences) View.GONE else View.VISIBLE
+
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = ReferencesAdapter(requireContext(), data.references)
+            binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
         } else {
             (binding.rvOtherInfo.adapter as ReferencesAdapter).submitList(data.references)
         }

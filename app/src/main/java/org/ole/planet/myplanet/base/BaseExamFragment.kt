@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
-import org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -62,7 +61,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var sub: RealmSubmission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
-    private var uniqueId = getUniqueIdentifier()
     var date = Date().toString()
     private var photoPath: String? = ""
     var submitId = ""
@@ -134,7 +132,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     private fun continueExam() {
         if (currentIndex < (questions?.size ?: 0)) {
             startExam(questions?.get(currentIndex))
-        } else if (isTeam == true && type?.startsWith("survey") == true) {
+        } else if (isTeam && type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
             saveCourseProgress()

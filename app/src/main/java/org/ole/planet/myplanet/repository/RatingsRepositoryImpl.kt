@@ -6,21 +6,24 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val gson: Gson,
-) : RealmRepository(databaseService), RatingsRepository {
+) : RealmRepository(databaseService, realmDispatcher), RatingsRepository {
 
     override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
         val ratings = queryList(RealmRating::class.java) {
             equalTo("type", type)
         }
         val aggregated = aggregateRatings(ratings, userId)
-        val map = HashMap<String?, JsonObject>()
+        val map = HashMap<String?, JsonObject>(Math.ceil(aggregated.size / 0.75).toInt())
         for ((item, aggregation) in aggregated) {
             map[item] = aggregation.toJson()
         }
@@ -198,6 +201,21 @@ class RatingsRepositoryImpl @Inject constructor(
 
         internal fun roundToSupportedRating(rating: Float): Int {
             return rating.roundToInt().coerceIn(MIN_RATING, MAX_RATING)
+        }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmRating.insert(realm, jsonDoc)
         }
     }
 }

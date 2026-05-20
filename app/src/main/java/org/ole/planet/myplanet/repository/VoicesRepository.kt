@@ -1,17 +1,38 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 
+data class NewsUploadData(
+    val id: String?,
+    val _id: String?,
+    val message: String?,
+    val imageUrls: List<String>,
+    val videoUrls: List<String>,
+    val newsJson: JsonObject
+)
+
+data class NewsUpdateData(
+    val id: String?,
+    val _id: String?,
+    val _rev: String?,
+    val imagesArray: com.google.gson.JsonArray,
+    val videosArray: com.google.gson.JsonArray = com.google.gson.JsonArray()
+)
+
 interface VoicesRepository {
+    suspend fun getNewsForUpload(): List<NewsUploadData>
+    suspend fun markNewsUploaded(updates: List<NewsUpdateData>)
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary?
     suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>>
     suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>>
     suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews>
     suspend fun getNewsByTeamId(teamId: String): List<RealmNews>
+    suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean
     suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?, videoList: List<String>? = null): RealmNews
     suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?, videoList: List<String>? = null): Boolean
     suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>>
@@ -31,5 +52,6 @@ interface VoicesRepository {
     suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
     suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
     suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
-    fun serializeNews(news: RealmNews): com.google.gson.JsonObject
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
 }

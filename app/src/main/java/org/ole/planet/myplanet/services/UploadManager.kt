@@ -9,39 +9,28 @@ import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import java.io.IOException
-import java.util.Date
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiClient
-import org.ole.planet.myplanet.data.api.ApiClient.client
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
+import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.FileUtils
@@ -49,8 +38,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
-
-private const val BATCH_SIZE = 50
+import java.util.Date
 
 private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
     chunked(BATCH_SIZE).forEach { chunk ->
@@ -58,6 +46,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
             action(item)
         }
     }
+
 }
 
 @Singleton
@@ -77,88 +66,45 @@ class UploadManager @Inject constructor(
     private val teamsRepository: Lazy<TeamsRepository>,
     private val apiInterface: ApiInterface,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-    @ApplicationScope private val scope: CoroutineScope
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+    @ApplicationScope private val scope: CoroutineScope,
+    private val photoUploader: PhotoUploader
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.upload(uploadConfigs.NewsActivities)
     }
 
-    fun uploadActivities(listener: OnSuccessListener?) {
-        val apiInterface = client.create(ApiInterface::class.java)
+    private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
+        withContext(dispatcherProvider.main) {
+            listener?.onSuccess(message)
+        }
+    }
 
+    fun uploadActivities(listener: OnSuccessListener?) {
         scope.launch {
             val model = userRepository.getUserModelSuspending() ?: run {
-                withContext(Dispatchers.Main) {
-                    listener?.onSuccess("Cannot upload activities: user model is null")
-                }
+                notifyListener(listener, "Cannot upload activities: user model is null")
                 return@launch
             }
 
             if (model.isManager()) {
-                withContext(Dispatchers.Main) {
-                    listener?.onSuccess("Skipping activities upload for manager")
-                }
+                notifyListener(listener, "Skipping activities upload for manager")
                 return@launch
             }
 
             try {
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        MyPlanet.getNormalMyPlanetActivities(MainApplication.context, sharedPrefManager, model)
-                    )
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                val response = try {
-                    apiInterface.getJsonObject(
-                        UrlUtils.header,
-                        "${UrlUtils.getUrl()}/myplanet_activities/${getAndroidId(MainApplication.context)}@${NetworkUtils.getUniqueIdentifier()}"
-                    )
-                } catch (e: Exception) {
-                    null
-                }
-
-                var `object` = response?.body()
-
-                if (`object` != null) {
-                    val usages = `object`.getAsJsonArray("usages")
-                    usages.addAll(MyPlanet.getTabletUsages(context))
-                    `object`.add("usages", usages)
-                } else {
-                    `object` = MyPlanet.getMyPlanetActivities(context, sharedPrefManager, model)
-                }
-
-                try {
-                    apiInterface.postDoc(
-                        UrlUtils.header,
-                        "application/json",
-                        "${UrlUtils.getUrl()}/myplanet_activities",
-                        `object`
-                    )
-                    withContext(Dispatchers.Main) {
-                        listener?.onSuccess("My planet activities uploaded successfully")
-                    }
-                } catch (e: Exception) {
-                    withContext(Dispatchers.Main) {
-                        listener?.onSuccess("Failed to upload activities: ${e.message}")
-                    }
-                }
+                activitiesRepository.uploadMyPlanetActivities(model)
+                notifyListener(listener, "My planet activities uploaded successfully")
             } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    listener?.onSuccess("Failed to upload activities: ${e.message}")
-                }
+                Log.e(TAG, "Exception in UploadManager", e)
+                notifyListener(listener, "Failed to upload activities: ${e.message}")
             }
         }
     }
 
     suspend fun uploadExamResult(listener: OnSuccessListener) {
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             try {
                 val result = uploadCoordinator.upload(uploadConfigs.ExamResults)
 
@@ -170,14 +116,10 @@ class UploadManager @Inject constructor(
                 }
 
                 uploadCourseProgress()
-                withContext(Dispatchers.Main) {
-                    listener.onSuccess(message)
-                }
+                notifyListener(listener, message)
             } catch (e: Exception) {
-                e.printStackTrace()
-                withContext(Dispatchers.Main) {
-                    listener.onSuccess("Error during result sync: ${e.message}")
-                }
+                Log.e(TAG, "Exception in UploadManager", e)
+                notifyListener(listener, "Error during result sync: ${e.message}")
             }
         }
     }
@@ -185,7 +127,7 @@ class UploadManager @Inject constructor(
     private fun createImage(user: RealmUser?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
-        `object`.addProperty("createdDate", Date().time)
+        `object`.addProperty("createdDate", System.currentTimeMillis())
         `object`.addProperty("filename", getString("fileName", imgObject))
         `object`.addProperty("private", true)
         user?.id?.let { `object`.addProperty("addedBy", it) }
@@ -219,17 +161,39 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        databaseService.executeTransactionAsync { transactionRealm ->
-            val list: List<RealmAchievement> = transactionRealm.where(RealmAchievement::class.java).findAll()
-            list.processInBatches { sub ->
+        val list = userRepository.getAchievementsForUpload()
+        if (list.isEmpty()) return
+        withContext(dispatcherProvider.io) {
+            list.forEach { achievement ->
+                val id = achievement.get("_id")?.asString ?: return@forEach
+                val url = "${UrlUtils.getUrl()}/achievements/$id"
                 try {
-                    if (sub._id?.startsWith("guest") == true) {
-                        return@processInBatches
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
+                    if (response.isSuccessful) {
+                        val rev = response.body()?.get("rev")?.asString
+                        userRepository.markAchievementUploaded(id, rev)
+                        val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
+                        if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
+                            uploadCvAttachment(id, rev, resumeFileName)
+                        }
                     }
-                } catch (e: IOException) {
-                    e.printStackTrace()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Exception in UploadManager", e)
                 }
             }
+        }
+    }
+
+    private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
+        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
+        if (!cvFile.exists()) return
+        try {
+            val body = cvFile.readBytes().toRequestBody("application/pdf".toMediaTypeOrNull())
+            // CouchDB attachment key is always "resume.pdf"
+            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
+            apiInterface.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upload CV attachment", e)
         }
     }
 
@@ -247,78 +211,24 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSubmitPhotos(listener: OnSuccessListener?) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
-        val photosToUpload = submissionsRepository.getUnuploadedPhotos()
-
-        if (photosToUpload.isEmpty()) {
-            listener?.onSuccess("No photos to upload")
-            return
-        }
-
-        withContext(Dispatchers.IO) {
-            data class UploadedPhotoInfo(val photoId: String, val rev: String, val id: String)
-
-            photosToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUploads = mutableListOf<UploadedPhotoInfo>()
-
-                batch.forEach { (photoId, serialized) ->
-                    try {
-                        val `object` = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/submissions", serialized
-                        ).body()
-
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            val id = getString("id", `object`)
-
-                            submissionsRepository.markPhotoUploaded(photoId, rev, id)
-
-                            if (listener != null && photoId != null) {
-                                successfulUploads.add(UploadedPhotoInfo(photoId, rev, id))
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-
-                if (listener != null && successfulUploads.isNotEmpty()) {
-                    val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
-                    val photos = databaseService.withRealm { realm ->
-                        val results = realm.where(RealmSubmitPhotos::class.java)
-                            .`in`("id", photoIds).findAll()
-                        realm.copyFromRealm(results)
-                    }
-
-                    photos?.forEach { photo ->
-                        val uploadInfo = successfulUploads.find { it.photoId == photo.id }
-                        if (uploadInfo != null) {
-                            uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
-                        }
-                    }
-                }
-            }
+        val resultMessage = photoUploader.uploadSubmitPhotos(listener)
+        resultMessage?.let {
+            notifyListener(listener, it)
         }
     }
 
     suspend fun uploadResource(listener: OnSuccessListener?) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         try {
             val user = userRepository.getUserModelSuspending()
 
             val resourcesToUpload = resourcesRepository.getUnuploadedResources(user)
 
             if (resourcesToUpload.isEmpty()) {
-                listener?.onSuccess("No resources to upload")
+                notifyListener(listener, "No resources to upload")
                 return
             }
 
-            withContext(Dispatchers.IO) {
+            withContext(dispatcherProvider.io) {
                 resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
                     val successfulUpdates = mutableListOf<Pair<org.ole.planet.myplanet.repository.ResourceUploadData, com.google.gson.JsonObject>>()
 
@@ -333,7 +243,7 @@ class UploadManager @Inject constructor(
                                 successfulUpdates.add(Pair(resourceData, `object`))
                             }
                         } catch (e: Exception) {
-                            e.printStackTrace()
+                            Log.e(TAG, "Exception in UploadManager", e)
                         }
                     }
 
@@ -368,24 +278,15 @@ class UploadManager @Inject constructor(
                             // We catch it here to prevent crashing the batch loop and prevent
                             // `isTransactionSuccessful` from being set to true, so we don't upload
                             // attachments for failed DB writes.
-                            e.printStackTrace()
+                            Log.e(TAG, "Exception in UploadManager", e)
                         }
 
                         if (isTransactionSuccessful) {
                             listener?.let {
                                 try {
-                                    val libraries = databaseService.withRealm { realm ->
-                                        if (libraryIds.isNotEmpty()) {
-                                            val results = realm.where(RealmMyLibrary::class.java)
-                                                .`in`("id", libraryIds)
-                                                .findAll()
-                                            realm.copyFromRealm(results)
-                                        } else {
-                                            emptyList()
-                                        }
-                                    }
+                                    val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
 
-                                    val libMap = libraries?.associateBy { it.id } ?: emptyMap()
+                                    val libMap = libraries.associateBy { it.id }
 
                                     successfulUpdates.forEach { (resourceData, `object`) ->
                                         val rev = getString("rev", `object`)
@@ -398,7 +299,7 @@ class UploadManager @Inject constructor(
                                         }
                                     }
                                 } catch (e: Exception) {
-                                    e.printStackTrace()
+                                    Log.e("UploadManager", "Error uploading attachments", e)
                                 }
                             }
                         }
@@ -406,17 +307,14 @@ class UploadManager @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            e.printStackTrace()
-            listener?.onSuccess("Resource upload failed: ${e.message}")
+            Log.e("UploadManager", "Resource upload failed", e)
+            notifyListener(listener, "Resource upload failed: ${e.message}")
         }
     }
 
     suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         if (!personal.isUploaded) {
-            return withContext(Dispatchers.IO) {
+            return withContext(dispatcherProvider.io) {
                 try {
                     val response = apiInterface.postDoc(
                         UrlUtils.header, "application/json",
@@ -438,7 +336,7 @@ class UploadManager @Inject constructor(
                         "Failed to upload personal resource: No response"
                     }
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e(TAG, "Exception in UploadManager", e)
                     "Unable to upload resource: ${e.message}"
                 }
             }
@@ -481,28 +379,36 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
-
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
                 batch.forEach { teamData ->
                     try {
-                        val response = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/teams", teamData.serialized
-                        )
+                        if (teamData.isDeletePending) {
+                            val id = teamData.teamId ?: return@forEach
+                            val response = apiInterface.putDoc(
+                                UrlUtils.header, "application/json",
+                                "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
+                            )
+                            if (response.isSuccessful) {
+                                teamsRepository.get().deleteLocalTeamRecord(id)
+                            }
+                        } else {
+                            val response = apiInterface.postDoc(
+                                UrlUtils.header, "application/json",
+                                "${UrlUtils.getUrl()}/teams", teamData.serialized
+                            )
 
-                        val `object` = response.body()
+                            val `object` = response.body()
 
-                        if (`object` != null) {
-                            val rev = getString("rev", `object`)
-                            teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            if (`object` != null) {
+                                val rev = getString("rev", `object`)
+                                teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            }
                         }
                     } catch (e: IOException) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
             }
@@ -510,120 +416,30 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         val model = userRepository.getUserModelSuspending() ?: run {
-            withContext(Dispatchers.Main) {
-                listener.onSuccess("Cannot upload user activities: user model is null")
-            }
+            notifyListener(listener, "Cannot upload user activities: user model is null")
             return
         }
 
         if (model.isManager()) {
-            withContext(Dispatchers.Main) {
-                listener.onSuccess("Skipping user activities upload for manager")
-            }
+            notifyListener(listener, "Skipping user activities upload for manager")
             return
         }
 
         try {
-            data class ActivityData(
-                val activityId: String?,
-                val userId: String?,
-                val serialized: JsonObject
-            )
+            activitiesRepository.uploadActivities()
 
-            val activitiesToUpload = databaseService.withRealm { realm ->
-                val activities = realm.where(RealmOfflineActivity::class.java)
-                    .isNull("_rev").equalTo("type", "login").findAll()
+            uploadTeamActivities()
 
-                activities.mapNotNull { activity ->
-                    if (activity.userId?.startsWith("guest") == true) {
-                        null
-                    } else {
-                        ActivityData(
-                            activityId = activity.id,
-                            userId = activity.userId,
-                            serialized = RealmOfflineActivity.serializeLoginActivities(activity, context)
-                        )
-                    }
-                }
-            }
-
-            activitiesToUpload.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableMapOf<String, JsonObject?>()
-
-                batch.forEach { activityData ->
-                    try {
-                        val `object` = apiInterface.postDoc(
-                            UrlUtils.header, "application/json",
-                            "${UrlUtils.getUrl()}/login_activities", activityData.serialized
-                        ).body()
-
-                        if (activityData.activityId != null) {
-                            successfulUpdates[activityData.activityId] = `object`
-                        }
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-
-                if (successfulUpdates.isNotEmpty()) {
-                    val idsToUpdate = successfulUpdates.keys.toTypedArray()
-                    databaseService.executeTransactionAsync { transactionRealm ->
-                        val activities = transactionRealm.where(RealmOfflineActivity::class.java)
-                            .`in`("id", idsToUpdate)
-                            .findAll()
-
-                        activities.forEach { activity ->
-                            val updateData = successfulUpdates[activity.id]
-                            activity.changeRev(updateData)
-                        }
-                    }
-                }
-            }
-
-            uploadTeamActivitiesRefactored()
-            withContext(Dispatchers.Main) {
-                listener.onSuccess("User activities sync completed successfully")
-            }
+            notifyListener(listener, "User activities sync completed successfully")
         } catch (e: Exception) {
-            e.printStackTrace()
-            withContext(Dispatchers.Main) {
-                listener.onSuccess("Failed to upload user activities: ${e.message}")
-            }
+            Log.e(TAG, "Exception in UploadManager", e)
+            notifyListener(listener, "Failed to upload user activities: ${e.message}")
         }
     }
 
-    private suspend fun uploadTeamActivitiesRefactored() {
-        uploadCoordinator.upload(uploadConfigs.TeamActivitiesRefactored)
-    }
-
-    suspend fun uploadTeamActivities(apiInterface: ApiInterface) {
-        val logsData = activitiesRepository.getUnuploadedTeamLogs()
-
-        val successfulUploads = mutableListOf<org.ole.planet.myplanet.repository.TeamLogUploadResult>()
-
-        logsData.forEach { logData ->
-            try {
-                val `object` = apiInterface.postDoc(
-                    UrlUtils.header, "application/json",
-                    "${UrlUtils.getUrl()}/team_activities", logData.serialized
-                ).body()
-
-                if (`object` != null) {
-                    val id = getString("id", `object`)
-                    val rev = getString("rev", `object`)
-                    successfulUploads.add(org.ole.planet.myplanet.repository.TeamLogUploadResult(logData.id, logData.time, logData.user, logData.type, id, rev))
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-
-        if (successfulUploads.isNotEmpty()) {
-            activitiesRepository.markTeamLogsUploaded(successfulUploads)
-        }
+    suspend fun uploadTeamActivities() {
+        uploadCoordinator.upload(uploadConfigs.TeamActivities)
     }
 
     suspend fun uploadRating() {
@@ -635,46 +451,12 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
-
-        ApiClient.ensureInitialized()
-        val apiInterface = client.create(ApiInterface::class.java)
         val user = userRepository.getUserModelSuspending()
+        val newsItems = voicesRepository.getNewsForUpload()
 
-        data class NewsUploadData(
-            val id: String?,
-            val _id: String?,
-            val message: String?,
-            val imageUrls: List<String>,
-            val videoUrls: List<String>,
-            val newsJson: JsonObject
-        )
-
-        val newsItems = databaseService.withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .findAll()
-                .mapNotNull { news ->
-                    if (news.userId?.startsWith("guest") == true) null
-                    else NewsUploadData(
-                        id = news.id,
-                        _id = news._id,
-                        message = news.message,
-                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        videoUrls = news.videoUrls?.toList() ?: emptyList(),
-                        newsJson = voicesRepository.serializeNews(news)
-                    )
-                }
-        }
-
-        data class NewsUpdateData(
-            val id: String?,
-            val body: JsonObject?,
-            val imagesArray: com.google.gson.JsonArray,
-            val videosArray: com.google.gson.JsonArray
-        )
-
-        withContext(Dispatchers.IO) {
+        withContext(dispatcherProvider.io) {
             newsItems.chunked(BATCH_SIZE).forEach { batch ->
-                val successfulUpdates = mutableListOf<NewsUpdateData>()
+                val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
                 batch.forEach { news ->
                     try {
                         // Upload images first and collect metadata
@@ -786,42 +568,22 @@ class UploadManager @Inject constructor(
 
                         // Update database on success
                         if (newsResponse.isSuccessful && newsResponse.body() != null) {
-                            successfulUpdates.add(NewsUpdateData(news.id, newsResponse.body(), imagesArray, videosArray))
+                            val body = newsResponse.body()
+                            successfulUpdates.add(org.ole.planet.myplanet.repository.NewsUpdateData(
+                                id = news.id,
+                                _id = getString("id", body),
+                                _rev = getString("rev", body),
+                                imagesArray = imagesArray,
+                                videosArray = videosArray
+                            ))
                         }
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
 
                 if (successfulUpdates.isNotEmpty()) {
-                    databaseService.executeTransactionAsync { realm ->
-                        val ids = successfulUpdates.mapNotNull { it.id }
-                        val managedNewsMap = mutableMapOf<String, RealmNews>()
-
-                        if (ids.isNotEmpty()) {
-                            ids.chunked(999).forEach { chunk ->
-                                val results = realm.where(RealmNews::class.java)
-                                    .`in`("id", chunk.toTypedArray())
-                                    .findAll()
-                                results.forEach { n ->
-                                    n.id?.let { id -> managedNewsMap[id] = n }
-                                }
-                            }
-                        }
-
-                        successfulUpdates.forEach { update ->
-                            update.id?.let { id ->
-                                managedNewsMap[id]?.let { managedNews ->
-                                    managedNews.imageUrls?.clear()
-                                    managedNews.videoUrls?.clear()
-                                    managedNews._id = getString("id", update.body)
-                                    managedNews._rev = getString("rev", update.body)
-                                    managedNews.images = gson.toJson(update.imagesArray)
-                                    managedNews.videos = gson.toJson(update.videosArray)
-                                }
-                            }
-                        }
-                    }
+                    voicesRepository.markNewsUploaded(successfulUpdates)
                 }
             }
         }
@@ -855,5 +617,9 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadAdoptedSurveys() {
         uploadCoordinator.upload(uploadConfigs.AdoptedSurveys)
+    }
+
+    companion object {
+        private const val TAG = "UploadManager"
     }
 }

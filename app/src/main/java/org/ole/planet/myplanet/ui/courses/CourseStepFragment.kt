@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.CameraUtils
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -41,6 +43,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     lateinit var progressRepository: ProgressRepository
     @Inject
     lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
@@ -148,8 +152,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         textWithSpans.removeSpan(urlSpan)
                     }
                 }
-                if (isVisible && data.userHasCourse) {
-                    launchSaveCourseProgress()
+                if (data.userHasCourse) {
+                    viewLifecycleOwner.lifecycle.withResumed {
+                        launchSaveCourseProgress()
+                    }
                 }
             }
         }
@@ -273,7 +279,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 b.putInt("stepNum", stepNumber)
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
-                capturePhoto(this)
+                capturePhoto(dispatcherProvider.default, this)
             }
         }
 

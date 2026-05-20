@@ -31,22 +31,60 @@ class InlineResourceAdapter(
     DiffUtils.itemCallback<RealmMyLibrary>(
         areItemsTheSame = { old, new -> old.id == new.id },
         areContentsTheSame = { old, new ->
-            old._rev == new._rev &&
-                old.downloadedRev == new.downloadedRev &&
-                old.resourceLocalAddress == new.resourceLocalAddress &&
+            old.resourceLocalAddress == new.resourceLocalAddress &&
                 old.title == new.title &&
                 old.isResourceOffline() == new.isResourceOffline()
+        },
+        getChangePayload = { old, new ->
+            val payloads = mutableListOf<String>()
+            if (old.title != new.title) payloads.add("TITLE")
+            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add("ADDRESS")
+            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add("STATUS")
+            if (payloads.isEmpty()) null else payloads
         }
     )
 ) {
 
+    private var externalFilesDir: java.io.File? = null
+
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (externalFilesDir == null) externalFilesDir = FileUtils.getExternalFilesDir(parent.context)
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
         return ViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+            return
+        }
+
+        val resource = getItem(position)
+        val context = holder.itemView.context
+        val binding = holder.binding
+
+        payloads.forEach { payloadList ->
+            if (payloadList is List<*>) {
+                payloadList.forEach { payload ->
+                    when (payload) {
+                        "TITLE" -> binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                        "ADDRESS" -> {
+                            binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                            updateStatusAndPreview(binding, context, resource)
+                        }
+                        "STATUS" -> updateStatusAndPreview(binding, context, resource)
+                    }
+                }
+            }
+        }
+
+        binding.cardResource.setOnClickListener {
+            onResourceClick(resource)
+        }
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -55,7 +93,14 @@ class InlineResourceAdapter(
         val binding = holder.binding
 
         binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+        updateStatusAndPreview(binding, context, resource)
 
+        binding.cardResource.setOnClickListener {
+            onResourceClick(resource)
+        }
+    }
+
+    private fun updateStatusAndPreview(binding: ItemInlineResourceBinding, context: Context, resource: RealmMyLibrary) {
         val isDownloaded = resource.isResourceOffline() ||
             FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
 
@@ -73,7 +118,7 @@ class InlineResourceAdapter(
             binding.ivStatus.setImageResource(R.drawable.ic_eye)
 
             val resourceFile = File(
-                context.getExternalFilesDir(null),
+                externalFilesDir,
                 "ole/${resource.id}/${resource.resourceLocalAddress}"
             )
 
@@ -104,10 +149,6 @@ class InlineResourceAdapter(
         binding.ivResourceIcon.setImageResource(
             ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
         )
-
-        binding.cardResource.setOnClickListener {
-            onResourceClick(resource)
-        }
     }
 
     private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {

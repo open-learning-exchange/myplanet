@@ -14,7 +14,12 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class DashboardSurveysAdapter(
     private val onItemClick: (Int) -> Unit,
     private val dialog: AlertDialog
-) : ListAdapter<String, DashboardSurveysAdapter.SurveyViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<String, DashboardSurveysAdapter.SurveyViewHolder>(
+    DiffUtils.itemCallback<String>(
+        areItemsTheSame = { oldItem, newItem -> oldItem == newItem },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
+) {
 
     inner class SurveyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val textView: TextView = itemView.findViewById(android.R.id.text1)
@@ -43,10 +48,4 @@ class DashboardSurveysAdapter(
         )
     }
 
-    companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<String>(
-            areItemsTheSame = { oldItem, newItem -> oldItem == newItem },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
-    }
 }

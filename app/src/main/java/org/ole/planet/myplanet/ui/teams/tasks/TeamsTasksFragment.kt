@@ -8,13 +8,13 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.DatePicker
 import android.widget.TextView
 import android.widget.TimePicker
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -25,6 +25,7 @@ import java.util.Calendar
 import java.util.Date
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -46,8 +48,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private val binding get() = _binding!!
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
-    var list: List<RealmTeamTask> = emptyList()
     private var currentTab = R.id.btn_all
+
+    private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
 
     private lateinit var adapterTask: TeamsTasksAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
@@ -62,6 +65,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
 
     private fun timePicker() {
+        val dl = deadline ?: Calendar.getInstance()
         val timePickerDialog = TimePickerDialog(activity, { _: TimePicker?, hourOfDay: Int, minute: Int ->
             deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
             deadline?.set(Calendar.MINUTE, minute)
@@ -70,7 +74,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     TimeUtils.getFormattedDateWithTime(it)
                 }
             }
-        }, deadline!![Calendar.HOUR_OF_DAY], deadline!![Calendar.MINUTE], true)
+        }, dl[Calendar.HOUR_OF_DAY], dl[Calendar.MINUTE], true)
         timePickerDialog.show()
     }
 
@@ -102,11 +106,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
-                        val displayName = assigneeUser.getFullName().ifBlank {
-                            assigneeUser.name ?: getString(R.string.no_assignee)
-                        }
-                        alertTaskBinding.tvAssignMember.text = displayName
-                        alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+                        updateAssigneeUI(alertTaskBinding, assigneeUser)
                     }
                 }
             }
@@ -130,35 +130,10 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     return@launch
                 }
 
-                var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
-
-                val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
-                val adapter = UserArrayAdapter { selectedUser ->
-                    dialogSelectedItem = selectedUser
+                showMemberSelectionDialog(filteredUserList) { user ->
+                    selectedAssignee = user
+                    updateAssigneeUI(alertTaskBinding, user)
                 }
-                alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
-                alertUsersSpinnerBinding.rvUser.adapter = adapter
-                adapter.submitList(filteredUserList)
-
-                AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
-                    .setTitle(R.string.select_member)
-                    .setView(alertUsersSpinnerBinding.root)
-                    .setCancelable(false)
-                    .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
-                        val user = dialogSelectedItem
-                        if (user != null) {
-                            selectedAssignee = user
-                            val displayName = user.getFullName().ifBlank {
-                                user.name ?: getString(R.string.no_assignee)
-                            }
-                            alertTaskBinding.tvAssignMember.text = displayName
-                            alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
-                        }
-                    }
-                    .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
-                        dialog.dismiss()
-                    }
-                    .show()
             }
         }
 
@@ -192,6 +167,41 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
+    private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
+        var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
+
+        val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
+        val adapter = UserArrayAdapter { selectedUser ->
+            dialogSelectedItem = selectedUser
+        }
+        alertUsersSpinnerBinding.rvUser.layoutManager = LinearLayoutManager(requireContext())
+        alertUsersSpinnerBinding.rvUser.adapter = adapter
+        adapter.submitList(filteredUserList)
+
+        AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
+            .setTitle(R.string.select_member)
+            .setView(alertUsersSpinnerBinding.root)
+            .setCancelable(false)
+            .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
+                val user = dialogSelectedItem
+                if (user != null) {
+                    onAssigneeSelected(user)
+                }
+            }
+            .setNegativeButton(R.string.cancel) { dialog: DialogInterface, _: Int ->
+                dialog.dismiss()
+            }
+            .show()
+    }
+
+    private fun updateAssigneeUI(alertTaskBinding: AlertTaskBinding, user: RealmUser) {
+        val displayName = user.getFullName().ifBlank {
+            user.name ?: getString(R.string.no_assignee)
+        }
+        alertTaskBinding.tvAssignMember.text = displayName
+        alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
+    }
+
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
         viewLifecycleOwner.lifecycleScope.launch {
             val deadlineMillis = deadline?.timeInMillis
@@ -220,9 +230,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
-            val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                 val user = userRepository.getUserById(assigneeId)
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onNameFetched(user?.name) }
+                withContext(dispatcherProvider.main) { onNameFetched(user?.name) }
             }
             return@TeamsTasksAdapter { job.cancel() }
         }
@@ -232,6 +242,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             currentTab = checkedId
             updateTasks()
         }
+
+        teamViewModel.loadTasks(teamId)
 
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -246,8 +258,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     }
                 }
                 launch {
-                    teamsRepository.getTasksByTeamId(teamId).collect { tasks ->
-                        list = tasks
+                    teamViewModel.taskList.collectLatest { tasks ->
                         updateTasks()
                     }
                 }
@@ -256,15 +267,15 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     }
 
     private fun allTasks(): List<RealmTeamTask> {
-        return list.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
+        return teamViewModel.taskList.value.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
     }
 
     private fun completedTasks(): List<RealmTeamTask> {
-        return list.filter { it.completed }.sortedByDescending { it.deadline }
+        return teamViewModel.taskList.value.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
     private fun myTasks(): List<RealmTeamTask> {
-        return list.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
+        return teamViewModel.taskList.value.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}

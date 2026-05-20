@@ -4,13 +4,13 @@ import android.util.Base64
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
     private fun spm(): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
 
     val header: String
         get() {
@@ -38,7 +38,7 @@ object UrlUtils {
                 }
             }
 
-            val finalUrl = if (hostIp?.endsWith(".org") == true || hostIp?.endsWith(".gt") == true) {
+            val finalUrl = if (hostIp.endsWith(".org") || hostIp.endsWith(".gt")) {
                 "$scheme://$hostIp/ml/"
             } else {
                 "$scheme://$hostIp:5000/"
@@ -64,7 +64,11 @@ object UrlUtils {
     }
 
     fun dbUrl(url: String): String {
-        return if (url.endsWith("/db")) url else "$url/db"
+        var base = url
+        if (base.endsWith("/")) {
+            base = base.dropLast(1)
+        }
+        return if (base.endsWith("/db")) base else "$base/db"
     }
 
     fun getUrl(library: RealmMyLibrary?): String {
@@ -75,8 +79,13 @@ object UrlUtils {
         return "${getUrl()}/resources/$id/$file"
     }
 
-    fun getUserImageUrl(userId: String?, imageName: String): String {
-        return "${getUrl()}/_users/$userId/$imageName"
+    fun getUserImageUrl(userId: String?, imageName: String): String? {
+        if (userId.isNullOrBlank() || imageName.isBlank()) {
+            return null
+        }
+        val encodedUserId = java.net.URLEncoder.encode(userId, "UTF-8")
+        val encodedImageName = java.net.URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
+        return "${getUrl()}/_users/$encodedUserId/$encodedImageName"
     }
 
     fun getUrl(): String {

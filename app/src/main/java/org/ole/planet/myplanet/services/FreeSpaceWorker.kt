@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.util.Log
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
@@ -8,11 +9,10 @@ import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.FileUtils
 
 @HiltWorker
 class FreeSpaceWorker @AssistedInject constructor(
@@ -40,7 +40,7 @@ class FreeSpaceWorker @AssistedInject constructor(
 
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Error in FreeSpaceWorker", e)
             Result.failure()
         }
     }
@@ -72,5 +72,9 @@ class FreeSpaceWorker @AssistedInject constructor(
                 }
             }
         }
+    }
+
+    companion object {
+        private const val TAG = "FreeSpaceWorker"
     }
 }

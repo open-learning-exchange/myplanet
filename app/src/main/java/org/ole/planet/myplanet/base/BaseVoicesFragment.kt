@@ -16,7 +16,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.RequiresApi
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,8 +25,6 @@ import com.google.gson.JsonObject
 import java.io.File
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
@@ -43,10 +40,12 @@ import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.getRealPathFromURI
 import org.ole.planet.myplanet.utils.JsonUtils
 
-@RequiresApi(api = Build.VERSION_CODES.O)
 abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickListener {
     lateinit var imageList: MutableList<String>
     lateinit var videoList: MutableList<String>
+
+    @javax.inject.Inject
+    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @JvmField
     protected var llImage: ViewGroup? = null
     @JvmField
@@ -112,13 +111,13 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
             if (result.resultCode == Activity.RESULT_OK) {
                 val newsId = result.data?.getStringExtra("newsId")
                 newsId.let { adapterNews?.updateReplyBadge(it) }
-                adapterNews?.refreshCurrentItems()
+                adapterNews?.submitList(adapterNews?.currentList?.toList())
             }
         }
     }
 
     override fun onDataChanged() {
-        adapterNews?.refreshCurrentItems()
+        adapterNews?.submitList(adapterNews?.currentList?.toList())
     }
 
     override fun onReplyPosted(newsId: String?) {
@@ -141,9 +140,9 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
     override fun onMemberSelected(userModel: RealmUser?) {
         if (!isAdded) return
-        val handler = profileDbHandler
+
         lifecycleScope.launch {
-            val fragment = VoicesActions.showMemberDetails(userModel, handler) ?: return@launch
+            val fragment = VoicesActions.showMemberDetails(userModel, activitiesRepository) ?: return@launch
             FragmentNavigator.replaceFragment(
                 requireActivity().supportFragmentManager,
                 R.id.fragment_container,

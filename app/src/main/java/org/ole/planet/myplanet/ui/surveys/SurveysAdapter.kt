@@ -7,10 +7,12 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -26,7 +28,11 @@ class SurveysAdapter(
 ) : ListAdapter<RealmStepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
     { oldItem, newItem -> oldItem == newItem }
-)) {
+)), OnDiffRefreshListener {
+    override fun refreshWithDiff() {
+        submitList(currentList.toList())
+    }
+
     private var listener: OnHomeItemClickListener? = null
     private var isTitleAscending = true
     private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->

@@ -16,6 +16,15 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
+data class UploadDocParams(
+    val id: String,
+    val rev: String,
+    val format: String,
+    val f: File,
+    val name: String,
+    val listener: OnSuccessListener
+)
+
 open class FileUploader(
     private val apiInterface: ApiInterface,
     private val scope: CoroutineScope
@@ -24,7 +33,7 @@ open class FileUploader(
         val f = personal.path?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.path)
         if (f != null) {
-            uploadDoc(id, rev, "%s/resources/%s/%s", f, name, listener)
+            uploadDoc(UploadDocParams(id, rev, "%s/resources/%s/%s", f, name, listener))
         }
     }
 
@@ -32,7 +41,7 @@ open class FileUploader(
         val f = personal.resourceLocalAddress?.let { File(it) }
         val name = FileUtils.getFileNameFromLocalAddress(personal.resourceLocalAddress)
         if (f != null) {
-            uploadDoc(id, rev, "%s/resources/%s/%s", f, name, listener)
+            uploadDoc(UploadDocParams(id, rev, "%s/resources/%s/%s", f, name, listener))
         }
     }
 
@@ -40,28 +49,28 @@ open class FileUploader(
         val f = personal.photoLocation?.let { File(it) }
         val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
         if (f != null) {
-            uploadDoc(id, rev, "%s/submissions/%s/%s", f, name, listener)
+            uploadDoc(UploadDocParams(id, rev, "%s/submissions/%s/%s", f, name, listener))
         }
     }
 
-    private fun uploadDoc(id: String, rev: String, format: String, f: File, name: String, listener: OnSuccessListener) {
+    private fun uploadDoc(params: UploadDocParams) {
         scope.launch {
             try {
-                val connection = f.toURI().toURL().openConnection()
+                val connection = params.f.toURI().toURL().openConnection()
                 val mimeType = connection.contentType
-                val body = FileUtils.fullyReadFileToBytes(f)
+                val body = FileUtils.fullyReadFileToBytes(params.f)
                     .toRequestBody("application/octet-stream".toMediaTypeOrNull())
-                val url = String.format(format, UrlUtils.getUrl(), id, name)
+                val url = String.format(params.format, UrlUtils.getUrl(), params.id, params.name)
 
                 try {
-                    val response = apiInterface.uploadResource(getHeaderMap(mimeType, rev), url, body)
-                    onDataReceived(response.body(), listener)
+                    val response = apiInterface.uploadResource(getHeaderMap(mimeType, params.rev), url, body)
+                    onDataReceived(response.body(), params.listener)
                 } catch (t: Exception) {
-                    listener.onSuccess("Unable to upload resource")
+                    params.listener.onSuccess("Unable to upload resource")
                 }
             } catch (e: IOException) {
                 e.printStackTrace()
-                listener.onSuccess("Unable to upload resource")
+                params.listener.onSuccess("Unable to upload resource")
             }
         }
     }

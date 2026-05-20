@@ -11,7 +11,7 @@ import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.AutoSyncEntryPoint
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -65,7 +65,7 @@ class MyPlanet : Serializable {
         @JvmStatic
         fun getTabletUsages(context: Context): JsonArray {
             val cal = Calendar.getInstance()
-            val spm = EntryPointAccessors.fromApplication(MainApplication.context, AutoSyncEntryPoint::class.java).sharedPrefManager()
+            val spm = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
             cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {

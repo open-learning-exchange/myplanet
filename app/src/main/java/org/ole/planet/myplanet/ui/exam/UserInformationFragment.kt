@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
 import android.app.DatePickerDialog
-import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.TextUtils
@@ -20,10 +19,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -38,7 +35,6 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -160,83 +156,8 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     }
 
     private fun submitForm() {
-        var fname = ""
-        var lname = ""
-        var mName = ""
-        var yob = ""
-        var calculatedAge = 0
-
-        if (fragmentUserInformationBinding.llNames.isVisible) {
-            fname = "${fragmentUserInformationBinding.etFname.text}".trim()
-            lname = "${fragmentUserInformationBinding.etLname.text}".trim()
-            mName = "${fragmentUserInformationBinding.etMname.text}".trim()
-        }
-
-        val user = JsonObject()
-
-        if (fragmentUserInformationBinding.ltYob.isVisible) {
-            yob = "${fragmentUserInformationBinding.etYob.text}".trim()
-
-            if (yob.isEmpty()) {
-                fragmentUserInformationBinding.etYob.error =
-                    getString(R.string.year_of_birth_cannot_be_empty)
-                return
-            }
-
-            val yobInt = yob.toIntOrNull()
-            if (yobInt == null) {
-                fragmentUserInformationBinding.etYob.error =
-                    getString(R.string.please_enter_a_valid_year_of_birth)
-                return
-            }
-
-            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
-            if (yobInt !in 1900..currentYear) {
-                fragmentUserInformationBinding.etYob.error =
-                    getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
-                return
-            }
-
-            calculatedAge = currentYear - yobInt
-        }
-
-        if (fname.isNotEmpty()) user.addProperty("firstName", fname)
-        if (mName.isNotEmpty()) user.addProperty("middleName", mName)
-        if (lname.isNotEmpty()) user.addProperty("lastName", lname)
-
-        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
-            val email = fragmentUserInformationBinding.etEmail.text.toString().trim()
-            val lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
-            if (email.isNotEmpty()) user.addProperty("email", email)
-            if (lang.isNotEmpty()) user.addProperty("language", lang)
-        }
-
-        if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
-            val phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
-            if (phone.isNotEmpty()) user.addProperty("phoneNumber", phone)
-
-            if (!dob.isNullOrEmpty()) {
-                val birthDateISO = TimeUtils.convertToISO8601(dob!!)
-                user.addProperty("birthDate", birthDateISO)
-            }
-        }
-
-        if (yob.isNotEmpty()) user.addProperty("age", calculatedAge.toString())
-
-        if (fragmentUserInformationBinding.llLevel.isVisible) {
-            val level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
-            if (level.isNotEmpty()) user.addProperty("level", level)
-        }
-
-        if (fragmentUserInformationBinding.rbGender.isVisible) {
-            val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
-            if (rbSelected != null) {
-                val gender = rbSelected.tag.toString()
-                if (gender.isNotEmpty()) user.addProperty("gender", gender)
-            }
-        }
-
-        user.addProperty("betaEnabled", false)
+        val profile = createUserProfile() ?: return
+        val user = profile.toJson()
 
         val teamId = arguments?.getString("teamId")
 
@@ -259,6 +180,85 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
+    private fun createUserProfile(): org.ole.planet.myplanet.model.UserSurveyProfile? {
+        var fname = ""
+        var lname = ""
+        var mName = ""
+        var yob = ""
+
+        if (fragmentUserInformationBinding.llNames.isVisible) {
+            fname = "${fragmentUserInformationBinding.etFname.text}".trim()
+            lname = "${fragmentUserInformationBinding.etLname.text}".trim()
+            mName = "${fragmentUserInformationBinding.etMname.text}".trim()
+        }
+
+        if (fragmentUserInformationBinding.ltYob.isVisible) {
+            yob = "${fragmentUserInformationBinding.etYob.text}".trim()
+
+            if (yob.isEmpty()) {
+                fragmentUserInformationBinding.etYob.error =
+                    getString(R.string.year_of_birth_cannot_be_empty)
+                return null
+            }
+
+            val yobInt = yob.toIntOrNull()
+            if (yobInt == null) {
+                fragmentUserInformationBinding.etYob.error =
+                    getString(R.string.please_enter_a_valid_year_of_birth)
+                return null
+            }
+
+            val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+            if (yobInt !in 1900..currentYear) {
+                fragmentUserInformationBinding.etYob.error =
+                    getString(R.string.please_enter_a_valid_year_between_1900_and, currentYear)
+                return null
+            }
+        }
+
+        var email = ""
+        var lang = ""
+        if (fragmentUserInformationBinding.llEmailLang.isVisible) {
+            email = fragmentUserInformationBinding.etEmail.text.toString().trim()
+            lang = fragmentUserInformationBinding.spnLang.selectedItem.toString()
+        }
+
+        var phone = ""
+        var birthDob = ""
+        if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
+            phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
+            if (!dob.isNullOrEmpty()) {
+                birthDob = dob!!
+            }
+        }
+
+        var level = ""
+        if (fragmentUserInformationBinding.llLevel.isVisible) {
+            level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
+        }
+
+        var gender = ""
+        if (fragmentUserInformationBinding.rbGender.isVisible) {
+            val rbSelected = requireView().findViewById<RadioButton>(fragmentUserInformationBinding.rbGender.checkedRadioButtonId)
+            if (rbSelected != null) {
+                gender = rbSelected.tag.toString()
+            }
+        }
+
+        return org.ole.planet.myplanet.model.UserSurveyProfile(
+            fname = fname,
+            lname = lname,
+            mName = mName,
+            email = email,
+            phone = phone,
+            dob = birthDob,
+            yob = yob,
+            level = level,
+            gender = gender,
+            language = lang
+        )
+    }
+
     private fun saveSubmission(user: JsonObject) {
         Log.d("UserInformationFragment", "saveSubmission called, syncStartTime: $syncStartTime")
         viewLifecycleOwner.lifecycleScope.launch {
@@ -277,24 +277,20 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 submissionsRepository.markSubmissionComplete(submissionId, user)
                 Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
 
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(
-                        MainApplication.context,
-                        getString(R.string.thank_you_for_taking_this_survey)
-                    )
-                    if (isAdded) {
-                        Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
-                        dialog?.dismiss()
-                    }
+                Utilities.toast(
+                    MainApplication.context,
+                    getString(R.string.thank_you_for_taking_this_survey)
+                )
+                if (isAdded) {
+                    Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
+                    dialog?.dismiss()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("UserInformationFragment", "Error in saveSubmission", e)
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
-                    if (isAdded) {
-                        dialog?.dismiss()
-                    }
+                Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
+                if (isAdded) {
+                    dialog?.dismiss()
                 }
             }
         }

@@ -23,7 +23,6 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -47,8 +46,6 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
-    @Inject
-    lateinit var databaseService: DatabaseService
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -287,7 +284,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             examination?.profileId = health?.userKey
             examination?.creatorId = health?.userKey
             examination?.gender = user?.gender
-            examination?.age = user?.dob?.let { getAge(it) }!!
+            examination?.age = user?.dob?.let { getAge(it) } ?: 0
             examination?.isSelfExamination = currentUser?._id == pojo?._id
             examination?.date = Date().time
             examination?.planetCode = user?.planetCode
@@ -392,8 +389,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             return isValidTemp && isValidHeight && isValidPulse && isValidWeight
         }
 
-    //    private float getFloat(String trim) {
-    //    }
     private fun getInt(trim: String): Int {
         return try {
             trim.toInt()

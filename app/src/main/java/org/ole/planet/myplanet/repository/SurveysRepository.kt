@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.repository
 
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
-import org.ole.planet.myplanet.ui.surveys.SurveyFormState
 
 interface SurveysRepository {
     suspend fun getExamQuestions(examId: String): List<RealmExamQuestion>
@@ -27,4 +29,10 @@ interface SurveysRepository {
     suspend fun getSurvey(id: String): RealmStepExam?
     suspend fun getSurveys(): List<RealmStepExam>
     suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam>
+    fun bulkInsertExamsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun dueRemindersFlow(): Flow<List<String>>
+    suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int)
+    suspend fun setLastSurveyDialogShown(time: Long)
+    suspend fun getLastSurveyDialogShown(): Long
+    suspend fun isReminderScheduled(surveyIds: String): Boolean
 }

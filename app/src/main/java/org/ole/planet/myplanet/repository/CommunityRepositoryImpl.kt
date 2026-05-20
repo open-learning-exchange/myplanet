@@ -3,15 +3,18 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import io.realm.Sort
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val apiInterface: ApiInterface
-) : RealmRepository(databaseService), CommunityRepository {
+) : RealmRepository(databaseService, realmDispatcher), CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
         executeTransaction { realm ->
@@ -37,11 +40,8 @@ class CommunityRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllSorted(): List<RealmCommunity> {
-        return withRealm { realm ->
-            realm.where(RealmCommunity::class.java)
-                .sort("weight", Sort.ASCENDING)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
+        return queryList(RealmCommunity::class.java) {
+            sort("weight", Sort.ASCENDING)
         }
     }
 
@@ -58,6 +58,21 @@ class CommunityRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             false
+        }
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        for (j in jsonArray) {
+            var jsonDoc = j.asJsonObject
+            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                documentList.add(jsonDoc)
+            }
+        }
+        documentList.forEach { jsonDoc ->
+            org.ole.planet.myplanet.model.RealmMeetup.insert(realm, jsonDoc)
         }
     }
 }

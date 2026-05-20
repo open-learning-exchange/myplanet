@@ -21,15 +21,14 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -42,6 +41,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.ui.community.HomeCommunityDialogFragment
@@ -49,11 +49,13 @@ import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
-import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -62,16 +64,19 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
     lateinit var loginSyncManager: LoginSyncManager
+    @Inject
+    lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var nameWatcher2: TextWatcher
+    private lateinit var usernameWatcher: TextWatcher
     private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
-    private var backPressedTime: Long = 0
-    private val backPressedInterval: Long = 2000
+    private var exitSnackbar: Snackbar? = null
     private var teamList = java.util.ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
@@ -81,6 +86,29 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+
+        bindViews()
+        setupAvailableSpace()
+
+        changeLogoColor()
+        declareElements()
+        declareMoreElements()
+        showWifiDialog()
+        registerReceiver()
+
+        handleSyncAndUpdates()
+        checkUsagesPermission()
+
+        setupAdditionalListeners()
+        handleAutoLogin()
+
+        getTeamMembers()
+
+        setupOnBackPressed()
+        setupTeamAdapter()
+    }
+
+    private fun bindViews() {
         lblLastSyncDate = binding.lblLastSyncDate
         btnSignIn = binding.btnSignin
         syncIcon = binding.syncIcon
@@ -93,17 +121,22 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
+    }
 
-        binding.tvAvailableSpace.text = buildString {
-            append(getString(R.string.available_space_colon))
-            append(" ")
-            append(FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity))
+    private fun setupAvailableSpace() {
+        lifecycleScope.launch {
+            val storageText = withContext(dispatcherProvider.io) {
+                FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity)
+            }
+            binding.tvAvailableSpace.text = buildString {
+                append(getString(R.string.available_space_colon))
+                append(" ")
+                append(storageText)
+            }
         }
-        changeLogoColor()
-        declareElements()
-        declareMoreElements()
-        showWifiDialog()
-        registerReceiver()
+    }
+
+    private fun handleSyncAndUpdates() {
         forceSync = intent.getBooleanExtra("forceSync", false)
         processedUrl = getUrl()
         if (forceSync) {
@@ -121,16 +154,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             configurationsRepository.checkVersion(this, prefData)
         }
-        checkUsagesPermission()
         forceSyncTrigger()
+    }
 
+    private fun setupAdditionalListeners() {
         val url = getUrl()
         if (url.isNotEmpty() && url != "/db") {
             binding.openCommunity.visibility = View.VISIBLE
             binding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
-            HomeCommunityDialogFragment().show(supportFragmentManager, "")
         } else {
             binding.openCommunity.visibility = View.GONE
         }
@@ -142,40 +175,50 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 settingDialog()
             }
         }
+        val selectDarkModeButton = binding.themeToggleButton
+        selectDarkModeButton.setOnClickListener {
+            ThemeManager.showThemeDialog(this)
+        }
+    }
 
+    private fun handleAutoLogin() {
         guest = intent.getBooleanExtra("guest", false)
-        val username = intent.getStringExtra("username")
-        val password = intent.getStringExtra("password")
-        val autoLogin = intent.getBooleanExtra("auto_login", false)
 
-        if (guest) {
+        val encryptedUsername = sharedPrefManager.getNewLoginUsername()
+        val username = if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedUsername) else null
+        val encryptedPassword = sharedPrefManager.getNewLoginPassword()
+        val password = if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedPassword) else null
+
+        if (guest && username != null) {
             resetGuestAsMember(username)
         }
 
-        if (autoLogin && username != null && password != null) {
+        if (username != null && password != null) {
+            sharedPrefManager.setNewLoginUsername(null)
+            sharedPrefManager.setNewLoginPassword(null)
             lifecycleScope.launch {
                 delay(500)
                 submitForm(username, password)
             }
         }
+    }
 
-        getTeamMembers()
-
+    private fun setupOnBackPressed() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (System.currentTimeMillis() - backPressedTime < backPressedInterval) {
+                if (exitSnackbar?.isShown == true) {
+                    exitSnackbar?.dismiss()
                     finish()
                 } else {
-                    toast(this@LoginActivity, getString(R.string.press_back_again_to_exit))
-                    backPressedTime = System.currentTimeMillis()
+                    exitSnackbar = Snackbar.make(binding.root, getString(R.string.press_back_again_to_exit), 2000)
+                        .setAction(getString(R.string.exit)) { finish() }
+                    exitSnackbar?.show()
                 }
             }
         })
-        val selectDarkModeButton = binding.themeToggleButton
-        selectDarkModeButton.setOnClickListener {
-            ThemeManager.showThemeDialog(this)
-        }
+    }
 
+    private fun setupTeamAdapter() {
         teamList.add(getString(R.string.loading))
         teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)
         teamAdapter?.setDropDownViewResource(R.layout.custom_simple_list_item_1)
@@ -228,7 +271,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 settingDialog()
             }
         }
-        if (prefData.getServerProtocol().isEmpty()) prefData.setServerProtocol("http://")
+        if (prefData.getServerProtocol().isEmpty()) prefData.setServerProtocol(Constants.HTTP_PROTOCOL)
         binding.becomeMember.setOnClickListener {
             if (getUrl() != "/db") {
                 binding.inputName.setText(R.string.empty_text)
@@ -265,7 +308,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 val serverUrl = prefData.getServerUrl()
                 val serverPin = prefData.getServerPin()
 
-                val url = if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+                val url = if (serverUrl.startsWith(Constants.HTTP_PROTOCOL) || serverUrl.startsWith(Constants.HTTPS_PROTOCOL)) {
                     serverUrl
                 } else {
                     "$protocol$serverUrl"
@@ -299,14 +342,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                val success = withContext(Dispatchers.IO) {
+                val success = withContext(dispatcherProvider.io) {
                     communityRepository.syncCommunityDocs()
                 }
                 val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
                 toast(this@LoginActivity, message)
             }
         }
-        nameWatcher2 = object : TextWatcher {
+        usernameWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
@@ -317,25 +360,23 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
 
-            override fun afterTextChanged(s: Editable) {}
+            override fun afterTextChanged(s: Editable?) {
+                val input = s?.toString() ?: ""
+                if (input.isNotEmpty()) {
+                    binding.inputName.error = validateUsernameInput(input)
+                } else {
+                    binding.inputName.error = null
+                }
+                updateSignInButtonState()
+            }
         }
-        binding.inputName.addTextChangedListener(nameWatcher2)
+        binding.inputName.addTextChangedListener(usernameWatcher)
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
     }
 
     private fun setupFormValidation() {
-        binding.inputName.doAfterTextChanged { text ->
-            val input = text?.toString() ?: ""
-            if (input.isNotEmpty()) {
-                binding.inputName.error = validateUsernameInput(input)
-            } else {
-                binding.inputName.error = null
-            }
-            updateSignInButtonState()
-        }
-
         passwordWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -504,29 +545,25 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         lifecycleScope.launch {
             selectedTeamId = prefData.getSelectedTeamId().toString()
             if (selectedTeamId?.isNotEmpty() == true) {
-                val teamMembers = teamsRepository.getJoinedMembers(selectedTeamId!!)
-                users = teamMembers
-                val userList = users?.map {
-                    User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
-                } ?: emptyList()
-
-                val existingUsers = prefData.getSavedUsers().toMutableList()
-                val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-                val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
-                prefData.setSavedUsers(updatedUserList)
+                users = teamsRepository.getJoinedMembersAndSave(selectedTeamId!!)
             }
-
-            if (mAdapter == null) {
-                mAdapter = UsersAdapter(this@LoginActivity)
-                binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
-                binding.recyclerView.adapter = mAdapter
-            }
-            mAdapter?.submitList(prefData.getSavedUsers().toMutableList())
-
-            binding.recyclerView.isNestedScrollingEnabled = true
-            binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
-            binding.recyclerView.isVerticalScrollBarEnabled = true
+            setupAndPopulateRecyclerView()
         }
+    }
+
+    private suspend fun setupAndPopulateRecyclerView() {
+        if (mAdapter == null) {
+            mAdapter = UsersAdapter(this@LoginActivity)
+            binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+            binding.recyclerView.adapter = mAdapter
+        }
+
+        val savedUsers = withContext(dispatcherProvider.io) { prefData.getSavedUsers().toMutableList() }
+        mAdapter?.submitList(savedUsers)
+
+        binding.recyclerView.isNestedScrollingEnabled = true
+        binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+        binding.recyclerView.isVerticalScrollBarEnabled = true
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
@@ -540,11 +577,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(user.name ?: "", settings)
+                    val model = userRepository.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
-                        saveUserInfoPref(settings, "", model)
+                        profileDbHandler.saveUserInfoPref(settings, "", model)
                         onLogin()
                     }
                 }
@@ -564,7 +601,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        AuthUtils.login(this, loginSyncManager, name, password)
+        lifecycleScope.launch {
+            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
+        }
     }
 
     internal fun showGuestDialog(username: String) {
@@ -580,12 +619,12 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(username, settings)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
-                        saveUserInfoPref(settings, "", model)
+                        profileDbHandler.saveUserInfoPref(settings, "", model)
                         onLogin()
                         dialog.dismiss()
                     }
@@ -703,8 +742,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::nameWatcher2.isInitialized) {
-            binding.inputName.removeTextChangedListener(nameWatcher2)
+        if (this::usernameWatcher.isInitialized) {
+            binding.inputName.removeTextChangedListener(usernameWatcher)
         }
         if (this::passwordWatcher.isInitialized) {
             binding.inputPassword.removeTextChangedListener(passwordWatcher)

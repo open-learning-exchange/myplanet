@@ -5,9 +5,8 @@ import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
-import android.widget.ListView
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -17,6 +16,7 @@ import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -48,7 +48,8 @@ class SendSurveyFragment : BaseDialogFragment() {
         }
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
-                for (i in fragmentSendSurveyBinding.listUsers.selectedItemsList.indices) {
+                val selectedItems = (fragmentSendSurveyBinding.listUsers.adapter as CheckboxAdapter).selectedItemsList
+                for (i in selectedItems) {
                     val u = users[i]
                     submissionsRepository.createSurveySubmission(id!!, u.id)
                 }
@@ -59,8 +60,10 @@ class SendSurveyFragment : BaseDialogFragment() {
     }
 
     private fun initListView(users: List<RealmUser>) {
-        val adapter = ArrayAdapter(requireActivity(), R.layout.rowlayout, R.id.checkBoxRowLayout, users)
-        fragmentSendSurveyBinding.listUsers.choiceMode = ListView.CHOICE_MODE_MULTIPLE
+        val names = users.map { it.toString() }
+        val adapter = CheckboxAdapter()
+        adapter.submitList(names)
+        fragmentSendSurveyBinding.listUsers.layoutManager = LinearLayoutManager(requireActivity())
         fragmentSendSurveyBinding.listUsers.adapter = adapter
     }
 

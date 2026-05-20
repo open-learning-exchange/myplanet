@@ -9,13 +9,6 @@
         android:contentDescription="@string/ai_chat"
         app:showAsAction="always" />
     <item
-        android:id="@+id/menu_goOnline"
-        android:icon="@drawable/goonline"
-        android:title="@string/user"
-        android:contentDescription="@string/user"
-        app:iconTint="@color/material_drawer_accent"
-        app:showAsAction="ifRoom" />
-    <item
         android:id="@+id/action_sync"
         android:icon="@drawable/sync_icon"
         android:contentDescription="@string/sync_now"

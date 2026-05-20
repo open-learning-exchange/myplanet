@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.Application
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
@@ -19,14 +20,13 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -55,6 +55,10 @@ class DashboardViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { dispatcherProvider.main } returns testDispatcher
+        every { dispatcherProvider.io } returns testDispatcher
+        every { dispatcherProvider.default } returns testDispatcher
+        every { dispatcherProvider.unconfined } returns testDispatcher
 
         viewModel = DashboardViewModel(
             application,
@@ -86,7 +90,7 @@ class DashboardViewModelTest {
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLogins("John Doe") } returns flowOf(listOf(RealmOfflineActivity(), RealmOfflineActivity()))
+        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
 
         viewModel.loadUserContent(userId)
 
@@ -121,7 +125,7 @@ class DashboardViewModelTest {
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLogins("John Doe") } returns flowOf(listOf(RealmOfflineActivity(), RealmOfflineActivity()))
+        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
 
         viewModel.loadUserContent(userId)
 
