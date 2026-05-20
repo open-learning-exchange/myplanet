@@ -22,8 +22,7 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmObject
 import javax.inject.Inject
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.async
+import android.util.Log
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -35,7 +34,6 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -54,6 +52,10 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
+    companion object {
+        private const val TAG = "BaseResourceFragment"
+    }
+
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: RealmUser? = null
     var lv: RecyclerView? = null
@@ -70,8 +72,6 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var surveysRepository: SurveysRepository
     @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
-    @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -80,7 +80,6 @@ abstract class BaseResourceFragment : Fragment() {
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
-    private var serverCheckDeferred: Deferred<Boolean>? = null
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -136,16 +135,20 @@ abstract class BaseResourceFragment : Fragment() {
                     if (pendingDownloadUrls.isNotEmpty()) {
                         val fileUrl = download.fileUrl
                         if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
+                            Log.d(TAG, "Progress update: ${download.progress}% for ${fileUrl.substringAfterLast('/')} | pending=${pendingDownloadUrls.size}")
                             if (download.progress == 100) {
                                 pendingDownloadUrls.remove(fileUrl)
+                                Log.d(TAG, "File complete: ${fileUrl.substringAfterLast('/')} | remaining=${pendingDownloadUrls.size}")
                             }
                             setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
+                        } else if (!fileUrl.isNullOrEmpty()) {
+                            Log.d(TAG, "Ignored broadcast for untracked URL: ${fileUrl.substringAfterLast('/')}")
                         }
                     }
                 } else {
+                    Log.e(TAG, "Download failed broadcast received: ${download?.message}")
                     pendingDownloadUrls.clear()
-                    prgDialog.dismiss()
-                    download?.message?.let { showError(prgDialog, it) }
+                    download?.message?.let { showError(prgDialog, it) } ?: prgDialog.dismiss()
                 }
             }
         }
@@ -154,8 +157,10 @@ abstract class BaseResourceFragment : Fragment() {
     protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
         if (!isAdded) return
         if (dbMyLibrary.isEmpty()) {
+            Log.d(TAG, "showDownloadDialog: list is empty, skipping")
             return
         }
+        Log.d(TAG, "showDownloadDialog: showing ${dbMyLibrary.size} item(s)")
 
         activity?.let { fragmentActivity ->
             val inflater = fragmentActivity.layoutInflater
@@ -168,7 +173,7 @@ abstract class BaseResourceFragment : Fragment() {
                 setPadding(48, 40, 48, 0)
                 textSize = 18f
                 maxLines = 5
-                setSingleLine(false)
+                isSingleLine = false
                 setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             }
             alertDialogBuilder.setView(convertView)
@@ -177,47 +182,42 @@ abstract class BaseResourceFragment : Fragment() {
 
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        val serverAvailable = serverCheckDeferred?.await()
-                            ?: configurationsRepository.checkServerAvailability()
-                        if (serverAvailable) {
-                            val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
-                            selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, ArrayList(it))
-                                val selectedLibraries = it.mapNotNull { index ->
-                                    dbMyLibrary.getOrNull(
-                                        index
-                                    ) }
-                                if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                    showProgressDialog()
-                                }
+                        val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
+                        selectedItemsList?.let { it ->
+                            Log.d(TAG, "Download selected: ${it.size} item(s) chosen")
+                            addToLibrary(dbMyLibrary, ArrayList(it))
+                            val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
+                            if (resourcesRepository.downloadResources(selectedLibraries)) {
+                                val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
+                                Log.d(TAG, "Download queued for ${urls.size} URL(s): ${urls.map { it.substringAfterLast('/') }}")
+                                trackDownloadUrls(urls)
+                                showProgressDialog()
+                            } else {
+                                Log.d(TAG, "Download selected: nothing queued (all already offline?)")
                             }
-                        } else {
-                            showNotConnectedToast()
                         }
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (serverCheckDeferred?.await() ?: configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(dbMyLibrary)
-                            val filtered = dbMyLibrary.filterNotNull()
-                            if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                showProgressDialog()
-                            }
+                        Log.d(TAG, "Download all: ${dbMyLibrary.size} item(s)")
+                        addAllToLibrary(dbMyLibrary)
+                        val filtered = dbMyLibrary.filterNotNull()
+                        if (resourcesRepository.downloadResources(filtered)) {
+                            val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
+                            Log.d(TAG, "Download all queued for ${urls.size} URL(s): ${urls.map { it.substringAfterLast('/') }}")
+                            trackDownloadUrls(urls)
+                            showProgressDialog()
                         } else {
-                            showNotConnectedToast()
+                            Log.d(TAG, "Download all: nothing queued (all already offline?)")
                         }
                     }
                 }.setNegativeButton(R.string.txt_cancel, null)
             downloadSuggestionDialog?.dismiss()
             downloadSuggestionDialog = alertDialogBuilder.create()
-            serverCheckDeferred = lifecycleScope.async { configurationsRepository.checkServerAvailability() }
             downloadSuggestionDialog?.let { dialog ->
                 createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
                     downloadSuggestionDialog = null
-                    serverCheckDeferred = null
                 }
                 dialog.show()
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size

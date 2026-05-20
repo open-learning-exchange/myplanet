@@ -7,7 +7,6 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
@@ -22,6 +21,7 @@ import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.Utilities.getCloudConfig
 
 class ResourcesAdapter(
     private val context: Context,
@@ -38,7 +38,7 @@ class ResourcesAdapter(
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
-    private val config: ChipCloudConfig = org.ole.planet.myplanet.utils.Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+    private val config: ChipCloudConfig = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
 
     private var isAscending = true
     private var isTitleAscending = true

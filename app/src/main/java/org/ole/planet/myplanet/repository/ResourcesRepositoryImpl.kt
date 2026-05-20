@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -32,6 +33,8 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+
+private const val TAG = "ResourcesRepository"
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -298,14 +301,17 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+        Log.d(TAG, "markResourceOfflineByLocalAddress: querying localAddress='$localAddress'")
         executeTransaction { realm ->
-            realm.where(RealmMyLibrary::class.java)
+            val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", localAddress)
                 .findAll()
-                ?.forEach { library ->
-                    library.resourceOffline = true
-                    library.downloadedRev = library._rev
-                }
+            Log.d(TAG, "markResourceOfflineByLocalAddress: found ${results.size} record(s) for '$localAddress'")
+            results.forEach { library ->
+                library.resourceOffline = true
+                library.downloadedRev = library._rev
+                Log.d(TAG, "markResourceOfflineByLocalAddress: marked offline — id=${library.id} rev=${library._rev}")
+            }
         }
     }
 
@@ -382,27 +388,25 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
+        val alreadyOffline = resources.count { it.isResourceOffline() }
+        Log.d(TAG, "downloadResources: total=${resources.size} alreadyOffline=$alreadyOffline")
         return try {
             val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
-            if (urls.isNotEmpty()) {
-                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            if (urls.isEmpty()) {
+                Log.d(TAG, "downloadResources: nothing to queue — all already offline or missing remote address")
+                return false
             }
+            Log.d(TAG, "downloadResources: queuing ${urls.size} URL(s): ${urls.map { it.substringAfterLast('/') }}")
+            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             true
         } catch (e: Exception) {
+            Log.e(TAG, "downloadResources: failed to start download service", e)
             false
         }
     }
 
     override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
-        return try {
-            val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
-            if (urls.isNotEmpty()) {
-                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
-            }
-            true
-        } catch (e: Exception) {
-            false
-        }
+        return downloadResources(resources)
     }
 
     override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
