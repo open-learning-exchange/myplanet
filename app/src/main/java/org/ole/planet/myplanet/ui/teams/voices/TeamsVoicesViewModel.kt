@@ -51,9 +51,9 @@ class TeamsVoicesViewModel @Inject constructor(
         }
     }
 
-    fun createTeamNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>) {
+    fun createTeamNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>, videoList: List<String> = emptyList()) {
         viewModelScope.launch(dispatcherProvider.io) {
-            val success = voicesRepository.createTeamNews(map, user, imageList)
+            val success = voicesRepository.createTeamNews(map, user, imageList, videoList)
             _createNewsSuccess.send(success)
         }
     }

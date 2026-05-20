@@ -66,7 +66,6 @@ class VoicesFragment : BaseVoicesFragment() {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
         llVideo = binding.llVideos
-        user = userSessionManager.getUserModelCopy()
         setupUI(binding.voicesFragmentParentLayout, requireActivity())
         etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
