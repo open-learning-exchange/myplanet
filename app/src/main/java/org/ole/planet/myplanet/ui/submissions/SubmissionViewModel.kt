@@ -39,6 +39,7 @@ class SubmissionViewModel @Inject constructor(
     private val _query = MutableStateFlow("")
 
     private val userIdFlow = flow { emit(userRepository.getActiveUserIdSuspending()) }
+        .shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
     private val allSubmissionsFlow = userIdFlow.flatMapLatest { uid ->
         submissionsRepository.getSubmissionsFlow(uid)
@@ -66,16 +67,19 @@ class SubmissionViewModel @Inject constructor(
 
         val groupedSubmissions = filtered.groupBy { it.parentId }
 
-        val uniqueSubmissions = groupedSubmissions
+        val uniqueRawSubmissions = groupedSubmissions
             .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
             .values
             .filterNotNull()
-            .map { sub ->
-                val name = submissionsRepository.getNormalizedSubmitterName(sub)
-                val fallback = sub.userId?.let { userRepository.getUserById(it)?.name }
-                SubmissionViewData(sub, name ?: fallback ?: "")
-            }
-            .sortedByDescending { it.submission.lastUpdateTime }
+
+        val userIds = uniqueRawSubmissions.mapNotNull { it.userId }.distinct()
+        val fallbackUsersMap = userRepository.getUsersByIds(userIds).associateBy { it.id }
+
+        val uniqueSubmissions = uniqueRawSubmissions.map { sub ->
+            val name = submissionsRepository.getNormalizedSubmitterName(sub)
+            val fallback = sub.userId?.let { fallbackUsersMap[it]?.name }
+            SubmissionViewData(sub, name ?: fallback ?: "")
+        }.sortedByDescending { it.submission.lastUpdateTime }
 
         val submissionCountMap = groupedSubmissions.mapValues { it.value.size }
             .mapKeys { entry ->
@@ -85,11 +89,17 @@ class SubmissionViewModel @Inject constructor(
         Triple(uniqueSubmissions, submissionCountMap, filtered)
     }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val submissions: StateFlow<List<RealmSubmission>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
+    val submissions: StateFlow<List<SubmissionUiModel>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
         uniqueSubmissions.map { viewData ->
-            viewData.submission.apply {
+            SubmissionUiModel(
+                id = viewData.submission.id,
+                status = viewData.submission.status,
+                startTime = viewData.submission.startTime,
+                lastUpdateTime = viewData.submission.lastUpdateTime,
+                parentId = viewData.submission.parentId,
+                userId = viewData.submission.userId,
                 submitterName = viewData.submitterName
-            }
+            )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 

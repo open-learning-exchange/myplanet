@@ -16,8 +16,7 @@
         android:text="@string/date"
         android:textSize="@dimen/text_size_mid"
         android:textColor="@color/daynight_textColor" />
-
-    <TextView
+   <TextView
         android:id="@+id/note"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -26,7 +25,6 @@
         android:text="@string/note"
         android:textSize="@dimen/text_size_mid"
         android:textColor="@color/daynight_textColor" />
-
     <TextView
         android:id="@+id/credit"
         android:layout_width="0dp"
@@ -34,9 +32,8 @@
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
         android:text="@string/credit"
-        android:textColor="@color/md_green_500"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_mid" />
-
     <TextView
         android:id="@+id/debit"
         android:layout_width="0dp"
@@ -44,9 +41,8 @@
         android:layout_weight="1"
         android:padding="@dimen/padding_small"
         android:text="@string/debit"
-        android:textColor="@color/md_red_500"
+        android:textColor="@color/daynight_textColor"
         android:textSize="@dimen/text_size_mid" />
-
     <TextView
         android:id="@+id/balance"
         android:layout_width="0dp"
@@ -59,5 +55,4 @@
         android:textSize="@dimen/text_size_mid"
         android:visibility="visible"
         android:textColor="@color/daynight_textColor" />
-
 </LinearLayout>

@@ -40,11 +40,8 @@ class CommunityRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllSorted(): List<RealmCommunity> {
-        return withRealm { realm ->
-            realm.where(RealmCommunity::class.java)
-                .sort("weight", Sort.ASCENDING)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
+        return queryList(RealmCommunity::class.java) {
+            sort("weight", Sort.ASCENDING)
         }
     }
 

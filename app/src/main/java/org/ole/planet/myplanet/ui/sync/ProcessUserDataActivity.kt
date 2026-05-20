@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
@@ -47,12 +46,11 @@ import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
-import org.ole.planet.myplanet.utils.SecurePrefs
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    open lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefData: SharedPrefManager
@@ -314,23 +312,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(this@ProcessUserDataActivity, settings, user?.name, password)
-        }
-        this.settings = settings
-        prefData.setUserId(user?.id ?: "")
-        prefData.setUserName(user?.name ?: "")
-        prefData.rawPreferences.edit().apply {
-            remove("password")
-            putString("firstName", user?.firstName)
-            putString("lastName", user?.lastName)
-            putString("middleName", user?.middleName)
-            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", System.currentTimeMillis())
-            apply()
-        }
-    }
 
     fun alertDialogOkay(message: String?) {
         val builder1 = AlertDialog.Builder(this, R.style.AlertDialogTheme)

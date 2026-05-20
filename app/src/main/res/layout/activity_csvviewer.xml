@@ -1,47 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context="org.ole.planet.myplanet.ui.viewer.CSVViewerActivity"
-    android:background="@color/light_dark">
+    android:background="@color/light_dark"
+    tools:context="org.ole.planet.myplanet.ui.viewer.CSVViewerActivity">
 
-    <TextView
-        android:id="@+id/csvFileName"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:paddingTop="@dimen/padding_large"
-        android:text="@string/csv_filename"
-        android:textColor="@color/daynight_textColor"
-        android:textSize="@dimen/text_size_large"
-        android:textStyle="bold" />
-    <ProgressBar
-        android:id="@+id/csvProgressBar"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="@dimen/padding_large"
-        android:layout_marginEnd="@dimen/padding_large"
-        android:indeterminate="true"
-        android:visibility="gone" />
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/csvFileName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/custom_border"
-            android:orientation="vertical">
+            android:gravity="center_horizontal"
+            android:paddingTop="@dimen/padding_large"
+            android:text="@string/csv_filename"
+            android:textColor="@color/daynight_textColor"
+            android:textSize="@dimen/text_size_large"
+            android:textStyle="bold" />
+        <ProgressBar
+            android:id="@+id/csvProgressBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginEnd="@dimen/padding_large"
+            android:indeterminate="true"
+            android:visibility="gone" />
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/csvFileContent"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:textSize="@dimen/text_size_mid" />
-        </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+                android:layout_height="wrap_content"
+                android:background="@drawable/custom_border"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/csvFileContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:textSize="@dimen/text_size_mid" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabTts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/read_aloud"
+        app:srcCompat="@drawable/ic_play" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -160,9 +160,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            val newAdapter = getAdapter()
-            recyclerView.adapter = newAdapter
-            showNoData(tvMessage, newAdapter.itemCount, "")
+            postAddRefresh()
 
             errorOccurred?.let {
                 it.printStackTrace()
@@ -173,6 +171,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
             if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
+    }
+
+    protected open suspend fun postAddRefresh() {
+        val newAdapter = getAdapter()
+        recyclerView.adapter = newAdapter
+        showNoData(tvMessage, newAdapter.itemCount, "")
     }
 
     private fun setJoinInProgress(inProgress: Boolean) {

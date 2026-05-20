@@ -1,15 +1,23 @@
 package org.ole.planet.myplanet.ui.chat
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.repository.ChatRepository
 
 @HiltViewModel
-class ChatViewModel @Inject constructor() : ViewModel() {
+class ChatViewModel @Inject constructor(
+    private val chatRepository: ChatRepository
+) : ViewModel() {
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
     val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
 
@@ -30,6 +38,20 @@ class ChatViewModel @Inject constructor() : ViewModel() {
 
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
+
+    private val _conversationSaveSuccess = MutableSharedFlow<Boolean>()
+    val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
+
+    fun continueConversation(id: String, query: String, response: String, rev: String) {
+        viewModelScope.launch {
+            try {
+                chatRepository.continueConversation(id, query, response, rev)
+                _conversationSaveSuccess.emit(true)
+            } catch (e: Exception) {
+                _conversationSaveSuccess.emit(false)
+            }
+        }
+    }
 
     fun setSelectedChatHistory(conversations: List<RealmConversation>) {
         _selectedChatHistory.value = conversations

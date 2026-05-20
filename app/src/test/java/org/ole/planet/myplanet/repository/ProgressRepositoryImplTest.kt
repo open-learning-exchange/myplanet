@@ -40,10 +40,12 @@ class ProgressRepositoryImplTest {
     @Before
     fun setUp() {
         every { dispatcherProvider.io } returns testDispatcher
+        val mockCoursesRepository = mockk<CoursesRepository>()
         repository = spyk(ProgressRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
-            dispatcherProvider
+            dispatcherProvider,
+            { mockCoursesRepository }
         ), recordPrivateCalls = true)
         coEvery { repository["queryList"](RealmMyCourse::class.java, any<Function1<*, *>>()) } returns emptyList<RealmMyCourse>()
     }
@@ -199,12 +201,12 @@ class ProgressRepositoryImplTest {
         } returns exams
 
         coEvery {
-            repository["queryList"](RealmAnswer::class.java, any<Function1<RealmQuery<RealmAnswer>, Unit>>())
+            repository["queryList"](RealmAnswer::class.java, any<Function1<*, *>>())
         } returns answers
 
         coEvery {
-            repository["findByField"](RealmExamQuestion::class.java, "id", "q1", false)
-        } returns question
+            repository["queryList"](RealmExamQuestion::class.java, any<Function1<*, *>>())
+        } returns listOf(question)
 
         val data = repository.fetchCourseData("user1")
         advanceUntilIdle()

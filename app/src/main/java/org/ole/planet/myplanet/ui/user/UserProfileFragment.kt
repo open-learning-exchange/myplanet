@@ -65,6 +65,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class UserProfileFragment : Fragment() {
@@ -93,9 +94,11 @@ class UserProfileFragment : Fragment() {
                 val uri = result.data?.data ?: return@registerForActivityResult
                 photoURI  = uri
                 startIntent(photoURI)
+                val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
                 Glide.with(this)
                     .load(uri)
                     .diskCacheStrategy(DiskCacheStrategy.ALL)
+                    .override(imageSize, imageSize)
                     .circleCrop()
                     .placeholder(R.drawable.profile)
                     .error(R.drawable.profile)
@@ -139,6 +142,14 @@ class UserProfileFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        initializeDependencies()
+        binding.btProfilePic.setOnClickListener { searchForPhoto() }
+        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
+        setupStatsRecycler()
+        observeUserProfile()
+        viewModel.loadUserProfile(sharedPrefManager.getUserId())
+        viewModel.getOfflineVisits()
+
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 combine(
@@ -158,13 +169,6 @@ class UserProfileFragment : Fragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentUserProfileBinding.inflate(inflater, container, false)
-        initializeDependencies()
-        binding.btProfilePic.setOnClickListener { searchForPhoto() }
-        binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
-        setupStatsRecycler()
-        observeUserProfile()
-        viewModel.loadUserProfile(sharedPrefManager.getUserId())
-        viewModel.getOfflineVisits()
 
         return binding.root
     }
@@ -176,38 +180,30 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun observeUserProfile() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.userModel.collect { userModel ->
-                    model = userModel
-                    if (userModel != null) {
-                        setupProfile()
-                        loadProfileImage()
-                        configureGuestView()
-                    }
-                }
+        collectWhenStarted(viewModel.userModel) { userModel ->
+            model = userModel
+            if (userModel != null) {
+                setupProfile()
+                loadProfileImage()
+                configureGuestView()
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.updateState.collect { state ->
-                    when (state) {
-                        ProfileUpdateState.Success -> {
-                            Utilities.toast(requireContext(), "User details updated successfully")
-                            editProfileDialog?.dismiss()
-                            editProfileDialog = null
-                            viewModel.resetUpdateState()
-                        }
-
-                        is ProfileUpdateState.Error -> {
-                            Utilities.toast(requireContext(), state.message)
-                            viewModel.resetUpdateState()
-                        }
-
-                        ProfileUpdateState.Idle -> Unit
-                    }
+        collectWhenStarted(viewModel.updateState) { state ->
+            when (state) {
+                ProfileUpdateState.Success -> {
+                    Utilities.toast(requireContext(), "User details updated successfully")
+                    editProfileDialog?.dismiss()
+                    editProfileDialog = null
+                    viewModel.resetUpdateState()
                 }
+
+                is ProfileUpdateState.Error -> {
+                    Utilities.toast(requireContext(), state.message)
+                    viewModel.resetUpdateState()
+                }
+
+                ProfileUpdateState.Idle -> Unit
             }
         }
     }
@@ -237,9 +233,11 @@ class UserProfileFragment : Fragment() {
 
         if (!isAdded) return
 
+        val imageSize = resources.getDimensionPixelSize(R.dimen.user_image_size)
         Glide.with(this)
             .load(profileImageUrl)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(imageSize, imageSize)
             .circleCrop()
             .apply(RequestOptions().placeholder(R.drawable.profile).error(R.drawable.profile))
             .listener(object : RequestListener<Drawable> {

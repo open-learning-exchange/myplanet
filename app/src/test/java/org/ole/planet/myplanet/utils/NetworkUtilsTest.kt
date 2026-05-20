@@ -17,6 +17,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
+import org.robolectric.util.ReflectionHelpers
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
@@ -45,6 +46,40 @@ class NetworkUtilsTest {
 
         wifiManager.isWifiEnabled = false
         assertFalse(NetworkUtils.isWifiEnabled())
+    }
+
+    @Test
+    fun getUniqueIdentifier_returnsExpectedFormat() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        android.provider.Settings.Secure.putString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+            "test_android_id"
+        )
+
+        ReflectionHelpers.setStaticField(android.os.Build::class.java, "ID", "test_build_id")
+
+        val uniqueId = NetworkUtils.getUniqueIdentifier()
+
+        assertEquals("test_android_id_test_build_id", uniqueId)
+    }
+
+    @Test
+    fun getUniqueIdentifier_withNullAndroidId_returnsExpectedFormat() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        android.provider.Settings.Secure.putString(
+            context.contentResolver,
+            android.provider.Settings.Secure.ANDROID_ID,
+            null
+        )
+
+        ReflectionHelpers.setStaticField(android.os.Build::class.java, "ID", "test_build_id")
+
+        val uniqueId = NetworkUtils.getUniqueIdentifier()
+
+        assertEquals("null_test_build_id", uniqueId)
     }
 
     @Test
@@ -80,5 +115,25 @@ class NetworkUtilsTest {
     @Test
     fun extractProtocol_withEmptyString() {
         assertNull(NetworkUtils.extractProtocol(""))
+    }
+
+    @Test
+    fun extractProtocol_withSpaces() {
+        assertEquals("http://", NetworkUtils.extractProtocol("  http://example.com  "))
+    }
+
+    @Test
+    fun extractProtocol_withMalformedUrl() {
+        assertNull(NetworkUtils.extractProtocol("htt p://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withInvalidSchemeCharacters() {
+        assertEquals("http#://", NetworkUtils.extractProtocol("http#://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withHttpUrlWithoutDomain() {
+        assertEquals("http://", NetworkUtils.extractProtocol("http://"))
     }
 }

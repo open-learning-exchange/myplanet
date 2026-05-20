@@ -195,7 +195,7 @@ class SurveysViewModelTest {
     @Test
     fun `test startExamSync when fastSync is false`() {
         every { sharedPrefManager.getFastSync() } returns false
-        every { sharedPrefManager.isExamsSynced() } returns false
+        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns false
 
         viewModel.startExamSync()
 
@@ -205,7 +205,7 @@ class SurveysViewModelTest {
     @Test
     fun `test startExamSync when isExamsSynced is true`() {
         every { sharedPrefManager.getFastSync() } returns true
-        every { sharedPrefManager.isExamsSynced() } returns true
+        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns true
 
         viewModel.startExamSync()
 
@@ -215,7 +215,7 @@ class SurveysViewModelTest {
     @Test
     fun `test startExamSync triggers sync and handles error state mapping`() = runTest {
         every { sharedPrefManager.getFastSync() } returns true
-        every { sharedPrefManager.isExamsSynced() } returns false
+        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns false
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
         every { serverUrlMapper.processUrl(any()) } returns mockk()
 
@@ -245,7 +245,7 @@ class SurveysViewModelTest {
 
         // Test onSyncComplete
         listener.onSyncComplete()
-        verify { sharedPrefManager.setExamsSynced(true) }
+        verify { sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true) }
         testDispatcher.scheduler.advanceUntilIdle()
         assertEquals(false, viewModel.isLoading.value)
     }

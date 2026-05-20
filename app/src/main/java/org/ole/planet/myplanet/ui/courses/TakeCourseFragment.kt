@@ -40,6 +40,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private var courseId: String? = null
+    private var userModel: RealmUser? = null
     private var currentCourse: RealmMyCourse? = null
     lateinit var steps: List<RealmCourseStep?>
     var position = 0
@@ -173,7 +175,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val stepNumber = position
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
-
+        binding.courseStepProgressBar.max = steps.size
+        binding.courseStepProgressBar.progress = position
         lifecycleScope.launch {
             val currentProgress = coursesRepository.getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
@@ -405,9 +408,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
-        var courseId: String? = null
-        var userModel: RealmUser? = null
-
         @JvmStatic
         fun newInstance(b: Bundle?): TakeCourseFragment {
             val takeCourseFragment = TakeCourseFragment()

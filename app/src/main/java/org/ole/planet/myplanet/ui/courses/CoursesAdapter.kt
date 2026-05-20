@@ -10,6 +10,7 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -67,7 +68,6 @@ class CoursesAdapter(
     private val config: ChipCloudConfig
     private var isAscending = true
     private var isTitleAscending = false
-    private var areAllSelected = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
 
     companion object {
@@ -87,9 +87,30 @@ class CoursesAdapter(
         this.ratingChangeListener = ratingChangeListener
     }
 
-    fun setTagsMap(tagsMap: Map<String, List<Tag>>) {
-        this.tagsMap = tagsMap
-        notifyItemRangeChanged(0, itemCount, TAG_PAYLOAD)
+    fun setTagsMap(newTagsMap: Map<String, List<Tag>>) {
+        val updatedCourseIds = mutableSetOf<String?>()
+
+        newTagsMap.forEach { (courseId, newTags) ->
+            if (tagsMap[courseId] != newTags) {
+                updatedCourseIds.add(courseId)
+            }
+        }
+
+        tagsMap.keys.filterNot { newTagsMap.containsKey(it) }.forEach { removedKey ->
+            updatedCourseIds.add(removedKey)
+        }
+
+        tagsMap = newTagsMap
+
+        updatedCourseIds.forEach { courseId ->
+            if (courseId.isNullOrEmpty()) {
+                return@forEach
+            }
+            val index = currentList.indexOfFirst { it.courseId == courseId }
+            if (index != -1) {
+                notifyItemChanged(index, TAG_PAYLOAD)
+            }
+        }
     }
 
     fun removeCourses(courseIds: List<String>) {
@@ -109,14 +130,43 @@ class CoursesAdapter(
         newMap: HashMap<String?, JsonObject>,
         newProgressMap: HashMap<String?, JsonObject>?
     ) {
+        val updatedCourseIds = mutableSetOf<String?>()
+
+        newMap.forEach { (courseId, newRating) ->
+            if (this.map[courseId] != newRating) {
+                updatedCourseIds.add(courseId)
+            }
+        }
+        this.map.keys.filterNot { newMap.containsKey(it) }.forEach { removedKey ->
+            updatedCourseIds.add(removedKey)
+        }
+
+        newProgressMap?.forEach { (courseId, newProgress) ->
+            if (this.progressMap?.get(courseId) != newProgress) {
+                updatedCourseIds.add(courseId)
+            }
+        }
+        this.progressMap?.keys?.filterNot { newProgressMap?.containsKey(it) == true }?.forEach { removedKey ->
+            updatedCourseIds.add(removedKey)
+        }
+
         this.map.clear()
         this.map.putAll(newMap)
         this.progressMap = newProgressMap
+
         submitList(newCourseList) {
             val bundle = Bundle()
             bundle.putBoolean(RATING_PAYLOAD, true)
             bundle.putBoolean(PROGRESS_PAYLOAD, true)
-            notifyItemRangeChanged(0, itemCount, bundle)
+            updatedCourseIds.forEach { courseId ->
+                if (courseId.isNullOrEmpty()) {
+                    return@forEach
+                }
+                val index = currentList.indexOfFirst { it.courseId == courseId }
+                if (index != -1) {
+                    notifyItemChanged(index, bundle)
+                }
+            }
         }
     }
 
@@ -186,8 +236,7 @@ class CoursesAdapter(
 
     fun areAllSelected(): Boolean {
         val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
-        return areAllSelected
+        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
     }
 
     fun selectAllItems(selectAll: Boolean) {
@@ -477,6 +526,19 @@ class CoursesAdapter(
             } else {
                 rowCourseBinding.courseProgress.visibility = View.GONE
             }
+            val badge = rowCourseBinding.statusBadge
+            val current = getInt("current", progress)
+            val max = getInt("max", progress)
+            val (statusText, statusColor) = when {
+                progress == null -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+                current >= max   -> Pair(context.getString(R.string.status_completed),   R.color.status_completed)
+                current > 0      -> Pair(context.getString(R.string.status_in_progress), R.color.status_in_progress)
+                else             -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+            }
+            badge.text = statusText
+            badge.visibility = View.VISIBLE
+            (badge.background as? android.graphics.drawable.GradientDrawable)
+                ?.setColor(ContextCompat.getColor(context, statusColor))
         }
 
         private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {

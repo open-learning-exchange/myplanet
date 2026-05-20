@@ -5,18 +5,18 @@ import android.os.Bundle
 import android.view.ContextThemeWrapper
 import android.view.LayoutInflater
 import android.view.MenuItem
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import javax.inject.Inject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmUserChallengeActions.Companion.createActionAsync
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
@@ -32,8 +32,9 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
 abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBackStackChangedListener {
+    @Inject
+    lateinit var databaseService: DatabaseService
     lateinit var navigationView: BottomNavigationView
-    var doubleBackToExitPressedOnce = false
     private lateinit var goOnline: MenuItem
     var c = 0
 
@@ -153,21 +154,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
                 .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK)
                 .putExtra("fromLogout", true)
             startActivity(loginScreen)
-            doubleBackToExitPressedOnce = true
             finish()
-        }
-    }
-
-    override fun finish() {
-        if (doubleBackToExitPressedOnce) {
-            super.finish()
-        } else {
-            doubleBackToExitPressedOnce = true
-            Toast.makeText(this, getString(R.string.press_back_again_to_exit), Toast.LENGTH_SHORT).show()
-            lifecycleScope.launch {
-                delay(2000)
-                doubleBackToExitPressedOnce = false
-            }
         }
     }
 

@@ -31,8 +31,8 @@ class LifeRepositoryImpl @Inject constructor(databaseService: DatabaseService, @
         }
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?): List<RealmMyLife> {
-        return queryList(RealmMyLife::class.java, true) {
+    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<RealmMyLife> {
+        return queryList(RealmMyLife::class.java, ensureLatest) {
             equalTo("userId", userId)
         }.sortedBy { it.weight }
     }

@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -151,8 +152,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                         textWithSpans.removeSpan(urlSpan)
                     }
                 }
-                if (isVisible && data.userHasCourse) {
-                    launchSaveCourseProgress()
+                if (data.userHasCourse) {
+                    viewLifecycleOwner.lifecycle.withResumed {
+                        launchSaveCourseProgress()
+                    }
                 }
             }
         }

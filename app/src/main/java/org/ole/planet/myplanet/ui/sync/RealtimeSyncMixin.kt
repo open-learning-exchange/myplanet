@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.ui.sync
 
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -13,6 +10,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 interface RealtimeSyncMixin {
     fun getWatchedTables(): List<String>
@@ -26,22 +24,19 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
 
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun setupRealtimeSync() {
-        fragment.lifecycleScope.launch {
-            fragment.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                syncManagerInstance.dataUpdateFlow
-                    .filter { update -> mixin.getWatchedTables().contains(update.table) }
-                    .distinctUntilChanged { old, new ->
-                        old.table == new.table &&
-                        old.newItemsCount == new.newItemsCount &&
-                        old.updatedItemsCount == new.updatedItemsCount
-                    }
-                    .debounce(300)
-                    .collect { update ->
-                        mixin.onDataUpdated(update.table, update)
-                        if (mixin.shouldAutoRefresh(update.table)) {
-                            refreshRecyclerView()
-                        }
-                    }
+        fragment.collectWhenStarted(
+            syncManagerInstance.dataUpdateFlow
+                .filter { update -> mixin.getWatchedTables().contains(update.table) }
+                .distinctUntilChanged { old, new ->
+                    old.table == new.table &&
+                    old.newItemsCount == new.newItemsCount &&
+                    old.updatedItemsCount == new.updatedItemsCount
+                }
+                .debounce(300)
+        ) { update ->
+            mixin.onDataUpdated(update.table, update)
+            if (mixin.shouldAutoRefresh(update.table)) {
+                refreshRecyclerView()
             }
         }
     }
@@ -49,14 +44,8 @@ class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: Real
     private fun refreshRecyclerView() {
         fragment.viewLifecycleOwner.lifecycleScope.launch {
             val adapter = mixin.getSyncRecyclerView()?.adapter ?: return@launch
-            when (adapter) {
-                is OnDiffRefreshListener -> adapter.refreshWithDiff()
-                is ListAdapter<*, *> -> {
-                    @Suppress("UNCHECKED_CAST")
-                    (adapter as ListAdapter<Any, *>).let { listAdapter ->
-                        listAdapter.submitList(listAdapter.currentList.toList())
-                    }
-                }
+            if (adapter is OnDiffRefreshListener) {
+                adapter.refreshWithDiff()
             }
         }
     }

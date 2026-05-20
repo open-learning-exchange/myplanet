@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainDispatcherRule
-import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -22,7 +22,7 @@ class NewsViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var resourcesRepository: ResourcesRepository
+    private lateinit var voicesRepository: VoicesRepository
     private lateinit var viewModel: NewsViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
@@ -34,15 +34,15 @@ class NewsViewModelTest {
 
     @Before
     fun setup() {
-        resourcesRepository = mockk()
-        viewModel = NewsViewModel(resourcesRepository, testDispatcherProvider)
+        voicesRepository = mockk()
+        viewModel = NewsViewModel(voicesRepository, testDispatcherProvider)
     }
 
     @Test
     fun `getPrivateImageUrlsCreatedAfter updates flow with list`() = runTest {
         val timestamp = 123456789L
         val expectedUrls = listOf("url1", "url2")
-        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+        coEvery { voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
         var capturedResult: List<String>? = null
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
@@ -62,7 +62,7 @@ class NewsViewModelTest {
     fun `getPrivateImageUrlsCreatedAfter updates flow with empty list`() = runTest {
         val timestamp = 123456789L
         val expectedUrls = emptyList<String>()
-        coEvery { resourcesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
+        coEvery { voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
         var capturedResult: List<String>? = null
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {

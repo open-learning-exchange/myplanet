@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -15,7 +14,6 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -38,57 +36,41 @@ class TeamViewModel @Inject constructor(
 
     fun loadTasks(teamId: String) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
-                    _taskList.value = tasks
-                }
+            teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+                _taskList.value = tasks
             }
         }
     }
 
-    private var currentTeams: List<TeamSummary> = emptyList()
+    private var currentTeamsDetails: List<TeamDetails> = emptyList()
     private var currentSearchQuery: String = ""
     private var currentUserId: String? = null
+    private var currentFromDashboard: Boolean = false
+    private var currentType: String? = null
     private var loadJob: kotlinx.coroutines.Job? = null
 
 
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
+        currentFromDashboard = fromDashboard
+        currentType = type
         currentUserId = userId
         loadJob?.cancel()
         loadJob = viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                when {
-                    fromDashboard -> {
-                        if (userId != null) {
-                            teamsRepository.getMyTeamsFlow(userId).collectLatest { list ->
-                                val teamList = list.mapNotNull {
-                                    val id = it._id ?: return@mapNotNull null
-                                    TeamSummary(
-                                        _id = id,
-                                        name = it.name ?: "",
-                                        teamType = it.teamType,
-                                        teamPlanetCode = it.teamPlanetCode,
-                                        createdDate = it.createdDate,
-                                        type = it.type,
-                                        status = it.status,
-                                        teamId = it.teamId,
-                                        description = it.description,
-                                        services = it.services,
-                                        rules = it.rules
-                                    )
-                                }
-                                processTeams(teamList, userId, currentSearchQuery)
-                            }
+            when {
+                fromDashboard -> {
+                    if (userId != null) {
+                        teamsRepository.getMyTeamDetailsFlow(userId).collectLatest { list ->
+                            applyFilters(list, currentSearchQuery)
                         }
                     }
-                    type == "enterprise" -> {
-                        val teamList = teamsRepository.getShareableEnterpriseSummaries(null)
-                        processTeams(teamList, userId, currentSearchQuery)
-                    }
-                    else -> {
-                        val teamList = teamsRepository.getTeamSummaries(null)
-                        processTeams(teamList, userId, currentSearchQuery)
-                    }
+                }
+                type == "enterprise" -> {
+                    val teamList = teamsRepository.getShareableEnterpriseDetails(userId)
+                    applyFilters(teamList, currentSearchQuery)
+                }
+                else -> {
+                    val teamList = teamsRepository.getTeamDetails(userId)
+                    applyFilters(teamList, currentSearchQuery)
                 }
             }
         }
@@ -96,74 +78,19 @@ class TeamViewModel @Inject constructor(
 
     fun searchTeams(query: String) {
         currentSearchQuery = query
-        viewModelScope.launch {
-            processTeams(currentTeams, currentUserId, currentSearchQuery)
-        }
+        applyFilters(currentTeamsDetails, currentSearchQuery)
     }
 
-    private suspend fun processTeams(teams: List<TeamSummary>, userId: String?, searchQuery: String) {
-        currentTeams = teams
-        val processedTeams = withContext(dispatcherProvider.io) {
-            val filteredList = if (searchQuery.isEmpty()) {
-                teams
-            } else {
-                teams.filter {
-                    it.name.contains(searchQuery, ignoreCase = true)
-                }
+    private fun applyFilters(teams: List<TeamDetails>, searchQuery: String) {
+        currentTeamsDetails = teams
+        val filteredList = if (searchQuery.isEmpty()) {
+            teams
+        } else {
+            teams.filter {
+                it.name?.contains(searchQuery, ignoreCase = true) == true
             }
-
-            val validTeams = filteredList.filter {
-                !it._id.isBlank() && (it.status == null || it.status != "archived")
-            }
-
-            if (validTeams.isEmpty()) {
-                return@withContext emptyList<TeamDetails>()
-            }
-
-            val teamIds = validTeams.map { it._id }
-
-            val visitCountsDeferred = async { teamsRepository.getRecentVisitCounts(teamIds) }
-            val memberStatusesDeferred = async { teamsRepository.getTeamMemberStatuses(userId, teamIds) }
-
-            val visitCounts = visitCountsDeferred.await()
-            val memberStatuses = memberStatusesDeferred.await()
-
-            val teamDataList = validTeams.map { team ->
-                val teamId = team._id
-                val status = memberStatuses[teamId]
-                TeamDetails(
-                    _id = team._id,
-                    name = team.name,
-                    teamType = team.teamType,
-                    createdDate = team.createdDate,
-                    type = team.type,
-                    status = team.status,
-                    visitCount = visitCounts[teamId] ?: 0L,
-                    teamStatus = status?.let {
-                        TeamStatus(
-                            isMember = it.isMember,
-                            isLeader = it.isLeader,
-                            hasPendingRequest = it.hasPendingRequest
-                        )
-                    },
-                    description = team.description,
-                    services = team.services,
-                    rules = team.rules,
-                    teamId = team.teamId
-                )
-            }
-
-            teamDataList.sortedWith(
-                compareByDescending<TeamDetails> {
-                    when {
-                        it.teamStatus?.isLeader == true -> 3
-                        it.teamStatus?.isMember == true -> 2
-                        else -> 1
-                    }
-                }.thenByDescending { it.visitCount }
-            )
         }
-        _teamData.value = processedTeams
+        _teamData.value = filteredList
     }
 
     fun requestToJoin(teamId: String, userId: String?, userPlanetCode: String?, teamType: String?) {
@@ -185,7 +112,7 @@ class TeamViewModel @Inject constructor(
                 teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
                 teamsRepository.syncTeamActivities()
             }
-            processTeams(currentTeams, userId, currentSearchQuery)
+            loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 
@@ -195,7 +122,7 @@ class TeamViewModel @Inject constructor(
                 teamsRepository.leaveTeam(teamId, userId)
                 teamsRepository.syncTeamActivities()
             }
-            processTeams(currentTeams, userId, currentSearchQuery)
+            loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 

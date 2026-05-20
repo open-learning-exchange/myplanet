@@ -24,6 +24,7 @@
     <color name="bg_white">#FFFFFF</color>
     <color name="green">#C304E019</color>
 
+
     <color name="empty_rating">@color/md_white_1000</color>
     <color name="ic_download">#FFFFFF</color>
     <color name="profile_pic">#757575</color>
@@ -73,4 +74,15 @@
     <color name="offline_ink">#8A3A12</color>
     <color name="notif_dot">#D64A26</color>
     <color name="md_amber_700">#FFA000</color>
+    <color name="achievement_purpose_icon">#66BB6A</color>
+    <color name="achievement_goals_icon">#FFB74D</color>
+    <color name="achievement_references_icon">#BA68C8</color>
+    <color name="chat_user_message_text">#FFFFFF</color>
+    <color name="chat_ai_response_text">@color/textColorPrimary</color>
+    <color name="chat_ai_response_background">#2F3136</color>
+    <color name="chat_detail_divider">#3A3B3C</color>
+
+    <color name="status_not_started">#BDBDBD</color>
+    <color name="status_in_progress">#FFD54F</color>
+    <color name="status_completed">#66BB6A</color>
 </resources>

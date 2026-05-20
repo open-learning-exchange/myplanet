@@ -69,7 +69,6 @@ class RealmRepositoryTest {
     fun `queryListFlow emits initial results then listener updates`() = runTest {
         val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
         val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
-        val asyncResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
         val frozenInitial = mockk<RealmResults<TestRealmObject>>(relaxed = true)
         val frozenUpdated = mockk<RealmResults<TestRealmObject>>(relaxed = true)
 
@@ -81,7 +80,6 @@ class RealmRepositoryTest {
 
         every { realm.where(TestRealmObject::class.java) } returns realmQuery
         every { realmQuery.findAll() } returns initialResults
-        every { realmQuery.findAllAsync() } returns asyncResults
 
         every { initialResults.isValid } returns true
         every { initialResults.isLoaded } returns true
@@ -91,7 +89,7 @@ class RealmRepositoryTest {
         every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns copiedInitialList
 
         val listenerSlot = slot<RealmChangeListener<RealmResults<TestRealmObject>>>()
-        every { asyncResults.addChangeListener(capture(listenerSlot)) } just Runs
+        every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
 
         every { frozenUpdated.realm } returns frozenRealmUpdated
         every { frozenRealmUpdated.copyFromRealm(frozenUpdated) } returns copiedUpdatedList
@@ -126,21 +124,20 @@ class RealmRepositoryTest {
     fun `queryListFlow awaitClose path closes channel and does not double-close`() = runTest {
         val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
         val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
-        val asyncResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
         val frozenInitial = mockk<RealmResults<TestRealmObject>>(relaxed = true)
         val frozenRealmInitial = mockk<Realm>(relaxed = true)
         val listenerSlot = slot<RealmChangeListener<RealmResults<TestRealmObject>>>()
 
         every { realm.where(TestRealmObject::class.java) } returns realmQuery
         every { realmQuery.findAll() } returns initialResults
-        every { realmQuery.findAllAsync() } returns asyncResults
+
         every { initialResults.isValid } returns true
         every { initialResults.isLoaded } returns true
         every { initialResults.freeze() } returns frozenInitial
         every { frozenInitial.realm } returns frozenRealmInitial
         every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns listOf()
-        every { asyncResults.addChangeListener(capture(listenerSlot)) } just Runs
-        every { asyncResults.isValid } returns true
+        every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
+
         every { realm.isClosed } returns false
 
         val job = launch(testDispatcher) {
@@ -155,7 +152,7 @@ class RealmRepositoryTest {
 
         // Wait a bit to ensure awaitClose is executed
         // verify removeChangeListener is called and realm.close is called
-        verify { asyncResults.removeChangeListener(listenerSlot.captured) }
+        verify { initialResults.removeChangeListener(listenerSlot.captured) }
         verify(exactly = 1) { realm.close() }
     }
 

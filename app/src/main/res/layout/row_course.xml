@@ -54,6 +54,20 @@
                 android:visibility="gone"
                 app:layout_constraintTop_toBottomOf="@id/title"
                 app:layout_constraintStart_toStartOf="parent" />
+            <TextView
+                android:id="@+id/statusBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/course_progress_badge"
+                android:paddingHorizontal="@dimen/status_badge_padding_horizontal"
+                android:paddingVertical="@dimen/status_badge_padding_vertical"
+                android:textColor="@color/md_white_1000"
+                android:textSize="@dimen/status_badge_text_size"
+                android:textStyle="bold"
+                android:visibility="gone"
+                app:layout_constraintTop_toBottomOf="@id/title"
+                app:layout_constraintStart_toEndOf="@id/isMyCourse"
+                android:layout_marginStart="@dimen/status_badge_margin_start"/>
         </androidx.constraintlayout.widget.ConstraintLayout>
 
         <LinearLayout

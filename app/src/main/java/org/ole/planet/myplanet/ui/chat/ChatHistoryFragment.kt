@@ -179,7 +179,7 @@ class ChatHistoryFragment : Fragment() {
 
     private fun startChatHistorySync() {
         val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isChatHistorySynced()) {
+        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.CHAT_HISTORY)) {
             checkServerAndStartSync()
         }
     }
@@ -213,7 +213,7 @@ class ChatHistoryFragment : Fragment() {
                         if (isAdded) {
                             customProgressDialog?.dismiss()
                             customProgressDialog = null
-                            sharedPrefManager.setChatHistorySynced(true)
+                            sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
 
                             refreshChatHistory()
                         }

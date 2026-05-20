@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services
 
 import android.app.Activity
 import android.app.ActivityManager
-import android.util.Log
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
@@ -10,6 +9,7 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.IBinder
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -59,14 +59,13 @@ class DownloadService : Service() {
     private lateinit var preferences: SharedPreferences
     private var currentDownloadUrl: String = ""
     private var fromSync = false
-    private var totalDownloadsCount = 0
-    private var completedDownloadsCount = 0
     private var lastNotificationUpdateTime = 0L
     private var currentFileProgress = 0
     private val processedUrls = mutableSetOf<String>()
     private var sessionTotalCount = 0
     private var sessionCompletedCount = 0
     private var isCurrentDownloadPriority = false
+    private var isQueueRunning = false
 
     private val downloadJob = SupervisorJob()
     private lateinit var downloadScope: CoroutineScope
@@ -90,7 +89,14 @@ class DownloadService : Service() {
 
         downloadScope.launch {
             preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            processDownloadQueue()
+            if (!isQueueRunning) {
+                isQueueRunning = true
+                try {
+                    processDownloadQueue()
+                } finally {
+                    isQueueRunning = false
+                }
+            }
         }
 
         return START_STICKY
@@ -104,42 +110,31 @@ class DownloadService : Service() {
                 if (sessionCompletedCount > 0) {
                     showCompletionNotification(false)
                 }
-
-                preferences.edit {
-                    remove(PENDING_DOWNLOADS_KEY)
-                    remove(PRIORITY_DOWNLOADS_KEY)
-                }
                 stopSelf()
                 return
             }
 
             processedUrls.add(nextUrl.url)
             sessionTotalCount++
-            totalDownloadsCount = getRemainingCount() + 1
 
             isCurrentDownloadPriority = nextUrl.isPriority
             updateNotificationForBatchDownload()
             initDownload(nextUrl.url, fromSync)
 
-            completedDownloadsCount++
             sessionCompletedCount++
 
             cleanupProcessedUrls()
         }
     }
 
-    private data class QueuedUrl(val url: String, val isPriority: Boolean)
+    internal data class QueuedUrl(val url: String, val isPriority: Boolean, val priority: Int = 0)
 
-    private fun getNextPriorityUrl(): QueuedUrl? {
-        val priorityUrls = preferences.getStringSet(PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val next = priorityUrls.firstOrNull { it !in processedUrls && it.isNotBlank() }
-        return next?.let { QueuedUrl(it, isPriority = true) }
+    internal fun getNextPriorityUrl(): QueuedUrl? {
+        return Companion.getNextUrl(preferences, PRIORITY_DOWNLOADS_KEY, processedUrls, true)
     }
 
-    private fun getNextPendingUrl(): QueuedUrl? {
-        val pendingUrls = preferences.getStringSet(PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
-        val next = pendingUrls.firstOrNull { it !in processedUrls && it.isNotBlank() }
-        return next?.let { QueuedUrl(it, isPriority = false) }
+    internal fun getNextPendingUrl(): QueuedUrl? {
+        return Companion.getNextUrl(preferences, PENDING_DOWNLOADS_KEY, processedUrls, false)
     }
 
     private fun getRemainingCount(): Int {
@@ -164,7 +159,7 @@ class DownloadService : Service() {
         DownloadUtils.createChannels(this)
         notificationBuilder = NotificationCompat.Builder(this, "DownloadChannel")
             .setContentTitle(getString(R.string.downloading_files))
-            .setContentText("Starting downloads (0/$totalDownloadsCount)")
+            .setContentText("Starting downloads (0/${getRemainingCount() + 1})")
             .setSmallIcon(R.drawable.ic_download)
             .setProgress(100, 0, true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
@@ -180,6 +175,12 @@ class DownloadService : Service() {
         try {
             if (url.isBlank()) {
                 downloadFailed("Invalid URL - empty or blank", fromSync)
+                return
+            }
+
+            if (FileUtils.checkFileExist(this, url)) {
+                DownloadUtils.updateResourceOfflineStatus(url)
+                onDownloadComplete(url)
                 return
             }
 
@@ -369,8 +370,8 @@ class DownloadService : Service() {
     private fun showCompletionNotification(hadErrors: Boolean) {
         val notification = DownloadUtils.buildCompletionNotification(
             this,
-            completedDownloadsCount,
-            totalDownloadsCount,
+            sessionCompletedCount,
+            sessionTotalCount,
             hadErrors,
             forWorker = false
         )
@@ -381,7 +382,8 @@ class DownloadService : Service() {
     override fun onDestroy() {
         try {
             stopForeground(Service.STOP_FOREGROUND_REMOVE)
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e(TAG, "Error stopping foreground service", e)
         }
         downloadJob.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
@@ -398,6 +400,25 @@ class DownloadService : Service() {
         private const val NOTIFICATION_UPDATE_INTERVAL_MS = 500L
         const val PENDING_DOWNLOADS_KEY = "pending_downloads_queue"
         const val PRIORITY_DOWNLOADS_KEY = "priority_downloads_queue"
+
+        internal fun getNextPriorityUrl(downloadQueue: List<QueuedUrl>): QueuedUrl? {
+            if (downloadQueue.isEmpty()) return null
+            return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
+        }
+
+        @androidx.annotation.VisibleForTesting
+        internal fun getNextUrl(
+            preferences: SharedPreferences,
+            key: String,
+            processedUrls: Set<String>,
+            isPriority: Boolean
+        ): QueuedUrl? {
+            val urls = preferences.getStringSet(key, emptySet()) ?: emptySet()
+            val queue = urls.sorted()
+                .filter { it !in processedUrls && it.isNotBlank() }
+                .map { QueuedUrl(it, isPriority) }
+            return getNextPriorityUrl(queue)
+        }
 
         fun startService(context: Context, urlsKey: String, fromSync: Boolean) {
             val intent = Intent(context, DownloadService::class.java).apply {

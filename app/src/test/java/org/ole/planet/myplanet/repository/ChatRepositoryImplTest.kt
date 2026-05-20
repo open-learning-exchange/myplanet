@@ -15,20 +15,20 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import io.realm.Sort
 import kotlinx.coroutines.test.runTest
+import okhttp3.RequestBody
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
-import okhttp3.RequestBody
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
-import retrofit2.Response
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import retrofit2.Response
 
 class ChatRepositoryImplTest {
     private lateinit var chatRepository: ChatRepositoryImpl

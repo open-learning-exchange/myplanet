@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -40,6 +41,8 @@ class AddResourceActivity : AppCompatActivity() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: RealmUser? = null
     var subjects: RealmList<String>? = null
@@ -153,22 +156,25 @@ class AddResourceActivity : AppCompatActivity() {
         }
         binding.btnSubmit.isEnabled = false
         lifecycleScope.launch {
-            if (resourcesRepository.resourceTitleExists(title)) {
+            val result = resourcesRepository.saveLocalResource(
+                resource,
+                userModel?.id,
+                isPrivateTeamResource,
+                teamId
+            )
+
+            if (result.isSuccess) {
+                val message = if (isPrivateTeamResource) {
+                    getString(R.string.resource_added_to_team)
+                } else {
+                    getString(R.string.added_to_my_library)
+                }
+                toast(this@AddResourceActivity, message)
+                finish()
+            } else {
                 binding.tlTitle.error = getString(R.string.resource_title_already_exists)
                 binding.btnSubmit.isEnabled = true
-                return@launch
             }
-            resourcesRepository.saveLibraryItem(resource)
-            if (!isPrivateTeamResource) {
-                resourcesRepository.markResourceAdded(userModel?.id, id)
-            }
-            val message = if (isPrivateTeamResource) {
-                getString(R.string.resource_added_to_team)
-            } else {
-                getString(R.string.added_to_my_library)
-            }
-            toast(this@AddResourceActivity, message)
-            finish()
         }
     }
 

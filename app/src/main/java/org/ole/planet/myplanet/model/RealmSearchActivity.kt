@@ -38,17 +38,4 @@ open class RealmSearchActivity(
         return obj
     }
 
-    companion object {
-        @JvmStatic
-        fun insert(log: RealmNewsLog): JsonObject {
-            val ob = JsonObject()
-            ob.addProperty("user", log.userId)
-            ob.addProperty("type", log.type)
-            ob.addProperty("time", log.time)
-            ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-            ob.addProperty("deviceName", NetworkUtils.getDeviceName())
-            ob.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
-            return ob
-        }
-    }
 }

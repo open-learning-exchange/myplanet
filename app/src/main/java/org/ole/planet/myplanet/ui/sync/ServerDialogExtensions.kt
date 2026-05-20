@@ -40,6 +40,7 @@ fun SyncActivity.showConfigurationUIElements(
         }
     binding.ltAdvanced.visibility = if (manualSelected) View.VISIBLE else View.GONE
     binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
+    binding.clearData.visibility = if (prefData.getConfigurationId().isNullOrBlank()) View.GONE else View.VISIBLE
 
     if (manualSelected) {
         setupManualUi(binding)

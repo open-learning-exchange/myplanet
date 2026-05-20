@@ -220,7 +220,8 @@ class RealmStepExamTest {
 
         every { RealmExamQuestion.serializeQuestions(any()) } returns JsonArray()
 
-        val json = RealmStepExam.serializeExam(mockRealm, exam)
+        val questions = listOf(mockk<RealmExamQuestion>())
+        val json = RealmStepExam.serializeExam(exam, questions)
 
         assertEquals("exam1", json.get("_id").asString)
         assertEquals("Test Exam", json.get("name").asString)

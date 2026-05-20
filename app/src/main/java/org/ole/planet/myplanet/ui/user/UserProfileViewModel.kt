@@ -23,6 +23,7 @@ sealed class ProfileUpdateState {
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager,
+    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -123,16 +124,20 @@ class UserProfileViewModel @Inject constructor(
 
     init {
         viewModelScope.launch(dispatcherProvider.io) {
-            _maxOpenedResource.value = userSessionManager.maxOpenedResource()
-            _lastVisit.value = userSessionManager.getGlobalLastVisit()
-            _numberOfResourceOpen.value = userSessionManager.getNumberOfResourceOpen()
+            val fullName = userSessionManager.getUserModel()?.name ?: ""
+            val result = activitiesRepository.getMostOpenedResource(fullName, org.ole.planet.myplanet.services.UserSessionManager.KEY_RESOURCE_OPEN)
+            _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
+            _lastVisit.value = activitiesRepository.getGlobalLastVisit()
+
+            val count = activitiesRepository.getResourceOpenCount(fullName, org.ole.planet.myplanet.services.UserSessionManager.KEY_RESOURCE_OPEN)
+            _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
         }
     }
 
     fun getOfflineVisits() {
         viewModelScope.launch(dispatcherProvider.io) {
             val user = userSessionManager.getUserModel()
-            _offlineVisits.value = userSessionManager.getOfflineVisits(user)
+            _offlineVisits.value = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
         }
     }
 }

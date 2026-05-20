@@ -69,6 +69,7 @@ object CameraUtils {
             backgroundHandler = null
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
+            cameraScope?.cancel()
             e.printStackTrace()
         }
     }

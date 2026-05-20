@@ -51,5 +51,12 @@
             android:src="@drawable/ic_play_white"
             android:contentDescription="@string/play_audio"
             app:fab_label="Play Audio" />
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_read_aloud"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_play"
+            android:contentDescription="@string/read_aloud"
+            app:fab_label="Read Aloud" />
     </com.github.clans.fab.FloatingActionMenu>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

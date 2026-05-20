@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.RealmObject
 import javax.inject.Inject
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -78,6 +80,7 @@ abstract class BaseResourceFragment : Fragment() {
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
+    private var serverCheckDeferred: Deferred<Boolean>? = null
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -160,11 +163,23 @@ abstract class BaseResourceFragment : Fragment() {
             convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            val titleView = TextView(requireContext()).apply {
+                text = getString(R.string.download_suggestion)
+                setPadding(48, 40, 48, 0)
+                textSize = 18f
+                maxLines = 5
+                setSingleLine(false)
+                setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            }
             alertDialogBuilder.setView(convertView)
-                .setTitle(R.string.download_suggestion)
+                .setCustomTitle(titleView)
+
+
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
+                        val serverAvailable = serverCheckDeferred?.await()
+                            ?: configurationsRepository.checkServerAvailability()
+                        if (serverAvailable) {
                             val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
                             selectedItemsList?.let {
                                 addToLibrary(dbMyLibrary, ArrayList(it))
@@ -183,7 +198,7 @@ abstract class BaseResourceFragment : Fragment() {
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
+                        if (serverCheckDeferred?.await() ?: configurationsRepository.checkServerAvailability()) {
                             addAllToLibrary(dbMyLibrary)
                             val filtered = dbMyLibrary.filterNotNull()
                             if (resourcesRepository.downloadResources(filtered)) {
@@ -197,10 +212,12 @@ abstract class BaseResourceFragment : Fragment() {
                 }.setNegativeButton(R.string.txt_cancel, null)
             downloadSuggestionDialog?.dismiss()
             downloadSuggestionDialog = alertDialogBuilder.create()
+            serverCheckDeferred = lifecycleScope.async { configurationsRepository.checkServerAvailability() }
             downloadSuggestionDialog?.let { dialog ->
                 createListView(dbMyLibrary, dialog)
                 dialog.setOnDismissListener {
                     downloadSuggestionDialog = null
+                    serverCheckDeferred = null
                 }
                 dialog.show()
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size

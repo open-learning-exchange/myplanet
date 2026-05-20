@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
@@ -8,6 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -100,6 +102,12 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             course?.let { realm.copyFromRealm(it) }
         }
+    }
+
+    override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
+        return queryListFlow(RealmMyCourse::class.java) {
+            equalTo("courseId", courseId)
+        }.map { it.firstOrNull() }
     }
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
@@ -219,11 +227,27 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
     private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
+        val lowercased = str.lowercase(Locale.getDefault())
+        val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
+        val sb = StringBuilder(normalized.length)
+        for (i in 0 until normalized.length) {
+            val c = normalized[i]
+            // NON_SPACING_MARK matches Unicode category Mn (Combining Diacritical Marks)
+            if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
+                sb.append(c)
+            }
+        }
+        return sb.toString()
+    }
+
+    private fun matchesAllParts(title: String, parts: List<String>): Boolean {
+        for (part in parts) {
+            if (!title.contains(part)) {
+                return false
+            }
+        }
+        return true
     }
 
     override suspend fun search(query: String): List<RealmMyCourse> {
@@ -243,9 +267,9 @@ class CoursesRepositoryImpl @Inject constructor(
             for (item in data) {
                 val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
-                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                if (title.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                } else if (matchesAllParts(title, normalizedQueryParts)) {
                     containsQuery.add(item)
                 }
             }
@@ -487,6 +511,27 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            RealmMyCourse.insertMyCourses(shelfId, doc, realmTx, sharedPrefManager)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
+    }
+
     override suspend fun getCourseTitleById(courseId: String): String? {
         return withRealm { realm ->
             realm.where(RealmMyCourse::class.java)
@@ -646,9 +691,9 @@ class CoursesRepositoryImpl @Inject constructor(
                 for (item in data) {
                     val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
-                    if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    if (title.startsWith(normalizedQuery)) {
                         startsWithQuery.add(item)
-                    } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    } else if (matchesAllParts(title, normalizedQueryParts)) {
                         containsQuery.add(item)
                     }
                 }
@@ -664,26 +709,26 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
+            RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager)
         }
     }
-    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -694,12 +739,12 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+        val id = JsonUtils.getString("_id", doc)
         var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
         if (certification == null) {
             certification = realm.createObject(RealmCertification::class.java, id)
         }
-        certification?.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", doc)
-        certification?.setCourseIds(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("courseIds", doc))
+        certification?.name = JsonUtils.getString("name", doc)
+        certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", doc))
     }
 }

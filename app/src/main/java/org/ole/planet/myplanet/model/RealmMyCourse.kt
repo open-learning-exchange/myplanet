@@ -7,7 +7,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
@@ -169,13 +168,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
         @JvmStatic
-        fun getMyByUserId(mRealm: Realm, userId: String?): RealmResults<RealmMyCourse> {
-            return mRealm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
-        }
-
-        @JvmStatic
         fun insert(mRealm: Realm, myCoursesDoc: JsonObject?, spm: SharedPrefManager) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
@@ -183,30 +175,6 @@ open class RealmMyCourse : RealmObject() {
             }
             try {
                 insertMyCourses("", myCoursesDoc, mRealm, spm)
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
-        }
-
-        @JvmStatic
-        fun getMyCourse(mRealm: Realm, id: String?): RealmMyCourse? {
-            return mRealm.where(RealmMyCourse::class.java).equalTo("courseId", id).findFirst()
-        }
-
-        @JvmStatic
-        fun createMyCourse(course: RealmMyCourse?, mRealm: Realm, id: String?) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                course?.setUserId(id)
                 if (startedTransaction) {
                     mRealm.commitTransaction()
                 }

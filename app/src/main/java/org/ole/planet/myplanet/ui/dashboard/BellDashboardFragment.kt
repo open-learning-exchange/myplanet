@@ -13,7 +13,6 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -25,16 +24,14 @@ import com.google.android.material.card.MaterialCardView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
+import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -55,7 +52,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
     var user: RealmUser? = null
-    private var surveyReminderJob: Job? = null
     private var surveyListDialog: AlertDialog? = null
     private var isCoursesExpanded = false
     private var isLibraryExpanded = false
@@ -67,7 +63,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     lateinit var serverUrlMapper: ServerUrlMapper
 
     companion object {
-        private const val PREF_SURVEY_REMINDERS = "survey_reminders"
+        private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -90,6 +86,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         observeLifePreviewItems()
         observeLastVisitedCourse()
         setGreetingBasedOnTime()
+        observeSurveyReminders()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
             user = profileDbHandler.getUserModel()
@@ -185,17 +182,13 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun checkPendingSurveys() {
         viewLifecycleOwner.lifecycleScope.launch {
-            if (checkScheduledReminders()) {
-                return@launch
-            }
-            val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
+            val lastShown = surveysRepository.getLastSurveyDialogShown()
+            if (System.currentTimeMillis() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
 
+            val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
             if (pendingSurveys.isNotEmpty()) {
                 val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-                val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-                if (preferences.contains("reminder_time_$surveyIds")) {
-                    return@launch
-                }
+                if (surveysRepository.isReminderScheduled(surveyIds)) return@launch
                 val title = getString(
                     R.string.surveys_to_complete,
                     pendingSurveys.size,
@@ -203,8 +196,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 )
                 val surveyTitles = submissionsRepository.getSurveyTitlesFromSubmissions(pendingSurveys)
                 showSurveyListDialog(pendingSurveys, title, surveyTitles)
-            } else {
-                checkScheduledReminders()
             }
         }
     }
@@ -261,73 +252,34 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun scheduleReminder(pendingSurveys: List<RealmSubmission>, value: Int, timeUnit: TimeUnit) {
-        val currentTime = System.currentTimeMillis()
-        val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
-
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
-        val preferences = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-        preferences.edit {
-            putLong("reminder_time_$surveyIds", reminderTime)
-                .putString("reminder_surveys_$surveyIds", surveyIds)
-        }
-
-        startReminderCheck()
-    }
-
-    private fun startReminderCheck() {
-        surveyReminderJob?.cancel()
-        surveyReminderJob = lifecycleScope.launch {
-            while (isActive) {
-                checkScheduledReminders()
-                delay(60000)
-            }
+        viewLifecycleOwner.lifecycleScope.launch {
+            surveysRepository.scheduleSurveyReminder(surveyIds, timeUnit, value)
         }
     }
 
-    private suspend fun checkScheduledReminders(): Boolean {
-        val currentTime = System.currentTimeMillis()
-
-        val (remindersToShow, remindersToRemove, preferences) = withContext(Dispatchers.IO) {
-            val prefs = requireActivity().getSharedPreferences(PREF_SURVEY_REMINDERS, 0)
-            val toShow = mutableListOf<String>()
-            val toRemove = mutableListOf<String>()
-            for (entry in prefs.all) {
-                if (entry.key.startsWith("reminder_time_")) {
-                    val surveyIds = entry.key.removePrefix("reminder_time_")
-                    val reminderTime = prefs.getLong(entry.key, 0)
-                    if (reminderTime <= currentTime) {
-                        toShow.add(surveyIds)
-                        toRemove.add(surveyIds)
-                    }
+    private fun observeSurveyReminders() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                surveysRepository.dueRemindersFlow().collect { ids ->
+                    handleDueReminders(ids)
                 }
             }
-            Triple(toShow, toRemove, prefs)
         }
+    }
 
+    private suspend fun handleDueReminders(remindersToShow: List<String>) {
         for (surveyIds in remindersToShow) {
             val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
-            if (surveyIdList.isEmpty()) {
-                continue
-            }
+            if (surveyIdList.isEmpty()) continue
             val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
             val submissionsById = submissions.associateBy { it.id }
-            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }
-                .filter { it.status == "pending" }
+            val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
 
             if (pendingSurveys.isNotEmpty()) {
                 showPendingSurveysReminder(pendingSurveys)
             }
         }
-
-        preferences.edit {
-            for (surveyIds in remindersToRemove) {
-                remove("reminder_time_$surveyIds")
-                remove("reminder_surveys_$surveyIds")
-            }
-        }
-
-        return remindersToShow.isNotEmpty()
-
     }
 
     private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
@@ -353,6 +305,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_survey_list, null)
         val recyclerView: RecyclerView = dialogView.findViewById(R.id.recyclerViewSurveys)
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            surveysRepository.setLastSurveyDialogShown(System.currentTimeMillis())
+        }
 
         surveyListDialog?.dismiss()
         surveyListDialog = AlertDialog.Builder(requireActivity(), R.style.AlertDialogTheme)
@@ -782,7 +738,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         surveyListDialog?.dismiss()
         surveyListDialog = null
         networkStatusJob?.cancel()
-        surveyReminderJob?.cancel()
         super.onDestroyView()
         _binding = null
     }

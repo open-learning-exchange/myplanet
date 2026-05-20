@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.content.SharedPreferences
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -12,10 +11,10 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
-import android.util.Log
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.SecurePrefs
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -35,16 +34,25 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    @Deprecated("Use getUserModel() suspend function instead")
-    val userModel: RealmUser? get() = userRepository.getUserModel()
-
-    @Deprecated("Use getUserModel() suspend function instead")
-    fun getUserModelCopy(): RealmUser? {
-        return userRepository.getUserModel()
-    }
-
     suspend fun getUserModel(): RealmUser? {
         return userRepository.getUserModelSuspending()
+    }
+
+    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+        withContext(dispatcherProvider.io) {
+            SecurePrefs.saveCredentials(context, settings, user?.name, password)
+        }
+        sharedPrefManager.setUserId(user?.id ?: "")
+        sharedPrefManager.setUserName(user?.name ?: "")
+        sharedPrefManager.rawPreferences.edit().apply {
+            remove("password")
+            putString("firstName", user?.firstName)
+            putString("lastName", user?.lastName)
+            putString("middleName", user?.middleName)
+            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
+            putLong("lastLogin", System.currentTimeMillis())
+            apply()
+        }
     }
 
     fun onLogin() {
@@ -83,24 +91,6 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    suspend fun getGlobalLastVisit(): Long? {
-        return activitiesRepository.getGlobalLastVisit()
-    }
-
-    suspend fun getOfflineVisits(m: RealmUser?): Int {
-        return m?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-    }
-
-    suspend fun getLastVisit(m: RealmUser): String {
-        val lastLogoutTimestamp = activitiesRepository.getLastVisit(m.name ?: "")
-        return if (lastLogoutTimestamp != null) {
-            val date = Date(lastLogoutTimestamp)
-            SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
-        } else {
-            "No logout record found"
-        }
-    }
-
     fun setResourceOpenCount(item: RealmMyLibrary) {
         setResourceOpenCount(item, KEY_RESOURCE_OPEN)
     }
@@ -128,20 +118,6 @@ class UserSessionManager @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Error in setResourceOpenCount", e)
             }
-        }
-    }
-
-    suspend fun getNumberOfResourceOpen(): String {
-        val count = activitiesRepository.getResourceOpenCount(fullName, KEY_RESOURCE_OPEN)
-        return if (count == 0L) "" else "Resource opened $count times."
-    }
-
-    suspend fun maxOpenedResource(): String {
-        val result = activitiesRepository.getMostOpenedResource(fullName, KEY_RESOURCE_OPEN)
-        return if (result == null) {
-            ""
-        } else {
-            "${result.first} opened ${result.second} times"
         }
     }
 

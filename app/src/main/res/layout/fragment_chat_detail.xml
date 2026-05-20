@@ -5,30 +5,35 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/secondary_bg"
-    android:fitsSystemWindows="true"
     tools:context=".ui.chat.ChatDetailFragment">
 
     <View
         android:id="@+id/hView"
         android:layout_width="1dp"
         android:layout_height="0dp"
-        android:background="#e0e0e0"
+        android:background="@color/chat_detail_divider"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
-    <TableLayout
+    <LinearLayout
         android:id="@+id/aiTbLayout"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TableRow
+        <LinearLayout
             android:id="@+id/aiTableRow"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/>
-    </TableLayout>
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal" />
+    </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_gchat"
@@ -77,7 +82,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:layout_toStartOf="@+id/button_gchat_send"
+            android:layout_toStartOf="@+id/button_gchat_mic"
             android:background="@android:color/transparent"
             android:hint="@string/chat_enter_message"
             android:inputType="textMultiLine"
@@ -85,6 +90,17 @@
             android:textColor="@color/daynight_textColor"
             android:textColorHint="@color/hint_color"
             tools:ignore="Autofill" />
+        <ImageView
+            android:id="@+id/button_gchat_mic"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_toStartOf="@+id/button_gchat_send"
+            android:layout_centerVertical="true"
+            android:layout_margin="5dp"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="@string/mic_button_content_description"
+            android:src="@drawable/ic_mic"
+            app:tint="@color/md_blue_500" />
         <pl.droidsonroids.gif.GifImageView
             android:id="@+id/image_gchat_loading"
             android:layout_width="40dp"

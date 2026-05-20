@@ -7,9 +7,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -19,6 +17,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
 import org.ole.planet.myplanet.repository.SubmissionsRepositoryExporter
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class SubmissionListFragment : Fragment() {
@@ -51,13 +50,9 @@ class SubmissionListFragment : Fragment() {
         binding.tvTitle.text = examTitle ?: "Submissions"
         setupRecyclerView()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.submissions.collect { submissionItems ->
-                    if (_binding != null) {
-                        adapter.submitList(submissionItems)
-                    }
-                }
+        collectWhenStarted(viewModel.submissions) { submissionItems ->
+            if (_binding != null) {
+                adapter.submitList(submissionItems)
             }
         }
 

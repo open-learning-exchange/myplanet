@@ -89,7 +89,6 @@ class AndroidDecrypter {
             try {
                 val p = PBKDF2Parameters("HmacSHA1", "utf-8", dbSalt?.toByteArray(), 10)
                 val dk = PBKDF2Engine(p).deriveKey(usrRawPwd, 20)
-                println("$usrId Value ${BinTools.bin2hex(dk).lowercase(Locale.ROOT)}")
                 return dbPwdKeyValue.equals(BinTools.bin2hex(dk).lowercase(Locale.ROOT), ignoreCase = true)
 
             } catch (e: Exception) {

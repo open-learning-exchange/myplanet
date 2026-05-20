@@ -42,6 +42,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private val binding get() = _binding!!
     private var reports: List<RealmMyTeam> = emptyList()
     private lateinit var reportsAdapter: EnterprisesReportsAdapter
+    private var scrollToLatestReport = false
     private var startTimeStamp: String? = null
     private var endTimeStamp: String? = null
     lateinit var teamType: String
@@ -120,6 +121,9 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                         when (event) {
                             is ReportEvent.ReportAdded,
                             is ReportEvent.ReportUpdated -> {
+                                if (event is ReportEvent.ReportAdded) {
+                                    scrollToLatestReport = true
+                                }
                                 activeDialog?.dismiss()
                                 activeDialog = null
                             }
@@ -340,7 +344,14 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private fun updatedReportsList(results: List<RealmMyTeam>) {
         if (_binding == null) return
         reports = results
-        reportsAdapter.submitList(reports)
+        if (scrollToLatestReport && reports.isNotEmpty()) {
+            reportsAdapter.submitList(reports) {
+                binding.rvReports.scrollToPosition(0)
+                scrollToLatestReport = false
+            }
+        } else {
+            reportsAdapter.submitList(reports)
+        }
         BaseRecyclerFragment.showNoData(binding.tvMessage, reports.size, "reports")
         binding.exportCSV.visibility = if (reports.isEmpty()) View.GONE else View.VISIBLE
     }

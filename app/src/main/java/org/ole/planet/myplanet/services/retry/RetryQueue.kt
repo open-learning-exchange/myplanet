@@ -27,7 +27,7 @@ class RetryQueue @Inject constructor(
 
     fun isCurrentlyProcessing(): Boolean = isProcessing.get()
 
-    fun setProcessing(processing: Boolean) {
+    internal fun setProcessing(processing: Boolean) {
         isProcessing.set(processing)
     }
 
