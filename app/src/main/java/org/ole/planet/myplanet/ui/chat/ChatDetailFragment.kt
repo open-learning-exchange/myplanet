@@ -77,6 +77,12 @@ class ChatDetailFragment : Fragment() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var textBeforeVoice: String = ""
+    private var allConversations: List<RealmConversation> = emptyList()
+    private var loadedCount = 0
+
+    companion object {
+        private const val PAGE_SIZE = 20
+    }
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
@@ -241,6 +247,7 @@ class ChatDetailFragment : Fragment() {
             }
             return@ChatAdapter { job.cancel() }
         }
+        mAdapter.onLoadMoreClick = ::loadMoreConversations
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())
@@ -318,14 +325,9 @@ class ChatDetailFragment : Fragment() {
             try {
                 val messages = withContext(Dispatchers.IO) {
                     val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                    val list = mutableListOf<ChatMessage>()
-                    val limit = 20
-                    val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
-                    for (conversation in limitedConversations) {
-                        conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
-                        conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-                    }
-                    list
+                    allConversations = conversations
+                    loadedCount = minOf(PAGE_SIZE, conversations.size)
+                    buildInitialPage()
                 }
                 mAdapter.submitList(messages) {
                     binding.recyclerGchat.post {
@@ -386,14 +388,14 @@ class ChatDetailFragment : Fragment() {
                 launch {
                     sharedViewModel.selectedChatHistory.collect { conversations ->
                         mAdapter.clearData()
+                        allConversations = emptyList()
+                        loadedCount = 0
                         binding.editGchatMessage.text.clear()
                         binding.textGchatIndicator.visibility = View.GONE
                         if (!conversations.isNullOrEmpty()) {
-                            val messages = mutableListOf<ChatMessage>()
-                            for (conversation in conversations) {
-                                conversation.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
-                                conversation.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-                            }
+                            allConversations = conversations
+                            loadedCount = minOf(PAGE_SIZE, conversations.size)
+                            val messages = buildInitialPage()
                             mAdapter.submitList(messages) {
                                 binding.recyclerGchat.post {
                                     binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -546,6 +548,8 @@ class ChatDetailFragment : Fragment() {
 
     private fun clearConversation() {
         mAdapter.clearData()
+        allConversations = emptyList()
+        loadedCount = 0
         _id = ""
         _rev = ""
         currentID = ""
@@ -750,6 +754,34 @@ class ChatDetailFragment : Fragment() {
         if (query.isBlank() && chatResponse.isBlank()) return
 
         sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
+    }
+
+    private fun buildMessagesSlice(startIndex: Int, endIndex: Int): List<ChatMessage> {
+        val messages = mutableListOf<ChatMessage>()
+        for (i in startIndex until endIndex) {
+            val conv = allConversations[i]
+            conv.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
+            conv.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
+        }
+        return messages
+    }
+
+    private fun buildInitialPage(): List<ChatMessage> {
+        val total = allConversations.size
+        val startIndex = maxOf(0, total - loadedCount)
+        val messages = mutableListOf<ChatMessage>()
+        if (startIndex > 0) messages.add(ChatMessage("", ChatMessage.LOAD_MORE))
+        messages.addAll(buildMessagesSlice(startIndex, total))
+        return messages
+    }
+
+    private fun loadMoreConversations() {
+        val total = allConversations.size
+        val prevStartIndex = maxOf(0, total - loadedCount)
+        loadedCount = minOf(loadedCount + PAGE_SIZE, total)
+        val newStartIndex = maxOf(0, total - loadedCount)
+        val newMessages = buildMessagesSlice(newStartIndex, prevStartIndex)
+        mAdapter.prependMessages(newMessages, hasLoadMoreAbove = newStartIndex > 0)
     }
 
     private fun clearChatDetail() {
