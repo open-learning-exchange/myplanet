@@ -1254,6 +1254,7 @@
     <string name="select_pdf_only">يرجى اختيار ملف PDF</string>
     <string name="file_not_found">الملف غير موجود: %s</string>
     <string name="chat_already_shared_to_destination">تمت مشاركة هذه الدردشة بالفعل إلى هذه الوجهة</string>
+    <string name="load_earlier_messages">تحميل الرسائل السابقة</string>
     <string name="already_shared">تمت المشاركة بالفعل</string>
     <string name="guest_visit_limit_warning">لديك محاولة تسجيل دخول واحدة متبقية قبل حظر حسابك.</string>
     <string name="warning_icon">أيقونة التحذير</string>
