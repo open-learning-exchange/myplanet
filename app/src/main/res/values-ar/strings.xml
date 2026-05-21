@@ -97,6 +97,8 @@
     <string name="settings">الإعدادات</string>
     <string name="edit_profile">تحرير الملف الشخصي</string>
     <string name="profile">الملف الشخصي</string>
+    <string name="mic_button_content_description">تحويل الكلام إلى نص</string>
+    <string name="voice_to_text">جاري تحويل الصوت إلى نص...</string>
     <string name="user">مستخدم</string>
     <string name="remove_selected">إزالة المحدد</string>
     <string name="stop_download">إيقاف التنزيل</string>
@@ -1195,6 +1197,9 @@
     <string name="please_enter_a_valid_year_of_birth">يرجى إدخال سنة ميلاد صالحة</string>
     <string name="please_enter_a_valid_year_between_1900_and">يرجى إدخال سنة صالحة بين 1900 و %1$d</string>
     <string name="redo_survey">أعد إجراء الاستبيان</string>
+    <string name="resume_survey">استئناف الاستبيان؟</string>
+    <string name="resume_survey_message">لديك تقدم محفوظ في هذا الاستبيان. هل تريد المتابعة من حيث توقفت؟</string>
+    <string name="start_over">ابدأ من جديد</string>
     <string name="resource_not_found_in_database">المورد غير موجود في قاعدة البيانات</string>
     <string name="resource_has_no_attachments">المورد لا يحتوي على ملفات قابلة للتنزيل</string>
     <string name="unable_to_download_resource">غير قادر على تنزيل المورد</string>
