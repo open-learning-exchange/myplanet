@@ -1303,7 +1303,14 @@
     <string name="enterprise_reports">تقارير المؤسسة</string>
     <string name="label_add_references">أضف أي مراجع أدناه</string>
     <string name="link">الرابط</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">لم يتم تكوين عنوان URL للخادم</string>
+    <string name="welcome_back">مرحبًا بعودتك</string>
+    <string name="welcome_new">مرحبًا</string>
+    <string name="sign_in_to_continue">سجّل الدخول للمتابعة</string>
+    <string name="sign_in_to_get_started">سجّل الدخول للبدء</string>
+    <string name="sync_chip_synced">تمت المزامنة</string>
+    <string name="sync_chip_syncing">جارٍ المزامنة…</string>
+    <string name="sync_chip_offline">غير متصل</string>
     <string name="desc_is_required">الوصف مطلوب</string>
 
 </resources>
