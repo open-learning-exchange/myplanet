@@ -48,7 +48,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/aiTbLayout" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_gchat"
         android:layout_width="0dp"
