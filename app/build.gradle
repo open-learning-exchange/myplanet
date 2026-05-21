@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< 13493-refactor-coursesfragment-extract-controllers-for-filtering-and-selection
         versionCode = 5589
         versionName = "0.55.89"
-=======
-        versionCode = 5588
-        versionName = "0.55.88"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
