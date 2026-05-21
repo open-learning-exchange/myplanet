@@ -89,6 +89,12 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `continueConversation returns early if both query and response are blank`() = runTest {
+        viewModel.continueConversation("id", "", "  ", "rev1")
+        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
+    }
+
+    @Test
     fun `clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values`() {
         val dummyHistory = listOf(RealmConversation())
         viewModel.setSelectedChatHistory(dummyHistory)

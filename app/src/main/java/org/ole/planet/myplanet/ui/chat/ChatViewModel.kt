@@ -48,6 +48,8 @@ class ChatViewModel @Inject constructor(
     val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
 
     fun continueConversation(id: String, query: String, response: String, rev: String) {
+        if (query.isBlank() && response.isBlank()) return
+
         viewModelScope.launch {
             try {
                 chatRepository.continueConversation(id, query, response, rev)

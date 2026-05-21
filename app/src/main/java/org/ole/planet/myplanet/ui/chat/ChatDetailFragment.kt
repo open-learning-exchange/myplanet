@@ -662,7 +662,8 @@ class ChatDetailFragment : Fragment() {
             }
         } else {
             showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
-            id?.let { continueConversationRealm(it, query, "") }
+            val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
+            realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
         }
         enableUI()
     }
@@ -670,12 +671,18 @@ class ChatDetailFragment : Fragment() {
     private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
         mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
-        id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
+        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
+        if (realmChatId != null) {
+            sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
+        } else {
+            saveNewChat(query, chatResponse, responseBody)
+        }
     }
 
     private fun handleFailure(errorMessage: String?, query: String, id: String?) {
         showError(errorMessage)
-        id?.let { continueConversationRealm(it, query, "") }
+        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
+        realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
         enableUI()
     }
 
@@ -728,19 +735,6 @@ class ChatDetailFragment : Fragment() {
             conversationsArray.add(conversationObject)
             add("conversations", conversationsArray)
         }
-
-    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
-        val realmChatId = when {
-            id.isNotBlank() -> id
-            _id.isNotBlank() -> _id
-            currentID.isNotBlank() -> currentID
-            else -> return
-        }
-
-        if (query.isBlank() && chatResponse.isBlank()) return
-
-        sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
-    }
 
     private fun clearChatDetail() {
         if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
