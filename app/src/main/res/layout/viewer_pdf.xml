@@ -13,7 +13,6 @@
         android:textColor="@color/md_black_1000"
         android:textSize="@dimen/text_size_large"
         android:textStyle="bold" />
-
     <TextView
         android:id="@+id/pdfPlaceholder"
         android:layout_width="match_parent"
