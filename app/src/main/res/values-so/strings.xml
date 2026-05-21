@@ -1238,6 +1238,7 @@
     <string name="select_pdf_only">Fadlan dooro fayl PDF ah</string>
     <string name="file_not_found">Faylka lama helin: %s</string>
     <string name="chat_already_shared_to_destination">Wadahadalkan hore ayaa loogu wadaagay goobtan</string>
+    <string name="load_earlier_messages">Soo geli fariimaha hore</string>
     <string name="already_shared">Hore loo wadaagay</string>
     <string name="guest_visit_limit_warning">Waxaad leedahay isku day hal oo login ah kahor inta aad joojin tahay.</string>
     <string name="warning_icon">Astaan digacaska</string>
