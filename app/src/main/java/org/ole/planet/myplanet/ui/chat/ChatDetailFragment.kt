@@ -87,10 +87,6 @@ class ChatDetailFragment : Fragment() {
     private var allConversations: List<RealmConversation> = emptyList()
     private var loadedCount = 0
 
-    companion object {
-        private const val PAGE_SIZE = 20
-    }
-
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
             startSpeechToText()
@@ -873,6 +869,7 @@ class ChatDetailFragment : Fragment() {
     }
 
     companion object {
+        private const val PAGE_SIZE = 20
         const val ARG_COURSE_TITLE = "course_title"
         const val ARG_STEP_TITLE = "step_title"
         const val ARG_STEP_DESCRIPTION = "step_description"
