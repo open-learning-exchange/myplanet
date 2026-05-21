@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< 13464-download-function-intermittently-broken-delay-or-never-starts-3
         versionCode = 5590
         versionName = "0.55.90"
-=======
-        versionCode = 5589
-        versionName = "0.55.89"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
