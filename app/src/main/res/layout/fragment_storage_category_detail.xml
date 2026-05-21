@@ -124,6 +124,7 @@
             android:minHeight="48dp"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
+            android:theme="@style/AppThemeButton"
             android:text="@string/storage_delete_all" />
     </LinearLayout>
 </LinearLayout>
