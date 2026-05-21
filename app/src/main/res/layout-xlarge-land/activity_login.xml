@@ -34,7 +34,6 @@
                     android:visibility="gone"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
-
                 <LinearLayout
                     android:id="@+id/chip_sync"
                     android:layout_width="wrap_content"
@@ -61,7 +60,6 @@
                             android:layout_width="8dp"
                             android:layout_height="8dp"
                             android:background="@drawable/dot_sync_ok" />
-
                         <TextView
                             android:id="@+id/txt_sync_state"
                             android:layout_width="wrap_content"
@@ -95,7 +93,6 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:srcCompat="@drawable/ic_settings_black_24dp"
                     app:tint="@color/daynight_textColor" />
-
                 <LinearLayout
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -116,7 +113,6 @@
                         android:src="@drawable/profile"
                         app:civ_border_color="@color/md_blue_700"
                         app:civ_border_width="2dp" />
-
                     <TextView
                         android:id="@+id/tv_welcome"
                         android:layout_width="wrap_content"
@@ -126,7 +122,6 @@
                         android:text="@string/welcome_back"
                         android:textColor="@color/daynight_textColor"
                         android:textSize="26sp" />
-
                     <TextView
                         android:id="@+id/tv_subtitle"
                         android:layout_width="wrap_content"
@@ -135,7 +130,6 @@
                         android:text="@string/sign_in_to_continue"
                         android:textColor="@color/hint_color"
                         android:textSize="13sp" />
-
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/ltInputName"
                         android:layout_width="match_parent"
@@ -225,13 +219,11 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="13sp"
                         android:theme="@style/PrimaryFlatButton" />
-
                     <View
                         android:layout_width="1dp"
                         android:layout_height="12dp"
                         android:alpha="0.3"
                         android:background="@color/daynight_textColor" />
-
                     <Button
                         android:id="@+id/become_member"
                         android:layout_width="wrap_content"
@@ -242,13 +234,11 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="13sp"
                         android:theme="@style/PrimaryFlatButton" />
-
                     <View
                         android:layout_width="1dp"
                         android:layout_height="12dp"
                         android:alpha="0.3"
                         android:background="@color/daynight_textColor" />
-
                     <Button
                         android:id="@+id/btn_feedback"
                         android:layout_width="wrap_content"
@@ -299,7 +289,6 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:srcCompat="@drawable/moon_35" />
-
                     <ImageView
                         android:id="@+id/logoImageView"
                         android:layout_width="96dp"
@@ -310,7 +299,6 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:srcCompat="@drawable/ole_logo" />
-
                     <TextView
                         android:id="@+id/textView"
                         android:layout_width="wrap_content"
@@ -325,7 +313,6 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
-
                     <TextView
                         android:id="@+id/lblVersion"
                         android:layout_width="wrap_content"
@@ -339,7 +326,6 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/textView" />
-
                     <Button
                         android:id="@+id/btn_lang"
                         android:layout_width="wrap_content"
@@ -355,7 +341,6 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
-
                     <TextView
                         android:id="@+id/customDeviceName"
                         android:layout_width="wrap_content"
@@ -365,7 +350,6 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
-
                     <LinearLayout
                         android:id="@+id/ltAvailablaSpace"
                         android:layout_width="wrap_content"
@@ -382,7 +366,6 @@
                             android:layout_height="wrap_content"
                             android:paddingHorizontal="@dimen/padding_small"
                             app:srcCompat="@drawable/baseline_storage_24" />
-
                         <TextView
                             android:id="@+id/tv_available_space"
                             android:layout_width="wrap_content"
@@ -402,7 +385,6 @@
                         app:backgroundTint="@color/daynight_textColor"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/ltAvailablaSpace" />
-
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
                         android:layout_width="match_parent"
