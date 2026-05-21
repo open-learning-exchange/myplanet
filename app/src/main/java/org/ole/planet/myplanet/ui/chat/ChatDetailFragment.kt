@@ -74,9 +74,18 @@ class ChatDetailFragment : Fragment() {
     private var isAiUnavailable = false
     private var newsId: String? = null
     private var loadingJob: Job? = null
+    private var courseTitle: String? = null
+    private var stepTitle: String? = null
+    private var stepDescription: String? = null
+    private var stepNumber: Int = 0
+    private var selectedText: String? = null
+    private var hasCourseContext = false
+    private var contextIncluded = false
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var textBeforeVoice: String = ""
+    private var allConversations: List<RealmConversation> = emptyList()
+    private var loadedCount = 0
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
@@ -99,6 +108,12 @@ class ChatDetailFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        courseTitle = arguments?.getString(ARG_COURSE_TITLE)
+        stepTitle = arguments?.getString(ARG_STEP_TITLE)
+        stepDescription = arguments?.getString(ARG_STEP_DESCRIPTION)
+        stepNumber = arguments?.getInt(ARG_STEP_NUMBER, 0) ?: 0
+        selectedText = arguments?.getString(ARG_SELECTED_TEXT)
+        hasCourseContext = !courseTitle.isNullOrBlank() || !stepTitle.isNullOrBlank()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -109,6 +124,9 @@ class ChatDetailFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        if (hasCourseContext) {
+            sharedViewModel.clearChatState()
+        }
         initChatComponents()
         val newsRev = arguments?.getString("newsRev")
         val newsConversations = arguments?.getString("conversations")
@@ -123,6 +141,15 @@ class ChatDetailFragment : Fragment() {
             observeViewModelData()
         }
         view.post { clearChatDetail() }
+        if (hasCourseContext) {
+            binding.courseContextBanner.visibility = View.VISIBLE
+            binding.courseContextBanner.text = buildBannerText()
+        }
+        val prefill = selectedText
+        if (!prefill.isNullOrBlank()) {
+            binding.editGchatMessage.setText(prefill)
+            binding.editGchatMessage.setSelection(prefill.length)
+        }
     }
 
     private fun setupMicButton() {
@@ -241,6 +268,7 @@ class ChatDetailFragment : Fragment() {
             }
             return@ChatAdapter { job.cancel() }
         }
+        mAdapter.onLoadMoreClick = ::loadMoreConversations
         binding.recyclerGchat.apply {
             adapter = mAdapter
             layoutManager = LinearLayoutManager(requireContext())
@@ -318,14 +346,9 @@ class ChatDetailFragment : Fragment() {
             try {
                 val messages = withContext(Dispatchers.IO) {
                     val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                    val list = mutableListOf<ChatMessage>()
-                    val limit = 20
-                    val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
-                    for (conversation in limitedConversations) {
-                        conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
-                        conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-                    }
-                    list
+                    allConversations = conversations
+                    loadedCount = minOf(PAGE_SIZE, conversations.size)
+                    buildInitialPage()
                 }
                 mAdapter.submitList(messages) {
                     binding.recyclerGchat.post {
@@ -386,14 +409,14 @@ class ChatDetailFragment : Fragment() {
                 launch {
                     sharedViewModel.selectedChatHistory.collect { conversations ->
                         mAdapter.clearData()
+                        allConversations = emptyList()
+                        loadedCount = 0
                         binding.editGchatMessage.text.clear()
                         binding.textGchatIndicator.visibility = View.GONE
                         if (!conversations.isNullOrEmpty()) {
-                            val messages = mutableListOf<ChatMessage>()
-                            for (conversation in conversations) {
-                                conversation.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
-                                conversation.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-                            }
+                            allConversations = conversations
+                            loadedCount = minOf(PAGE_SIZE, conversations.size)
+                            val messages = buildInitialPage()
                             mAdapter.submitList(messages) {
                                 binding.recyclerGchat.post {
                                     binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -546,6 +569,8 @@ class ChatDetailFragment : Fragment() {
 
     private fun clearConversation() {
         mAdapter.clearData()
+        allConversations = emptyList()
+        loadedCount = 0
         _id = ""
         _rev = ""
         currentID = ""
@@ -563,9 +588,15 @@ class ChatDetailFragment : Fragment() {
     private fun launchNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         disableUI()
         val mapping = processServerUrl()
+        val contextualQuery = if (hasCourseContext && !contextIncluded) {
+            contextIncluded = true
+            buildContextPrefix() + query
+        } else {
+            query
+        }
         viewLifecycleOwner.lifecycleScope.launch {
             updateServerIfNecessary(mapping)
-            sendNewChatRequest(query, userName, aiProvider)
+            sendNewChatRequest(contextualQuery, userName, aiProvider)
         }
     }
 
@@ -672,7 +703,8 @@ class ChatDetailFragment : Fragment() {
             }
         } else {
             showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
-            id?.let { continueConversationRealm(it, query, "") }
+            val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
+            realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
         }
         enableUI()
     }
@@ -680,12 +712,18 @@ class ChatDetailFragment : Fragment() {
     private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
         mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
         responseBody.couchDBResponse?.rev?.let { _rev = it }
-        id?.let { continueConversationRealm(it, query, chatResponse) } ?: saveNewChat(query, chatResponse, responseBody)
+        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
+        if (realmChatId != null) {
+            sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
+        } else {
+            saveNewChat(query, chatResponse, responseBody)
+        }
     }
 
     private fun handleFailure(errorMessage: String?, query: String, id: String?) {
         showError(errorMessage)
-        id?.let { continueConversationRealm(it, query, "") }
+        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
+        realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
         enableUI()
     }
 
@@ -752,6 +790,34 @@ class ChatDetailFragment : Fragment() {
         sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
     }
 
+    private fun buildMessagesSlice(startIndex: Int, endIndex: Int): List<ChatMessage> {
+        val messages = mutableListOf<ChatMessage>()
+        for (i in startIndex until endIndex) {
+            val conv = allConversations[i]
+            conv.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
+            conv.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
+        }
+        return messages
+    }
+
+    private fun buildInitialPage(): List<ChatMessage> {
+        val total = allConversations.size
+        val startIndex = maxOf(0, total - loadedCount)
+        val messages = mutableListOf<ChatMessage>()
+        if (startIndex > 0) messages.add(ChatMessage("", ChatMessage.LOAD_MORE))
+        messages.addAll(buildMessagesSlice(startIndex, total))
+        return messages
+    }
+
+    private fun loadMoreConversations() {
+        val total = allConversations.size
+        val prevStartIndex = maxOf(0, total - loadedCount)
+        loadedCount = minOf(loadedCount + PAGE_SIZE, total)
+        val newStartIndex = maxOf(0, total - loadedCount)
+        val newMessages = buildMessagesSlice(newStartIndex, prevStartIndex)
+        mAdapter.prependMessages(newMessages, hasLoadMoreAbove = newStartIndex > 0)
+    }
+
     private fun clearChatDetail() {
         if (newsId == null && sharedViewModel.selectedChatHistory.value.isNullOrEmpty()) {
             if (::mAdapter.isInitialized) {
@@ -775,5 +841,39 @@ class ChatDetailFragment : Fragment() {
         speechRecognizer?.destroy()
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun buildContextPrefix(): String {
+        val sb = StringBuilder("[Context: ")
+        if (!courseTitle.isNullOrBlank()) sb.append("Course \"$courseTitle\"")
+        if (stepNumber > 0) sb.append(", Step $stepNumber")
+        if (!stepTitle.isNullOrBlank()) sb.append(": \"$stepTitle\"")
+        if (!selectedText.isNullOrBlank()) {
+            val passage = selectedText!!.take(300)
+            sb.append(". Highlighted passage: \"$passage${if (selectedText!!.length > 300) "..." else ""}\"")
+        } else if (!stepDescription.isNullOrBlank()) {
+            val desc = stepDescription!!.take(400)
+            sb.append(". Content: $desc${if (stepDescription!!.length > 400) "..." else ""}")
+        }
+        sb.append("]\n\n")
+        return sb.toString()
+    }
+
+    private fun buildBannerText(): String {
+        val label = when {
+            stepNumber > 0 && !stepTitle.isNullOrBlank() -> "Step $stepNumber: $stepTitle"
+            !stepTitle.isNullOrBlank() -> stepTitle!!
+            else -> courseTitle ?: ""
+        }
+        return getString(R.string.course_context_banner, label)
+    }
+
+    companion object {
+        private const val PAGE_SIZE = 20
+        const val ARG_COURSE_TITLE = "course_title"
+        const val ARG_STEP_TITLE = "step_title"
+        const val ARG_STEP_DESCRIPTION = "step_description"
+        const val ARG_STEP_NUMBER = "step_number"
+        const val ARG_SELECTED_TEXT = "selected_text"
     }
 }

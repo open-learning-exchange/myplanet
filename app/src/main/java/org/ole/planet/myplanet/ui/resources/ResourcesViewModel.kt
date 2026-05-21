@@ -70,21 +70,9 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
-        val allLibraryItems = if (isMyCourseLib) {
-            resourcesRepository.getMyLibrary(modelId)
-        } else {
-            resourcesRepository.getAllLibraryItems().filter {
-                !it.isPrivate && it.userId?.contains(modelId) == false
-            }
-        }
+        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
 
-        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
-
-        val map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, modelId))
-        val tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
-
-        return allLibraryItems.map { library ->
-            val resourceId = library.resourceId ?: library.id
+        return enrichedLibraries.map { (library, rating, libraryTags) ->
             val item = ResourceItem(
                 id = library.id,
                 title = library.title,
@@ -99,8 +87,7 @@ class ResourcesViewModel @Inject constructor(
                 filename = library.filename,
                 resourceLocalAddress = library.resourceLocalAddress
             )
-            val rating = resourceId?.let { map[it] }
-            val tags = resourceId?.let { tagsMap[it]?.map { tag -> TagItem(tag.id, tag.name) } } ?: emptyList()
+            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
             ResourceListModel(library, item, rating, tags)
         }
     }

@@ -113,14 +113,38 @@ fun SyncActivity.refreshServerList() {
         serverListAddresses,
         prefData.getPinnedServerUrl(),
     )
-    serverAddressAdapter?.submitList(filteredList)
 
     val pinnedUrl = prefData.getServerUrl()
-    val pinnedIndex = filteredList.indexOfFirst {
-        it.url.replace(Regex("^https?://"), "") == pinnedUrl.replace(Regex("^https?://"), "")
+    val urlWithoutProtocol = pinnedUrl.replace(Regex("^https?://"), "")
+
+    // build the final list — if showing more, still pin selected server at top
+    val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty()) {
+        val pinnedServer = filteredList.find {
+            it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol
+        }
+        if (pinnedServer != null) {
+            // pinned server at top, then everyone else without the duplicate
+            listOf(pinnedServer) + filteredList.filter {
+                it.url.replace(Regex("^https?://"), "") != urlWithoutProtocol
+            }
+        } else {
+            filteredList
+        }
+    } else {
+        filteredList
     }
-    if (pinnedIndex != -1) {
-        serverAddressAdapter?.setSelectedPosition(pinnedIndex)
+
+    // submitList is async, so pass a callback for when it's done
+    serverAddressAdapter?.submitList(finalList) {
+        // this runs AFTER the list diff is done and views are updated
+        val pinnedIndex = finalList.indexOfFirst {
+            it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol
+        }
+        if (pinnedIndex != -1) {
+            serverAddressAdapter?.setSelectedPosition(pinnedIndex)
+        } else {
+            serverAddressAdapter?.clearSelection()
+        }
     }
 }
 
@@ -141,19 +165,16 @@ fun SyncActivity.setupManualUi(binding: DialogServerUrlBinding) {
 fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: MaterialDialog) {
     serverAddresses.layoutManager = LinearLayoutManager(this)
     serverListAddresses = ServerConfigUtils.getServerAddresses(this)
-
     val storedUrl = prefData.getServerUrl().takeIf { it.isNotEmpty() }
     val storedPin = prefData.getServerPin().takeIf { it.isNotEmpty() }
     val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
-
     val filteredList = ServerConfigUtils.getFilteredList(
         showAdditionalServers,
         serverListAddresses,
         prefData.getPinnedServerUrl(),
     )
-
     serverAddressAdapter = ServerAddressAdapter(
-        { serverListAddress ->
+        onItemClick = { serverListAddress ->
             val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
             binding.inputServerUrl.setText(actualUrl)
             binding.inputServerPassword.setText(ServerConfigUtils.getPinForUrl(actualUrl))
@@ -164,35 +185,22 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
                 isLocalNetwork(actualUrl)
             ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
             prefData.setServerProtocol(protocol)
-            if (serverCheck) {
-                performSync(dialog)
-            }
+            if (serverCheck) performSync(dialog)
         },
-        { _, _ ->
+        onClearDataDialog = { _, _ ->
             clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false) {
                 serverAddressAdapter?.revertSelection()
             }
         },
-        urlWithoutProtocol,
+        isServerAlreadyConfigured = !urlWithoutProtocol.isNullOrEmpty(),
     )
-
-    serverAddressAdapter?.submitList(filteredList)
-
-    serverAddresses.adapter = serverAddressAdapter
-
-    if (urlWithoutProtocol != null) {
-        val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
-        if (position != -1) {
-            serverAddressAdapter?.setSelectedPosition(position)
-            binding.inputServerUrl.setText(urlWithoutProtocol)
-            binding.inputServerPassword.setText(prefData.getServerPin())
-        }
-    }
-
-    if (!prefData.getManualConfig()) {
-        serverAddresses.visibility = View.VISIBLE
-        if (storedUrl != null && !syncFailed) {
-            val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
+    serverAddresses.adapter = serverAddressAdapter  // set adapter BEFORE submitList
+    serverAddressAdapter?.submitList(filteredList) {
+        // runs AFTER list is ready
+        if (urlWithoutProtocol != null && !syncFailed) {
+            val position = filteredList.indexOfFirst {
+                it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol
+            }
             if (position != -1) {
                 serverAddressAdapter?.setSelectedPosition(position)
                 binding.inputServerUrl.setText(urlWithoutProtocol)
@@ -200,13 +208,6 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
             }
         } else if (syncFailed) {
             serverAddressAdapter?.clearSelection()
-        }
-    } else if (storedUrl != null) {
-        val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
-        if (position != -1) {
-            serverAddressAdapter?.setSelectedPosition(position)
-            binding.inputServerUrl.setText(urlWithoutProtocol)
-            binding.inputServerPassword.setText(storedPin)
         }
     }
     serverUrl.isEnabled = false
