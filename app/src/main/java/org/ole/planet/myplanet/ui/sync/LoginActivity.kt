@@ -29,7 +29,6 @@ import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -51,6 +50,7 @@ import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -63,6 +63,8 @@ import org.ole.planet.myplanet.utils.Utilities.toast
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     @Inject
     lateinit var teamsRepository: TeamsRepository
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var loginSyncManager: LoginSyncManager
     @Inject
@@ -123,7 +125,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private fun setupAvailableSpace() {
         lifecycleScope.launch {
-            val storageText = withContext(Dispatchers.IO) {
+            val storageText = withContext(dispatcherProvider.io) {
                 FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity)
             }
             binding.tvAvailableSpace.text = buildString {
@@ -340,7 +342,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                val success = withContext(Dispatchers.IO) {
+                val success = withContext(dispatcherProvider.io) {
                     communityRepository.syncCommunityDocs()
                 }
                 val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
@@ -556,7 +558,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.recyclerView.adapter = mAdapter
         }
 
-        val savedUsers = withContext(Dispatchers.IO) { prefData.getSavedUsers().toMutableList() }
+        val savedUsers = withContext(dispatcherProvider.io) { prefData.getSavedUsers().toMutableList() }
         mAdapter?.submitList(savedUsers)
 
         binding.recyclerView.isNestedScrollingEnabled = true

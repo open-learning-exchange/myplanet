@@ -647,14 +647,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
-        executeTransaction { transactionRealm ->
-            transactionRealm.where(RealmSubmitPhotos::class.java)
-                .equalTo("id", photoId)
-                .findFirst()?.let { sub ->
-                    sub.uploaded = true
-                    sub._rev = rev
-                    sub._id = id
-                }
+        update(RealmSubmitPhotos::class.java, "id", photoId ?: "") { sub ->
+            sub.uploaded = true
+            sub._rev = rev
+            sub._id = id
         }
     }
 
