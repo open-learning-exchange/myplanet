@@ -19,7 +19,7 @@ class VoicesViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val teamsRepository: TeamsRepository,
     private val dispatcherProvider: DispatcherProvider
-) : ViewModel() {
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
     fun deletePost(newsId: String, teamName: String, onComplete: () -> Unit) {
         viewModelScope.launch {
@@ -80,15 +80,4 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
-    suspend fun addLabel(newsId: String, label: String) {
-        withContext(dispatcherProvider.io) {
-            voicesRepository.addLabel(newsId, label)
-        }
-    }
-
-    suspend fun removeLabel(newsId: String, label: String) {
-        withContext(dispatcherProvider.io) {
-            voicesRepository.removeLabel(newsId, label)
-        }
-    }
 }

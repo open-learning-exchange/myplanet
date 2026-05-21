@@ -18,6 +18,8 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.ui.voices.DefaultLabelManipulator
+import org.ole.planet.myplanet.ui.voices.LabelManipulator
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
@@ -26,7 +28,7 @@ class TeamsVoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
-) : ViewModel() {
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
     private val _discussions = MutableStateFlow<List<RealmNews?>>(emptyList())
     val discussions: StateFlow<List<RealmNews?>> = _discussions.asStateFlow()
@@ -94,15 +96,4 @@ class TeamsVoicesViewModel @Inject constructor(
         voicesRepository.getLibraryResource(resourceId)
     }
 
-    suspend fun addLabel(newsId: String, label: String) {
-        withContext(dispatcherProvider.io) {
-            voicesRepository.addLabel(newsId, label)
-        }
-    }
-
-    suspend fun removeLabel(newsId: String, label: String) {
-        withContext(dispatcherProvider.io) {
-            voicesRepository.removeLabel(newsId, label)
-        }
-    }
 }
