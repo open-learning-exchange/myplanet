@@ -354,7 +354,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
                 "${examId}@${courseId}"
             } else {
@@ -511,7 +511,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         val submissionId = submission?.id
         val questionId = question.id
 
-        databaseService.executeTransactionAsync { r ->
+        executeTransaction { r ->
             val realmSubmission = if (submissionId != null) {
                 r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
             } else {
@@ -647,14 +647,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
-        executeTransaction { transactionRealm ->
-            transactionRealm.where(RealmSubmitPhotos::class.java)
-                .equalTo("id", photoId)
-                .findFirst()?.let { sub ->
-                    sub.uploaded = true
-                    sub._rev = rev
-                    sub._id = id
-                }
+        update(RealmSubmitPhotos::class.java, "id", photoId ?: "") { sub ->
+            sub.uploaded = true
+            sub._rev = rev
+            sub._id = id
         }
     }
 
