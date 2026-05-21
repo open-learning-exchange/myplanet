@@ -54,6 +54,8 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
+    @Inject
+    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -181,9 +183,9 @@ class VoicesFragment : BaseVoicesFragment() {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             downloadResourcesForNews(list)
             val sortedList = sortNews(list)
-            setupVoicesAdapter(sortedList)
+            setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list)
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list?.filterNotNull())
         }
         adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
     }
@@ -219,8 +221,14 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun setupVoicesAdapter(sortedList: List<RealmNews?>) {
-        val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+    private fun setupVoicesAdapter(sortedList: List<RealmNews>) {
+        val labelManager = VoicesLabelManager(
+            context = requireActivity(),
+            scope = viewLifecycleOwner.lifecycleScope,
+            dispatcherProvider = dispatcherProvider,
+            addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+            removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+        )
         adapterNews = VoicesAdapter(
             context = requireActivity(),
             currentUser = user,

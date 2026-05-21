@@ -182,7 +182,13 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
-            val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+            val labelManager = VoicesLabelManager(
+                context = requireActivity(),
+                scope = viewLifecycleOwner.lifecycleScope,
+                dispatcherProvider = dispatcherProvider,
+                addLabelFn = { newsId, label -> viewModel.addLabel(newsId, label) },
+                removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) }
+            )
             val effectiveTeamName = getEffectiveTeamName()
             val adapterNews = activity?.let {
                 VoicesAdapter(
@@ -248,7 +254,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             }
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            realmNewsList?.let { adapterNews?.submitList(it) }
+            realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
             adapterNews?.let {
                 showNoData(binding.tvNodata, it.itemCount, "discussions")
@@ -256,7 +262,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 realmNewsList?.let {
-                    adapter.submitList(it)
+                    adapter.submitList(it.filterNotNull())
                     showNoData(binding.tvNodata, adapter.itemCount, "discussions")
                 }
             }
