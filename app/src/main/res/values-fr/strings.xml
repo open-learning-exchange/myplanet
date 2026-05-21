@@ -885,6 +885,8 @@
     </plurals>
 
     <string name="ai_chat">AI Chat</string>
+    <string name="ask_ai">Demander à l\'IA</string>
+    <string name="course_context_banner">En cours d\'étude : %1$s</string>
     <string name="kindly_give_a_rating">Veuillez donner une note</string>
     <string name="must_start_with_letter_or_number">Doit commencer par une lettre ou un chiffre</string>
     <string name="only_letters_numbers_and_are_allowed">Seules les lettres de a à z, les chiffres, le "_", ".", et "-" sont autorisés</string>
@@ -1290,7 +1292,14 @@
     <string name="enterprise_reports">Rapports d\'entreprise</string>
     <string name="label_add_references">Ajouter des références ci-dessous</string>
     <string name="link">Lien</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">URL du serveur non configurée</string>
+    <string name="welcome_back">Bon retour</string>
+    <string name="welcome_new">Bienvenue</string>
+    <string name="sign_in_to_continue">Connectez-vous pour continuer</string>
+    <string name="sign_in_to_get_started">Connectez-vous pour commencer</string>
+    <string name="sync_chip_synced">Synchronisé</string>
+    <string name="sync_chip_syncing">Synchronisation…</string>
+    <string name="sync_chip_offline">Hors ligne</string>
     <string name="desc_is_required">La description est obligatoire</string>
 
 </resources>
