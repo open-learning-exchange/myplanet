@@ -455,6 +455,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    override fun onSingleResourceDownloaded(url: String) {
+        if (!::adapterLibrary.isInitialized) return
+        val localAddress = url.substringAfterLast('/')
+        val id = allResourceModels.find { it.item.resourceLocalAddress == localAddress }?.item?.id ?: return
+        adapterLibrary.markItemAsOffline(id)
+    }
+
     override fun onResourceClicked(item: ResourceItem) {
         val model = allResourceModels.find { it.item.id == item.id }
         if (model != null) {

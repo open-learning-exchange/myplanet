@@ -84,7 +84,8 @@ class ResourcesViewModel @Inject constructor(
                 isOffline = library.isResourceOffline(),
                 _rev = library._rev,
                 uploadDate = library.uploadDate,
-                filename = library.filename
+                filename = library.filename,
+                resourceLocalAddress = library.resourceLocalAddress
             )
             val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
             ResourceListModel(library, item, rating, tags)
