@@ -62,25 +62,36 @@ open class RealmRepository(
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
-                try {
-                    results?.let { res ->
-                        listener?.let { l ->
-                            if (res.isValid) {
-                                res.removeChangeListener(l)
-                            }
-                        }
+                val currentResults = results
+                val currentListener = listener
+                if (currentResults != null && currentListener != null && currentResults.isValid) {
+                    try {
+                        currentResults.removeChangeListener(currentListener)
+                    } catch (e: Exception) {
+                        RealmLog.error(e, "Error removing RealmChangeListener")
                     }
-                } catch (e: Exception) {
-                    RealmLog.error(e, "Error removing RealmChangeListener")
                 }
+
+                val currentRealm = realm
+                if (currentRealm != null && !currentRealm.isClosed) {
+                    try {
+                        currentRealm.close()
+                    } catch (e: Exception) {
+                        RealmLog.error(e, "Error closing Realm")
+                    }
+                }
+            }
+        }
+
+        fun emitResults(res: RealmResults<T>, errorMsg: String) {
+            if (!isClosed.get() && res.isValid && res.isLoaded) {
                 try {
-                    realm?.let { r ->
-                        if (!r.isClosed) {
-                            r.close()
-                        }
+                    val frozen = res.freeze()
+                    if (!isClosed.get()) {
+                        trySend(frozen)
                     }
                 } catch (e: Exception) {
-                    RealmLog.error(e, "Error closing Realm")
+                    RealmLog.error(e, errorMsg)
                 }
             }
         }
@@ -89,29 +100,11 @@ open class RealmRepository(
             realm = databaseService.createManagedRealmInstance()
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
-            if (initialResults.isValid && initialResults.isLoaded) {
-                try {
-                    val frozenInitial = initialResults.freeze()
-                    if (!isClosed.get()) {
-                        trySend(frozenInitial)
-                    }
-                } catch (e: Exception) {
-                    RealmLog.error(e, "Error sending initial results")
-                }
-            }
+            emitResults(initialResults, "Error sending initial results")
 
             results = initialResults
             listener = RealmChangeListener<RealmResults<T>> { changedResults ->
-                if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
-                    try {
-                        val frozenResults = changedResults.freeze()
-                        if (!isClosed.get()) {
-                            trySend(frozenResults)
-                        }
-                    } catch (e: Exception) {
-                        RealmLog.error(e, "Error sending changed results")
-                    }
-                }
+                emitResults(changedResults, "Error sending changed results")
             }
             results.addChangeListener(listener)
 

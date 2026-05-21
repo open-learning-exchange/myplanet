@@ -1288,6 +1288,13 @@
     <string name="enterprise_reports">Enterprise Reports</string>
     <string name="label_add_references">Add any references below</string>
     <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="welcome_back">Welcome back</string>
+    <string name="welcome_new">Welcome</string>
+    <string name="sign_in_to_continue">Sign in to continue</string>
+    <string name="sign_in_to_get_started">Sign in to get started</string>
+    <string name="sync_chip_synced">Synced</string>
+    <string name="sync_chip_syncing">Syncing…</string>
+    <string name="sync_chip_offline">Offline</string>
     <string name="desc_is_required">Description is required</string>
 
 </resources>

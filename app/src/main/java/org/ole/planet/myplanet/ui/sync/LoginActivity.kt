@@ -121,6 +121,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
+        dotSync = binding.dotSync
+        txtSyncState = binding.txtSyncState
     }
 
     private fun setupAvailableSpace() {
@@ -164,8 +166,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
+            syncIcon.visibility = View.VISIBLE
         } else {
             binding.openCommunity.visibility = View.GONE
+            syncIcon.visibility = View.GONE
         }
         binding.btnFeedback.setOnClickListener {
             if (getUrl() != "/db") {
@@ -560,6 +564,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
         val savedUsers = withContext(dispatcherProvider.io) { prefData.getSavedUsers().toMutableList() }
         mAdapter?.submitList(savedUsers)
+
+        val hasUsers = savedUsers.isNotEmpty()
+        binding.tvWelcome.setText(if (hasUsers) R.string.welcome_back else R.string.welcome_new)
+        binding.tvSubtitle.setText(if (hasUsers) R.string.sign_in_to_continue else R.string.sign_in_to_get_started)
 
         binding.recyclerView.isNestedScrollingEnabled = true
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY

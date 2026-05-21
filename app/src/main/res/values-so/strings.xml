@@ -1287,7 +1287,14 @@
     <string name="enterprise_reports">Warbixinnada shirkadda</string>
     <string name="label_add_references">Ku dar tixraac kasta xagga hoose</string>
     <string name="link">Xiriirka</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">URL-ka server-ka lama dejin</string>
+    <string name="welcome_back">Ku soo dhawoow mar kale</string>
+    <string name="welcome_new">Ku soo dhawoow</string>
+    <string name="sign_in_to_continue">Soo gal si aad u sii waddo</string>
+    <string name="sign_in_to_get_started">Soo gal si aad u bilowdo</string>
+    <string name="sync_chip_synced">La waafajiyay</string>
+    <string name="sync_chip_syncing">La waafajinayaa…</string>
+    <string name="sync_chip_offline">Khadka kama jiro</string>
     <string name="desc_is_required">Sharaxaadda waa loo baahan yahay</string>
 
 </resources>
