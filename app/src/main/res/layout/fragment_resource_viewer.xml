@@ -15,25 +15,21 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout="@layout/viewer_video" />
-
         <ViewStub
             android:id="@+id/stub_audio"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout="@layout/viewer_audio" />
-
         <ViewStub
             android:id="@+id/stub_pdf"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout="@layout/viewer_pdf" />
-
         <ViewStub
             android:id="@+id/stub_image"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout="@layout/viewer_image" />
-
         <ViewStub
             android:id="@+id/stub_text"
             android:layout_width="match_parent"
@@ -71,5 +67,4 @@
             android:contentDescription="@string/read_aloud"
             app:fab_label="Read Aloud" />
     </com.github.clans.fab.FloatingActionMenu>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
