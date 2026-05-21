@@ -131,13 +131,14 @@ class CoursesViewModel @Inject constructor(
                         emptyList()
                     }
 
+                    val allCourseIds = validCourses.mapNotNull { it.courseId }
+
                     val (map, progressMap) = coroutineScope {
                         val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                        val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+                        val progressDeferred = async { coursesRepository.getCourseProgress(userId, allCourseIds) }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
 
-                    val allCourseIds = validCourses.mapNotNull { it.courseId }
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }
 
