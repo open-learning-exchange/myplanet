@@ -48,6 +48,16 @@ class ResourcesAdapter(
         private const val RATING_PAYLOAD = "RATING_PAYLOAD"
         private const val OPENED_RESOURCE_PAYLOAD = "OPENED_RESOURCE_PAYLOAD"
         private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
+        private const val OFFLINE_STATUS_PAYLOAD = "OFFLINE_STATUS_PAYLOAD"
+    }
+
+    private val locallyOfflineIds = mutableSetOf<String>()
+
+    fun markItemAsOffline(id: String) {
+        if (locallyOfflineIds.add(id)) {
+            val index = currentList.indexOfFirst { it.item.id == id }
+            if (index >= 0) notifyItemChanged(index, OFFLINE_STATUS_PAYLOAD)
+        }
     }
 
     fun setListener(listener: OnLibraryItemSelectedListener?) {
@@ -87,13 +97,11 @@ class ResourcesAdapter(
                 openLibrary(model)
             }
             val isResourceOpened = openedResourceIds.contains(library.id)
-            if (library.isOffline || isResourceOpened) {
-                holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
-            } else {
-                holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
-            }
+            val isOffline = library.isOffline || locallyOfflineIds.contains(library.id)
+            holder.rowLibraryBinding.ivDownloaded.visibility =
+                if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (library.isOffline) {
+                if (isOffline) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
@@ -160,13 +168,11 @@ class ResourcesAdapter(
                 holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
                 handled = true
             }
-            if (payloads.contains(OPENED_RESOURCE_PAYLOAD)) {
+            if (payloads.contains(OPENED_RESOURCE_PAYLOAD) || payloads.contains(OFFLINE_STATUS_PAYLOAD)) {
                 val isResourceOpened = openedResourceIds.contains(library.id)
-                if (library.isOffline || isResourceOpened) {
-                    holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
-                } else {
-                    holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
-                }
+                val isOffline = library.isOffline || locallyOfflineIds.contains(library.id)
+                holder.rowLibraryBinding.ivDownloaded.visibility =
+                    if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
                 handled = true
             }
             if (payloads.contains(TAGS_PAYLOAD)) {

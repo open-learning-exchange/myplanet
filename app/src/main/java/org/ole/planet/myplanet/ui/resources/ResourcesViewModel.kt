@@ -96,7 +96,8 @@ class ResourcesViewModel @Inject constructor(
                 isOffline = library.isResourceOffline(),
                 _rev = library._rev,
                 uploadDate = library.uploadDate,
-                filename = library.filename
+                filename = library.filename,
+                resourceLocalAddress = library.resourceLocalAddress
             )
             val rating = resourceId?.let { map[it] }
             val tags = resourceId?.let { tagsMap[it]?.map { tag -> TagItem(tag.id, tag.name) } } ?: emptyList()

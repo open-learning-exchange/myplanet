@@ -139,6 +139,7 @@ abstract class BaseResourceFragment : Fragment() {
                             if (download.progress == 100) {
                                 pendingDownloadUrls.remove(fileUrl)
                                 Log.d(TAG, "File complete: ${fileUrl.substringAfterLast('/')} | remaining=${pendingDownloadUrls.size}")
+                                onSingleResourceDownloaded(fileUrl)
                             }
                             setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
                         } else if (!fileUrl.isNullOrEmpty()) {
@@ -300,6 +301,8 @@ abstract class BaseResourceFragment : Fragment() {
             onDownloadComplete()
         }
     }
+
+    protected open fun onSingleResourceDownloaded(url: String) {}
 
     open fun onDownloadComplete() {
         prgDialog.dismiss()
