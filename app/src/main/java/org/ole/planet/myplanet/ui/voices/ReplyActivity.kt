@@ -15,7 +15,6 @@ import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -37,6 +36,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesActions
+import org.ole.planet.myplanet.ui.voices.VoicesViewModel
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.getImagePath
@@ -59,6 +59,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     @Inject
     lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+
+    @Inject
+    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     @Inject
@@ -101,7 +104,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             }
             val (news, list) = viewModel.getNewsWithReplies(id)
             if (!::newsAdapter.isInitialized) {
-                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+                val labelManager = VoicesLabelManager(
+                    context = this@ReplyActivity,
+                    scope = lifecycleScope,
+                    dispatcherProvider = dispatcherProvider,
+                    addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+                    removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+                )
                 newsAdapter = VoicesAdapter(
                     context = this@ReplyActivity,
                     currentUser = user,

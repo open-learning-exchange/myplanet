@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.teams.voices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,8 +18,9 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.ui.voices.DefaultLabelManipulator
+import org.ole.planet.myplanet.ui.voices.LabelManipulator
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import javax.inject.Inject
 
 @HiltViewModel
 class TeamsVoicesViewModel @Inject constructor(
@@ -26,7 +28,7 @@ class TeamsVoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
-) : ViewModel() {
+) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
     private val _discussions = MutableStateFlow<List<RealmNews?>>(emptyList())
     val discussions: StateFlow<List<RealmNews?>> = _discussions.asStateFlow()
@@ -93,4 +95,5 @@ class TeamsVoicesViewModel @Inject constructor(
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? = withContext(dispatcherProvider.io) {
         voicesRepository.getLibraryResource(resourceId)
     }
+
 }

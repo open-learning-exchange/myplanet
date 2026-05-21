@@ -12,14 +12,16 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 class VoicesLabelManager(
     private val context: Context,
-    private val voicesRepository: VoicesRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
+    private val addLabelFn: suspend (String, String) -> Unit,
+    private val removeLabelFn: suspend (String, String) -> Unit
 ) {
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: RealmNews?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
@@ -43,8 +45,8 @@ class VoicesLabelManager(
                 if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
                     scope.launch {
                         try {
-                            voicesRepository.addLabel(voiceId, selectedLabel)
-                            withContext(Dispatchers.Main) {
+                            addLabelFn(voiceId, selectedLabel)
+                            withContext(dispatcherProvider.main) {
                                 if (voice.labels == null) {
                                     voice.labels = RealmList()
                                 }
@@ -85,8 +87,8 @@ class VoicesLabelManager(
                     if (selectedLabel != null && voiceId != null) {
                         scope.launch {
                             try {
-                                voicesRepository.removeLabel(voiceId, selectedLabel)
-                                withContext(Dispatchers.Main) {
+                                removeLabelFn(voiceId, selectedLabel)
+                                withContext(dispatcherProvider.main) {
                                     voice.labels?.remove(selectedLabel)
                                     showChips(binding, voice, canManageLabels)
                                 }
