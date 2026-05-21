@@ -11,12 +11,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
     val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
@@ -51,6 +56,25 @@ class ChatViewModel @Inject constructor(
                 _conversationSaveSuccess.emit(true)
             } catch (e: Exception) {
                 _conversationSaveSuccess.emit(false)
+            }
+        }
+    }
+
+    suspend fun parseNewsConversations(newsConversations: String?): List<ChatMessage> {
+        return withContext(dispatcherProvider.io) {
+            if (newsConversations.isNullOrBlank()) return@withContext emptyList()
+            try {
+                val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
+                val list = mutableListOf<ChatMessage>()
+                val limit = 20
+                val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
+                for (conversation in limitedConversations) {
+                    conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
+                    conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
+                }
+                list
+            } catch (e: Exception) {
+                emptyList()
             }
         }
     }
