@@ -184,14 +184,13 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseIds.isEmpty()) {
-                    return@runCatching false
-                }
+        return runCatching {
+            if (courseIds.isEmpty()) {
+                return@runCatching false
+            }
 
-                var courseFound = false
-                executeTransaction { realm ->
+            var courseFound = false
+            executeTransaction { realm ->
                     val validCourseIds = courseIds.filter { it.isNotBlank() }
                     if (validCourseIds.isEmpty()) return@executeTransaction
 
@@ -221,7 +220,6 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
 
                 courseFound
-            }
         }
     }
 
@@ -359,11 +357,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun joinCourse(courseId: String, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseId.isBlank() || userId.isBlank()) return@runCatching
+        return runCatching {
+            if (courseId.isBlank() || userId.isBlank()) return@runCatching
 
-                executeTransaction { realm ->
+            executeTransaction { realm ->
                     val course = realm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -382,14 +379,12 @@ class CoursesRepositoryImpl @Inject constructor(
                         removedLog?.deleteFromRealm()
                     }
                 }
-            }
         }
     }
 
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                executeTransaction { realm ->
+        return runCatching {
+            executeTransaction { realm ->
                     val course = realm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -397,7 +392,6 @@ class CoursesRepositoryImpl @Inject constructor(
                     RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
                 }
                 RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
-            }
         }
     }
 
@@ -618,8 +612,8 @@ class CoursesRepositoryImpl @Inject constructor(
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, JsonObject> {
-        return progressRepository.getCourseProgress(userId)
+    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, JsonObject> {
+        return progressRepository.getCourseProgress(courseIds, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
