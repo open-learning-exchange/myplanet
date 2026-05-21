@@ -171,7 +171,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             val stepNumber = position
             binding.tvStep.text = String.format(getString(R.string.step) + " %d/%d", stepNumber, steps.size)
         }
-
+        binding.courseStepProgressBar.max = steps.size
+        binding.courseStepProgressBar.progress = position
         lifecycleScope.launch {
             val currentProgress = coursesRepository.getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
