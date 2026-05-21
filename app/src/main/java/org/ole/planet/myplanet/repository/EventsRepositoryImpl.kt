@@ -67,15 +67,13 @@ class EventsRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         var processedCount = 0
         try {
-            withRealm { realm ->
-                realm.executeTransaction { realmTx ->
-                    documents.forEach { doc ->
-                        try {
-                            RealmMeetup.insert(realmTx, doc)
-                            processedCount++
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
+            executeTransaction { realm ->
+                documents.forEach { doc ->
+                    try {
+                        RealmMeetup.insert(realm, doc)
+                        processedCount++
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
             }
