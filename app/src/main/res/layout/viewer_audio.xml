@@ -23,7 +23,6 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.4" />
-
     <TextView
         android:id="@+id/trackTitle"
         android:layout_width="0dp"
@@ -38,7 +37,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/albumArt" />
-
     <TextView
         android:id="@+id/artistName"
         android:layout_width="0dp"
@@ -52,7 +50,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/trackTitle" />
-
     <FrameLayout
         android:id="@+id/playerContainer"
         android:layout_width="0dp"
@@ -68,7 +65,6 @@
             android:layout_height="match_parent"
             android:alpha="0.8"
             android:scaleType="centerCrop" />
-
         <androidx.media3.ui.PlayerView
             android:id="@+id/audio_player_view"
             android:layout_width="match_parent"
