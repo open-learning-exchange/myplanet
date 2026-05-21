@@ -1,8 +1,13 @@
 package org.ole.planet.myplanet.ui.chat
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Typeface
 import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
@@ -12,6 +17,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.LinearLayout
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.view.isNotEmpty
 import androidx.fragment.app.Fragment
@@ -48,6 +54,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 import retrofit2.Response
 
 @AndroidEntryPoint
@@ -67,6 +74,17 @@ class ChatDetailFragment : Fragment() {
     private var isAiUnavailable = false
     private var newsId: String? = null
     private var loadingJob: Job? = null
+    private var speechRecognizer: SpeechRecognizer? = null
+    private var isListening = false
+    private var textBeforeVoice: String = ""
+
+    private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            startSpeechToText()
+        } else {
+            Utilities.toast(requireContext(), getString(R.string.microphone_permission_required))
+        }
+    }
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     lateinit var customProgressDialog: DialogUtils.CustomProgressDialog
@@ -97,6 +115,7 @@ class ChatDetailFragment : Fragment() {
         observeAiProviders()
         checkAiProviders()
         setupSendButton()
+        setupMicButton()
         setupMessageInputListeners()
         if (newsId != null) {
             loadNewsConversations(newsId, newsRev, newsConversations)
@@ -104,6 +123,99 @@ class ChatDetailFragment : Fragment() {
             observeViewModelData()
         }
         view.post { clearChatDetail() }
+    }
+
+    private fun setupMicButton() {
+        binding.buttonGchatMic.setOnClickListener {
+            if (isListening) {
+                stopSpeechToText()
+            } else {
+                if (ContextCompat.checkSelfPermission(requireContext(), android.Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                    startSpeechToText()
+                } else {
+                    requestPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+                }
+            }
+        }
+        initSpeechRecognizer()
+    }
+
+    private fun initSpeechRecognizer() {
+        if (SpeechRecognizer.isRecognitionAvailable(requireContext())) {
+            speechRecognizer = SpeechRecognizer.createSpeechRecognizer(requireContext())
+            speechRecognizer?.setRecognitionListener(object : RecognitionListener {
+                override fun onReadyForSpeech(params: Bundle?) {
+                    isListening = true
+                    binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_red_500))
+                    binding.textGchatIndicator.text = getString(R.string.voice_to_text)
+                    binding.textGchatIndicator.visibility = View.VISIBLE
+                }
+
+                override fun onBeginningOfSpeech() {}
+                override fun onRmsChanged(rmsdB: Float) {}
+                override fun onBufferReceived(buffer: ByteArray?) {}
+                override fun onEndOfSpeech() {
+                    stopSpeechToText()
+                }
+
+                override fun onError(error: Int) {
+                    stopSpeechToText()
+                    val message = when (error) {
+                        SpeechRecognizer.ERROR_AUDIO -> "Audio recording error"
+                        SpeechRecognizer.ERROR_CLIENT -> "Client side error"
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Insufficient permissions"
+                        SpeechRecognizer.ERROR_NETWORK -> "Network error"
+                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network timeout"
+                        SpeechRecognizer.ERROR_NO_MATCH -> "No match"
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "RecognitionService busy"
+                        SpeechRecognizer.ERROR_SERVER -> "Error from server"
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech input"
+                        else -> "Didn't understand, please try again."
+                    }
+                    Utilities.toast(requireContext(), message)
+                }
+
+                override fun onResults(results: Bundle?) {
+                    val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (!matches.isNullOrEmpty()) {
+                        val finalMatch = matches[0]
+                        val newText = if (textBeforeVoice.isEmpty()) finalMatch else "$textBeforeVoice $finalMatch"
+                        binding.editGchatMessage.setText(newText)
+                        binding.editGchatMessage.setSelection(newText.length)
+                    }
+                }
+
+                override fun onPartialResults(partialResults: Bundle?) {
+                    val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                    if (!matches.isNullOrEmpty()) {
+                        val partialMatch = matches[0]
+                        val newText = if (textBeforeVoice.isEmpty()) partialMatch else "$textBeforeVoice $partialMatch"
+                        binding.editGchatMessage.setText(newText)
+                        binding.editGchatMessage.setSelection(newText.length)
+                    }
+                }
+
+                override fun onEvent(eventType: Int, params: Bundle?) {}
+            })
+        } else {
+            binding.buttonGchatMic.visibility = View.GONE
+        }
+    }
+
+    private fun startSpeechToText() {
+        textBeforeVoice = binding.editGchatMessage.text.toString().trim()
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+        speechRecognizer?.startListening(intent)
+    }
+
+    private fun stopSpeechToText() {
+        speechRecognizer?.stopListening()
+        isListening = false
+        binding.buttonGchatMic.setColorFilter(ContextCompat.getColor(requireContext(), R.color.md_blue_500))
+        binding.textGchatIndicator.visibility = View.GONE
     }
 
     private fun initChatComponents() {
@@ -650,6 +762,7 @@ class ChatDetailFragment : Fragment() {
             sharedPrefManager.setIsAlternativeUrl(false)
         }
         loadingJob?.cancel()
+        speechRecognizer?.destroy()
         _binding = null
         super.onDestroyView()
     }
