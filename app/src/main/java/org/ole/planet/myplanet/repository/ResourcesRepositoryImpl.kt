@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -650,6 +651,28 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
         return tagsRepository.getTagsForResources(ids)
+    }
+
+    override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
+        val allLibraryItems = if (isMyCourseLib) {
+            getMyLibrary(modelId)
+        } else {
+            getAllLibraryItems().filter {
+                it.userId?.contains(modelId) == false
+            }
+        }
+
+        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
+
+        val map = HashMap(getResourceRatingsBulk(allResourceIds, modelId))
+        val tagsMap = getResourceTagsBulk(allResourceIds)
+
+        return allLibraryItems.map { library ->
+            val resourceId = library.resourceId ?: library.id
+            val rating = resourceId?.let { map[it] }
+            val tags = resourceId?.let { tagsMap[it] } ?: emptyList()
+            LibraryWithMetadata(library, rating, tags)
+        }
     }
 
     companion object {
