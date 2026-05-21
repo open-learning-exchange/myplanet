@@ -151,22 +151,28 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         val alertDialog = builder.create()
         alertDialog.show()
-
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val task = alertTaskBinding.etTask.text.toString()
             val desc = alertTaskBinding.etDescription.text.toString()
+            var isValid = true
             if (task.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
-            } else if (deadline == null) {
+                isValid = false
+            }
+            if (deadline == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
-            } else {
+                isValid = false  }
+            if (desc.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.desc_is_required))
+                isValid = false
+            }
+            if (isValid) {
                 createOrUpdateTask(task, desc, t, selectedAssignee?.id)
                 alertDialog.dismiss()
             }
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
-
     private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
         var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
 
