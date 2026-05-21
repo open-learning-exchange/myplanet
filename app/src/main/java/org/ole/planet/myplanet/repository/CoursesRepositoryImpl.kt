@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
@@ -21,7 +22,6 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
-import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission

@@ -8,6 +8,10 @@
         android:key="reset_app"
         android:title="@string/reset_app" />
     <Preference
+        android:key="storage_breakdown"
+        android:title="@string/storage_breakdown"
+        android:summary="@string/storage_breakdown_summary" />
+    <Preference
         android:key="freeup_space"
         android:title="@string/freeup_space" />
     <PreferenceCategory

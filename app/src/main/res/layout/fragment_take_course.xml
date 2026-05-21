@@ -81,7 +81,6 @@
                         android:background="@drawable/buttonyellow"
                         android:minHeight="@dimen/_40dp"
                         android:text="@string/remove" />
-
                     <TextView
                         android:id="@+id/previous_step"
                         android:layout_width="wrap_content"
@@ -118,6 +117,14 @@
                         android:textColor="@color/md_white_1000"
                         android:visibility="gone" />
                 </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/course_step_progress_bar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:progress="0"
+                    android:progressTint="@color/colorAccent" />
 
                 <androidx.viewpager2.widget.ViewPager2
                     android:id="@+id/viewPager2"

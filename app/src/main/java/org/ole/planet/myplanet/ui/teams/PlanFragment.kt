@@ -166,19 +166,6 @@ class PlanFragment : BaseTeamFragment() {
 
             try {
                 val teamTypeForValidation = team.type ?: "team"
-                val nameExists = teamsRepository.isTeamNameExists(name, teamTypeForValidation, teamIdentifier)
-
-                if (nameExists) {
-                    val duplicateMessage = if (isEnterprise) {
-                        context.getString(R.string.enterprise_name_already_exists)
-                    } else {
-                        context.getString(R.string.team_name_already_exists)
-                    }
-                    Utilities.toast(activity, duplicateMessage)
-                    binding.etName.error = duplicateMessage
-                    return@launch
-                }
-
                 val wasUpdated = teamsRepository.updateTeamDetails(
                     teamId = teamIdentifier,
                     name = name,

@@ -81,11 +81,11 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TimeUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -119,6 +119,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
+    private var systemNotificationReceiverRegistered = false
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
 
@@ -597,6 +598,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun registerSystemNotificationReceiver() {
+        if (systemNotificationReceiverRegistered) return
         systemNotificationReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val pendingResult = goAsync()
@@ -637,18 +639,23 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 @Suppress("UnspecifiedRegisterReceiverFlag")
                 registerReceiver(systemNotificationReceiver, filter)
             }
+            systemNotificationReceiverRegistered = true
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
             systemNotificationReceiver = null
+            systemNotificationReceiverRegistered = false
         }
     }
 
     private fun unregisterSystemNotificationReceiver() {
         systemNotificationReceiver?.let {
-            try {
-                unregisterReceiver(it)
-            } catch (e: IllegalArgumentException) {
-                e.printStackTrace()
+            if (systemNotificationReceiverRegistered) {
+                try {
+                    unregisterReceiver(it)
+                } catch (e: IllegalArgumentException) {
+                    e.printStackTrace()
+                }
+                systemNotificationReceiverRegistered = false
             }
             systemNotificationReceiver = null
         }

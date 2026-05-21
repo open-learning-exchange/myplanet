@@ -177,6 +177,14 @@ class SettingsActivity : AppCompatActivity() {
 
             clearDataButtonInit()
             initRetryQueueDebug()
+            initStorageBreakdown()
+        }
+
+        private fun initStorageBreakdown() {
+            findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
+                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                true
+            }
         }
 
         private fun initRetryQueueDebug() {

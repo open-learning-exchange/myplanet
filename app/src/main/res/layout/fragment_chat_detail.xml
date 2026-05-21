@@ -82,7 +82,7 @@
             android:layout_height="wrap_content"
             android:layout_centerVertical="true"
             android:layout_marginStart="16dp"
-            android:layout_toStartOf="@+id/button_gchat_send"
+            android:layout_toStartOf="@+id/button_gchat_mic"
             android:background="@android:color/transparent"
             android:hint="@string/chat_enter_message"
             android:inputType="textMultiLine"
@@ -90,6 +90,17 @@
             android:textColor="@color/daynight_textColor"
             android:textColorHint="@color/hint_color"
             tools:ignore="Autofill" />
+        <ImageView
+            android:id="@+id/button_gchat_mic"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_toStartOf="@+id/button_gchat_send"
+            android:layout_centerVertical="true"
+            android:layout_margin="5dp"
+            android:background="?attr/selectableItemBackground"
+            android:contentDescription="@string/mic_button_content_description"
+            android:src="@drawable/ic_mic"
+            app:tint="@color/md_blue_500" />
         <pl.droidsonroids.gif.GifImageView
             android:id="@+id/image_gchat_loading"
             android:layout_width="40dp"
