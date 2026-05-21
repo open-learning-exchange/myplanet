@@ -33,7 +33,6 @@ class ResourcesRepositoryImplTest {
         databaseService,
         testDispatcher,
         activitiesRepository,
-        settings,
         sharedPrefManager,
         ratingsRepository,
         tagsRepository,

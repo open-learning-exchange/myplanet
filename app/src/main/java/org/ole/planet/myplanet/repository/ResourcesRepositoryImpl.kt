@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.content.SharedPreferences
-import android.util.Log
 import androidx.annotation.VisibleForTesting
 import com.google.gson.Gson
 import com.google.gson.JsonArray
@@ -21,7 +19,6 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -29,19 +26,16 @@ import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-
-private const val TAG = "ResourcesRepository"
+import kotlin.math.ceil
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
-    @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
@@ -301,16 +295,13 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
-        Log.d(TAG, "markResourceOfflineByLocalAddress: querying localAddress='$localAddress'")
         executeTransaction { realm ->
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", localAddress)
                 .findAll()
-            Log.d(TAG, "markResourceOfflineByLocalAddress: found ${results.size} record(s) for '$localAddress'")
             results.forEach { library ->
                 library.resourceOffline = true
                 library.downloadedRev = library._rev
-                Log.d(TAG, "markResourceOfflineByLocalAddress: marked offline — id=${library.id} rev=${library._rev}")
             }
         }
     }
@@ -388,19 +379,14 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
-        val alreadyOffline = resources.count { it.isResourceOffline() }
-        Log.d(TAG, "downloadResources: total=${resources.size} alreadyOffline=$alreadyOffline")
         return try {
             val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isEmpty()) {
-                Log.d(TAG, "downloadResources: nothing to queue — all already offline or missing remote address")
                 return false
             }
-            Log.d(TAG, "downloadResources: queuing ${urls.size} URL(s): ${urls.map { it.substringAfterLast('/') }}")
             DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             true
         } catch (e: Exception) {
-            Log.e(TAG, "downloadResources: failed to start download service", e)
             false
         }
     }
@@ -645,7 +631,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
         val allRatings = ratingsRepository.getResourceRatings(userId)
-        val filteredRatings = HashMap<String?, JsonObject>(Math.ceil(ids.size / 0.75).toInt())
+        val filteredRatings = HashMap<String?, JsonObject>(ceil(ids.size / 0.75).toInt())
         for (id in ids) {
             allRatings[id]?.let {
                 filteredRatings[id] = it
