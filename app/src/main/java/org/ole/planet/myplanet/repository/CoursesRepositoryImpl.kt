@@ -609,8 +609,8 @@ class CoursesRepositoryImpl @Inject constructor(
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
-        return progressRepository.getCourseProgress(userId)
+    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, com.google.gson.JsonObject> {
+        return progressRepository.getCourseProgress(courseIds, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
