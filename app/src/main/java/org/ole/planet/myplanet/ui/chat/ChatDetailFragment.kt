@@ -316,17 +316,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.setText(getString(R.string.please_wait))
             customProgressDialog.show()
             try {
-                val messages = withContext(Dispatchers.IO) {
-                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                    val list = mutableListOf<ChatMessage>()
-                    val limit = 20
-                    val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
-                    for (conversation in limitedConversations) {
-                        conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
-                        conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-                    }
-                    list
-                }
+                val messages = sharedViewModel.parseNewsConversations(newsConversations)
                 mAdapter.submitList(messages) {
                     binding.recyclerGchat.post {
                         binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
