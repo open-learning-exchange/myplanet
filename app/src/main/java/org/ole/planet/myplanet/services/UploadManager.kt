@@ -204,32 +204,32 @@ class UploadManager @Inject constructor(
 
             when (result) {
                 is org.ole.planet.myplanet.services.upload.UploadResult.Success -> {
-                    val libraryIds = result.items.map { it.localId }
-                    if (libraryIds.isNotEmpty()) {
-                        val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-                        val libMap = libraries.associateBy { it.id }
+                    listener?.let { l ->
+                        val libraryIds = result.items.map { it.localId }
+                        if (libraryIds.isNotEmpty()) {
+                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
+                            val libMap = libraries.associateBy { it.id }
 
-                        result.items.forEach { item ->
-                            libMap[item.localId]?.let { library ->
-                                uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, listener ?: object : OnSuccessListener {
-                                    override fun onSuccess(success: String?) {}
-                                })
+                            result.items.forEach { item ->
+                                libMap[item.localId]?.let { library ->
+                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                }
                             }
                         }
                     }
                     notifyListener(listener, "Uploaded ${result.items.size} resources successfully")
                 }
                 is org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess -> {
-                    val libraryIds = result.succeeded.map { it.localId }
-                    if (libraryIds.isNotEmpty()) {
-                        val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-                        val libMap = libraries.associateBy { it.id }
+                    listener?.let { l ->
+                        val libraryIds = result.succeeded.map { it.localId }
+                        if (libraryIds.isNotEmpty()) {
+                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
+                            val libMap = libraries.associateBy { it.id }
 
-                        result.succeeded.forEach { item ->
-                            libMap[item.localId]?.let { library ->
-                                uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, listener ?: object : OnSuccessListener {
-                                    override fun onSuccess(success: String?) {}
-                                })
+                            result.succeeded.forEach { item ->
+                                libMap[item.localId]?.let { library ->
+                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                }
                             }
                         }
                     }
