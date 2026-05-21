@@ -46,7 +46,8 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
@@ -215,8 +216,9 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val filename = pendingCvFilename ?: achievement?.resumeFileName ?: return@setOnClickListener
             val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$filename")
             if (cvFile.exists()) {
-                val intent = android.content.Intent(requireContext(), PDFReaderActivity::class.java)
+                val intent = android.content.Intent(requireContext(), ResourceViewerActivity::class.java)
                 intent.putExtra("TOUCHED_FILE", "cv/$filename")
+                intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
                 startActivity(intent)
             } else {
                 Utilities.toast(activity, getString(R.string.file_not_found, filename))

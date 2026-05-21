@@ -39,13 +39,8 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
 
-private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
-    chunked(BATCH_SIZE).forEach { chunk ->
-        chunk.forEach { item ->
-            action(item)
-        }
-    }
-
+private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
+    chunked(BATCH_SIZE).forEach(action)
 }
 
 @Singleton
@@ -318,7 +313,7 @@ class UploadManager @Inject constructor(
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
-            teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
+            teamsToUpload.processInBatches { batch ->
                 batch.forEach { teamData ->
                     try {
                         if (teamData.isDeletePending) {
@@ -391,7 +386,7 @@ class UploadManager @Inject constructor(
         val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
-            newsItems.chunked(BATCH_SIZE).forEach { batch ->
+            newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
                 batch.forEach { news ->
                     try {
