@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.SyncApiInterface
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
+    @SyncApiInterface private val syncApiInterface: ApiInterface,
     private val databaseService: DatabaseService,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
@@ -158,7 +160,7 @@ class TransactionSyncManager @Inject constructor(
             // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
                 "ratings" -> 20      // Small batches for slow endpoint
-                "submissions" -> 100  // Medium batches for slow endpoint
+                "submissions" -> 500
                 else -> 1000          // Large batches for fast endpoints
             }
             var skip = 0
@@ -169,20 +171,30 @@ class TransactionSyncManager @Inject constructor(
             while (true) {
                 batchNumber++
                 val batchStartTime = System.currentTimeMillis()
-                // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
-                val response = apiInterface.findDocs(
-                    UrlUtils.header,
-                    "application/json",
-                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
-                    JsonObject() // Empty body for GET-style query
-                )
+                val response = try {
+                    syncApiInterface.findDocs(
+                        UrlUtils.header,
+                        "application/json",
+                        UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
+                        JsonObject()
+                    )
+                } catch (e: com.google.gson.JsonParseException) {
+                    // Server returned truncated JSON — stop paginating but keep what we have
+                    android.util.Log.w("SyncPerf", "  ⚠ Truncated response for $table batch $batchNumber (${e.message}), stopping pagination")
+                    break
+                }
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     android.util.Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
                 }
-                val arr = getJsonArray("rows", response.body())
+                val arr = try {
+                    getJsonArray("rows", response.body())
+                } catch (e: com.google.gson.JsonParseException) {
+                    android.util.Log.w("SyncPerf", "  ⚠ Truncated body for $table batch $batchNumber (${e.message}), stopping pagination")
+                    break
+                }
                 if (arr.size() == 0) {
                     break // No more documents
                 }

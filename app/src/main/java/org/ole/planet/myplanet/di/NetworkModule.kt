@@ -39,6 +39,18 @@ annotation class StandardHttpClient
 @Retention(AnnotationRetention.BINARY)
 annotation class StandardRetrofit
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SyncHttpClient
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SyncRetrofit
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class SyncApiInterface
+
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
@@ -100,5 +112,35 @@ object NetworkModule {
     ): ApiClient {
         ApiClient.client = retrofit
         return ApiClient
+    }
+
+    @Provides
+    @Singleton
+    @SyncHttpClient
+    fun provideSyncOkHttpClient(): OkHttpClient {
+        // 120s read timeout: CouchDB streams large _all_docs responses in chunks;
+        // a slow/loaded server can have >10s gaps between TCP packets mid-stream.
+        return buildOkHttpClient(30, 120, 30)
+    }
+
+    @Provides
+    @Singleton
+    @SyncRetrofit
+    fun provideSyncRetrofit(
+        @SyncHttpClient okHttpClient: OkHttpClient,
+        gson: Gson
+    ): Retrofit {
+        return Retrofit.Builder()
+            .baseUrl("https://vi.media.mit.edu/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    @SyncApiInterface
+    fun provideSyncApiInterface(@SyncRetrofit retrofit: Retrofit): ApiInterface {
+        return retrofit.create(ApiInterface::class.java)
     }
 }
