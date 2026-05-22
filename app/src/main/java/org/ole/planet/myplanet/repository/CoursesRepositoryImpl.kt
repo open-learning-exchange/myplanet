@@ -604,6 +604,17 @@ class CoursesRepositoryImpl @Inject constructor(
         leaveCourse(courseId, userId)
     }
 
+    override suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String): Result<Unit> {
+        return try {
+            courseIds.forEach { courseId ->
+                leaveCourse(courseId, userId)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
         activitiesRepository.logCourseVisit(courseId, title, userId)
     }

@@ -193,12 +193,42 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open suspend fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEachIndexed { _, item ->
-            val `object` = item as RealmObject
-            deleteCourseProgress(deleteProgress, `object`)
-            removeFromShelf(`object`)
+        val itemsToDelete = selectedItems?.toList() ?: return
+        if (itemsToDelete.isEmpty()) return
+
+        val resourceIds = mutableListOf<String>()
+        val courseIds = mutableListOf<String>()
+
+        itemsToDelete.forEach { item ->
+            val realmObject = item as RealmObject
+            deleteCourseProgress(deleteProgress, realmObject)
+            when (realmObject) {
+                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
+                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+            }
         }
-        selectedItems?.clear()
+
+        val userId = profileDbHandler.getUserModel()?.id ?: return
+        var anyRemoved = false
+
+        if (resourceIds.isNotEmpty()) {
+            resourcesRepository.removeResourcesFromShelf(resourceIds, userId).onSuccess {
+                anyRemoved = true
+            }
+        }
+
+        if (courseIds.isNotEmpty()) {
+            coursesRepository.removeCoursesFromShelf(courseIds, userId).onSuccess {
+                anyRemoved = true
+            }
+        }
+
+        if (anyRemoved) {
+            if (resourceIds.isNotEmpty()) toast(activity, getString(R.string.removed_from_mylibrary))
+            if (courseIds.isNotEmpty()) toast(activity, getString(R.string.removed_from_mycourse))
+            selectedItems?.clear()
+            postAddRefresh()
+        }
     }
 
     fun countSelected(): Int {

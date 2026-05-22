@@ -152,6 +152,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         selectionController.clearAll(adapterCourses)
                         checkList()
                         showNoData(tvMessage, state.courses.size, "courses")
+                        setupButtonVisibility()
                     }
                 }
             }
@@ -220,7 +221,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             isMyCourseLib = isMyCourseLib,
             isGuest = userModel?.isGuest() ?: true,
             onRemoveConfirmed = {
-                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                val courseIds = selectedItems?.toList()?.mapNotNull { it?.courseId } ?: emptyList()
                 viewLifecycleOwner.lifecycleScope.launch {
                     deleteSelected(true)
                     selectionController.clearAll(adapterCourses)
@@ -228,7 +229,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
             },
             onArchiveConfirmed = {
-                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                val courseIds = selectedItems?.toList()?.mapNotNull { it?.courseId } ?: emptyList()
                 viewLifecycleOwner.lifecycleScope.launch {
                     deleteSelected(true)
                     selectionController.clearAll(adapterCourses)
@@ -252,11 +253,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     private fun setupButtonVisibility() {
+        val isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty()
         if (::selectionController.isInitialized) {
             selectionController.onListChanged(
-                isEmpty = !::adapterCourses.isInitialized || adapterCourses.currentList.isEmpty(),
+                isEmpty = isEmpty,
                 hasSelectableItems = isMyCourseLib || (::adapterCourses.isInitialized && adapterCourses.currentList.any { !it.isMyCourse })
             )
+        }
+        view?.findViewById<View>(R.id.filter)?.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        if (isMyCourseLib) {
+            view?.findViewById<View>(R.id.fabMyProgress)?.visibility = if (isEmpty) View.GONE else View.VISIBLE
         }
     }
 
@@ -317,6 +323,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         filterController.setListVisible(!isEmpty)
         val hasSelectableItems = isMyCourseLib || adapterCourses.currentList.any { !it.isMyCourse }
         selectionController.onListChanged(isEmpty, hasSelectableItems)
+        
+        view?.findViewById<View>(R.id.filter)?.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        if (isMyCourseLib) {
+            view?.findViewById<View>(R.id.fabMyProgress)?.visibility = if (isEmpty) View.GONE else View.VISIBLE
+        }
     }
 
     override fun onAttach(context: Context) {

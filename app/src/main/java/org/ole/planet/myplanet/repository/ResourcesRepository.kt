@@ -82,6 +82,7 @@ interface ResourcesRepository {
     suspend fun removeDeletedResources(currentIds: List<String?>)
     suspend fun getMyLibIds(userId: String): JsonArray
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
+    suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
     suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>

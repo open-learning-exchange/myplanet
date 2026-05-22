@@ -58,6 +58,7 @@ interface CoursesRepository {
     suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData
     suspend fun getMyCourseIds(userId: String): JsonArray
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
+    suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String): Result<Unit>
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, com.google.gson.JsonObject>

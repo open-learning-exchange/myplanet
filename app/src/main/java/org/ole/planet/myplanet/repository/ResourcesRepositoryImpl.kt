@@ -526,6 +526,17 @@ class ResourcesRepositoryImpl @Inject constructor(
         updateUserLibrary(resourceId, userId, false)
     }
 
+    override suspend fun removeResourcesFromShelf(resourceIds: List<String>, userId: String): Result<Unit> {
+        return try {
+            resourceIds.forEach { resourceId ->
+                updateUserLibrary(resourceId, userId, false)
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     override suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse {
         val resource = getLibraryItemByResourceId(resourceId) ?: return ResourceUrlsResponse.ResourceNotFound
         if (resource.attachments.isNullOrEmpty()) return ResourceUrlsResponse.NoAttachments

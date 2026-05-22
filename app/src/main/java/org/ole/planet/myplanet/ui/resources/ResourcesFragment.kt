@@ -705,21 +705,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override suspend fun deleteSelected(deleteProgress: Boolean) {
-        val userId = userModel?.id
-        val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val userId = userModel?.id ?: return
+        val itemsToDelete = selectedItems?.toList()?.mapNotNull { it?.resourceId } ?: emptyList()
 
-        if (userId != null && itemsToDelete.isNotEmpty()) {
+        if (itemsToDelete.isNotEmpty()) {
             lifecycleScope.launch(dispatcherProvider.io) {
-                itemsToDelete.forEach { resourceId ->
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                }
-                withContext(dispatcherProvider.main) {
-                    _binding ?: return@withContext
-                    Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
-                    refreshResourcesData()
-                    selectedItems?.clear()
-                    changeButtonStatus()
-                    hideButton()
+                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId).onSuccess {
+                    withContext(dispatcherProvider.main) {
+                        _binding ?: return@withContext
+                        Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                        selectedItems?.clear()
+                        refreshResourcesData()
+                        changeButtonStatus()
+                        hideButton()
+                    }
                 }
             }
         }
@@ -727,7 +726,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun addToMyList() {
         val userId = userModel?.id
-        val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
+        val itemsToAdd = selectedItems?.toList()?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch {
