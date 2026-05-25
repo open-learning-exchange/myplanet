@@ -256,14 +256,12 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
-            adapterNews?.let {
-                showNoData(binding.tvNodata, it.itemCount, "discussions")
-            }
+            showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 realmNewsList?.let {
                     adapter.submitList(it.filterNotNull())
-                    showNoData(binding.tvNodata, adapter.itemCount, "discussions")
+                    showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")
                 }
             }
         }
