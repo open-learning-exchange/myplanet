@@ -113,8 +113,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     @Inject
     lateinit var progressRepository: org.ole.planet.myplanet.repository.ProgressRepository
     @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, prefData, dashboardViewModel)
