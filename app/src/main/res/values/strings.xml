@@ -357,6 +357,8 @@
         <item>Order By Date - Desc</item>
         <item>Order By Date - Asc</item>
         <item>Order By Title</item>
+        <item>Order By Completeness - Incomplete First</item>
+        <item>Order By Completeness - Complete First</item>
     </string-array>
 
     <string-array name="sort_member">
