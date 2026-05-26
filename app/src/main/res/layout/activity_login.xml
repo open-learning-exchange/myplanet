@@ -48,8 +48,8 @@
                     android:paddingTop="5dp"
                     android:paddingEnd="10dp"
                     android:paddingBottom="5dp"
-                    app:layout_constraintEnd_toStartOf="@+id/imgBtnSetting"
-                    app:layout_constraintStart_toEndOf="@+id/syncIcon"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent">
 
                     <LinearLayout
@@ -201,37 +201,25 @@
                         android:textAllCaps="false"
                         android:textColor="@android:color/white"
                         android:textSize="14sp" />
-                    <LinearLayout
+                    <Button
+                        android:id="@+id/btn_guest_login"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <Button
-                            android:id="@+id/btn_guest_login"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:contentDescription="@string/btn_guest_login"
-                            android:text="@string/btn_guest_login"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="12sp"
-                            android:theme="@style/PrimaryFlatButton" />
-                        <View
-                            android:layout_width="1dp"
-                            android:layout_height="12dp"
-                            android:alpha="0.3"
-                            android:background="@color/daynight_textColor" />
-                        <Button
-                            android:id="@+id/become_member"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:contentDescription="@string/become_a_member"
-                            android:text="@string/become_a_member"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="12sp"
-                            android:theme="@style/PrimaryFlatButton" />
-                    </LinearLayout>
+                        android:contentDescription="@string/btn_guest_login"
+                        android:text="@string/btn_guest_login"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="12sp"
+                        android:theme="@style/PrimaryFlatButton" />
+                    <Button
+                        android:id="@+id/become_member"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:contentDescription="@string/become_a_member"
+                        android:text="@string/become_a_member"
+                        android:textColor="@color/daynight_textColor"
+                        android:textSize="12sp"
+                        android:theme="@style/PrimaryFlatButton" />
 
                     <Button
                         android:id="@+id/btn_feedback"
@@ -331,9 +319,11 @@
                         app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
                     <TextView
                         android:id="@+id/customDeviceName"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
                         android:layout_marginTop="8dp"
+                        android:layout_marginEnd="12dp"
                         android:textColor="@android:color/white"
                         android:textSize="12sp"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -341,8 +331,10 @@
                         app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
                     <TextView
                         android:id="@+id/tv_available_space"
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_marginEnd="12dp"
                         android:textColor="@color/md_white_1000"
                         android:textSize="12sp"
                         app:drawableStartCompat="@drawable/baseline_storage_24"
