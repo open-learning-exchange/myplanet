@@ -22,6 +22,13 @@ class EventsRepositoryImplTest {
     private lateinit var repository: EventsRepositoryImpl
     private lateinit var mockRealm: Realm
 
+    // A silent exception to avoid cluttering test logs with stack traces
+    class SilentException(message: String) : Exception(message) {
+        override fun printStackTrace() {
+            // Do nothing
+        }
+    }
+
     @Before
     fun setup() {
         mockRealm = mockk(relaxed = true)
@@ -158,7 +165,7 @@ class EventsRepositoryImplTest {
         mockkObject(RealmMeetup.Companion)
         val docs = listOf(JsonObject(), JsonObject())
 
-        every { RealmMeetup.insert(any(), any()) } throws Exception("Test Exception")
+        every { RealmMeetup.insert(any(), any()) } throws SilentException("Test Exception")
 
         val count = repository.batchInsertMeetups(docs)
         assertEquals(0, count)
@@ -180,7 +187,7 @@ class EventsRepositoryImplTest {
     @Test
     fun createMeetupException() = runTest {
         val meetup = RealmMeetup()
-        every { mockRealm.copyToRealmOrUpdate(meetup) } throws Exception("Test Exception")
+        every { mockRealm.copyToRealmOrUpdate(meetup) } throws SilentException("Test Exception")
 
         val result = repository.createMeetup(meetup)
         assertFalse(result)
