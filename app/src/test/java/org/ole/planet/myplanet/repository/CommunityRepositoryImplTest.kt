@@ -12,6 +12,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -49,6 +50,11 @@ class CommunityRepositoryImplTest {
         }
 
         repository = CommunityRepositoryImpl(databaseService, testDispatcher, apiInterface)
+    }
+
+    @After
+    fun tearDown() {
+        unmockkAll()
     }
 
     @Test
@@ -121,7 +127,7 @@ class CommunityRepositoryImplTest {
 
     @Test
     fun `syncCommunityDocs returns false on exception`() = runTest {
-        coEvery { apiInterface.getJsonObject(any(), any()) } answers { throw RuntimeException("Network Error") }
+        coEvery { apiInterface.getJsonObject(any(), any()) } throws RuntimeException("Network Error")
 
         val result = repository.syncCommunityDocs()
 
