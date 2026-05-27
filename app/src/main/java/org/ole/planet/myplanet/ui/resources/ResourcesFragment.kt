@@ -24,6 +24,7 @@ import fisk.chipcloud.ChipDeletedListener
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -179,7 +180,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             val userId = userModel?.id
             if (userId != null) {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userId).collect { openedResourceIds ->
+                    resourcesRepository.observeOpenedResourceIds(userId).collectLatest { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
