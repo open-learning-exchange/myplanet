@@ -205,6 +205,7 @@ object CameraUtils {
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
                         Log.e("CameraUtils", "Camera configuration failed")
+                        closeCamera()
                     }
                 }
 
@@ -227,6 +228,7 @@ object CameraUtils {
 
                     override fun onConfigureFailed(session: CameraCaptureSession) {
                         Log.e("CameraUtils", "Camera configuration failed")
+                        closeCamera()
                     }
                 },
                     backgroundHandler
