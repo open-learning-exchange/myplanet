@@ -780,8 +780,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    override fun onCheckingVersion() {}
-
     fun registerReceiver() {
         collectWhenStarted(broadcastService.events) { intent ->
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
