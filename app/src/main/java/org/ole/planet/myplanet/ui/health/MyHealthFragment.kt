@@ -16,6 +16,7 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -294,7 +295,9 @@ class MyHealthFragment : Fragment() {
 
     private fun sortList(spnSort: AppCompatSpinner, rv: RecyclerView) {
         spnSort.onItemSelectedListener = object : OnItemSelectedListener {
-            override fun onNothingSelected(p0: AdapterView<*>?) {}
+            override fun onNothingSelected(p0: AdapterView<*>?) {
+                // No action needed
+            }
 
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -315,39 +318,34 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun afterTextChanged(editable: Editable) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    val loadingJob = launch(dispatcherProvider.main) {
-                        delay(100)
-                        alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
-                        rv.visibility = View.GONE
-                    }
+        textWatcher = etSearch.doAfterTextChanged { editable ->
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                delay(300)
+                val loadingJob = launch(dispatcherProvider.main) {
+                    delay(100)
+                    alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
+                    rv.visibility = View.GONE
+                }
 
-                    val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
+                val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
 
-                    loadingJob.cancel()
-                    if (isAdded) {
-                        alertHealthListBinding?.searchProgress?.visibility = View.GONE
-                        rv.visibility = View.VISIBLE
-                        val searchAdapter = HealthUsersAdapter { selected ->
-                            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                            getHealthRecords(userId)
-                            dialog?.dismiss()
-                        }
-                        searchAdapter.submitList(userModelList)
-                        rv.adapter = searchAdapter
-                        btnAddMember.visibility =
-                            if (userModelList.isEmpty()) View.VISIBLE else View.GONE
+                loadingJob.cancel()
+                if (isAdded) {
+                    alertHealthListBinding?.searchProgress?.visibility = View.GONE
+                    rv.visibility = View.VISIBLE
+                    val searchAdapter = HealthUsersAdapter { selected ->
+                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                        getHealthRecords(userId)
+                        dialog?.dismiss()
                     }
+                    searchAdapter.submitList(userModelList)
+                    rv.adapter = searchAdapter
+                    btnAddMember.visibility =
+                        if (userModelList.isEmpty()) View.VISIBLE else View.GONE
                 }
             }
         }
-        etSearch.addTextChangedListener(textWatcher)
     }
 
     override fun onResume() {
