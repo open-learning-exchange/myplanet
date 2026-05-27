@@ -4,7 +4,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.Realm
@@ -30,14 +29,12 @@ class ChatRepositoryTest {
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = spyk(
-            ChatRepositoryImpl(
-                databaseService,
-                UnconfinedTestDispatcher(),
-                chatApiService,
-                serverUrlMapper,
-                sharedPrefManager
-            ), recordPrivateCalls = true
+        chatRepository = ChatRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            chatApiService,
+            serverUrlMapper,
+            sharedPrefManager
         )
     }
 
@@ -47,29 +44,26 @@ class ChatRepositoryTest {
     }
 
     @Test
-    fun insertChatHistoryBatch_callsBulkInsertFromSync() {
+    fun insertChatHistoryBatch_filtersDesignDocsAndHandlesExistingRecords() {
         val jsonArray = JsonArray()
 
-        every { chatRepository.bulkInsertFromSync(mockRealm, jsonArray) } answers { }
+        // 1. Valid document (NEW record - should not call delete)
+        val newDoc = JsonObject()
+        newDoc.addProperty("_id", "123")
+        newDoc.addProperty("_rev", "1-rev")
+        val newObjWrapper = JsonObject()
+        newObjWrapper.add("doc", newDoc)
+        jsonArray.add(newObjWrapper)
 
-        chatRepository.insertChatHistoryBatch(mockRealm, jsonArray)
+        // 2. Valid document (EXISTING record - should call delete)
+        val existingDoc = JsonObject()
+        existingDoc.addProperty("_id", "456")
+        existingDoc.addProperty("_rev", "2-rev")
+        val existingObjWrapper = JsonObject()
+        existingObjWrapper.add("doc", existingDoc)
+        jsonArray.add(existingObjWrapper)
 
-        verify(exactly = 1) { chatRepository.bulkInsertFromSync(mockRealm, jsonArray) }
-    }
-
-    @Test
-    fun bulkInsertFromSync_filtersDesignDocsAndCallsInsertChatHistory() {
-        val jsonArray = JsonArray()
-
-        // Valid document
-        val validDoc = JsonObject()
-        validDoc.addProperty("_id", "123")
-        validDoc.addProperty("_rev", "1-rev")
-        val validObjWrapper = JsonObject()
-        validObjWrapper.add("doc", validDoc)
-        jsonArray.add(validObjWrapper)
-
-        // Design document
+        // 3. Design document (should be ignored)
         val designDoc = JsonObject()
         designDoc.addProperty("_id", "_design/foo")
         val designObjWrapper = JsonObject()
@@ -77,19 +71,35 @@ class ChatRepositoryTest {
         jsonArray.add(designObjWrapper)
 
         val mockQuery: RealmQuery<RealmChatHistory> = mockk(relaxed = true)
+        val mockExistingRecord: RealmChatHistory = mockk(relaxed = true)
+
         every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+
+        // Mocking finding the records
         every { mockQuery.equalTo("_id", "123") } returns mockQuery
-        every { mockQuery.findFirst() } returns null
+        every { mockQuery.equalTo("_id", "456") } returns mockQuery
+
+        // For "123" return null (new record)
+        // For "456" return existing record (triggers deleteFromRealm)
+        every { mockQuery.findFirst() } returnsMany listOf(null, mockExistingRecord)
+
+        // Mock creation
         every { mockRealm.createObject(RealmChatHistory::class.java, "123") } returns RealmChatHistory().apply { _id = "123" }
+        every { mockRealm.createObject(RealmChatHistory::class.java, "456") } returns RealmChatHistory().apply { _id = "456" }
 
-        chatRepository.bulkInsertFromSync(mockRealm, jsonArray)
+        chatRepository.insertChatHistoryBatch(mockRealm, jsonArray)
 
-        // Verification for valid document
-        verify(exactly = 1) { mockRealm.where(RealmChatHistory::class.java) }
+        // Verification for NEW document ("123")
         verify(exactly = 1) { mockQuery.equalTo("_id", "123") }
         verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "123") }
+        // The existing record mock should NOT be deleted in the context of "123"
 
-        // Verification for design document (should not happen)
+        // Verification for EXISTING document ("456")
+        verify(exactly = 1) { mockQuery.equalTo("_id", "456") }
+        verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "456") }
+        verify(exactly = 1) { mockExistingRecord.deleteFromRealm() }
+
+        // Verification for DESIGN document (should be ignored entirely)
         verify(exactly = 0) { mockQuery.equalTo("_id", "_design/foo") }
         verify(exactly = 0) { mockRealm.createObject(RealmChatHistory::class.java, "_design/foo") }
     }
