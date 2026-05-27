@@ -21,6 +21,14 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.data.findCopyByField
+import org.json.JSONObject
+import io.mockk.mockkConstructor
+import io.mockk.mockkStatic
+
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
 
@@ -172,4 +180,138 @@ class NotificationsRepositoryImplTest {
         // isRead should be preserved (true) even though status is "unread", because needsSync is true
         assertTrue(notification.isRead)
     }
+
+    @Test
+    fun `getSurveyId returns id when relatedId is not null and survey exists`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val stepExam = RealmStepExam().apply { id = "survey123" }
+
+        val operationSlot = slot<(Realm) -> RealmStepExam?>()
+        coEvery { databaseService.withRealmAsync<RealmStepExam?>(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(realm)
+        }
+
+        mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
+        every { realm.findCopyByField(RealmStepExam::class.java, "name", "surveyName") } returns stepExam
+
+        val result = repository.getSurveyId("surveyName")
+        assertEquals("survey123", result)
+    }
+
+    @Test
+    fun `getSurveyId returns null when relatedId is null`() = runTest {
+        val result = repository.getSurveyId(null)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `getTaskDetails returns TaskNotificationResult when task and team exist`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val teamTask = RealmTeamTask().apply { link = "{\"teams\":\"team123\"}" }
+        val team = RealmMyTeam().apply { name = "Team Alpha"; type = "open" }
+
+        coEvery { databaseService.withRealmAsync<Any?>(any()) } answers {
+            val operation = firstArg<(Realm) -> Any?>()
+            operation.invoke(realm)
+        }
+
+        mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
+        every { realm.findCopyByField(RealmTeamTask::class.java, "id", "task123") } returns teamTask
+        every { realm.findCopyByField(RealmMyTeam::class.java, "_id", "team123") } returns team
+
+        mockkConstructor(JSONObject::class)
+        every { anyConstructed<JSONObject>().optString("teams") } returns "team123"
+
+        val result = repository.getTaskDetails("task123")
+
+        assertNotNull(result)
+        assertEquals("team123", result?.teamId)
+        assertEquals("Team Alpha", result?.teamName)
+        assertEquals("open", result?.teamType)
+    }
+
+    @Test
+    fun `getTaskDetails returns null when relatedId is null`() = runTest {
+        val result = repository.getTaskDetails(null)
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `getTaskDetails returns null when task has empty teams link`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val teamTask = RealmTeamTask().apply { link = "{}" }
+
+        coEvery { databaseService.withRealmAsync<Any?>(any()) } answers {
+            val operation = firstArg<(Realm) -> Any?>()
+            operation.invoke(realm)
+        }
+
+        mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
+        every { realm.findCopyByField(RealmTeamTask::class.java, "id", "task123") } returns teamTask
+
+        mockkConstructor(JSONObject::class)
+        every { anyConstructed<JSONObject>().optString("teams") } returns ""
+
+        val result = repository.getTaskDetails("task123")
+
+        assertEquals(null, result)
+    }
+
+
+    @Test
+    fun `getUnreadCount returns correct count when userId is not null and not admin`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmNotification>>()
+
+        coEvery { databaseService.withRealmAsync<Long>(any()) } answers {
+            val operation = firstArg<(Realm) -> Long>()
+            operation.invoke(realm)
+        }
+
+        every { realm.where(RealmNotification::class.java) } returns query
+        every { query.beginGroup() } returns query
+        every { query.equalTo("userId", "user123") } returns query
+        every { query.endGroup() } returns query
+        every { query.equalTo("isRead", false) } returns query
+        every { query.count() } returns 5L
+
+        val result = repository.getUnreadCount("user123", isAdmin = false)
+
+        assertEquals(5, result)
+        verify(exactly = 0) { query.or() }
+        verify(exactly = 0) { query.equalTo("userId", "SYSTEM") }
+    }
+
+    @Test
+    fun `getUnreadCount returns correct count when userId is not null and is admin`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmNotification>>()
+
+        coEvery { databaseService.withRealmAsync<Long>(any()) } answers {
+            val operation = firstArg<(Realm) -> Long>()
+            operation.invoke(realm)
+        }
+
+        every { realm.where(RealmNotification::class.java) } returns query
+        every { query.beginGroup() } returns query
+        every { query.equalTo("userId", "user123") } returns query
+        every { query.or() } returns query
+        every { query.equalTo("userId", "SYSTEM") } returns query
+        every { query.endGroup() } returns query
+        every { query.equalTo("isRead", false) } returns query
+        every { query.count() } returns 8L
+
+        val result = repository.getUnreadCount("user123", isAdmin = true)
+
+        assertEquals(8, result)
+        verify { query.or() }
+        verify { query.equalTo("userId", "SYSTEM") }
+    }
+
+    @Test
+    fun `getUnreadCount returns 0 when userId is null`() = runTest {
+        val result = repository.getUnreadCount(null, isAdmin = false)
+        assertEquals(0, result)
+    }
+
 }
