@@ -71,9 +71,13 @@ class AutoSyncWorker @AssistedInject constructor(
         return@coroutineScope Result.success()
     }
 
-    override fun onSyncStarted() {}
+    override fun onSyncStarted() {
+        // Intentional empty block
+    }
 
-    override fun onSyncComplete() {}
+    override fun onSyncComplete() {
+        // Intentional empty block
+    }
 
     override fun onSyncFailed(msg: String?) {
         syncContinuation?.takeIf { it.isActive }?.resume(Unit)
@@ -95,7 +99,9 @@ class AutoSyncWorker @AssistedInject constructor(
         syncContinuation = null
     }
 
-    override fun onCheckingVersion() {}
+    override fun onCheckingVersion() {
+        // Intentional empty block
+    }
 
     override fun onError(msg: String, blockSync: Boolean) {
         if (blockSync) {
