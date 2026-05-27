@@ -57,16 +57,18 @@ class RatingsRepositoryImplTest {
             }
         }
 
+
+
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val transaction = firstArg<(Realm) -> Unit>()
             transaction(mockRealm)
         }
 
-        repository = io.mockk.spyk(RatingsRepositoryImpl(
+        repository = RatingsRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
             gson
-        ), recordPrivateCalls = true)
+        )
     }
 
     private fun <T : io.realm.RealmObject> mockQueryResults(
@@ -86,24 +88,12 @@ class RatingsRepositoryImplTest {
 
         every { mockRealm.copyFromRealm(mockResults) } returns results
 
-        // Mock queryList extension
-        coEvery { mockRealm.queryList<T>(clazz, any()) } returns results
+        // We don't mock queryList extension. It will run normally and call where().apply(builder).findAll()
 
-        // Mock findCopyByField for single objects
-        every { mockRealm.findCopyByField<T, String>(clazz, any(), any()) } answers {
-            val fieldName = secondArg<String>()
-            val value = thirdArg<String>()
-            // Find in results
-            results.find {
-                when(it) {
-                    is RealmUser -> (if(fieldName == "id") it.id else it._id) == value
-                    is RealmRating -> it.id == value
-                    else -> false
-                }
-            }
-        }
+        // Let findCopyByField run normally
 
         every { mockQuery.findFirst() } answers { results.firstOrNull() }
+        every { mockRealm.copyFromRealm(any<io.realm.RealmObject>()) } answers { firstArg() }
 
         return mockQuery
     }
@@ -115,9 +105,11 @@ class RatingsRepositoryImplTest {
             RealmRating().apply { item = "item1"; rate = 5; userId = "user2" },
             RealmRating().apply { item = "item2"; rate = 3; userId = "user1" }
         )
-        mockQueryResults(RealmRating::class.java, ratings)
+        val mockQuery = mockQueryResults(RealmRating::class.java, ratings)
 
         val result = repository.getRatings("course", "user1")
+
+        verify { mockQuery.equalTo("type", "course") }
 
         assertEquals(2, result.size)
         val item1Aggregation = result["item1"]
@@ -227,8 +219,6 @@ class RatingsRepositoryImplTest {
     @Test
     fun `submitRating creates new rating when none exists`() = runTest {
         val user = RealmUser().apply { id = "user1"; parentCode = "p1"; planetCode = "pl1" }
-        coEvery { repository["findByField"](RealmUser::class.java, "id", "user1") } returns user
-        coEvery { repository["findByField"](RealmUser::class.java, "_id", "user1") } returns null
         // mockQueryResults for findByField (user) and queryList (empty ratings)
         val mockQuery = mockQueryResults(RealmUser::class.java, listOf(user))
 
@@ -266,8 +256,6 @@ class RatingsRepositoryImplTest {
     @Test
     fun `submitRating updates existing rating when it exists`() = runTest {
         val user = RealmUser().apply { id = "user1"; parentCode = "p1"; planetCode = "pl1" }
-        coEvery { repository["findByField"](RealmUser::class.java, "id", "user1") } returns user
-        coEvery { repository["findByField"](RealmUser::class.java, "_id", "user1") } returns null
         val existingRating = RealmRating().apply { id = "rating1"; rate = 2; comment = "Bad" }
 
         // mockQueryResults for findByField (user)
@@ -334,6 +322,26 @@ class RatingsRepositoryImplTest {
         verify(exactly = 0) { RealmRating.insert(mockRealm, designDoc) }
 
         io.mockk.unmockkObject(RealmRating.Companion)
+    }
+
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `submitRating throws exception on blank userId`() = runTest {
+        repository.submitRating("course", "item1", "Title", "", 4f, "")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `submitRating throws exception when user not found`() = runTest {
+
+        repository.submitRating("course", "item1", "Title", "unknown", 4f, "")
+    }
+
+
+    @Test
+    fun `roundToSupportedRating handles boundaries correctly`() {
+        assertEquals(1, RatingsRepositoryImpl.roundToSupportedRating(0.4f))
+        assertEquals(1, RatingsRepositoryImpl.roundToSupportedRating(1.4f))
+        assertEquals(5, RatingsRepositoryImpl.roundToSupportedRating(5.5f))
     }
 
     @After
