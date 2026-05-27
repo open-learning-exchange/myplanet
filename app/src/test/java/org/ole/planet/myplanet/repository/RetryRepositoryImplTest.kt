@@ -350,18 +350,12 @@ class RetryRepositoryImplTest {
         every { realm.where(RealmRetryOperation::class.java) } returns query
         every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
         every { query.findAll() } returns results
-        every { results.iterator() } answers { mutableListOf(operation1).iterator() }
-        every { results.size } returns 1
-        every { results[0] } returns operation1
-        every { results.get(0) } returns operation1
-
-
+        every { results.iterator() } answers { mutableListOf(operation1, operation2).iterator() }
 
         repository.resetAllPending()
 
-        verify { query.findAll() }
-        // Note: We cannot easily verify the inline forEach mutation on the mocked list,
-        // but we verify the query was executed.
+        assert(operation1.nextRetryTime > 0)
+        assert(operation2.nextRetryTime > 0)
     }
 
     @Test
@@ -403,11 +397,6 @@ class RetryRepositoryImplTest {
         every { query.equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS) } returns query
         every { query.findAll() } returns results
         every { results.iterator() } answers { mutableListOf(operation1).iterator() }
-        every { results.size } returns 1
-        every { results[0] } returns operation1
-        every { results.get(0) } returns operation1
-
-
 
         repository.recoverStuckOperations()
 
