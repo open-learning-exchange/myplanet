@@ -84,7 +84,7 @@ class ResourcesRepositoryImplTest {
         val resultList = results.firstOrNull() ?: emptyList()
 
         // Mock RealmResults iteration
-        every { mockResults.iterator() } returns resultList.toMutableList().iterator()
+        every { mockResults.iterator() } answers { resultList.toMutableList().iterator() }
         every { mockResults.size } returns resultList.size
         every { mockResults.isEmpty() } returns resultList.isEmpty()
         every { mockResults[any()] } answers { resultList[firstArg()] }
@@ -158,6 +158,8 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(1, result.size)
         assertEquals("Test Library", result[0].title)
+        verify(exactly = 0) { mockQuery.equalTo(any<String>(), any<Boolean>()) }
+        verify(exactly = 0) { mockQuery.equalTo(any<String>(), any<String>()) }
     }
 
     @Test
@@ -193,6 +195,14 @@ class ResourcesRepositoryImplTest {
 
         assertEquals(2, result.size)
         verify { mockQuery.equalTo("isPrivate", false) }
+    }
+
+
+    @Test
+    fun `search with isMyCourseLib true and userId null returns empty list`() = runTest {
+        val result = repository.search("query", true, null)
+        assertTrue(result.isEmpty())
+        // test mockQuery
     }
 
     @Test
