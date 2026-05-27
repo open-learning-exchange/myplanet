@@ -65,7 +65,7 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+class MainApplication : Application(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
@@ -218,8 +218,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private var mainThreadRealm: io.realm.Realm? = null
-    private var activityReferences = 0
-    private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
@@ -356,7 +354,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun setupLifecycleCallbacks() {
-        registerActivityLifecycleCallbacks(this)
+        androidx.lifecycle.ProcessLifecycleOwner.get().lifecycle.addObserver(object : androidx.lifecycle.DefaultLifecycleObserver {
+            override fun onStart(owner: androidx.lifecycle.LifecycleOwner) {
+                onAppForegrounded()
+            }
+        })
         onAppStarted()
     }
 
@@ -443,31 +445,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private fun getCurrentThemeMode(): String {
         return ThemeManager.getCurrentThemeMode(context)
     }
-
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
-
-    override fun onActivityStarted(activity: Activity) {
-        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
-            onAppForegrounded()
-        }
-    }
-
-    override fun onActivityResumed(activity: Activity) {
-        if (isFirstLaunch) {
-            isFirstLaunch = false
-        }
-    }
-
-    override fun onActivityPaused(activity: Activity) {}
-
-    override fun onActivityStopped(activity: Activity) {
-        isActivityChangingConfigurations = activity.isChangingConfigurations
-        --activityReferences
-    }
-
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
-
-    override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
