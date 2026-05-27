@@ -154,6 +154,35 @@ class DownloadRepositoryTest {
     }
 
     @Test
+    fun `downloadFileResponse handles 404 and creates log with original url on no match`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository: DownloadRepository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        // Mock a Response toString that doesn't match the regex
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 404
+        every { mockResponse.toString() } returns "Response{protocol=h2, code=404, message=Not Found}"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals("File not found", (result as DownloadResult.Error).message)
+        assertEquals(404, result.code)
+
+        verify { MainApplication.createLog("File Not Found", url) }
+    }
+
+    @Test
     fun `downloadFileResponse handles 404 and creates log with original url on exception`() = runTest {
         val testDispatcher = UnconfinedTestDispatcher(testScheduler)
         val mockDispatcherProvider = mockk<DispatcherProvider> {
@@ -180,6 +209,33 @@ class DownloadRepositoryTest {
         assertEquals(404, (result as DownloadResult.Error).code)
 
         verify { MainApplication.createLog("File Not Found", url) }
+    }
+
+    @Test
+    fun `downloadFileResponse does not create log for non-404 errors`() = runTest {
+        val testDispatcher = UnconfinedTestDispatcher(testScheduler)
+        val mockDispatcherProvider = mockk<DispatcherProvider> {
+            every { io } returns testDispatcher
+        }
+        val mockApiInterface = mockk<ApiInterface>()
+        val repository: DownloadRepository = DownloadRepositoryImpl(mockApiInterface, mockDispatcherProvider)
+
+        val url = "http://example.com/file"
+        val authHeader = "auth"
+
+        val mockResponse = mockk<Response<okhttp3.ResponseBody>>()
+        every { mockResponse.isSuccessful } returns false
+        every { mockResponse.code() } returns 500
+        every { mockResponse.toString() } returns "Response{protocol=h2, code=500, message=Server Error, url=http://example.com/extracted_file}"
+
+        coEvery { mockApiInterface.downloadFile(authHeader, url) } returns mockResponse
+
+        val result = repository.downloadFileResponse(url, authHeader)
+
+        assertTrue(result is DownloadResult.Error)
+        assertEquals(500, (result as DownloadResult.Error).code)
+
+        verify(exactly = 0) { MainApplication.createLog(any(), any()) }
     }
 
     @Test

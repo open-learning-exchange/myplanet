@@ -42,7 +42,11 @@ class DownloadRepositoryImpl @Inject constructor(
                         val regex = Regex("url=([^}]*)")
                         val matchResult = regex.find(responseString)
                         val extractedUrl = matchResult?.groupValues?.get(1)
-                        createLog("File Not Found", "$extractedUrl")
+                        if (extractedUrl != null) {
+                            createLog("File Not Found", extractedUrl)
+                        } else {
+                            createLog("File Not Found", url)
+                        }
                     } catch (e: Exception) {
                         createLog("File Not Found", url)
                     }
