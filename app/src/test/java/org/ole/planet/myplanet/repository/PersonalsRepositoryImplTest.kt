@@ -26,7 +26,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.utils.NetworkUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
@@ -149,6 +148,30 @@ class PersonalsRepositoryImplTest {
     }
 
     @Test
+    fun `getPersonalResources returns flow of personals for valid userId`() = runTest {
+        val mockQuery = mockk<RealmQuery<RealmMyPersonal>>(relaxed = true)
+        val initialResults = mockk<RealmResults<RealmMyPersonal>>(relaxed = true)
+        val frozenInitial = mockk<RealmResults<RealmMyPersonal>>(relaxed = true)
+        val frozenRealmInitial = mockk<Realm>(relaxed = true)
+        val expectedList = listOf(RealmMyPersonal())
+
+        every { mockRealm.where(RealmMyPersonal::class.java) } returns mockQuery
+        every { mockQuery.equalTo("userId", "user1") } returns mockQuery
+        every { mockQuery.findAll() } returns initialResults
+
+        every { initialResults.isValid } returns true
+        every { initialResults.isLoaded } returns true
+        every { initialResults.freeze() } returns frozenInitial
+        every { frozenInitial.realm } returns frozenRealmInitial
+        every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns expectedList
+
+        val result = repository.getPersonalResources("user1").first()
+        assertEquals(expectedList, result)
+
+        verify { mockQuery.equalTo("userId", "user1") }
+    }
+
+    @Test
     fun `deletePersonalResource deletes both _id and id`() = runTest {
         val mockQuery = mockQueryResults(listOf(RealmMyPersonal()))
         val mockPersonal = mockk<RealmMyPersonal>(relaxed = true)
@@ -166,12 +189,10 @@ class PersonalsRepositoryImplTest {
     @Test
     fun `updatePersonalResource calls updater on matched _id and id`() = runTest {
         val mockQuery = mockQueryResults()
-        val mockPersonalId = RealmMyPersonal().apply { title = "Old" }
         val mockPersonal_Id = RealmMyPersonal().apply { title = "Old" }
+        val mockPersonalId = RealmMyPersonal().apply { title = "Old" }
 
-        // Setting up mock behavior to return different objects for _id and id calls
-        every { mockQuery.equalTo("_id", "test-id").findFirst() } returns mockPersonal_Id
-        every { mockQuery.equalTo("id", "test-id").findFirst() } returns mockPersonalId
+        every { mockQuery.findFirst() } returnsMany listOf(mockPersonal_Id, mockPersonalId)
 
         var updateCount = 0
         repository.updatePersonalResource("test-id") { personal ->
