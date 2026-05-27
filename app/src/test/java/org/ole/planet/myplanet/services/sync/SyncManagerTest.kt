@@ -104,6 +104,7 @@ class SyncManagerTest {
 
     @Test
     fun `start with useImprovedSync=false uses legacy sync manager`() = runTest {
+        every { context.getString(org.ole.planet.myplanet.R.string.invalid_configuration) } returns "Invalid configuration"
         every { sharedPrefManager.getUseImprovedSync() } returns false
         coEvery { transactionSyncManager.authenticate() } returns false
 
@@ -111,13 +112,19 @@ class SyncManagerTest {
 
         verify { listener.onSyncStarted() }
         coVerify { transactionSyncManager.authenticate() }
+        verify { listener.onSyncFailed("Invalid configuration") }
     }
 
     @Test
     fun `cancelBackgroundSync clears background sync and listener`() = runTest {
+        // Prevent immediate execution of background sync logic so we can cancel it
+        every { sharedPrefManager.getUseImprovedSync() } returns true
+        every { sharedPrefManager.getFastSync() } returns true
+
         syncManager.start(listener, "sync", listOf())
         syncManager.cancelBackgroundSync()
-        // No crash, and future callbacks should ideally not reach the listener
-        // The most visible side-effect is that backgroundSync job is cancelled.
+
+        verify(exactly = 0) { listener.onSyncComplete() }
+        verify(exactly = 0) { listener.onSyncFailed(any()) }
     }
 }
