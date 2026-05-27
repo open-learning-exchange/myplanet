@@ -203,6 +203,30 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
+    fun `getRatingSummary handles zero ratings correctly`() = runTest {
+        val mockQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmRating>>(relaxed = true)
+
+        every { mockRealm.where(RealmRating::class.java) } returns mockQuery
+        every { mockQuery.equalTo(any<String>(), any<String>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+
+        every { mockResults.size } returns 0
+
+        val mockSubQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
+        every { mockResults.where() } returns mockSubQuery
+        every { mockSubQuery.equalTo(any<String>(), any<String>()) } returns mockSubQuery
+        every { mockSubQuery.findFirst() } returns null
+
+        val summary = repository.getRatingSummary("course", "course1", "user1")
+
+        assertEquals(0, summary.totalRatings)
+        assertEquals(0f, summary.averageRating)
+        assertEquals(null, summary.userRating)
+        assertEquals(null, summary.existingRating)
+    }
+
+    @Test
     fun `submitRating inserts new rating if not exists`() = runTest {
         val mockUserQuery = mockk<RealmQuery<RealmUser>>(relaxed = true)
         every { mockRealm.where(RealmUser::class.java) } returns mockUserQuery
@@ -214,20 +238,33 @@ class RatingsRepositoryImplTest {
         every { mockUserQuery.findFirst() } returns mockUser
         every { mockRealm.copyFromRealm(mockUser) } returns mockUser
 
-        val mockRatingQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
-        val mockResults = mockk<RealmResults<RealmRating>>(relaxed = true)
-        every { mockRealm.where(RealmRating::class.java) } returns mockRatingQuery
-        every { mockRatingQuery.equalTo(any<String>(), any<String>()) } returns mockRatingQuery
-        every { mockRatingQuery.findAll() } returns mockResults
-
-        every { mockRealm.copyFromRealm(mockResults) } returns emptyList()
-
-        every { mockResults.size } returns 1
-        every { mockResults.average("rate") } returns 4.0
-        val mockSubQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
-        every { mockResults.where() } returns mockSubQuery
-        every { mockSubQuery.equalTo(any<String>(), any<String>()) } returns mockSubQuery
-        every { mockSubQuery.findFirst() } returns RealmRating().apply { rate = 4 }
+        var callCount = 0
+        every { mockRealm.where(RealmRating::class.java) } answers {
+            callCount++
+            when (callCount) {
+                1 -> { // queryList in submitRating
+                    val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    val results = mockk<RealmResults<RealmRating>>(relaxed = true)
+                    every { query.equalTo(any<String>(), any<String>()) } returns query
+                    every { query.findAll() } returns results
+                    every { mockRealm.copyFromRealm(results) } returns emptyList()
+                    query
+                }
+                else -> { // getRatingSummary
+                    val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    val results = mockk<RealmResults<RealmRating>>(relaxed = true)
+                    every { query.equalTo(any<String>(), any<String>()) } returns query
+                    every { query.findAll() } returns results
+                    every { results.size } returns 1
+                    every { results.average("rate") } returns 4.0
+                    val subQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    every { results.where() } returns subQuery
+                    every { subQuery.equalTo(any<String>(), any<String>()) } returns subQuery
+                    every { subQuery.findFirst() } returns RealmRating().apply { rate = 4 }
+                    query
+                }
+            }
+        }
 
         every { mockRealm.copyToRealmOrUpdate(any<RealmRating>()) } returns mockk()
 
@@ -251,33 +288,68 @@ class RatingsRepositoryImplTest {
         every { mockUserQuery.findFirst() } returns mockUser
         every { mockRealm.copyFromRealm(mockUser) } returns mockUser
 
-        val mockRatingQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
-        val mockResults = mockk<RealmResults<RealmRating>>(relaxed = true)
-        every { mockRealm.where(RealmRating::class.java) } returns mockRatingQuery
-        every { mockRatingQuery.equalTo(any<String>(), any<String>()) } returns mockRatingQuery
-        every { mockRatingQuery.findAll() } returns mockResults
-
         val existingRating = RealmRating().apply {
             id = "existing_id"
             rate = 3
         }
-        every { mockRealm.copyFromRealm(mockResults) } returns listOf(existingRating)
 
-        every { mockRatingQuery.findFirst() } returns existingRating
+        var callCount = 0
+        every { mockRealm.where(RealmRating::class.java) } answers {
+            callCount++
+            when (callCount) {
+                1 -> { // queryList in submitRating
+                    val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    val results = mockk<RealmResults<RealmRating>>(relaxed = true)
+                    every { query.equalTo(any<String>(), any<String>()) } returns query
+                    every { query.findAll() } returns results
+                    every { mockRealm.copyFromRealm(results) } returns listOf(existingRating)
+                    query
+                }
+                2 -> { // update in submitRating
+                    val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    every { query.equalTo(any<String>(), any<String>()) } returns query
+                    every { query.findFirst() } returns existingRating
+                    query
+                }
+                else -> { // getRatingSummary
+                    val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    val results = mockk<RealmResults<RealmRating>>(relaxed = true)
+                    every { query.equalTo(any<String>(), any<String>()) } returns query
+                    every { query.findAll() } returns results
+                    every { results.size } returns 1
+                    every { results.average("rate") } returns 5.0
+                    val subQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
+                    every { results.where() } returns subQuery
+                    every { subQuery.equalTo(any<String>(), any<String>()) } returns subQuery
+                    every { subQuery.findFirst() } returns existingRating
+                    query
+                }
+            }
+        }
 
-        every { mockResults.size } returns 1
-        every { mockResults.average("rate") } returns 5.0
-        val mockSubQuery = mockk<RealmQuery<RealmRating>>(relaxed = true)
-        every { mockResults.where() } returns mockSubQuery
-        every { mockSubQuery.equalTo(any<String>(), any<String>()) } returns mockSubQuery
-        every { mockSubQuery.findFirst() } returns existingRating
+        val summary = repository.submitRating("course", "course1", "Updated", "user1", 5f, "Awesome")
 
-        repository.submitRating("course", "course1", "Updated", "user1", 5f, "Awesome")
-
-        verify { mockRatingQuery.findFirst() }
         assertEquals(5, existingRating.rate)
         assertEquals("Awesome", existingRating.comment)
         assertEquals("Updated", existingRating.title)
+        assertEquals(1, summary.totalRatings)
+        assertEquals(5.0f, summary.averageRating)
+        assertEquals(5, summary.userRating)
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `submitRating throws when userId is blank`() = runTest {
+        repository.submitRating("course", "course1", "Title", "", 4f, "Comment")
+    }
+
+    @Test(expected = IllegalArgumentException::class)
+    fun `submitRating throws when user is not found`() = runTest {
+        val mockUserQuery = mockk<RealmQuery<RealmUser>>(relaxed = true)
+        every { mockRealm.where(RealmUser::class.java) } returns mockUserQuery
+        every { mockUserQuery.equalTo(any<String>(), any<String>()) } returns mockUserQuery
+        every { mockUserQuery.findFirst() } returns null
+
+        repository.submitRating("course", "course1", "Title", "unknown", 4f, "Comment")
     }
 
     @Test
