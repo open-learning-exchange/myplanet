@@ -220,7 +220,6 @@
                         android:textColor="@color/daynight_textColor"
                         android:textSize="12sp"
                         android:theme="@style/PrimaryFlatButton" />
-
                     <Button
                         android:id="@+id/btn_feedback"
                         android:layout_width="wrap_content"
