@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
+import android.util.Log
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
@@ -202,7 +203,9 @@ object CameraUtils {
                         }
                     }
 
-                    override fun onConfigureFailed(session: CameraCaptureSession) {}
+                    override fun onConfigureFailed(session: CameraCaptureSession) {
+                        Log.e("CameraUtils", "Camera configuration failed")
+                    }
                 }
 
                 val sessionConfiguration = SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outputConfigurations, sessionExecutor, stateCallback)
@@ -222,7 +225,10 @@ object CameraUtils {
                         }
                     }
 
-                    override fun onConfigureFailed(session: CameraCaptureSession) {} },
+                    override fun onConfigureFailed(session: CameraCaptureSession) {
+                        Log.e("CameraUtils", "Camera configuration failed")
+                    }
+                },
                     backgroundHandler
                 )
             }
