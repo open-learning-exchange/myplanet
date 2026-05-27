@@ -69,6 +69,8 @@ open class RealmMeetup : RealmObject() {
 
         @JvmStatic
         fun insertList(mRealm: Realm, userId: String?, documents: List<JsonObject>) {
+            if (documents.isEmpty()) return
+
             val ids = documents.map { JsonUtils.getString("_id", it) }.toTypedArray()
 
             val existingMeetups = mRealm.where(RealmMeetup::class.java)
@@ -85,9 +87,7 @@ open class RealmMeetup : RealmObject() {
                 }
 
                 myMeetupsDB?.meetupId = id
-                if (userId != null) {
-                    myMeetupsDB?.userId = userId
-                }
+                myMeetupsDB?.userId = userId
                 myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
                 myMeetupsDB?.title = JsonUtils.getString("title", meetupDoc)
                 myMeetupsDB?.description = JsonUtils.getString("description", meetupDoc)
