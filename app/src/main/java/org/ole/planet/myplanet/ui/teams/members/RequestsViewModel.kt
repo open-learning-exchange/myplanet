@@ -48,16 +48,16 @@ class RequestsViewModel @Inject constructor(
 
         val originalState = _uiState.value
         val optimisticState = originalState.copy(
-            members = originalState.members.filter { it.id != user.id }
+            members = originalState.members.filter { it.id != user.id },
+            memberCount = if (isAccepted) originalState.memberCount + 1 else originalState.memberCount
         )
         _uiState.value = optimisticState
 
         viewModelScope.launch(dispatcherProvider.io) {
             val result = teamsRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
             if (result.isSuccess) {
-                teamsRepository.syncTeamActivities()
                 _successAction.emit(Unit)
-                fetchMembers(teamId)
+                launch { teamsRepository.syncTeamActivities() }
             } else {
                 _uiState.value = originalState
             }
