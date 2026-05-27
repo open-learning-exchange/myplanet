@@ -20,7 +20,6 @@ class EventsRepositoryImplTest {
 
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: EventsRepositoryImpl
-    private lateinit var mockRealm: Realm
 
     // A silent exception to avoid cluttering test logs with stack traces
     class SilentException(message: String) : Exception(message) {
@@ -31,30 +30,24 @@ class EventsRepositoryImplTest {
 
     @Before
     fun setup() {
-        mockRealm = mockk(relaxed = true)
         databaseService = mockk(relaxed = true)
-
-        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val operation = firstArg<(Realm) -> Any>()
-            operation(mockRealm)
-        }
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val operation = firstArg<(Realm) -> Unit>()
-            operation(mockRealm)
-        }
-
         repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
     }
 
     @Test
     fun getMeetupsForTeam() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
         val mockResults = mockk<RealmResults<RealmMeetup>>(relaxed = true)
         val mockQuery = mockk<RealmQuery<RealmMeetup>>(relaxed = true)
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.equalTo("teamId", "team1") } returns mockQuery
         every { mockQuery.findAll() } returns mockResults
         every { mockRealm.copyFromRealm(mockResults) } returns listOf(RealmMeetup().apply { id = "1" })
+
+        val operationSlot = slot<Function1<Realm, List<RealmMeetup>>>()
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
+        }
 
         val result = repository.getMeetupsForTeam("team1")
 
@@ -64,12 +57,18 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getMeetupById() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
         val mockQuery = mockk<RealmQuery<RealmMeetup>>(relaxed = true)
         val mockMeetup = RealmMeetup().apply { meetupId = "meetup1" }
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
         every { mockQuery.findFirst() } returns mockMeetup
         every { mockRealm.copyFromRealm(mockMeetup) } returns mockMeetup
+
+        val operationSlot = slot<Function1<Realm, RealmMeetup?>>()
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
+        }
 
         val result = repository.getMeetupById("meetup1")
         assertNotNull(result)
@@ -81,6 +80,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getJoinedMembers() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
         val mockResults = mockk<RealmResults<RealmMeetup>>(relaxed = true)
         val mockQuery = mockk<RealmQuery<RealmMeetup>>(relaxed = true)
         val mockUserResults = mockk<RealmResults<RealmUser>>(relaxed = true)
@@ -104,6 +104,11 @@ class EventsRepositoryImplTest {
         every { mockUserQuery.findAll() } returns mockUserResults
         every { mockRealm.copyFromRealm(mockUserResults) } returns listOf(RealmUser().apply { id = "user1" }, RealmUser().apply { id = "user2" })
 
+        val operationSlot = slot<Function1<Realm, List<RealmUser>>>()
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
+        }
+
         val result = repository.getJoinedMembers("meetup1")
 
         assertEquals(2, result.size)
@@ -116,6 +121,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun toggleAttendance() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
         val mockQuery = mockk<RealmQuery<RealmMeetup>>(relaxed = true)
         val mockMeetup = mockk<RealmMeetup>(relaxed = true)
         val mockMeetupQueryFirst = mockk<RealmMeetup>(relaxed = true)
@@ -128,6 +134,15 @@ class EventsRepositoryImplTest {
 
         // Setup for getMeetupById
         every { mockRealm.copyFromRealm(mockMeetup) } returns mockMeetup
+
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(mockRealm)
+        }
+        val operationSlot = slot<Function1<Realm, RealmMeetup?>>()
+        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
+        }
 
         // Test joining
         every { mockMeetupQueryFirst.userId } returns ""
@@ -148,9 +163,14 @@ class EventsRepositoryImplTest {
 
     @Test
     fun batchInsertMeetups() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
         mockkObject(RealmMeetup.Companion)
         val docs = listOf(JsonObject(), JsonObject())
 
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(mockRealm)
+        }
         every { RealmMeetup.insert(any(), any()) } just Runs
 
         val count = repository.batchInsertMeetups(docs)
@@ -161,21 +181,55 @@ class EventsRepositoryImplTest {
     }
 
     @Test
+    fun batchInsertMeetupsPartialException() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
+        mockkObject(RealmMeetup.Companion)
+
+        val doc1 = JsonObject().apply { addProperty("id", "1") }
+        val doc2 = JsonObject().apply { addProperty("id", "2") }
+        val docs = listOf(doc1, doc2)
+
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(mockRealm)
+        }
+
+        // Fail on second doc
+        every { RealmMeetup.insert(mockRealm, doc1) } just Runs
+        every { RealmMeetup.insert(mockRealm, doc2) } throws SilentException("Test Exception")
+
+        val count = repository.batchInsertMeetups(docs)
+        assertEquals(1, count)
+
+        verify(exactly = 1) { RealmMeetup.insert(mockRealm, doc1) }
+        verify(exactly = 1) { RealmMeetup.insert(mockRealm, doc2) }
+        unmockkObject(RealmMeetup.Companion)
+    }
+
+    @Test
     fun batchInsertMeetupsException() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
         mockkObject(RealmMeetup.Companion)
         val docs = listOf(JsonObject(), JsonObject())
 
-        every { RealmMeetup.insert(any(), any()) } throws SilentException("Test Exception")
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } throws SilentException("Outer Exception")
 
         val count = repository.batchInsertMeetups(docs)
         assertEquals(0, count)
 
-        verify(exactly = 2) { RealmMeetup.insert(mockRealm, any()) }
+        verify(exactly = 0) { RealmMeetup.insert(mockRealm, any()) }
         unmockkObject(RealmMeetup.Companion)
     }
 
     @Test
     fun createMeetup() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(mockRealm)
+        }
+
         val meetup = RealmMeetup()
         every { mockRealm.copyToRealmOrUpdate(meetup) } returns meetup
 
@@ -186,11 +240,13 @@ class EventsRepositoryImplTest {
 
     @Test
     fun createMeetupException() = runTest {
+        val mockRealm = mockk<Realm>(relaxed = true)
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } throws SilentException("Test Exception")
+
         val meetup = RealmMeetup()
-        every { mockRealm.copyToRealmOrUpdate(meetup) } throws SilentException("Test Exception")
 
         val result = repository.createMeetup(meetup)
         assertFalse(result)
-        verify { mockRealm.copyToRealmOrUpdate(meetup) }
     }
 }
