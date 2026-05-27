@@ -253,17 +253,40 @@ class ProgressRepositoryImpl @Inject constructor(
 
     private fun insertCourseProgress(mRealm: Realm, act: JsonObject?) {
         val docId = JsonUtils.getString("_id", act)
+        val courseId = JsonUtils.getString("courseId", act)
+        val userId = JsonUtils.getString("userId", act)
+        val stepNum = JsonUtils.getInt("stepNum", act)
+
         var courseProgress = mRealm.where(RealmCourseProgress::class.java).equalTo("id", docId).findFirst()
         if (courseProgress == null) {
+            // Find any local-only record for the same step (pre-upload _id=null, or already
+            // uploaded with _id matching this doc) to avoid creating a duplicate.
+            val localRecord = mRealm.where(RealmCourseProgress::class.java)
+                .equalTo("courseId", courseId)
+                .equalTo("userId", userId)
+                .equalTo("stepNum", stepNum)
+                .beginGroup()
+                    .isNull("_id")
+                    .or()
+                    .equalTo("_id", docId)
+                .endGroup()
+                .findFirst()
+            val localPassed = localRecord?.passed ?: false
+            localRecord?.deleteFromRealm()
+
             courseProgress = mRealm.createObject(RealmCourseProgress::class.java, docId)
+            // Preserve a locally-confirmed passed=true in case the server hasn't caught up yet.
+            if (localPassed) courseProgress.passed = true
         }
         courseProgress?._id = docId
         courseProgress?._rev = JsonUtils.getString("_rev", act)
-        courseProgress?.passed = JsonUtils.getBoolean("passed", act)
-        courseProgress?.stepNum = JsonUtils.getInt("stepNum", act)
-        courseProgress?.userId = JsonUtils.getString("userId", act)
+        if (courseProgress?.passed != true) {
+            courseProgress?.passed = JsonUtils.getBoolean("passed", act)
+        }
+        courseProgress?.stepNum = stepNum
+        courseProgress?.userId = userId
         courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
-        courseProgress?.courseId = JsonUtils.getString("courseId", act)
+        courseProgress?.courseId = courseId
         courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
         courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
         courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
