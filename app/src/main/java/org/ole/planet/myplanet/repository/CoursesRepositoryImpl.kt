@@ -638,7 +638,6 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun deleteCourseProgress(courseId: String?) {
         executeTransaction { realm ->
-            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
             val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
             val examIds = examList.mapNotNull { it.id }.toTypedArray()
             if (examIds.isNotEmpty()) {
