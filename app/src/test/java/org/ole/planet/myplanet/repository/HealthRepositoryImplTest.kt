@@ -175,9 +175,13 @@ class HealthRepositoryImplTest {
         healthResultsIterable.clear()
         healthResultsIterable.add(examination)
 
-        every { realm.queryList(RealmHealthExamination::class.java, any<(RealmQuery<RealmHealthExamination>) -> Unit>()) } returns healthResultsIterable
+        val builderSlot = slot<(RealmQuery<RealmHealthExamination>) -> Unit>()
+        every { realm.queryList(RealmHealthExamination::class.java, capture(builderSlot)) } returns healthResultsIterable
 
         val result = repository.getUpdatedHealthExaminations()
+        builderSlot.captured.invoke(healthQuery)
+        verify { healthQuery.equalTo("isUpdated", true) }
+        verify { healthQuery.notEqualTo("userId", "") }
         advanceUntilIdle()
 
         assertEquals(1, result.size)
@@ -194,9 +198,13 @@ class HealthRepositoryImplTest {
         healthResultsIterable.clear()
         healthResultsIterable.add(examination)
 
-        every { realm.queryList(RealmHealthExamination::class.java, any<(RealmQuery<RealmHealthExamination>) -> Unit>()) } returns healthResultsIterable
+        val builderSlot = slot<(RealmQuery<RealmHealthExamination>) -> Unit>()
+        every { realm.queryList(RealmHealthExamination::class.java, capture(builderSlot)) } returns healthResultsIterable
 
         val result = repository.getUpdatedHealthForUser("user1")
+        builderSlot.captured.invoke(healthQuery)
+        verify { healthQuery.equalTo("isUpdated", true) }
+        verify { healthQuery.equalTo("userId", "user1") }
         advanceUntilIdle()
 
         assertEquals(1, result.size)
@@ -220,7 +228,7 @@ class HealthRepositoryImplTest {
         repository.markHealthExaminationsUploaded(idToRevMap)
         advanceUntilIdle()
 
-        verify { healthQuery.`in`("_id", arrayOf("exam1", "exam2")) }
+        verify { healthQuery.`in`(eq("_id"), match<Array<String>> { it.toSet() == setOf("exam1", "exam2") }) }
         assertEquals("rev1", exam1._rev)
         assertEquals(false, exam1.isUpdated)
         assertEquals("rev2", exam2._rev)
