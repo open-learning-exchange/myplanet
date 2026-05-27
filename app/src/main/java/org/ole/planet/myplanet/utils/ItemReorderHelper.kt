@@ -39,7 +39,10 @@ class ItemReorderHelper(private val mAdapter: OnItemMoveListener) :
         return true
     }
 
-    override fun onSwiped(viewHolder: RecyclerView.ViewHolder, i: Int) {}
+    override fun onSwiped(viewHolder: RecyclerView.ViewHolder, i: Int) {
+        // No action needed since swipe is disabled
+    }
+
     override fun onSelectedChanged(viewHolder: RecyclerView.ViewHolder?, actionState: Int) {
         // We only want the active item to change
         if (actionState != ItemTouchHelper.ACTION_STATE_IDLE) {
