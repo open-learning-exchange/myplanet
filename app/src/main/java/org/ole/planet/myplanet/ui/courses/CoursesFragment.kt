@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -80,6 +81,22 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override suspend fun postAddRefresh() {
         loadDataAsync()
+    }
+
+    override suspend fun deleteSelected(deleteProgress: Boolean) {
+        val userId = userModel?.id ?: return
+        val snapshot = selectedItems?.filterNotNull() ?: return
+        if (snapshot.isEmpty()) return
+        withContext(dispatcherProvider.io) {
+            snapshot.forEach { course ->
+                course.courseId?.let { courseId ->
+                    coursesRepository.removeCourseFromShelf(courseId, userId)
+                    if (deleteProgress) coursesRepository.deleteCourseProgress(courseId)
+                }
+            }
+        }
+        selectedItems?.clear()
+        Utilities.toast(activity, getString(R.string.removed_from_mycourse))
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {

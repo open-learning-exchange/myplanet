@@ -132,7 +132,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             }
             binding.tvAvailableSpace.text = buildString {
                 append(getString(R.string.available_space_colon))
-                append(" ")
+                append("\n")
                 append(storageText)
             }
         }

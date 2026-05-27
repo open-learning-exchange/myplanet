@@ -24,7 +24,9 @@ open class RealmMyCourse : RealmObject() {
     var memberLimit: Int? = null
     var description: String? = null
     var method: String? = null
+    @Index
     var gradeLevel: String? = null
+    @Index
     var subjectLevel: String? = null
     var createdDate: Long = 0
     private var numberOfSteps: Int? = null

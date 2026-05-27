@@ -187,7 +187,7 @@ class VoicesFragment : BaseVoicesFragment() {
         } else {
             (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list?.filterNotNull())
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
+        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
     }
 
     private fun downloadResourcesForNews(list: List<RealmNews?>) {
