@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet
 
+import org.ole.planet.myplanet.utils.EmptyActivityLifecycleCallbacks
 import android.app.Activity
 import android.app.Application
 import android.content.Context
@@ -65,7 +66,7 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+class MainApplication : Application(), Application.ActivityLifecycleCallbacks by EmptyActivityLifecycleCallbacks(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
@@ -444,8 +445,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         return ThemeManager.getCurrentThemeMode(context)
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
-
     override fun onActivityStarted(activity: Activity) {
         if (++activityReferences == 1 && !isActivityChangingConfigurations) {
             onAppForegrounded()
@@ -458,16 +457,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
-    override fun onActivityPaused(activity: Activity) {}
-
     override fun onActivityStopped(activity: Activity) {
         isActivityChangingConfigurations = activity.isChangingConfigurations
         --activityReferences
     }
-
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
-
-    override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
