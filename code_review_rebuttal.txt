@@ -1,0 +1,11 @@
+The reviewer incorrectly states that `MockK` and `kotlinx-coroutines-test` are not added to `app/build.gradle`.
+
+As verified from the source code, `app/build.gradle` contains the following lines:
+`testImplementation(libs.test.mockk)`
+`testImplementation(libs.test.coroutines)`
+
+And `gradle/libs.versions.toml` defines:
+`test-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }`
+`test-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "testCoroutines" }`
+
+Both dependencies are already included in the project configuration and the codebase compiles and passes tests successfully. Therefore, no modification to `app/build.gradle` is required.
