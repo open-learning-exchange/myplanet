@@ -98,8 +98,29 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertChatHistoryList(chats: List<JsonObject>) {
+        val unmanagedChats = chats.map { json ->
+            val chatHistoryId = JsonUtils.getString("_id", json)
+            RealmChatHistory().apply {
+                id = chatHistoryId
+                _id = chatHistoryId
+                _rev = JsonUtils.getString("_rev", json)
+                title = JsonUtils.getString("title", json)
+                createdDate = "${JsonUtils.getLong("createdDate", json)}"
+                updatedDate = "${JsonUtils.getLong("updatedDate", json)}"
+                user = JsonUtils.getString("user", json)
+                aiProvider = JsonUtils.getString("aiProvider", json)
+                val conversationsArray = JsonUtils.getJsonArray("conversations", json)
+                val unmanagedConversations = conversationsArray.map {
+                    JsonUtils.gson.fromJson(it, RealmConversation::class.java)
+                }
+                conversations = io.realm.RealmList<RealmConversation>().apply {
+                    addAll(unmanagedConversations)
+                }
+                lastUsed = java.util.Date().time
+            }
+        }
         executeTransaction { realm ->
-            chats.forEach { insertChatHistory(realm, it) }
+            realm.insertOrUpdate(unmanagedChats)
         }
     }
 
