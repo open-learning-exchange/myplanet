@@ -13,7 +13,6 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -46,7 +45,7 @@ class ImprovedSyncManagerTest {
 
     private val poolManager: RealmPoolManager = mockk(relaxed = true)
 
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
@@ -93,16 +92,17 @@ class ImprovedSyncManagerTest {
     }
 
     @Test
-    fun testInitialize() = runTest {
+    fun testInitialize() = runTest(testDispatcher) {
         coEvery { poolManager.initializePool(any(), any(), any()) } returns Unit
 
         syncManager.initialize()
+        advanceUntilIdle()
 
         coVerify { poolManager.initializePool(context, databaseService, any()) }
     }
 
     @Test
-    fun testStart_syncNotRunning_startsSyncAndAuthenticates() = runTest {
+    fun testStart_syncNotRunning_startsSyncAndAuthenticates() = runTest(testDispatcher) {
         val listener: OnSyncListener = mockk(relaxed = true)
 
         coEvery { transactionSyncManager.authenticate() } returns true
@@ -112,6 +112,7 @@ class ImprovedSyncManagerTest {
         coEvery { activitiesRepository.recordSyncActivity(any()) } returns Unit
 
         syncManager.start(listener, SyncMode.Standard, listOf("test_table"))
+        advanceUntilIdle()
 
         coVerify { listener.onSyncStarted() }
         coVerify { MainApplication.createLog("improved_sync_start", any()) }
@@ -124,12 +125,13 @@ class ImprovedSyncManagerTest {
     }
 
     @Test
-    fun testStart_authFails() = runTest {
+    fun testStart_authFails() = runTest(testDispatcher) {
         val listener: OnSyncListener = mockk(relaxed = true)
 
         coEvery { transactionSyncManager.authenticate() } returns false
 
         syncManager.start(listener, SyncMode.Standard, listOf("test_table"))
+        advanceUntilIdle()
 
         coVerify { listener.onSyncStarted() }
         coVerify { transactionSyncManager.authenticate() }
@@ -139,12 +141,13 @@ class ImprovedSyncManagerTest {
     }
 
     @Test
-    fun testStart_exception() = runTest {
+    fun testStart_exception() = runTest(testDispatcher) {
         val listener: OnSyncListener = mockk(relaxed = true)
 
         coEvery { transactionSyncManager.authenticate() } throws RuntimeException("Network error")
 
         syncManager.start(listener, SyncMode.Standard, listOf("test_table"))
+        advanceUntilIdle()
 
         coVerify { listener.onSyncStarted() }
         coVerify { transactionSyncManager.authenticate() }
