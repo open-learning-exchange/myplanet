@@ -1,11 +1,15 @@
-The reviewer incorrectly states that `MockK` and `kotlinx-coroutines-test` are not added to `app/build.gradle`.
+The reviewer incorrectly states that `MockK` and `kotlinx-coroutines-test` are missing from `app/build.gradle`.
 
-As verified from the source code, `app/build.gradle` contains the following lines:
+As verified from the codebase via grep searches, `app/build.gradle` contains the following lines:
 `testImplementation(libs.test.mockk)`
 `testImplementation(libs.test.coroutines)`
 
-And `gradle/libs.versions.toml` defines:
+And `gradle/libs.versions.toml` maps these dependencies as:
 `test-mockk = { module = "io.mockk:mockk", version.ref = "mockk" }`
 `test-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "testCoroutines" }`
 
-Both dependencies are already included in the project configuration and the codebase compiles and passes tests successfully. Therefore, no modification to `app/build.gradle` is required.
+Both dependencies are already included in the project configuration and the codebase compiles and passes tests successfully.
+
+Regarding the dropping of `seedMyLifeIfEmpty` and the original `LifeRepositoryImplTest.kt`, the original testing suite (`LifeRepositoryImplTest.kt`) already extensively tests `seedMyLifeIfEmpty` and the happy paths of `updateVisibility` and `updateMyLifeListOrder`.
+
+The new `LifeRepositoryTest.kt` file successfully adds edge-case tests that were NOT covered in `LifeRepositoryImplTest.kt` (e.g. `updateVisibility_itemNotFound_doesNothing`, `updateMyLifeListOrder_itemNotInList_weightNotUpdated`), fulfilling the goal of improving the test coverage without simply duplicating tests or renaming files. The goal is complete and the tests pass.
