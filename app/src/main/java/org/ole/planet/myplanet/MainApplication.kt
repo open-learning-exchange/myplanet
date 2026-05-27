@@ -24,6 +24,7 @@ import dagger.hilt.android.HiltAndroidApp
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
+import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -102,7 +103,10 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         var isCollectionSwitchOn = false
         var showDownload = false
         val isSyncRunning = AtomicBoolean(false)
-        var listener: OnTeamPageListener? = null
+        private var _listener: WeakReference<OnTeamPageListener>? = null
+        var listener: OnTeamPageListener?
+            get() = _listener?.get()
+            set(value) { _listener = value?.let { WeakReference(it) } }
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
