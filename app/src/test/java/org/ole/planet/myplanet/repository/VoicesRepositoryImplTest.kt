@@ -159,6 +159,8 @@ class VoicesRepositoryImplTest {
         val result = repoWithRealGson.getNewsByTeamId("team1")
 
         org.junit.Assert.assertEquals(2, result.size)
+        org.junit.Assert.assertEquals("teams", result[0].viewableBy)
+        org.junit.Assert.assertEquals("[{\"_id\":\"team1\"}]", result[1].viewIn)
     }
 
     @Test
@@ -190,6 +192,12 @@ class VoicesRepositoryImplTest {
         val result = repository.getFilteredNews("team1")
 
         org.junit.Assert.assertEquals(1, result.size)
+        io.mockk.verify(exactly = 1) { mockRealmQuery.beginGroup() }
+        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE) }
+        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE) }
+        io.mockk.verify(exactly = 1) { mockRealmQuery.endGroup() }
+        io.mockk.verify(exactly = 1) { mockRealmQuery.or() }
+        io.mockk.verify(exactly = 1) { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE) }
     }
 
     @Test
