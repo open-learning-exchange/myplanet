@@ -54,10 +54,10 @@ class RetryRepositoryImplTest {
             transactionSlot.captured.invoke(realm)
         }
 
-        val uploadError = UploadError("itemId", Exception(), retryable = true, httpCode = 500)
+        val uploadError = UploadError("itemId", Exception("test error"), retryable = true, httpCode = 500)
 
         val op = mockk<RealmRetryOperation>(relaxed = true)
-        every { realm.createObject(RealmRetryOperation::class.java, any<String>()) } returns op
+        every { realm.createObject(RealmRetryOperation::class.java, any()) } returns op
 
 
 
@@ -66,7 +66,19 @@ class RetryRepositoryImplTest {
             "POST", "testDbId", "TestClass", "testUserId"
         )
 
-        verify { realm.createObject(RealmRetryOperation::class.java, any<String>()) }
+        verify { realm.createObject(RealmRetryOperation::class.java, any()) }
+        verify {
+            op.uploadType = "testUploadType"
+            op.serializedPayload = "testPayload"
+            op.endpoint = "testEndpoint"
+            op.httpMethod = "POST"
+            op.dbId = "testDbId"
+            op.modelClassName = "TestClass"
+            op.userId = "testUserId"
+            op.status = RealmRetryOperation.STATUS_PENDING
+            op.attemptCount = 1
+            op.httpCode = 500
+        }
     }
 
     @Test
@@ -79,7 +91,7 @@ class RetryRepositoryImplTest {
         }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -109,7 +121,7 @@ class RetryRepositoryImplTest {
         }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -134,7 +146,7 @@ class RetryRepositoryImplTest {
         }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -157,7 +169,7 @@ class RetryRepositoryImplTest {
         }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -182,7 +194,7 @@ class RetryRepositoryImplTest {
         }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -210,7 +222,7 @@ class RetryRepositoryImplTest {
         }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -244,7 +256,6 @@ class RetryRepositoryImplTest {
         every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
         every { query.lessThanOrEqualTo("nextRetryTime", any<Long>()) } returns query
         every { query.findAll() } returns results
-        every { results.deleteAllFromRealm() } returns true
         every { results.iterator() } returns list.toMutableList().iterator()
         every { realm.copyFromRealm(any<Iterable<RealmRetryOperation>>()) } answers {
             arg<Iterable<RealmRetryOperation>>(0).toList()
@@ -308,7 +319,7 @@ class RetryRepositoryImplTest {
         val results = mockk<RealmResults<RealmRetryOperation>>()
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -317,7 +328,6 @@ class RetryRepositoryImplTest {
         every { query.lessThan("lastAttemptTime", any<Long>()) } returns query
         every { query.findAll() } returns results
         every { results.deleteAllFromRealm() } returns true
-
         repository.cleanup()
 
         verify { results.deleteAllFromRealm() }
@@ -333,22 +343,17 @@ class RetryRepositoryImplTest {
         val operation2 = RealmRetryOperation().apply { nextRetryTime = 0 }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
         every { realm.where(RealmRetryOperation::class.java) } returns query
         every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
         every { query.findAll() } returns results
-        every { results.deleteAllFromRealm() } returns true
         every { results.iterator() } answers { mutableListOf(operation1).iterator() }
         every { results.size } returns 1
         every { results[0] } returns operation1
         every { results.get(0) } returns operation1
-        every { results.forEach(any<java.util.function.Consumer<RealmRetryOperation>>()) } answers {
-            val action = invocation.args[0] as java.util.function.Consumer<RealmRetryOperation>
-            action.accept(operation1)
-        }
 
 
 
@@ -366,7 +371,7 @@ class RetryRepositoryImplTest {
         val results = mockk<RealmResults<RealmRetryOperation>>()
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
@@ -376,7 +381,6 @@ class RetryRepositoryImplTest {
         every { query.equalTo("status", RealmRetryOperation.STATUS_ABANDONED) } returns query
         every { query.findAll() } returns results
         every { results.deleteAllFromRealm() } returns true
-
         repository.deletePendingAndAbandonedOperations()
 
         verify { results.deleteAllFromRealm() }
@@ -391,22 +395,17 @@ class RetryRepositoryImplTest {
         val operation1 = RealmRetryOperation().apply { status = RealmRetryOperation.STATUS_IN_PROGRESS; nextRetryTime = 0 }
 
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = invocation.args[0] as Function1<Realm, Unit>
+            val block = invocation.args[0] as ((Realm) -> Unit)
             block.invoke(realm)
         }
 
         every { realm.where(RealmRetryOperation::class.java) } returns query
         every { query.equalTo("status", RealmRetryOperation.STATUS_IN_PROGRESS) } returns query
         every { query.findAll() } returns results
-        every { results.deleteAllFromRealm() } returns true
         every { results.iterator() } answers { mutableListOf(operation1).iterator() }
         every { results.size } returns 1
         every { results[0] } returns operation1
         every { results.get(0) } returns operation1
-        every { results.forEach(any<java.util.function.Consumer<RealmRetryOperation>>()) } answers {
-            val action = invocation.args[0] as java.util.function.Consumer<RealmRetryOperation>
-            action.accept(operation1)
-        }
 
 
 
