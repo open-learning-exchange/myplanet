@@ -127,7 +127,7 @@ class CommunityRepositoryImplTest {
 
     @Test
     fun `syncCommunityDocs returns false on exception`() = runTest {
-        coEvery { apiInterface.getJsonObject(any(), any()) } throws RuntimeException("Network Error")
+        coEvery { apiInterface.getJsonObject(any(), any()) } answers { throw RuntimeException("Network Error") }
 
         val result = repository.syncCommunityDocs()
 
