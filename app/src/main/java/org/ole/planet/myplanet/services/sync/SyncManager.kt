@@ -216,7 +216,6 @@ class SyncManager @Inject constructor(
 
             // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
-            // TEMP: ratings, courses_progress, submissions, login_activities, team_activities omitted for sync performance testing
             val parallelTables = listOf(
                 "tablet_users", "exams", "achievements",
                 "tags", "news", "feedback", "tasks",
@@ -271,6 +270,18 @@ class SyncManager @Inject constructor(
 
             logger.stopLogging()
 
+            // Heavy tables start only after main sync fully completes — no overlap with resources/library
+            val heavyTables = listOf("ratings", "courses_progress", "submissions", "login_activities", "team_activities")
+            syncScope.launch(dispatcherProvider.io) {
+                heavyTables.forEach { table ->
+                    try {
+                        transactionSyncManager.syncDb(table)
+                    } catch (e: Exception) {
+                        Log.e("SyncPerf", "Background sync failed for $table: ${e.message}")
+                    }
+                }
+            }
+
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
             val minutes = totalSyncTime / 60000
@@ -309,12 +320,11 @@ class SyncManager @Inject constructor(
                             logger.endProcess("tablet_users_sync")
                         })
 
-                    // TEMP: skipped login_activities for sync performance testing
-                    // syncJobs.add(async {
-                    //     logger.startProcess("login_activities_sync")
-                    //     transactionSyncManager.syncDb("login_activities")
-                    //     logger.endProcess("login_activities_sync")
-                    // })
+                    syncJobs.add(async {
+                        logger.startProcess("login_activities_sync")
+                        transactionSyncManager.syncDb("login_activities")
+                        logger.endProcess("login_activities_sync")
+                    })
 
                     syncJobs.add(
                         async {
@@ -376,19 +386,17 @@ class SyncManager @Inject constructor(
                             logger.endProcess("courses_sync")
                         })
 
-                    // TEMP: skipped courses_progress for sync performance testing
-                    // syncJobs.add(async {
-                    //     logger.startProcess("courses_progress_sync")
-                    //     transactionSyncManager.syncDb("courses_progress")
-                    //     logger.endProcess("courses_progress_sync")
-                    // })
+                    syncJobs.add(async {
+                        logger.startProcess("courses_progress_sync")
+                        transactionSyncManager.syncDb("courses_progress")
+                        logger.endProcess("courses_progress_sync")
+                    })
 
-                    // TEMP: skipped ratings for sync performance testing
-                    // syncJobs.add(async {
-                    //     logger.startProcess("ratings_sync")
-                    //     transactionSyncManager.syncDb("ratings")
-                    //     logger.endProcess("ratings_sync")
-                    // })
+                    syncJobs.add(async {
+                        logger.startProcess("ratings_sync")
+                        transactionSyncManager.syncDb("ratings")
+                        logger.endProcess("ratings_sync")
+                    })
                 }
 
                 if (syncTables?.contains("tasks") == true) {
@@ -409,14 +417,13 @@ class SyncManager @Inject constructor(
                         })
                 }
 
-                // TEMP: skipped team_activities for sync performance testing
-                // if (syncTables?.contains("team_activities") == true) {
-                //     syncJobs.add(async {
-                //         logger.startProcess("team_activities_sync")
-                //         transactionSyncManager.syncDb("team_activities")
-                //         logger.endProcess("team_activities_sync")
-                //     })
-                // }
+                if (syncTables?.contains("team_activities") == true) {
+                    syncJobs.add(async {
+                        logger.startProcess("team_activities_sync")
+                        transactionSyncManager.syncDb("team_activities")
+                        logger.endProcess("team_activities_sync")
+                    })
+                }
 
                 if (syncTables?.contains("chat_history") == true) {
                     syncJobs.add(
@@ -469,12 +476,11 @@ class SyncManager @Inject constructor(
                             logger.endProcess("exams_sync")
                         })
 
-                    // TEMP: skipped submissions for sync performance testing
-                    // syncJobs.add(async {
-                    //     logger.startProcess("submissions_sync")
-                    //     transactionSyncManager.syncDb("submissions")
-                    //     logger.endProcess("submissions_sync")
-                    // })
+                    syncJobs.add(async {
+                        logger.startProcess("submissions_sync")
+                        transactionSyncManager.syncDb("submissions")
+                        logger.endProcess("submissions_sync")
+                    })
                 }
 
                 syncJobs.awaitAll()

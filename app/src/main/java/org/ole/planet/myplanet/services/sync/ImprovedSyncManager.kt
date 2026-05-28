@@ -43,7 +43,6 @@ class ImprovedSyncManager @Inject constructor(
     private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
-    // TEMP: submissions, login_activities, team_activities, ratings omitted for sync performance testing
     private val syncOrder = listOf(
         "tablet_users",
         "tags",
@@ -53,16 +52,16 @@ class ImprovedSyncManager @Inject constructor(
         "resources",
         "courses",
         "exams",
-        // "ratings",
-        // "courses_progress",
+        "ratings",
+        "courses_progress",
         "achievements",
-        // "submissions",
+        "submissions",
         "tasks",
-        // "login_activities",
+        "login_activities",
         "meetups",
         "health",
         "certifications",
-        // "team_activities",
+        "team_activities",
         "chat_history",
         "feedback",
         "notifications"
