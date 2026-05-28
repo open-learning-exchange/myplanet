@@ -929,7 +929,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
         return withRealm { realm ->
-            val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val userModel = realm.where(RealmUser::class.java).equalTo("_id", userId).findFirst()
+                ?: realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
 
@@ -947,7 +948,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         executeTransaction { transactionRealm ->
-            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("_id", userId).findFirst()
+                ?: transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: transactionRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
                 ?: transactionRealm.createObject(RealmHealthExamination::class.java, userId)
