@@ -18,7 +18,8 @@ class HealthRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
-        val userCopy = findByField(RealmUser::class.java, "id", userId)
+        val userCopy = findByField(RealmUser::class.java, "_id", userId)
+            ?: findByField(RealmUser::class.java, "id", userId)
         val pojoCopy = findByField(RealmHealthExamination::class.java, "_id", userId)
             ?: findByField(RealmHealthExamination::class.java, "userId", userId)
 
