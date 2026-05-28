@@ -23,7 +23,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
@@ -54,6 +53,8 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
+    @Inject
+    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
@@ -185,7 +186,7 @@ class VoicesFragment : BaseVoicesFragment() {
         } else {
             (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list?.filterNotNull())
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
+        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
     }
 
     private fun downloadResourcesForNews(list: List<RealmNews?>) {
@@ -220,7 +221,13 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     private fun setupVoicesAdapter(sortedList: List<RealmNews>) {
-        val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+        val labelManager = VoicesLabelManager(
+            context = requireActivity(),
+            scope = viewLifecycleOwner.lifecycleScope,
+            dispatcherProvider = dispatcherProvider,
+            addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+            removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+        )
         adapterNews = VoicesAdapter(
             context = requireActivity(),
             currentUser = user,

@@ -8,6 +8,7 @@ data class ChatMessage(
     companion object {
         const val QUERY = 1
         const val RESPONSE = 2
+        const val LOAD_MORE = 3
         const val RESPONSE_SOURCE_UNKNOWN = 0
         const val RESPONSE_SOURCE_SHARED_VIEW_MODEL = 1
         const val RESPONSE_SOURCE_NETWORK = 2

@@ -21,7 +21,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
@@ -132,7 +131,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             }
             binding.tvAvailableSpace.text = buildString {
                 append(getString(R.string.available_space_colon))
-                append(" ")
+                append("\n")
                 append(storageText)
             }
         }

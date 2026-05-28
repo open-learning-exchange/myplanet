@@ -390,6 +390,11 @@ class ChatHistoryFragment : Fragment() {
             syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
         searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
+        searchBarWatcher = null
+        sharedNewsMessages = emptyList()
+        shareTargets = ChatShareTargets(null, emptyList(), emptyList())
+        memoizedShareTargets = null
+        user = null
         _binding = null
         super.onDestroyView()
     }
