@@ -3,34 +3,31 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.view.View
 import android.widget.Button
+import android.widget.PopupMenu
 import com.google.android.flexbox.FlexboxLayout
 import fisk.chipcloud.ChipCloud
 import io.mockk.clearAllMocks
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkObject
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.RealmList
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import kotlinx.coroutines.test.runTest
-import io.mockk.coVerify
-import io.mockk.slot
-import android.widget.PopupMenu
-import android.view.MenuItem
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.advanceUntilIdle
 
 class VoicesLabelManagerTest {
 
