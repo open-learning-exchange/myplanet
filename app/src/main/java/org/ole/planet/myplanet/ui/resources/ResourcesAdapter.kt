@@ -203,10 +203,13 @@ class ResourcesAdapter(
         val flexboxDrawable = holder.rowLibraryBinding.flexboxDrawable
         val model = getItem(position)
         if (model == null) {
+            holder.cachedTags = emptyList()
             flexboxDrawable.removeAllViews()
             return
         }
         val tags = model.tags
+        if (tags == holder.cachedTags) return
+        holder.cachedTags = tags
         renderTagCloud(flexboxDrawable, tags)
     }
 
@@ -229,6 +232,14 @@ class ResourcesAdapter(
                     listener?.onTagClicked(selectedTag)
                 }
             }
+        }
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is ResourcesViewHolder) {
+            holder.cachedTags = emptyList()
+            holder.rowLibraryBinding.flexboxDrawable.removeAllViews()
         }
     }
 
@@ -278,7 +289,8 @@ class ResourcesAdapter(
 
     internal inner class ResourcesViewHolder(val rowLibraryBinding: RowLibraryBinding) :
         RecyclerView.ViewHolder(rowLibraryBinding.root) {
-            init {
+        var cachedTags: List<TagItem> = emptyList()
+        init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) {
                         val adapterPosition = bindingAdapterPosition
