@@ -68,6 +68,45 @@ open class RealmMeetup : RealmObject() {
         }
 
         @JvmStatic
+        fun insertList(mRealm: Realm, userId: String?, documents: List<JsonObject>) {
+            if (documents.isEmpty()) return
+
+            val ids = documents.map { JsonUtils.getString("_id", it) }.toTypedArray()
+
+            val existingMeetups = mRealm.where(RealmMeetup::class.java)
+                .`in`("meetupId", ids)
+                .findAll()
+                .associateByTo(HashMap()) { it.meetupId }
+
+            for (meetupDoc in documents) {
+                val id = JsonUtils.getString("_id", meetupDoc)
+                var myMeetupsDB = existingMeetups[id]
+                if (myMeetupsDB == null) {
+                    myMeetupsDB = mRealm.createObject(RealmMeetup::class.java, id)
+                    existingMeetups[id] = myMeetupsDB
+                }
+
+                myMeetupsDB?.meetupId = id
+                myMeetupsDB?.userId = userId
+                myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
+                myMeetupsDB?.title = JsonUtils.getString("title", meetupDoc)
+                myMeetupsDB?.description = JsonUtils.getString("description", meetupDoc)
+                myMeetupsDB?.startDate = JsonUtils.getLong("startDate", meetupDoc)
+                myMeetupsDB?.endDate = JsonUtils.getLong("endDate", meetupDoc)
+                myMeetupsDB?.recurring = JsonUtils.getString("recurring", meetupDoc)
+                myMeetupsDB?.startTime = JsonUtils.getString("startTime", meetupDoc)
+                myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
+                myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
+                myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
+                myMeetupsDB?.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
+                myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
+                myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
+                myMeetupsDB?.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
+                myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
+            }
+        }
+
+        @JvmStatic
         fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
             val meetups = realm?.where(RealmMeetup::class.java)?.isNotEmpty("userId")
                 ?.equalTo("userId", userId, Case.INSENSITIVE)?.findAll()
