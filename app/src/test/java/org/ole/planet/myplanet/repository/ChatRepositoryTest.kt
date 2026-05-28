@@ -71,17 +71,13 @@ class ChatRepositoryTest {
         jsonArray.add(designObjWrapper)
 
         val mockQuery: RealmQuery<RealmChatHistory> = mockk(relaxed = true)
-        val mockExistingRecord: RealmChatHistory = mockk(relaxed = true)
+        val mockResults: io.realm.RealmResults<RealmChatHistory> = mockk(relaxed = true)
 
         every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
 
-        // Mocking finding the records
-        every { mockQuery.equalTo("_id", "123") } returns mockQuery
-        every { mockQuery.equalTo("_id", "456") } returns mockQuery
-
-        // For "123" return null (new record)
-        // For "456" return existing record (triggers deleteFromRealm)
-        every { mockQuery.findFirst() } returnsMany listOf(null, mockExistingRecord)
+        // Mocking finding the records via bulk query
+        every { mockQuery.`in`("_id", any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
 
         // Mock creation
         every { mockRealm.createObject(RealmChatHistory::class.java, "123") } returns RealmChatHistory().apply { _id = "123" }
@@ -89,15 +85,13 @@ class ChatRepositoryTest {
 
         chatRepository.insertChatHistoryBatch(mockRealm, jsonArray)
 
-        // Verification for NEW document ("123")
-        verify(exactly = 1) { mockQuery.equalTo("_id", "123") }
-        verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "123") }
-        // The existing record mock should NOT be deleted in the context of "123"
+        // Verification for bulk query and delete
+        verify(exactly = 1) { mockQuery.`in`("_id", match<Array<String>> { it.toSet() == setOf("123", "456") }) }
+        verify(exactly = 1) { mockResults.deleteAllFromRealm() }
 
-        // Verification for EXISTING document ("456")
-        verify(exactly = 1) { mockQuery.equalTo("_id", "456") }
+        // Verification for valid documents
+        verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "123") }
         verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "456") }
-        verify(exactly = 1) { mockExistingRecord.deleteFromRealm() }
 
         // Verification for DESIGN document (should be ignored entirely)
         verify(exactly = 0) { mockQuery.equalTo("_id", "_design/foo") }
