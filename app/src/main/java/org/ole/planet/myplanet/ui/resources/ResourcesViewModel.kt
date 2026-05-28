@@ -29,6 +29,12 @@ class ResourcesViewModel @Inject constructor(
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+    private val _downloadComplete = MutableStateFlow(false)
+    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    fun notifyDownloadComplete() {
+        _downloadComplete.value = true
+        _downloadComplete.value = false
+    }
 
     fun startResourcesSync() {
         val isFastSync = sharedPrefManager.getFastSync()
@@ -71,8 +77,9 @@ class ResourcesViewModel @Inject constructor(
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
         val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-
-        return enrichedLibraries.map { (library, rating, libraryTags) ->
+        return enrichedLibraries
+            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
+            .map { (library, rating, libraryTags) ->
             val item = ResourceItem(
                 id = library.id,
                 title = library.title,
