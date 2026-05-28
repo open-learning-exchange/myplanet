@@ -416,7 +416,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun scheduleTaskNotificationWork() {
-        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
         val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
