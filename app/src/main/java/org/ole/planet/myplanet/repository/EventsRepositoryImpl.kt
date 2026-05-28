@@ -68,13 +68,11 @@ class EventsRepositoryImpl @Inject constructor(
         var processedCount = 0
         try {
             executeTransaction { realm ->
-                documents.forEach { doc ->
-                    try {
-                        RealmMeetup.insert(realm, doc)
-                        processedCount++
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                try {
+                    RealmMeetup.insertList(realm, "", documents)
+                    processedCount = documents.size
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
             }
         } catch (e: Exception) {
