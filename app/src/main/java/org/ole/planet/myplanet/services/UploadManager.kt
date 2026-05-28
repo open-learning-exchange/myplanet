@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
@@ -192,96 +191,49 @@ class UploadManager @Inject constructor(
             notifyListener(listener, it)
         }
     }
-
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
             val user = userRepository.getUserModelSuspending()
+            val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
 
-            val resourcesToUpload = resourcesRepository.getUnuploadedResources(user)
+            when (result) {
+                is org.ole.planet.myplanet.services.upload.UploadResult.Success -> {
+                    listener?.let { l ->
+                        val libraryIds = result.items.map { it.localId }
+                        if (libraryIds.isNotEmpty()) {
+                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
+                            val libMap = libraries.associateBy { it.id }
 
-            if (resourcesToUpload.isEmpty()) {
-                notifyListener(listener, "No resources to upload")
-                return
-            }
-
-            withContext(dispatcherProvider.io) {
-                resourcesToUpload.processInBatches { batch ->
-                    val successfulUpdates = mutableListOf<Pair<org.ole.planet.myplanet.repository.ResourceUploadData, com.google.gson.JsonObject>>()
-
-                    batch.forEach { resourceData ->
-                        try {
-                            val `object` = apiInterface.postDoc(
-                                UrlUtils.header, "application/json",
-                                "${UrlUtils.getUrl()}/resources", resourceData.serialized
-                            ).body()
-
-                            if (`object` != null) {
-                                successfulUpdates.add(Pair(resourceData, `object`))
-                            }
-                        } catch (e: Exception) {
-                            Log.e(TAG, "Exception in UploadManager", e)
-                        }
-                    }
-
-                    if (successfulUpdates.isNotEmpty()) {
-                        val libraryIds = mutableListOf<String>()
-                        val uploadedInfos = ArrayList<org.ole.planet.myplanet.repository.UploadedResourceInfo>(successfulUpdates.size)
-
-                        successfulUpdates.forEach { (resourceData, `object`) ->
-                            resourceData.libraryId?.let { libId ->
-                                libraryIds.add(libId)
-                                uploadedInfos.add(
-                                    org.ole.planet.myplanet.repository.UploadedResourceInfo(
-                                        libraryId = libId,
-                                        id = getString("id", `object`),
-                                        rev = getString("rev", `object`),
-                                        isPrivate = resourceData.isPrivate,
-                                        privateFor = resourceData.privateFor,
-                                        title = resourceData.title
-                                    )
-                                )
-                            }
-                        }
-                        var isTransactionSuccessful = false
-
-                        try {
-                            val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                                ?: sharedPrefManager.getPlanetCode()
-
-                            resourcesRepository.markResourcesUploaded(uploadedInfos, planetCode)
-                            isTransactionSuccessful = true
-                        } catch (e: Exception) {
-                            // If the executeTransaction block throws (e.g. disk full, schema conflict),
-                            // Realm automatically rolls back the entire transaction.
-                            // We catch it here to prevent crashing the batch loop and prevent
-                            // `isTransactionSuccessful` from being set to true, so we don't upload
-                            // attachments for failed DB writes.
-                            Log.e(TAG, "Exception in UploadManager", e)
-                        }
-
-                        if (isTransactionSuccessful) {
-                            listener?.let {
-                                try {
-                                    val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
-
-                                    val libMap = libraries.associateBy { it.id }
-
-                                    successfulUpdates.forEach { (resourceData, `object`) ->
-                                        val rev = getString("rev", `object`)
-                                        val id = getString("id", `object`)
-
-                                        resourceData.libraryId?.let { libId ->
-                                            libMap[libId]?.let { library ->
-                                                uploadAttachment(id, rev, library, listener)
-                                            }
-                                        }
-                                    }
-                                } catch (e: Exception) {
-                                    Log.e("UploadManager", "Error uploading attachments", e)
+                            result.items.forEach { item ->
+                                libMap[item.localId]?.let { library ->
+                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
                                 }
                             }
                         }
                     }
+                    notifyListener(listener, "Uploaded ${result.items.size} resources successfully")
+                }
+                is org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess -> {
+                    listener?.let { l ->
+                        val libraryIds = result.succeeded.map { it.localId }
+                        if (libraryIds.isNotEmpty()) {
+                            val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
+                            val libMap = libraries.associateBy { it.id }
+
+                            result.succeeded.forEach { item ->
+                                libMap[item.localId]?.let { library ->
+                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                }
+                            }
+                        }
+                    }
+                    notifyListener(listener, "Partial success: ${result.succeeded.size} succeeded, ${result.failed.size} failed")
+                }
+                is org.ole.planet.myplanet.services.upload.UploadResult.Failure -> {
+                    notifyListener(listener, "Upload failed: ${result.errors.size} errors")
+                }
+                is org.ole.planet.myplanet.services.upload.UploadResult.Empty -> {
+                    notifyListener(listener, "No resources to upload")
                 }
             }
         } catch (e: Exception) {
