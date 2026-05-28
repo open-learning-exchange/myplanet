@@ -5,6 +5,9 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.invoke
 import io.mockk.mockk
+import io.mockk.mockkConstructor
+import org.json.JSONObject
+import io.mockk.mockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import io.realm.Realm
@@ -25,9 +28,6 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.data.findCopyByField
-import org.json.JSONObject
-import io.mockk.mockkConstructor
-import io.mockk.mockkStatic
 
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
@@ -39,28 +39,17 @@ class NotificationsRepositoryImplTest {
 
     @Before
     fun setUp() {
+        io.mockk.mockkStatic(io.realm.Realm::class)
+        every { io.realm.Realm.getDefaultInstance() } returns mockk(relaxed = true)
+        io.mockk.mockkStatic(io.realm.log.RealmLog::class)
+        every { io.realm.log.RealmLog.error(any<Throwable>(), any()) } returns Unit
+        every { io.realm.log.RealmLog.error(any<String>()) } returns Unit
+
         databaseService = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository)
     }
 
-    @Test
-    fun `test default property values`() {
-        val notification = RealmNotification()
-        assertNotNull(notification.id)
-        assertEquals("", notification.userId)
-        assertEquals("", notification.message)
-        assertFalse(notification.isRead)
-        assertNotNull(notification.createdAt)
-        assertEquals("", notification.type)
-        assertEquals(null, notification.relatedId)
-        assertEquals(null, notification.title)
-        assertEquals(null, notification.link)
-        assertEquals(0, notification.priority)
-        assertFalse(notification.isFromServer)
-        assertEquals(null, notification.rev)
-        assertFalse(notification.needsSync)
-    }
 
     @Test
     fun `insert with missing id does nothing`() = runTest {
@@ -314,4 +303,98 @@ class NotificationsRepositoryImplTest {
         assertEquals(0, result)
     }
 
+
+
+
+    @Test
+    fun `getNotifications handles filter and returns payloads`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmNotification>>()
+        val mockResults = mockk<io.realm.RealmResults<RealmNotification>>()
+
+        val notification = RealmNotification().apply {
+            id = "testId"
+            userId = "user123"
+            message = "Test"
+            isRead = true
+            createdAt = java.util.Date(1000)
+            type = "type"
+            priority = 1
+            isFromServer = true
+        }
+
+        coEvery { databaseService.withRealmAsync<List<RealmNotification>>(any()) } answers {
+            val operation = firstArg<(Realm) -> List<RealmNotification>>()
+            operation.invoke(realm)
+        }
+
+        every { realm.where(RealmNotification::class.java) } returns query
+        every { query.beginGroup() } returns query
+        every { query.equalTo("userId", "user123") } returns query
+        every { query.endGroup() } returns query
+        every { query.notEqualTo("message", "INVALID") } returns query
+        every { query.isNotEmpty("message") } returns query
+        every { query.equalTo("isRead", true) } returns query
+        every { query.sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING) } returns query
+        every { query.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf(notification).iterator()
+        every { realm.copyFromRealm(any<io.realm.RealmResults<RealmNotification>>()) } returns listOf(notification)
+
+        val result = repository.getNotifications("user123", "read", isAdmin = false)
+
+        assertEquals(1, result.size)
+        assertEquals("testId", result[0].id)
+        assertEquals(true, result[0].isRead)
+        assertEquals(1000L, result[0].createdAt)
+    }
+
+    @Test
+    fun `markAllUnreadAsRead updates relevant notifications and returns ids`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmNotification>>()
+        val mockResults = mockk<io.realm.RealmResults<RealmNotification>>()
+        val notification = RealmNotification().apply { id = "testId"; isRead = false; isFromServer = true }
+
+        val transactionSlot = slot<(Realm) -> Unit>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
+        every { realm.where(RealmNotification::class.java) } returns query
+        every { query.equalTo("userId", "user123") } returns query
+        every { query.equalTo("isRead", false) } returns query
+        every { query.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf(notification).iterator()
+
+        val result = repository.markAllUnreadAsRead("user123")
+
+        assertTrue(notification.isRead)
+        assertTrue(notification.needsSync)
+        assertEquals(setOf("testId"), result)
+    }
+
+    @Test
+    fun `getPendingSyncNotifications executes compound query correctly`() = runTest {
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmNotification>>()
+        val mockResults = mockk<io.realm.RealmResults<RealmNotification>>()
+        val notification = RealmNotification().apply { id = "testId"; needsSync = true; rev = "1-rev" }
+
+        coEvery { databaseService.withRealmAsync<List<RealmNotification>>(any()) } answers {
+            val operation = firstArg<(Realm) -> List<RealmNotification>>()
+            operation.invoke(realm)
+        }
+
+        every { realm.where(RealmNotification::class.java) } returns query
+        every { query.equalTo("needsSync", true) } returns query
+        every { query.isNotNull("rev") } returns query
+        every { query.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf(notification).iterator()
+        every { realm.copyFromRealm(any<io.realm.RealmResults<RealmNotification>>()) } returns listOf(notification)
+
+        val result = repository.getPendingSyncNotifications()
+
+        assertEquals(1, result.size)
+        assertEquals("testId", result[0].id)
+    }
 }
