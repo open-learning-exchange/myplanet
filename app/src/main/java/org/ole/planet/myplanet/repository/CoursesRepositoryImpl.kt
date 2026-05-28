@@ -1,5 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Base64
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmList
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
@@ -8,9 +13,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -19,25 +24,19 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.utils.JsonUtils
-import android.util.Base64
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmList
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.model.CourseProgressData
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,

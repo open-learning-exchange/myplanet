@@ -24,6 +24,7 @@ import fisk.chipcloud.ChipDeletedListener
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -171,7 +172,28 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
             }
         }
-
+        collectWhenStarted(viewModel.downloadComplete) { completed ->
+            if (completed) {
+                refreshResourcesData()
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (intent.action == org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS) {
+                        val download = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra("download", org.ole.planet.myplanet.model.Download::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra("download")
+                        }
+                        if (download?.completeAll == true) {
+                            viewModel.notifyDownloadComplete()
+                        }
+                    }
+                }
+            }
+        }
         lifecycleScope.launch {
             userModel = profileDbHandler.getUserModel()
             setupGuestUserRestrictions()
@@ -179,7 +201,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             val userId = userModel?.id
             if (userId != null) {
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userId).collect { openedResourceIds ->
+                    resourcesRepository.observeOpenedResourceIds(userId).collectLatest { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
@@ -460,6 +482,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val localAddress = url.substringAfterLast('/')
         val id = allResourceModels.find { it.item.resourceLocalAddress == localAddress }?.item?.id ?: return
         adapterLibrary.markItemAsOffline(id)
+        refreshResourcesData()
     }
 
     override fun onResourceClicked(item: ResourceItem) {
