@@ -104,6 +104,7 @@
         android:orientation="horizontal"
         android:padding="12dp"
         android:visibility="gone">
+
         <Button
             android:id="@+id/deleteSelectedButton"
             android:layout_width="0dp"
