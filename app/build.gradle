@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< jules-testing-voices-repository-12978417455366046690
         versionCode = 5626
         versionName = "0.56.26"
+=======
+        versionCode = 5624
+        versionName = "0.56.24"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }

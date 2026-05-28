@@ -249,8 +249,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadResource returns early when no resources to upload`() = testScope.runTest {
-        coEvery { userRepository.getUserModelSuspending() } returns null
-        coEvery { resourcesRepository.getUnuploadedResources(any()) } returns emptyList()
+        coEvery { uploadCoordinator.upload(any<org.ole.planet.myplanet.services.upload.UploadConfig<*>>()) } returns org.ole.planet.myplanet.services.upload.UploadResult.Empty
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
@@ -262,7 +261,7 @@ class UploadManagerTest {
     @Test
     fun `uploadResource notifies listener on failure`() = testScope.runTest {
         val errorMessage = "Test error"
-        coEvery { userRepository.getUserModelSuspending() } throws Exception(errorMessage)
+        coEvery { uploadCoordinator.upload(any<org.ole.planet.myplanet.services.upload.UploadConfig<*>>()) } throws Exception(errorMessage)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
