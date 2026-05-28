@@ -117,13 +117,29 @@ class ChatRepositoryImpl @Inject constructor(
                 docs.add(jsonDoc)
             }
         }
-        docs.forEach { insertChatHistory(realm, it) }
+
+        val ids = docs.map { JsonUtils.getString("_id", it) }.toTypedArray()
+        if (ids.isNotEmpty()) {
+            realm.where(RealmChatHistory::class.java)
+                .`in`("_id", ids)
+                .findAll()
+                .deleteAllFromRealm()
+        }
+
+        docs.forEach { json ->
+            val chatHistoryId = JsonUtils.getString("_id", json)
+            createAndPopulateChatHistory(realm, chatHistoryId, json)
+        }
     }
 
     private fun insertChatHistory(realm: io.realm.Realm, json: JsonObject) {
         val chatHistoryId = JsonUtils.getString("_id", json)
         val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
         existingChatHistory?.deleteFromRealm()
+        createAndPopulateChatHistory(realm, chatHistoryId, json)
+    }
+
+    private fun createAndPopulateChatHistory(realm: io.realm.Realm, chatHistoryId: String, json: JsonObject) {
         val chatHistory = realm.createObject(RealmChatHistory::class.java, chatHistoryId)
         chatHistory._rev = JsonUtils.getString("_rev", json)
         chatHistory._id = JsonUtils.getString("_id", json)
