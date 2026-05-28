@@ -71,8 +71,6 @@ class CommunityRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMeetup.insert(realm, jsonDoc)
-        }
+        org.ole.planet.myplanet.model.RealmMeetup.insertList(realm, "", documentList)
     }
 }
