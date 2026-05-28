@@ -1,6 +1,7 @@
-1. **Update `ActivitiesRepository`**: Add `suspend fun recordSyncAction(userId: String)`
-2. **Update `ActivitiesRepositoryImpl`**: Add `recordSyncAction` implementation which uses `executeTransaction` to insert a `RealmUserChallengeActions` object with actionType = "sync".
-3. **Update `DashboardElementActivity.kt`**: Replace `@Inject lateinit var databaseService: DatabaseService` with `@Inject lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository`. In `logSyncInSharedPrefs()`, replace `createActionAsync(databaseService, "${userModel?.id}", null, "sync")` with `activitiesRepository.recordSyncAction("${userModel?.id}")`. Remove `createActionAsync` and `DatabaseService` imports.
-4. **Update `DashboardActivity.kt`**: Remove `lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository` to avoid shadowing the field inherited from `DashboardElementActivity`. (Also remove `@Inject` above it).
-
-5. **Pre-commit checks**: Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+1. Modify `app/src/test/java/org/ole/planet/myplanet/repository/ResourcesRepositoryImplTest.kt`:
+   - Change `every { mockResults.iterator() } returns resultList.toMutableList().iterator()` to `every { mockResults.iterator() } answers { resultList.toMutableList().iterator() }`.
+   - Add a test for `getAllLibraries` ensuring that no `equalTo` filter is applied: `verify(exactly = 0) { mockQuery.equalTo(any<String>(), any<Any>()) }`.
+   - Add a test `search with isMyCourseLib true and userId null returns empty list` to cover the early return branch.
+2. Check using `./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.ResourcesRepositoryImplTest" --no-build-cache`.
+3. Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.
+4. Submit the change.
