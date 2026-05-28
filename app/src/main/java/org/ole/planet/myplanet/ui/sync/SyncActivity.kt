@@ -75,7 +75,6 @@ import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -99,6 +98,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
+    protected var dotSync: View? = null
+    protected var txtSyncState: TextView? = null
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     lateinit var spnCloud: Spinner
@@ -465,6 +466,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
             isProgressDialogShowing = true
+            txtSyncState?.text = getString(R.string.sync_chip_syncing)
+            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF59E0B.toInt())
         }
     }
 
@@ -479,6 +482,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
             }
+            txtSyncState?.text = getString(R.string.sync_chip_offline)
+            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
             showAlert(this@SyncActivity, getString(R.string.sync_failed), msg)
             showWifiSettingDialog(this@SyncActivity)
         }
@@ -592,6 +597,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         if (::lblLastSyncDate.isInitialized) {
             if (prefData.getLastSync() <= 0) {
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
+                txtSyncState?.text = getString(R.string.sync_chip_offline)
+                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
@@ -601,6 +608,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
 
                 lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
+                txtSyncState?.text = getString(R.string.sync_chip_synced)
+                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF22C55E.toInt())
             }
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
@@ -769,8 +778,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             builder.show()
         }
     }
-
-    override fun onCheckingVersion() {}
 
     fun registerReceiver() {
         collectWhenStarted(broadcastService.events) { intent ->

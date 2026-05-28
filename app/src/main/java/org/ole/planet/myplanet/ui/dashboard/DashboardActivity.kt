@@ -108,8 +108,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, prefData, dashboardViewModel)
@@ -268,9 +266,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, binding.root)
         insetsController.isAppearanceLightStatusBars = true
         insetsController.isAppearanceLightNavigationBars = true

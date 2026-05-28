@@ -37,15 +37,9 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import org.ole.planet.myplanet.utils.VersionUtils.getAndroidId
 
-private inline fun <T> Iterable<T>.processInBatches(action: (T) -> Unit) {
-    chunked(BATCH_SIZE).forEach { chunk ->
-        chunk.forEach { item ->
-            action(item)
-        }
-    }
-
+private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
+    chunked(BATCH_SIZE).forEach(action)
 }
 
 @Singleton
@@ -210,7 +204,7 @@ class UploadManager @Inject constructor(
             }
 
             withContext(dispatcherProvider.io) {
-                resourcesToUpload.chunked(BATCH_SIZE).forEach { batch ->
+                resourcesToUpload.processInBatches { batch ->
                     val successfulUpdates = mutableListOf<Pair<org.ole.planet.myplanet.repository.ResourceUploadData, com.google.gson.JsonObject>>()
 
                     batch.forEach { resourceData ->
@@ -229,25 +223,27 @@ class UploadManager @Inject constructor(
                     }
 
                     if (successfulUpdates.isNotEmpty()) {
-                        val libraryIds = successfulUpdates.mapNotNull { it.first.libraryId }.toTypedArray()
-                        var isTransactionSuccessful = false
+                        val libraryIds = mutableListOf<String>()
+                        val uploadedInfos = ArrayList<org.ole.planet.myplanet.repository.UploadedResourceInfo>(successfulUpdates.size)
 
-                        try {
-                            val uploadedInfos = successfulUpdates.mapNotNull { (resourceData, `object`) ->
-                                val rev = getString("rev", `object`)
-                                val id = getString("id", `object`)
-                                resourceData.libraryId?.let { libId ->
+                        successfulUpdates.forEach { (resourceData, `object`) ->
+                            resourceData.libraryId?.let { libId ->
+                                libraryIds.add(libId)
+                                uploadedInfos.add(
                                     org.ole.planet.myplanet.repository.UploadedResourceInfo(
                                         libraryId = libId,
-                                        id = id,
-                                        rev = rev,
+                                        id = getString("id", `object`),
+                                        rev = getString("rev", `object`),
                                         isPrivate = resourceData.isPrivate,
                                         privateFor = resourceData.privateFor,
                                         title = resourceData.title
                                     )
-                                }
+                                )
                             }
+                        }
+                        var isTransactionSuccessful = false
 
+                        try {
                             val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
                                 ?: sharedPrefManager.getPlanetCode()
 
@@ -265,7 +261,7 @@ class UploadManager @Inject constructor(
                         if (isTransactionSuccessful) {
                             listener?.let {
                                 try {
-                                    val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds.toList())
+                                    val libraries = resourcesRepository.getLibraryItemsByIds(libraryIds)
 
                                     val libMap = libraries.associateBy { it.id }
 
@@ -363,7 +359,7 @@ class UploadManager @Inject constructor(
         val teamsToUpload = teamsRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
-            teamsToUpload.chunked(BATCH_SIZE).forEach { batch ->
+            teamsToUpload.processInBatches { batch ->
                 batch.forEach { teamData ->
                     try {
                         if (teamData.isDeletePending) {
@@ -436,7 +432,7 @@ class UploadManager @Inject constructor(
         val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
-            newsItems.chunked(BATCH_SIZE).forEach { batch ->
+            newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
                 batch.forEach { news ->
                     try {

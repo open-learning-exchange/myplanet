@@ -58,5 +58,19 @@ class RealmMigrations : RealmMigration {
                 ?.addField("isDeletePending", Boolean::class.java)
             version++
         }
+
+        if (version == 9L) {
+            schema.get("RealmTag")
+                ?.addIndex("name")
+                ?.addIndex("tagId")
+                ?.addIndex("db")
+            schema.get("RealmRating")
+                ?.addIndex("item")
+                ?.addIndex("type")
+            schema.get("RealmMyCourse")
+                ?.addIndex("gradeLevel")
+                ?.addIndex("subjectLevel")
+            version++
+        }
     }
 }

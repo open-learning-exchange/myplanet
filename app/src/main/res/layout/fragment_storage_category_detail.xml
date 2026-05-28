@@ -108,16 +108,25 @@
 
         <Button
             android:id="@+id/deleteSelectedButton"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
             android:layout_marginEnd="8dp"
+            android:minHeight="48dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
             android:enabled="false"
+            android:theme="@style/AppThemeButton"
             android:text="@string/storage_delete_selected" />
         <Button
             android:id="@+id/deleteAllButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:minHeight="48dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:theme="@style/AppThemeButton"
             android:text="@string/storage_delete_all" />
     </LinearLayout>
 </LinearLayout>

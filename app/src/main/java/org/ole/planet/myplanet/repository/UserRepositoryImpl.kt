@@ -3,13 +3,16 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.text.Normalizer
 import java.util.Calendar
+import java.util.Date
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -40,8 +43,11 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.RetryUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -682,7 +688,7 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
+                    saveKeyIv(userModel, obj)
                 } catch (_: Exception) { }
                 Result.success(userModel)
             } else {
@@ -691,6 +697,183 @@ class UserRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)
+        }
+    }
+
+
+    override suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        try {
+            val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
+            if (response.body() != null) {
+                val jsonObject = response.body()
+                val members = jsonObject?.getAsJsonObject("members")
+                val rolesArray: JsonArray = if (members?.has("roles") == true) {
+                    members.getAsJsonArray("roles")
+                } else {
+                    JsonArray()
+                }
+                rolesArray.add("health")
+                members?.add("roles", rolesArray)
+                jsonObject?.add("members", members)
+                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun saveKeyIv(model: RealmUser, obj: JsonObject) {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        val ob = JsonObject()
+        var keyString = AndroidDecrypter.generateKey()
+        var iv: String? = AndroidDecrypter.generateIv()
+
+        if (!TextUtils.isEmpty(model.iv)) {
+            iv = model.iv
+        }
+        if (!TextUtils.isEmpty(model.key)) {
+            keyString = model.key
+        }
+
+        ob.addProperty("key", keyString)
+        ob.addProperty("iv", iv)
+        ob.addProperty("createdOn", Date().time)
+
+        val maxAttempts = 3
+        val retryDelayMs = 2000L
+        val dbUrl = "${UrlUtils.getUrl()}/$table"
+
+        withContext(dispatcherProvider.io) {
+            try {
+                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject())
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        val response = withContext(dispatcherProvider.io) {
+            RetryUtils.retry(
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+            }
+        }
+
+        if (response?.isSuccessful == true && response.body() != null) {
+            changeUserSecurity(model, obj)
+
+            markUserKeyIvSaved(model.id ?: "", keyString ?: "", iv)
+        } else {
+            throw IOException("Failed to save key/IV after $maxAttempts attempts")
+        }
+    }
+
+    private fun replacedUrl(model: RealmUser): String {
+        val url = UrlUtils.getUrl()
+        val password = SecurePrefs.getPassword(context, settings) ?: ""
+        val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
+        val protocolIndex = url.indexOf("://")
+        val protocol = url.substring(0, protocolIndex)
+        return "$protocol://$replacedUrl"
+    }
+
+    override suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean {
+        try {
+            val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val exists = res.body() != null
+            return exists
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
+
+    override suspend fun processUserAfterCreation(model: RealmUser, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
+
+            if (fetchDataResponse.isSuccessful) {
+                val passwordScheme = JsonUtils.getString("password_scheme", fetchDataResponse.body())
+                val derivedKey = JsonUtils.getString("derived_key", fetchDataResponse.body())
+                val salt = JsonUtils.getString("salt", fetchDataResponse.body())
+                val iterations = JsonUtils.getString("iterations", fetchDataResponse.body())
+
+                model.password_scheme = passwordScheme
+                model.derived_key = derivedKey
+                model.salt = salt
+                model.iterations = iterations
+
+                updateSecurityData(
+                    model.name ?: "",
+                    model._id,
+                    model._rev,
+                    derivedKey,
+                    salt,
+                    passwordScheme,
+                    iterations
+                )
+
+                saveKeyIv(model, obj)
+
+                updateHealthFn(model.id ?: "", model._id ?: "")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun uploadNewUser(model: RealmUser, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val obj = model.serialize()
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
+
+            if (createResponse.isSuccessful) {
+                val id = createResponse.body()?.get("id")?.asString
+                val rev = createResponse.body()?.get("rev")?.asString
+                model._id = id
+                model._rev = rev
+
+                // Persist _id and _rev to database
+                markUserUploaded(model.id ?: "", id ?: "", rev ?: "")
+
+                processUserAfterCreation(model, obj, updateHealthFn)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun updateExistingUser(header: String, model: RealmUser) {
+        try {
+            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+
+            if (latestDocResponse.isSuccessful) {
+                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                val obj = model.serialize()
+                val objMap = obj.entrySet().associate { (key, value) -> key to value }
+                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
+                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
+
+                val gson = com.google.gson.Gson()
+                val jsonElement = gson.toJsonTree(mutableObj)
+                val jsonObject = jsonElement.asJsonObject
+
+                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
+
+                if (updateResponse.isSuccessful) {
+                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                    markUserRevUpdated(model.id ?: "", updatedRev)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -746,7 +929,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
         return withRealm { realm ->
-            val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val userModel = realm.where(RealmUser::class.java).equalTo("_id", userId).findFirst()
+                ?: realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
 
@@ -764,7 +948,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         executeTransaction { transactionRealm ->
-            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("_id", userId).findFirst()
+                ?: transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: transactionRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
                 ?: transactionRealm.createObject(RealmHealthExamination::class.java, userId)
