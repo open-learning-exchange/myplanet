@@ -30,8 +30,8 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
-import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
+import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.CameraUtils

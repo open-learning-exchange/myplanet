@@ -10,7 +10,6 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
