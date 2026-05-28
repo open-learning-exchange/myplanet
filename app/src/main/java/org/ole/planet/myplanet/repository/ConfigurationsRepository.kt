@@ -14,7 +14,7 @@ interface ConfigurationsRepository {
 
     interface CheckVersionCallback {
         fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
-        fun onCheckingVersion()
+        fun onCheckingVersion() {}
         fun onError(msg: String, blockSync: Boolean)
     }
 
