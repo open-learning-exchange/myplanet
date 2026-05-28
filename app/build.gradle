@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< perf-batch-insert-chat-history-10303884226472882223
         versionCode = 5606
         versionName = "0.56.6"
+=======
+        versionCode = 5605
+        versionName = "0.56.5"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }

@@ -13,11 +13,11 @@ import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
+import kotlin.math.ceil
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-import kotlin.math.ceil
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
