@@ -40,7 +40,8 @@ interface CoursesRepository {
         searchText: String,
         gradeLevel: String,
         subjectLevel: String,
-        tagNames: List<String>
+        tagNames: List<String>,
+        showArchived: Boolean = false
     ): List<RealmMyCourse>
     suspend fun saveSearchActivity(
         searchText: String,
@@ -68,6 +69,8 @@ interface CoursesRepository {
     suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
+    suspend fun archiveCourse(courseId: String, userId: String)
+    suspend fun unarchiveCourse(courseId: String, userId: String)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject)

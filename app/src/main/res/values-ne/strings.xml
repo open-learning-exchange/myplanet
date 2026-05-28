@@ -1297,5 +1297,11 @@
     <string name="sync_chip_syncing">सिङ्क हुँदैछ…</string>
     <string name="sync_chip_offline">अफलाइन</string>
     <string name="desc_is_required">विवरण आवश्यक छ</string>
+    <string name="show_archived">अभिलेखित</string>
+    <string name="unarchive">अभिलेखबाट हटाउनुस्</string>
+    <string name="course_archived">कोर्स अभिलेखित भयो</string>
+    <string name="course_restored">कोर्स पुनःस्थापित भयो</string>
+    <string name="are_you_sure_you_want_to_unarchive_this_course">के तपाईं यो कोर्स अभिलेखबाट हटाउन चाहनुहुन्छ?</string>
+    <string name="are_you_sure_you_want_to_unarchive_these_courses">के तपाईं यी कोर्सहरू अभिलेखबाट हटाउन चाहनुहुन्छ?</string>
 
 </resources>

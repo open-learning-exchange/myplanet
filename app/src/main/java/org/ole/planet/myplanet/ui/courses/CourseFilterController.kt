@@ -5,6 +5,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
@@ -19,7 +20,8 @@ data class FilterState(
     val searchText: String,
     val grade: String,
     val subject: String,
-    val tagNames: List<String>
+    val tagNames: List<String>,
+    val showArchived: Boolean = false
 ) {
     val isActive: Boolean
         get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty()
@@ -38,12 +40,19 @@ class CourseFilterController(
     val searchTags: MutableList<RealmTag> = ArrayList()
     private var searchJob: Job? = null
     private var searchTextWatcher: TextWatcher? = null
+    private lateinit var chkArchived: CheckBox
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
         spnGrade = rootView.findViewById(R.id.spn_grade)
         spnSubject = rootView.findViewById(R.id.spn_subject)
         tvSelected = rootView.findViewById(R.id.tv_selected)
+        val cardFilter = rootView.findViewById<View>(R.id.card_filter)
+        chkArchived = cardFilter.findViewById(R.id.chk_archived)
+        chkArchived.setOnCheckedChangeListener { _, _ ->
+            onFilterChanged(currentState())
+            onScrollToTop()
+        }
         setupSpinners()
         setupSearchWatcher()
         setupClearTagsButton()
@@ -119,6 +128,7 @@ class CourseFilterController(
         tvSelected.text = ""
         spnGrade.setSelection(0)
         spnSubject.setSelection(0)
+        chkArchived.isChecked = false
         onFilterChanged(currentState())
         onScrollToTop()
     }
@@ -132,7 +142,8 @@ class CourseFilterController(
             searchText = etSearch.text.toString().trim(),
             grade = grade,
             subject = subject,
-            tagNames = searchTags.mapNotNull { it.name }
+            tagNames = searchTags.mapNotNull { it.name },
+            showArchived = chkArchived.isChecked
         )
     }
 

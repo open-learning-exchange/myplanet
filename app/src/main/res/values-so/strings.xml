@@ -1297,5 +1297,11 @@
     <string name="sync_chip_syncing">La waafajinayaa…</string>
     <string name="sync_chip_offline">Khadka kama jiro</string>
     <string name="desc_is_required">Sharaxaadda waa loo baahan yahay</string>
+    <string name="show_archived">Kaydsan</string>
+    <string name="unarchive">Ka saar kaydka</string>
+    <string name="course_archived">Koorska waa la kaydiyay</string>
+    <string name="course_restored">Koorska waa la soo celiyay</string>
+    <string name="are_you_sure_you_want_to_unarchive_this_course">Ma hubtaa inaad ka saarto kaydka koorskaan?</string>
+    <string name="are_you_sure_you_want_to_unarchive_these_courses">Ma hubtaa inaad ka saarto kaydka koorsaskaas?</string>
 
 </resources>

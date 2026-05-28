@@ -48,12 +48,17 @@ class CoursesViewModel @Inject constructor(
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
     val coursesState: StateFlow<CoursesUiState> = _coursesState
-
+    private val _showArchived = MutableStateFlow(false)
+    val showArchived: StateFlow<Boolean> = _showArchived
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
 
     fun resetSyncStatus() {
         _syncStatus.value = SyncStatus.Idle
+    }
+
+    fun setShowArchived(archived: Boolean) {
+        _showArchived.value = archived
     }
 
     fun startCoursesSync() {
@@ -123,7 +128,8 @@ class CoursesViewModel @Inject constructor(
             withContext(dispatcherProvider.io) {
                 try {
                     val allCourses = coursesRepository.getAllCourses()
-                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+                    val validCourses = allCourses.filter {
+                        !it.courseTitle.isNullOrBlank() && it.isArchived == _showArchived.value}
 
                     val myCourses = if (isMyCourseLib) {
                         coursesRepository.getMyCourses(userId, validCourses)
@@ -153,13 +159,11 @@ class CoursesViewModel @Inject constructor(
     fun filterCourses(isMyCourseLib: Boolean, userId: String?, searchText: String, selectedGrade: String, selectedSubject: String, tagNames: List<String>) {
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
-                val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
+                val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames, showArchived = _showArchived.value)
                 val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
-
                 val map = _coursesState.value.map
                 val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
-
                 processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap, tagsMap)
             }
         }
@@ -174,7 +178,8 @@ class CoursesViewModel @Inject constructor(
             subjectLevel = this.subjectLevel ?: "",
             createdDate = this.createdDate,
             numberOfSteps = this.getNumberOfSteps(),
-            isMyCourse = this.isMyCourse
+            isMyCourse = this.isMyCourse,
+            isArchived = this.isArchived
         )
     }
 }

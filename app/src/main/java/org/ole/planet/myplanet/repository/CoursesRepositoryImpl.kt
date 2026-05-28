@@ -288,7 +288,8 @@ class CoursesRepositoryImpl @Inject constructor(
         searchText: String,
         gradeLevel: String,
         subjectLevel: String,
-        tagNames: List<String>
+        tagNames: List<String>,
+        showArchived: Boolean
     ): List<RealmMyCourse> {
         return withRealm { realm ->
             val courseIdsWithTags = if (tagNames.isNotEmpty()) {
@@ -306,6 +307,7 @@ class CoursesRepositoryImpl @Inject constructor(
             }
 
             var query = realm.where(RealmMyCourse::class.java)
+                .equalTo("isArchived", showArchived)
             if (searchText.isNotEmpty()) {
                 query = query.contains("courseTitle", searchText, io.realm.Case.INSENSITIVE)
             }
@@ -602,6 +604,24 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
+    }
+
+    override suspend fun archiveCourse(courseId: String, userId: String) {
+        executeTransaction { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.isArchived = true
+        }
+    }
+
+    override suspend fun unarchiveCourse(courseId: String, userId: String) {
+        executeTransaction { realm ->
+            realm.where(RealmMyCourse::class.java)
+                .equalTo("courseId", courseId)
+                .findFirst()
+                ?.isArchived = false
+        }
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {

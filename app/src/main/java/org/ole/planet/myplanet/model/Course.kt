@@ -8,5 +8,6 @@ data class Course(
     val subjectLevel: String,
     val createdDate: Long,
     val numberOfSteps: Int = 0,
-    val isMyCourse: Boolean = false
+    val isMyCourse: Boolean = false,
+    val isArchived: Boolean = false
 )
