@@ -171,38 +171,33 @@ class EventsRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
             transactionSlot.captured.invoke(mockRealm)
         }
-        every { RealmMeetup.insert(any(), any()) } just Runs
+        every { RealmMeetup.insertList(any(), any(), any()) } just Runs
 
         val count = repository.batchInsertMeetups(docs)
         assertEquals(2, count)
 
-        verify(exactly = 2) { RealmMeetup.insert(mockRealm, any()) }
+        verify(exactly = 1) { RealmMeetup.insertList(mockRealm, "", docs) }
         unmockkObject(RealmMeetup.Companion)
     }
 
     @Test
-    fun batchInsertMeetupsPartialException() = runTest {
+    fun batchInsertMeetupsInnerException() = runTest {
         val mockRealm = mockk<Realm>(relaxed = true)
         mockkObject(RealmMeetup.Companion)
-
-        val doc1 = JsonObject().apply { addProperty("id", "1") }
-        val doc2 = JsonObject().apply { addProperty("id", "2") }
-        val docs = listOf(doc1, doc2)
+        val docs = listOf(JsonObject(), JsonObject())
 
         val transactionSlot = slot<Function1<Realm, Unit>>()
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
             transactionSlot.captured.invoke(mockRealm)
         }
 
-        // Fail on second doc
-        every { RealmMeetup.insert(mockRealm, doc1) } just Runs
-        every { RealmMeetup.insert(mockRealm, doc2) } throws SilentException("Test Exception")
+        // Fail during insertList
+        every { RealmMeetup.insertList(mockRealm, "", docs) } throws SilentException("Inner Exception")
 
         val count = repository.batchInsertMeetups(docs)
-        assertEquals(1, count)
+        assertEquals(0, count)
 
-        verify(exactly = 1) { RealmMeetup.insert(mockRealm, doc1) }
-        verify(exactly = 1) { RealmMeetup.insert(mockRealm, doc2) }
+        verify(exactly = 1) { RealmMeetup.insertList(mockRealm, "", docs) }
         unmockkObject(RealmMeetup.Companion)
     }
 
@@ -218,7 +213,7 @@ class EventsRepositoryImplTest {
         val count = repository.batchInsertMeetups(docs)
         assertEquals(0, count)
 
-        verify(exactly = 0) { RealmMeetup.insert(mockRealm, any()) }
+        verify(exactly = 0) { RealmMeetup.insertList(any(), any(), any()) }
         unmockkObject(RealmMeetup.Companion)
     }
 
