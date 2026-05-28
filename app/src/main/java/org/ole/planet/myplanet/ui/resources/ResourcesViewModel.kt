@@ -29,6 +29,12 @@ class ResourcesViewModel @Inject constructor(
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+    private val _downloadComplete = MutableStateFlow(false)
+    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    fun notifyDownloadComplete() {
+        _downloadComplete.value = true
+        _downloadComplete.value = false
+    }
 
     fun startResourcesSync() {
         val isFastSync = sharedPrefManager.getFastSync()
@@ -70,21 +76,10 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
-        val allLibraryItems = if (isMyCourseLib) {
-            resourcesRepository.getMyLibrary(modelId)
-        } else {
-            resourcesRepository.getAllLibraryItems().filter {
-                !it.isPrivate && it.userId?.contains(modelId) == false
-            }
-        }
-
-        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
-
-        val map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, modelId))
-        val tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
-
-        return allLibraryItems.map { library ->
-            val resourceId = library.resourceId ?: library.id
+        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
+        return enrichedLibraries
+            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
+            .map { (library, rating, libraryTags) ->
             val item = ResourceItem(
                 id = library.id,
                 title = library.title,
@@ -96,10 +91,10 @@ class ResourcesViewModel @Inject constructor(
                 isOffline = library.isResourceOffline(),
                 _rev = library._rev,
                 uploadDate = library.uploadDate,
-                filename = library.filename
+                filename = library.filename,
+                resourceLocalAddress = library.resourceLocalAddress
             )
-            val rating = resourceId?.let { map[it] }
-            val tags = resourceId?.let { tagsMap[it]?.map { tag -> TagItem(tag.id, tag.name) } } ?: emptyList()
+            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
             ResourceListModel(library, item, rating, tags)
         }
     }

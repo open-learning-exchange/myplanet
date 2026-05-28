@@ -20,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
@@ -27,12 +28,14 @@ class ChatViewModelTest {
     private lateinit var viewModel: ChatViewModel
     private lateinit var chatRepository: ChatRepository
     private val testDispatcher = StandardTestDispatcher()
+    private lateinit var dispatcherProvider: TestDispatcherProvider
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         chatRepository = mockk(relaxed = true)
-        viewModel = ChatViewModel(chatRepository)
+        dispatcherProvider = TestDispatcherProvider(testDispatcher)
+        viewModel = ChatViewModel(chatRepository, dispatcherProvider)
     }
 
     @After
@@ -83,6 +86,12 @@ class ChatViewModelTest {
         viewModel.continueConversation("id2", "query", "response", "rev2")
         job.join()
         coVerify { chatRepository.continueConversation("id2", "query", "response", "rev2") }
+    }
+
+    @Test
+    fun `continueConversation returns early if both query and response are blank`() = runTest {
+        viewModel.continueConversation("id", "", "  ", "rev1")
+        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
     }
 
     @Test

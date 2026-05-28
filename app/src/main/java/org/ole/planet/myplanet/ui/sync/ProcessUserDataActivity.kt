@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
@@ -17,15 +16,11 @@ import android.webkit.URLUtil
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -128,17 +123,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     fun changeLogoColor() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
-        val newColor = ContextCompat.getColor(this, android.R.color.white)
-        val alpha = (Color.alpha(newColor) * 10).toFloat().roundToInt()
-        val red = Color.red(newColor)
-        val green = Color.green(newColor)
-        val blue = Color.blue(newColor)
-        val alphaWhite = Color.argb(alpha, red, green, blue)
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
-            (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
-            logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
-        }
+        logo.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP)
     }
 
     fun setUrlParts(url: String, password: String): String {

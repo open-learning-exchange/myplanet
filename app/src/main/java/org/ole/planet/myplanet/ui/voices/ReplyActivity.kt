@@ -23,7 +23,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -59,6 +58,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     @Inject
     lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+
+    @Inject
+    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     @Inject
     lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
     @Inject
@@ -101,7 +103,13 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
             }
             val (news, list) = viewModel.getNewsWithReplies(id)
             if (!::newsAdapter.isInitialized) {
-                val labelManager = VoicesLabelManager(this@ReplyActivity, voicesRepository, lifecycleScope)
+                val labelManager = VoicesLabelManager(
+                    context = this@ReplyActivity,
+                    scope = lifecycleScope,
+                    dispatcherProvider = dispatcherProvider,
+                    addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+                    removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+                )
                 newsAdapter = VoicesAdapter(
                     context = this@ReplyActivity,
                     currentUser = user,
