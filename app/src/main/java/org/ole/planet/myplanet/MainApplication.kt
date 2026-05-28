@@ -21,10 +21,10 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
-import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -416,7 +416,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun scheduleTaskNotificationWork() {
-        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
         val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }

@@ -13,7 +13,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
