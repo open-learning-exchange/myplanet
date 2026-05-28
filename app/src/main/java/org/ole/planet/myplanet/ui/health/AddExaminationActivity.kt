@@ -447,6 +447,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     override fun onDestroy() {
         binding.etBloodpressure.removeTextChangedListener(textWatcher)
         textWatcher = null
+        user = null
+        currentUser = null
+        pojo = null
+        health = null
+        examination = null
+        customDiag = null
+        mapConditions = null
         super.onDestroy()
     }
 }
