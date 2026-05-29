@@ -57,13 +57,13 @@ class HealthRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
 
         every { databaseService.createManagedRealmInstance() } returns realm
-        coEvery { databaseService.withRealmAsync<Any?>(any()) } answers {
-            val operation = arg<(Realm) -> Any?>(0)
-            operation(realm)
+        coEvery { databaseService.withRealmAsync(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            (firstArg<Any>() as Function1<Realm, Any?>).invoke(realm)
         }
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val transaction = invocation.args[0] as (Realm) -> Unit
-            transaction(realm)
+        coEvery { databaseService.executeTransactionAsync(any()) } coAnswers {
+            @Suppress("UNCHECKED_CAST")
+            (firstArg<Any>() as Function1<Realm, Unit>).invoke(realm)
         }
 
         every { realm.where(RealmHealthExamination::class.java) } returns healthQuery
