@@ -5,9 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Sort
-import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -37,6 +35,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationConfig
+import javax.inject.Inject
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -129,12 +128,18 @@ class DashboardViewModel @Inject constructor(
     }
 
     fun loadUserContent(userId: String?) {
-        if (userId == null) return
+        if (userId == null) {
+            return
+        }
+
         userContentJob?.cancel()
         userContentJob = viewModelScope.launch {
-            val libraryDeferred = async(dispatcherProvider.io) {
-                val result = resourcesRepository.getMyLibrary(userId)
-                result
+            launch(dispatcherProvider.main) {
+                resourcesRepository.getMyLibraryFlow(userId)
+                    .flowOn(dispatcherProvider.io)
+                    .collect { library ->
+                        _uiState.update { it.copy(library = library) }
+                    }
             }
 
             launch(dispatcherProvider.main) {
@@ -178,8 +183,6 @@ class DashboardViewModel @Inject constructor(
                 }
             }
 
-            val myLibrary = libraryDeferred.await()
-            _uiState.update { it.copy(library = myLibrary) }
         }
     }
 

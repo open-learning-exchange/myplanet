@@ -21,5 +21,6 @@ interface FeedbackRepository {
     suspend fun saveFeedback(feedback: RealmFeedback)
     suspend fun insertFromJson(jsonObject: JsonObject)
     suspend fun insertFeedbackList(jsonObjects: List<JsonObject>)
+    suspend fun fetchAndSaveFeedbackForUser(userName: String): Boolean
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

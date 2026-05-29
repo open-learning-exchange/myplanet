@@ -126,10 +126,25 @@ class ResourcesRepositoryImpl @Inject constructor(
         return getLibraryListForUser(userId)
     }
 
-    override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+    override fun getMyLibraryFlow(userId: String?): Flow<List<RealmMyLibrary>> {
+        return queryListFlow(RealmMyLibrary::class.java) {
             equalTo("userId", userId)
         }
+    }
+
+    override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
+        val total = queryList(RealmMyLibrary::class.java).size
+        val result = queryList(RealmMyLibrary::class.java) {
+            equalTo("userId", userId)
+        }
+        android.util.Log.d("DashboardSync", "getMyLibrary — querying userId=$userId | matched=${result.size} / total=$total in Realm")
+        if (result.isEmpty() && total > 0) {
+            val sample = queryList(RealmMyLibrary::class.java).take(3)
+            sample.forEach { lib ->
+                android.util.Log.d("DashboardSync", "  sample resource userId list: ${lib.userId?.joinToString()}")
+            }
+        }
+        return result
     }
 
     override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
@@ -327,7 +342,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
             DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             true
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

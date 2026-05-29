@@ -30,6 +30,7 @@ class SyncConfigurationCoordinator(
         fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String)
         fun onSaveConfigAndContinue(dialog: MaterialDialog, binding: DialogServerUrlBinding, defaultUrl: String)
         fun onClearDataDialog()
+        fun onBetaSyncConfigSaved(url: String, defaultUrl: String, isAlternativeUrl: Boolean)
     }
 
     fun checkMinApk(
@@ -73,6 +74,20 @@ class SyncConfigurationCoordinator(
     ) {
         val savedId = prefData.getConfigurationId()
         callback.setSyncFailed(false)
+
+        if (prefData.getFastSync()) {
+            if (savedId != null && id != savedId) {
+                callback.onClearDataDialog()
+                return
+            }
+            if (savedId == null) {
+                prefData.setConfigurationId(id)
+                prefData.setCommunityName(code)
+            }
+            callback.onBetaSyncConfigSaved(url, defaultUrl, isAlternativeUrl)
+            return
+        }
+
         when (callerContext) {
             CallerContext.LOGIN_ACTIVITY, CallerContext.DASHBOARD_ACTIVITY -> {
                 if (isAlternativeUrl) {
