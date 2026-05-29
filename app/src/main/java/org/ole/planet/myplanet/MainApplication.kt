@@ -21,10 +21,10 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
-import java.lang.ref.WeakReference
 import java.util.UUID
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -60,12 +60,15 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+class MainApplication : Application(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
 
@@ -218,8 +221,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private var mainThreadRealm: io.realm.Realm? = null
-    private var activityReferences = 0
-    private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
@@ -356,7 +357,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun setupLifecycleCallbacks() {
-        registerActivityLifecycleCallbacks(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                onAppForegrounded()
+            }
+        })
         onAppStarted()
     }
 
@@ -416,7 +421,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun scheduleTaskNotificationWork() {
-        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
         val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
@@ -443,31 +453,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     private fun getCurrentThemeMode(): String {
         return ThemeManager.getCurrentThemeMode(context)
     }
-
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
-
-    override fun onActivityStarted(activity: Activity) {
-        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
-            onAppForegrounded()
-        }
-    }
-
-    override fun onActivityResumed(activity: Activity) {
-        if (isFirstLaunch) {
-            isFirstLaunch = false
-        }
-    }
-
-    override fun onActivityPaused(activity: Activity) {}
-
-    override fun onActivityStopped(activity: Activity) {
-        isActivityChangingConfigurations = activity.isChangingConfigurations
-        --activityReferences
-    }
-
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
-
-    override fun onActivityDestroyed(activity: Activity) {}
 
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
