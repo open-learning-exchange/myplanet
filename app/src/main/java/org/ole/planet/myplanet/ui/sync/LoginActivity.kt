@@ -588,7 +588,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
-                        profileDbHandler.saveUserInfoPref(settings, "", model)
+                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                     }
                 }
@@ -631,7 +631,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
-                        profileDbHandler.saveUserInfoPref(settings, "", model)
+                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                         dialog.dismiss()
                     }
