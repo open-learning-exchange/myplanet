@@ -77,7 +77,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.loadCourses(isMyCourseLib, model?.id) // now properly awaited
+            viewModel.loadCourses(isMyCourseLib, model?.id)
         }
     }
 
@@ -123,13 +123,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)  // ← ADD THIS, was missing
+        super.onViewCreated(view, savedInstanceState)
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         additionalSetup()
         setupMyProgressButton()
 
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userSessionManager.getUserModel()  // ← ADD THIS BLOCK
+            userModel = userSessionManager.getUserModel()
             model = userModel
             initializeView()
             setupButtonVisibility()
@@ -144,11 +144,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.coursesState.collectLatest { state ->
                 if (!::adapterCourses.isInitialized) return@collectLatest
+
                 if (isMyCourseLib) {
                     val courseIds = state.courses.mapNotNull { it.courseId }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
+
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
                 adapterCourses.setTagsMap(state.tagsMap)
