@@ -233,8 +233,8 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun normalizeText(str: String): String {
-        val lowercased = str.lowercase(Locale.getDefault())
+    internal fun normalizeText(str: String): String {
+        val lowercased = str.lowercase(Locale.ROOT)
         val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
         val sb = StringBuilder(normalized.length)
         for (i in 0 until normalized.length) {
@@ -247,7 +247,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return sb.toString()
     }
 
-    private fun matchesAllParts(title: String, parts: List<String>): Boolean {
+    internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
         for (part in parts) {
             if (!title.contains(part)) {
                 return false
