@@ -266,9 +266,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, binding.root)
         insetsController.isAppearanceLightStatusBars = true
         insetsController.isAppearanceLightNavigationBars = true
