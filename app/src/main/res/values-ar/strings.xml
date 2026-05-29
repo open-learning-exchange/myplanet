@@ -1313,5 +1313,11 @@
     <string name="sync_chip_syncing">جارٍ المزامنة…</string>
     <string name="sync_chip_offline">غير متصل</string>
     <string name="desc_is_required">الوصف مطلوب</string>
+    <string name="show_archived">مؤرشف</string>
+    <string name="unarchive">إلغاء الأرشفة</string>
+    <string name="course_archived">تمت أرشفة الدورة</string>
+    <string name="course_restored">تمت استعادة الدورة</string>
+    <string name="are_you_sure_you_want_to_unarchive_this_course">هل تريد إلغاء أرشفة هذه الدورة؟</string>
+    <string name="are_you_sure_you_want_to_unarchive_these_courses">هل تريد إلغاء أرشفة هذه الدورات؟</string>
 
 </resources>

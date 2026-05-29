@@ -1301,5 +1301,11 @@
     <string name="sync_chip_syncing">Synchronisation…</string>
     <string name="sync_chip_offline">Hors ligne</string>
     <string name="desc_is_required">La description est obligatoire</string>
+    <string name="show_archived">Archivé</string>
+    <string name="unarchive">Désarchiver</string>
+    <string name="course_archived">Cours archivé</string>
+    <string name="course_restored">Cours restauré</string>
+    <string name="are_you_sure_you_want_to_unarchive_this_course">Désarchiver ce cours ?</string>
+    <string name="are_you_sure_you_want_to_unarchive_these_courses">Désarchiver ces cours ?</string>
 
 </resources>

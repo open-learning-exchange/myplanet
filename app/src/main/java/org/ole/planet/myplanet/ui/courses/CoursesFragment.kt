@@ -151,6 +151,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.showArchived.collectLatest {
+                if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
+                    initializeView()
+                }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
             viewModel.coursesState.collectLatest { state ->
                 if (!::adapterCourses.isInitialized) return@collectLatest
 
@@ -226,6 +234,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             rootView = requireView(),
             scope = viewLifecycleOwner.lifecycleScope,
             onFilterChanged = { state ->
+                viewModel.setShowArchived(state.showArchived)
                 viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
             },
             onScrollToTop = { scrollToTop() }
@@ -236,6 +245,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             rootView = requireView(),
             isMyCourseLib = isMyCourseLib,
             isGuest = userModel?.isGuest() ?: true,
+            isArchivedView = viewModel.showArchived.value,
             onRemoveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -247,7 +257,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
+                    archiveSelected()
+                    selectionController.clearAll(adapterCourses)
+                    adapterCourses.removeCourses(courseIds)
+                }
+            },
+            onUnarchiveConfirmed = {
+                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    unarchiveSelected()
                     selectionController.clearAll(adapterCourses)
                     adapterCourses.removeCourses(courseIds)
                 }
@@ -438,6 +456,32 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 state.subject
             )
         }
+    }
+
+    private suspend fun archiveSelected() {
+        val userId = userModel?.id ?: return
+        val snapshot = selectedItems?.filterNotNull() ?: return
+        if (snapshot.isEmpty()) return
+        withContext(dispatcherProvider.io) {
+            snapshot.forEach { course ->
+                course.courseId?.let { coursesRepository.archiveCourse(it, userId) }
+            }
+        }
+        selectedItems?.clear()
+        Utilities.toast(activity, getString(R.string.course_archived))
+    }
+
+    private suspend fun unarchiveSelected() {
+        val userId = userModel?.id ?: return
+        val snapshot = selectedItems?.filterNotNull() ?: return
+        if (snapshot.isEmpty()) return
+        withContext(dispatcherProvider.io) {
+            snapshot.forEach { course ->
+                course.courseId?.let { coursesRepository.unarchiveCourse(it, userId) }
+            }
+        }
+        selectedItems?.clear()
+        Utilities.toast(activity, getString(R.string.course_restored))
     }
 
     override fun onPause() {
