@@ -118,52 +118,79 @@ class CoursesViewModel @Inject constructor(
         _coursesState.value = CoursesUiState(mappedCourses, map, progressMap, tagsMap)
     }
 
-    fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
-        viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                try {
-                    val allCourses = coursesRepository.getAllCourses()
-                    val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
+    suspend fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
+        withContext(dispatcherProvider.io) {
+            try {
+                val allCourses = coursesRepository.getAllCourses()
+                val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
 
-                    val myCourses = if (isMyCourseLib) {
-                        coursesRepository.getMyCourses(userId, validCourses)
-                    } else {
-                        emptyList()
-                    }
-
-                    val allCourseIds = validCourses.mapNotNull { it.courseId }
-
-                    val (map, progressMap) = coroutineScope {
-                        val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                        val progressDeferred = async { coursesRepository.getCourseProgress(userId, allCourseIds) }
-                        Pair(ratingsDeferred.await(), progressDeferred.await())
-                    }
-
-                    val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
-                        .mapValues { entry -> entry.value.map { it.toTag() } }
-
-                    processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
-                } catch (e: Exception) {
-                    e.printStackTrace()
+                val myCourses = if (isMyCourseLib) {
+                    coursesRepository.getMyCourses(userId, validCourses)
+                } else {
+                    emptyList()
                 }
+
+                val allCourseIds = validCourses.mapNotNull { it.courseId }
+
+                val (map, progressMap) = coroutineScope {
+                    val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
+                    val progressDeferred =
+                        async { coursesRepository.getCourseProgress(userId, allCourseIds) }
+                    Pair(ratingsDeferred.await(), progressDeferred.await())
+                }
+
+                val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
+                    .mapValues { entry -> entry.value.map { it.toTag() } }
+
+                processCourses(
+                    isMyCourseLib,
+                    userId,
+                    validCourses,
+                    myCourses,
+                    map,
+                    progressMap,
+                    tagsMap
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
     }
 
-    fun filterCourses(isMyCourseLib: Boolean, userId: String?, searchText: String, selectedGrade: String, selectedSubject: String, tagNames: List<String>) {
-        viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
-                val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
 
-                val map = _coursesState.value.map
-                val progressMap = _coursesState.value.progressMap
-                val tagsMap = _coursesState.value.tagsMap
+    suspend fun filterCourses(
+        isMyCourseLib: Boolean,
+        userId: String?,
+        searchText: String,
+        selectedGrade: String,
+        selectedSubject: String,
+        tagNames: List<String>
+    ) {
+        withContext(dispatcherProvider.io) {
+            val filteredCourses = coursesRepository.filterCourses(
+                searchText,
+                selectedGrade,
+                selectedSubject,
+                tagNames
+            )
+            val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
 
-                processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap, tagsMap)
-            }
+            val map = _coursesState.value.map
+            val progressMap = _coursesState.value.progressMap
+            val tagsMap = _coursesState.value.tagsMap
+
+            processCourses(
+                isMyCourseLib,
+                userId,
+                filteredCourses,
+                myCourses,
+                map,
+                progressMap,
+                tagsMap
+            )
         }
     }
+
 
     private fun RealmMyCourse.toCourse(): Course {
         return Course(
@@ -178,3 +205,4 @@ class CoursesViewModel @Inject constructor(
         )
     }
 }
+

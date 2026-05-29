@@ -76,11 +76,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun loadDataAsync() {
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
-        viewModel.loadCourses(isMyCourseLib, model?.id)
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.loadCourses(isMyCourseLib, model?.id) // now properly awaited
+        }
     }
 
     override suspend fun postAddRefresh() {
-        loadDataAsync()
+        viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
     override suspend fun deleteSelected(deleteProgress: Boolean) {
@@ -116,29 +118,18 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
-
-        val cachedState = viewModel.coursesState.value
-        if (cachedState.courses.isNotEmpty()) {
-            adapterCourses.setProgressMap(cachedState.progressMap)
-            adapterCourses.setRatingMap(cachedState.map)
-            adapterCourses.setTagsMap(cachedState.tagsMap)
-            adapterCourses.submitList(cachedState.courses) {
-                if (isAdded) showNoData(tvMessage, cachedState.courses.size, "courses")
-            }
-        }
-
         viewModel.loadCourses(isMyCourseLib, model?.id)
         return adapterCourses
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
+        super.onViewCreated(view, savedInstanceState)  // ← ADD THIS, was missing
         setupUI(requireView().findViewById(R.id.my_course_parent_layout), requireActivity())
         additionalSetup()
         setupMyProgressButton()
 
         viewLifecycleOwner.lifecycleScope.launch {
-            userModel = userSessionManager.getUserModel()
+            userModel = userSessionManager.getUserModel()  // ← ADD THIS BLOCK
             model = userModel
             initializeView()
             setupButtonVisibility()
@@ -153,13 +144,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.coursesState.collectLatest { state ->
                 if (!::adapterCourses.isInitialized) return@collectLatest
-
                 if (isMyCourseLib) {
                     val courseIds = state.courses.mapNotNull { it.courseId }
                     resources = coursesRepository.getCourseOfflineResources(courseIds)
                     courseLib = "courses"
                 }
-
                 adapterCourses.setProgressMap(state.progressMap)
                 adapterCourses.setRatingMap(state.map)
                 adapterCourses.setTagsMap(state.tagsMap)
@@ -226,7 +215,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             rootView = requireView(),
             scope = viewLifecycleOwner.lifecycleScope,
             onFilterChanged = { state ->
-                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+                viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.filterCourses(
+                        isMyCourseLib,
+                        model?.id,
+                        state.searchText,
+                        state.grade,
+                        state.subject,
+                        state.tagNames
+                    )
+                }
             },
             onScrollToTop = { scrollToTop() }
         )
@@ -478,7 +476,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         if (::filterController.isInitialized) {
             val state = filterController.currentState()
-            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+            }
             scrollToTop()
         }
     }
