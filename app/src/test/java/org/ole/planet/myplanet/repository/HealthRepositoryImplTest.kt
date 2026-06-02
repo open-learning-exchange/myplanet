@@ -40,7 +40,8 @@ import org.ole.planet.myplanet.data.queryList
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
-	@@ -22,22 +46,271 @@ class HealthRepositoryImplTest {
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+    private lateinit var repository: HealthRepositoryImpl
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
@@ -55,9 +56,8 @@ class HealthRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
 
         every { databaseService.createManagedRealmInstance() } returns realm
-        coEvery { databaseService.withRealmAsync(any()) } coAnswers {
-            @Suppress("UNCHECKED_CAST")
-            (firstArg<Any>() as Function1<Realm, Any?>).invoke(realm)
+        coEvery { databaseService.withRealmAsync<Any?>(any()) } coAnswers {
+            firstArg<(Realm) -> Any?>().invoke(realm)
         }
         coEvery { databaseService.executeTransactionAsync(any()) } coAnswers {
             @Suppress("UNCHECKED_CAST")
@@ -122,8 +122,12 @@ class HealthRepositoryImplTest {
         val examination = RealmHealthExamination()
         examination._id = "user1"
 
-        every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns examination
+        every { userQuery.applyEqualTo("_id", "user1") } returns userQuery
+        every { userQuery.applyEqualTo("id", "user1") } returns userQuery
+        every { userQuery.findFirst() } returns user
+
+        every { healthQuery.applyEqualTo("_id", "user1") } returns healthQuery
+        every { healthQuery.findFirst() } returns examination
 
         val result = repository.getHealthEntry("user1")
         advanceUntilIdle()
@@ -140,9 +144,14 @@ class HealthRepositoryImplTest {
         examination._id = "exam1"
         examination.userId = "user1"
 
-        every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns null
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "userId", "user1") } returns examination
+        every { userQuery.applyEqualTo("_id", "user1") } returns userQuery
+        every { userQuery.applyEqualTo("id", "user1") } returns userQuery
+        every { userQuery.findFirst() } returns user
+
+        every { healthQuery.applyEqualTo("_id", "user1") } returns healthQuery
+        every { healthQuery.applyEqualTo("userId", "user1") } returns healthQuery
+
+        every { healthQuery.findFirst() } returnsMany listOf(null, examination)
 
         val result = repository.getHealthEntry("user1")
         advanceUntilIdle()
@@ -156,7 +165,8 @@ class HealthRepositoryImplTest {
         val examination = RealmHealthExamination()
         examination._id = "exam1"
 
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "exam1") } returns examination
+        every { healthQuery.applyEqualTo("_id", "exam1") } returns healthQuery
+        every { healthQuery.findFirst() } returns examination
 
         val result = repository.getExaminationById("exam1")
         advanceUntilIdle()
