@@ -43,7 +43,6 @@ class ChatRepositoryTest {
         unmockkAll()
     }
 
-
     @Test
     fun insertChatHistoryBatch_filtersDesignDocsAndHandlesExistingRecords() {
         val jsonArray = JsonArray()
@@ -103,5 +102,4 @@ class ChatRepositoryTest {
         // Verification for DESIGN document (should be ignored entirely)
         verify(exactly = 0) { mockQuery.equalTo("_id", "_design/foo") }
     }
-
 }
