@@ -123,6 +123,7 @@ class HealthRepositoryImplTest {
         val examination = RealmHealthExamination()
         examination._id = "user1"
 
+        every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
         every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns examination
 
@@ -141,6 +142,7 @@ class HealthRepositoryImplTest {
         examination._id = "exam1"
         examination.userId = "user1"
 
+        every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
         every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmHealthExamination::class.java, "userId", "user1") } returns examination
