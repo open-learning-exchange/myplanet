@@ -3,7 +3,11 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.arg
 import io.mockk.every
+import io.mockk.eq
+import io.mockk.firstArg
+import io.mockk.match
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
@@ -11,7 +15,6 @@ import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.slot
 import io.mockk.verify
-import io.mockk.coVerify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -40,7 +43,9 @@ import org.ole.planet.myplanet.data.queryList
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
-	@@ -22,22 +46,271 @@ class HealthRepositoryImplTest {
+
+    private lateinit var repository: HealthRepositoryImpl
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
