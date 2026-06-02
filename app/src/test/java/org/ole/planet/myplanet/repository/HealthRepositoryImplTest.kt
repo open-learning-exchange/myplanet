@@ -56,8 +56,8 @@ class HealthRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
 
         every { databaseService.createManagedRealmInstance() } returns realm
-        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val operation = firstArg<(Realm) -> Any>()
+        coEvery { databaseService.withRealmAsync<Any?>(any()) } answers {
+            val operation = firstArg<(Realm) -> Any?>()
             operation(realm)
         }
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
