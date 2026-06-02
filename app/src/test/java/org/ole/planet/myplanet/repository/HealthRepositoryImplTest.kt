@@ -40,7 +40,8 @@ import org.ole.planet.myplanet.data.queryList
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
-	@@ -22,22 +46,271 @@ class HealthRepositoryImplTest {
+    private lateinit var repository: HealthRepositoryImpl
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
