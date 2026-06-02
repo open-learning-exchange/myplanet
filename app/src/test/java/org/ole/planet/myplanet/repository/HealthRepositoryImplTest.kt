@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.data.queryList
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
-
     private lateinit var repository: HealthRepositoryImpl
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
@@ -58,12 +57,12 @@ class HealthRepositoryImplTest {
 
         every { databaseService.createManagedRealmInstance() } returns realm
         coEvery { databaseService.withRealmAsync<Any?>(any()) } answers {
-            val operation = arg<(Realm) -> Any?>(0)
+            val operation = firstArg<(Realm) -> Any?>()
             operation(realm)
         }
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val transaction = invocation.args[0] as (Realm) -> Unit
-            transaction(realm)
+            val operation = firstArg<(Realm) -> Unit>()
+            operation(realm)
         }
 
         every { realm.where(RealmHealthExamination::class.java) } returns healthQuery
@@ -124,6 +123,7 @@ class HealthRepositoryImplTest {
         val examination = RealmHealthExamination()
         examination._id = "user1"
 
+        every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
         every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns examination
 
@@ -142,6 +142,7 @@ class HealthRepositoryImplTest {
         examination._id = "exam1"
         examination.userId = "user1"
 
+        every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
         every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmHealthExamination::class.java, "userId", "user1") } returns examination
