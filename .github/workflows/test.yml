@@ -3,7 +3,7 @@ name: myPlanet test
 on:
   push:
     branches:
-      - '*'
+      - '**'
     workflow_dispatch:
 
 permissions:
