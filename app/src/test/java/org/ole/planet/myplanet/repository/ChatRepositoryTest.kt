@@ -43,11 +43,12 @@ class ChatRepositoryTest {
         unmockkAll()
     }
 
+
     @Test
     fun insertChatHistoryBatch_filtersDesignDocsAndHandlesExistingRecords() {
         val jsonArray = JsonArray()
 
-        // 1. Valid document (NEW record - should not call delete)
+        // 1. Valid document (NEW record)
         val newDoc = JsonObject()
         newDoc.addProperty("_id", "123")
         newDoc.addProperty("_rev", "1-rev")
@@ -55,7 +56,7 @@ class ChatRepositoryTest {
         newObjWrapper.add("doc", newDoc)
         jsonArray.add(newObjWrapper)
 
-        // 2. Valid document (EXISTING record - should call delete)
+        // 2. Valid document (EXISTING record)
         val existingDoc = JsonObject()
         existingDoc.addProperty("_id", "456")
         existingDoc.addProperty("_rev", "2-rev")
@@ -73,28 +74,34 @@ class ChatRepositoryTest {
         val mockQuery: RealmQuery<RealmChatHistory> = mockk(relaxed = true)
         val mockResults: io.realm.RealmResults<RealmChatHistory> = mockk(relaxed = true)
 
-        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        val mockConversationList: io.realm.RealmList<org.ole.planet.myplanet.model.RealmConversation> = mockk(relaxed = true)
+        val existingChat = RealmChatHistory().apply {
+            _id = "456"
+            conversations = mockConversationList
+        }
 
-        // Mocking finding the records via bulk query
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
         every { mockQuery.`in`("_id", any<Array<String>>()) } returns mockQuery
         every { mockQuery.findAll() } returns mockResults
-
-        // Mock creation
-        every { mockRealm.createObject(RealmChatHistory::class.java, "123") } returns RealmChatHistory().apply { _id = "123" }
-        every { mockRealm.createObject(RealmChatHistory::class.java, "456") } returns RealmChatHistory().apply { _id = "456" }
+        every { mockResults.iterator() } answers { mutableListOf(existingChat).iterator() }
 
         chatRepository.insertChatHistoryBatch(mockRealm, jsonArray)
 
-        // Verification for bulk query and delete
+        // Verification for bulk query
         verify(exactly = 1) { mockQuery.`in`("_id", match<Array<String>> { it.toSet() == setOf("123", "456") }) }
-        verify(exactly = 1) { mockResults.deleteAllFromRealm() }
 
-        // Verification for valid documents
-        verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "123") }
-        verify(exactly = 1) { mockRealm.createObject(RealmChatHistory::class.java, "456") }
+        // Verification that existing chat's conversations are cleared to prevent orphans
+        verify(exactly = 1) { mockConversationList.deleteAllFromRealm() }
+
+        // Verification for bulk insert
+        verify(exactly = 1) {
+            mockRealm.insertOrUpdate(match<List<RealmChatHistory>> { list ->
+                list.size == 2 && list.any { it._id == "123" } && list.any { it._id == "456" }
+            })
+        }
 
         // Verification for DESIGN document (should be ignored entirely)
         verify(exactly = 0) { mockQuery.equalTo("_id", "_design/foo") }
-        verify(exactly = 0) { mockRealm.createObject(RealmChatHistory::class.java, "_design/foo") }
     }
+
 }
