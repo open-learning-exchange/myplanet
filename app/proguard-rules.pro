@@ -42,3 +42,14 @@
 # Markwon missing optional dependencies
 -dontwarn com.caverock.androidsvg.**
 -dontwarn org.commonmark.ext.gfm.strikethrough.**
+
+# Realm Keep Rules
+-keep class io.realm.** { *; }
+-keep class * extends io.realm.RealmObject { *; }
+-keep class * extends io.realm.RealmModel { *; }
+
+# Retrofit / Gson Keep Rules
+-keep class org.ole.planet.myplanet.model.** { *; }
+-keepclasseswithmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
