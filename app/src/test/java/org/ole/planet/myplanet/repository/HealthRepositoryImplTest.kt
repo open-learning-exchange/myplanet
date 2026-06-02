@@ -11,7 +11,6 @@ import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.slot
 import io.mockk.verify
-import io.mockk.coVerify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -40,7 +39,9 @@ import org.ole.planet.myplanet.data.queryList
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
-	@@ -22,22 +46,271 @@ class HealthRepositoryImplTest {
+
+    private lateinit var repository: HealthRepositoryImpl
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
@@ -55,13 +56,13 @@ class HealthRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
 
         every { databaseService.createManagedRealmInstance() } returns realm
-        coEvery { databaseService.withRealmAsync(any()) } coAnswers {
-            @Suppress("UNCHECKED_CAST")
-            (firstArg<Any>() as Function1<Realm, Any?>).invoke(realm)
+        coEvery { databaseService.withRealmAsync<Any?>(any()) } coAnswers {
+            val operation = firstArg<(Realm) -> Any?>()
+            operation(realm)
         }
         coEvery { databaseService.executeTransactionAsync(any()) } coAnswers {
-            @Suppress("UNCHECKED_CAST")
-            (firstArg<Any>() as Function1<Realm, Unit>).invoke(realm)
+            val transaction = firstArg<(Realm) -> Unit>()
+            transaction(realm)
         }
 
         every { realm.where(RealmHealthExamination::class.java) } returns healthQuery
