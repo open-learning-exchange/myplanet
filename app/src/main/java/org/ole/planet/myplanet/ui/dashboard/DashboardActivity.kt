@@ -534,10 +534,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
 
-            lifecycleScope.launch {
-                delay(1000)
-                isFromNotificationAction = false
-            }
+            binding.root.post { isFromNotificationAction = false }
         }
     }
     
