@@ -897,6 +897,14 @@
     <string name="image_resource">recurso de imagen</string>
     <string name="play_audio">reproducir audio</string>
     <string name="video_player">reproductor de video</string>
+    <string name="video_unavailable">Video no disponible: archivo no encontrado y no se pudo conectar al servidor</string>
+    <string name="video_playback_error">Error de reproducción de video. Inténtalo de nuevo o comprueba tu conexión</string>
+    <string name="video_loading_checking_server">Comprobando disponibilidad del servidor…</string>
+    <string name="video_loading_connecting">Conectando al servidor…</string>
+    <string name="video_loading_buffering">Cargando…</string>
+    <string name="video_loading_local">Cargando video…</string>
+    <string name="unable_to_play_video">No se puede reproducir el video</string>
+    <string name="go_back">Volver</string>
     <string name="progress_bar">barra de progreso</string>
     <string name="web_view">vista web</string>
     <string name="invalid_configuration">Configuraciones de servidor no válidas</string>

@@ -897,6 +897,14 @@
     <string name="image_resource">deriska sawirka</string>
     <string name="play_audio">bixi codka</string>
     <string name="video_player">qalabka fiidyowga</string>
+    <string name="video_unavailable">Fiidyowga lama heli karo — faylku lama helin oo xiriirka serverka lama samayn karin</string>
+    <string name="video_playback_error">Khalad ku yimid ciyaarta fiidyowga. Isku day mar kale ama hubi xiriirkaaga</string>
+    <string name="video_loading_checking_server">Hubi helitaanka serverka…</string>
+    <string name="video_loading_connecting">La xiriiraya serverka…</string>
+    <string name="video_loading_buffering">Kaydinta…</string>
+    <string name="video_loading_local">Soo dejinaya fiidyowga…</string>
+    <string name="unable_to_play_video">Ma ciyaari karo fiidyowga</string>
+    <string name="go_back">Ku laabo</string>
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>

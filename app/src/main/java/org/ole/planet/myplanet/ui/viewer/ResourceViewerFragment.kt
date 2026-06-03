@@ -26,6 +26,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
@@ -57,7 +59,9 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AudioRecorder
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.resources.AddResourceViewModel
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -66,6 +70,7 @@ import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TTSManager
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -87,6 +92,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
+    private var videoLoadingOverlay: View? = null
+    private var videoLoadingText: TextView? = null
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: RealmMyLibrary
     private var pdfText: String = ""
@@ -98,6 +105,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
     @Inject lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
+    @Inject lateinit var serverUrlMapper: ServerUrlMapper
+    @Inject lateinit var sharedPrefManager: SharedPrefManager
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val addResourceViewModel: AddResourceViewModel by viewModels()
@@ -171,7 +180,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
-    private fun setupViewer() {
+    private suspend fun setupViewer() {
         when (type) {
             ResourceType.VIDEO -> setupVideoViewer()
             ResourceType.AUDIO -> setupAudioViewer()
@@ -182,33 +191,121 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
-    private fun setupVideoViewer() {
+    private fun showVideoLoading(statusText: String) {
+        videoLoadingOverlay?.visibility = View.VISIBLE
+        videoLoadingText?.text = statusText
+    }
+
+    private fun hideVideoLoading() {
+        videoLoadingOverlay?.visibility = View.GONE
+    }
+
+    private fun navigateBackWithError(message: String) {
+        view?.post {
+            if (!isAdded) return@post
+            hideVideoLoading()
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.unable_to_play_video))
+                .setMessage(message)
+                .setPositiveButton(getString(R.string.go_back)) { _, _ -> requireActivity().finish() }
+                .setCancelable(false)
+                .show()
+        }
+    }
+
+    private suspend fun isUrlDirectlyReachable(url: String): Boolean {
+        return try {
+            withContext(dispatcherProvider.io) {
+                val cleanUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "http://$url" else url
+                val connection = java.net.URL(cleanUrl).openConnection() as java.net.HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.requestMethod = "GET"
+                val code = connection.responseCode
+                connection.disconnect()
+                code in 200..599
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private suspend fun ensureServerUrlUpdated() {
+        val serverUrl = sharedPrefManager.getServerUrl()
+        val mapping = serverUrlMapper.processUrl(serverUrl)
+        if (mapping.alternativeUrl != null) {
+            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                isUrlDirectlyReachable(url)
+            }
+        }
+    }
+
+    private suspend fun startOnlineStreaming() {
+        if (!::library.isInitialized) {
+            navigateBackWithError(getString(R.string.video_unavailable))
+            return
+        }
+        showVideoLoading(getString(R.string.video_loading_checking_server))
+        ensureServerUrlUpdated()
+        filePath = UrlUtils.getUrl(library)
+        showVideoLoading(getString(R.string.video_loading_connecting))
+        authSessionUpdater = authSessionUpdaterFactory.create(this)
+    }
+
+    private suspend fun setupVideoViewer() {
         binding.stubVideo.visibility = View.VISIBLE
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
-        
+        videoLoadingOverlay = binding.root.findViewById(R.id.video_loading_overlay)
+        videoLoadingText = binding.root.findViewById(R.id.video_loading_text)
+
         if (isOnline) {
+            showVideoLoading(getString(R.string.video_loading_checking_server))
+            ensureServerUrlUpdated()
+            if (::library.isInitialized) {
+                filePath = UrlUtils.getUrl(library)
+            }
+            showVideoLoading(getString(R.string.video_loading_connecting))
             authSessionUpdater = authSessionUpdaterFactory.create(this)
         } else {
-            prepareVideoPlayer(filePath)
+            val resolvedPath = filePath?.let { resolveVideoPath(it) }
+            val localFile = resolvedPath?.let { File(it) }
+
+            when {
+                localFile != null && localFile.exists() -> {
+                    showVideoLoading(getString(R.string.video_loading_local))
+                    prepareVideoPlayer(resolvedPath)
+                }
+                else -> {
+                    startOnlineStreaming()
+                }
+            }
         }
-        
+
         val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
         requireContext().registerReceiver(audioBecomingNoisyReceiver, filter)
     }
 
+    private fun resolveVideoPath(relativePath: String): String {
+        if (isFullPath) return relativePath
+        return File(requireContext().getExternalFilesDir(null), "ole/$relativePath").absolutePath
+    }
+
     @OptIn(UnstableApi::class)
-    private fun prepareVideoPlayer(uriString: String?) {
-        val uri = uriString?.toUri() ?: return
+    private fun prepareVideoPlayer(resolvedPath: String) {
+        val uri = File(resolvedPath).toUri()
         val dataSpec = DataSpec(uri)
         val fileDataSource = FileDataSource()
         try {
             fileDataSource.open(dataSpec)
         } catch (e: FileDataSource.FileDataSourceException) {
-            e.printStackTrace()
+            navigateBackWithError(getString(R.string.video_playback_error))
             return
         }
         val factory = DataSource.Factory { fileDataSource }
-        val fileUri = fileDataSource.uri ?: return
+        val fileUri = fileDataSource.uri
+        if (fileUri == null) {
+            navigateBackWithError(getString(R.string.video_playback_error))
+            return
+        }
 
         val trackSelector = DefaultTrackSelector(requireContext())
         exoPlayer = ExoPlayer.Builder(requireContext())
@@ -216,6 +313,19 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setLoadControl(DefaultLoadControl())
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
+
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                navigateBackWithError(getString(R.string.video_playback_error))
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
+                    Player.STATE_READY -> hideVideoLoading()
+                    else -> {}
+                }
+            }
+        })
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
@@ -245,6 +355,19 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setTrackSelector(trackSelector)
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
+
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                navigateBackWithError(getString(R.string.video_playback_error))
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
+                    Player.STATE_READY -> hideVideoLoading()
+                    else -> {}
+                }
+            }
+        })
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
@@ -400,10 +523,15 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
-        val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
+        val cookieHeader = responseHeader["Set-Cookie"]?.get(0)
+        val headerAuth = cookieHeader?.split(";") ?: run {
+            return
+        }
         auth = headerAuth[0]
         lifecycleScope.launch {
-            val url = filePath ?: return@launch
+            val url = filePath ?: run {
+                return@launch
+            }
             streamVideoFromUrl(url, auth)
             if (isOnline && !FileUtils.checkFileExist(requireContext(), url)) {
                 DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
@@ -411,7 +539,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
-    override fun onError(s: String) { Utilities.toast(requireContext(), "Auth error: $s") }
+    override fun onError(s: String) {
+        navigateBackWithError(getString(R.string.video_unavailable))
+    }
 
     override fun onPause() {
         super.onPause()
