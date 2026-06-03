@@ -91,6 +91,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private lateinit var library: RealmMyLibrary
     private var pdfText: String = ""
     private var isExtractingText = false
+    private var externalFilesDir: File? = null
 
     @Inject lateinit var personalsRepository: PersonalsRepository
     @Inject lateinit var resourcesRepository: ResourcesRepository
@@ -164,6 +165,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder.setCaller(requireActivity(), requireContext())
 
         lifecycleScope.launch {
+            externalFilesDir = withContext(dispatcherProvider.io) {
+                requireContext().getExternalFilesDir(null)
+            }
             resourceId?.let {
                 library = resourcesRepository.getLibraryItemById(it) ?: return@launch
             }
@@ -297,7 +301,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             val matcher = uuidPattern.matcher(it)
             if (matcher.find()) it.substring(matcher.end()) else it
         }
-        return File(requireContext().getExternalFilesDir(null), "ole/$processedPath").absolutePath
+        return File(externalFilesDir, "ole/$processedPath").absolutePath
     }
 
     private fun setupPdfViewer() {
@@ -312,7 +316,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private fun renderPdf() {
-        val file = File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+        val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
             try {
                 val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -340,7 +344,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private fun extractPdfText() {
-        val file = File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+        val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
         isExtractingText = true
         lifecycleScope.launch(dispatcherProvider.io) {
@@ -374,7 +378,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         imageFileName.text = title
 
         val imageFile = if (isFullPath) filePath?.let { File(it) }
-                        else File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+                        else File(externalFilesDir, "ole/$filePath")
         Glide.with(this)
             .load(imageFile)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -388,7 +392,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
 
-        val file = File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+        val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
             val text = file.readText()
             if (type == ResourceType.MARKDOWN) {
