@@ -15,6 +15,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -325,7 +326,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (urls.isEmpty()) {
                 return false
             }
-            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            withContext(databaseService.ioDispatcher) {
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            }
             true
         } catch (e: Exception) {
             false
