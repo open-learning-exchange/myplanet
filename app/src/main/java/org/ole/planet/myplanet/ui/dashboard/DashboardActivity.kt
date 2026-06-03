@@ -117,7 +117,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
-    private var systemNotificationReceiverRegistered = false
     private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
 
@@ -596,8 +595,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun registerSystemNotificationReceiver() {
-        if (systemNotificationReceiverRegistered) return
-        systemNotificationReceiver = object : BroadcastReceiver() {
+        if (systemNotificationReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val pendingResult = goAsync()
                 lifecycleScope.launch {
@@ -628,34 +627,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
-        
+
         val filter = IntentFilter("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
         try {
             if (Build.VERSION.SDK_INT >= 33) {
-                registerReceiver(systemNotificationReceiver, filter, RECEIVER_NOT_EXPORTED)
+                registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED)
             } else {
                 @Suppress("UnspecifiedRegisterReceiverFlag")
-                registerReceiver(systemNotificationReceiver, filter)
+                registerReceiver(receiver, filter)
             }
-            systemNotificationReceiverRegistered = true
+            systemNotificationReceiver = receiver
         } catch (e: IllegalArgumentException) {
             e.printStackTrace()
-            systemNotificationReceiver = null
-            systemNotificationReceiverRegistered = false
         }
     }
 
     private fun unregisterSystemNotificationReceiver() {
-        systemNotificationReceiver?.let {
-            if (systemNotificationReceiverRegistered) {
-                try {
-                    unregisterReceiver(it)
-                } catch (e: IllegalArgumentException) {
-                    e.printStackTrace()
-                }
-                systemNotificationReceiverRegistered = false
-            }
-            systemNotificationReceiver = null
+        val receiver = systemNotificationReceiver ?: return
+        systemNotificationReceiver = null
+        try {
+            unregisterReceiver(receiver)
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
         }
     }
 
