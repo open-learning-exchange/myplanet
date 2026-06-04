@@ -9,13 +9,11 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -39,7 +37,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -52,6 +49,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
@@ -60,7 +58,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val improvedSyncManager: Lazy<ImprovedSyncManager>,
@@ -741,7 +738,7 @@ class SyncManager @Inject constructor(
         val shelvesWithData = mutableListOf<String>()
         val shelfIds = shelfBatch.map { it.id }
         val keysObject = JsonObject().apply {
-            add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
+            add("keys", gson.fromJson(gson.toJson(shelfIds), JsonArray::class.java))
         }
 
         val response = ApiClient.executeWithRetryAndWrap {
@@ -936,7 +933,7 @@ class SyncManager @Inject constructor(
                 val batch = validIds.subList(i, end)
 
                 val keysObject = JsonObject()
-                keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
+                keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
 
                 // API call
                 val apiStartTime = System.currentTimeMillis()
@@ -990,9 +987,5 @@ class SyncManager @Inject constructor(
             logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
         }
         return processedCount
-    }
-
-    private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        return ThreadSafeRealmManager.withRealm(databaseService, operation)
     }
 }
