@@ -1053,7 +1053,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(BellDashboardFragment())
             }
         }
-        item.isChecked = true
         return true
     }
 
