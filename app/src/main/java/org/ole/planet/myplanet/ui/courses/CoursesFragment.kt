@@ -76,13 +76,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun loadDataAsync() {
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.loadCourses(isMyCourseLib, model?.id)
-        }
+        viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
     override suspend fun postAddRefresh() {
-        viewModel.loadCourses(isMyCourseLib, model?.id)
+        loadDataAsync()
     }
 
     override suspend fun deleteSelected(deleteProgress: Boolean) {
@@ -118,6 +116,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         adapterCourses.setListener(this@CoursesFragment)
         adapterCourses.setRatingChangeListener(this@CoursesFragment)
         enableSortButtons()
+
+        val cachedState = viewModel.coursesState.value
+        if (cachedState.courses.isNotEmpty()) {
+            adapterCourses.setProgressMap(cachedState.progressMap)
+            adapterCourses.setRatingMap(cachedState.map)
+            adapterCourses.setTagsMap(cachedState.tagsMap)
+            adapterCourses.submitList(cachedState.courses) {
+                if (isAdded) showNoData(tvMessage, cachedState.courses.size, "courses")
+            }
+        }
+
         viewModel.loadCourses(isMyCourseLib, model?.id)
         return adapterCourses
     }
@@ -217,16 +226,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             rootView = requireView(),
             scope = viewLifecycleOwner.lifecycleScope,
             onFilterChanged = { state ->
-                viewLifecycleOwner.lifecycleScope.launch {
-                    viewModel.filterCourses(
-                        isMyCourseLib,
-                        model?.id,
-                        state.searchText,
-                        state.grade,
-                        state.subject,
-                        state.tagNames
-                    )
-                }
+                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
             },
             onScrollToTop = { scrollToTop() }
         )
@@ -411,13 +411,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
+                    addToMyList()
                     val fragment = CoursesFragment().apply {
                         arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
                     }
                     homeItemClickListener?.openMyFragment(fragment)
                 }
             }
-            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                addToMyList()
+                dialog.cancel()
+    }
             .setOnDismissListener { addToMyList() }
 
         return builder.create()
@@ -478,9 +482,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         if (::filterController.isInitialized) {
             val state = filterController.currentState()
-            viewLifecycleOwner.lifecycleScope.launch {
-                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
-            }
+            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
             scrollToTop()
         }
     }
