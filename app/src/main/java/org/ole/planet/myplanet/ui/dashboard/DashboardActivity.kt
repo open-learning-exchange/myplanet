@@ -164,9 +164,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
-            notificationManager = withContext(dispatcherProvider.io) {
-                NotificationUtils.getInstance(this@DashboardActivity)
-            }
+            notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
         }
     }
 
@@ -534,10 +532,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
 
-            lifecycleScope.launch {
-                delay(1000)
-                isFromNotificationAction = false
-            }
+            binding.root.post { isFromNotificationAction = false }
         }
     }
     
