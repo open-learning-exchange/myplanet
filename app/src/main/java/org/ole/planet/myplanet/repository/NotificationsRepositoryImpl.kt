@@ -493,6 +493,19 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
+        if (ids.isEmpty()) return emptySet()
+        val deletedIds = mutableSetOf<String>()
+        executeTransaction { realm ->
+            val notifications = realm.where(RealmNotification::class.java)
+                .`in`("id", ids.toTypedArray())
+                .findAll()
+            notifications.forEach { deletedIds.add(it.id) }
+            notifications.deleteAllFromRealm()
+        }
+        return deletedIds
+    }
+
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         for (j in jsonArray) {
