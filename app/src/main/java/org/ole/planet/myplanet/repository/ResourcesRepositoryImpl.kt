@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -46,7 +47,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+        return queryList(RealmMyLibrary::class.java, ensureLatest = true) {
             equalTo("isPrivate", false)
         }
     }
@@ -127,7 +128,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+        return queryList(RealmMyLibrary::class.java, ensureLatest = true) {
             equalTo("userId", userId)
         }
     }
@@ -325,7 +326,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (urls.isEmpty()) {
                 return false
             }
-            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            withContext(databaseService.ioDispatcher) {
+                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
+            }
             true
         } catch (e: Exception) {
             false
