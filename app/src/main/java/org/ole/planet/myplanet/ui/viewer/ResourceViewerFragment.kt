@@ -405,8 +405,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         lifecycleScope.launch {
             val url = filePath ?: return@launch
             streamVideoFromUrl(url, auth)
-            if (isOnline && !FileUtils.checkFileExist(requireContext(), url)) {
-                DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
+            if (isOnline) {
+                withContext(dispatcherProvider.io) {
+                    if (!FileUtils.checkFileExist(requireContext(), url)) {
+                        DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
+                    }
+                }
             }
         }
     }
