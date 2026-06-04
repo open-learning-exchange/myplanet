@@ -61,7 +61,6 @@ class SyncManagerTest {
 
         syncManager = SyncManager(
             context,
-            databaseService,
             sharedPrefManager,
             apiInterface,
             lazyImprovedSyncManager,
