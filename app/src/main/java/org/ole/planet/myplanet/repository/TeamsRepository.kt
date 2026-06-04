@@ -13,7 +13,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
-import org.ole.planet.myplanet.model.Transaction
 
 data class JoinedMemberData(
     val user: RealmUser,
@@ -42,7 +41,7 @@ data class TeamUploadData(
     val isDeletePending: Boolean = false
 )
 
-interface TeamsRepository {
+interface TeamsRepository : TeamTasksRepository, TeamFinanceRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)
     suspend fun deleteLocalTeamRecord(teamId: String?)
@@ -66,12 +65,8 @@ interface TeamsRepository {
     suspend fun getTeamLinks(): List<RealmMyTeam>
     suspend fun getTeamById(teamId: String): RealmMyTeam?
     suspend fun getTeamSummaryById(teamId: String): TeamSummary?
-    suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
-    suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
-    fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
-    suspend fun getTasks(userId: String?): List<RealmTeamTask>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
@@ -82,20 +77,6 @@ interface TeamsRepository {
     suspend fun removeMember(teamId: String, userId: String)
     suspend fun addResourceLinks(teamId: String, resources: List<TeamResourceDto>, userId: String?)
     suspend fun removeResourceLink(teamId: String, resourceId: String)
-    suspend fun deleteTask(taskId: String)
-    suspend fun upsertTask(task: RealmTeamTask)
-    suspend fun createTask(title: String, description: String, deadline: Long, teamId: String, assigneeId: String?)
-    suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?)
-    suspend fun assignTask(taskId: String, assigneeId: String?)
-    suspend fun setTaskCompletion(taskId: String, completed: Boolean)
-    suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask>
-    suspend fun markTasksNotified(taskIds: Collection<String>)
-    suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>>
-    suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>>
-    suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String
-    suspend fun addReport(report: JsonObject)
-    suspend fun updateReport(reportId: String, payload: JsonObject)
-    suspend fun archiveReport(reportId: String)
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
         userParentCode: String?, teamType: String?
     )
@@ -108,14 +89,6 @@ interface TeamsRepository {
         teamType: String, isPublic: Boolean, createdBy: String
     ): Boolean
     suspend fun syncTeamActivities()
-    suspend fun getTeamTransactionsWithBalance(
-        teamId: String, startDate: Long? = null,
-        endDate: Long? = null, sortAscending: Boolean = false
-    ): Flow<List<Transaction>>
-    suspend fun createTransaction(
-        teamId: String, type: String, note: String, amount: Int, date: Long,
-        parentCode: String?, planetCode: String?
-    ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
     suspend fun getJoinedMembers(teamId: String): List<RealmUser>
