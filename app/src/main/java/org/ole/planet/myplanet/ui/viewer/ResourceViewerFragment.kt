@@ -257,12 +257,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private suspend fun setupVideoViewer() {
         binding.stubVideo.visibility = View.VISIBLE
-<<<<<<< 13722-video-resources-not-playing
         videoLoadingOverlay = binding.root.findViewById(R.id.video_loading_overlay)
         videoLoadingText = binding.root.findViewById(R.id.video_loading_text)
 
-=======
->>>>>>> master
         if (isOnline) {
             showVideoLoading(getString(R.string.video_loading_checking_server))
             ensureServerUrlUpdated()
