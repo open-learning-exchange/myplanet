@@ -7,7 +7,6 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
 
@@ -31,7 +31,8 @@ class ImprovedSyncManager @Inject constructor(
     private val transactionSyncManager: TransactionSyncManager,
     private val standardStrategy: StandardSyncStrategy,
     private val loginSyncManager: LoginSyncManager,
-    private val activitiesRepository: ActivitiesRepository
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
@@ -39,7 +40,7 @@ class ImprovedSyncManager @Inject constructor(
 
     private var isSyncing = false
     private var listener: OnSyncListener? = null
-    private val syncScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
+    private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(

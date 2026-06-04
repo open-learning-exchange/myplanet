@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.teams
 
 import io.mockk.coEvery
-import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

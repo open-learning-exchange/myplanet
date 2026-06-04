@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
-import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -13,11 +12,14 @@ open class RealmTag : RealmObject() {
     var id: String? = null
     var _id: String? = null
     var _rev: String? = null
+    @Index
     var name: String? = null
     var linkId: String? = null
+    @Index
     var tagId: String? = null
     var attachedTo: RealmList<String>? = null
     var docType: String? = null
+    @Index
     var db: String? = null
     var isAttached = false
     private fun setAttachedTo(attachedTo: JsonArray) {

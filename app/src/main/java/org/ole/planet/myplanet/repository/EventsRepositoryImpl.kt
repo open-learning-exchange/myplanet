@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
@@ -61,6 +62,23 @@ class EventsRepositoryImpl @Inject constructor(
             }
         }
         return getMeetupById(meetupId)
+    }
+
+    override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            executeTransaction { realm ->
+                try {
+                    RealmMeetup.insertList(realm, "", documents)
+                    processedCount = documents.size
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
     }
 
     override suspend fun createMeetup(meetup: RealmMeetup): Boolean {

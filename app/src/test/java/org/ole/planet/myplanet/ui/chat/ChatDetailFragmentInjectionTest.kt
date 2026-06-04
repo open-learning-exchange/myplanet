@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
-import org.junit.Test
 import kotlin.test.assertFalse
+import org.junit.Test
 
 class ChatDetailFragmentInjectionTest {
     @Test

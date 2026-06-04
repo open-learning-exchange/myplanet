@@ -10,6 +10,7 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -67,7 +68,6 @@ class CoursesAdapter(
     private val config: ChipCloudConfig
     private var isAscending = true
     private var isTitleAscending = false
-    private var areAllSelected = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
 
     companion object {
@@ -236,8 +236,7 @@ class CoursesAdapter(
 
     fun areAllSelected(): Boolean {
         val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
-        return areAllSelected
+        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
     }
 
     fun selectAllItems(selectAll: Boolean) {
@@ -527,6 +526,19 @@ class CoursesAdapter(
             } else {
                 rowCourseBinding.courseProgress.visibility = View.GONE
             }
+            val badge = rowCourseBinding.statusBadge
+            val current = getInt("current", progress)
+            val max = getInt("max", progress)
+            val (statusText, statusColor) = when {
+                progress == null -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+                current >= max   -> Pair(context.getString(R.string.status_completed),   R.color.status_completed)
+                current > 0      -> Pair(context.getString(R.string.status_in_progress), R.color.status_in_progress)
+                else             -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+            }
+            badge.text = statusText
+            badge.visibility = View.VISIBLE
+            (badge.background as? android.graphics.drawable.GradientDrawable)
+                ?.setColor(ContextCompat.getColor(context, statusColor))
         }
 
         private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {

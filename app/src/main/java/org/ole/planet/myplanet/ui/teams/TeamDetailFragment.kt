@@ -44,7 +44,6 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ReportsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
 

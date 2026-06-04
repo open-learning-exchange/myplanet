@@ -19,10 +19,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -279,24 +277,20 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 submissionsRepository.markSubmissionComplete(submissionId, user)
                 Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
 
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(
-                        MainApplication.context,
-                        getString(R.string.thank_you_for_taking_this_survey)
-                    )
-                    if (isAdded) {
-                        Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
-                        dialog?.dismiss()
-                    }
+                Utilities.toast(
+                    MainApplication.context,
+                    getString(R.string.thank_you_for_taking_this_survey)
+                )
+                if (isAdded) {
+                    Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
+                    dialog?.dismiss()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("UserInformationFragment", "Error in saveSubmission", e)
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
-                    if (isAdded) {
-                        dialog?.dismiss()
-                    }
+                Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
+                if (isAdded) {
+                    dialog?.dismiss()
                 }
             }
         }

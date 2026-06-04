@@ -87,7 +87,7 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun saveNewChat(chat: JsonObject) {
         executeTransaction { realm ->
-            insertChatHistory(realm, chat)
+            insertChatsBatchInternal(realm, listOf(chat))
         }
     }
 
@@ -99,41 +99,64 @@ class ChatRepositoryImpl @Inject constructor(
 
     override suspend fun insertChatHistoryList(chats: List<JsonObject>) {
         executeTransaction { realm ->
-            chats.forEach { insertChatHistory(realm, it) }
+            insertChatsBatchInternal(realm, chats)
         }
     }
 
-        override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+        bulkInsertFromSync(realm, jsonArray)
+    }
+
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val docs = mutableListOf<JsonObject>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            docs.add(jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                docs.add(jsonDoc)
+            }
         }
-        docs.forEach { insertChatHistory(realm, it) }
+        insertChatsBatchInternal(realm, docs)
     }
 
-    private fun insertChatHistory(realm: io.realm.Realm, json: JsonObject) {
-        val chatHistoryId = JsonUtils.getString("_id", json)
-        val existingChatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-        existingChatHistory?.deleteFromRealm()
-        val chatHistory = realm.createObject(RealmChatHistory::class.java, chatHistoryId)
-        chatHistory._rev = JsonUtils.getString("_rev", json)
-        chatHistory._id = JsonUtils.getString("_id", json)
-        chatHistory.title = JsonUtils.getString("title", json)
-        chatHistory.createdDate = "${JsonUtils.getLong("createdDate", json)}"
-        chatHistory.updatedDate = "${JsonUtils.getLong("updatedDate", json)}"
-        chatHistory.user = JsonUtils.getString("user", json)
-        chatHistory.aiProvider = JsonUtils.getString("aiProvider", json)
-        chatHistory.conversations = parseConversations(realm, JsonUtils.getJsonArray("conversations", json))
-        chatHistory.lastUsed = Date().time
-    }
+    private fun insertChatsBatchInternal(realm: io.realm.Realm, chats: List<JsonObject>) {
+        if (chats.isEmpty()) return
 
-    private fun parseConversations(realm: io.realm.Realm, jsonArray: JsonArray): io.realm.RealmList<RealmConversation> {
-        val conversations = io.realm.RealmList<RealmConversation>()
-        val unmanagedConversations = jsonArray.map { JsonUtils.gson.fromJson(it, RealmConversation::class.java) }
-        conversations.addAll(realm.copyToRealm(unmanagedConversations))
-        return conversations
+        val chatIds = chats.mapNotNull { JsonUtils.getString("_id", it) }.toTypedArray()
+
+        // Find existing chats to delete orphaned conversations
+        val existingChats = realm.where(RealmChatHistory::class.java)
+            .`in`("_id", chatIds)
+            .findAll()
+
+        existingChats.forEach { chat ->
+            chat.conversations?.deleteAllFromRealm()
+        }
+
+        val unmanagedChats = chats.map { json ->
+            val chatHistoryId = JsonUtils.getString("_id", json)
+            RealmChatHistory().apply {
+                id = chatHistoryId
+                _id = chatHistoryId
+                _rev = JsonUtils.getString("_rev", json)
+                title = JsonUtils.getString("title", json)
+                createdDate = "${JsonUtils.getLong("createdDate", json)}"
+                updatedDate = "${JsonUtils.getLong("updatedDate", json)}"
+                user = JsonUtils.getString("user", json)
+                aiProvider = JsonUtils.getString("aiProvider", json)
+                val conversationsArray = JsonUtils.getJsonArray("conversations", json)
+                val unmanagedConversations = conversationsArray.map {
+                    JsonUtils.gson.fromJson(it, RealmConversation::class.java)
+                }
+                conversations = io.realm.RealmList<RealmConversation>().apply {
+                    addAll(unmanagedConversations)
+                }
+                lastUsed = java.util.Date().time
+            }
+        }
+
+        realm.insertOrUpdate(unmanagedChats)
     }
 
     private fun addConversation(realm: io.realm.Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {

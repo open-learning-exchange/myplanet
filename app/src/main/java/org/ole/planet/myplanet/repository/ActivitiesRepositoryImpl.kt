@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -8,25 +9,23 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
-import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.utils.UrlUtils
-import android.util.Log
-import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -34,7 +33,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     @ApplicationContext private val context: Context,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val userRepository: Lazy<UserRepository>,
-    private val apiInterface: ApiInterface
+    private val apiInterface: ApiInterface,
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -235,6 +235,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
 
+    override suspend fun recordSyncUserChallengeAction(userId: String) {
+        executeTransaction { realm ->
+            val action = realm.createObject(
+                org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java,
+                UUID.randomUUID().toString()
+            )
+            action.userId = userId
+            action.actionType = "sync"
+            action.resourceId = null
+            action.time = System.currentTimeMillis()
+        }
+    }
+
     override suspend fun recordSyncActivity(userId: String) {
         val user = userRepository.get().getUserById(userId)
         if (user == null || user.id?.startsWith("guest") == true) {
@@ -262,24 +275,42 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun insertActivityInternal(realm: io.realm.Realm, json: com.google.gson.JsonObject) {
+    private fun insertActivityInternal(
+        realm: io.realm.Realm,
+        json: com.google.gson.JsonObject,
+        existingActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null,
+        fallbackActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null
+    ) {
         val serverIdStr = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
         val loginTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", json)
         val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
 
-        var activities = realm.where(RealmOfflineActivity::class.java)
-            .equalTo("_id", serverIdStr)
-            .findFirst()
+        var activities = if (existingActivitiesMap != null) {
+            existingActivitiesMap[serverIdStr]
+        } else {
+            realm.where(RealmOfflineActivity::class.java)
+                .equalTo("_id", serverIdStr)
+                .findFirst()
+        }
 
         if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
-            activities = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("loginTime", loginTime)
-                .equalTo("userName", userName)
-                .findFirst()
+            activities = if (fallbackActivitiesMap != null) {
+                fallbackActivitiesMap["${loginTime}_${userName}"]
+            } else {
+                realm.where(RealmOfflineActivity::class.java)
+                    .equalTo("loginTime", loginTime)
+                    .equalTo("userName", userName)
+                    .findFirst()
+            }
         }
 
         if (activities == null) {
             activities = realm.createObject(RealmOfflineActivity::class.java, serverIdStr)
+            existingActivitiesMap?.put(serverIdStr, activities)
+
+            if (loginTime > 0 && userName.isNotEmpty()) {
+                fallbackActivitiesMap?.put("${loginTime}_${userName}", activities)
+            }
         }
         if (activities != null) {
             activities._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", json)
@@ -369,17 +400,89 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
+
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                if (id.isNotEmpty()) {
+                    ids.add(id)
+                }
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertActivityInternal(realm, jsonDoc)
+
+        val existingActivitiesMap = if (ids.isNotEmpty()) {
+            realm.where(RealmOfflineActivity::class.java)
+                .`in`("_id", ids.toTypedArray())
+                .findAll()
+                .associateBy { it._id!! }
+                .toMutableMap()
+        } else {
+            mutableMapOf<String, RealmOfflineActivity>()
         }
+
+        val fallbackCandidates = if (documentList.isNotEmpty()) {
+            val loginTimes = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct().toTypedArray()
+            val userNames = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct().toTypedArray()
+
+            if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
+                val results = realm.where(RealmOfflineActivity::class.java)
+                    .`in`("loginTime", loginTimes)
+                    .`in`("userName", userNames)
+                    .findAll()
+
+                val map = mutableMapOf<String, RealmOfflineActivity>()
+                for (activity in results) {
+                    val key = "${activity.loginTime}_${activity.userName}"
+                    if (!map.containsKey(key)) {
+                        map[key] = activity
+                    }
+                }
+                map
+            } else {
+                mutableMapOf()
+            }
+        } else {
+            mutableMapOf()
+        }
+
+        documentList.forEach { jsonDoc ->
+            insertActivityInternal(realm, jsonDoc, existingActivitiesMap, fallbackCandidates)
+        }
+    }
+
+    override suspend fun uploadMyPlanetActivities(userModel: org.ole.planet.myplanet.model.RealmUser) {
+        apiInterface.postDoc(
+            UrlUtils.header,
+            "application/json",
+            "${UrlUtils.getUrl()}/myplanet_activities",
+            org.ole.planet.myplanet.model.MyPlanet.getNormalMyPlanetActivities(context, sharedPrefManager, userModel)
+        )
+
+        val response = apiInterface.getJsonObject(
+            UrlUtils.header,
+            "${UrlUtils.getUrl()}/myplanet_activities/${org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(context)}@${NetworkUtils.getUniqueIdentifier()}"
+        )
+
+        var `object` = response.body()
+
+        if (`object` != null) {
+            val usages = `object`.getAsJsonArray("usages")
+            usages.addAll(org.ole.planet.myplanet.model.MyPlanet.getTabletUsages(context))
+            `object`.add("usages", usages)
+        } else {
+            `object` = org.ole.planet.myplanet.model.MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
+        }
+
+        apiInterface.postDoc(
+            UrlUtils.header,
+            "application/json",
+            "${UrlUtils.getUrl()}/myplanet_activities",
+            `object`
+        )
     }
 }
 

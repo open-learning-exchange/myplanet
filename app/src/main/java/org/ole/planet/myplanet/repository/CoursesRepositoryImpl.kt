@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import android.util.Base64
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import io.realm.Realm
+import io.realm.RealmList
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Locale
@@ -8,9 +12,10 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCertification
@@ -19,14 +24,19 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -36,7 +46,7 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -100,6 +110,12 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             course?.let { realm.copyFromRealm(it) }
         }
+    }
+
+    override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
+        return queryListFlow(RealmMyCourse::class.java) {
+            equalTo("courseId", courseId)
+        }.map { it.firstOrNull() }
     }
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
@@ -167,14 +183,13 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseIds.isEmpty()) {
-                    return@runCatching false
-                }
+        return runCatching {
+            if (courseIds.isEmpty()) {
+                return@runCatching false
+            }
 
-                var courseFound = false
-                executeTransaction { realm ->
+            var courseFound = false
+            executeTransaction { realm ->
                     val validCourseIds = courseIds.filter { it.isNotBlank() }
                     if (validCourseIds.isEmpty()) return@executeTransaction
 
@@ -204,7 +219,6 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
 
                 courseFound
-            }
         }
     }
 
@@ -219,11 +233,27 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+    internal fun normalizeText(str: String): String {
+        val lowercased = str.lowercase(Locale.ROOT)
+        val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
+        val sb = StringBuilder(normalized.length)
+        for (i in 0 until normalized.length) {
+            val c = normalized[i]
+            // NON_SPACING_MARK matches Unicode category Mn (Combining Diacritical Marks)
+            if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
+                sb.append(c)
+            }
+        }
+        return sb.toString()
+    }
 
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
+    internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
+        for (part in parts) {
+            if (!title.contains(part)) {
+                return false
+            }
+        }
+        return true
     }
 
     override suspend fun search(query: String): List<RealmMyCourse> {
@@ -243,9 +273,9 @@ class CoursesRepositoryImpl @Inject constructor(
             for (item in data) {
                 val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
-                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                if (title.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                } else if (matchesAllParts(title, normalizedQueryParts)) {
                     containsQuery.add(item)
                 }
             }
@@ -316,7 +346,7 @@ class CoursesRepositoryImpl @Inject constructor(
             activity.parentCode = parentCode
             activity.text = searchText
             activity.type = "courses"
-            val filter = com.google.gson.JsonObject()
+            val filter = JsonObject()
 
             filter.add("tags", RealmTag.getTagsArray(tags))
             filter.addProperty("doc.gradeLevel", grade)
@@ -326,11 +356,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun joinCourse(courseId: String, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseId.isBlank() || userId.isBlank()) return@runCatching
+        return runCatching {
+            if (courseId.isBlank() || userId.isBlank()) return@runCatching
 
-                executeTransaction { realm ->
+            executeTransaction { realm ->
                     val course = realm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -349,14 +378,12 @@ class CoursesRepositoryImpl @Inject constructor(
                         removedLog?.deleteFromRealm()
                     }
                 }
-            }
         }
     }
 
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                executeTransaction { realm ->
+        return runCatching {
+            executeTransaction { realm ->
                     val course = realm.where(RealmMyCourse::class.java)
                         .equalTo("courseId", courseId)
                         .findFirst()
@@ -364,7 +391,6 @@ class CoursesRepositoryImpl @Inject constructor(
                     RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
                 }
                 RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
-            }
         }
     }
 
@@ -378,7 +404,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }.isNotEmpty()
     }
 
-    override suspend fun getCourseProgress(courseId: String, userId: String?): org.ole.planet.myplanet.model.CourseProgressData {
+    override suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData {
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         return withRealm { realm ->
@@ -449,19 +475,19 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val array = JsonArray()
             stepsList.forEach { step ->
-                val ob = com.google.gson.JsonObject()
+                val ob = JsonObject()
                 ob.addProperty("stepId", step.id)
                 val exams = examsByStepId[step.id] ?: emptyList()
                 getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
                 array.add(ob)
             }
-            org.ole.planet.myplanet.model.CourseProgressData(title, current, max, array)
+            CourseProgressData(title, current, max, array)
         }
     }
 
     private fun getExamObject(
         exams: Iterable<RealmStepExam>,
-        ob: com.google.gson.JsonObject,
+        ob: JsonObject,
         questionsByExamId: Map<String, List<RealmExamQuestion>>,
         submissionsByExamId: Map<String, List<RealmSubmission>>,
         answersBySubmissionId: Map<String, List<RealmAnswer>>
@@ -485,6 +511,27 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
+
+    override suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            insertMyCourse(shelfId ?: "", doc, realmTx, sharedPrefManager)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
     }
 
     override suspend fun getCourseTitleById(courseId: String): String? {
@@ -564,8 +611,8 @@ class CoursesRepositoryImpl @Inject constructor(
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject> {
-        return progressRepository.getCourseProgress(userId)
+    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, JsonObject> {
+        return progressRepository.getCourseProgress(courseIds, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
@@ -584,13 +631,12 @@ class CoursesRepositoryImpl @Inject constructor(
         return tagsRepository.getTagsForCourses(courseIds)
     }
 
-    override suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject> {
+    override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
         return ratingsRepository.getCourseRatings(userId)
     }
 
     override suspend fun deleteCourseProgress(courseId: String?) {
         executeTransaction { realm ->
-            realm.where(RealmCourseProgress::class.java).equalTo("courseId", courseId).findAll().deleteAllFromRealm()
             val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
             val examIds = examList.mapNotNull { it.id }.toTypedArray()
             if (examIds.isNotEmpty()) {
@@ -646,9 +692,9 @@ class CoursesRepositoryImpl @Inject constructor(
                 for (item in data) {
                     val title = item.courseTitle?.let { normalizeText(it) } ?: continue
 
-                    if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                    if (title.startsWith(normalizedQuery)) {
                         startsWithQuery.add(item)
-                    } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                    } else if (matchesAllParts(title, normalizedQueryParts)) {
                         containsQuery.add(item)
                     }
                 }
@@ -664,26 +710,40 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmMyCourse.insert(realm, jsonDoc, sharedPrefManager, dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository())
+            val startedTransaction = !realm.isInTransaction
+            if (startedTransaction) {
+                realm.beginTransaction()
+            }
+            try {
+                insertMyCourse("", jsonDoc, realm, sharedPrefManager)
+                if (startedTransaction) {
+                    realm.commitTransaction()
+                }
+            } catch (e: Exception) {
+                if (startedTransaction && realm.isInTransaction) {
+                    realm.cancelTransaction()
+                }
+                throw e
+            }
         }
     }
-    override fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertCertificationsFromSync(realm: Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -693,13 +753,90 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject) {
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+    override fun insertCertification(realm: Realm, doc: JsonObject) {
+        val id = JsonUtils.getString("_id", doc)
         var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
         if (certification == null) {
             certification = realm.createObject(RealmCertification::class.java, id)
         }
-        certification?.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", doc)
-        certification?.setCourseIds(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("courseIds", doc))
+        certification?.name = JsonUtils.getString("name", doc)
+        certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", doc))
+    }
+
+    private fun insertMyCourse(shelfId: String, doc: JsonObject, realmTx: Realm, spm: SharedPrefManager) {
+        val id = JsonUtils.getString("_id", doc)
+        var myMyCoursesDB = realmTx.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
+        if (myMyCoursesDB == null) {
+            myMyCoursesDB = realmTx.createObject(RealmMyCourse::class.java, id)
+        }
+        myMyCoursesDB?.setUserId(shelfId)
+        myMyCoursesDB?.courseId = JsonUtils.getString("_id", doc)
+        myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", doc)
+        myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc)
+        myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", doc)
+        myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", doc)
+        val description = JsonUtils.getString("description", doc)
+        myMyCoursesDB?.description = description
+        val links = extractLinks(description)
+        val baseUrl = UrlUtils.getUrl()
+        for (link in links) {
+            RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
+        }
+        myMyCoursesDB?.method = JsonUtils.getString("method", doc)
+        myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", doc)
+        myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", doc)
+        myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", doc)
+        val courseStepsJsonArray = JsonUtils.getJsonArray("steps", doc)
+        val stepsSize = courseStepsJsonArray.size()
+        myMyCoursesDB?.setNumberOfSteps(stepsSize)
+        val courseStepsList = mutableListOf<RealmCourseStep>()
+
+        for (i in 0 until stepsSize) {
+            val stepElement = courseStepsJsonArray[i]
+            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+            val stepJson = stepElement.asJsonObject
+            val step = RealmCourseStep()
+            step.id = stepId
+            step.stepTitle = JsonUtils.getString("stepTitle", stepJson)
+            val stepDescription = JsonUtils.getString("description", stepJson)
+            step.description = stepDescription
+            val stepLinks = extractLinks(stepDescription)
+            for (stepLink in stepLinks) {
+                RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
+            }
+            insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
+            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId)
+            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate)
+            step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
+            step.courseId = myMyCoursesDB?.courseId
+            courseStepsList.add(step)
+        }
+        myMyCoursesDB?.courseSteps = RealmList()
+        myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
+    }
+
+    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+        if (stepContainer.has("exam")) {
+            val obj = stepContainer.getAsJsonObject("exam")
+            obj.addProperty("stepNumber", i)
+            insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
+        }
+    }
+
+    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
+        if (stepContainer.has("survey")) {
+            val obj = stepContainer.getAsJsonObject("survey")
+            obj.addProperty("stepNumber", i)
+            obj.addProperty("createdDate", createdDate)
+            insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
+        }
+    }
+
+    private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
+        resources.forEach { resource ->
+            if (mRealm != null) {
+                createStepResource(mRealm, resource.asJsonObject, myCoursesID, stepId, spm)
+            }
+        }
     }
 }

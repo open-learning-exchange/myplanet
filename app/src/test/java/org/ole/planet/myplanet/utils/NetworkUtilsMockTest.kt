@@ -4,21 +4,22 @@ import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
+import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import dagger.hilt.android.EntryPointAccessors
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 class NetworkUtilsMockTest {
     private lateinit var mockContext: Context
@@ -103,5 +104,18 @@ class NetworkUtilsMockTest {
         every { mockWifiManager.isWifiEnabled } returns false
         every { mockBluetoothAdapter.isEnabled } returns false
         assertFalse(NetworkUtils.isWifiBluetoothEnabled())
+    }
+
+    @Test
+    fun `getCustomDeviceName returns correct name from SharedPrefManager`() {
+        val mockEntryPoint = mockk<CoreDependenciesEntryPoint>(relaxed = true)
+        val mockSharedPrefManager = mockk<SharedPrefManager>()
+        every { mockSharedPrefManager.getCustomDeviceName() } returns "Test Device Name"
+        every { mockEntryPoint.sharedPrefManager() } returns mockSharedPrefManager
+        every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
+
+        val result = NetworkUtils.getCustomDeviceName(mockContext)
+
+        assertEquals("Test Device Name", result)
     }
 }

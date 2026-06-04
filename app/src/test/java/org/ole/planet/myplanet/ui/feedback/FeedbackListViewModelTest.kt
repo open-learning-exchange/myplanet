@@ -2,14 +2,14 @@ package org.ole.planet.myplanet.ui.feedback
 
 import io.mockk.coEvery
 import io.mockk.coVerify
+import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import io.mockk.every
-import io.mockk.slot
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule

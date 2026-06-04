@@ -21,10 +21,12 @@ open class RealmRating : RealmObject() {
     var isUpdated = false
     var rate = 0
     var _id: String? = null
+    @Index
     var item: String? = null
     var comment: String? = null
     var parentCode: String? = null
     var planetCode: String? = null
+    @Index
     var type: String? = null
     var user: String? = null
 

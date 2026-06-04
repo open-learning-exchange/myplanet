@@ -1,53 +1,29 @@
 package org.ole.planet.myplanet.ui.teams
 
-import android.content.Context
 import android.graphics.PorterDuff
 import android.graphics.Typeface
-import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.toColorInt
-import androidx.fragment.app.FragmentManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnTeamActionsListener
-import org.ole.planet.myplanet.callback.OnTeamEditListener
-import org.ole.planet.myplanet.callback.OnUpdateCompleteListener
 import org.ole.planet.myplanet.databinding.ItemTeamListBinding
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class TeamsAdapter(
-    private val context: Context,
-    private val fragmentManager: FragmentManager,
-    private val currentUser: RealmUser?,
-    private val sharedPrefManager: SharedPrefManager
+    private val isGuestUser: Boolean,
+    private val onItemClick: (TeamDetails) -> Unit,
+    private val onFeedbackClick: (TeamDetails) -> Unit,
+    private val onEditTeamClick: (TeamDetails) -> Unit,
+    private val onLeaveTeamClick: (TeamDetails) -> Unit,
+    private val onRequestToJoinClick: (TeamDetails) -> Unit
 ) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
     private var type: String? = ""
-    private var teamListener: OnTeamEditListener? = null
-    private var updateCompleteListener: OnUpdateCompleteListener? = null
-    private var teamActionsListener: OnTeamActionsListener? = null
-
-    fun setTeamListener(teamListener: OnTeamEditListener?) {
-        this.teamListener = teamListener
-    }
-
-    fun setTeamActionsListener(listener: OnTeamActionsListener) {
-        teamActionsListener = listener
-    }
-
-    fun setUpdateCompleteListener(listener: OnUpdateCompleteListener?) {
-        this.updateCompleteListener = listener
-    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsViewHolder {
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -56,50 +32,32 @@ class TeamsAdapter(
 
     override fun onBindViewHolder(holder: TeamsViewHolder, position: Int) {
         val team = getItem(position)
-        val user: RealmUser? = currentUser
 
         with(holder.binding) {
             created.text = TimeUtils.getFormattedDate(team.createdDate ?: 0)
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
-            noOfVisits.text = context.getString(R.string.number_placeholder, team.visitCount)
+            noOfVisits.text = root.context.getString(R.string.number_placeholder, team.visitCount)
 
-            val teamId = team._id.orEmpty()
             val teamStatus = team.teamStatus ?: TeamStatus(
                 isMember = false,
                 isLeader = false,
                 hasPendingRequest = false
             )
 
-            showActionButton(teamStatus.isMember, teamStatus.isLeader, teamStatus.hasPendingRequest, team, user)
+            showActionButton(teamStatus.isMember, teamStatus.isLeader, teamStatus.hasPendingRequest, team)
 
             root.setOnClickListener {
-                val activity = context as? AppCompatActivity ?: return@setOnClickListener
-                val fragment = TeamDetailFragment.newInstance(
-                    teamId = teamId,
-                    teamName = "${team.name}",
-                    teamType = "${team.type}",
-                    isMyTeam = teamStatus.isMember
-                )
-                FragmentNavigator.replaceFragment(
-                    activity.supportFragmentManager,
-                    R.id.fragment_container,
-                    fragment,
-                    addToBackStack = true,
-                    tag = "TeamDetailFragment"
-                )
-                sharedPrefManager.setTeamName(team.name)
+                onItemClick(team)
             }
 
             btnFeedback.setOnClickListener {
-                val feedbackFragment = FeedbackFragment()
-                feedbackFragment.show(fragmentManager, "")
-                feedbackFragment.arguments = getBundle(team)
+                onFeedbackClick(team)
             }
 
             joinLeave.setOnClickListener {
-                handleJoinLeaveClick(team, user)
+                handleJoinLeaveClick(team)
             }
         }
     }
@@ -109,15 +67,15 @@ class TeamsAdapter(
         isTeamLeader: Boolean,
         hasPendingRequest: Boolean,
         team: TeamDetails,
-        user: RealmUser?,
     ) {
+        val context = root.context
         if (isMyTeam) {
             name.setTypeface(null, Typeface.BOLD)
         } else {
             name.setTypeface(null, Typeface.NORMAL)
         }
         when {
-            user?.isGuest() == true -> joinLeave.visibility = View.GONE
+            isGuestUser -> joinLeave.visibility = View.GONE
 
             isTeamLeader -> {
                 joinLeave.apply {
@@ -163,26 +121,14 @@ class TeamsAdapter(
         }
     }
 
-    private fun handleJoinLeaveClick(team: TeamDetails, user: RealmUser?) {
+    private fun handleJoinLeaveClick(team: TeamDetails) {
         val teamStatus = team.teamStatus ?: return
         when {
-            teamStatus.isLeader -> teamListener?.onEditTeam(team)
+            teamStatus.isLeader -> onEditTeamClick(team)
             teamStatus.isMember -> {
-                teamActionsListener?.onLeaveTeam(team, user)
+                onLeaveTeamClick(team)
             }
-            else -> requestToJoin(team, user)
-        }
-    }
-
-    private fun requestToJoin(team: TeamDetails, user: RealmUser?) {
-        teamActionsListener?.onRequestToJoin(team, user)
-    }
-
-    private fun getBundle(team: TeamDetails): Bundle {
-        return Bundle().apply {
-            putString("state", if (team.type?.isEmpty() == true) "teams" else "${team.type}s")
-            putString("item", team._id)
-            putString("parentCode", "dev")
+            else -> onRequestToJoinClick(team)
         }
     }
 

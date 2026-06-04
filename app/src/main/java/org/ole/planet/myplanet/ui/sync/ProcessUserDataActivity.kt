@@ -4,8 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
-import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
@@ -17,15 +15,11 @@ import android.webkit.URLUtil
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -35,7 +29,6 @@ import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
@@ -47,12 +40,11 @@ import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
-import org.ole.planet.myplanet.utils.SecurePrefs
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    open lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefData: SharedPrefManager
@@ -70,7 +62,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
-    lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
     }
@@ -130,17 +121,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     fun changeLogoColor() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
-        val newColor = ContextCompat.getColor(this, android.R.color.white)
-        val alpha = (Color.alpha(newColor) * 10).toFloat().roundToInt()
-        val red = Color.red(newColor)
-        val green = Color.green(newColor)
-        val blue = Color.blue(newColor)
-        val alphaWhite = Color.argb(alpha, red, green, blue)
-        val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
-        if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
-            (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM && currentNightMode == Configuration.UI_MODE_NIGHT_NO)) {
-            logo.setColorFilter(alphaWhite, PorterDuff.Mode.SRC_ATOP)
-        }
+        logo.setColorFilter(Color.WHITE, PorterDuff.Mode.SRC_ATOP)
     }
 
     fun setUrlParts(url: String, password: String): String {
@@ -314,23 +295,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
     }
 
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
-        withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(this@ProcessUserDataActivity, settings, user?.name, password)
-        }
-        this.settings = settings
-        prefData.setUserId(user?.id ?: "")
-        prefData.setUserName(user?.name ?: "")
-        prefData.rawPreferences.edit().apply {
-            remove("password")
-            putString("firstName", user?.firstName)
-            putString("lastName", user?.lastName)
-            putString("middleName", user?.middleName)
-            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", System.currentTimeMillis())
-            apply()
-        }
-    }
 
     fun alertDialogOkay(message: String?) {
         val builder1 = AlertDialog.Builder(this, R.style.AlertDialogTheme)

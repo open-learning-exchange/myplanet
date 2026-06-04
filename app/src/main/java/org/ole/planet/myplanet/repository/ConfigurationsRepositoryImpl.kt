@@ -86,13 +86,13 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
         val baseUrl = UrlUtils.baseUrl(spm)
         if (baseUrl.isEmpty()) {
+            callback.onError(context.getString(R.string.server_url_not_configured), true)
             return
         }
 
-        serviceScope.launch {
-            withContext(dispatcherProvider.main) {
-                callback.onCheckingVersion()
-            }
+        serviceScope.launch(dispatcherProvider.io) {
+            callback.onCheckingVersion()
+
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
@@ -113,11 +113,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = withContext(dispatcherProvider.io) { fetchVersionInfo(spm) }
+                val planetInfo = fetchVersionInfo(spm)
                 if (planetInfo == null) {
-                    withContext(dispatcherProvider.main) {
-                        callback.onError(context.getString(R.string.version_not_found), true)
-                    }
+                    callback.onError(context.getString(R.string.version_not_found), true)
                     return@launch
                 }
 
@@ -130,20 +128,16 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val rawApkVersion = fetchApkVersionString(spm)
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    withContext(dispatcherProvider.main) {
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                    }
+                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     return@launch
                 }
 
                 val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
-                        withContext(dispatcherProvider.main) {
-                            callback.onError(
-                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                                false
-                            )
-                        }
+                        callback.onError(
+                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                            false
+                        )
                         return@launch
                     }
 
@@ -171,9 +165,11 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        withContext(dispatcherProvider.io) {
+        val result = withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
+            val alternativeReachable = mapping.alternativeUrl?.let {
+                checkServerAvailability(it)
+            } == true
 
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
@@ -188,17 +184,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         sharedPrefManager.rawPreferences
                     )
                 }
+                alternativeReachable
+            } else {
+                primaryReachable
             }
         }
 
-        return try {
-            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(sharedPrefManager))
-            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-            isAvailable
-        } catch (e: Exception) {
-            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-            false
-        }
+        serverAvailabilityCache[updateUrl] = Pair(result, System.currentTimeMillis())
+        return result
     }
 
     override suspend fun clearAllData() {

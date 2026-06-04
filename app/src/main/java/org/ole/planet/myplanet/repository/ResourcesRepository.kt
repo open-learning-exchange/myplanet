@@ -7,6 +7,12 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 
+data class LibraryWithMetadata(
+    val library: RealmMyLibrary,
+    val rating: JsonObject?,
+    val tags: List<RealmTag>
+)
+
 data class ResourceUploadData(
     val libraryId: String?,
     val title: String?,
@@ -25,9 +31,6 @@ data class UploadedResourceInfo(
 )
 
 interface ResourcesRepository {
-    suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData>
-    suspend fun markResourceUploaded(libraryId: String, id: String, rev: String)
-    suspend fun markResourcesUploaded(uploadedInfos: List<UploadedResourceInfo>, planetCode: String?)
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
@@ -79,10 +82,12 @@ interface ResourcesRepository {
     suspend fun getHtmlResourceDownloadUrls(resourceId: String): ResourceUrlsResponse
     suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
+    suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun getResourceRatings(resourceId: String): JsonObject?
     suspend fun getResourceTags(resourceId: String): List<RealmTag>
     suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
     suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
+    suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
 }
 
 sealed class ResourceUrlsResponse {

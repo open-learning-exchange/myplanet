@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
@@ -14,11 +13,9 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmExamQuestion
 
 class BaseExamFragmentTest {
 

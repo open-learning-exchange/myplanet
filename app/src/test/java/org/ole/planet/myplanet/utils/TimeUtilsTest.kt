@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.utils
 
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import java.time.Instant
 import java.time.LocalDate
 import java.util.Locale
 import java.util.TimeZone
-import java.io.PrintStream
-import java.io.ByteArrayOutputStream
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals

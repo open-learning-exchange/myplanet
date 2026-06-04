@@ -10,9 +10,9 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
-import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.Transaction
 
 data class JoinedMemberData(
@@ -139,6 +139,7 @@ interface TeamsRepository {
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
     fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
     fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
+    suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun bulkInsertTasksFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun bulkInsertTeamActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)

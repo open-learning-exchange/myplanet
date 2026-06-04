@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.community
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,10 +15,9 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.FragmentNavigator.replaceFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.viewer.WebViewActivity
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
-import org.ole.planet.myplanet.ui.viewer.WebViewActivity
-import android.content.Intent
 
 class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null
@@ -84,22 +84,26 @@ class CommunityServicesFragment : BaseTeamFragment() {
             b.setPadding(8, 8, 8, 8)
             b.text = team.title
             b.setOnClickListener {
-                val route = team.route?.split("/")
-                if (route != null && route.size >= 4) {
-                    val teamId = route[3]
+                val rawRoute = team.route ?: return@setOnClickListener
+                if (rawRoute.startsWith("http://") || rawRoute.startsWith("https://")) {
+                    startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                        putExtra("link", rawRoute)
+                        putExtra("title", team.title)
+                    })
+                    return@setOnClickListener
+                }
+                val segments = rawRoute.split("/")
+                val teamId = if (segments.size >= 4) segments[3] else null
+                if (teamId != null) {
                     viewLifecycleOwner.lifecycleScope.launch {
                         val isMyTeam = teamsRepository.isMember(user?.id, teamId)
-
                         val f = TeamDetailFragment()
-                        val args = Bundle().apply {
+                        f.arguments = Bundle().apply {
                             putString("id", teamId)
                             putBoolean("isMyTeam", isMyTeam)
                         }
-                        f.arguments = args
-
-                        val activity = requireActivity()
                         replaceFragment(
-                            activity.supportFragmentManager,
+                            requireActivity().supportFragmentManager,
                             R.id.fragment_container,
                             f,
                             addToBackStack = true,
@@ -107,12 +111,11 @@ class CommunityServicesFragment : BaseTeamFragment() {
                         )
                     }
                 } else {
-                    val url = team.route ?: return@setOnClickListener
-                    val intent = Intent(requireContext(), WebViewActivity::class.java).apply {
-                        putExtra("link", url)
+                    startActivity(Intent(requireContext(), WebViewActivity::class.java).apply {
+                        putExtra("link", rawRoute)
                         putExtra("title", team.title)
-                    }
-                    startActivity(intent)}
+                    })
+                }
             }
             parent.addView(b)
         }

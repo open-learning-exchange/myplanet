@@ -10,12 +10,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,7 +48,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             }
             mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "Error checking usages permission", e)
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {
@@ -115,7 +115,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             packageInfo.requestedPermissions?.contains(permission) == true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
             false
         }
     }
@@ -343,7 +343,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
         }
     }
 
@@ -355,7 +355,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 

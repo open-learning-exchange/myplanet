@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
-import io.realm.RealmResults
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Locale
@@ -23,6 +22,7 @@ open class RealmExamQuestion : RealmObject() {
     var marks: String? = null
     var choices: String? = null
     var hasOtherOption: Boolean = false
+    var scaleMax: Int = 9
     private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
         for (i in 0 until array.size()) {
             question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
@@ -91,6 +91,7 @@ open class RealmExamQuestion : RealmObject() {
                     }
 
                     hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
+                    scaleMax = JsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
                     val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
                     if (isMultipleChoice) {
                         insertCorrectChoice(question["choices"].asJsonArray, question, this)

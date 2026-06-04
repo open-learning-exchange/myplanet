@@ -3,13 +3,16 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
+import android.util.Base64
 import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.text.Normalizer
 import java.util.Calendar
+import java.util.Date
 import java.util.regex.Pattern
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -40,8 +43,11 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.RetryUtils
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -49,18 +55,27 @@ class UserRepositoryImpl @Inject constructor(
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
+    private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
+    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val uploadToShelfService: Lazy<UploadToShelfService>,
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher), UserRepository {
+) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
                 .equalTo("id", userId)
                 .findFirst()
                 ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun getUsersByIds(userIds: List<String>): List<RealmUser> {
+        if (userIds.isEmpty()) return emptyList()
+        return queryList(RealmUser::class.java) {
+            `in`("id", userIds.toTypedArray())
         }
     }
 
@@ -104,7 +119,7 @@ class UserRepositoryImpl @Inject constructor(
         }.firstOrNull()
     }
 
-    override suspend fun createGuestUser(username: String, settings: SharedPreferences): RealmUser? {
+    override suspend fun createGuestUser(username: String): RealmUser? {
         return withRealm { realm ->
             val `object` = JsonObject()
             `object`.addProperty("_id", "guest_$username")
@@ -115,7 +130,7 @@ class UserRepositoryImpl @Inject constructor(
             `object`.add("roles", rolesArray)
             val startedTransaction = !realm.isInTransaction
             if (startedTransaction) realm.beginTransaction()
-            val user = populateUser(`object`, realm, settings)
+            val user = populateUser(`object`, realm)
             if (startedTransaction && realm.isInTransaction) {
                 realm.commitTransaction()
             }
@@ -327,7 +342,7 @@ class UserRepositoryImpl @Inject constructor(
         return null
     }
 
-    override fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?, settings: SharedPreferences): RealmUser? {
+    private fun populateUser(jsonDoc: JsonObject?, mRealm: io.realm.Realm?): RealmUser? {
         if (jsonDoc == null || mRealm == null) return null
         try {
             val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
@@ -401,15 +416,14 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveUser(
         jsonDoc: JsonObject?,
-        settings: SharedPreferences,
         key: String?,
-        iv: String?,
+        iv: String?
     ): RealmUser? {
         if (jsonDoc == null) return null
 
         var userId: String? = null
         withRealm { realm ->
-            val managedUser = populateUser(jsonDoc, realm, settings)
+            val managedUser = populateUser(jsonDoc, realm)
             userId = managedUser?.id
         }
 
@@ -554,6 +568,7 @@ class UserRepositoryImpl @Inject constructor(
                     "language" -> model.language = payload.get(key).asString
                     "phoneNumber" -> model.phoneNumber = payload.get(key).asString
                     "birthDate" -> model.dob = payload.get(key).asString
+                    "birthPlace" -> model.birthPlace = payload.get(key).asString
                     "level" -> model.level = payload.get(key).asString
                     "gender" -> model.gender = payload.get(key).asString
                     "age" -> model.age = payload.get(key).asString
@@ -640,7 +655,7 @@ class UserRepositoryImpl @Inject constructor(
 
             val keyString = AndroidDecrypter.generateKey()
             val iv = AndroidDecrypter.generateIv()
-            saveUser(obj, settings, keyString, iv)
+            saveUser(obj, keyString, iv)
             return Pair(true, context.getString(R.string.not_connect_to_planet_created_user_offline))
         }
     }
@@ -665,7 +680,7 @@ class UserRepositoryImpl @Inject constructor(
                 ensureActive()
 
                 if (response.isSuccessful) {
-                    response.body()?.let { saveUser(it, settings) }
+                    response.body()?.let { saveUser(it, null, null) }
                 } else {
                     null
                 }
@@ -673,8 +688,8 @@ class UserRepositoryImpl @Inject constructor(
 
             if (userModel != null) {
                 try {
-                    uploadToShelfService.get().saveKeyIv(apiInterface, userModel, obj)
-                } catch (keyIvException: Exception) { }
+                    saveKeyIv(userModel, obj)
+                } catch (_: Exception) { }
                 Result.success(userModel)
             } else {
                 Result.failure(Exception("Failed to save user or user model was null"))
@@ -685,9 +700,187 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        try {
+            val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
+            if (response.body() != null) {
+                val jsonObject = response.body()
+                val members = jsonObject?.getAsJsonObject("members")
+                val rolesArray: JsonArray = if (members?.has("roles") == true) {
+                    members.getAsJsonArray("roles")
+                } else {
+                    JsonArray()
+                }
+                rolesArray.add("health")
+                members?.add("roles", rolesArray)
+                jsonObject?.add("members", members)
+                apiInterface.putDoc(header, "application/json", "${UrlUtils.getUrl()}/${table}/_security", jsonObject)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun saveKeyIv(model: RealmUser, obj: JsonObject) {
+        val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
+        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        val ob = JsonObject()
+        var keyString = AndroidDecrypter.generateKey()
+        var iv: String? = AndroidDecrypter.generateIv()
+
+        if (!TextUtils.isEmpty(model.iv)) {
+            iv = model.iv
+        }
+        if (!TextUtils.isEmpty(model.key)) {
+            keyString = model.key
+        }
+
+        ob.addProperty("key", keyString)
+        ob.addProperty("iv", iv)
+        ob.addProperty("createdOn", Date().time)
+
+        val maxAttempts = 3
+        val retryDelayMs = 2000L
+        val dbUrl = "${UrlUtils.getUrl()}/$table"
+
+        withContext(dispatcherProvider.io) {
+            try {
+                apiInterface.putDoc(header, "application/json", dbUrl, JsonObject())
+            } catch (e: Exception) {
+                null
+            }
+        }
+
+        val response = withContext(dispatcherProvider.io) {
+            RetryUtils.retry(
+                maxAttempts = maxAttempts,
+                delayMs = retryDelayMs,
+                shouldRetry = { resp -> resp == null || !resp.isSuccessful || resp.body() == null }
+            ) {
+                apiInterface.postDoc(header, "application/json", "${UrlUtils.getUrl()}/$table", ob)
+            }
+        }
+
+        if (response?.isSuccessful == true && response.body() != null) {
+            changeUserSecurity(model, obj)
+
+            markUserKeyIvSaved(model.id ?: "", keyString ?: "", iv)
+        } else {
+            throw IOException("Failed to save key/IV after $maxAttempts attempts")
+        }
+    }
+
+    private fun replacedUrl(model: RealmUser): String {
+        val url = UrlUtils.getUrl()
+        val password = SecurePrefs.getPassword(context, settings) ?: ""
+        val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
+        val protocolIndex = url.indexOf("://")
+        val protocol = url.substring(0, protocolIndex)
+        return "$protocol://$replacedUrl"
+    }
+
+    override suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean {
+        try {
+            val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+            val exists = res.body() != null
+            return exists
+        } catch (e: Exception) {
+            e.printStackTrace()
+            return false
+        }
+    }
+
+    override suspend fun processUserAfterCreation(model: RealmUser, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
+
+            if (fetchDataResponse.isSuccessful) {
+                val passwordScheme = JsonUtils.getString("password_scheme", fetchDataResponse.body())
+                val derivedKey = JsonUtils.getString("derived_key", fetchDataResponse.body())
+                val salt = JsonUtils.getString("salt", fetchDataResponse.body())
+                val iterations = JsonUtils.getString("iterations", fetchDataResponse.body())
+
+                model.password_scheme = passwordScheme
+                model.derived_key = derivedKey
+                model.salt = salt
+                model.iterations = iterations
+
+                updateSecurityData(
+                    model.name ?: "",
+                    model._id,
+                    model._rev,
+                    derivedKey,
+                    salt,
+                    passwordScheme,
+                    iterations
+                )
+
+                saveKeyIv(model, obj)
+
+                updateHealthFn(model.id ?: "", model._id ?: "")
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun uploadNewUser(model: RealmUser, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val obj = model.serialize()
+            val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
+
+            if (createResponse.isSuccessful) {
+                val id = createResponse.body()?.get("id")?.asString
+                val rev = createResponse.body()?.get("rev")?.asString
+                model._id = id
+                model._rev = rev
+
+                // Persist _id and _rev to database
+                markUserUploaded(model.id ?: "", id ?: "", rev ?: "")
+
+                processUserAfterCreation(model, obj, updateHealthFn)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    override suspend fun updateExistingUser(header: String, model: RealmUser) {
+        try {
+            val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
+
+            if (latestDocResponse.isSuccessful) {
+                val latestRev = latestDocResponse.body()?.get("_rev")?.asString
+                val obj = model.serialize()
+                val objMap = obj.entrySet().associate { (key, value) -> key to value }
+                val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
+                latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
+
+                val gson = com.google.gson.Gson()
+                val jsonElement = gson.toJsonTree(mutableObj)
+                val jsonObject = jsonElement.asJsonObject
+
+                val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
+
+                if (updateResponse.isSuccessful) {
+                    val updatedRev = updateResponse.body()?.get("rev")?.asString
+                    markUserRevUpdated(model.id ?: "", updatedRev)
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override suspend fun getActiveUserIdSuspending(): String {
         return getUserModelSuspending()?.id ?: ""
     }
+
     override suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
         currentUser: RealmUser
@@ -736,7 +929,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
         return withRealm { realm ->
-            val userModel = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val userModel = realm.where(RealmUser::class.java).equalTo("_id", userId).findFirst()
+                ?: realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = realm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: realm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
 
@@ -754,7 +948,8 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         executeTransaction { transactionRealm ->
-            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
+            val userModel = transactionRealm.where(RealmUser::class.java).equalTo("_id", userId).findFirst()
+                ?: transactionRealm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
             val healthPojo = transactionRealm.where(RealmHealthExamination::class.java).equalTo("_id", userId).findFirst()
                 ?: transactionRealm.where(RealmHealthExamination::class.java).equalTo("userId", userId).findFirst()
                 ?: transactionRealm.createObject(RealmHealthExamination::class.java, userId)
@@ -938,7 +1133,8 @@ class UserRepositoryImpl @Inject constructor(
         references: JsonArray,
         createdOn: String,
         username: String,
-        parentCode: String
+        parentCode: String,
+        resumeFileName: String
     ) {
         executeTransaction { transactionRealm ->
             val achievement = transactionRealm.where(RealmAchievement::class.java)
@@ -954,6 +1150,7 @@ class UserRepositoryImpl @Inject constructor(
                 achievement.parentCode = parentCode
                 achievement.setAchievements(achievements)
                 achievement.setReferences(references)
+                achievement.resumeFileName = resumeFileName
                 achievement.isUpdated = true
             }
         }
@@ -1015,7 +1212,8 @@ class UserRepositoryImpl @Inject constructor(
                 achievementsHeader = achievementCopy.achievementsHeader ?: "",
                 achievements = achievementCopy.achievements ?: emptyList(),
                 achievementResources = resources,
-                references = achievementCopy.references ?: emptyList()
+                references = achievementCopy.references ?: emptyList(),
+                resumeFileName = achievementCopy.resumeFileName ?: ""
             )
         } else {
             AchievementData()
@@ -1041,58 +1239,119 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                ids.add(id)
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertAchievement(realm, jsonDoc)
+
+        if (ids.isEmpty()) return
+
+        val existingAchievements = realm.where(org.ole.planet.myplanet.model.RealmAchievement::class.java)
+            .`in`("_id", ids.toTypedArray())
+            .findAll()
+            .associateBy { it._id }
+            .toMutableMap()
+
+        documentList.forEach { act ->
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+            var achievement = existingAchievements[id]
+
+            if (achievement == null) {
+                achievement = realm.createObject(org.ole.planet.myplanet.model.RealmAchievement::class.java, id)
+                existingAchievements[id] = achievement
+            }
+
+            achievement?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
+            achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
+            achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
+            achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
+            achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+            achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
+            achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
+            achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)
+            achievement?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", act)
+            achievement?.isUpdated = false
+            achievement?.setReferences(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("references", act))
+            achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
+            achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
+            achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
+            achievement?.resumeFileName = org.ole.planet.myplanet.utils.JsonUtils.getString("resumeFileName", act)
         }
     }
 
-    private fun insertAchievement(mRealm: io.realm.Realm, act: com.google.gson.JsonObject?) {
-        var achievement = mRealm.where(org.ole.planet.myplanet.model.RealmAchievement::class.java)
-            .equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
-        if (achievement == null) {
-            achievement = mRealm.createObject(org.ole.planet.myplanet.model.RealmAchievement::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
-        }
-        achievement?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
-        achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
-        achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
-        achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
-        achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
-        achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
-        achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
-        achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)
-        achievement?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", act)
-        achievement?.isUpdated = false
-        achievement?.setReferences(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("references", act))
-        achievement?.setAchievements(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("achievements", act))
-        achievement?.setLinks(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("links", act))
-        achievement?.setOtherInfo(org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("otherInfo", act))
-    }
-    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray, settings: android.content.SharedPreferences) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
+        val ids = mutableListOf<String>()
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                val docId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: java.util.UUID.randomUUID().toString()
+                ids.add(docId)
             }
         }
-        documentList.forEach { jsonDoc ->
-            populateUser(jsonDoc, realm, settings)
+
+        val existingUsersMap = if (ids.isNotEmpty()) {
+            realm.where(RealmUser::class.java).`in`("_id", ids.toTypedArray()).findAll()
+                .associateBy { it._id }
+                .toMutableMap()
+        } else {
+            mutableMapOf()
+        }
+
+        for (i in documentList.indices) {
+            val jsonDoc = documentList[i]
+            try {
+                val id = ids[i]
+                val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("name", jsonDoc)
+                var user = existingUsersMap[id]
+
+                if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
+                    user = migrateGuestUser(realm, id, userName, settings)
+                    user?.let { existingUsersMap[id] = it }
+                }
+
+                if (user == null) {
+                    user = realm.createObject(RealmUser::class.java, id)
+                    user?.let { existingUsersMap[id] = it }
+                }
+                user?.let { insertIntoUsers(jsonDoc, it, settings) }
+            } catch (err: Exception) {
+                err.printStackTrace()
+            }
         }
     }
 
-    override suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
+
+    override suspend fun uploadShelfData(user: RealmUser) {
+        try {
+            val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
+            val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")
+            val myCourseIds = coursesRepositoryLazy.get().getMyCourseIds(user.id ?: "")
+            val shelfData = getShelfData(user.id, jsonDoc, myLibs, myCourseIds)
+            shelfData.addProperty("_rev", JsonUtils.getString("_rev", jsonDoc))
+            apiInterface.putDoc(
+                UrlUtils.header,
+                "application/json",
+                "${UrlUtils.getUrl()}/shelf/${user._id}",
+                shelfData
+            )
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+    }
+
+    private suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
         return withRealm { realm ->
             val myMeetups = getMyMeetUpIds(realm, userId)
             val removedResources = listOf(*removedIds(realm, "resources", userId))

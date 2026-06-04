@@ -1,35 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     tools:context="org.ole.planet.myplanet.ui.viewer.TextFileViewerActivity">
 
-    <TextView
-        android:id="@+id/textFileName"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_horizontal"
-        android:paddingTop="@dimen/padding_large"
-        android:textColor="@color/md_black_1000"
-        android:textSize="@dimen/text_size_large"
-        android:textStyle="bold" />
-    <ScrollView
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent"
+        android:orientation="vertical">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/textFileName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/custom_border"
-            android:orientation="vertical">
+            android:gravity="center_horizontal"
+            android:paddingTop="@dimen/padding_large"
+            android:textColor="@color/md_black_1000"
+            android:textSize="@dimen/text_size_large"
+            android:textStyle="bold" />
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/textFileContent"
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
-        </LinearLayout>
-    </ScrollView>
-</LinearLayout>
+                android:layout_height="wrap_content"
+                android:background="@drawable/custom_border"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/textFileContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent" />
+            </LinearLayout>
+        </ScrollView>
+    </LinearLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabTts"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/read_aloud"
+        app:srcCompat="@drawable/ic_play" />
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

@@ -261,8 +261,12 @@ object DialogUtils {
         }
 
         fun setProgress(value: Int) {
-            setIndeterminate()
-            progressBar.progress = value
+            if (value < 0) {
+                progressBar.isIndeterminate = true
+            } else {
+                progressBar.isIndeterminate = false
+                progressBar.progress = value
+            }
         }
 
         fun setText(text: String) {
@@ -284,6 +288,32 @@ object DialogUtils {
 
         fun disableNegativeButton() {
             binding.buttonNegative.isEnabled = false
+        }
+
+        fun setSyncPhase(phase: String, phaseIndex: Int, totalPhases: Int, stepLabel: String) {
+            progressText.visibility = View.GONE
+            binding.syncPhaseLabel.text = phase
+            binding.syncPhaseLabel.visibility = View.VISIBLE
+            binding.syncItemCountRow.visibility = View.VISIBLE
+            binding.syncStepText.text = stepLabel
+            binding.syncItemProgressBar.visibility = View.GONE
+            binding.syncItemCountText.text = ""
+        }
+
+        fun setSyncItemProgress(done: Int, total: Int, countLabel: String) {
+            binding.syncItemProgressBar.visibility = View.VISIBLE
+            binding.syncItemCountRow.visibility = View.VISIBLE
+            binding.syncItemCountText.text = countLabel
+            if (total > 0) {
+                binding.syncItemProgressBar.progress = (done * 100 / total)
+            }
+        }
+
+        fun resetSyncProgress() {
+            binding.syncPhaseLabel.visibility = View.GONE
+            binding.syncItemProgressBar.visibility = View.GONE
+            binding.syncItemCountRow.visibility = View.GONE
+            progressBar.isIndeterminate = true
         }
     }
 }

@@ -11,14 +11,13 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
 class SubmissionsAdapter(
     private val context: Context,
-) : ListAdapter<RealmSubmission, SubmissionsAdapter.SubmissionsViewHolder>(
+) : ListAdapter<SubmissionUiModel, SubmissionsAdapter.SubmissionsViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             oldItem.id == newItem.id
@@ -26,7 +25,8 @@ class SubmissionsAdapter(
         areContentsTheSame = { oldItem, newItem ->
             oldItem.id == newItem.id &&
                 oldItem.status == newItem.status &&
-                oldItem.lastUpdateTime == newItem.lastUpdateTime
+                oldItem.lastUpdateTime == newItem.lastUpdateTime &&
+                oldItem.submitterName == newItem.submitterName
         }
     )
 ) {
@@ -96,7 +96,7 @@ class SubmissionsAdapter(
         }
     }
 
-    private fun showAllSubmissions(submission: RealmSubmission) {
+    private fun showAllSubmissions(submission: SubmissionUiModel) {
         val examTitle = examHashMap[submission.parentId]?.name ?: "Submissions"
 
         val b = Bundle()
@@ -111,7 +111,7 @@ class SubmissionsAdapter(
     }
 
     inner class SubmissionsViewHolder(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(submission: RealmSubmission) {
+        fun bind(submission: SubmissionUiModel) {
             binding.status.text = submission.status
             binding.date.text = getFormattedDate(submission.startTime)
             showSubmittedBy(submission)
@@ -119,13 +119,13 @@ class SubmissionsAdapter(
             updateSubmissionCount(submission)
         }
 
-        fun updateExam(submission: RealmSubmission) {
+        fun updateExam(submission: SubmissionUiModel) {
             if (examHashMap.containsKey(submission.parentId)) {
                 binding.title.text = examHashMap[submission.parentId]?.name
             }
         }
 
-        fun updateSubmissionCount(submission: RealmSubmission) {
+        fun updateSubmissionCount(submission: SubmissionUiModel) {
             val count = submissionCountMap[submission.id] ?: 1
             if (count > 1) {
                 binding.submissionCount.visibility = View.VISIBLE
@@ -147,7 +147,7 @@ class SubmissionsAdapter(
             }
         }
 
-        private fun showSubmittedBy(submission: RealmSubmission) {
+        private fun showSubmittedBy(submission: SubmissionUiModel) {
             val finalName = submission.submitterName
             if (finalName.isBlank()) {
                 binding.submittedBy.visibility = View.GONE

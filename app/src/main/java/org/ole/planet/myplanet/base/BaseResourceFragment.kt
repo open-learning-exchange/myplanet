@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -67,8 +66,6 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var surveysRepository: SurveysRepository
-    @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
@@ -135,14 +132,14 @@ abstract class BaseResourceFragment : Fragment() {
                         if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
                             if (download.progress == 100) {
                                 pendingDownloadUrls.remove(fileUrl)
+                                onSingleResourceDownloaded(fileUrl)
                             }
                             setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
                         }
                     }
                 } else {
                     pendingDownloadUrls.clear()
-                    prgDialog.dismiss()
-                    download?.message?.let { showError(prgDialog, it) }
+                    download?.message?.let { showError(prgDialog, it) } ?: prgDialog.dismiss()
                 }
             }
         }
@@ -160,38 +157,39 @@ abstract class BaseResourceFragment : Fragment() {
             convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            val titleView = TextView(requireContext()).apply {
+                text = getString(R.string.download_suggestion)
+                setPadding(48, 40, 48, 0)
+                textSize = 18f
+                maxLines = 5
+                isSingleLine = false
+                setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            }
             alertDialogBuilder.setView(convertView)
-                .setTitle(R.string.download_suggestion)
+                .setCustomTitle(titleView)
+
+
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
-                            selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, ArrayList(it))
-                                val selectedLibraries = it.mapNotNull { index ->
-                                    dbMyLibrary.getOrNull(
-                                        index
-                                    ) }
-                                if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                    showProgressDialog()
-                                }
+                        val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
+                        selectedItemsList?.let {
+                            addToLibrary(dbMyLibrary, ArrayList(it))
+                            val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
+                            if (resourcesRepository.downloadResources(selectedLibraries)) {
+                                val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
+                                trackDownloadUrls(urls)
+                                showProgressDialog()
                             }
-                        } else {
-                            showNotConnectedToast()
                         }
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(dbMyLibrary)
-                            val filtered = dbMyLibrary.filterNotNull()
-                            if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                showProgressDialog()
-                            }
-                        } else {
-                            showNotConnectedToast()
+                        addAllToLibrary(dbMyLibrary)
+                        val filtered = dbMyLibrary.filterNotNull()
+                        if (resourcesRepository.downloadResources(filtered)) {
+                            val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
+                            trackDownloadUrls(urls)
+                            showProgressDialog()
                         }
                     }
                 }.setNegativeButton(R.string.txt_cancel, null)
@@ -283,6 +281,8 @@ abstract class BaseResourceFragment : Fragment() {
             onDownloadComplete()
         }
     }
+
+    protected open fun onSingleResourceDownloaded(url: String) {}
 
     open fun onDownloadComplete() {
         prgDialog.dismiss()
