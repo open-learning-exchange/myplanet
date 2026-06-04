@@ -191,7 +191,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         }
-        settings = prefData.rawPreferences
         requestAllPermissions()
         processedUrl = UrlUtils.getUrl()
     }
@@ -392,18 +391,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         (applicationContext as? org.ole.planet.myplanet.MainApplication)?.applyAutoSyncSettings()
     }
 
-    suspend fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
-            if (settings != null) {
-                this.settings = settings
-            }
             if (!userRepository.hasAtLeastOneUser()) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
                 val user = userRepository.authenticateUser(username, password, isManagerMode)
                 if (user != null) {
-                    profileDbHandler.saveUserInfoPref(this.settings, password, user)
+                    profileDbHandler.saveUserInfoPref(password, user)
                     true
                 } else {
                     false
