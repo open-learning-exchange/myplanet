@@ -348,17 +348,12 @@ class VoicesFragment : BaseVoicesFragment() {
     
     private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
         val query = queryParam ?: etSearch.text.toString().trim()
-        
-        if (query.isEmpty()) {
-            return list
+        if (query.isEmpty()) return list
+        return list.filter { news ->
+            news?.message?.contains(query, ignoreCase = true) == true ||
+            news?.userName?.contains(query, ignoreCase = true) == true ||
+            news?.newsTitle?.contains(query, ignoreCase = true) == true
         }
-        
-        val filtered = list.filter { news ->
-            val message = news?.message?.trim() ?: ""
-            val matches = message.contains(query, ignoreCase = true)
-            matches
-        }
-        return filtered
     }
     
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
