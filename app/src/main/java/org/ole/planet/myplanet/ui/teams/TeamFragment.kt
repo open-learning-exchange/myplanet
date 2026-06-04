@@ -1,9 +1,7 @@
 package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,7 +14,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.SimpleItemAnimator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlin.OptIn
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.utils.textChanges
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
@@ -47,7 +51,6 @@ class TeamFragment : Fragment() {
     var user: RealmUser? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
-    private var textWatcher: TextWatcher? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -310,15 +313,12 @@ class TeamFragment : Fragment() {
         }
     }
 
+    @OptIn(FlowPreview::class)
     private fun setupTextWatcher() {
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                viewModel.searchTeams(charSequence.toString())
-            }
-            override fun afterTextChanged(editable: Editable) {}
-        }
-        binding.etSearch.addTextChangedListener(textWatcher)
+        binding.etSearch.textChanges()
+            .debounce(300)
+            .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
 
@@ -357,8 +357,6 @@ class TeamFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        _binding?.etSearch?.removeTextChangedListener(textWatcher)
-        textWatcher = null
         _binding = null
         super.onDestroyView()
     }
