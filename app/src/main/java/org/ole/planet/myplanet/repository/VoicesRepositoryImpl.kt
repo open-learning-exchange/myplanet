@@ -48,6 +48,7 @@ class VoicesRepositoryImpl @Inject constructor(
                         _id = news._id,
                         message = news.message,
                         imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                        videoUrls = news.videoUrls?.toList() ?: emptyList(),
                         newsJson = serializeNews(news)
                     )
                 }
@@ -74,9 +75,11 @@ class VoicesRepositoryImpl @Inject constructor(
                 update.id?.let { id ->
                     managedNewsMap[id]?.let { managedNews ->
                         managedNews.imageUrls?.clear()
+                        managedNews.videoUrls?.clear()
                         managedNews._id = update._id
                         managedNews._rev = update._rev
                         managedNews.images = gson.toJson(update.imagesArray)
+                        managedNews.videos = gson.toJson(update.videosArray)
                     }
                 }
             }
@@ -125,19 +128,21 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
+    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?, videoList: List<String>?): RealmNews {
         val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+        val realmVideoList = videoList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, realmImageList)
+            val managedNews = createNews(map, realm, user, realmImageList, realmVideoList)
             realm.copyFromRealm(managedNews)
         }
     }
 
-    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean {
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?, videoList: List<String>?): Boolean {
         val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
+        val realmVideoList = videoList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         return try {
             executeTransaction { realm ->
-                RealmNews.createNews(newsData, realm, user, realmImageList)
+                RealmNews.createNews(newsData, realm, user, realmImageList, realmVideoList)
             }
             true
         } catch (e: Exception) {
@@ -426,7 +431,7 @@ class VoicesRepositoryImpl @Inject constructor(
             map["messageType"] = messageType ?: ""
             map["messagePlanetCode"] = messagePlanetCode ?: ""
             map["viewIn"] = viewIn ?: ""
-            createNews(map, realm, transactionUser, realmImageList, true)
+            createNews(map, realm, transactionUser, realmImageList, null, true)
         }
     }
 
