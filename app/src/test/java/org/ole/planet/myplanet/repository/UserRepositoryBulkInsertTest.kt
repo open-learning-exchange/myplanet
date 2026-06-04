@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import android.content.SharedPreferences
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
@@ -53,9 +52,8 @@ class UserRepositoryBulkInsertTest {
             jsonArray.add(jObj)
         }
 
-        val settings = mockk<SharedPreferences>(relaxed = true)
 
-        userRepository.bulkInsertUsersFromSync(realm, jsonArray, settings)
+        userRepository.bulkInsertUsersFromSync(realm, jsonArray)
 
         // The query is done only ONCE using `in`!
         verify(exactly = 1) { realm.where(RealmUser::class.java) }

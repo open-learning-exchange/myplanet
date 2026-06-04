@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -38,6 +39,7 @@ class LoginSyncManagerTest {
     private val context: Context = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
+    private val userSyncRepository: UserSyncRepository = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -62,6 +64,7 @@ class LoginSyncManagerTest {
             context,
             sharedPrefManager,
             userRepository,
+            userSyncRepository,
             apiInterface,
             testScope,
             dispatcherProvider
@@ -140,7 +143,7 @@ class LoginSyncManagerTest {
         coEvery { apiInterface.getJsonObject(any(), any()) } returns Response.success(jsonDoc)
 
         every { AndroidDecrypter.androidDecrypter("testUser", "testPass", "test_derived_key", "test_salt") } returns true
-        coEvery { userRepository.saveUser(any(), any(), any(), any()) } returns mockk(relaxed = true)
+        coEvery { userSyncRepository.saveUser(any(), any(), any()) } returns mockk(relaxed = true)
 
         loginSyncManager.login("testUser", "testPass", listener)
 

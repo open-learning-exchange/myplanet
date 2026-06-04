@@ -131,13 +131,14 @@ class CoursesViewModel @Inject constructor(
                         emptyList()
                     }
 
+                    val allCourseIds = validCourses.mapNotNull { it.courseId }
+
                     val (map, progressMap) = coroutineScope {
                         val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                        val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+                        val progressDeferred = async { coursesRepository.getCourseProgress(userId, allCourseIds) }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
 
-                    val allCourseIds = validCourses.mapNotNull { it.courseId }
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }
 
@@ -155,13 +156,10 @@ class CoursesViewModel @Inject constructor(
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
 
-                val (map, progressMap) = coroutineScope {
-                    val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                    val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
-                    Pair(ratingsDeferred.await(), progressDeferred.await())
-                }
-
+                val map = _coursesState.value.map
+                val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
+
                 processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap, tagsMap)
             }
         }

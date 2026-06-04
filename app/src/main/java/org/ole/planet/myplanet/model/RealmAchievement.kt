@@ -28,6 +28,7 @@ open class RealmAchievement : RealmObject() {
     var username: String? = null
     var parentCode: String? = null
     var isUpdated: Boolean = false
+    var resumeFileName: String? = null
 
     val achievementsArray: JsonArray
         get() = parseStringListToJsonArray(achievements)
@@ -118,6 +119,7 @@ open class RealmAchievement : RealmObject() {
             `object`.add("achievements", sub.achievementsArray)
             `object`.add("links", sub.linksArray)
             `object`.add("otherInfo", sub.otherInfoArray)
+            `object`.addProperty("resumeFileName", sub.resumeFileName ?: "")
             return `object`
         }
 

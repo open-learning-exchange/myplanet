@@ -94,9 +94,11 @@ class MembersAdapter(
             R.string.last_visit,
             lastVisitDate
         )
+        val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
         Glide.with(binding.memberImage.context)
             .load(member.userImage)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(avatarSize, avatarSize)
             .circleCrop()
             .placeholder(R.drawable.profile)
             .error(R.drawable.profile)

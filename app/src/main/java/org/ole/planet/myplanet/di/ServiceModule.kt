@@ -52,18 +52,11 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
-        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
+        teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
+        coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
+        eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository)
-    }
-
-    @Provides
-    @Singleton
-    fun provideUploadRepository(
-        databaseService: DatabaseService,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-    ): org.ole.planet.myplanet.repository.UploadRepository {
-        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
+        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository, coursesRepository, eventsRepository)
     }
 
     @Provides
@@ -99,12 +92,13 @@ object ServiceModule {
         @AppPreferences preferences: SharedPreferences,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
         healthRepository: org.ole.planet.myplanet.repository.HealthRepository,
         @ApplicationScope appScope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, userRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
     }
 
     @Provides
@@ -118,6 +112,7 @@ object ServiceModule {
         feedbackRepository: org.ole.planet.myplanet.repository.FeedbackRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
+        userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         teamsRepository: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsRepository>,
         notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
@@ -132,6 +127,6 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
     }
 }

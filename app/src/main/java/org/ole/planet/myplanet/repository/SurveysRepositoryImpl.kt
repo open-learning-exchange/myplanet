@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.text.TextUtils
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID

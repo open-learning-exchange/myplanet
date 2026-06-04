@@ -12,13 +12,13 @@ import dagger.assisted.AssistedInject
 import java.io.File
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import okio.Buffer
 import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
@@ -76,6 +76,10 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+        if (FileUtils.checkFileExist(context, url)) {
+            DownloadUtils.updateResourceOfflineStatus(url)
+            return true
+        }
         return try {
             val response = apiInterface.downloadFile(UrlUtils.header, url)
             if (response.isSuccessful) {

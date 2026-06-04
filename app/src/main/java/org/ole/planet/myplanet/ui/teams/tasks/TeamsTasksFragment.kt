@@ -25,6 +25,7 @@ import java.util.Calendar
 import java.util.Date
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
@@ -150,22 +151,28 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         val alertDialog = builder.create()
         alertDialog.show()
-
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val task = alertTaskBinding.etTask.text.toString()
             val desc = alertTaskBinding.etDescription.text.toString()
+            var isValid = true
             if (task.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
-            } else if (deadline == null) {
+                isValid = false
+            }
+            if (deadline == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
-            } else {
+                isValid = false  }
+            if (desc.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.desc_is_required))
+                isValid = false
+            }
+            if (isValid) {
                 createOrUpdateTask(task, desc, t, selectedAssignee?.id)
                 alertDialog.dismiss()
             }
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
-
     private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
         var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
 
@@ -229,9 +236,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
-            val job = viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                 val user = userRepository.getUserById(assigneeId)
-                kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) { onNameFetched(user?.name) }
+                withContext(dispatcherProvider.main) { onNameFetched(user?.name) }
             }
             return@TeamsTasksAdapter { job.cancel() }
         }

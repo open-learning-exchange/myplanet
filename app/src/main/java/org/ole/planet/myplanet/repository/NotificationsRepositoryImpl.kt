@@ -316,6 +316,44 @@ class NotificationsRepositoryImpl @Inject constructor(
         return team?.name
     }
 
+    override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
+        if (taskTitles.isEmpty()) return emptyMap()
+        val map = mutableMapOf<String, String>()
+
+        val tasks = queryList(RealmTeamTask::class.java) {
+            beginGroup()
+            taskTitles.forEachIndexed { index, title ->
+                if (index > 0) or()
+                equalTo("title", title)
+            }
+            endGroup()
+        }
+
+        val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
+        if (teamIds.isNotEmpty()) {
+            val teams = queryList(RealmMyTeam::class.java) {
+                beginGroup()
+                teamIds.forEachIndexed { index, id ->
+                    if (index > 0) or()
+                    equalTo("_id", id)
+                }
+                endGroup()
+            }
+            val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
+
+            tasks.forEach { task ->
+                val taskTitle = task.title
+                val teamId = task.teamId
+                if (!taskTitle.isNullOrEmpty() && !teamId.isNullOrEmpty()) {
+                    teamMap[teamId]?.let { teamName ->
+                        map[taskTitle] = teamName
+                    }
+                }
+            }
+        }
+        return map
+    }
+
     override suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
         val current = System.currentTimeMillis()
         val tomorrow = Calendar.getInstance()

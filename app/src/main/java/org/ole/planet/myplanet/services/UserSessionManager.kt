@@ -10,7 +10,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
-import android.content.SharedPreferences
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -38,9 +37,9 @@ class UserSessionManager @Inject constructor(
         return userRepository.getUserModelSuspending()
     }
 
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+    suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {
         withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(context, settings, user?.name, password)
+            SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
         }
         sharedPrefManager.setUserId(user?.id ?: "")
         sharedPrefManager.setUserName(user?.name ?: "")

@@ -91,8 +91,6 @@
         <activity
             android:name=".ui.resources.P2pTransferActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity"
-            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
             android:theme="@style/AppTheme" />
@@ -102,19 +100,9 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity"
-            android:configChanges="orientation|screenSize" />
         <activity android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.VideoViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.ImageViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.CSVViewerActivity"
+        <activity android:name=".ui.viewer.ResourceViewerActivity"
             android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"

@@ -12,14 +12,14 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertEquals
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 class NetworkUtilsMockTest {
     private lateinit var mockContext: Context

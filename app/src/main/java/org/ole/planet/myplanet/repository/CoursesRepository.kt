@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
@@ -20,6 +21,7 @@ interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>>
     suspend fun getCourseById(courseId: String): RealmMyCourse?
     suspend fun getCourseByCourseId(courseId: String): RealmMyCourse?
+    fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?>
     suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse>
     suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary>
@@ -28,6 +30,7 @@ interface CoursesRepository {
     suspend fun getCourseSteps(courseId: String): List<RealmCourseStep>
     suspend fun getCourseStepIds(courseId: String): List<String?>
     suspend fun markCourseAdded(courseId: String, userId: String?): Result<Boolean>
+    suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int
     suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean>
     suspend fun joinCourse(courseId: String, userId: String): Result<Unit>
     suspend fun leaveCourse(courseId: String, userId: String): Result<Unit>
@@ -57,7 +60,7 @@ interface CoursesRepository {
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
-    suspend fun getCourseProgress(userId: String?): java.util.HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, com.google.gson.JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTags(courseId: String): List<RealmTag>

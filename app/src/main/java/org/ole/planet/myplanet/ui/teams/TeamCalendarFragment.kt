@@ -117,7 +117,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         addMeetupDialog?.setOnDismissListener {
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
-                refreshCalendarView()
+                refreshMeetups()
             }
         }
     }
@@ -196,8 +196,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
             if (success) {
                 Utilities.toast(activity, getString(R.string.meetup_added))
                 addMeetupDialog?.dismiss()
-                refreshCalendarView()
-                refreshMeetupDialog()
+                refreshMeetups()
+
             } else {
                 Utilities.toast(activity, getString(R.string.meetup_not_added))
             }
@@ -254,14 +254,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
         binding.calendarView.setOnCalendarDayClickListener(object : OnCalendarDayClickListener {
             override fun onClick(calendarDay: CalendarDay) {
                 lifecycleScope.launch {
-                    meetupList = eventsRepository.getMeetupsForTeam(teamId)
+                    val meetups = fetchMeetupSnapshot()
                     clickedCalendar = calendarDay.calendar
                     val clickedDateInMillis = clickedCalendar.timeInMillis
                     val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                         .atZone(ZoneId.systemDefault())
                         .toLocalDate()
 
-                    val markedDates = meetupList.filter { meetup ->
+                    val markedDates = meetups.filter { meetup ->
                         val meetupDate = Instant.ofEpochMilli(meetup.startDate)
                             .atZone(ZoneId.systemDefault())
                             .toLocalDate()
@@ -287,7 +287,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 }
             }
         })
-        refreshCalendarView()
+        refreshMeetups()
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -358,12 +358,18 @@ class TeamCalendarFragment : BaseTeamFragment() {
         meetupDialog?.show()
     }
 
-    private fun refreshCalendarView() {
-        if (teamId.isEmpty()) {
-            return
+    private suspend fun fetchMeetupSnapshot(): List<RealmMeetup> {
+        if (teamId.isNotEmpty()) {
+            meetupList = eventsRepository.getMeetupsForTeam(teamId)
         }
+        return meetupList
+    }
+
+    private fun refreshMeetups() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val newDates = eventsRepository.getMeetupsForTeam(teamId).mapTo(mutableListOf()) { meetup ->
+            val meetups = fetchMeetupSnapshot()
+
+            val newDates = meetups.mapTo(mutableListOf()) { meetup ->
                 val calendarInstance = Calendar.getInstance()
                 calendarInstance.timeInMillis = meetup.startDate
                 calendarInstance
@@ -378,28 +384,22 @@ class TeamCalendarFragment : BaseTeamFragment() {
                 binding.calendarView.setCalendarDays(calendarDays)
                 binding.calendarView.selectedDates = ArrayList(newDates)
             }
-        }
-    }
 
-    private fun refreshMeetupDialog() {
-        if (!::clickedCalendar.isInitialized || meetupDialog?.isShowing != true) {
-            return
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val updatedMeetupList = eventsRepository.getMeetupsForTeam(teamId)
-            val clickedDateInMillis = clickedCalendar.timeInMillis
-            val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
-                .atZone(ZoneId.systemDefault())
-                .toLocalDate()
-
-            val filteredMeetups = updatedMeetupList.filter { meetup ->
-                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+            if (::clickedCalendar.isInitialized && meetupDialog?.isShowing == true) {
+                val clickedDateInMillis = clickedCalendar.timeInMillis
+                val clickedDate = Instant.ofEpochMilli(clickedDateInMillis)
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
-                meetupDate == clickedDate
-            }
 
-            meetupAdapter?.submitList(filteredMeetups)
+                val filteredMeetups = meetups.filter { meetup ->
+                    val meetupDate = Instant.ofEpochMilli(meetup.startDate)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    meetupDate == clickedDate
+                }
+
+                meetupAdapter?.submitList(filteredMeetups)
+            }
         }
     }
 

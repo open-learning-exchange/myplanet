@@ -192,7 +192,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
             uploadExamResultWrapper()
-            if (!MainApplication.isSyncRunning) {
+            if (!MainApplication.isSyncRunning.get()) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
         } catch (e: Exception) {

@@ -3,7 +3,10 @@ package org.ole.planet.myplanet.repository
 import android.content.SharedPreferences
 import com.google.gson.Gson
 import com.google.gson.JsonObject
-import io.mockk.*
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -21,7 +24,6 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import kotlin.system.measureTimeMillis
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryBenchmarkTest {

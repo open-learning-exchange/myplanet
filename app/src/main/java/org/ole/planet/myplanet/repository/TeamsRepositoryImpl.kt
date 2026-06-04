@@ -367,13 +367,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 if (courseIds.isEmpty()) {
                     return@runCatching
                 }
-                executeTransaction { realm ->
-                    val team = realm.where(RealmMyTeam::class.java)
-                        .equalTo("_id", teamId)
-                        .findFirst()
-                    if (team == null) {
-                        return@executeTransaction
-                    }
+                update(RealmMyTeam::class.java, "_id", teamId) { team ->
                     courseIds.forEach { courseId ->
                         if (team.courses?.contains(courseId) != true) {
                             team.courses?.add(courseId)
@@ -1528,6 +1522,27 @@ class TeamsRepositoryImpl @Inject constructor(
             concatenatedLinks.add(concatenatedLink)
         }
         org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
+    }
+
+    override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {
+        var processedCount = 0
+        try {
+            withRealm { realm ->
+                realm.executeTransaction { realmTx ->
+                    documents.forEach { doc ->
+                        try {
+                            insertMyTeam(realmTx, doc)
+                            processedCount++
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return processedCount
     }
 
     override fun insertMyTeam(realm: Realm, doc: JsonObject) {

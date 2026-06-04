@@ -7,11 +7,9 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CheckBox
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.flexbox.FlexboxLayout
-import com.google.gson.JsonObject
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import java.util.Locale
@@ -23,28 +21,24 @@ import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.Utilities.getCloudConfig
 
 class ResourcesAdapter(
     private val context: Context,
     private val isGuest: Boolean,
     private var openedResourceIds: Set<String>
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(
-    object : DiffUtil.ItemCallback<ResourceListModel>() {
-        override fun areItemsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-            return oldItem.item.id == newItem.item.id
-        }
-
-        override fun areContentsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-            return oldItem == newItem
-        }
-    }
+    org.ole.planet.myplanet.utils.DiffUtils.itemCallback<ResourceListModel>(
+        { oldItem, newItem -> oldItem.item.id == newItem.item.id },
+        { oldItem, newItem -> oldItem == newItem }
+    )
 ) {
 
     private val selectedItems: MutableList<ResourceListModel> = ArrayList()
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
-    private val config: ChipCloudConfig = org.ole.planet.myplanet.utils.Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+    private val config: ChipCloudConfig = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
 
     private var isAscending = true
     private var isTitleAscending = true
@@ -54,6 +48,16 @@ class ResourcesAdapter(
         private const val RATING_PAYLOAD = "RATING_PAYLOAD"
         private const val OPENED_RESOURCE_PAYLOAD = "OPENED_RESOURCE_PAYLOAD"
         private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
+        private const val OFFLINE_STATUS_PAYLOAD = "OFFLINE_STATUS_PAYLOAD"
+    }
+
+    private val locallyOfflineIds = mutableSetOf<String>()
+
+    fun markItemAsOffline(id: String) {
+        if (locallyOfflineIds.add(id)) {
+            val index = currentList.indexOfFirst { it.item.id == id }
+            if (index >= 0) notifyItemChanged(index, OFFLINE_STATUS_PAYLOAD)
+        }
     }
 
     fun setListener(listener: OnLibraryItemSelectedListener?) {
@@ -93,13 +97,11 @@ class ResourcesAdapter(
                 openLibrary(model)
             }
             val isResourceOpened = openedResourceIds.contains(library.id)
-            if (library.isOffline || isResourceOpened) {
-                holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
-            } else {
-                holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
-            }
+            val isOffline = library.isOffline || locallyOfflineIds.contains(library.id)
+            holder.rowLibraryBinding.ivDownloaded.visibility =
+                if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
 
-            if (library.isOffline) {
+            if (isOffline) {
                 holder.rowLibraryBinding.ivShare.visibility = View.VISIBLE
                 holder.rowLibraryBinding.ivShare.setOnClickListener {
                     listener?.onShareClicked(library)
@@ -109,7 +111,7 @@ class ResourcesAdapter(
             }
 
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
-                if (library.isOffline) {
+                if (isOffline) {
                     context.getString(R.string.view)
                 } else {
                     context.getString(R.string.download)
@@ -176,13 +178,11 @@ class ResourcesAdapter(
                 holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
                 handled = true
             }
-            if (payloads.contains(OPENED_RESOURCE_PAYLOAD)) {
+            if (payloads.contains(OPENED_RESOURCE_PAYLOAD) || payloads.contains(OFFLINE_STATUS_PAYLOAD)) {
                 val isResourceOpened = openedResourceIds.contains(library.id)
-                if (library.isOffline || isResourceOpened) {
-                    holder.rowLibraryBinding.ivDownloaded.visibility = View.INVISIBLE
-                } else {
-                    holder.rowLibraryBinding.ivDownloaded.visibility = View.VISIBLE
-                }
+                val isOffline = library.isOffline || locallyOfflineIds.contains(library.id)
+                holder.rowLibraryBinding.ivDownloaded.visibility =
+                    if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
                 handled = true
             }
             if (payloads.contains(TAGS_PAYLOAD)) {
@@ -213,10 +213,13 @@ class ResourcesAdapter(
         val flexboxDrawable = holder.rowLibraryBinding.flexboxDrawable
         val model = getItem(position)
         if (model == null) {
+            holder.cachedTags = emptyList()
             flexboxDrawable.removeAllViews()
             return
         }
         val tags = model.tags
+        if (tags == holder.cachedTags) return
+        holder.cachedTags = tags
         renderTagCloud(flexboxDrawable, tags)
     }
 
@@ -239,6 +242,14 @@ class ResourcesAdapter(
                     listener?.onTagClicked(selectedTag)
                 }
             }
+        }
+    }
+
+    override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
+        super.onViewRecycled(holder)
+        if (holder is ResourcesViewHolder) {
+            holder.cachedTags = emptyList()
+            holder.rowLibraryBinding.flexboxDrawable.removeAllViews()
         }
     }
 
@@ -288,7 +299,8 @@ class ResourcesAdapter(
 
     internal inner class ResourcesViewHolder(val rowLibraryBinding: RowLibraryBinding) :
         RecyclerView.ViewHolder(rowLibraryBinding.root) {
-            init {
+        var cachedTags: List<TagItem> = emptyList()
+        init {
                 rowLibraryBinding.ratingBar.setOnTouchListener { _: View?, event: MotionEvent ->
                     if (event.action == MotionEvent.ACTION_UP) {
                         val adapterPosition = bindingAdapterPosition

@@ -148,11 +148,7 @@ object DownloadUtils {
             preferences.edit {
                 putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
             }
-
-            val serviceRunning = isDownloadServiceRunning(ctx)
-            if (!serviceRunning) {
-                startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
-            }
+            startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
         }
     }
 
@@ -168,22 +164,8 @@ object DownloadUtils {
                 putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
             }
 
-            val serviceRunning = isDownloadServiceRunning(ctx)
-            if (!serviceRunning) {
-                startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
-            }
+            startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
         }
-    }
-
-    private fun isDownloadServiceRunning(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        @Suppress("DEPRECATION")
-        for (service in activityManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (DownloadService::class.java.name == service.service.className) {
-                return true
-            }
-        }
-        return false
     }
 
     @RequiresApi(Build.VERSION_CODES.S)

@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class ServerAddressAdapter(
     private val onItemClick: (ServerAddress) -> Unit,
     private val onClearDataDialog: (ServerAddress, Int) -> Unit,
-    private val urlWithoutProtocol: String?,
+    private val isServerAlreadyConfigured: Boolean, // ← simple flag instead of URL
 ) : ListAdapter<ServerAddress, ServerAddressAdapter.ViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { old, new -> old.url == new.url },
@@ -64,13 +64,13 @@ class ServerAddressAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val serverAddress = getItem(position)
-        holder.bind(serverAddress, position == selectedPosition)
+        holder.bind(serverAddress, position == selectedPosition) // ← only selectedPosition matters
         holder.itemView.setOnClickListener {
-            if (!urlWithoutProtocol.isNullOrEmpty() &&
-                serverAddress.url.replace(URL_PROTOCOL_REGEX, "") != urlWithoutProtocol
-            ) {
+            if (isServerAlreadyConfigured && position != selectedPosition) {
+                // user is clicking a DIFFERENT server than currently selected → warn them
                 onClearDataDialog(serverAddress, position)
             } else {
+                // either no server configured yet, or clicking the already selected one
                 onItemClick(serverAddress)
                 setSelectedPosition(position)
             }
@@ -79,7 +79,6 @@ class ServerAddressAdapter(
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val button: MaterialButton = itemView.findViewById(R.id.btn_server_address)
-
         fun bind(serverAddress: ServerAddress, isSelected: Boolean) {
             button.text = serverAddress.name
             button.contentDescription =
@@ -99,6 +98,7 @@ class ServerAddressAdapter(
             }
         }
     }
+
     companion object {
         private val URL_PROTOCOL_REGEX = Regex("^https?://")
     }
