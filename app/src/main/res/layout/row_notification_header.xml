@@ -19,7 +19,6 @@
         android:layout_gravity="center_vertical"
         android:layout_marginEnd="12dp"
         android:tint="@color/mainColor" />
-
     <TextView
         android:id="@+id/tv_header_label"
         android:layout_width="0dp"
@@ -31,7 +30,6 @@
         android:textColor="@color/daynight_textColor"
         android:textAllCaps="true"
         android:letterSpacing="0.05" />
-
     <TextView
         android:id="@+id/tv_unread_badge"
         android:layout_width="wrap_content"
@@ -48,7 +46,6 @@
         android:textColor="@color/bg_white"
         android:background="@color/mainColor"
         android:visibility="gone" />
-
     <ImageView
         android:id="@+id/iv_expand"
         android:layout_width="24dp"
@@ -56,5 +53,4 @@
         android:layout_gravity="center_vertical"
         android:src="@drawable/ic_keyboard_arrow_up_black_24dp"
         android:tint="@color/daynight_textColor" />
-
 </LinearLayout>
