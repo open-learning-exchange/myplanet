@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.di
 
 import dagger.Binds
+import dagger.Provides
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -146,4 +149,15 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideUploadRepository(
+            databaseService: DatabaseService,
+            dispatcherProvider: DispatcherProvider
+        ): org.ole.planet.myplanet.repository.UploadRepository {
+            return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
+        }
+    }
 }

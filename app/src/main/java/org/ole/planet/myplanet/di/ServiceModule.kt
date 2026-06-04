@@ -61,15 +61,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    fun provideUploadRepository(
-        databaseService: DatabaseService,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-    ): org.ole.planet.myplanet.repository.UploadRepository {
-        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
-    }
-
-    @Provides
-    @Singleton
     fun provideUploadManager(
         @ApplicationContext context: Context,
         databaseService: DatabaseService,
