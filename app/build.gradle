@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.realm.android)
 }
 android {
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         applicationId "org.ole.planet.myplanet"
