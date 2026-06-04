@@ -12,7 +12,7 @@
     <string name="file_not_found_locally">Fichier non trouvé localement</string>
     <string name="status_sending">État : Envoi de %1$s…</string>
     <string name="status_sent_success">État : Envoyé avec succès !</string>
-    <string name="status_send_failed">État : Échec de l'envoi</string>
+    <string name="status_send_failed">État : Échec de l\'envoi</string>
     <string name="status_waiting_receive">État : En attente de réception…</string>
     <string name="status_received_imported">État : Reçu et importé !</string>
     <string name="status_receive_failed">État : Échec de la réception</string>
