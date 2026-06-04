@@ -1305,5 +1305,20 @@
     <string name="sync_chip_syncing">La waafajinayaa…</string>
     <string name="sync_chip_offline">Khadka kama jiro</string>
     <string name="desc_is_required">Sharaxaadda waa loo baahan yahay</string>
+    <string name="notification_group_system">Nidaam</string>
+    <string name="notification_group_other">Kale</string>
+    <string name="notif_group_join_requests">Codsiyada Ku-Biiritaanka</string>
+    <string name="notif_group_team_updates">Cusboonaysiinta Kooxda</string>
+    <string name="notif_group_new_voices">Codadka Cusub</string>
+    <string name="notif_group_voice_replies">Jawaabaha Codka</string>
+    <string name="selected_count">%1$d la doortay</string>
+    <string name="mark_selected_as_read">Calaamadee akhrinta</string>
+    <string name="delete_selected">Tirtir</string>
+    <string name="cancel_selection">Jooji doortashada</string>
+    <string name="just_now">Hadda uun</string>
+    <string name="minutes_ago">%1$d daqiiqo ka hor</string>
+    <string name="hours_ago">%1$d saacad ka hor</string>
+    <string name="yesterday">Shalay</string>
+    <string name="days_ago">%1$d maalmood ka hor</string>
 
 </resources>

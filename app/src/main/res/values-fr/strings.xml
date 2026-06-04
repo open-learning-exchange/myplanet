@@ -1309,5 +1309,20 @@
     <string name="sync_chip_syncing">Synchronisation…</string>
     <string name="sync_chip_offline">Hors ligne</string>
     <string name="desc_is_required">La description est obligatoire</string>
+    <string name="notification_group_system">Système</string>
+    <string name="notification_group_other">Autre</string>
+    <string name="notif_group_join_requests">Demandes d\'adhésion</string>
+    <string name="notif_group_team_updates">Mises à jour de l\'équipe</string>
+    <string name="notif_group_new_voices">Nouvelles voix</string>
+    <string name="notif_group_voice_replies">Réponses vocales</string>
+    <string name="selected_count">%1$d sélectionné(s)</string>
+    <string name="mark_selected_as_read">Marquer comme lu</string>
+    <string name="delete_selected">Supprimer</string>
+    <string name="cancel_selection">Annuler la sélection</string>
+    <string name="just_now">À l\'instant</string>
+    <string name="minutes_ago">Il y a %1$d min</string>
+    <string name="hours_ago">Il y a %1$d h</string>
+    <string name="yesterday">Hier</string>
+    <string name="days_ago">Il y a %1$d jour(s)</string>
 
 </resources>
