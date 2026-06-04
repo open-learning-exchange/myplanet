@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -21,7 +20,6 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -30,10 +28,8 @@ class TeamsRepositoryImplTest {
 
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
-    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
-    private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
@@ -59,19 +55,21 @@ class TeamsRepositoryImplTest {
         every { sharedPrefManager.getServerUrl() } returns "http://test.com"
 
         val mockUserRepository = mockk<UserRepository>(relaxed = true)
+        val teamTasksRepository = mockk<TeamTasksRepository>(relaxed = true)
+        val teamFinanceRepository = mockk<TeamFinanceRepository>(relaxed = true)
 
         teamsRepository = TeamsRepositoryImpl(
             activitiesRepository,
             databaseService,
             UnconfinedTestDispatcher(),
-            userSessionManager,
             uploadManager,
-            gson,
             preferences,
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            mockUserRepository
+            mockUserRepository,
+            teamTasksRepository,
+            teamFinanceRepository
         )
     }
 

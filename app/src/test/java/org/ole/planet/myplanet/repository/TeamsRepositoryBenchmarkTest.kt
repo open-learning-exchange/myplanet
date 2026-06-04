@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
@@ -21,7 +20,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -29,15 +27,15 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class TeamsRepositoryBenchmarkTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
-    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
-    private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val userRepository: UserRepository = mockk(relaxed = true)
+    private val teamTasksRepository: TeamTasksRepository = mockk(relaxed = true)
+    private val teamFinanceRepository: TeamFinanceRepository = mockk(relaxed = true)
     private val realm: Realm = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -59,14 +57,14 @@ class TeamsRepositoryBenchmarkTest {
             activitiesRepository,
             databaseService,
             testDispatcher,
-            userSessionManager,
             uploadManager,
-            gson,
             preferences,
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            userRepository
+            userRepository,
+            teamTasksRepository,
+            teamFinanceRepository
         )
     }
 
