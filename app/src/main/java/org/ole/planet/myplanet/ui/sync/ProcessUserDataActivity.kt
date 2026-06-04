@@ -4,7 +4,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.net.Uri
@@ -63,7 +62,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
 
-    lateinit var settings: SharedPreferences
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
     }
