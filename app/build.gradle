@@ -24,6 +24,7 @@ android {
     }
     configurations.configureEach {
         resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
+        resolutionStrategy.force "org.jetbrains.kotlin:kotlin-metadata-jvm:${libs.versions.kotlin.get()}"
     }
     buildTypes {
         release {
