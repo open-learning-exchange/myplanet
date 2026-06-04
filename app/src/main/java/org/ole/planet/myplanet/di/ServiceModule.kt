@@ -42,7 +42,6 @@ object ServiceModule {
     @Singleton
     fun provideSyncManager(
         @ApplicationContext context: Context,
-        databaseService: DatabaseService,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         apiInterface: ApiInterface,
         improvedSyncManager: Lazy<ImprovedSyncManager>,
@@ -56,16 +55,7 @@ object ServiceModule {
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
     ): SyncManager {
-        return SyncManager(context, databaseService, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository, coursesRepository, eventsRepository)
-    }
-
-    @Provides
-    @Singleton
-    fun provideUploadRepository(
-        databaseService: DatabaseService,
-        dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-    ): org.ole.planet.myplanet.repository.UploadRepository {
-        return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
+        return SyncManager(context, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository, coursesRepository, eventsRepository)
     }
 
     @Provides

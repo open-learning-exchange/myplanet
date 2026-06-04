@@ -85,4 +85,7 @@
     <color name="status_not_started">#BDBDBD</color>
     <color name="status_in_progress">#FFD54F</color>
     <color name="status_completed">#66BB6A</color>
+
+    <color name="field_fill">#1A2330</color>
+    <color name="md_blue_100">#1E3A5F</color>
 </resources>

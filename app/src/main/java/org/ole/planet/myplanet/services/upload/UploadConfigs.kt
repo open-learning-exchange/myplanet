@@ -8,6 +8,10 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmUser
+import java.util.UUID
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -232,6 +236,37 @@ class UploadConfigs @Inject constructor(
             submission.isUpdated = false
         }
     )
+
+    fun getResourcesConfig(user: RealmUser?): UploadConfig<RealmMyLibrary> {
+        return UploadConfig(
+            modelClass = RealmMyLibrary::class,
+            endpoint = "resources",
+            queryBuilder = { query -> query.isNull("_rev") },
+            serializer = UploadSerializer.Simple { library ->
+                RealmMyLibrary.serialize(library, user)
+            },
+            idExtractor = { it.id },
+            additionalUpdates = { realm, library, uploadedItem ->
+                val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                    ?: sharedPrefManager.getPlanetCode()
+
+                if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
+                    val teamResource = realm.createObject(
+                        RealmMyTeam::class.java,
+                        UUID.randomUUID().toString()
+                    )
+                    teamResource.teamId = library.privateFor
+                    teamResource.title = library.title
+                    teamResource.resourceId = uploadedItem.remoteId
+                    teamResource.docType = "resourceLink"
+                    teamResource.updated = true
+                    teamResource.teamType = "local"
+                    teamResource.teamPlanetCode = planetCode
+                    teamResource.sourcePlanet = planetCode
+                }
+            }
+        )
+    }
 
     val Rating = UploadConfig(
         modelClass = RealmRating::class,

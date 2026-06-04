@@ -267,8 +267,8 @@
     <string name="pulse_rate">Fréquence cardiaque (bpm)</string>
     <string name="blood_pressure">Pression artérielle (Systolique/Diastolique)</string>
     <string name="save">Enregistrer</string>
-    <string name="task">Tâche (obligatoire)</string>
-    <string name="deadline_required">Date limite (obligatoire)</string>
+    <string name="task">Tâche *</string>
+    <string name="deadline_required">"Date limite "</string>
     <string name="click_here_to_pick_date">Cliquez ici pour choisir la date</string>
     <string name="enterprises">Entreprises</string>
     <string name="select_member">Sélectionnez un membre de l\'équipe</string>
@@ -885,6 +885,8 @@
     </plurals>
 
     <string name="ai_chat">AI Chat</string>
+    <string name="ask_ai">Demander à l\'IA</string>
+    <string name="course_context_banner">En cours d\'étude : %1$s</string>
     <string name="kindly_give_a_rating">Veuillez donner une note</string>
     <string name="must_start_with_letter_or_number">Doit commencer par une lettre ou un chiffre</string>
     <string name="only_letters_numbers_and_are_allowed">Seules les lettres de a à z, les chiffres, le "_", ".", et "-" sont autorisés</string>
@@ -1193,7 +1195,7 @@
     <string name="unable_to_download_resource">Impossible de télécharger la ressource</string>
     <string name="hide_new_message">Masquer le nouveau message</string>
     <string name="cannot_assign_completed_task">Impossible d\'attribuer une tâche terminée</string>
-    <string name="assign_to">Attribuer à (Optionnel)</string>
+    <string name="assign_to">"Attribuer à "</string>
     <string name="click_to_assign_member">Cliquez pour attribuer un membre de l\'équipe</string>
     <string name="saving">Enregistrement…</string>
     <string name="achievement_saved">Réalisation mise à jour</string>
@@ -1240,6 +1242,7 @@
     <string name="select_pdf_only">Veuillez sélectionner un fichier PDF</string>
     <string name="file_not_found">Fichier introuvable : %s</string>
     <string name="chat_already_shared_to_destination">Cette discussion a déjà été partagée vers cette destination</string>
+    <string name="load_earlier_messages">Charger les messages précédents</string>
     <string name="already_shared">Déjà partagé</string>
     <string name="your_learning">Votre apprentissage</string>
     <string name="pick_up_where_you_left_off">Reprenez là où vous en étiez</string>
@@ -1312,6 +1315,14 @@
     <string name="enterprise_reports">Rapports d\'entreprise</string>
     <string name="label_add_references">Ajouter des références ci-dessous</string>
     <string name="link">Lien</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">URL du serveur non configurée</string>
+    <string name="welcome_back">Bon retour</string>
+    <string name="welcome_new">Bienvenue</string>
+    <string name="sign_in_to_continue">Connectez-vous pour continuer</string>
+    <string name="sign_in_to_get_started">Connectez-vous pour commencer</string>
+    <string name="sync_chip_synced">Synchronisé</string>
+    <string name="sync_chip_syncing">Synchronisation…</string>
+    <string name="sync_chip_offline">Hors ligne</string>
+    <string name="desc_is_required">La description est obligatoire</string>
 
 </resources>

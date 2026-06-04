@@ -83,7 +83,7 @@ object FileUtils {
     fun checkFileExist(context: Context, url: String?): Boolean {
         if (url.isNullOrEmpty()) return false
         val f = getSDPathFromUrl(context, url)
-        return f.exists()
+        return f.exists() && f.length() > 0
     }
 
     @JvmStatic

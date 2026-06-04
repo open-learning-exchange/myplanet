@@ -66,7 +66,7 @@ class FileUtilsTest {
         FileUtils.warmUp(context)
         val testFile = File(FileUtils.getExternalFilesDir(context), "ole/123/test_file.txt")
         testFile.parentFile?.mkdirs()
-        testFile.createNewFile()
+        testFile.writeText("dummy content")
 
         val url = "http://example.com/resources/123/test_file.txt"
 

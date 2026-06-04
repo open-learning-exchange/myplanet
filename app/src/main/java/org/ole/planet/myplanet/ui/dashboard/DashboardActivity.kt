@@ -108,8 +108,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
-    @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
         ChallengePrompter(this, prefData, dashboardViewModel)
@@ -166,9 +164,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
-            notificationManager = withContext(dispatcherProvider.io) {
-                NotificationUtils.getInstance(this@DashboardActivity)
-            }
+            notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
         }
     }
 
@@ -268,9 +264,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, binding.root)
         insetsController.isAppearanceLightStatusBars = true
         insetsController.isAppearanceLightNavigationBars = true
@@ -536,10 +532,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
 
-            lifecycleScope.launch {
-                delay(1000)
-                isFromNotificationAction = false
-            }
+            binding.root.post { isFromNotificationAction = false }
         }
     }
     
@@ -1060,7 +1053,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(BellDashboardFragment())
             }
         }
-        item.isChecked = true
         return true
     }
 
