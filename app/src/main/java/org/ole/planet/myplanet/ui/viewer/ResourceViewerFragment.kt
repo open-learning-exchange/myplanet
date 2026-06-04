@@ -18,10 +18,10 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -58,7 +58,6 @@ import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.resources.AddResourceViewModel
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -87,6 +86,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
+    private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: RealmMyLibrary
     private var pdfText: String = ""
@@ -99,8 +99,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     @Inject lateinit var ttsManager: TTSManager
     @Inject lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
     private var authSessionUpdater: AuthSessionUpdater? = null
-
-    private val addResourceViewModel: AddResourceViewModel by viewModels()
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -184,8 +182,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private fun setupVideoViewer() {
         binding.stubVideo.visibility = View.VISIBLE
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
-        
         if (isOnline) {
             authSessionUpdater = authSessionUpdaterFactory.create(this)
         } else {
@@ -193,7 +189,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
         
         val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        requireContext().registerReceiver(audioBecomingNoisyReceiver, filter)
+        registerReceiver(requireContext(), audioBecomingNoisyReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        noisyReceiverRegistered = true
     }
 
     @OptIn(UnstableApi::class)
@@ -259,7 +256,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         binding.stubAudio.visibility = View.VISIBLE
         val trackTitle = binding.root.findViewById<TextView>(R.id.trackTitle)
         val artistName = binding.root.findViewById<TextView>(R.id.artistName)
-        val albumArt = binding.root.findViewById<ImageView>(R.id.albumArt)
         val backgroundImage = binding.root.findViewById<ImageView>(R.id.backgroundImage)
         val playerView = binding.root.findViewById<PlayerView>(R.id.audio_player_view)
 
@@ -423,9 +419,10 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
-        try {
+        if (noisyReceiverRegistered) {
             requireContext().unregisterReceiver(audioBecomingNoisyReceiver)
-        } catch (e: Exception) {}
+            noisyReceiverRegistered = false
+        }
         super.onDestroyView()
         _binding = null
     }
