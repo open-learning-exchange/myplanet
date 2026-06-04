@@ -66,7 +66,6 @@
             android:paddingStart="@dimen/padding_normal"
             android:textColor="@color/daynight_textColor"
             android:textSize="@dimen/text_size_small" />
-
         <Button
             android:id="@+id/btnBulkMarkAsRead"
             android:layout_width="wrap_content"
@@ -77,7 +76,6 @@
             android:text="@string/mark_selected_as_read"
             android:textAllCaps="false"
             android:textSize="12sp" />
-
         <Button
             android:id="@+id/btnBulkDelete"
             android:layout_width="wrap_content"
@@ -88,7 +86,6 @@
             android:text="@string/delete_selected"
             android:textAllCaps="false"
             android:textSize="12sp" />
-
         <ImageButton
             android:id="@+id/btnCancelSelection"
             android:layout_width="wrap_content"
@@ -98,7 +95,6 @@
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@android:drawable/ic_menu_close_clear_cancel"
             android:contentDescription="@string/cancel_selection" />
-
     </LinearLayout>
 
     <!-- Barrier sits below whichever bar is currently visible -->
@@ -108,7 +104,6 @@
         android:layout_height="wrap_content"
         app:barrierDirection="bottom"
         app:constraint_referenced_ids="ltTopBar,ltBulkActionBar" />
-
     <TextView
         android:id="@+id/emptyData"
         android:layout_width="wrap_content"
@@ -120,7 +115,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/headerBarrier" />
-
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_notifications"
         android:layout_width="match_parent"
@@ -131,5 +125,4 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/headerBarrier" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
