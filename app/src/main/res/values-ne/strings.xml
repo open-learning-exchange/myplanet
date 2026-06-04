@@ -357,6 +357,8 @@
         <item>मितिमा आदान - अवरोही</item>
         <item>मितिमा आदान - आरोही</item>
         <item>शीर्षकमा आदान</item>
+        <item>पूर्णताद्वारा क्रमबद्ध - अपूर्ण पहिले</item>
+        <item>पूर्णताद्वारा क्रमबद्ध - पूर्ण पहिले</item>
     </string-array>
 
     <string-array name="sort_member">

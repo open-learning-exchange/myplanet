@@ -36,7 +36,7 @@ class SurveysViewModel @Inject constructor(
 ) : ViewModel() {
 
     enum class SortOption {
-        DATE_ASC, DATE_DESC, TITLE_ASC, TITLE_DESC
+        DATE_ASC, DATE_DESC, TITLE_ASC, TITLE_DESC, INCOMPLETE_FIRST, COMPLETE_FIRST
     }
 
     private var rawSurveys: List<RealmStepExam> = emptyList()
@@ -132,6 +132,14 @@ class SurveysViewModel @Inject constructor(
             SortOption.DATE_ASC -> list.sortedBy { getSortDate(it) }
             SortOption.TITLE_ASC -> list.sortedBy { it.name?.lowercase(Locale.getDefault()) }
             SortOption.TITLE_DESC -> list.sortedByDescending { it.name?.lowercase(Locale.getDefault()) }
+            SortOption.INCOMPLETE_FIRST -> list.sortedBy { survey ->
+                val formState = _bindingData.value[survey.id]
+                if (formState?.teamSubmission?.status == "complete") 1 else 0
+            }
+            SortOption.COMPLETE_FIRST -> list.sortedBy { survey ->
+                val formState = _bindingData.value[survey.id]
+                if (formState?.teamSubmission?.status == "complete") 0 else 1
+            }
         }
 
         _surveys.value = list

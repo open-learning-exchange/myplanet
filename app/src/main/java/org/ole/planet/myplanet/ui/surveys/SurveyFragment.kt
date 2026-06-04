@@ -151,6 +151,8 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
                     2 -> {
                         viewModel.toggleTitleSort()
                     }
+                    3 -> viewModel.sort(SurveysViewModel.SortOption.INCOMPLETE_FIRST)
+                    4 -> viewModel.sort(SurveysViewModel.SortOption.COMPLETE_FIRST)
                 }
                 recyclerView.scrollToPosition(0)
             }
