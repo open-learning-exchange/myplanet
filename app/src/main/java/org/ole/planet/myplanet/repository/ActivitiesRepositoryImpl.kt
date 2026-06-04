@@ -275,7 +275,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun insertActivityInternal(realm: io.realm.Realm, json: com.google.gson.JsonObject, existingActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null) {
+    private fun insertActivityInternal(
+        realm: io.realm.Realm,
+        json: com.google.gson.JsonObject,
+        existingActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null,
+        fallbackActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null
+    ) {
         val serverIdStr = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", json)
         val loginTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", json)
         val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("user", json)
@@ -289,15 +294,23 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
 
         if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
-            activities = realm.where(RealmOfflineActivity::class.java)
-                .equalTo("loginTime", loginTime)
-                .equalTo("userName", userName)
-                .findFirst()
+            activities = if (fallbackActivitiesMap != null) {
+                fallbackActivitiesMap["${loginTime}_${userName}"]
+            } else {
+                realm.where(RealmOfflineActivity::class.java)
+                    .equalTo("loginTime", loginTime)
+                    .equalTo("userName", userName)
+                    .findFirst()
+            }
         }
 
         if (activities == null) {
             activities = realm.createObject(RealmOfflineActivity::class.java, serverIdStr)
             existingActivitiesMap?.put(serverIdStr, activities)
+
+            if (loginTime > 0 && userName.isNotEmpty()) {
+                fallbackActivitiesMap?.put("${loginTime}_${userName}", activities)
+            }
         }
         if (activities != null) {
             activities._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", json)
@@ -411,8 +424,33 @@ class ActivitiesRepositoryImpl @Inject constructor(
             mutableMapOf<String, RealmOfflineActivity>()
         }
 
+        val fallbackCandidates = if (documentList.isNotEmpty()) {
+            val loginTimes = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct().toTypedArray()
+            val userNames = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct().toTypedArray()
+
+            if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
+                val results = realm.where(RealmOfflineActivity::class.java)
+                    .`in`("loginTime", loginTimes)
+                    .`in`("userName", userNames)
+                    .findAll()
+
+                val map = mutableMapOf<String, RealmOfflineActivity>()
+                for (activity in results) {
+                    val key = "${activity.loginTime}_${activity.userName}"
+                    if (!map.containsKey(key)) {
+                        map[key] = activity
+                    }
+                }
+                map
+            } else {
+                mutableMapOf()
+            }
+        } else {
+            mutableMapOf()
+        }
+
         documentList.forEach { jsonDoc ->
-            insertActivityInternal(realm, jsonDoc, existingActivitiesMap)
+            insertActivityInternal(realm, jsonDoc, existingActivitiesMap, fallbackCandidates)
         }
     }
 
