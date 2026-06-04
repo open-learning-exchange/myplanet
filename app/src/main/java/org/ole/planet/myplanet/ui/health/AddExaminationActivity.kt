@@ -439,6 +439,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onDestroy() {
+        user = null
+        currentUser = null
+        pojo = null
+        health = null
+        examination = null
+        customDiag = null
+        mapConditions = null
         super.onDestroy()
     }
 }
