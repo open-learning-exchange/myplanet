@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
 import org.ole.planet.myplanet.model.TaskNotificationResult
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
@@ -40,16 +39,8 @@ class NotificationsFragment : Fragment() {
     private lateinit var adapter: NotificationsAdapter
     private lateinit var userId: String
     private var notificationUpdateListener: OnNotificationsListener? = null
-    private lateinit var dashboardActivity: DashboardActivity
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is DashboardActivity) {
-            dashboardActivity = context
-        }
-    }
 
     fun setNotificationUpdateListener(listener: OnNotificationsListener) {
         this.notificationUpdateListener = listener
@@ -173,7 +164,7 @@ class NotificationsFragment : Fragment() {
                     }
                 }
                 "resource" -> {
-                    dashboardActivity.openMyFragment(ResourcesFragment())
+                    (activity as? OnHomeItemClickListener)?.openMyFragment(ResourcesFragment())
                 }
             }
 
