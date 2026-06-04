@@ -95,8 +95,6 @@ class AutoSyncWorker @AssistedInject constructor(
         syncContinuation = null
     }
 
-    override fun onCheckingVersion() {}
-
     override fun onError(msg: String, blockSync: Boolean) {
         if (blockSync) {
             syncContinuation?.takeIf { it.isActive }?.resume(Unit)

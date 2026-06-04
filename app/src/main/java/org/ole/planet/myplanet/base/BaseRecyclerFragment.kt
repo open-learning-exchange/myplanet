@@ -193,7 +193,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     }
 
     open suspend fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEachIndexed { _, item ->
+        val snapshot = selectedItems?.toList() ?: return
+        for (item in snapshot) {
             val `object` = item as RealmObject
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)

@@ -282,6 +282,9 @@ open class RealmMyLibrary : RealmObject() {
                             resourceRemoteAddress = "${spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(context, resourceRemoteAddress)
+                            if (resourceOffline) {
+                                downloadedRev = JsonUtils.getString("_rev", doc)
+                            }
                         }
                     }
                 }

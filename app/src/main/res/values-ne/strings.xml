@@ -267,8 +267,8 @@
     <string name="pulse_rate">नाडी दर (bpm)</string>
     <string name="blood_pressure">रक्त चाप (सिस्टोलिक / डायास्टोलिक)</string>
     <string name="save">सुरक्षित गर्नुहोस्</string>
-    <string name="task">कार्य (आवश्यक)</string>
-    <string name="deadline_required">समयसीमा (आवश्यक)</string>
+    <string name="task">कार्य *</string>
+    <string name="deadline_required">"समयसीमा "</string>
     <string name="click_here_to_pick_date">मिति चयन गर्न क्लिक गर्नुहोस्</string>
     <string name="enterprises">उद्यमहरू</string>
     <string name="select_member">टिम सदस्य छान्नुहोस्</string>
@@ -883,6 +883,8 @@
     </plurals>
 
     <string name="ai_chat">AI Chat</string>
+    <string name="ask_ai">AI लाई सोध्नुहोस्</string>
+    <string name="course_context_banner">अध्ययन गर्दै: %1$s</string>
     <string name="kindly_give_a_rating">कृपया मूल्याङ्कन दिनुहोस्</string>
     <string name="must_start_with_letter_or_number">पात्र वा नम्बरसँग सुरु गर्नु पर्दछ</string>
     <string name="only_letters_numbers_and_are_allowed">केवल अक्षरहरू a- z, नम्बर र "_" , "." , "-" पार्स्याद छ</string>
@@ -1188,7 +1190,7 @@
     <string name="unable_to_download_resource">स्रोत डाउनलोड गर्न असमर्थ</string>
     <string name="hide_new_message">नयाँ सन्देश लुकाउनुहोस्</string>
     <string name="cannot_assign_completed_task">पूरा भएको कार्य सौंप्न सकिँदैन</string>
-    <string name="assign_to">सौंप्नुहोस् (वैकल्पिक)</string>
+    <string name="assign_to">"सौंप्नुहोस् "</string>
     <string name="click_to_assign_member">टोली सदस्य सौंप्न क्लिक गर्नुहोस्</string>
     <string name="saving">सुरक्षित गरिदै…</string>
     <string name="achievement_saved">उपलब्धि अद्यावधिक गरियो</string>
@@ -1239,6 +1241,7 @@
     <string name="select_pdf_only">कृपया PDF फाइल छान्नुहोस्</string>
     <string name="file_not_found">फाइल फेला परेन: %s</string>
     <string name="chat_already_shared_to_destination">यो च्याट पहिले नै यस गन्तव्यमा साझेदारी गरिएको छ</string>
+    <string name="load_earlier_messages">पहिलेका सन्देशहरू लोड गर्नुहोस्</string>
     <string name="already_shared">पहिले नै साझा गरिएको</string>
     <string name="guest_visit_limit_warning">तपाईंको खाता ब्लक हुनु अघि १ लगइन बाकी छ।</string>
     <string name="warning_icon">चेतावनी आइकन</string>
@@ -1288,6 +1291,14 @@
     <string name="enterprise_reports">इन्टरप्राइज रिपोर्टहरू</string>
     <string name="label_add_references">तल कुनै पनि सन्दर्भहरू थप्नुहोस्</string>
     <string name="link">लिङ्क</string>
-    <string name="server_url_not_configured">Server URL not configured</string>
+    <string name="server_url_not_configured">सर्भर URL कन्फिगर गरिएको छैन</string>
+    <string name="welcome_back">फेरि स्वागत छ</string>
+    <string name="welcome_new">स्वागत छ</string>
+    <string name="sign_in_to_continue">जारी राख्न साइन इन गर्नुहोस्</string>
+    <string name="sign_in_to_get_started">सुरु गर्न साइन इन गर्नुहोस्</string>
+    <string name="sync_chip_synced">सिङ्क भयो</string>
+    <string name="sync_chip_syncing">सिङ्क हुँदैछ…</string>
+    <string name="sync_chip_offline">अफलाइन</string>
+    <string name="desc_is_required">विवरण आवश्यक छ</string>
 
 </resources>

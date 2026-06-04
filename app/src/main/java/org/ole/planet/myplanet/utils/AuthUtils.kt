@@ -22,12 +22,11 @@ object AuthUtils {
     suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?) {
         if (activity.forceSyncTrigger()) return
 
-        val settings = activity.settings
         withContext(Dispatchers.IO) {
-            SecurePrefs.saveCredentials(activity, settings, name, password)
+            SecurePrefs.saveCredentials(activity, activity.prefData.rawPreferences, name, password)
         }
 
-        val isLoggedIn = activity.authenticateUser(settings, name, password, false)
+        val isLoggedIn = activity.authenticateUser(name, password, false)
         if (isLoggedIn) {
             Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
             activity.onLogin()
@@ -62,7 +61,7 @@ object AuthUtils {
         }
 
         if (syncResult) {
-            val log = activity.authenticateUser(activity.settings, name, password, true)
+            val log = activity.authenticateUser(name, password, true)
             if (log) {
                 Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                 activity.onLogin()

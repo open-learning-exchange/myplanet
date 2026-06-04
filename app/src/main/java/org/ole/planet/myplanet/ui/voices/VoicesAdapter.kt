@@ -26,7 +26,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.io.File
 import java.util.Locale
-import kotlinx.coroutines.isActive
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
@@ -134,7 +133,7 @@ class VoicesAdapter(
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
     private val profileDbHandler = userSessionManager
-    private val userCache = mutableMapOf<String, RealmUser?>()
+    private val userCache = object : LinkedHashMap<String, RealmUser?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, RealmUser?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
     private val leadersList: List<RealmUser> by lazy {
@@ -677,6 +676,8 @@ class VoicesAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         this.recyclerView = null
+        userCache.clear()
+        fetchingUserIds.clear()
     }
 
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {
@@ -732,18 +733,25 @@ class VoicesAdapter(
         }
     }
 
-    private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
-        if (path == null) return
-        val request = Glide.with(binding.imgNews.context)
-        val file = File(path)
-        val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
+
+    private fun loadGlideImage(file: File, target: ImageView, size: Int) {
+        val request = Glide.with(target.context)
+        val path = file.absolutePath
+        val glideTarget = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
             request.asGif().load(file).error(request.asGif().load(path))
         } else {
             request.load(file).error(request.load(path))
         }
-        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
+        glideTarget.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().override(size, size).placeholder(R.drawable.ic_loading)
             .error(R.drawable.ic_loading)
-            .into(binding.imgNews)
+            .into(target)
+    }
+
+    private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
+        if (path == null) return
+        val file = File(path)
+        val size = (120 * binding.imgNews.context.resources.displayMetrics.density).toInt()
+        loadGlideImage(file, binding.imgNews, size)
         binding.imgNews.visibility = View.VISIBLE
         binding.imgNews.setOnClickListener {
             showZoomableImage(it.context, path)
@@ -760,16 +768,8 @@ class VoicesAdapter(
         imageView.layoutParams = params
         imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-        val request = Glide.with(context)
         val file = File(path)
-        val target = if (path.lowercase(Locale.getDefault()).endsWith(".gif")) {
-            request.asGif().load(file).error(request.asGif().load(path))
-        } else {
-            request.load(file).error(request.load(path))
-        }
-        target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-            .error(R.drawable.ic_loading)
-            .into(imageView)
+        loadGlideImage(file, imageView, size)
 
         imageView.setOnClickListener {
             showZoomableImage(context, path)
@@ -784,16 +784,8 @@ class VoicesAdapter(
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                val request = Glide.with(binding.imgNews.context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(binding.imgNews)
+                val size = (120 * binding.imgNews.context.resources.displayMetrics.density).toInt()
+                loadGlideImage(imageFile, binding.imgNews, size)
                 binding.imgNews.visibility = View.VISIBLE
                 binding.imgNews.setOnClickListener {
                     showZoomableImage(it.context, imageFile.toString())
@@ -816,16 +808,7 @@ class VoicesAdapter(
                 imageView.layoutParams = params
                 imageView.scaleType = ImageView.ScaleType.CENTER_CROP
 
-                val request = Glide.with(context)
-                val isGif = library.resourceLocalAddress?.lowercase(Locale.getDefault())?.endsWith(".gif") == true
-                val target = if (isGif) {
-                    request.asGif().load(imageFile)
-                } else {
-                    request.load(imageFile)
-                }
-                target.diskCacheStrategy(DiskCacheStrategy.ALL).fitCenter().placeholder(R.drawable.ic_loading)
-                    .error(R.drawable.ic_loading)
-                    .into(imageView)
+                loadGlideImage(imageFile, imageView, size)
 
                 imageView.setOnClickListener {
                     showZoomableImage(context, imageFile.toString())
