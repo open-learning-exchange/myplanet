@@ -20,6 +20,8 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -57,6 +59,8 @@ class RealmUserTest {
         val mockSettings = mockk<SharedPreferences>(relaxed = true)
         val mockSharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
         val mockApiInterface = mockk<ApiInterface>(relaxed = true)
+        val mockResourcesRepositoryLazy = mockk<Lazy<ResourcesRepository>>(relaxed = true)
+        val mockCoursesRepositoryLazy = mockk<Lazy<CoursesRepository>>(relaxed = true)
         val mockUploadToShelfService = mockk<Lazy<UploadToShelfService>>(relaxed = true)
         val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
         val mockConfigurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
@@ -69,6 +73,8 @@ class RealmUserTest {
             mockSettings,
             mockSharedPrefManager,
             mockApiInterface,
+            mockResourcesRepositoryLazy,
+            mockCoursesRepositoryLazy,
             mockUploadToShelfService,
             mockContext,
             mockConfigurationsRepository,

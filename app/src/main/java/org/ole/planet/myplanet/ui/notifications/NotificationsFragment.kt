@@ -24,8 +24,8 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
+import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.TaskNotificationResult
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
@@ -40,16 +40,8 @@ class NotificationsFragment : Fragment() {
     private lateinit var adapter: NotificationsAdapter
     private lateinit var userId: String
     private var notificationUpdateListener: OnNotificationsListener? = null
-    private lateinit var dashboardActivity: DashboardActivity
     private var currentFilter: String = "all"
     private var isAdmin: Boolean = false
-
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        if (context is DashboardActivity) {
-            dashboardActivity = context
-        }
-    }
 
     fun setNotificationUpdateListener(listener: OnNotificationsListener) {
         this.notificationUpdateListener = listener
@@ -59,16 +51,16 @@ class NotificationsFragment : Fragment() {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
         isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
+
         adapter = NotificationsAdapter(
-            onMarkAsReadClick = { notificationId ->
-                markAsReadById(notificationId)
-            },
-            onNotificationClick = { notification ->
-                handleNotificationClick(notification)
-            }
+            onMarkAsReadClick = { notificationId -> viewModel.markAsRead(notificationId) },
+            onNotificationClick = { notification -> handleNotificationClick(notification) },
+            onToggleSelection = { notificationId -> viewModel.toggleSelection(notificationId) },
+            onToggleGroupExpansion = { type -> viewModel.toggleGroupExpansion(type) }
         )
         binding.rvNotifications.adapter = adapter
         binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
+
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
@@ -84,16 +76,22 @@ class NotificationsFragment : Fragment() {
                 currentFilter = parent.getItemAtPosition(position).toString().lowercase()
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
-
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
+
+        binding.btnMarkAllAsRead.setOnClickListener { viewModel.markAllAsRead(userId) }
+        binding.btnBulkMarkAsRead.setOnClickListener { viewModel.markSelectedAsRead() }
+        binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
+        binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
+
         viewModel.loadNotifications(userId, "all", isAdmin)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.notifications.collect { notifications ->
-                        adapter.submitList(notifications)
-                        val isEmpty = notifications.isEmpty()
+                    viewModel.groupedItems.collect { items ->
+                        adapter.submitList(items)
+                        val isEmpty = items.isEmpty()
                         binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
                         binding.emptyData.text = when (currentFilter) {
                             "unread" -> getString(R.string.no_unread_notifications)
@@ -110,10 +108,18 @@ class NotificationsFragment : Fragment() {
                         binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
                     }
                 }
+                launch {
+                    viewModel.isSelectionMode.collect { inSelectionMode ->
+                        binding.ltBulkActionBar.visibility = if (inSelectionMode) View.VISIBLE else View.GONE
+                        binding.ltTopBar.visibility = if (inSelectionMode) View.GONE else View.VISIBLE
+                    }
+                }
+                launch {
+                    viewModel.selectedCount.collect { count ->
+                        binding.tvSelectedCount.text = getString(R.string.selected_count, count)
+                    }
+                }
             }
-        }
-        binding.btnMarkAllAsRead.setOnClickListener {
-            markAllAsRead()
         }
         return binding.root
     }
@@ -173,22 +179,14 @@ class NotificationsFragment : Fragment() {
                     }
                 }
                 "resource" -> {
-                    dashboardActivity.openMyFragment(ResourcesFragment())
+                    (activity as? OnHomeItemClickListener)?.openMyFragment(ResourcesFragment())
                 }
             }
 
             if (!notification.isRead) {
-                markAsReadById(notification.id)
+                viewModel.markAsRead(notification.id)
             }
         }
-    }
-
-    private fun markAsReadById(notificationId: String) {
-        viewModel.markAsRead(notificationId)
-    }
-
-    private fun markAllAsRead() {
-        viewModel.markAllAsRead(userId)
     }
 
     fun refreshNotificationsList() {
