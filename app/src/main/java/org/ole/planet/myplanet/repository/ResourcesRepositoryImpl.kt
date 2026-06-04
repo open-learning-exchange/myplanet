@@ -46,7 +46,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+        return queryList(RealmMyLibrary::class.java, ensureLatest = true) {
             equalTo("isPrivate", false)
         }
     }
@@ -127,7 +127,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
+        return queryList(RealmMyLibrary::class.java, ensureLatest = true) {
             equalTo("userId", userId)
         }
     }
