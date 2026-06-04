@@ -157,9 +157,10 @@ class TransactionSyncManager @Inject constructor(
         try {
             // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
-                "ratings" -> 20      // Small batches for slow endpoint
-                "submissions" -> 100  // Medium batches for slow endpoint
-                else -> 1000          // Large batches for fast endpoints
+                "ratings" -> 20        // Small batches for slow endpoint
+                "submissions" -> 100   // Medium batches for slow endpoint
+                "courses_progress", "login_activities", "team_activities" -> 200  // Smaller batches when running in background to reduce write-lock hold time
+                else -> 1000           // Large batches for fast endpoints
             }
             var skip = 0
             var totalDocs = 0
