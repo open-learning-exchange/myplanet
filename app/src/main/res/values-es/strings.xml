@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="share">Compartir</string>
+    <string name="p2p_title">Compartir recursos P2P</string>
+    <string name="send_resource">Enviar recurso</string>
+    <string name="receive_resource">Recibir recurso</string>
+    <string name="status_idle">Estado: Inactivo</string>
+    <string name="available_peers">Pares disponibles:</string>
+    <string name="p2p_permission_required">Se requieren permisos para compartir P2P</string>
+    <string name="status_discovering">Estado: Descubriendo…</string>
+    <string name="status_discovery_failed">Estado: Fallo en el descubrimiento (%1$d)</string>
+    <string name="file_not_found_locally">Archivo no encontrado localmente</string>
+    <string name="status_sending">Estado: Enviando %1$s…</string>
+    <string name="status_sent_success">Estado: ¡Enviado con éxito!</string>
+    <string name="status_send_failed">Estado: Fallo al enviar</string>
+    <string name="status_waiting_receive">Estado: Esperando para recibir…</string>
+    <string name="status_received_imported">Estado: ¡Recibido e importado!</string>
+    <string name="status_receive_failed">Estado: Fallo al recibir</string>
+    <string name="imported_resource">Importado: %1$s</string>
+    <string name="status_connecting">Estado: Conectando a %1$s…</string>
+    <string name="status_connection_failed">Estado: Fallo en la conexión (%1$d)</string>
     <string name="resource_not_found">Recurso no encontrado</string>
     <string name="resource_not_found_message">No se pudo encontrar el recurso solicitado</string>
     <string name="community_earnings">Ingresos totales de la comunidad: **$%1$d** /$500</string>

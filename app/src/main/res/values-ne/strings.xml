@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="share">साझा गर्नुहोस्</string>
+    <string name="p2p_title">P2P संसाधन साझेदारी</string>
+    <string name="send_resource">संसाधन पठाउनुहोस्</string>
+    <string name="receive_resource">संसाधन प्राप्त गर्नुहोस्</string>
+    <string name="status_idle">अवस्था: निष्क्रिय</string>
+    <string name="available_peers">उपलब्ध उपकरणहरू:</string>
+    <string name="p2p_permission_required">P2P साझेदारीको लागि अनुमति आवश्यक छ</string>
+    <string name="status_discovering">अवस्था: खोज्दै…</string>
+    <string name="status_discovery_failed">अवस्था: खोज असफल भयो (%1$d)</string>
+    <string name="file_not_found_locally">फाइल स्थानीय रूपमा फेला परेन</string>
+    <string name="status_sending">अवस्था: %1$s पठाउँदै…</string>
+    <string name="status_sent_success">अवस्था: सफलतापूर्वक पठाइयो!</string>
+    <string name="status_send_failed">अवस्था: पठाउन असफल भयो</string>
+    <string name="status_waiting_receive">अवस्था: प्राप्त गर्न पर्खँदै…</string>
+    <string name="status_received_imported">अवस्था: प्राप्त र आयात गरियो!</string>
+    <string name="status_receive_failed">अवस्था: प्राप्त गर्न असफल भयो</string>
+    <string name="imported_resource">आयात गरियो: %1$s</string>
+    <string name="status_connecting">अवस्था: %1$s मा जडान गर्दै…</string>
+    <string name="status_connection_failed">अवस्था: जडान असफल भयो (%1$d)</string>
     <string name="resource_not_found">स्रोत फेला परेन</string>
     <string name="resource_not_found_message">अनुरोध गरिएको स्रोत फेला पार्न सकिएन</string>
     <string name="community_earnings">समुदायको कुल आम्दानी: **$%1$d** /$500</string>

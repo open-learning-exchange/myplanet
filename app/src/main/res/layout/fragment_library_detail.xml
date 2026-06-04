@@ -53,6 +53,18 @@
                         android:textColor="@color/md_white_1000"
                         android:textStyle="bold" />
                     <ImageButton
+                        android:id="@+id/btn_share"
+                        style="@style/YellowButtons"
+                        android:layout_width="@dimen/_50dp"
+                        android:layout_height="@dimen/_50dp"
+                        android:layout_gravity="center_vertical"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/buttonyellow"
+                        android:contentDescription="@string/share"
+                        android:src="@drawable/baseline_share_24"
+                        app:tint="@color/md_black_1000"
+                        android:visibility="gone" />
+                    <ImageButton
                         android:id="@+id/btn_download"
                         style="@style/YellowButtons"
                         android:layout_width="@dimen/_50dp"

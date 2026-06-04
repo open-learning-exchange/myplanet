@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="share">La wadaag</string>
+    <string name="p2p_title">Wadaaga Kheyraadka P2P</string>
+    <string name="send_resource">Dir Kheyraad</string>
+    <string name="receive_resource">Hel Kheyraad</string>
+    <string name="status_idle">Xaaladda: Ma shaqaynayo</string>
+    <string name="available_peers">Aaladaha diyaar ah:</string>
+    <string name="p2p_permission_required">Ogolaansho ayaa loo baahan yahay wadaaga P2P</string>
+    <string name="status_discovering">Xaaladda: Baadi-goobaya…</string>
+    <string name="status_discovery_failed">Xaaladda: Baadi-goobka waa fashilmay (%1$d)</string>
+    <string name="file_not_found_locally">Faylka lagama helin gudaha</string>
+    <string name="status_sending">Xaaladda: Diraya %1$s…</string>
+    <string name="status_sent_success">Xaaladda: Si guul leh ayaa loo diray!</string>
+    <string name="status_send_failed">Xaaladda: Dirista waa fashilantay</string>
+    <string name="status_waiting_receive">Xaaladda: Sugaya helidda…</string>
+    <string name="status_received_imported">Xaaladda: Waa la helay lana soo dhoofiyay!</string>
+    <string name="status_receive_failed">Xaaladda: Helidda waa fashilantay</string>
+    <string name="imported_resource">La soo dhoofiyay: %1$s</string>
+    <string name="status_connecting">Xaaladda: Ku xirmaya %1$s…</string>
+    <string name="status_connection_failed">Xaaladda: Xiriirka waa fashilmay (%1$d)</string>
     <string name="resource_not_found">Ilaha lama helin</string>
     <string name="resource_not_found_message">Ilaha la codsaday waa la heli waayay</string>
     <string name="community_earnings">Dakhliga guud ee bulshada: **$%1$d** /$500</string>

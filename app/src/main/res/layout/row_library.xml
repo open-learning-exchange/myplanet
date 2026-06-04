@@ -71,6 +71,15 @@
             </LinearLayout>
     
             <ImageView
+                android:id="@+id/iv_share"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:src="@drawable/baseline_share_24"
+                android:layout_margin="@dimen/padding_small"
+                android:visibility="gone" />
+
+            <ImageView
                 android:id="@+id/iv_downloaded"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
