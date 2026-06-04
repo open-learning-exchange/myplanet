@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.di
 
 import dagger.Binds
-import dagger.Provides
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ActivitiesRepositoryImpl
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -53,6 +52,7 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Module
 @InstallIn(SingletonComponent::class)

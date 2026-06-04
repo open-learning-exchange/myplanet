@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
