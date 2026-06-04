@@ -10,10 +10,10 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -33,7 +33,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysRepositoryImplTest {
