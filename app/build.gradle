@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< 13722-video-resources-not-playing
         versionCode = 5654
         versionName = "0.56.54"
+=======
+        versionCode = 5653
+        versionName = "0.56.53"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
