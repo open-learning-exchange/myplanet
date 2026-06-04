@@ -92,12 +92,9 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
-<<<<<<< 13722-video-resources-not-playing
     private var videoLoadingOverlay: View? = null
     private var videoLoadingText: TextView? = null
-=======
     private var noisyReceiverRegistered = false
->>>>>>> master
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: RealmMyLibrary
     private var pdfText: String = ""
@@ -260,12 +257,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private suspend fun setupVideoViewer() {
         binding.stubVideo.visibility = View.VISIBLE
-<<<<<<< 13722-video-resources-not-playing
         videoLoadingOverlay = binding.root.findViewById(R.id.video_loading_overlay)
         videoLoadingText = binding.root.findViewById(R.id.video_loading_text)
-
-=======
->>>>>>> master
         if (isOnline) {
             showVideoLoading(getString(R.string.video_loading_checking_server))
             ensureServerUrlUpdated()
