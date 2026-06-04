@@ -375,7 +375,7 @@ class VoicesAdapter(
 
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
-            val conversations = news.parsedConversations!!
+            val conversations = news.parsedConversations ?: return
             val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, onAnimateTyping)
 
             if (currentUser?.id?.startsWith("guest") == false) {

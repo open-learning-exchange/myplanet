@@ -283,13 +283,16 @@ class TeamFragment : Fragment() {
                 AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
                     .setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _, _ ->
-                        viewModel.leaveTeam(team._id!!, user?.id)
+                        val teamId = team._id ?: return@setPositiveButton
+                        viewModel.leaveTeam(teamId, user?.id)
                     }
                     .setNegativeButton(R.string.no, null)
                     .show()
             },
             onRequestToJoinClick = { team ->
-                viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+                team._id?.let { teamId ->
+                    viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
+                }
             }
         ).apply {
             setType(type)

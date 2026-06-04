@@ -304,10 +304,10 @@ class SurveysRepositoryImpl @Inject constructor(
             surveyIds.find { surveyId ->
                 parentId == surveyId || parentId.startsWith("$surveyId@")
             }
-        }.filterKeys { it != null }.mapKeys { it.key!! }
+        }.filterKeys { it != null }.mapKeys { it.key ?: "" }
 
         return surveys.filter { it.id != null }.associate { survey ->
-            val surveyId = survey.id!!
+            val surveyId = survey.id ?: ""
             val surveySubmissions = submissionsByParentId[surveyId] ?: emptyList()
             val submissionCount = surveySubmissions.size
             val lastSubmissionDate = surveySubmissions.maxByOrNull {
@@ -344,7 +344,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }.groupingBy { it.examId }.eachCount()
 
         return surveys.filter { it.id != null }.associate { survey ->
-            val surveyId = survey.id!!
+            val surveyId = survey.id ?: ""
             val teamSubmission = teamSubmissions[surveyId]
             val questionCount = questionCounts[surveyId] ?: 0
             surveyId to SurveyFormState(teamSubmission, questionCount)
