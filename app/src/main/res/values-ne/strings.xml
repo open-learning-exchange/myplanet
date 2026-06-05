@@ -1320,5 +1320,6 @@
     <string name="hours_ago">%1$d घण्टा अघि</string>
     <string name="yesterday">हिजो</string>
     <string name="days_ago">%1$d दिन अघि</string>
+    <string name="please_complete_test">कृपया पाठ्यक्रम समाप्त गर्न परीक्षण पूरा गर्नुहोस्</string>
 
 </resources>

@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager.widget.ViewPager
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
@@ -30,8 +31,11 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 
+
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
+    private var isNextStepLocked = false
+    private var lockedStepMessage = ""
     private var _binding: FragmentTakeCourseBinding? = null
     private val binding get() = _binding!!
     @Inject
@@ -242,6 +246,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
     override fun onPageSelected(position: Int) {
         if (!this::steps.isInitialized) return
+        isNextStepLocked = false
         if (position > 0) {
             if (position - 1 < steps.size) changeNextButtonState(position)
         } else {
@@ -257,20 +262,30 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             val stepId = steps.getOrNull(position - 1)?.id
             lifecycleScope.launch {
+                val stepData = stepId?.let { coursesRepository.getCourseStepData(it, userModel?.id) }
+                val hasExam = stepData?.stepExams?.isNotEmpty() == true
+                val hasSurvey = stepData?.stepSurvey?.isNotEmpty() == true
+
                 if (coursesRepository.isStepCompleted(stepId, userModel?.id)) {
-                    binding.nextStep.isClickable = true
+                    isNextStepLocked = false
                     binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
-                } else {
+                } else if (hasExam || hasSurvey) {
+                    isNextStepLocked = true
+                    lockedStepMessage = when {
+                        hasExam -> getString(R.string.please_complete_test)
+                        else -> getString(R.string.please_complete_survey)
+                    }
                     binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
-                    binding.nextStep.isClickable = false
+                } else {
+                    isNextStepLocked = false
+                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
                 }
             }
         } else {
-            binding.nextStep.isClickable = true
+            isNextStepLocked = false
             binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_white_1000))
         }
     }
-
     override fun onPageScrollStateChanged(state: Int) {}
 
     private fun onClickNext() {
@@ -302,6 +317,10 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onClick(view: View) {
         when (view.id) {
             R.id.next_step -> {
+                if (isNextStepLocked) {
+                    Snackbar.make(binding.root, lockedStepMessage, Snackbar.LENGTH_SHORT).show()
+                    return
+                }
                 if (isValidClickRight) {
                     binding.viewPager2.currentItem += 1
                     binding.previousStep.visibility = View.VISIBLE
