@@ -1320,5 +1320,6 @@
     <string name="hours_ago">%1$d saacad ka hor</string>
     <string name="yesterday">Shalay</string>
     <string name="days_ago">%1$d maalmood ka hor</string>
+    <string name="removed_from_teamcourse">Koorska waxaa laga saaray kooxda</string>
 
 </resources>
