@@ -1235,11 +1235,19 @@ class TeamsRepositoryImpl @Inject constructor(
                 equalTo("teamId", teamId)
             }.mapNotNull { it.userId }.toSet()
 
-            for (admin in adminUsers) {
+            val validAdmins = adminUsers.filter { admin ->
                 val adminFullId = "org.couchdb.user:${admin.name}"
+                adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()
+            }
 
-                if (adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()) {
-                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name!!)
+            if (validAdmins.isNotEmpty()) {
+                val validAdminNames = validAdmins.mapNotNull { it.name }.toTypedArray()
+                val adminFromRealmMap = queryList(RealmUser::class.java) {
+                    `in`("name", validAdminNames)
+                }.associateBy { it.name }
+
+                for (admin in validAdmins) {
+                    val adminFromRealm = adminFromRealmMap[admin.name]
                     if (adminFromRealm != null) {
                         members.add(adminFromRealm)
                     } else {
