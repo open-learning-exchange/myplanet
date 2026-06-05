@@ -22,6 +22,10 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], manifest = Config.NONE, application = Application::class)
 class MapTileUtilsTest {
+    class SilentException(message: String) : IOException(message) {
+        override fun printStackTrace() {}
+    }
+
 
     private lateinit var context: Context
     private lateinit var assetManager: AssetManager
@@ -67,7 +71,7 @@ class MapTileUtilsTest {
 
     @Test
     fun copyAssets_handlesExceptionGracefully() {
-        every { assetManager.open(any()) } throws IOException("Mocked exception")
+        every { assetManager.open(any()) } throws SilentException("Mocked exception")
 
         // This should not throw an exception as it is caught inside the method
         MapTileUtils.copyAssets(context)
