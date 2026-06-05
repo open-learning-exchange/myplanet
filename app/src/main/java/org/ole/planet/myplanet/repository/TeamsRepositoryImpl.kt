@@ -1529,9 +1529,26 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             withRealm { realm ->
                 realm.executeTransaction { realmTx ->
+                    val ids = mutableListOf<String>()
+                    documents.forEach { doc ->
+                        val id = JsonUtils.getString("_id", doc)
+                        if (id.isNotEmpty() && !id.startsWith("_design")) {
+                            ids.add(id)
+                        }
+                    }
+                    val existingTeams = if (ids.isNotEmpty()) {
+                        realmTx.where(RealmMyTeam::class.java)
+                            .`in`("_id", ids.toTypedArray())
+                            .findAll()
+                            .associateBy { it._id!! }
+                            .toMutableMap()
+                    } else {
+                        mutableMapOf<String, RealmMyTeam>()
+                    }
+
                     documents.forEach { doc ->
                         try {
-                            insertMyTeam(realmTx, doc)
+                            insertMyTeam(realmTx, doc, existingTeams)
                             processedCount++
                         } catch (e: Exception) {
                             e.printStackTrace()
