@@ -176,13 +176,18 @@ object SyncTimeLogger {
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
     }
 
-    private fun extractProcessName(endpoint: String): String {
-        val urlPath = endpoint.substringAfter("/")
-        val segments = urlPath.split("/")
-        return if (segments.size > 1) {
-            segments.lastOrNull { it.isNotEmpty() && !it.startsWith("?") }?.substringBefore("?")?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() } ?: "Unknown"
-        } else {
-            if (urlPath.isEmpty()) "Unknown" else urlPath.substringBefore("?").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+    internal fun extractProcessName(endpoint: String): String {
+        val segments = endpoint.split("/")
+
+        val lastValidSegment = segments.lastOrNull {
+            it.isNotEmpty() && !it.startsWith("?")
+        } ?: return "Unknown"
+
+        val withoutQuery = lastValidSegment.substringBefore("?")
+        if (withoutQuery.isEmpty()) return "Unknown"
+
+        return withoutQuery.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
         }
     }
 
