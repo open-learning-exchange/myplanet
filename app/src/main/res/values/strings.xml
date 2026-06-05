@@ -1320,5 +1320,6 @@
     <string name="hours_ago">%1$d hr ago</string>
     <string name="yesterday">Yesterday</string>
     <string name="days_ago">%1$d days ago</string>
+    <string name="please_complete_test">please complete the test to finish the course</string>
 
 </resources>
