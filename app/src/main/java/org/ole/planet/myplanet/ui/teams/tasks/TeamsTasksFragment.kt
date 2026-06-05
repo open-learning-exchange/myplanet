@@ -222,6 +222,12 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 teamsRepository.updateTask(teamTask.id!!, task, desc, deadlineMillis, assigneeId)
             }
 
+            val shouldStayOnMyTasks = currentTab == R.id.btn_my && assigneeId == user?.id
+            if (!shouldStayOnMyTasks) {
+                currentTab = R.id.btn_all
+                binding.taskToggle.check(R.id.btn_all)
+            }
+
             Utilities.toast(
                 activity,
                 String.format(
@@ -298,6 +304,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 else -> allTasks()
             }
             adapterTask.submitList(taskList)
+            binding.rvTask.scrollToPosition(0)
+
             showNoData(binding.tvNodata, taskList.size, "tasks")
         }
     }
