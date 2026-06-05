@@ -136,4 +136,40 @@ class NetworkUtilsTest {
     fun extractProtocol_withHttpUrlWithoutDomain() {
         assertEquals("http://", NetworkUtils.extractProtocol("http://"))
     }
+
+    @Test
+    fun extractProtocol_withSpaceInsideProtocol() {
+        assertNull(NetworkUtils.extractProtocol("http ://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceAfterProtocol() {
+        assertEquals("http://", NetworkUtils.extractProtocol("http:// example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withMultipleSpaces() {
+        assertNull(NetworkUtils.extractProtocol("h t t p://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withOnlySpaces() {
+        assertNull(NetworkUtils.extractProtocol("   "))
+    }
+
+    @Test
+    fun extractProtocol_withExtremelyLongProtocol() {
+        val longProtocol = "a".repeat(1000)
+        assertEquals("$longProtocol://", NetworkUtils.extractProtocol("$longProtocol://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withProtocolContainingNumbers() {
+        assertEquals("http2://", NetworkUtils.extractProtocol("http2://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withProtocolContainingSpecialChars() {
+        assertEquals("http+ssl://", NetworkUtils.extractProtocol("http+ssl://example.com"))
+    }
 }
