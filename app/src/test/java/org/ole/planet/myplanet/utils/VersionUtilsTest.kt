@@ -4,6 +4,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import android.content.Context
+import android.content.pm.PackageManager
+import io.mockk.every
+import io.mockk.mockk
 import org.junit.Test
 
 class VersionUtilsTest {
@@ -83,5 +87,35 @@ class VersionUtilsTest {
     fun parseApkVersionString_should_return_null_for_empty_or_null_input() {
         assertNull(VersionUtils.parseApkVersionString(null))
         assertNull(VersionUtils.parseApkVersionString(""))
+    }
+
+    class SilentNameNotFoundException : PackageManager.NameNotFoundException() {
+        override fun printStackTrace() {}
+    }
+
+    @Test
+    fun getVersionCode_should_return_0_on_NameNotFoundException() {
+        val mockContext = mockk<Context>()
+        val mockPackageManager = mockk<PackageManager>()
+
+        every { mockContext.packageName } returns "org.ole.planet.myplanet"
+        every { mockContext.packageManager } returns mockPackageManager
+        every { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) } throws SilentNameNotFoundException()
+
+        val versionCode = VersionUtils.getVersionCode(mockContext)
+        assertEquals(0, versionCode)
+    }
+
+    @Test
+    fun getVersionName_should_return_empty_string_on_NameNotFoundException() {
+        val mockContext = mockk<Context>()
+        val mockPackageManager = mockk<PackageManager>()
+
+        every { mockContext.packageName } returns "org.ole.planet.myplanet"
+        every { mockContext.packageManager } returns mockPackageManager
+        every { mockPackageManager.getPackageInfo("org.ole.planet.myplanet", 0) } throws SilentNameNotFoundException()
+
+        val versionName = VersionUtils.getVersionName(mockContext)
+        assertEquals("", versionName)
     }
 }
