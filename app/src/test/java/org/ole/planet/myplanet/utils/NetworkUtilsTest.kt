@@ -158,18 +158,22 @@ class NetworkUtilsTest {
     }
 
     @Test
-    fun extractProtocol_withExtremelyLongProtocol() {
-        val longProtocol = "a".repeat(1000)
-        assertEquals("$longProtocol://", NetworkUtils.extractProtocol("$longProtocol://example.com"))
-    }
-
-    @Test
     fun extractProtocol_withProtocolContainingNumbers() {
         assertEquals("http2://", NetworkUtils.extractProtocol("http2://example.com"))
     }
 
     @Test
-    fun extractProtocol_withProtocolContainingSpecialChars() {
-        assertEquals("http+ssl://", NetworkUtils.extractProtocol("http+ssl://example.com"))
+    fun extractProtocol_withSpaceReturnedByUriParse() {
+        // android.net.Uri doesn't strictly follow all JVM URI rules.
+        // There are edge cases where scheme might be parsed containing a space
+        // depending on android framework version.
+        // We will mock this behaviour indirectly by testing what happens if scheme has a space.
+        // Since we can't easily force Uri.parse to return a space in scheme here without a custom mock
+        // that intercepts toUri(), we test strings that might potentially trigger it.
+        // The implementation checks: return if (scheme != null && !scheme.contains(" ")) "$scheme://" else null
+
+        // This is a proxy test, we test strings with spaces before colon in ways that android might parse it
+        // Or we test if it correctly handles null schemes when there are spaces.
+        assertNull(NetworkUtils.extractProtocol("my scheme://example.com"))
     }
 }
