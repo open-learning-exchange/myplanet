@@ -177,9 +177,13 @@ object SyncTimeLogger {
     }
 
     private fun extractProcessName(endpoint: String): String {
-        // Extract database/collection name from endpoint
-        val parts = endpoint.split("/")
-        return parts.getOrNull(parts.size - 2) ?: "unknown"
+        val urlPath = endpoint.substringAfter("/")
+        val segments = urlPath.split("/")
+        return if (segments.size > 1) {
+            segments.lastOrNull { it.isNotEmpty() && !it.startsWith("?") }?.substringBefore("?")?.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() } ?: "Unknown"
+        } else {
+            if (urlPath.isEmpty()) "Unknown" else urlPath.substringBefore("?").replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString() }
+        }
     }
 
     private fun shortenEndpoint(endpoint: String): String {
