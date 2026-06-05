@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.model
 
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 
 open class RealmResourceActivity : RealmObject() {
@@ -13,6 +14,7 @@ open class RealmResourceActivity : RealmObject() {
     var title: String? = null
     var resourceId: String? = null
     var parentCode: String? = null
+    @Index
     var type: String? = null
     var user: String? = null
     var androidId: String? = null
