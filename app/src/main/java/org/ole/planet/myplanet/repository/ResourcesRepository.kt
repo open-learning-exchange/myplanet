@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUser
 
 data class LibraryWithMetadata(
     val library: RealmMyLibrary,

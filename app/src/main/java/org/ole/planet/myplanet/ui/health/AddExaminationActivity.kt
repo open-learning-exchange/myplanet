@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
@@ -439,6 +438,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onDestroy() {
+        user = null
+        currentUser = null
+        pojo = null
+        health = null
+        examination = null
+        customDiag = null
+        mapConditions = null
         super.onDestroy()
     }
 }

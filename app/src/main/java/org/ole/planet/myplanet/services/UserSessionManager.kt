@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
-import android.content.SharedPreferences
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
@@ -38,9 +37,9 @@ class UserSessionManager @Inject constructor(
         return userRepository.getUserModelSuspending()
     }
 
-    suspend fun saveUserInfoPref(settings: SharedPreferences, password: String?, user: RealmUser?) {
+    suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {
         withContext(dispatcherProvider.io) {
-            SecurePrefs.saveCredentials(context, settings, user?.name, password)
+            SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
         }
         sharedPrefManager.setUserId(user?.id ?: "")
         sharedPrefManager.setUserName(user?.name ?: "")

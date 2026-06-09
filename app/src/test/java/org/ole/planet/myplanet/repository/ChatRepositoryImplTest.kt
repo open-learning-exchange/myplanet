@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import retrofit2.Response
@@ -157,14 +159,79 @@ class ChatRepositoryImplTest {
 
     @Test
     fun insertChatHistoryList_executesTransaction() = runTest {
-        val chatObj1 = JsonObject()
-        val chatObj2 = JsonObject()
+        val chatObj1 = JsonObject().apply {
+            addProperty("_id", "1")
+            addProperty("_rev", "1-rev")
+            add("conversations", JsonArray())
+        }
+        val chatObj2 = JsonObject().apply {
+            addProperty("_id", "2")
+            addProperty("_rev", "2-rev")
+            add("conversations", JsonArray())
+        }
+
+        coEvery { databaseService.executeTransactionAsync(any()) } answers {
+            val op = arg<(Realm) -> Unit>(0)
+            op.invoke(mockRealm)
+        }
+
+        // Mock query logic to simulate existing chats
+        val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmChatHistory>().iterator()
+
+        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
 
         coEvery { chatRepository.insertChatHistoryList(any()) } answers { callOriginal() }
 
         chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2))
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
+        verify(exactly = 1) { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) }
+    }
+
+    @Test
+    fun bulkInsertFromSync_removesOrphanedConversationsAndInsertsBatch() = runTest {
+        val jsonArray = JsonArray()
+        val chatDoc = JsonObject().apply {
+            addProperty("_id", "chat123")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Test Chat")
+            add("conversations", JsonArray())
+        }
+        val wrapper = JsonObject().apply {
+            add("doc", chatDoc)
+        }
+        jsonArray.add(wrapper)
+
+        val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
+        val existingChat = mockk<RealmChatHistory>(relaxed = true)
+        val mockConversations = mockk<io.realm.RealmList<RealmConversation>>(relaxed = true)
+
+        every { existingChat.conversations } returns mockConversations
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf(existingChat).iterator()
+
+        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
+
+        chatRepository.bulkInsertFromSync(mockRealm, jsonArray)
+
+        // Verify that existing conversations are explicitly deleted
+        verify(exactly = 1) { mockConversations.deleteAllFromRealm() }
+
+        // Verify insertOrUpdate is called
+        val captureList = slot<Collection<RealmChatHistory>>()
+        verify(exactly = 1) { mockRealm.insertOrUpdate(capture(captureList)) }
+
+        val inserted = captureList.captured.first()
+        assertEquals("chat123", inserted._id)
+        assertEquals("Test Chat", inserted.title)
     }
 
     @Test
