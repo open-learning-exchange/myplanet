@@ -23,8 +23,9 @@ class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentCommunityServicesBinding.inflate(inflater, container, false)
-        return binding!!.root
+        val b = FragmentCommunityServicesBinding.inflate(inflater, container, false)
+        binding = b
+        return b.root
     }
 
     override fun onDestroyView() {

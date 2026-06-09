@@ -1324,5 +1324,6 @@
     <string name="hours_ago">Il y a %1$d h</string>
     <string name="yesterday">Hier</string>
     <string name="days_ago">Il y a %1$d jour(s)</string>
+    <string name="removed_from_teamcourse">Cours retiré de l\'équipe</string>
 
 </resources>
