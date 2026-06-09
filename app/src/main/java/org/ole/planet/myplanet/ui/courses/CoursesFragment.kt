@@ -411,13 +411,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
+                    addToMyList()
                     val fragment = CoursesFragment().apply {
                         arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
                     }
                     homeItemClickListener?.openMyFragment(fragment)
                 }
             }
-            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                addToMyList()
+                dialog.cancel()
+    }
             .setOnDismissListener { addToMyList() }
 
         return builder.create()

@@ -227,8 +227,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         var birthDob = ""
         if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
             phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
-            if (!dob.isNullOrEmpty()) {
-                birthDob = dob!!
+            val capturedDob = dob
+            if (!capturedDob.isNullOrEmpty()) {
+                birthDob = capturedDob
             }
         }
 

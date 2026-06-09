@@ -106,8 +106,8 @@ class ServerUrlMapper @Inject constructor() {
         val defaultInfo = arrayOf("", "")
         val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
 
-        val result = if ((info?.size ?: 0) > 1) {
-            arrayOf(info!![0], info[1])
+        val result = if (info != null && info.size > 1) {
+            arrayOf(info[0], info[1])
         } else {
             defaultInfo
         }
