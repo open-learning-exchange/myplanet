@@ -231,12 +231,12 @@ class TeamsRepositoryImpl @Inject constructor(
         val validTeams = teams.filter { !it._id.isNullOrBlank() && it.status != "archived" }
         if (validTeams.isEmpty()) return emptyList()
 
-        val teamIds = validTeams.map { it._id!! }
+        val teamIds = validTeams.map { it._id ?: "" }
         val visitCounts = getRecentVisitCounts(teamIds)
         val memberStatuses = getTeamMemberStatuses(userId, teamIds)
 
         val detailsList = validTeams.map { team ->
-            val teamId = team._id!!
+            val teamId = team._id ?: ""
             val status = memberStatuses[teamId]
             TeamDetails(
                 _id = team._id,
@@ -1252,7 +1252,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 val adminFullId = "org.couchdb.user:${admin.name}"
 
                 if (adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()) {
-                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name!!)
+                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name.orEmpty())
                     if (adminFromRealm != null) {
                         members.add(adminFromRealm)
                     } else {
@@ -1601,7 +1601,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         if (myTeams == null) {
             myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
-            existingTeams?.put(teamId, myTeams!!)
+            myTeams?.let { existingTeams?.put(teamId, it) }
         }
         myTeams?.let {
             RealmMyTeam.populateTeamFields(doc, it, true)
@@ -1625,7 +1625,7 @@ class TeamsRepositoryImpl @Inject constructor(
             realm.where(RealmMyTeam::class.java)
                 .`in`("_id", ids.toTypedArray())
                 .findAll()
-                .associateBy { it._id!! }
+                .associateBy { it._id ?: "" }
                 .toMutableMap()
         } else {
             mutableMapOf<String, RealmMyTeam>()

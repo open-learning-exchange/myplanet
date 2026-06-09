@@ -4,6 +4,7 @@ import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -11,6 +12,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 open class RealmHealthExamination : RealmObject() {
     @PrimaryKey
     var _id: String? = null
+    @Index
     var userId: String? = null
     var isUpdated = false
     var _rev: String? = null
