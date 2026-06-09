@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
@@ -24,7 +23,6 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.FragmentNotificationsBinding
 import org.ole.planet.myplanet.model.Notification
-import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter

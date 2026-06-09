@@ -901,6 +901,14 @@
     <string name="image_resource">مصدر الصورة</string>
     <string name="play_audio">تشغيل الصوت</string>
     <string name="video_player">مشغل الفيديو</string>
+    <string name="video_unavailable">الفيديو غير متاح — الملف غير موجود ولا يمكن الاتصال بالخادم</string>
+    <string name="video_playback_error">خطأ في تشغيل الفيديو. حاول مرة أخرى أو تحقق من اتصالك</string>
+    <string name="video_loading_checking_server">جارٍ التحقق من توفر الخادم…</string>
+    <string name="video_loading_connecting">جارٍ الاتصال بالخادم…</string>
+    <string name="video_loading_buffering">جارٍ التخزين المؤقت…</string>
+    <string name="video_loading_local">جارٍ تحميل الفيديو…</string>
+    <string name="unable_to_play_video">تعذر تشغيل الفيديو</string>
+    <string name="go_back">رجوع</string>
     <string name="progress_bar">شريط التقدم</string>
     <string name="web_view">عرض الويب</string>
     <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>

@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -89,14 +88,9 @@ class ActivitiesFragment : Fragment() {
         val dataSet = BarDataSet(entries, label)
         val barData = BarData(dataSet)
 
-        val description = Description().apply {
-            text = getString(R.string.chart_description)
-            setTextColor(textColor)
-        }
-
         binding.chart.apply {
+            description.isEnabled = false
             data = barData
-            this.description = description
             xAxis.valueFormatter = object : ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     return getMonth(value.toInt())
@@ -106,7 +100,6 @@ class ActivitiesFragment : Fragment() {
             axisLeft.textColor = textColor
             axisRight.textColor = textColor
             legend.textColor = textColor
-            this.description.setPosition(850f, 830f)
             this.data.setValueTextColor(textColor)
             invalidate()
         }

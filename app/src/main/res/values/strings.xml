@@ -897,6 +897,14 @@
     <string name="image_resource">image resource</string>
     <string name="play_audio">play audio</string>
     <string name="video_player">video player</string>
+    <string name="video_unavailable">Video unavailable — file not found and could not connect to server</string>
+    <string name="video_playback_error">Video playback error. Please try again or check your connection</string>
+    <string name="video_loading_checking_server">Checking server availability…</string>
+    <string name="video_loading_connecting">Connecting to server…</string>
+    <string name="video_loading_buffering">Buffering…</string>
+    <string name="video_loading_local">Loading video…</string>
+    <string name="unable_to_play_video">Unable to Play Video</string>
+    <string name="go_back">Go Back</string>
     <string name="progress_bar">progress bar</string>
     <string name="web_view">web view</string>
     <string name="invalid_configuration">Invalid server configurations</string>
