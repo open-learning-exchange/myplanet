@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< test-flow-extensions-39894193784611309
         versionCode = 5674
         versionName = "0.56.74"
-=======
-        versionCode = 5673
-        versionName = "0.56.73"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
