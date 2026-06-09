@@ -81,11 +81,10 @@ object SyncTimeLogger {
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable =
-                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+            val alternativeUrl = mapping.alternativeUrl
+            val alternativeAvailable = alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
 
-            if (!primaryAvailable && alternativeAvailable) {
-                val alternativeUrl = mapping.alternativeUrl!!
+            if (!primaryAvailable && alternativeAvailable && alternativeUrl != null) {
                 val uri = updateUrl.toUri()
                 val prefs = spm.rawPreferences
                 val editor = prefs.edit()
