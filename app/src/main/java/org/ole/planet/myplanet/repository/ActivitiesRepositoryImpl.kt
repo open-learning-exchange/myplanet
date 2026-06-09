@@ -200,7 +200,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             if (maxEntry == null || maxEntry.value.first == 0) {
                 null
             } else {
-                Pair(maxEntry.value.second!!, maxEntry.value.first)
+                Pair(maxEntry.value.second ?: "", maxEntry.value.first)
             }
         }
     }
@@ -213,9 +213,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
             if (activity.userId?.startsWith("guest") == true || activity.id == null || activity.userId == null) {
                 null
             } else {
+                val actId = activity.id ?: return@mapNotNull null
+                val actUserId = activity.userId ?: return@mapNotNull null
                 org.ole.planet.myplanet.model.LoginActivityData(
-                    activity.id!!,
-                    activity.userId!!,
+                    actId,
+                    actUserId,
                     serializeLoginActivities(activity, context)
                 )
             }
@@ -418,7 +420,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             realm.where(RealmOfflineActivity::class.java)
                 .`in`("_id", ids.toTypedArray())
                 .findAll()
-                .associateBy { it._id!! }
+                .associateBy { it._id ?: "" }
                 .toMutableMap()
         } else {
             mutableMapOf<String, RealmOfflineActivity>()

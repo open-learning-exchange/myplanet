@@ -897,6 +897,14 @@
     <string name="image_resource">image resource</string>
     <string name="play_audio">play audio</string>
     <string name="video_player">video player</string>
+    <string name="video_unavailable">Video unavailable — file not found and could not connect to server</string>
+    <string name="video_playback_error">Video playback error. Please try again or check your connection</string>
+    <string name="video_loading_checking_server">Checking server availability…</string>
+    <string name="video_loading_connecting">Connecting to server…</string>
+    <string name="video_loading_buffering">Buffering…</string>
+    <string name="video_loading_local">Loading video…</string>
+    <string name="unable_to_play_video">Unable to Play Video</string>
+    <string name="go_back">Go Back</string>
     <string name="progress_bar">progress bar</string>
     <string name="web_view">web view</string>
     <string name="invalid_configuration">Invalid server configurations</string>
@@ -1297,5 +1305,21 @@
     <string name="sync_chip_syncing">Syncing…</string>
     <string name="sync_chip_offline">Offline</string>
     <string name="desc_is_required">Description is required</string>
+    <string name="notification_group_system">System</string>
+    <string name="notification_group_other">Other</string>
+    <string name="notif_group_join_requests">Join Requests</string>
+    <string name="notif_group_team_updates">Team Updates</string>
+    <string name="notif_group_new_voices">New Voices</string>
+    <string name="notif_group_voice_replies">Voice Replies</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="mark_selected_as_read">Mark read</string>
+    <string name="delete_selected">Delete</string>
+    <string name="cancel_selection">Cancel selection</string>
+    <string name="just_now">Just now</string>
+    <string name="minutes_ago">%1$d min ago</string>
+    <string name="hours_ago">%1$d hr ago</string>
+    <string name="yesterday">Yesterday</string>
+    <string name="days_ago">%1$d days ago</string>
+    <string name="removed_from_teamcourse">Course removed from team</string>
 
 </resources>

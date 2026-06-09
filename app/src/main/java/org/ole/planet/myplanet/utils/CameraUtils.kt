@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.ImageFormat
 import android.graphics.SurfaceTexture
-import android.util.Log
 import android.hardware.camera2.CameraAccessException
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraDevice
@@ -18,6 +17,7 @@ import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import android.view.Surface
 import androidx.core.content.ContextCompat
 import java.io.File
@@ -97,7 +97,7 @@ object CameraUtils {
                 val bytes = ByteArray(buffer.capacity())
                 buffer.get(bytes)
                 image.close()
-                cameraScope!!.launch {
+                cameraScope?.launch {
                     savePicture(bytes, callback)
                 }
             }
@@ -105,14 +105,15 @@ object CameraUtils {
 
         try {
             val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
-            captureBuilder?.addTarget(imageReader!!.surface)
-            captureBuilder?.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+                ?: return
+            imageReader?.surface?.let { captureBuilder.addTarget(it) }
+            captureBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
 
             val captureCallback = object : CameraCaptureSession.CaptureCallback() {}
 
             captureSession?.stopRepeating()
             captureSession?.abortCaptures()
-            captureSession?.capture(captureBuilder!!.build(), captureCallback, null)
+            captureSession?.capture(captureBuilder.build(), captureCallback, null)
         } catch (e: CameraAccessException) {
             when (e.reason) {
                 CameraAccessException.CAMERA_DISCONNECTED -> {
@@ -187,7 +188,7 @@ object CameraUtils {
             val texture = SurfaceTexture(0)
             texture.setDefaultBufferSize(IMAGE_WIDTH, IMAGE_HEIGHT)
             val surface = Surface(texture)
-            val captureRequestBuilder = cameraDevice!!.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+            val captureRequestBuilder = (cameraDevice ?: return).createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
             captureRequestBuilder.addTarget(surface)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 val outputConfigurations = listOf(OutputConfiguration(surface))

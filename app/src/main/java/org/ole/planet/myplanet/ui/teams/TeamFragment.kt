@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.utils.textChanges
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
@@ -33,6 +32,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.feedback.FeedbackFragment
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class TeamFragment : Fragment() {
@@ -283,13 +283,16 @@ class TeamFragment : Fragment() {
                 AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
                     .setMessage(R.string.confirm_exit)
                     .setPositiveButton(R.string.yes) { _, _ ->
-                        viewModel.leaveTeam(team._id!!, user?.id)
+                        val teamId = team._id ?: return@setPositiveButton
+                        viewModel.leaveTeam(teamId, user?.id)
                     }
                     .setNegativeButton(R.string.no, null)
                     .show()
             },
             onRequestToJoinClick = { team ->
-                viewModel.requestToJoin(team._id!!, user?.id, user?.planetCode, team.teamType)
+                team._id?.let { teamId ->
+                    viewModel.requestToJoin(teamId, user?.id, user?.planetCode, team.teamType)
+                }
             }
         ).apply {
             setType(type)

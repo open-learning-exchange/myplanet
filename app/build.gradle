@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.realm.android)
 }
 android {
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         applicationId "org.ole.planet.myplanet"
@@ -24,6 +24,7 @@ android {
     }
     configurations.configureEach {
         resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
+        resolutionStrategy.force "org.jetbrains.kotlin:kotlin-metadata-jvm:${libs.versions.kotlin.get()}"
     }
     buildTypes {
         release {

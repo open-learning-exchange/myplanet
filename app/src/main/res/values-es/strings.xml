@@ -897,6 +897,14 @@
     <string name="image_resource">recurso de imagen</string>
     <string name="play_audio">reproducir audio</string>
     <string name="video_player">reproductor de video</string>
+    <string name="video_unavailable">Video no disponible: archivo no encontrado y no se pudo conectar al servidor</string>
+    <string name="video_playback_error">Error de reproducción de video. Inténtalo de nuevo o comprueba tu conexión</string>
+    <string name="video_loading_checking_server">Comprobando disponibilidad del servidor…</string>
+    <string name="video_loading_connecting">Conectando al servidor…</string>
+    <string name="video_loading_buffering">Cargando…</string>
+    <string name="video_loading_local">Cargando video…</string>
+    <string name="unable_to_play_video">No se puede reproducir el video</string>
+    <string name="go_back">Volver</string>
     <string name="progress_bar">barra de progreso</string>
     <string name="web_view">vista web</string>
     <string name="invalid_configuration">Configuraciones de servidor no válidas</string>
@@ -1300,5 +1308,21 @@
     <string name="sync_chip_syncing">Sincronizando…</string>
     <string name="sync_chip_offline">Sin conexión</string>
     <string name="desc_is_required">La descripción es obligatoria</string>
+    <string name="notification_group_system">Sistema</string>
+    <string name="notification_group_other">Otro</string>
+    <string name="notif_group_join_requests">Solicitudes de unión</string>
+    <string name="notif_group_team_updates">Actualizaciones del equipo</string>
+    <string name="notif_group_new_voices">Nuevas voces</string>
+    <string name="notif_group_voice_replies">Respuestas de voz</string>
+    <string name="selected_count">%1$d seleccionado(s)</string>
+    <string name="mark_selected_as_read">Marcar como leído</string>
+    <string name="delete_selected">Eliminar</string>
+    <string name="cancel_selection">Cancelar selección</string>
+    <string name="just_now">Ahora mismo</string>
+    <string name="minutes_ago">Hace %1$d min</string>
+    <string name="hours_ago">Hace %1$d h</string>
+    <string name="yesterday">Ayer</string>
+    <string name="days_ago">Hace %1$d día(s)</string>
+    <string name="removed_from_teamcourse">Curso eliminado del equipo</string>
 
 </resources>

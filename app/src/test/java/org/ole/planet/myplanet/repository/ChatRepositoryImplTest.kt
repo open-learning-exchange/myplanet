@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -16,8 +17,6 @@ import io.realm.RealmResults
 import io.realm.Sort
 import kotlinx.coroutines.test.runTest
 import okhttp3.RequestBody
-import com.google.gson.JsonArray
-import org.ole.planet.myplanet.model.RealmConversation
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -28,6 +27,7 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import retrofit2.Response
