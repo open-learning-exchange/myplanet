@@ -69,26 +69,29 @@ object SecurePrefs {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
 
-            val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
-            if (plainPrefs.all.isNotEmpty()) {
-                encryptedPrefs.edit(commit = true) {
-                    plainPrefs.all.forEach { (key, value) ->
-                        when (value) {
-                            is String -> putString(key, value)
-                            is Boolean -> putBoolean(key, value)
-                            is Int -> putInt(key, value)
-                            is Long -> putLong(key, value)
-                            is Float -> putFloat(key, value)
-                            is Set<*> -> {
-                                @Suppress("UNCHECKED_CAST")
-                                putStringSet(key, value as Set<String>)
+            val plainPrefsFile = java.io.File(context.applicationInfo.dataDir, "shared_prefs/$PLAIN_PREFS_FILE_NAME.xml")
+            if (plainPrefsFile.exists()) {
+                val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+                if (plainPrefs.all.isNotEmpty()) {
+                    encryptedPrefs.edit(commit = true) {
+                        plainPrefs.all.forEach { (key, value) ->
+                            when (value) {
+                                is String -> putString(key, value)
+                                is Boolean -> putBoolean(key, value)
+                                is Int -> putInt(key, value)
+                                is Long -> putLong(key, value)
+                                is Float -> putFloat(key, value)
+                                is Set<*> -> {
+                                    @Suppress("UNCHECKED_CAST")
+                                    putStringSet(key, value as Set<String>)
+                                }
                             }
                         }
                     }
-                }
-                plainPrefs.edit(commit = true) { clear() }
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                    plainPrefs.edit(commit = true) { clear() }
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                        context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                    }
                 }
             }
             encryptedPrefs

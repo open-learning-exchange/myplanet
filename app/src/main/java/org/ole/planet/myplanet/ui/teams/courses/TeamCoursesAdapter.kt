@@ -15,7 +15,8 @@ import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamCoursesAdapter(
     private val context: Context,
-    private val canRemove: Boolean
+    private val canRemove: Boolean,
+    private val onRemove: (RealmMyCourse) -> Unit = {}
 ) : ListAdapter<RealmMyCourse, TeamCoursesAdapter.ViewHolder>(DiffCallback) {
     private var listener: OnHomeItemClickListener? = null
 
@@ -45,6 +46,9 @@ class TeamCoursesAdapter(
             holder.binding.ivRemove.visibility = View.GONE
         } else {
             holder.binding.ivRemove.visibility = View.VISIBLE
+            holder.binding.ivRemove.setOnClickListener {
+                onRemove(course)
+            }
         }
     }
 

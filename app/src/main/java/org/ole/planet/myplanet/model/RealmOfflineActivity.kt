@@ -13,7 +13,9 @@ open class RealmOfflineActivity : RealmObject() {
     @Index
     var _rev: String? = null
     var userName: String? = null
+    @Index
     var userId: String? = null
+    @Index
     var type: String? = null
     var description: String? = null
     var createdOn: String? = null

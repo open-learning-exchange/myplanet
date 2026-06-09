@@ -38,8 +38,9 @@ class AdaptiveBatchProcessor(private val context: Context) {
     
     private fun getSystemCapabilities(): SystemCapabilities {
         val now = System.currentTimeMillis()
-        if (cachedCapabilities != null && (now - lastCapabilityCheck) < cacheValidityMs) {
-            return cachedCapabilities!!
+        val cached = cachedCapabilities
+        if (cached != null && (now - lastCapabilityCheck) < cacheValidityMs) {
+            return cached
         }
         
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
