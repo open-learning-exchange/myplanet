@@ -8,6 +8,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Ignore
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
@@ -18,6 +19,7 @@ open class RealmNews : RealmObject() {
     var id: String? = null
     var _id: String? = null
     var _rev: String? = null
+    @Index
     var userId: String? = null
     var user: String? = null
     var message: String? = null
