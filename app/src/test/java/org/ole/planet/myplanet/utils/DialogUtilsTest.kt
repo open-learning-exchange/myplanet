@@ -2,15 +2,14 @@ package org.ole.planet.myplanet.utils
 
 import android.app.AlertDialog
 import android.content.Context
-import android.widget.TextView
 import androidx.appcompat.view.ContextThemeWrapper
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.mockkObject
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import org.junit.After
@@ -19,35 +18,27 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.robolectric.annotation.Config
-import dagger.hilt.android.testing.HiltAndroidRule
-import dagger.hilt.android.testing.HiltAndroidTest
-import dagger.hilt.android.testing.HiltTestApplication
+import org.robolectric.shadows.ShadowAlertDialog
 
 @RunWith(AndroidJUnit4::class)
-@HiltAndroidTest
-@Config(sdk = [33], manifest = Config.NONE, application = HiltTestApplication::class)
+@Config(sdk = [33], manifest = Config.NONE)
 class DialogUtilsTest {
-
-    @get:org.junit.Rule
-    var hiltRule = HiltAndroidRule(this)
 
     @Before
     fun setup() {
-        hiltRule.inject()
-        org.ole.planet.myplanet.MainApplication.context = ApplicationProvider.getApplicationContext()
+        MainApplication.context = ApplicationProvider.getApplicationContext()
 
-        // We will just let the test run through the real UrlUtils and DialogUtils without mocking
-        // the click action itself will call actual logic, which will schedule coroutines but we don't necessarily need to assert that.
-        // It's just testing DialogUtils getUpdateDialog.
+        mockkStatic(DialogUtils::class)
+        every { DialogUtils.startDownloadUpdate(any(), any(), any(), any(), any()) } returns Unit
+        every { DialogUtils.getUpdateDialog(any(), any(), any(), any(), any()) } answers { callOriginal() }
 
-        mockkObject(DialogUtils)
-        // Just mock startDownloadUpdate to do nothing so we don't hit the coroutine exception.
-        // Or wait, startDownloadUpdate is the one with the CoroutineScope MockkException. We just won't mock it.
-        // We just verify the dialog components
+        mockkStatic(UrlUtils::class)
+        every { UrlUtils.getApkUpdateUrl(any<String>()) } returns "mocked_local_path"
     }
 
     @After
@@ -82,11 +73,9 @@ class DialogUtilsTest {
         assertNotNull(dialog)
 
         dialog.show()
+        val shadowDialog = org.robolectric.Shadows.shadowOf(dialog)
 
-        val alertTitle = dialog.findViewById<TextView>(androidx.appcompat.R.id.alertTitle)
-        if (alertTitle != null) {
-             assertEquals(context.getString(R.string.new_version_of_my_planet_available), alertTitle.text.toString())
-        }
+        assertEquals(context.getString(R.string.new_version_of_my_planet_available), shadowDialog.title)
 
         val upgradeLocalButton = dialog.getButton(AlertDialog.BUTTON_NEUTRAL)
         assertNotNull(upgradeLocalButton)
@@ -96,8 +85,10 @@ class DialogUtilsTest {
         assertNotNull(upgradeButton)
         assertEquals(context.getString(R.string.upgrade), upgradeButton.text)
 
-        // If we click it, it executes the code in startDownloadUpdate, which uses coroutines and could crash.
-        // But verifying button text and builder setup is enough to cover getUpdateDialog.
-        // Let's just do that to make test solid.
+        upgradeLocalButton.performClick()
+        verify(exactly = 1) { DialogUtils.startDownloadUpdate(context, "mocked_local_path", progressDialog, scope, configurationsRepository) }
+
+        upgradeButton.performClick()
+        verify(exactly = 1) { DialogUtils.startDownloadUpdate(context, "remote_path", progressDialog, scope, configurationsRepository) }
     }
 }
