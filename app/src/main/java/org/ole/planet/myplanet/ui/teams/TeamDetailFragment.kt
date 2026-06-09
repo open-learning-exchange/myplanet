@@ -360,7 +360,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     team?.let { currentTeam ->
                         user?.let { currentUser ->
                             viewLifecycleOwner.lifecycleScope.launch {
-                                teamsRepository.leaveTeam(currentTeam._id!!, currentUser.id)
+                                val teamId = currentTeam._id ?: return@launch
+                                teamsRepository.leaveTeam(teamId, currentUser.id)
                                 Utilities.toast(activity, getString(R.string.left_team))
                                 val lastPageId =
                                     currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
