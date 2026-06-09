@@ -376,6 +376,7 @@ class VoicesAdapter(
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = news.parsedConversations ?: return
             val adapter = holder.chatAdapter
+            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, onAnimateTyping)
 
             if (currentUser?.id?.startsWith("guest") == false) {
                 adapter.setOnChatItemClickListener(object : OnChatItemClickListener {

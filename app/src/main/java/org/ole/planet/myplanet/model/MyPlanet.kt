@@ -25,7 +25,7 @@ class MyPlanet : Serializable {
     var appname: String? = null
     var localapkpath: String? = null
     override fun toString(): String {
-        return appname!!
+        return appname ?: ""
     }
 
     companion object {

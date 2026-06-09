@@ -106,8 +106,10 @@ class RatingsRepositoryImpl @Inject constructor(
             setRatingData(newRating, resolvedUser, type, itemId, title, rating, comment)
             save(newRating)
         } else {
-            update(RealmRating::class.java, "id", existingRating.id!!) { ratingObject ->
-                setRatingData(ratingObject, resolvedUser, type, itemId, title, rating, comment)
+            existingRating.id?.let { ratingId ->
+                update(RealmRating::class.java, "id", ratingId) { ratingObject ->
+                    setRatingData(ratingObject, resolvedUser, type, itemId, title, rating, comment)
+                }
             }
         }
 

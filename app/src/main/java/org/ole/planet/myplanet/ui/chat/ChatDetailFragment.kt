@@ -848,21 +848,24 @@ class ChatDetailFragment : Fragment() {
         if (!courseTitle.isNullOrBlank()) sb.append("Course \"$courseTitle\"")
         if (stepNumber > 0) sb.append(", Step $stepNumber")
         if (!stepTitle.isNullOrBlank()) sb.append(": \"$stepTitle\"")
-        if (!selectedText.isNullOrBlank()) {
-            val passage = selectedText!!.take(300)
-            sb.append(". Highlighted passage: \"$passage${if (selectedText!!.length > 300) "..." else ""}\"")
-        } else if (!stepDescription.isNullOrBlank()) {
-            val desc = stepDescription!!.take(400)
-            sb.append(". Content: $desc${if (stepDescription!!.length > 400) "..." else ""}")
+        val text = selectedText
+        val desc = stepDescription
+        if (!text.isNullOrBlank()) {
+            val passage = text.take(300)
+            sb.append(". Highlighted passage: \"$passage${if (text.length > 300) "..." else ""}\"")
+        } else if (!desc.isNullOrBlank()) {
+            val truncated = desc.take(400)
+            sb.append(". Content: $truncated${if (desc.length > 400) "..." else ""}")
         }
         sb.append("]\n\n")
         return sb.toString()
     }
 
     private fun buildBannerText(): String {
+        val title = stepTitle
         val label = when {
-            stepNumber > 0 && !stepTitle.isNullOrBlank() -> "Step $stepNumber: $stepTitle"
-            !stepTitle.isNullOrBlank() -> stepTitle!!
+            stepNumber > 0 && !title.isNullOrBlank() -> "Step $stepNumber: $title"
+            !title.isNullOrBlank() -> title
             else -> courseTitle ?: ""
         }
         return getString(R.string.course_context_banner, label)
