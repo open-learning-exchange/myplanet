@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.text.TextUtils
+import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -373,6 +375,17 @@ class TeamsRepositoryImpl @Inject constructor(
                             team.courses?.add(courseId)
                         }
                     }
+                    team.updated = true
+                }
+            }
+        }
+    }
+
+    override suspend fun removeCourseFromTeam(teamId: String, courseId: String): Result<Unit> {
+        return withContext(databaseService.ioDispatcher) {
+            runCatching {
+                update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                    team.courses?.remove(courseId)
                     team.updated = true
                 }
             }
@@ -1513,6 +1526,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return ob
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun processDescription(description: String?) {
         val links = org.ole.planet.myplanet.utils.DownloadUtils.extractLinks(description ?: "")
         val baseUrl = org.ole.planet.myplanet.utils.UrlUtils.getUrl()
