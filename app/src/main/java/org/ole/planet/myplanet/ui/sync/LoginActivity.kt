@@ -547,8 +547,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     fun getTeamMembers() {
         lifecycleScope.launch {
             selectedTeamId = prefData.getSelectedTeamId().toString()
-            if (selectedTeamId?.isNotEmpty() == true) {
-                users = teamsRepository.getJoinedMembersAndSave(selectedTeamId!!)
+            val teamId = selectedTeamId
+            if (!teamId.isNullOrEmpty()) {
+                users = teamsRepository.getJoinedMembersAndSave(teamId)
             }
             setupAndPopulateRecyclerView()
         }
