@@ -184,7 +184,6 @@ class VoicesAdapter(
         if (holder is VoicesViewHolder) {
             holder.bind(position)
             val news = getNews(holder, position)
-            preParseNews(news)
 
             if (news?.isValid == true) {
                 val sharedTeamName = extractSharedTeamName(news)
@@ -376,31 +375,23 @@ class VoicesAdapter(
     private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = news.parsedConversations ?: return
-            val chatAdapter = ChatAdapter(context, holder.binding.recyclerGchat, onAnimateTyping)
+            val adapter = holder.chatAdapter
 
             if (currentUser?.id?.startsWith("guest") == false) {
-                chatAdapter.setOnChatItemClickListener(object : OnChatItemClickListener {
+                adapter.setOnChatItemClickListener(object : OnChatItemClickListener {
                     override fun onChatItemClick(position: Int, chatItem: ChatMessage) {
                         listener?.onNewsItemClick(news)
                     }
                 })
             }
 
-            val messages = mutableListOf<ChatMessage>()
+            val messages = ArrayList<ChatMessage>(conversations.size * 2)
             for (conversation in conversations) {
-                val query = conversation.query
-                val response = conversation.response
-                if (query != null) {
-                    messages.add(ChatMessage(query, ChatMessage.QUERY))
-                }
-                if (response != null) {
-                    messages.add(ChatMessage(response, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL))
-                }
+                conversation.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
+                conversation.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
             }
-            chatAdapter.submitList(messages)
+            adapter.submitList(messages)
 
-            holder.binding.recyclerGchat.adapter = chatAdapter
-            holder.binding.recyclerGchat.layoutManager = LinearLayoutManager(context)
             holder.binding.recyclerGchat.visibility = View.VISIBLE
             holder.binding.sharedChat.visibility = View.VISIBLE
         } else {
@@ -823,6 +814,14 @@ class VoicesAdapter(
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
         var cancelJob: (() -> Unit)? = null
         private var adapterPosition = 0
+
+        val chatAdapter: ChatAdapter by lazy {
+            ChatAdapter(context, binding.recyclerGchat, onAnimateTyping).also {
+                binding.recyclerGchat.layoutManager = LinearLayoutManager(binding.recyclerGchat.context)
+                binding.recyclerGchat.adapter = it
+            }
+        }
+
         fun bind(position: Int) {
             adapterPosition = position
         }
