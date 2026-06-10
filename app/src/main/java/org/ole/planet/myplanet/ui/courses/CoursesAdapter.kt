@@ -74,6 +74,7 @@ class CoursesAdapter(
         private const val TAG_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val PROGRESS_PAYLOAD = "payload_progress"
+        private const val SELECTION_PAYLOAD = "payload_selection"
     }
 
     init {
@@ -247,10 +248,8 @@ class CoursesAdapter(
             selectedItems.addAll(selectableCourses)
         }
 
-        currentList.forEachIndexed { index, course ->
-            if (isMyCourseLib || !course.isMyCourse) {
-                notifyItemChanged(index)
-            }
+        if (currentList.isNotEmpty()) {
+            notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
         }
 
         listener?.onSelectedListChange(selectedItems)
@@ -267,13 +266,14 @@ class CoursesAdapter(
         }
 
         val hasTagPayload = payloads.any { it == TAG_PAYLOAD }
+        val hasSelectionPayload = payloads.any { it == SELECTION_PAYLOAD }
         val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle()) { acc, b -> acc.apply { putAll(b) } }
         val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
         val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
 
-        if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
+        if (hasTagPayload || hasRatingPayload || hasProgressPayload || hasSelectionPayload) {
             val course = getItem(position) ?: return
-            holder.bindPayloads(position, course, hasTagPayload, hasRatingPayload, hasProgressPayload)
+            holder.bindPayloads(position, course, hasTagPayload, hasRatingPayload, hasProgressPayload, hasSelectionPayload)
         } else {
             super.onBindViewHolder(holder, position, payloads)
         }
@@ -296,7 +296,7 @@ class CoursesAdapter(
 
     abstract inner class CoursesViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         abstract fun bind(position: Int, course: Course)
-        abstract fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean)
+        abstract fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean, hasSelectionPayload: Boolean)
 
         open fun onRecycled() {}
     }
@@ -359,7 +359,7 @@ class CoursesAdapter(
             updateProgressViews(position)
         }
 
-        override fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean) {
+        override fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
             if (hasTagPayload) {
                 renderTagCloud(rowCourseBinding.flexboxDrawable, tagsMap[course.courseId].orEmpty())
             }
@@ -368,6 +368,11 @@ class CoursesAdapter(
             }
             if (hasProgressPayload) {
                 updateProgressViews(position)
+            }
+            if (hasSelectionPayload) {
+                if (!isGuest && (isMyCourseLib || !course.isMyCourse)) {
+                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                }
             }
         }
 
