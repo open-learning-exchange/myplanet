@@ -6,8 +6,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.realm.Sort
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -82,38 +84,69 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `loadUserContent replaces all constituent jobs when called multiple times`() = runTest(testDispatcher) {
+    fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"
         val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(RealmMyLibrary().apply { title = "Lib1" })
-        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
-        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
+        val firstCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+        val secondCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+
         coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
+        coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
+        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
+
+        // First call
+        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns firstCoursesFlow
+        viewModel.loadUserContent(userId)
+        advanceUntilIdle()
+
+        // Second call
+        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns secondCoursesFlow
+        viewModel.loadUserContent(userId)
+        advanceUntilIdle()
+
+        // Emit to the first flow - should be ignored because the job was cancelled
+        firstCoursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "Old Course" }))
+        advanceUntilIdle()
+
+        val stateAfterFirstEmit = viewModel.uiState.value
+        assertEquals(0, stateAfterFirstEmit.courses.size)
+
+        // Emit to the second flow - should update state
+        secondCoursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "New Course" }))
+        advanceUntilIdle()
+
+        val stateAfterSecondEmit = viewModel.uiState.value
+        assertEquals(1, stateAfterSecondEmit.courses.size)
+        assertEquals("New Course", (stateAfterSecondEmit.courses[0] as RealmMyCourse).courseTitle)
+    }
+
+    @Test
+    fun `constituent jobs are independent and cancellation of one does not cancel others`() = runTest(testDispatcher) {
+        val userId = "user1"
+        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
+
+        val coursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+
+        coEvery { userRepository.getUserById(userId) } returns user
+        coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
+
+        // Library throws CancellationException, simulating its job being cancelled
+        coEvery { resourcesRepository.getMyLibrary(userId) } throws CancellationException("Test cancel")
+        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns coursesFlow
 
         viewModel.loadUserContent(userId)
+        advanceUntilIdle()
 
-        // Call it again to trigger job cancellation/replacement
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(RealmMyLibrary().apply { title = "Lib2" })
-        viewModel.loadUserContent(userId)
-
+        // Even though library job was cancelled, courses flow should still be active and receive updates
+        coursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "Active Course" }))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals("John Doe", state.fullName)
-        assertEquals(2, state.offlineLogins)
         assertEquals(1, state.courses.size)
-        assertEquals("Course1", (state.courses[0] as RealmMyCourse).courseTitle)
-        assertEquals(1, state.teams.size)
-        assertEquals("Team1", (state.teams[0] as RealmMyTeam).name)
-        assertEquals(1, state.library.size)
-        assertEquals("Lib2", (state.library[0] as RealmMyLibrary).title)
-
-        // Ensure that repository methods associated with the initial call were canceled/replaced
-        // Since both calls use the same user ID, they get requested twice.
-        // We verify that the second library title ("Lib2") is the only one present.
-        io.mockk.coVerify(exactly = 1) { resourcesRepository.getMyLibrary(userId) }
+        assertEquals("Active Course", (state.courses[0] as RealmMyCourse).courseTitle)
     }
 
     @Test

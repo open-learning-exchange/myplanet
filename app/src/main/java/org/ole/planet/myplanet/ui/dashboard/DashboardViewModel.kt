@@ -135,8 +135,10 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
 
         libraryJob?.cancel()
-        libraryJob = viewModelScope.launch(dispatcherProvider.io) {
-            val myLibrary = resourcesRepository.getMyLibrary(userId)
+        libraryJob = viewModelScope.launch(dispatcherProvider.main) {
+            val myLibrary = withContext(dispatcherProvider.io) {
+                resourcesRepository.getMyLibrary(userId)
+            }
             _uiState.update { it.copy(library = myLibrary) }
         }
 
