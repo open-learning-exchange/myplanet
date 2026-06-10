@@ -49,8 +49,6 @@ class UploadRepositoryImpl @Inject constructor(
                     val item = itemsById[uploadedItem.localId]
 
                     item?.let {
-                        setRealmField(it, "_id", uploadedItem.remoteId)
-                        setRealmField(it, "_rev", uploadedItem.remoteRev)
                         config.additionalUpdates?.invoke(realm, it, uploadedItem)
                     } ?: run {
                         failedLocally.add(uploadedItem)
@@ -64,27 +62,5 @@ class UploadRepositoryImpl @Inject constructor(
         return failedLocally
     }
 
-    private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
-        try {
-            var clazz: Class<*>? = obj.javaClass
-            var field: java.lang.reflect.Field? = null
 
-            while (clazz != null && field == null) {
-                try {
-                    field = clazz.getDeclaredField(fieldName)
-                } catch (e: NoSuchFieldException) {
-                    clazz = clazz.superclass
-                }
-            }
-
-            if (field != null) {
-                field.isAccessible = true
-                field.set(obj, value)
-            } else {
-                Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
-            }
-        } catch (e: Exception) {
-            Log.w("UploadRepositoryImpl", "Failed to set field $fieldName: ${e.message}")
-        }
-    }
 }

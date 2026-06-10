@@ -42,7 +42,11 @@ class UploadConfigs @Inject constructor(
             query.isNull("_id").or().isEmpty("_id")
         },
         serializer = UploadSerializer.Simple(RealmNewsLog::serialize),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val CourseProgress = UploadConfig(
@@ -52,7 +56,11 @@ class UploadConfigs @Inject constructor(
         filterGuests = true,
         guestUserIdExtractor = { it.userId },
         serializer = UploadSerializer.Simple(RealmCourseProgress::serializeProgress),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val TeamTask = UploadConfig(
@@ -67,7 +75,11 @@ class UploadConfigs @Inject constructor(
             val user = userRepository.getUserById(task.assignee ?: "")
             RealmTeamTask.serialize(task, user)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val TeamActivities = UploadConfig(
@@ -75,7 +87,11 @@ class UploadConfigs @Inject constructor(
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
         serializer = UploadSerializer.WithContext { log, context -> serializeTeamActivities(log, context) },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     private fun serializeTeamActivities(log: RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject {
@@ -102,7 +118,11 @@ class UploadConfigs @Inject constructor(
         endpoint = "search_activities",
         queryBuilder = { query -> query.isEmpty("_rev") },
         serializer = UploadSerializer.Simple { it.serialize() },
-        idExtractor = { it._id }
+        idExtractor = { it._id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val ResourceActivities = UploadConfig(
@@ -112,7 +132,11 @@ class UploadConfigs @Inject constructor(
             query.isNull("_rev").notEqualTo("type", "sync")
         },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
-        idExtractor = { it._id }
+        idExtractor = { it._id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val ResourceActivitiesSync = UploadConfig(
@@ -122,7 +146,11 @@ class UploadConfigs @Inject constructor(
             query.isNull("_rev").equalTo("type", "sync")
         },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
-        idExtractor = { it._id }
+        idExtractor = { it._id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val CourseActivities = UploadConfig(
@@ -132,7 +160,11 @@ class UploadConfigs @Inject constructor(
             query.isNull("_rev").notEqualTo("type", "sync")
         },
         serializer = UploadSerializer.Simple(RealmCourseActivity::serializeSerialize),
-        idExtractor = { it._id }
+        idExtractor = { it._id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val Meetups = UploadConfig(
@@ -160,7 +192,10 @@ class UploadConfigs @Inject constructor(
             val questions = surveysRepository.getExamQuestions(exam.id ?: "")
             RealmStepExam.serializeExam(exam, questions)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val Feedback = UploadConfig(
@@ -171,8 +206,10 @@ class UploadConfigs @Inject constructor(
         },
         serializer = UploadSerializer.Simple(RealmFeedback::serializeFeedback),
         idExtractor = { it.id },
-        additionalUpdates = { _, feedback, _ ->
+        additionalUpdates = { _, feedback, uploadedItem ->
             feedback.isUploaded = true
+            feedback._id = uploadedItem.remoteId
+            feedback._rev = uploadedItem.remoteRev
         }
     )
 
@@ -181,7 +218,10 @@ class UploadConfigs @Inject constructor(
         endpoint = "apk_logs",
         queryBuilder = { query -> query.isNull("_rev") },
         serializer = UploadSerializer.WithContext(RealmApkLog::serialize),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val SubmitPhotos = UploadConfig(
@@ -190,8 +230,10 @@ class UploadConfigs @Inject constructor(
         queryBuilder = { query -> query.equalTo("uploaded", false) },
         serializer = UploadSerializer.Simple(RealmSubmitPhotos::serializeRealmSubmitPhotos),
         idExtractor = { it.id },
-        additionalUpdates = { _, photo, _ ->
+        additionalUpdates = { _, photo, uploadedItem ->
             photo.uploaded = true
+            photo._id = uploadedItem.remoteId
+            photo._rev = uploadedItem.remoteRev
         }
     )
 
@@ -213,7 +255,11 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         filterGuests = true,
-        guestUserIdExtractor = { it.userId }
+        guestUserIdExtractor = { it.userId },
+        additionalUpdates = { _, item, uploadedItem ->
+            item._id = uploadedItem.remoteId
+            item._rev = uploadedItem.remoteRev
+        }
     )
 
     val Submissions = UploadConfig(
@@ -232,8 +278,10 @@ class UploadConfigs @Inject constructor(
         },
         idExtractor = { it.id },
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
-        additionalUpdates = { _, submission, _ ->
+        additionalUpdates = { _, submission, uploadedItem ->
             submission.isUpdated = false
+            submission._id = uploadedItem.remoteId
+            submission._rev = uploadedItem.remoteRev
         }
     )
 
@@ -249,6 +297,9 @@ class UploadConfigs @Inject constructor(
             additionalUpdates = { realm, library, uploadedItem ->
                 val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
                     ?: sharedPrefManager.getPlanetCode()
+
+                library._id = uploadedItem.remoteId
+                library._rev = uploadedItem.remoteRev
 
                 if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
                     val teamResource = realm.createObject(
@@ -279,8 +330,10 @@ class UploadConfigs @Inject constructor(
         dbIdExtractor = { it._id },  // Enables POST/PUT logic
         filterGuests = true,
         guestUserIdExtractor = { it.userId },
-        additionalUpdates = { _, rating, _ ->
+        additionalUpdates = { _, rating, uploadedItem ->
             rating.isUpdated = false
+            rating._id = uploadedItem.remoteId
+            rating._rev = uploadedItem.remoteRev
         }
     )
 }
