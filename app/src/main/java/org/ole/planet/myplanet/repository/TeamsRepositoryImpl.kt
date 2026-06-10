@@ -6,7 +6,6 @@ import android.os.Build
 import android.text.TextUtils
 import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
-import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
 import java.util.Calendar
@@ -38,34 +37,27 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.UploadManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
-    private val gson: Gson,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
+    private val teamTasksRepository: TeamTasksRepository,
+    private val teamFinanceRepository: TeamFinanceRepository,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
-    override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
-        return queryListFlow(RealmTeamTask::class.java) {
-            notEqualTo("status", "archived")
-                .equalTo("completed", false)
-                .equalTo("assignee", userId)
-        }
-    }
+    override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> =
+        teamTasksRepository.getTasksFlow(userId)
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
         return withRealm { realm ->
@@ -145,13 +137,8 @@ class TeamsRepositoryImpl @Inject constructor(
             teamId
         }
     }
-    override suspend fun getTasks(userId: String?): List<RealmTeamTask> {
-        return queryList(RealmTeamTask::class.java) {
-            notEqualTo("status", "archived")
-                .equalTo("completed", false)
-                .equalTo("assignee", userId)
-        }
-    }
+    override suspend fun getTasks(userId: String?): List<RealmTeamTask> =
+        teamTasksRepository.getTasks(userId)
 
     override suspend fun getAllActiveTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
@@ -434,40 +421,16 @@ class TeamsRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? {
-        val task = findByField(RealmTeamTask::class.java, "id", taskId)
-
-        return task?.let {
-            val linkJson = org.json.JSONObject(it.link ?: "{}")
-            val teamId = linkJson.optString("teams")
-            if (teamId.isNotEmpty()) {
-                val teamObject = findByField(RealmMyTeam::class.java, "_id", teamId)
-                teamObject?.let { team ->
-                    Triple(teamId, team.name ?: "", team.type ?: "")
-                }
-            } else {
-                null
-            }
-        }
-    }
+    override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? =
+        teamTasksRepository.getTaskTeamInfo(taskId)
 
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
         val request = findByField(RealmMyTeam::class.java, "_id", requestId)
         return if (request?.docType == "request") request.teamId else null
     }
 
-    override suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>> {
-        if (userId.isNullOrEmpty()) return emptyList()
-        return queryList(RealmTeamTask::class.java) {
-            notEqualTo("status", "archived")
-            equalTo("completed", false)
-            equalTo("assignee", userId)
-        }.mapNotNull { task ->
-            val title = task.title ?: return@mapNotNull null
-            val id = task.id ?: return@mapNotNull null
-            Triple(title, formatDate(task.deadline), id)
-        }
-    }
+    override suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>> =
+        teamTasksRepository.getTaskNotifications(userId)
 
     override suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification> {
         if (userId.isNullOrEmpty()) return emptyList()
@@ -521,122 +484,19 @@ class TeamsRepositoryImpl @Inject constructor(
         startDate: Long?,
         endDate: Long?,
         sortAscending: Boolean,
-    ): Flow<List<Transaction>> {
-        return queryTransactions(teamId, startDate, endDate, true).map { transactions ->
-            val transactionDataList = mapTransactionsToPresentationModel(transactions)
-            if (!sortAscending) {
-                transactionDataList.reversed()
-            } else {
-                transactionDataList
-            }
-        }
-    }
-
-    private suspend fun queryTransactions(
-        teamId: String,
-        startDate: Long?,
-        endDate: Long?,
-        sortAscending: Boolean
-    ): Flow<List<RealmMyTeam>> {
-        return queryListFlow(RealmMyTeam::class.java) {
-            equalTo("teamId", teamId)
-            equalTo("docType", "transaction")
-            notEqualTo("status", "archived")
-            startDate?.let { greaterThanOrEqualTo("date", it) }
-            endDate?.let { lessThanOrEqualTo("date", it) }
-        }.map { transactions ->
-            if (sortAscending) {
-                transactions.sortedBy { it.date }
-            } else {
-                transactions.sortedByDescending { it.date }
-            }
-        }
-    }
-
-    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<Transaction> {
-        val transactionDataList = mutableListOf<Transaction>()
-        var balance = 0
-        for (team in transactions) {
-            val id = team._id ?: continue
-            balance += if ("debit".equals(team.type, ignoreCase = true)) {
-                -team.amount
-            } else {
-                team.amount
-            }
-            transactionDataList.add(
-                Transaction(
-                    id = id,
-                    date = team.date,
-                    description = team.description,
-                    type = team.type,
-                    amount = team.amount,
-                    balance = balance
-                )
-            )
-        }
-        return transactionDataList
-    }
+    ): Flow<List<Transaction>> = teamFinanceRepository.getTeamTransactionsWithBalance(teamId, startDate, endDate, sortAscending)
 
     override suspend fun createTransaction(
-        teamId: String,
-        type: String,
-        note: String,
-        amount: Int,
-        date: Long,
-        parentCode: String?,
-        planetCode: String?,
-    ): Result<Unit> {
-        if (teamId.isBlank()) {
-            return Result.failure(IllegalArgumentException("teamId cannot be blank"))
-        }
-        return runCatching {
-            val transaction = RealmMyTeam().apply {
-                _id = UUID.randomUUID().toString()
-                status = "active"
-                this.date = date
-                this.type = type
-                description = note
-                this.teamId = teamId
-                this.amount = amount
-                this.parentCode = parentCode
-                teamPlanetCode = planetCode
-                teamType = "sync"
-                docType = "transaction"
-                updated = true
-            }
-            save(transaction)
-        }
-    }
+        teamId: String, type: String, note: String, amount: Int, date: Long,
+        parentCode: String?, planetCode: String?,
+    ): Result<Unit> = teamFinanceRepository.createTransaction(teamId, type, note, amount, date, parentCode, planetCode)
 
-    override suspend fun addReport(report: JsonObject) {
-        executeTransaction { realm ->
-            val reportId = JsonUtils.getString("_id", report)
-            val reportEntry = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", reportId)
-                .findFirst()
-                ?: realm.createObject(RealmMyTeam::class.java, reportId)
-            RealmMyTeam.populateTeamFields(report, reportEntry)
-        }
-    }
+    override suspend fun addReport(report: JsonObject) = teamFinanceRepository.addReport(report)
 
-    override suspend fun updateReport(reportId: String, payload: JsonObject) {
-        if (reportId.isBlank()) return
-        update(RealmMyTeam::class.java, "_id", reportId) { report ->
-            RealmMyTeam.populateReportFields(payload, report)
-            report.updated = true
-            if (report.updatedDate == 0L) {
-                report.updatedDate = System.currentTimeMillis()
-            }
-        }
-    }
+    override suspend fun updateReport(reportId: String, payload: JsonObject) =
+        teamFinanceRepository.updateReport(reportId, payload)
 
-    override suspend fun archiveReport(reportId: String) {
-        if (reportId.isBlank()) return
-        update(RealmMyTeam::class.java, "_id", reportId) { report ->
-            report.status = "archived"
-            report.updated = true
-        }
-    }
+    override suspend fun archiveReport(reportId: String) = teamFinanceRepository.archiveReport(reportId)
 
     override suspend fun isMember(userId: String?, teamId: String): Boolean {
         userId ?: return false
@@ -872,132 +732,36 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPendingTasksForUser(
-        userId: String,
-        start: Long,
-        end: Long,
-    ): List<RealmTeamTask> {
-        if (userId.isBlank() || start > end) return emptyList()
-        return queryList(RealmTeamTask::class.java) {
-            equalTo("completed", false)
-            equalTo("assignee", userId)
-            equalTo("isNotified", false)
-            between("deadline", start, end)
-        }
-    }
+    override suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask> =
+        teamTasksRepository.getPendingTasksForUser(userId, start, end)
 
-    override suspend fun markTasksNotified(taskIds: Collection<String>) {
-        if (taskIds.isEmpty()) return
-        val validIds = taskIds.mapNotNull { it.takeIf(String::isNotBlank) }.distinct()
-        if (validIds.isEmpty()) return
-        executeTransaction { realm ->
-            val tasks = realm.where(RealmTeamTask::class.java)
-                .`in`("id", validIds.toTypedArray())
-                .findAll()
-            tasks.forEach { task ->
-                task.isNotified = true
-            }
-        }
-    }
+    override suspend fun markTasksNotified(taskIds: Collection<String>) =
+        teamTasksRepository.markTasksNotified(taskIds)
 
-    override suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>> {
-        return queryListFlow(RealmTeamTask::class.java) {
-            equalTo("teamId", teamId)
-            notEqualTo("status", "archived")
-        }
-    }
+    override suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>> =
+        teamTasksRepository.getTasksByTeamId(teamId)
 
-    override suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
-        return queryListFlow(RealmMyTeam::class.java) {
-            equalTo("teamId", teamId)
-            equalTo("docType", "report")
-            notEqualTo("status", "archived")
-            sort("createdDate", io.realm.Sort.DESCENDING)
-        }
-    }
+    override suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> =
+        teamFinanceRepository.getReportsFlow(teamId)
 
-    override suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String {
-        val csvBuilder = StringBuilder()
-        csvBuilder.append("$teamName Financial Report Summary\n\n")
-        csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
-        for (report in reports) {
-            val totalIncome = report.sales + report.otherIncome
-            val totalExpenses = report.wages + report.otherExpenses
-            val profitLoss = totalIncome - totalExpenses
-            val endingBalance = profitLoss + report.beginningBalance
-            csvBuilder.append("${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.startDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.endDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.createdDate)}, ${org.ole.planet.myplanet.utils.TimeUtils.formatDateForCsv(report.updatedDate)}, ${report.beginningBalance}, ${report.sales}, ${report.otherIncome}, ${report.wages}, ${report.otherExpenses}, $profitLoss, $endingBalance\n")
-        }
-        return csvBuilder.toString()
-    }
+    override suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String =
+        teamFinanceRepository.exportReportsAsCsv(reports, teamName)
 
-    override suspend fun deleteTask(taskId: String) {
-        delete(RealmTeamTask::class.java, "id", taskId)
-    }
+    override suspend fun deleteTask(taskId: String) = teamTasksRepository.deleteTask(taskId)
 
-    override suspend fun upsertTask(task: RealmTeamTask) {
-        if (task.link.isNullOrBlank()) {
-            val linkObj = JsonObject().apply { addProperty("teams", task.teamId) }
-            task.link = gson.toJson(linkObj)
-        }
-        if (task.sync.isNullOrBlank()) {
-            val syncObj = JsonObject().apply {
-                addProperty("type", "local")
-                addProperty("planetCode", userSessionManager.getUserModel()?.planetCode)
-            }
-            task.sync = gson.toJson(syncObj)
-        }
-        save(task)
-    }
+    override suspend fun upsertTask(task: RealmTeamTask) = teamTasksRepository.upsertTask(task)
 
-    override suspend fun createTask(
-        title: String,
-        description: String,
-        deadline: Long,
-        teamId: String,
-        assigneeId: String?
-    ) {
-        val realmTeamTask = RealmTeamTask().apply {
-            this.id = UUID.randomUUID().toString()
-            this.title = title
-            this.description = description
-            this.deadline = deadline
-            this.teamId = teamId
-            this.assignee = assigneeId
-            this.isUpdated = true
-        }
-        upsertTask(realmTeamTask)
-    }
+    override suspend fun createTask(title: String, description: String, deadline: Long, teamId: String, assigneeId: String?) =
+        teamTasksRepository.createTask(title, description, deadline, teamId, assigneeId)
 
-    override suspend fun updateTask(
-        taskId: String,
-        title: String,
-        description: String,
-        deadline: Long,
-        assigneeId: String?
-    ) {
-        update(RealmTeamTask::class.java, "id", taskId) { task ->
-            task.title = title
-            task.description = description
-            task.deadline = deadline
-            task.assignee = assigneeId
-            task.isUpdated = true
-        }
-    }
+    override suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?) =
+        teamTasksRepository.updateTask(taskId, title, description, deadline, assigneeId)
 
-    override suspend fun assignTask(taskId: String, assigneeId: String?) {
-        update(RealmTeamTask::class.java, "id", taskId) { task ->
-            task.assignee = assigneeId
-            task.isUpdated = true
-        }
-    }
+    override suspend fun assignTask(taskId: String, assigneeId: String?) =
+        teamTasksRepository.assignTask(taskId, assigneeId)
 
-    override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
-        update(RealmTeamTask::class.java, "id", taskId) { task ->
-            task.completed = completed
-            task.completedTime = if (completed) Date().time else 0
-            task.isUpdated = true
-        }
-    }
+    override suspend fun setTaskCompletion(taskId: String, completed: Boolean) =
+        teamTasksRepository.setTaskCompletion(taskId, completed)
 
     override suspend fun logTeamVisit(
         teamId: String,

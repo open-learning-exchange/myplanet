@@ -61,7 +61,8 @@ class UserRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userAchievementRepository: UserAchievementRepository,
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -1104,24 +1105,8 @@ class UserRepositoryImpl @Inject constructor(
         return actions.isNotEmpty()
     }
 
-    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
-        executeTransaction { transactionRealm ->
-            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-
-            if (achievement == null) {
-                transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-            }
-        }
-
-        return withRealm { realm ->
-            val achievement = realm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-            achievement?.let { realm.copyFromRealm(it) }
-        }
-    }
+    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? =
+        userAchievementRepository.initializeAchievement(achievementId)
 
     override suspend fun updateAchievement(
         achievementId: String,
@@ -1135,26 +1120,10 @@ class UserRepositoryImpl @Inject constructor(
         username: String,
         parentCode: String,
         resumeFileName: String
-    ) {
-        executeTransaction { transactionRealm ->
-            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-            if (achievement != null) {
-                achievement.achievementsHeader = header
-                achievement.goals = goals
-                achievement.purpose = purpose
-                achievement.sendToNation = sendToNation
-                achievement.createdOn = createdOn
-                achievement.username = username
-                achievement.parentCode = parentCode
-                achievement.setAchievements(achievements)
-                achievement.setReferences(references)
-                achievement.resumeFileName = resumeFileName
-                achievement.isUpdated = true
-            }
-        }
-    }
+    ) = userAchievementRepository.updateAchievement(
+        achievementId, header, goals, purpose, sendToNation,
+        achievements, references, createdOn, username, parentCode, resumeFileName
+    )
 
     override suspend fun markUserUploaded(userId: String, id: String, rev: String) {
         update(RealmUser::class.java, "id", userId) { user ->
@@ -1183,61 +1152,14 @@ class UserRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData = withRealm { realm ->
-        val achievement = realm.where(RealmAchievement::class.java)
-            .equalTo("_id", "$userId@$planetCode")
-            .findFirst()
+    override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData =
+        userAchievementRepository.getAchievementData(userId, planetCode)
 
-        if (achievement != null) {
-            val achievementCopy = realm.copyFromRealm(achievement)
-            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                JsonUtils.gson.fromJson(json, JsonObject::class.java)
-                    ?.getAsJsonArray("resources")
-                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
-            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
+    override suspend fun getAchievementsForUpload(): List<JsonObject> =
+        userAchievementRepository.getAchievementsForUpload()
 
-            val resources = if (resourceIds.isNotEmpty()) {
-                realm.copyFromRealm(
-                    realm.where(RealmMyLibrary::class.java)
-                        .`in`("id", resourceIds)
-                        .findAll()
-                )
-            } else {
-                emptyList()
-            }
-
-            AchievementData(
-                goals = achievementCopy.goals ?: "",
-                purpose = achievementCopy.purpose ?: "",
-                achievementsHeader = achievementCopy.achievementsHeader ?: "",
-                achievements = achievementCopy.achievements ?: emptyList(),
-                achievementResources = resources,
-                references = achievementCopy.references ?: emptyList(),
-                resumeFileName = achievementCopy.resumeFileName ?: ""
-            )
-        } else {
-            AchievementData()
-        }
-    }
-
-    override suspend fun getAchievementsForUpload(): List<JsonObject> {
-        return queryList(RealmAchievement::class.java) {
-            not().beginsWith("_id", "guest")
-            equalTo("isUpdated", true)
-        }.map { RealmAchievement.serialize(it) }
-    }
-
-    override suspend fun markAchievementUploaded(id: String, rev: String?) {
-        executeTransaction { transactionRealm ->
-            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", id)
-                .findFirst()
-            if (achievement != null) {
-                if (!rev.isNullOrEmpty()) achievement._rev = rev
-                achievement.isUpdated = false
-            }
-        }
-    }
+    override suspend fun markAchievementUploaded(id: String, rev: String?) =
+        userAchievementRepository.markAchievementUploaded(id, rev)
 
     override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())

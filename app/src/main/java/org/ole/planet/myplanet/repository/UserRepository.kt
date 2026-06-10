@@ -1,15 +1,12 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Sort
-import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
-import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 
-interface UserRepository {
+interface UserRepository : UserAchievementRepository {
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
@@ -85,24 +82,7 @@ interface UserRepository {
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
-    suspend fun initializeAchievement(achievementId: String): RealmAchievement?
-    suspend fun updateAchievement(
-        achievementId: String,
-        header: String,
-        goals: String,
-        purpose: String,
-        sendToNation: String,
-        achievements: JsonArray,
-        references: JsonArray,
-        createdOn: String,
-        username: String,
-        parentCode: String,
-        resumeFileName: String = ""
-    )
     suspend fun markUserUploaded(userId: String, id: String, rev: String)
     suspend fun markUserKeyIvSaved(userId: String, key: String, iv: String?)
     suspend fun markUserRevUpdated(userId: String, rev: String?)
-    suspend fun getAchievementData(userId: String, planetCode: String): AchievementData
-    suspend fun getAchievementsForUpload(): List<JsonObject>
-    suspend fun markAchievementUploaded(id: String, rev: String?)
 }

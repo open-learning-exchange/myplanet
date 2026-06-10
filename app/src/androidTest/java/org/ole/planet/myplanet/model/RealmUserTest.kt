@@ -79,7 +79,8 @@ class RealmUserTest {
             mockContext,
             mockConfigurationsRepository,
             mockAppScope,
-            mockDispatcherProvider
+            mockDispatcherProvider,
+            mockk(relaxed = true)
         )
     }
 
