@@ -141,7 +141,7 @@ class ChatViewModelTest {
         val (messages, hasMore) = viewModel.loadMoreConversations()
         assertEquals(25, viewModel.loadedCount)
         assertEquals(false, hasMore)
-        assertEquals(10, messages.size) // 5 items * 2
+        assertEquals(10, messages.size) // 5 conversations * 2 messages each = 10 messages
     }
 
     @Test

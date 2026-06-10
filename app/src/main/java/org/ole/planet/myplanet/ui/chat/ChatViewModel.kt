@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
+import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -27,8 +28,10 @@ class ChatViewModel @Inject constructor(
         const val PAGE_SIZE = 20
     }
 
-    var allConversations: List<RealmConversation> = emptyList()
-    var loadedCount = 0
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var allConversations: List<RealmConversation> = emptyList()
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
+    internal var loadedCount = 0
 
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
     val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
@@ -68,17 +71,17 @@ class ChatViewModel @Inject constructor(
     }
 
     suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> {
-        return withContext(dispatcherProvider.io) {
+        val parsedConversations = withContext(dispatcherProvider.io) {
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()
             try {
-                val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                allConversations = conversations
-                loadedCount = minOf(PAGE_SIZE, conversations.size)
-                buildInitialPage()
+                JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
             } catch (e: Exception) {
                 emptyList()
             }
         }
+        allConversations = parsedConversations
+        loadedCount = minOf(PAGE_SIZE, parsedConversations.size)
+        return buildInitialPage()
     }
 
     fun processChatHistory(conversations: List<RealmConversation>): List<ChatMessage> {
