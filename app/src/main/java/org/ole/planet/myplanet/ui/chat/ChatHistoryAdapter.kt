@@ -58,6 +58,7 @@ class ChatHistoryAdapter(
     private lateinit var expandableListAdapter: ChatShareTargetAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
+    private var cachedSharedViewInIds: Map<String, Set<String>> = emptyMap()
 
     init {
         chatHistory = chatHistory.sortedByDescending { chat ->
@@ -69,6 +70,29 @@ class ChatHistoryAdapter(
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
+        cachedSharedViewInIds = if (sharedNews.isEmpty()) {
+            emptyMap()
+        } else {
+            sharedNews
+                .groupBy { it.newsId }
+                .mapNotNull { (newsId, newsEntries) ->
+                    if (newsId == null) null
+                    else {
+                        val ids = newsEntries.flatMap { news ->
+                            try {
+                                val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                                array.mapNotNull { elem ->
+                                    if (elem.isJsonObject) elem.asJsonObject.get("_id")?.asString else null
+                                }
+                            } catch (_: Exception) {
+                                emptyList()
+                            }
+                        }.toSet()
+                        newsId to ids
+                    }
+                }
+                .toMap()
+        }
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {
@@ -245,21 +269,10 @@ class ChatHistoryAdapter(
         }
     }
 
-    private fun getSharedViewInIds(chatId: String?): Set<String> {
+    @androidx.annotation.VisibleForTesting(otherwise = androidx.annotation.VisibleForTesting.PRIVATE)
+    internal fun getSharedViewInIds(chatId: String?): Set<String> {
         if (chatId == null) return emptySet()
-        return newsList
-            .filter { it.newsId == chatId }
-            .flatMap { news ->
-                try {
-                    val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                    array.mapNotNull { elem ->
-                        if (elem.isJsonObject) elem.asJsonObject.get("_id")?.asString else null
-                    }
-                } catch (_: Exception) {
-                    emptyList()
-                }
-            }
-            .toSet()
+        return cachedSharedViewInIds[chatId] ?: emptySet()
     }
 
     private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory, sharedIds: Set<String> = emptySet()) {
