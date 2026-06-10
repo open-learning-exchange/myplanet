@@ -37,7 +37,7 @@ class TTSManager @Inject constructor(
                     }
                     @Deprecated("Deprecated in Java")
                     override fun onError(utteranceId: String?) {
-                        _state.value = State.IDLE
+                        onError(utteranceId, TextToSpeech.ERROR)
                     }
                     override fun onError(utteranceId: String?, errorCode: Int) {
                         _state.value = State.IDLE

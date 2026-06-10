@@ -256,11 +256,13 @@ class SubmissionsRepositoryExporter @Inject constructor(
     }
 
     private fun formatAnswer(answer: org.ole.planet.myplanet.model.RealmAnswer?): String {
+        if (answer == null) return "No answer provided"
+        val value = answer.value
+        val choices = answer.valueChoices
         return when {
-            answer == null -> "No answer provided"
-            !answer.value.isNullOrEmpty() -> answer.value!!
-            answer.valueChoices != null && answer.valueChoices!!.isNotEmpty() -> {
-                answer.valueChoices!!.joinToString(", ") { choice ->
+            !value.isNullOrEmpty() -> value
+            !choices.isNullOrEmpty() -> {
+                choices.joinToString(", ") { choice ->
                     try {
                         val choiceObj = org.json.JSONObject(choice)
                         choiceObj.optString("text", choice)

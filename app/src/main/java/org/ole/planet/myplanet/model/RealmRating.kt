@@ -16,6 +16,7 @@ open class RealmRating : RealmObject() {
     var _rev: String? = null
     var time: Long = 0
     var title: String? = null
+    @Index
     var userId: String? = null
     @Index
     var isUpdated = false
