@@ -165,7 +165,7 @@ class VoicesAdapter(
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember != nonTeamMember) {
             this.nonTeamMember = nonTeamMember
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_MEMBERSHIP_CHANGED)
         }
     }
 
@@ -176,6 +176,23 @@ class VoicesAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return VoicesViewHolder(binding)
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.flatMap { if (it is List<*>) it else listOf(it) }.contains(PAYLOAD_MEMBERSHIP_CHANGED)) {
+            val news = getNews(holder, position)
+            if (news?.isValid == true && holder is VoicesViewHolder) {
+                showHideButtons(news, holder)
+                configureEditDeleteButtons(holder, news)
+                showReplyButton(holder, news, position)
+                showShareButton(holder, news)
+                val canManageLabels = canAddLabel(news)
+                labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                news.let { labelManager.showChips(holder.binding, it, canManageLabels) }
+            }
+            return
+        }
+        super.onBindViewHolder(holder, position, payloads)
     }
 
     @SuppressLint("SetTextI18n")
@@ -809,6 +826,10 @@ class VoicesAdapter(
         closeButton.setOnClickListener { dialog.dismiss() }
 
         dialog.show()
+    }
+
+    companion object {
+        private const val PAYLOAD_MEMBERSHIP_CHANGED = "PAYLOAD_MEMBERSHIP_CHANGED"
     }
 
     internal inner class VoicesViewHolder(val binding: RowNewsBinding) : RecyclerView.ViewHolder(binding.root) {
