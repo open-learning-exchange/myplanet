@@ -113,5 +113,12 @@ class RealmMigrations : RealmMigration {
                 ?.addIndex("userId")
             version++
         }
+
+        if (version == 11L) {
+            schema.get("RealmMyCourse")
+                ?.addField("courseTitleNormal", String::class.java)
+                ?.addIndex("courseTitleNormal")
+            version++
+        }
     }
 }
