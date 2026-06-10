@@ -14,7 +14,9 @@ open class RealmSubmission : RealmObject() {
     @Index
     var _rev: String? = null
     var parentId: String? = null
+    @Index
     var type: String? = null
+    @Index
     var userId: String? = null
     var user: String? = null
     var startTime: Long = 0
