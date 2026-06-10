@@ -8,17 +8,17 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.DiffUtil
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.utils.DiffUtils
 
 class DashboardSurveysAdapter(
     private val onItemClick: (Int) -> Unit,
     private val dialog: AlertDialog
 ) : ListAdapter<String, DashboardSurveysAdapter.SurveyViewHolder>(
-    DiffUtils.itemCallback<String>(
-        areItemsTheSame = { oldItem, newItem -> oldItem == newItem },
-        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-    )
+    object : DiffUtil.ItemCallback<String>() {
+        override fun areItemsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+        override fun areContentsTheSame(oldItem: String, newItem: String): Boolean = oldItem == newItem
+    }
 ) {
 
     inner class SurveyViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
