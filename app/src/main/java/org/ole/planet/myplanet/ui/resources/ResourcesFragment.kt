@@ -264,9 +264,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        deleteSelected(true)
-                    }
+                    deleteSelected(true)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -727,7 +725,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 

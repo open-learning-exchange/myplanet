@@ -83,7 +83,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         loadDataAsync()
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
@@ -232,19 +232,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             isGuest = userModel?.isGuest() ?: true,
             onRemoveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
-                    selectionController.clearAll(adapterCourses)
-                    adapterCourses.removeCourses(courseIds)
-                }
+                deleteSelected(true)
+                selectionController.clearAll(adapterCourses)
+                adapterCourses.removeCourses(courseIds)
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
-                    selectionController.clearAll(adapterCourses)
-                    adapterCourses.removeCourses(courseIds)
-                }
+                deleteSelected(true)
+                selectionController.clearAll(adapterCourses)
+                adapterCourses.removeCourses(courseIds)
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {

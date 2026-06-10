@@ -178,9 +178,9 @@ class CoursesViewModel @Inject constructor(
         )
     }
 
-    suspend fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean) {
+    fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean) {
         if (courseIds.isEmpty()) return
-        withContext(dispatcherProvider.io) {
+        viewModelScope.launch(dispatcherProvider.io) {
             courseIds.forEach { courseId ->
                 coursesRepository.removeCourseFromShelf(courseId, userId)
                 if (deleteProgress) {
