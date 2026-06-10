@@ -713,7 +713,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-        lifecycleScope.launch {
+        runOnUiThread {
             dialog.dismiss()
 
             processedUrl = if (isAlternativeUrl) {
@@ -730,7 +730,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             }
 
             if (TextUtils.isEmpty(processedUrl)) {
-                return@launch
+                return@runOnUiThread
             }
 
             isSync = true
