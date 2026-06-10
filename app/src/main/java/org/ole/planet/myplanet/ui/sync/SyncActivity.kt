@@ -36,7 +36,6 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -714,7 +713,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch {
             dialog.dismiss()
 
             processedUrl = if (isAlternativeUrl) {
@@ -760,7 +759,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch {
             val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
             if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
@@ -785,7 +784,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        lifecycleScope.launch(Dispatchers.Main) {
+        lifecycleScope.launch {
             Utilities.toast(this@SyncActivity, msg)
             if (msg.startsWith("Config")) {
                 settingDialog()
