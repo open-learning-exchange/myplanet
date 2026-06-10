@@ -16,7 +16,9 @@ open class RealmCourseProgress : RealmObject() {
     var _rev: String? = null
     var stepNum = 0
     var passed = false
+    @Index
     var userId: String? = null
+    @Index
     var courseId: String? = null
     var parentCode: String? = null
 

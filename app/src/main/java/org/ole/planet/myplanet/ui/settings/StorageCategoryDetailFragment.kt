@@ -173,7 +173,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         // Build a map of resourceId → title from Realm (one query)
         val titleMap = resourcesRepository.getAllLibraries()
             .filter { it.resourceId != null }
-            .associate { it.resourceId!! to (it.title ?: getString(R.string.storage_unknown_resource)) }
+            .associate { (it.resourceId ?: "") to (it.title ?: getString(R.string.storage_unknown_resource)) }
 
         // Group files by resourceId directory
         val grouped = mutableMapOf<String, MutableList<File>>()

@@ -4,6 +4,7 @@ import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -20,6 +21,7 @@ open class RealmStepExam : RealmObject() {
     var description: String? = null
     var type: String? = null
     var stepId: String? = null
+    @Index
     var courseId: String? = null
     var sourcePlanet: String? = null
     var passingPercentage: String? = null
