@@ -226,7 +226,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     deletePostFn = { newsId ->
                         viewLifecycleOwner.lifecycleScope.launch {
                             viewModel.deletePost(newsId, getEffectiveTeamName())
-                            (binding.rvDiscussion.adapter as? VoicesAdapter)?.removePost(newsId)
+                            // The Flow should push a new list here since the DB was updated
                         }
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
