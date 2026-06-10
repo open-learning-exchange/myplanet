@@ -15,7 +15,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentSubmissionListBinding
-import org.ole.planet.myplanet.repository.SubmissionsRepositoryExporter
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -24,8 +23,6 @@ class SubmissionListFragment : Fragment() {
     private var _binding: FragmentSubmissionListBinding? = null
     private val binding get() = _binding!!
     private val viewModel: SubmissionListViewModel by viewModels()
-    @Inject
-    lateinit var submissionsRepositoryExporter: SubmissionsRepositoryExporter
     private var parentId: String? = null
     private var examTitle: String? = null
     private var userId: String? = null
@@ -53,6 +50,23 @@ class SubmissionListFragment : Fragment() {
         collectWhenStarted(viewModel.submissions) { submissionItems ->
             if (_binding != null) {
                 adapter.submitList(submissionItems)
+            }
+        }
+
+        collectWhenStarted(viewModel.exportProgress) { isExporting ->
+            if (_binding != null) {
+                binding.progressBar.visibility = if (isExporting) View.VISIBLE else View.GONE
+            }
+        }
+
+        collectWhenStarted(viewModel.exportFile) { file ->
+            if (_binding != null) {
+                if (file != null) {
+                    Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
+                    FileUtils.openPdf(requireContext(), file)
+                } else {
+                    Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -87,37 +101,11 @@ class SubmissionListFragment : Fragment() {
     }
 
     private fun generateSubmissionPdf(submissionId: String) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            binding.progressBar.visibility = View.VISIBLE
-            val file = submissionsRepositoryExporter.generateSubmissionPdf(requireContext(), submissionId)
-            binding.progressBar.visibility = View.GONE
-
-            if (file != null) {
-                Toast.makeText(requireContext(), "PDF saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                FileUtils.openPdf(requireContext(), file)
-            } else {
-                Toast.makeText(requireContext(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
-            }
-        }
+        viewModel.generateSubmissionPdf(submissionId)
     }
 
     private fun generateReport(submissionIds: List<String>) {
-        viewLifecycleOwner.lifecycleScope.launch {
-            binding.progressBar.visibility = View.VISIBLE
-            val file = submissionsRepositoryExporter.generateMultipleSubmissionsPdf(
-                requireContext(),
-                submissionIds,
-                examTitle ?: "Submissions"
-            )
-            binding.progressBar.visibility = View.GONE
-
-            if (file != null) {
-                Toast.makeText(context, "Report saved to ${file.absolutePath}", Toast.LENGTH_LONG).show()
-                FileUtils.openPdf(requireContext(), file)
-            } else {
-                Toast.makeText(context, "Failed to generate report", Toast.LENGTH_SHORT).show()
-            }
-        }
+        viewModel.generateMultipleSubmissionsPdf(submissionIds, examTitle ?: "Submissions")
     }
 
     override fun onDestroyView() {
