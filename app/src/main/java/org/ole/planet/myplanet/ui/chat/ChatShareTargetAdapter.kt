@@ -9,16 +9,53 @@ import android.widget.BaseExpandableListAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.AsyncDifferConfig
+import androidx.recyclerview.widget.AsyncListDiffer
+import androidx.recyclerview.widget.ListUpdateCallback
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DiffUtils
+
+data class ShareTargetItem(
+    val title: String,
+    val details: List<String>
+)
 
 class ChatShareTargetAdapter(
     private val context: Context,
-    private val expandableTitleList: List<String>,
-    private val expandableDetailList: HashMap<String, List<String>>,
-    private val sharedChildren: Set<String> = emptySet()
+    expandableTitleList: List<String>,
+    expandableDetailList: HashMap<String, List<String>>,
+    private var sharedChildren: Set<String> = emptySet()
 ) : BaseExpandableListAdapter() {
+
+    private val diffCallback = DiffUtils.itemCallback<ShareTargetItem>(
+        { oldItem, newItem -> oldItem.title == newItem.title },
+        { oldItem, newItem -> oldItem == newItem }
+    )
+
+    private val differ = AsyncListDiffer(
+        object : ListUpdateCallback {
+            override fun onInserted(position: Int, count: Int) { notifyDataSetChanged() }
+            override fun onRemoved(position: Int, count: Int) { notifyDataSetChanged() }
+            override fun onMoved(fromPosition: Int, toPosition: Int) { notifyDataSetChanged() }
+            override fun onChanged(position: Int, count: Int, payload: Any?) { notifyDataSetChanged() }
+        },
+        AsyncDifferConfig.Builder(diffCallback).build()
+    )
+
+    init {
+        updateData(expandableTitleList, expandableDetailList, sharedChildren)
+    }
+
+    fun updateData(newTitleList: List<String>, newDetailList: HashMap<String, List<String>>, newSharedChildren: Set<String> = sharedChildren) {
+        sharedChildren = newSharedChildren
+        val newItems = newTitleList.map { title ->
+            ShareTargetItem(title, newDetailList[title] ?: emptyList())
+        }
+        differ.submitList(newItems)
+    }
+
     override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
-        return expandableDetailList[expandableTitleList[lstPosn]]?.get(expandedListPosition) ?: ""
+        return differ.currentList[lstPosn].details[expandedListPosition]
     }
 
     override fun getChildId(listPosition: Int, expandedListPosition: Int): Long {
@@ -42,15 +79,15 @@ class ChatShareTargetAdapter(
     }
 
     override fun getChildrenCount(listPosition: Int): Int {
-        return expandableDetailList[expandableTitleList[listPosition]]?.size ?: 0
+        return differ.currentList[listPosition].details.size
     }
 
     override fun getGroup(listPosition: Int): Any {
-        return expandableTitleList[listPosition]
+        return differ.currentList[listPosition].title
     }
 
     override fun getGroupCount(): Int {
-        return expandableTitleList.size
+        return differ.currentList.size
     }
 
     override fun getGroupId(listPosition: Int): Long {
