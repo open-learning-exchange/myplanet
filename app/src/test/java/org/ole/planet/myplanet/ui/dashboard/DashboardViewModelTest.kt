@@ -82,7 +82,7 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `loadUserContent replaces userContentJob when called multiple times`() = runTest(testDispatcher) {
+    fun `loadUserContent replaces all constituent jobs when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"
         val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 

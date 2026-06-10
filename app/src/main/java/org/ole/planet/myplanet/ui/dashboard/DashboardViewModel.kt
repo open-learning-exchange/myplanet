@@ -87,7 +87,10 @@ class DashboardViewModel @Inject constructor(
     private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>(extraBufferCapacity = 1)
     val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
-    private var userContentJob: Job? = null
+    private var libraryJob: Job? = null
+    private var coursesJob: Job? = null
+    private var teamsJob: Job? = null
+    private var profileJob: Job? = null
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
@@ -130,56 +133,47 @@ class DashboardViewModel @Inject constructor(
 
     fun loadUserContent(userId: String?) {
         if (userId == null) return
-        userContentJob?.cancel()
-        userContentJob = viewModelScope.launch {
-            val libraryDeferred = async(dispatcherProvider.io) {
-                val result = resourcesRepository.getMyLibrary(userId)
-                result
-            }
 
-            launch(dispatcherProvider.main) {
-                var isFirstEmission = true
-                coursesRepository.getMyCoursesFlow(userId)
-                    .flowOn(dispatcherProvider.io)
-                    .collect { courses ->
-                        if (isFirstEmission) {
-                            isFirstEmission = false
-                        }
-                        _uiState.update { it.copy(courses = courses) }
-                    }
-            }
-
-            launch(dispatcherProvider.main) {
-                var isFirstEmission = true
-                teamsRepository.getMyTeamsFlow(userId)
-                    .flowOn(dispatcherProvider.io)
-                    .collect { teams ->
-                        if (isFirstEmission) {
-                            isFirstEmission = false
-                        }
-                        _uiState.update { it.copy(teams = teams) }
-                    }
-            }
-
-            launch(dispatcherProvider.main) {
-                val (userName, fullName) = withContext(dispatcherProvider.io) {
-                    val user = userRepository.getUserById(userId)
-                    val userName = user?.name
-                    val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-                    Pair(userName, fullName)
-                }
-                _uiState.update { it.copy(fullName = fullName) }
-
-                if (userName != null) {
-                    val count = withContext(dispatcherProvider.io) {
-                        activitiesRepository.getOfflineLoginCount(userName)
-                    }
-                    _uiState.update { it.copy(offlineLogins = count) }
-                }
-            }
-
-            val myLibrary = libraryDeferred.await()
+        libraryJob?.cancel()
+        libraryJob = viewModelScope.launch(dispatcherProvider.io) {
+            val myLibrary = resourcesRepository.getMyLibrary(userId)
             _uiState.update { it.copy(library = myLibrary) }
+        }
+
+        coursesJob?.cancel()
+        coursesJob = viewModelScope.launch(dispatcherProvider.main) {
+            coursesRepository.getMyCoursesFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .collect { courses ->
+                    _uiState.update { it.copy(courses = courses) }
+                }
+        }
+
+        teamsJob?.cancel()
+        teamsJob = viewModelScope.launch(dispatcherProvider.main) {
+            teamsRepository.getMyTeamsFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .collect { teams ->
+                    _uiState.update { it.copy(teams = teams) }
+                }
+        }
+
+        profileJob?.cancel()
+        profileJob = viewModelScope.launch(dispatcherProvider.main) {
+            val (userName, fullName) = withContext(dispatcherProvider.io) {
+                val user = userRepository.getUserById(userId)
+                val userName = user?.name
+                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+                Pair(userName, fullName)
+            }
+            _uiState.update { it.copy(fullName = fullName) }
+
+            if (userName != null) {
+                val count = withContext(dispatcherProvider.io) {
+                    activitiesRepository.getOfflineLoginCount(userName)
+                }
+                _uiState.update { it.copy(offlineLogins = count) }
+            }
         }
     }
 
