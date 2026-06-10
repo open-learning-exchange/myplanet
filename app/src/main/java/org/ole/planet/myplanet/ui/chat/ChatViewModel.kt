@@ -23,6 +23,13 @@ class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
+    companion object {
+        const val PAGE_SIZE = 20
+    }
+
+    var allConversations: List<RealmConversation> = emptyList()
+    var loadedCount = 0
+
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
     val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
 
@@ -60,23 +67,57 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    suspend fun parseNewsConversations(newsConversations: String?): List<ChatMessage> {
+    suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> {
         return withContext(dispatcherProvider.io) {
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()
             try {
                 val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                val list = mutableListOf<ChatMessage>()
-                val limit = 20
-                val limitedConversations = if (conversations.size > limit) conversations.takeLast(limit) else conversations
-                for (conversation in limitedConversations) {
-                    conversation.query?.let { list.add(ChatMessage(it, ChatMessage.QUERY)) }
-                    conversation.response?.let { list.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-                }
-                list
+                allConversations = conversations
+                loadedCount = minOf(PAGE_SIZE, conversations.size)
+                buildInitialPage()
             } catch (e: Exception) {
                 emptyList()
             }
         }
+    }
+
+    fun processChatHistory(conversations: List<RealmConversation>): List<ChatMessage> {
+        allConversations = conversations
+        loadedCount = minOf(PAGE_SIZE, conversations.size)
+        return buildInitialPage()
+    }
+
+    private fun buildInitialPage(): List<ChatMessage> {
+        val total = allConversations.size
+        val startIndex = maxOf(0, total - loadedCount)
+        val messages = mutableListOf<ChatMessage>()
+        if (startIndex > 0) messages.add(ChatMessage("", ChatMessage.LOAD_MORE))
+        messages.addAll(buildMessagesSlice(startIndex, total))
+        return messages
+    }
+
+    private fun buildMessagesSlice(startIndex: Int, endIndex: Int): List<ChatMessage> {
+        val messages = mutableListOf<ChatMessage>()
+        for (i in startIndex until endIndex) {
+            val conv = allConversations[i]
+            conv.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
+            conv.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
+        }
+        return messages
+    }
+
+    fun loadMoreConversations(): Pair<List<ChatMessage>, Boolean> {
+        val total = allConversations.size
+        val prevStartIndex = maxOf(0, total - loadedCount)
+        loadedCount = minOf(loadedCount + PAGE_SIZE, total)
+        val newStartIndex = maxOf(0, total - loadedCount)
+        val newMessages = buildMessagesSlice(newStartIndex, prevStartIndex)
+        return Pair(newMessages, newStartIndex > 0)
+    }
+
+    fun clearPaginationState() {
+        allConversations = emptyList()
+        loadedCount = 0
     }
 
     fun setSelectedChatHistory(conversations: List<RealmConversation>) {

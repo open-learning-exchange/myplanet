@@ -114,4 +114,41 @@ class ChatViewModelTest {
         assertEquals("", viewModel.selectedRev.value)
         assertNull(viewModel.selectedAiProvider.value)
     }
+
+    @Test
+    fun `parseAndBuildInitialPage sets pagination state and returns messages`() = runTest {
+        val json = "[{\"query\":\"q1\",\"response\":\"r1\"}]"
+        val messages = viewModel.parseAndBuildInitialPage(json)
+        assertEquals(1, viewModel.allConversations.size)
+        assertEquals(1, viewModel.loadedCount)
+        assertEquals(2, messages.size) // query and response
+    }
+
+    @Test
+    fun `processChatHistory sets pagination state and returns messages`() {
+        val conversations = listOf(RealmConversation().apply { query = "q1"; response = "r1" })
+        val messages = viewModel.processChatHistory(conversations)
+        assertEquals(1, viewModel.allConversations.size)
+        assertEquals(1, viewModel.loadedCount)
+        assertEquals(2, messages.size)
+    }
+
+    @Test
+    fun `loadMoreConversations returns older messages and updates loadedCount`() {
+        val conversations = List(25) { RealmConversation().apply { query = "q$it"; response = "r$it" } }
+        viewModel.processChatHistory(conversations)
+        assertEquals(20, viewModel.loadedCount)
+        val (messages, hasMore) = viewModel.loadMoreConversations()
+        assertEquals(25, viewModel.loadedCount)
+        assertEquals(false, hasMore)
+        assertEquals(10, messages.size) // 5 items * 2
+    }
+
+    @Test
+    fun `clearPaginationState resets allConversations and loadedCount`() {
+        viewModel.processChatHistory(listOf(RealmConversation()))
+        viewModel.clearPaginationState()
+        assertTrue(viewModel.allConversations.isEmpty())
+        assertEquals(0, viewModel.loadedCount)
+    }
 }
