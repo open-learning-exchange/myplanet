@@ -375,8 +375,14 @@ class ProgressRepositoryImplTest {
         val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
         jsonArray.add(item1)
 
-        val mockQuery = mockk<RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
+
         every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
+        every { mockQuery.`in`("id", any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmCourseProgress>().iterator()
+
         every { mockQuery.equalTo("id", any<String>()) } returns mockQuery
         every { mockQuery.equalTo("courseId", any<String>()) } returns mockQuery
         every { mockQuery.equalTo("userId", any<String>()) } returns mockQuery
@@ -419,8 +425,14 @@ class ProgressRepositoryImplTest {
         val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
         jsonArray.add(item1)
 
-        val mockQuery = mockk<RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
+
         every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
+        every { mockQuery.`in`("id", any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmCourseProgress>().iterator()
+
         every { mockQuery.equalTo("id", any<String>()) } returns mockQuery
         every { mockQuery.equalTo("courseId", any<String>()) } returns mockQuery
         every { mockQuery.equalTo("userId", any<String>()) } returns mockQuery
@@ -437,7 +449,7 @@ class ProgressRepositoryImplTest {
         every { existingProgress.userId } returns "user1"
         every { existingProgress.stepNum } returns 1
 
-        every { mockQuery.findFirst() } returnsMany listOf(null, existingProgress)
+        every { mockQuery.findFirst() } returns existingProgress
 
         val mockProgress = RealmCourseProgress()
         every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
