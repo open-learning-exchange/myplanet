@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -22,13 +23,10 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], manifest = Config.NONE, application = Application::class)
 class MapTileUtilsTest {
-    class SilentException(message: String) : IOException(message) {
-        override fun printStackTrace() {}
-    }
-
 
     private lateinit var context: Context
     private lateinit var assetManager: AssetManager
+    private lateinit var osmdroidDir: File
 
     @Before
     fun setUp() {
@@ -37,25 +35,50 @@ class MapTileUtilsTest {
         context = mockk<Context>()
         assetManager = mockk<AssetManager>()
         every { context.assets } returns assetManager
+
+        osmdroidDir = File(Environment.getExternalStorageDirectory(), "osmdroid")
+        if (osmdroidDir.exists()) {
+            osmdroidDir.deleteRecursively()
+        }
     }
 
     @After
     fun tearDown() {
-        val osmdroidDir = File(Environment.getExternalStorageDirectory(), "osmdroid")
         if (osmdroidDir.exists()) {
             osmdroidDir.deleteRecursively()
         }
     }
 
     @Test
-    fun copyAssets_copiesFilesSuccessfully() {
+    fun copyAssets_failsSilentlyWhenDirectoryDoesNotExist() {
         val dhulikhelContent = "dhulikhel content".toByteArray()
         val somaliaContent = "somalia content".toByteArray()
 
         every { assetManager.open("dhulikhel.mbtiles") } returns ByteArrayInputStream(dhulikhelContent)
         every { assetManager.open("somalia.mbtiles") } returns ByteArrayInputStream(somaliaContent)
 
-        val osmdroidDir = File(Environment.getExternalStorageDirectory(), "osmdroid")
+        // Ensure the directory does NOT exist to trigger the FileNotFoundException when creating FileOutputStream
+        assertFalse(osmdroidDir.exists())
+
+        MapTileUtils.copyAssets(context)
+
+        // Due to the try/catch around the entire loop, the exception is caught silently and no files are written
+        val dhulikhelFile = File(osmdroidDir, "dhulikhel.mbtiles")
+        val somaliaFile = File(osmdroidDir, "somalia.mbtiles")
+
+        assertFalse(dhulikhelFile.exists())
+        assertFalse(somaliaFile.exists())
+    }
+
+    @Test
+    fun copyAssets_copiesFilesSuccessfullyWhenDirectoryExists() {
+        val dhulikhelContent = "dhulikhel content".toByteArray()
+        val somaliaContent = "somalia content".toByteArray()
+
+        every { assetManager.open("dhulikhel.mbtiles") } returns ByteArrayInputStream(dhulikhelContent)
+        every { assetManager.open("somalia.mbtiles") } returns ByteArrayInputStream(somaliaContent)
+
+        // Simulate production properly initializing the directory before calling this util, or the directory existing already
         osmdroidDir.mkdirs()
 
         MapTileUtils.copyAssets(context)
@@ -70,14 +93,24 @@ class MapTileUtilsTest {
     }
 
     @Test
-    fun copyAssets_handlesExceptionGracefully() {
-        every { assetManager.open(any()) } throws SilentException("Mocked exception")
+    fun copyAssets_skipsRemainingFilesOnPartialFailure() {
+        val dhulikhelContent = "dhulikhel content".toByteArray()
+        val somaliaContent = "somalia content".toByteArray()
 
-        // This should not throw an exception as it is caught inside the method
+        // The first file throws an exception
+        every { assetManager.open("dhulikhel.mbtiles") } throws IOException("Mocked exception")
+        // The second file would succeed if the loop continued
+        every { assetManager.open("somalia.mbtiles") } returns ByteArrayInputStream(somaliaContent)
+
+        osmdroidDir.mkdirs()
+
         MapTileUtils.copyAssets(context)
 
-        // We can verify that no files were written
-        val osmdroidDir = File(Environment.getExternalStorageDirectory(), "osmdroid")
-        assertTrue(!osmdroidDir.exists() || osmdroidDir.listFiles()?.isEmpty() == true)
+        val dhulikhelFile = File(osmdroidDir, "dhulikhel.mbtiles")
+        val somaliaFile = File(osmdroidDir, "somalia.mbtiles")
+
+        // Neither file should exist because the loop breaks on the first exception (caught outside the loop)
+        assertFalse(dhulikhelFile.exists())
+        assertFalse(somaliaFile.exists())
     }
 }
