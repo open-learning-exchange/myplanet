@@ -1,3 +1,4 @@
+cat << 'INNER_EOF' > app/src/main/java/org/ole/planet/myplanet/ui/references/ReferencesAdapter.kt
 package org.ole.planet.myplanet.ui.references
 
 import android.view.LayoutInflater
@@ -67,3 +68,5 @@ data class ReferenceRow(
     val phone: String,
     val email: String
 )
+INNER_EOF
+./gradlew testDefaultDebugUnitTest --tests "ReferencesAdapterTest" --offline
