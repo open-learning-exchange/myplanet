@@ -177,4 +177,16 @@ class CoursesViewModel @Inject constructor(
             isMyCourse = this.isMyCourse
         )
     }
+
+    suspend fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean) {
+        if (courseIds.isEmpty()) return
+        withContext(dispatcherProvider.io) {
+            courseIds.forEach { courseId ->
+                coursesRepository.removeCourseFromShelf(courseId, userId)
+                if (deleteProgress) {
+                    coursesRepository.deleteCourseProgress(courseId)
+                }
+            }
+        }
+    }
 }

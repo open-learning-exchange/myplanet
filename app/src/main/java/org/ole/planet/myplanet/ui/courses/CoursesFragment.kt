@@ -87,14 +87,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        withContext(dispatcherProvider.io) {
-            snapshot.forEach { course ->
-                course.courseId?.let { courseId ->
-                    coursesRepository.removeCourseFromShelf(courseId, userId)
-                    if (deleteProgress) coursesRepository.deleteCourseProgress(courseId)
-                }
-            }
-        }
+        val courseIds = snapshot.mapNotNull { it.courseId }
+        viewModel.removeCourses(courseIds, userId, deleteProgress)
         selectedItems?.clear()
         Utilities.toast(activity, getString(R.string.removed_from_mycourse))
     }
