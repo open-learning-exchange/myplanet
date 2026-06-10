@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -58,6 +57,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
+    private val resourcesRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -337,22 +337,10 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getTeamResources(teamId: String): List<org.ole.planet.myplanet.model.RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
-        val linkedResources = if (resourceIds.isEmpty()) {
-            emptyList()
-        } else {
-            queryList(RealmMyLibrary::class.java) {
-                `in`("resourceId", resourceIds.toTypedArray())
-            }
-        }
-
-        // Also get private resources belonging to this team
-        val privateResources = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", true)
-            equalTo("privateFor", teamId)
-        }
-
+        val linkedResources = resourcesRepositoryLazy.get().getLibraryItemsByResourceIds(resourceIds)
+        val privateResources = resourcesRepositoryLazy.get().getTeamPrivateResources(teamId)
         return (linkedResources + privateResources).distinctBy { it.id }
     }
 
@@ -1436,14 +1424,10 @@ class TeamsRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
     }
 
-    override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getAvailableResourcesToAdd(teamId: String): List<org.ole.planet.myplanet.model.RealmMyLibrary> {
         val existing = getTeamResources(teamId)
         val existingIds = existing.mapNotNull { it._id }
-
-        val allLibraryItems = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-        }
-
+        val allLibraryItems = resourcesRepositoryLazy.get().getPublicLibraryItems()
         return allLibraryItems.filter { it._id !in existingIds }
     }
 
