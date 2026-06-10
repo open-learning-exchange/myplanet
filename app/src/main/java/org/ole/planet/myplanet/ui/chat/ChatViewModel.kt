@@ -13,14 +13,22 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatMessage
+import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
+    private val teamsRepository: TeamsRepository,
+    private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
@@ -116,5 +124,39 @@ class ChatViewModel @Inject constructor(
 
     fun shouldFetchAiProviders(): Boolean {
         return _aiProviders.value == null && !_aiProvidersLoading.value
+    }
+
+    suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
+        val teams = teamsRepository.getTeamSummaries(userId)
+        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
+        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
+            "$communityName@$parentCode"
+        } else {
+            null
+        }
+        val community = communityId?.let { id ->
+            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
+                _id = id,
+                name = communityName ?: "",
+                teamType = null,
+                teamPlanetCode = null,
+                createdDate = null,
+                type = null,
+                status = null,
+                teamId = null,
+                description = null,
+                services = null,
+                rules = null
+            )
+        }
+        return ChatShareTargets(community, teams, enterprises)
+    }
+
+    suspend fun shareChatToVoices(chatId: String, viewInId: String, map: HashMap<String?, String>, currentUser: RealmUser?): Result<RealmNews?> {
+        if (chatId.isNotEmpty() && viewInId.isNotEmpty() && voicesRepository.isAlreadyShared(chatId, viewInId)) {
+            return Result.success(null)
+        }
+        val createdNews = voicesRepository.createNews(map, currentUser, null)
+        return Result.success(createdNews)
     }
 }

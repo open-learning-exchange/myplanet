@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -27,6 +29,8 @@ class ChatViewModelTest {
 
     private lateinit var viewModel: ChatViewModel
     private lateinit var chatRepository: ChatRepository
+    private lateinit var teamsRepository: TeamsRepository
+    private lateinit var voicesRepository: VoicesRepository
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
 
@@ -34,8 +38,10 @@ class ChatViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         chatRepository = mockk(relaxed = true)
+        teamsRepository = mockk(relaxed = true)
+        voicesRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = ChatViewModel(chatRepository, dispatcherProvider)
+        viewModel = ChatViewModel(chatRepository, teamsRepository, voicesRepository, dispatcherProvider)
     }
 
     @After

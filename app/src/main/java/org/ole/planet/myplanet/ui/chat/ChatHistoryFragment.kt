@@ -251,7 +251,7 @@ class ChatHistoryFragment : Fragment() {
             val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
             val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
             val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-            val targets = cachedTargets ?: loadShareTargets(
+            val targets = cachedTargets ?: sharedViewModel.loadShareTargets(
                 sharedPrefManager.getParentCode(),
                 sharedPrefManager.getCommunityName(),
                 currentUser?._id
@@ -278,18 +278,20 @@ class ChatHistoryFragment : Fragment() {
                         val currentUser = user
                         val chatId = chat._id ?: ""
                         val viewInId = map["viewInId"] ?: ""
-                        if (chatId.isNotEmpty() && viewInId.isNotEmpty() &&
-                            voicesRepository.isAlreadyShared(chatId, viewInId)) {
-                            Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
-                            return@launch
-                        }
-                        val createdNews = voicesRepository.createNews(map, currentUser, null)
-                        if (currentUser?.planetCode != null) {
-                            sharedNewsMessages = sharedNewsMessages + createdNews
-                        }
-                        (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                            adapter.updateCachedData(currentUser, sharedNewsMessages)
-                            adapter.notifyChatShared(chat._id)
+                        val result = sharedViewModel.shareChatToVoices(chatId, viewInId, map, currentUser)
+                        if (result.isSuccess) {
+                            val createdNews = result.getOrNull()
+                            if (createdNews == null) {
+                                Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
+                                return@launch
+                            }
+                            if (currentUser?.planetCode != null) {
+                                sharedNewsMessages = sharedNewsMessages + createdNews
+                            }
+                            (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
+                                adapter.updateCachedData(currentUser, sharedNewsMessages)
+                                adapter.notifyChatShared(chat._id)
+                            }
                         }
                     }
                 }
@@ -324,32 +326,6 @@ class ChatHistoryFragment : Fragment() {
             return null
         }
         return userRepository.getUserById(userId)
-    }
-
-    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
-        val teams = teamsRepository.getTeamSummaries(userId)
-        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
-        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
-            "$communityName@$parentCode"
-        } else {
-            null
-        }
-        val community = communityId?.let { id ->
-            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
-                _id = id,
-                name = communityName ?: "",
-                teamType = null,
-                teamPlanetCode = null,
-                createdDate = null,
-                type = null,
-                status = null,
-                teamId = null,
-                description = null,
-                services = null,
-                rules = null
-            )
-        }
-        return ChatShareTargets(community, teams, enterprises)
     }
 
     private fun checkAiProvidersIfNeeded() {
