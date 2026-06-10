@@ -103,8 +103,6 @@ class ChatDetailFragment : Fragment() {
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -346,7 +344,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.setText(getString(R.string.please_wait))
             customProgressDialog.show()
             try {
-                val messages = withContext(dispatcherProvider.io) {
+                val messages = withContext(Dispatchers.IO) {
                     val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     allConversations = conversations
                     loadedCount = minOf(PAGE_SIZE, conversations.size)
