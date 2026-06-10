@@ -336,38 +336,28 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun processConfigurationDoc(doc: JsonObject) {
+    private suspend fun processConfigurationDoc(doc: JsonObject) = withContext(dispatcherProvider.io) {
         val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-
-        withContext(dispatcherProvider.io) {
-            sharedPrefManager.setParentCode(parentCode)
-        }
+        sharedPrefManager.setParentCode(parentCode)
 
         if (doc.has("preferredLang")) {
             val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
-                withContext(dispatcherProvider.io) {
-                    LocaleUtils.setLocale(context, languageCode)
-                    sharedPrefManager.setPendingLanguageChange(languageCode)
-                }
+                LocaleUtils.setLocale(context, languageCode)
+                sharedPrefManager.setPendingLanguageChange(languageCode)
             }
         }
 
         if (doc.has("models")) {
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
-
-            withContext(dispatcherProvider.io) {
-                sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
-            }
+            sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
         }
 
         if (doc.has("planetType")) {
             val planetType = doc.getAsJsonPrimitive("planetType").asString
-            withContext(dispatcherProvider.io) {
-                sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
-            }
+            sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
         }
     }
 
@@ -433,33 +423,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
-        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onUpdateAvailable(info, false)
-                }
-            }
-            return
-        }
-        if (apkVersion > currentVersion) {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-                }
-            }
-            return
-        }
-        if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onUpdateAvailable(info, true)
-                }
-            }
-        } else {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                }
+        serviceScope.launch(dispatcherProvider.main) {
+            if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+                callback.onUpdateAvailable(info, false)
+            } else if (apkVersion > currentVersion) {
+                callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+            } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
+                callback.onUpdateAvailable(info, true)
+            } else {
+                callback.onError(context.getString(R.string.planet_is_up_to_date), false)
             }
         }
     }
