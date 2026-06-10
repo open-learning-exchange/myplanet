@@ -17,6 +17,8 @@ import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
@@ -62,7 +64,7 @@ class ChatHistoryFragment : Fragment() {
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
-    private var searchJob: kotlinx.coroutines.Job? = null
+    private var searchJob: Job? = null
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -129,7 +131,7 @@ class ChatHistoryFragment : Fragment() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 searchJob?.cancel()
                 searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    kotlinx.coroutines.delay(300)
+                    delay(300)
                     (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
                 }
             }

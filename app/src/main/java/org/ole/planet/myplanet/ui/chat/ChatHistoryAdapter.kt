@@ -27,18 +27,13 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utils.JsonUtils
-
-data class PrecomputedChat(
-    val chat: RealmChatHistory,
-    val normalizedTitle: String?,
-    val normalizedQueries: List<String?>,
-    val normalizedResponses: List<String?>
-)
 
 class ChatHistoryAdapter(
     private val context: Context,
-    private var chatHistory: List<RealmChatHistory>,
+    chatHistoryList: List<RealmChatHistory>,
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
@@ -65,7 +60,21 @@ class ChatHistoryAdapter(
     private lateinit var expandableListAdapter: ChatShareTargetAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
+
+    private data class PrecomputedChat(
+        val chat: RealmChatHistory,
+        val normalizedTitle: String?,
+        val normalizedQueries: List<String?>,
+        val normalizedResponses: List<String?>
+    )
+
     private var precomputedChats: List<PrecomputedChat> = emptyList()
+
+    private var chatHistory: List<RealmChatHistory> = emptyList()
+        set(value) {
+            field = value
+            precomputedChats = buildPrecomputedChats(value)
+        }
 
     private fun buildPrecomputedChats(chats: List<RealmChatHistory>): List<PrecomputedChat> {
         return chats.map { chat ->
@@ -82,10 +91,9 @@ class ChatHistoryAdapter(
     }
 
     init {
-        chatHistory = chatHistory.sortedByDescending { chat ->
+        chatHistory = chatHistoryList.sortedByDescending { chat ->
             maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
         }
-        precomputedChats = buildPrecomputedChats(chatHistory)
         submitList(chatHistory)
     }
 
@@ -125,13 +133,17 @@ class ChatHistoryAdapter(
             .replace(DIACRITICS_REGEX, "")
     }
 
-    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        val results = if (isFullSearch) {
-            fullConvoSearch(s, isQuestion)
-        } else {
-            searchByTitle(s)
+    suspend fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
+        val results = withContext(Dispatchers.Default) {
+            if (isFullSearch) {
+                fullConvoSearch(s, isQuestion)
+            } else {
+                searchByTitle(s)
+            }
         }
-        submitList(results)
+        withContext(Dispatchers.Main) {
+            submitList(results)
+        }
     }
 
     private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
@@ -149,9 +161,9 @@ class ChatHistoryAdapter(
             if (!conversations.isNullOrEmpty()) {
                 for (i in 0 until conversations.size) {
                     conversation = if (isQuestion) {
-                        if (i < pChat.normalizedQueries.size) pChat.normalizedQueries[i] else null
+                        pChat.normalizedQueries[i]
                     } else {
-                        if (i < pChat.normalizedResponses.size) pChat.normalizedResponses[i] else null
+                        pChat.normalizedResponses[i]
                     }
                     if (conversation == null) continue
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
@@ -196,7 +208,6 @@ class ChatHistoryAdapter(
         chatHistory = newChatHistory.sortedByDescending { chat ->
             maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
         }
-        precomputedChats = buildPrecomputedChats(chatHistory)
         submitList(chatHistory)
     }
 
