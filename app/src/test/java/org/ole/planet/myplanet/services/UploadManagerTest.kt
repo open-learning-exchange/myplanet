@@ -63,6 +63,7 @@ class UploadManagerTest {
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private lateinit var photoUploader: PhotoUploader
+    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -98,7 +99,8 @@ class UploadManagerTest {
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
                 testScope,
-                photoUploader
+                photoUploader,
+                achievementUploader
             )
         )
     }

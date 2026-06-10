@@ -61,8 +61,7 @@ class UploadManager @Inject constructor(
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
-    private val photoUploader: PhotoUploader,
-    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader
+    private val photoUploader: PhotoUploader
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -137,7 +136,40 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        achievementUploader.uploadAchievement()
+        val list = userRepository.getAchievementsForUpload()
+        if (list.isEmpty()) return
+        withContext(dispatcherProvider.io) {
+            list.forEach { achievement ->
+                val id = achievement.get("_id")?.asString ?: return@forEach
+                val url = "${UrlUtils.getUrl()}/achievements/$id"
+                try {
+                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
+                    if (response.isSuccessful) {
+                        val rev = response.body()?.get("rev")?.asString
+                        userRepository.markAchievementUploaded(id, rev)
+                        val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
+                        if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
+                            uploadCvAttachment(id, rev, resumeFileName)
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Exception in UploadManager", e)
+                }
+            }
+        }
+    }
+
+    private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
+        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
+        if (!cvFile.exists()) return
+        try {
+            val body = cvFile.readBytes().toRequestBody("application/pdf".toMediaTypeOrNull())
+            // CouchDB attachment key is always "resume.pdf"
+            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
+            apiInterface.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upload CV attachment", e)
+        }
     }
 
     private suspend fun uploadCourseProgress() {
