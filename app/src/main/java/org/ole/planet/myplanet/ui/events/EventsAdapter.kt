@@ -10,12 +10,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
-class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(
-    DiffUtils.itemCallback<RealmMeetup>(
-        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-        areContentsTheSame = { oldItem, newItem -> oldItem.id == newItem.id && oldItem.title == newItem.title && oldItem.description == newItem.description && oldItem.startDate == newItem.startDate && oldItem.endDate == newItem.endDate && oldItem.startTime == newItem.startTime && oldItem.endTime == newItem.endTime && oldItem.meetupLocation == newItem.meetupLocation && oldItem.meetupLink == newItem.meetupLink && oldItem.recurring == newItem.recurring && oldItem.creator == newItem.creator }
-    )
-) {
+class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(DIFF_CALLBACK) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventsViewHolder {
         val binding = ItemMeetupBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return EventsViewHolder(binding)
@@ -38,4 +33,21 @@ class EventsAdapter : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(
 
     class EventsViewHolder(val binding: ItemMeetupBinding) : RecyclerView.ViewHolder(binding.root)
 
+    companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMeetup>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.title == newItem.title &&
+                        oldItem.description == newItem.description &&
+                        oldItem.startDate == newItem.startDate &&
+                        oldItem.endDate == newItem.endDate &&
+                        oldItem.startTime == newItem.startTime &&
+                        oldItem.endTime == newItem.endTime &&
+                        oldItem.meetupLocation == newItem.meetupLocation &&
+                        oldItem.meetupLink == newItem.meetupLink &&
+                        oldItem.recurring == newItem.recurring &&
+                        oldItem.creator == newItem.creator
+            }
+        )
+    }
 }
