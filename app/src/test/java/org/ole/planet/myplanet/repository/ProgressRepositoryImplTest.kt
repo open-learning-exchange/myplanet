@@ -46,7 +46,8 @@ class ProgressRepositoryImplTest {
             databaseService,
             UnconfinedTestDispatcher(),
             dispatcherProvider,
-            { mockCoursesRepository }
+            { mockCoursesRepository },
+            { mockk(relaxed = true) }
         ), recordPrivateCalls = true)
     }
 
@@ -308,20 +309,25 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun testHasUserCompletedSync() = testScope.runTest {
-        coEvery {
-            repository invoke "count" withArguments listOf(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java, any<Function1<RealmQuery<org.ole.planet.myplanet.model.RealmUserChallengeActions>, Unit>>())
-        } returns 1L
+        val activitiesRepo = mockk<ActivitiesRepository>()
+        val localRepository = ProgressRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            dispatcherProvider,
+            { mockCoursesRepository },
+            { activitiesRepo }
+        )
 
-        val result = repository.hasUserCompletedSync("user1")
+        coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns true
+
+        val result = localRepository.hasUserCompletedSync("user1")
         advanceUntilIdle()
 
         assertEquals(true, result)
 
-        coEvery {
-            repository invoke "count" withArguments listOf(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java, any<Function1<RealmQuery<org.ole.planet.myplanet.model.RealmUserChallengeActions>, Unit>>())
-        } returns 0L
+        coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns false
 
-        val result2 = repository.hasUserCompletedSync("user1")
+        val result2 = localRepository.hasUserCompletedSync("user1")
         advanceUntilIdle()
 
         assertEquals(false, result2)

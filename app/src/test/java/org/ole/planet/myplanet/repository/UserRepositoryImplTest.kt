@@ -88,7 +88,8 @@ class UserRepositoryImplTest {
             context,
             configurationsRepository,
             appScope,
-            dispatcherProvider
+            dispatcherProvider,
+            mockk(relaxed = true)
         )
     }
 

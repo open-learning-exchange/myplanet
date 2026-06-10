@@ -327,6 +327,22 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun hasUserSyncAction(userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+        val actions = queryList(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        }
+        return actions.isNotEmpty()
+    }
+
+    override suspend fun hasUserCompletedSync(userId: String): Boolean = kotlinx.coroutines.withContext(realmDispatcher) {
+        count(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        } > 0
+    }
+
     override suspend fun getRecentLogin(): RealmOfflineActivity? {
         return withRealm { realm ->
             realm.where(RealmOfflineActivity::class.java)

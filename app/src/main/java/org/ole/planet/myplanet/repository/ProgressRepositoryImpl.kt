@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -25,7 +24,8 @@ class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
-    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
+    private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
+    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
         val courseIdsArray = courseIds.toTypedArray()
@@ -245,10 +245,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(dispatcherProvider.io) {
-        count(RealmUserChallengeActions::class.java) {
-            equalTo("userId", userId)
-            equalTo("actionType", "sync")
-        } > 0
+        activitiesRepositoryLazy.get().hasUserCompletedSync(userId)
     }
 
     private fun insertCourseProgress(mRealm: Realm, act: JsonObject?) {
