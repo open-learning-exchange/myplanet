@@ -30,10 +30,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -67,10 +64,6 @@ class ChatHistoryFragment : Fragment() {
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var chatRepository: ChatRepository
-    @Inject
-    lateinit var userRepository: UserRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
@@ -245,29 +238,26 @@ class ChatHistoryFragment : Fragment() {
 
     fun refreshChatHistory() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val cachedUser = user
-            val cachedTargets = memoizedShareTargets
-
-            val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
-            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-            val targets = cachedTargets ?: loadShareTargets(
+            val data = sharedViewModel.loadChatHistoryScreenData(
+                sharedPrefManager.getUserId(),
                 sharedPrefManager.getParentCode(),
                 sharedPrefManager.getCommunityName(),
-                currentUser?._id
+                user,
+                memoizedShareTargets
             )
 
-            user = currentUser
-            sharedNewsMessages = newsMessages
-            shareTargets = targets
-            memoizedShareTargets = targets
+            user = data.currentUser
+            sharedNewsMessages = data.newsMessages
+            shareTargets = data.shareTargets
+            memoizedShareTargets = data.shareTargets
+            val chatHistory = data.chatHistory
 
             val adapter = binding.recyclerView.adapter as? ChatHistoryAdapter
             if (adapter == null) {
                 val newAdapter = ChatHistoryAdapter(
                     requireContext(),
                     chatHistory,
-                    currentUser,
+                    user,
                     sharedNewsMessages,
                     shareTargets
                 ) { map, chat ->
@@ -304,7 +294,7 @@ class ChatHistoryFragment : Fragment() {
                 })
                 binding.recyclerView.adapter = newAdapter
             } else {
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
+                adapter.updateCachedData(user, sharedNewsMessages)
                 adapter.updateShareTargets(shareTargets)
                 adapter.updateChatHistory(chatHistory)
                 binding.searchBar.visibility = View.VISIBLE
@@ -317,39 +307,6 @@ class ChatHistoryFragment : Fragment() {
                 binding.recyclerView.visibility = View.GONE
             }
         }
-    }
-
-    private suspend fun loadCurrentUser(userId: String?): RealmUser? {
-        if (userId.isNullOrEmpty()) {
-            return null
-        }
-        return userRepository.getUserById(userId)
-    }
-
-    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
-        val teams = teamsRepository.getTeamSummaries(userId)
-        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
-        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
-            "$communityName@$parentCode"
-        } else {
-            null
-        }
-        val community = communityId?.let { id ->
-            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
-                _id = id,
-                name = communityName ?: "",
-                teamType = null,
-                teamPlanetCode = null,
-                createdDate = null,
-                type = null,
-                status = null,
-                teamId = null,
-                description = null,
-                services = null,
-                rules = null
-            )
-        }
-        return ChatShareTargets(community, teams, enterprises)
     }
 
     private fun checkAiProvidersIfNeeded() {
