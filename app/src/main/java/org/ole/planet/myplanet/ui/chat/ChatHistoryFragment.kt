@@ -62,6 +62,7 @@ class ChatHistoryFragment : Fragment() {
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
+    private var searchJob: kotlinx.coroutines.Job? = null
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -126,7 +127,11 @@ class ChatHistoryFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    kotlinx.coroutines.delay(300)
+                    (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                }
             }
 
             override fun afterTextChanged(s: Editable?) {}
