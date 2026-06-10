@@ -1,0 +1,98 @@
+package org.ole.planet.myplanet.ui.references
+
+import android.os.Build
+import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.gson.JsonObject
+import org.junit.Assert.assertEquals
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.robolectric.annotation.Config
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import org.junit.Rule
+
+@RunWith(AndroidJUnit4::class)
+@Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)
+class ReferencesAdapterTest {
+
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
+
+    private lateinit var adapter: ReferencesAdapter
+    private lateinit var context: Context
+
+    @Before
+    fun setUp() {
+        context = ApplicationProvider.getApplicationContext()
+
+        val ref1 = JsonObject()
+        ref1.addProperty("name", "John Doe")
+        ref1.addProperty("relationship", "Friend")
+        ref1.addProperty("phone", "123-456-7890")
+        ref1.addProperty("email", "john@example.com")
+
+        val ref2 = JsonObject()
+        ref2.addProperty("name", "Jane Smith")
+        ref2.addProperty("relationship", "Colleague")
+
+        val jsonList = listOf(JsonUtils.gson.toJson(ref1), JsonUtils.gson.toJson(ref2))
+
+        adapter = ReferencesAdapter(jsonList)
+    }
+
+    @Test
+    fun testSubmitJsonListParsesCorrectly() {
+        adapter.submitList(adapter.currentList) {
+            assertEquals(2, adapter.itemCount)
+
+            val row1 = adapter.currentList[0]
+            assertEquals("John Doe", row1.name)
+            assertEquals("Friend", row1.relationship)
+            assertEquals("123-456-7890", row1.phone)
+            assertEquals("john@example.com", row1.email)
+
+            val row2 = adapter.currentList[1]
+            assertEquals("Jane Smith", row2.name)
+            assertEquals("Colleague", row2.relationship)
+            assertEquals("—", row2.phone)
+            assertEquals("—", row2.email)
+        }
+    }
+
+    @Test
+    fun testUpdateList() {
+        val ref3 = JsonObject()
+        ref3.addProperty("name", "Bob")
+        ref3.addProperty("relationship", "Brother")
+        ref3.addProperty("phone", "555")
+        ref3.addProperty("email", "bob@ex.com")
+
+        val jsonList = listOf(JsonUtils.gson.toJson(ref3))
+
+        adapter.submitJsonList(jsonList)
+        adapter.submitList(adapter.currentList) {
+            assertEquals(1, adapter.currentList.size)
+            val row1 = adapter.currentList[0]
+            assertEquals("Bob", row1.name)
+            assertEquals("Brother", row1.relationship)
+            assertEquals("555", row1.phone)
+            assertEquals("bob@ex.com", row1.email)
+        }
+    }
+
+    @Test
+    fun testSubmitInvalidJson() {
+        val invalidJsonList = listOf("invalid json", "{\"name\": \"Bob\"}")
+        adapter.submitJsonList(invalidJsonList)
+        adapter.submitList(adapter.currentList) {
+            assertEquals(2, adapter.currentList.size)
+            val row1 = adapter.currentList[0]
+            assertEquals("—", row1.name)
+            val row2 = adapter.currentList[1]
+            assertEquals("Bob", row2.name)
+        }
+    }
+}
