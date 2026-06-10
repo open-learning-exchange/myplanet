@@ -10,6 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.repository.RetryFailure
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
@@ -46,14 +47,15 @@ class RetryQueue @Inject constructor(
             return
         }
 
+        val failure = RetryFailure(error.itemId, error.message, error.httpCode)
         val existingOperation = retryRepository.getExistingOperation(error.itemId, uploadType)
 
         if (existingOperation != null) {
-            retryRepository.updateAttempt(existingOperation.id, error)
+            retryRepository.updateAttempt(existingOperation.id, failure)
             Log.d(TAG, "Updated existing retry operation for item ${error.itemId}")
         } else {
             retryRepository.enqueue(
-                uploadType, error, payload.toString(), endpoint,
+                uploadType, failure, payload.toString(), endpoint,
                 httpMethod, dbId, modelClassName, userId
             )
             Log.i(TAG, "RETRY_QUEUE: Queued new operation - type=$uploadType, itemId=${error.itemId}, error=${error.message}")

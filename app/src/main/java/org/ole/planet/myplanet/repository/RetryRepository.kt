@@ -1,12 +1,11 @@
 package org.ole.planet.myplanet.repository
 
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.services.upload.UploadError
 
 interface RetryRepository {
     suspend fun enqueue(
         uploadType: String,
-        error: UploadError,
+        failure: RetryFailure,
         payload: String,
         endpoint: String,
         httpMethod: String,
@@ -16,7 +15,7 @@ interface RetryRepository {
     )
     suspend fun updateAttempt(
         operationId: String,
-        error: UploadError
+        failure: RetryFailure
     )
     suspend fun markInProgress(operationId: String)
     suspend fun markCompleted(operationId: String)
