@@ -24,6 +24,7 @@ interface ActivitiesRepository {
     suspend fun recordSyncActivity(userId: String)
     suspend fun recordSyncUserChallengeAction(userId: String)
     suspend fun insertActivity(json: JsonObject)
+    suspend fun hasUserSyncAction(userId: String?): Boolean
     suspend fun hasUserCompletedSync(userId: String): Boolean
     suspend fun getRecentLogin(): RealmOfflineActivity?
     suspend fun insertSearchActivityFromNewsLog(log: org.ole.planet.myplanet.model.RealmNewsLog)

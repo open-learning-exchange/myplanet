@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -241,7 +242,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     override suspend fun recordSyncUserChallengeAction(userId: String) {
         executeTransaction { realm ->
             val action = realm.createObject(
-                org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java,
+                RealmUserChallengeActions::class.java,
                 UUID.randomUUID().toString()
             )
             action.userId = userId
@@ -328,7 +329,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun hasUserCompletedSync(userId: String): Boolean = kotlinx.coroutines.withContext(realmDispatcher) {
+    override suspend fun hasUserSyncAction(userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+        return hasUserCompletedSync(userId)
+    }
+
+    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(realmDispatcher) {
         if (userId.isEmpty()) return@withContext false
         count(RealmUserChallengeActions::class.java) {
             equalTo("userId", userId)
