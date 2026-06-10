@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -62,6 +63,7 @@ class ChatHistoryFragment : Fragment() {
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
+    private var fullChatHistory: List<RealmChatHistory> = emptyList()
     
     @Inject
     lateinit var syncManager: SyncManager
@@ -126,7 +128,7 @@ class ChatHistoryFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(fullChatHistory, s.toString(), isFullSearch, isQuestion)
             }
 
             override fun afterTextChanged(s: Editable?) {}
@@ -262,11 +264,11 @@ class ChatHistoryFragment : Fragment() {
             shareTargets = targets
             memoizedShareTargets = targets
 
+            fullChatHistory = chatHistory
             val adapter = binding.recyclerView.adapter as? ChatHistoryAdapter
             if (adapter == null) {
                 val newAdapter = ChatHistoryAdapter(
                     requireContext(),
-                    chatHistory,
                     currentUser,
                     sharedNewsMessages,
                     shareTargets
@@ -289,10 +291,10 @@ class ChatHistoryFragment : Fragment() {
                         }
                         (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
                             adapter.updateCachedData(currentUser, sharedNewsMessages)
-                            adapter.notifyChatShared(chat._id)
                         }
                     }
                 }
+                newAdapter.updateChatHistory(chatHistory)
                 newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
