@@ -64,7 +64,11 @@ class DownloadService : Service() {
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
-    private lateinit var preferences: SharedPreferences
+
+    @Inject
+    @org.ole.planet.myplanet.di.DownloadPreferences
+    lateinit var preferences: SharedPreferences
+
     private var currentDownloadUrl: String = ""
     private var originalDownloadUrl: String = ""
     private var fromSync = false
@@ -98,7 +102,6 @@ class DownloadService : Service() {
         Log.d(TAG, "onStartCommand: fromSync=$fromSync queueRunning=$isQueueRunning")
 
         downloadScope.launch {
-            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             if (!isQueueRunning) {
                 isQueueRunning = true
                 try {

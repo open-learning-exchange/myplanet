@@ -28,11 +28,11 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
     private val apiInterface: ApiInterface, private val broadcastService: BroadcastService,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    @org.ole.planet.myplanet.di.DownloadPreferences private val preferences: android.content.SharedPreferences
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
     override suspend fun doWork(): Result = withContext(dispatcherProvider.io) {
         try {
