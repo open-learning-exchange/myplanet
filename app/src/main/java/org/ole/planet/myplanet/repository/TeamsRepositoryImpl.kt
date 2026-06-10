@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.text.TextUtils
+import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -229,12 +231,12 @@ class TeamsRepositoryImpl @Inject constructor(
         val validTeams = teams.filter { !it._id.isNullOrBlank() && it.status != "archived" }
         if (validTeams.isEmpty()) return emptyList()
 
-        val teamIds = validTeams.map { it._id!! }
+        val teamIds = validTeams.map { it._id ?: "" }
         val visitCounts = getRecentVisitCounts(teamIds)
         val memberStatuses = getTeamMemberStatuses(userId, teamIds)
 
         val detailsList = validTeams.map { team ->
-            val teamId = team._id!!
+            val teamId = team._id ?: ""
             val status = memberStatuses[teamId]
             TeamDetails(
                 _id = team._id,
@@ -373,6 +375,17 @@ class TeamsRepositoryImpl @Inject constructor(
                             team.courses?.add(courseId)
                         }
                     }
+                    team.updated = true
+                }
+            }
+        }
+    }
+
+    override suspend fun removeCourseFromTeam(teamId: String, courseId: String): Result<Unit> {
+        return withContext(databaseService.ioDispatcher) {
+            runCatching {
+                update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                    team.courses?.remove(courseId)
                     team.updated = true
                 }
             }
@@ -1235,11 +1248,19 @@ class TeamsRepositoryImpl @Inject constructor(
                 equalTo("teamId", teamId)
             }.mapNotNull { it.userId }.toSet()
 
-            for (admin in adminUsers) {
+            val validAdmins = adminUsers.filter { admin ->
                 val adminFullId = "org.couchdb.user:${admin.name}"
+                adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()
+            }
 
-                if (adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()) {
-                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name!!)
+            if (validAdmins.isNotEmpty()) {
+                val validAdminNames = validAdmins.mapNotNull { it.name }.toTypedArray()
+                val adminFromRealmMap = queryList(RealmUser::class.java) {
+                    `in`("name", validAdminNames)
+                }.associateBy { it.name }
+
+                for (admin in validAdmins) {
+                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name.orEmpty())
                     if (adminFromRealm != null) {
                         members.add(adminFromRealm)
                     } else {
@@ -1513,6 +1534,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return ob
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     private fun processDescription(description: String?) {
         val links = org.ole.planet.myplanet.utils.DownloadUtils.extractLinks(description ?: "")
         val baseUrl = org.ole.planet.myplanet.utils.UrlUtils.getUrl()
@@ -1529,9 +1551,26 @@ class TeamsRepositoryImpl @Inject constructor(
         try {
             withRealm { realm ->
                 realm.executeTransaction { realmTx ->
+                    val ids = mutableListOf<String>()
+                    documents.forEach { doc ->
+                        val id = JsonUtils.getString("_id", doc)
+                        if (id.isNotEmpty() && !id.startsWith("_design")) {
+                            ids.add(id)
+                        }
+                    }
+                    val existingTeams = if (ids.isNotEmpty()) {
+                        realmTx.where(RealmMyTeam::class.java)
+                            .`in`("_id", ids.toTypedArray())
+                            .findAll()
+                            .associateBy { it._id!! }
+                            .toMutableMap()
+                    } else {
+                        mutableMapOf<String, RealmMyTeam>()
+                    }
+
                     documents.forEach { doc ->
                         try {
-                            insertMyTeam(realmTx, doc)
+                            insertMyTeam(realmTx, doc, existingTeams)
                             processedCount++
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -1587,7 +1626,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         if (myTeams == null) {
             myTeams = realm.createObject(RealmMyTeam::class.java, teamId)
-            existingTeams?.put(teamId, myTeams!!)
+            myTeams?.let { existingTeams?.put(teamId, it) }
         }
         myTeams?.let {
             RealmMyTeam.populateTeamFields(doc, it, true)
@@ -1611,7 +1650,7 @@ class TeamsRepositoryImpl @Inject constructor(
             realm.where(RealmMyTeam::class.java)
                 .`in`("_id", ids.toTypedArray())
                 .findAll()
-                .associateBy { it._id!! }
+                .associateBy { it._id ?: "" }
                 .toMutableMap()
         } else {
             mutableMapOf<String, RealmMyTeam>()

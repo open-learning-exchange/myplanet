@@ -125,16 +125,27 @@ class TagsRepositoryImpl @Inject constructor(
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        val ids = ArrayList<String>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                ids.add(id)
             }
         }
+
+        val tagCache = mutableMapOf<String, RealmTag>()
+        if (ids.isNotEmpty()) {
+            val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
+            for (tag in existingTags) {
+                tag._id?.let { tagCache[it] = tag }
+            }
+        }
+
         documentList.forEach { jsonDoc ->
-            insertIntoRealm(realm, jsonDoc)
+            insertIntoRealm(realm, jsonDoc, tagCache)
         }
     }
 
@@ -144,10 +155,12 @@ class TagsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject) {
-        var tag = mRealm.where(RealmTag::class.java).equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
+    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject, cache: MutableMap<String, RealmTag>? = null) {
+        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+        var tag = if (cache != null) cache[id] else mRealm.where(RealmTag::class.java).equalTo("_id", id).findFirst()
         if (tag == null) {
-            tag = mRealm.createObject(RealmTag::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
+            tag = mRealm.createObject(RealmTag::class.java, id)
+            cache?.put(id, tag)
         }
         if (tag != null) {
             tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)

@@ -922,7 +922,7 @@ class UserRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
-            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
+            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id ?: "" }
         }
         HealthRecord(mhCopy, mm, list, userMap)
     }
