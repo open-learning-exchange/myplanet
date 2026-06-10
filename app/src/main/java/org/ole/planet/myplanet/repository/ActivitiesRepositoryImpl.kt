@@ -13,6 +13,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.data.DatabaseService
@@ -327,17 +328,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun hasUserSyncAction(userId: String?): Boolean {
-        if (userId.isNullOrEmpty()) return false
-        val actions = queryList(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java) {
-            equalTo("userId", userId)
-            equalTo("actionType", "sync")
-        }
-        return actions.isNotEmpty()
-    }
-
     override suspend fun hasUserCompletedSync(userId: String): Boolean = kotlinx.coroutines.withContext(realmDispatcher) {
-        count(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java) {
+        if (userId.isEmpty()) return@withContext false
+        count(RealmUserChallengeActions::class.java) {
             equalTo("userId", userId)
             equalTo("actionType", "sync")
         } > 0

@@ -60,8 +60,7 @@ class UserRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider,
-    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -1096,7 +1095,12 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
-        return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
+        if (userId.isNullOrEmpty()) return false
+        val actions = queryList(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        }
+        return actions.isNotEmpty()
     }
 
     override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
