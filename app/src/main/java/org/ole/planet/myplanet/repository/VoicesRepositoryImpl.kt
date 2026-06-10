@@ -481,7 +481,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     private fun getDateFromTimestamp(timestamp: Long): String {
-        return dateFormat.get()!!.format(java.util.Date(timestamp))
+        return dateFormat.get()?.format(java.util.Date(timestamp)) ?: ""
     }
 
     override suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews> {

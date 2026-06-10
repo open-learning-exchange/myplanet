@@ -2,13 +2,16 @@ package org.ole.planet.myplanet.model
 
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.UUID
 
 open class RealmRemovedLog : RealmObject() {
     @PrimaryKey
     var id: String? = null
+    @Index
     var userId: String? = null
+    @Index
     var type: String? = null
     var docId: String? = null
 

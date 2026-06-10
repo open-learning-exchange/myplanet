@@ -721,10 +721,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             logout.contentDescription = getString(R.string.menu_logout)
             becomeMember.setOnClickListener {
                 lifecycleScope.launch {
-                    val guest = true
                     val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
                     intent.putExtra("username", profileDbHandler.getUserModel()?.name)
-                    intent.putExtra("guest", guest)
+                    intent.putExtra("guest", true)
                     setResult(RESULT_OK, intent)
                     startActivity(intent)
                 }

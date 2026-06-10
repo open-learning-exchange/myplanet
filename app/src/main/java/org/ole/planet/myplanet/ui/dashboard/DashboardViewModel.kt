@@ -294,8 +294,8 @@ class DashboardViewModel @Inject constructor(
             val survey = withContext(dispatcherProvider.io) {
                 surveysRepository.getSurvey(surveyId)
             }
-            if (survey != null && survey.id != null) {
-                _surveyNavigationEvent.emit(survey.id!!)
+            survey?.id?.let { id ->
+                _surveyNavigationEvent.emit(id)
             }
         }
     }
