@@ -32,6 +32,12 @@ class ChatViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
+    private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
+    val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
+
+    private var cachedUser: RealmUser? = null
+    private var cachedShareTargets: ChatShareTargets? = null
+
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
     val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
 
@@ -56,20 +62,21 @@ class ChatViewModel @Inject constructor(
     private val _conversationSaveSuccess = MutableSharedFlow<Boolean>()
     val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
 
-    suspend fun loadChatHistoryScreenData(
+    fun loadChatHistoryScreenData(
         userId: String?,
         parentCode: String?,
-        communityName: String?,
-        cachedUser: RealmUser?,
-        cachedTargets: ChatShareTargets?
-    ): ChatHistoryScreenData {
-        return withContext(dispatcherProvider.io) {
-            val currentUser = cachedUser ?: loadCurrentUser(userId)
-            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-            val targets = cachedTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id)
+        communityName: String?
+    ) {
+        viewModelScope.launch {
+            val data = withContext(dispatcherProvider.io) {
+                val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
+                val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
+                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+                val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
 
-            ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
+                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
+            }
+            _screenData.value = data
         }
     }
 

@@ -146,13 +146,22 @@ class ChatViewModelTest {
         coEvery { teamsRepository.getShareableEnterpriseSummaries("user123") } returns listOf(team)
         coEvery { teamsRepository.getTeamSummaryById("community1@parent1") } returns team
 
-        val result = viewModel.loadChatHistoryScreenData(
+        val job = launch(testDispatcher) {
+            viewModel.screenData.collect {}
+        }
+
+        viewModel.loadChatHistoryScreenData(
             userId = "user123",
             parentCode = "parent1",
-            communityName = "community1",
-            cachedUser = null,
-            cachedTargets = null
+            communityName = "community1"
         )
+
+        // Wait for coroutine to process
+        testScheduler.advanceUntilIdle()
+
+        val result = viewModel.screenData.value
+        org.junit.Assert.assertNotNull(result)
+        result!!
 
         assertEquals(user, result.currentUser)
         assertEquals(listOf(conversation), result.chatHistory)
@@ -165,34 +174,59 @@ class ChatViewModelTest {
         coVerify { voicesRepository.getPlanetNewsMessages("planet1") }
         coVerify { chatRepository.getChatHistoryForUser("Test User") }
         coVerify { teamsRepository.getTeamSummaries("user123") }
+
+        job.cancel()
     }
 
     @Test
     fun `loadChatHistoryScreenData uses cached data and handles nulls gracefully`() = runTest {
         val cachedUser = mockk<RealmUser>(relaxed = true)
-        val cachedTargets = ChatShareTargets(null, emptyList(), emptyList())
         val conversation = mockk<org.ole.planet.myplanet.model.RealmChatHistory>(relaxed = true)
         val news = RealmNews()
 
+        coEvery { userRepository.getUserById("user123") } returns cachedUser
         coEvery { cachedUser.planetCode } returns "planet2"
         coEvery { cachedUser.name } returns "Cached User"
         coEvery { voicesRepository.getPlanetNewsMessages("planet2") } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser("Cached User") } returns listOf(conversation)
+        coEvery { teamsRepository.getTeamSummaries(any()) } returns emptyList()
+        coEvery { teamsRepository.getShareableEnterpriseSummaries(any()) } returns emptyList()
 
-        val result = viewModel.loadChatHistoryScreenData(
+        // First call to populate cache
+        viewModel.loadChatHistoryScreenData(
             userId = "user123",
             parentCode = "parent1",
-            communityName = "community1",
-            cachedUser = cachedUser,
-            cachedTargets = cachedTargets
+            communityName = "community1"
         )
+        testScheduler.advanceUntilIdle()
+
+        // Clear mocks to verify cache usage
+        io.mockk.clearMocks(userRepository, teamsRepository, voicesRepository, chatRepository, answers = false)
+
+        val job = launch(testDispatcher) {
+            viewModel.screenData.collect {}
+        }
+
+        // Second call should use cache
+        viewModel.loadChatHistoryScreenData(
+            userId = "user123",
+            parentCode = "parent1",
+            communityName = "community1"
+        )
+        testScheduler.advanceUntilIdle()
+
+        val result = viewModel.screenData.value
+        org.junit.Assert.assertNotNull(result)
+        result!!
 
         assertEquals(cachedUser, result.currentUser)
         assertEquals(listOf(conversation), result.chatHistory)
         assertEquals(listOf(news), result.newsMessages)
-        assertEquals(cachedTargets, result.shareTargets)
 
+        // Verify user and targets were NOT fetched again
         coVerify(exactly = 0) { userRepository.getUserById(any()) }
         coVerify(exactly = 0) { teamsRepository.getTeamSummaries(any()) }
+
+        job.cancel()
     }
 }
