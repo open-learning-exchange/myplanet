@@ -55,7 +55,7 @@ class ReferencesAdapter(list: List<String>) : ListAdapter<ReferenceRow, Referenc
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
-            { oldItem, newItem -> oldItem.name == newItem.name },
+            { oldItem, newItem -> oldItem == newItem },
             { oldItem, newItem -> oldItem == newItem }
         )
     }

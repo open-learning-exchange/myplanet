@@ -45,21 +45,19 @@ class ReferencesAdapterTest {
 
     @Test
     fun testSubmitJsonListParsesCorrectly() {
-        adapter.submitList(adapter.currentList) {
-            assertEquals(2, adapter.itemCount)
+        assertEquals(2, adapter.itemCount)
 
-            val row1 = adapter.currentList[0]
-            assertEquals("John Doe", row1.name)
-            assertEquals("Friend", row1.relationship)
-            assertEquals("123-456-7890", row1.phone)
-            assertEquals("john@example.com", row1.email)
+        val row1 = adapter.currentList[0]
+        assertEquals("John Doe", row1.name)
+        assertEquals("Friend", row1.relationship)
+        assertEquals("123-456-7890", row1.phone)
+        assertEquals("john@example.com", row1.email)
 
-            val row2 = adapter.currentList[1]
-            assertEquals("Jane Smith", row2.name)
-            assertEquals("Colleague", row2.relationship)
-            assertEquals("—", row2.phone)
-            assertEquals("—", row2.email)
-        }
+        val row2 = adapter.currentList[1]
+        assertEquals("Jane Smith", row2.name)
+        assertEquals("Colleague", row2.relationship)
+        assertEquals("—", row2.phone)
+        assertEquals("—", row2.email)
     }
 
     @Test
@@ -73,26 +71,49 @@ class ReferencesAdapterTest {
         val jsonList = listOf(JsonUtils.gson.toJson(ref3))
 
         adapter.submitJsonList(jsonList)
-        adapter.submitList(adapter.currentList) {
-            assertEquals(1, adapter.currentList.size)
-            val row1 = adapter.currentList[0]
-            assertEquals("Bob", row1.name)
-            assertEquals("Brother", row1.relationship)
-            assertEquals("555", row1.phone)
-            assertEquals("bob@ex.com", row1.email)
+
+        // Wait for DiffUtil to compute on the background thread and submit to main
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        var attempts = 0
+        while (adapter.currentList.size != 1 && attempts < 50) {
+            Thread.sleep(10)
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            attempts++
         }
+
+        // Assert directly
+        val list = adapter.currentList
+        assertEquals(1, list.size)
+        val row1 = list[0]
+        assertEquals("Bob", row1.name)
+        assertEquals("Brother", row1.relationship)
+        assertEquals("555", row1.phone)
+        assertEquals("bob@ex.com", row1.email)
     }
 
     @Test
     fun testSubmitInvalidJson() {
+        // We create a fresh adapter here, avoiding issues with lists merging unpredictably
+        adapter = ReferencesAdapter(listOf())
+
         val invalidJsonList = listOf("invalid json", "{\"name\": \"Bob\"}")
         adapter.submitJsonList(invalidJsonList)
-        adapter.submitList(adapter.currentList) {
-            assertEquals(2, adapter.currentList.size)
-            val row1 = adapter.currentList[0]
-            assertEquals("—", row1.name)
-            val row2 = adapter.currentList[1]
-            assertEquals("Bob", row2.name)
+
+        // Wait for DiffUtil
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        var attempts = 0
+        while (adapter.currentList.size != 2 && attempts < 50) {
+            Thread.sleep(10)
+            org.robolectric.shadows.ShadowLooper.idleMainLooper()
+            attempts++
         }
+
+        // Assert directly
+        val list = adapter.currentList
+        assertEquals(2, list.size)
+        val row1 = list[0]
+        assertEquals("—", row1.name)
+        val row2 = list[1]
+        assertEquals("Bob", row2.name)
     }
 }
