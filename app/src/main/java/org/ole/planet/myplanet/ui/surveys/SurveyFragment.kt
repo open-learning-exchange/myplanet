@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import android.os.Bundle
+import androidx.recyclerview.widget.ListAdapter
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -69,7 +70,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewModel.adoptSurvey(surveyId)
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
         adapterMutex.withLock {
             if (adapter == null) {
                 val userProfileModel = profileDbHandler.getUserModel()

@@ -23,7 +23,7 @@ class UserArrayAdapter(
     )
 ) {
 
-    var selectedPosition = 0
+    var selectedUser: RealmUser? = null
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -51,7 +51,7 @@ class UserArrayAdapter(
             holder.binding.ivUser.setImageResource(R.drawable.profile)
         }
 
-        if (position == selectedPosition) {
+        if (user.id == selectedUser?.id) {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_300))
         } else {
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
@@ -60,10 +60,11 @@ class UserArrayAdapter(
         holder.itemView.setOnClickListener {
             val currentPos = holder.bindingAdapterPosition
             if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
-            val oldPos = selectedPosition
-            selectedPosition = currentPos
-            notifyItemChanged(oldPos)
-            notifyItemChanged(selectedPosition)
+            val previousUser = selectedUser
+            selectedUser = user
+            val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
+            if (prevPos != -1) notifyItemChanged(prevPos)
+            notifyItemChanged(currentPos)
             onItemClick(user)
         }
     }
