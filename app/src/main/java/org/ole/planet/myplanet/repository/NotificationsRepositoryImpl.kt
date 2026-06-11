@@ -8,7 +8,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmTeamNotification
@@ -19,7 +18,8 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val userRepository: Lazy<UserRepository>
+    private val userRepository: Lazy<UserRepository>,
+    private val teamsRepository: Lazy<TeamsRepository>
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
@@ -179,7 +179,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
-                val teamObject = findByField(org.ole.planet.myplanet.model.RealmMyTeam::class.java, "_id", teamId)
+                val teamObject = teamsRepository.get().getTeamById(teamId)
                 TaskNotificationResult(teamId, teamObject?.name, teamObject?.type)
             } else {
                 null
@@ -194,20 +194,14 @@ class NotificationsRepositoryImpl @Inject constructor(
             } else {
                 it
             }
-            queryList(org.ole.planet.myplanet.model.RealmMyTeam::class.java) {
-                equalTo("_id", actualJoinRequestId)
-                equalTo("docType", "request")
-            }.firstOrNull()?.teamId
+            teamsRepository.get().getJoinRequestById(actualJoinRequestId)?.teamId
         }
     }
 
     override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
-        val joinRequest = queryList(RealmMyTeam::class.java) {
-            equalTo("_id", relatedId)
-            equalTo("docType", "request")
-        }.firstOrNull()
+        val joinRequest = teamsRepository.get().getJoinRequestById(relatedId)
         val team = joinRequest?.teamId?.let { tid ->
-            findByField(RealmMyTeam::class.java, "_id", tid)
+            teamsRepository.get().getTeamById(tid)
         }
         val uid = joinRequest?.userId
         val teamName = team?.name ?: "Unknown Team"
@@ -231,15 +225,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
         if (teamIds.isNotEmpty()) {
-            val teams = queryList(RealmMyTeam::class.java) {
-                beginGroup()
-                teamIds.forEachIndexed { index, id ->
-                    if (index > 0) or()
-                    equalTo("_id", id)
-                }
-                endGroup()
-            }
-            val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
 
             tasks.forEach { task ->
                 val taskId = task.id
@@ -257,29 +243,11 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
         if (relatedIds.isEmpty()) return emptyMap()
 
-        val joinRequests = queryList(RealmMyTeam::class.java) {
-            equalTo("docType", "request")
-            beginGroup()
-            relatedIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("_id", id)
-            }
-            endGroup()
-        }
+        val joinRequests = relatedIds.mapNotNull { teamsRepository.get().getJoinRequestById(it) }
 
         val teamIds = joinRequests.mapNotNull { it.teamId }.distinct()
 
-        val teamMap = if (teamIds.isNotEmpty()) {
-            val teams = queryList(RealmMyTeam::class.java) {
-                beginGroup()
-                teamIds.forEachIndexed { index, id ->
-                    if (index > 0) or()
-                    equalTo("_id", id)
-                }
-                endGroup()
-            }
-            teams.associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
-        } else emptyMap()
+        val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
 
         val intermediateList = mutableListOf<Triple<String, String, String>>()
         joinRequests.forEach { jr ->
@@ -312,7 +280,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getTaskTeamName(taskTitle: String): String? {
         val taskObj = findByField(RealmTeamTask::class.java, "title", taskTitle)
-        val team = taskObj?.teamId?.let { findByField(RealmMyTeam::class.java, "_id", it) }
+        val team = taskObj?.teamId?.let { teamsRepository.get().getTeamById(it) }
         return team?.name
     }
 
@@ -331,15 +299,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
         if (teamIds.isNotEmpty()) {
-            val teams = queryList(RealmMyTeam::class.java) {
-                beginGroup()
-                teamIds.forEachIndexed { index, id ->
-                    if (index > 0) or()
-                    equalTo("_id", id)
-                }
-                endGroup()
-            }
-            val teamMap = teams.associateBy({ it._id ?: "" }, { it.name ?: "" })
+            val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
 
             tasks.forEach { task ->
                 val taskTitle = task.title
