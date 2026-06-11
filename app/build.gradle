@@ -12,13 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-<<<<<<< refactor-team-calendar-viewmodel-2427155062787160296
         versionCode = 5707
         versionName = "0.57.7"
-=======
-        versionCode = 5706
-        versionName = "0.57.6"
->>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
