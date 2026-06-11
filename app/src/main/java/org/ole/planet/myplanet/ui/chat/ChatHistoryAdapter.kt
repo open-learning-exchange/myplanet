@@ -70,29 +70,7 @@ class ChatHistoryAdapter(
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
-        cachedSharedViewInIds = if (sharedNews.isEmpty()) {
-            emptyMap()
-        } else {
-            sharedNews
-                .groupBy { it.newsId }
-                .mapNotNull { (newsId, newsEntries) ->
-                    if (newsId == null) null
-                    else {
-                        val ids = newsEntries.flatMap { news ->
-                            try {
-                                val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                                array.mapNotNull { elem ->
-                                    if (elem.isJsonObject) elem.asJsonObject.get("_id")?.asString else null
-                                }
-                            } catch (_: Exception) {
-                                emptyList()
-                            }
-                        }.toSet()
-                        newsId to ids
-                    }
-                }
-                .toMap()
-        }
+        cachedSharedViewInIds = ChatHistoryAdapterHelper.extractSharedViewInIds(sharedNews)
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {
