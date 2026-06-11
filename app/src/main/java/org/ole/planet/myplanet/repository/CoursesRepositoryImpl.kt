@@ -271,7 +271,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val containsQuery = mutableListOf<RealmMyCourse>()
 
             for (item in data) {
-                val title = item.courseTitle?.let { normalizeText(it) } ?: continue
+                val title = item.courseTitleNormal ?: item.courseTitle?.let { normalizeText(it) } ?: continue
 
                 if (title.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
@@ -317,11 +317,10 @@ class CoursesRepositoryImpl @Inject constructor(
             courseIdsWithTags?.let {
                 query = query.`in`("courseId", it.toTypedArray())
             }
+            query = query.isNotEmpty("courseTitle")
 
-            val results = query.findAll()
-            val sortedList = results
-                .filter { !it.courseTitle.isNullOrBlank() }
-                .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
+            val sortedList = results.sortedBy { it.isMyCourse }
             realm.copyFromRealm(sortedList)
         }
     }
@@ -773,7 +772,9 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.courseId = JsonUtils.getString("_id", doc)
         myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", doc)
         myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc)
-        myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", doc)
+        val title = JsonUtils.getString("courseTitle", doc)
+        myMyCoursesDB?.courseTitle = title
+        myMyCoursesDB?.courseTitleNormal = title.let { normalizeText(it) }
         myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", doc)
         val description = JsonUtils.getString("description", doc)
         myMyCoursesDB?.description = description
@@ -790,6 +791,26 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsSize = courseStepsJsonArray.size()
         myMyCoursesDB?.setNumberOfSteps(stepsSize)
         val courseStepsList = mutableListOf<RealmCourseStep>()
+        val examCache = HashMap<String, RealmStepExam>()
+        val examIds = mutableListOf<String>()
+        for (i in 0 until stepsSize) {
+            val stepJson = courseStepsJsonArray[i].asJsonObject
+            if (stepJson.has("exam")) {
+                val id = JsonUtils.getString("_id", stepJson.getAsJsonObject("exam"))
+                if (id.isNotEmpty()) examIds.add(id)
+            }
+            if (stepJson.has("survey")) {
+                val id = JsonUtils.getString("_id", stepJson.getAsJsonObject("survey"))
+                if (id.isNotEmpty()) examIds.add(id)
+            }
+        }
+        examIds.chunked(900).forEach { chunk ->
+            if (chunk.isNotEmpty()) {
+                realmTx.where(RealmStepExam::class.java).`in`("id", chunk.toTypedArray()).findAll().forEach {
+                    it.id?.let { id -> examCache[id] = it }
+                }
+            }
+        }
 
         for (i in 0 until stepsSize) {
             val stepElement = courseStepsJsonArray[i]
@@ -805,8 +826,8 @@ class CoursesRepositoryImpl @Inject constructor(
                 RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
             }
             insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
-            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId)
-            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate)
+            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, examCache)
+            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate, examCache)
             step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
             step.courseId = myMyCoursesDB?.courseId
             courseStepsList.add(step)
@@ -815,20 +836,20 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
     }
 
-    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?) {
+    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, examCache: HashMap<String, RealmStepExam>? = null) {
         if (stepContainer.has("exam")) {
             val obj = stepContainer.getAsJsonObject("exam")
             obj.addProperty("stepNumber", i)
-            insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
+            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
         }
     }
 
-    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?) {
+    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?, examCache: HashMap<String, RealmStepExam>? = null) {
         if (stepContainer.has("survey")) {
             val obj = stepContainer.getAsJsonObject("survey")
             obj.addProperty("stepNumber", i)
             obj.addProperty("createdDate", createdDate)
-            insertCourseStepsExams(myCoursesID, stepId, obj, mRealm)
+            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
         }
     }
 
