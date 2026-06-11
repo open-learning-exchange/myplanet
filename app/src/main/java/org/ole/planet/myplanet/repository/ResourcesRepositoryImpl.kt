@@ -107,6 +107,26 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary> {
+        if (ids.isEmpty()) return emptyList()
+        return queryList(RealmMyLibrary::class.java) {
+            this.`in`("resourceId", ids.toTypedArray())
+        }
+    }
+
+    override suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", true)
+            equalTo("privateFor", teamId)
+        }
+    }
+
+    override suspend fun getPublicLibraryItems(): List<RealmMyLibrary> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("isPrivate", false)
+        }
+    }
+
     override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java) {
             equalTo("resourceLocalAddress", localAddress)
