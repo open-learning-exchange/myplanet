@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
@@ -72,11 +71,13 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val spm = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
+        val dispatcherProvider = entryPoint.dispatcherProvider()
+
+        MainApplication.applicationScope.launch(dispatcherProvider.io) {
+            val spm = entryPoint.sharedPrefManager()
             MainApplication.createLog("sync summary", summary)
             val updateUrl = spm.getServerUrl()
-            val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 

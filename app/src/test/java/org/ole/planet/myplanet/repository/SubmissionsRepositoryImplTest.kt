@@ -38,6 +38,7 @@ class SubmissionsRepositoryImplTest {
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var exporter: SubmissionsRepositoryExporter
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private lateinit var repository: SubmissionsRepositoryImpl
@@ -51,6 +52,7 @@ class SubmissionsRepositoryImplTest {
         surveysRepositoryProvider = mockk(relaxed = true)
         context = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
+        exporter = mockk(relaxed = true)
 
         every { databaseService.ioDispatcher } returns testDispatcher
 
@@ -66,7 +68,8 @@ class SubmissionsRepositoryImplTest {
             teamsRepositoryProvider,
             surveysRepositoryProvider,
             context,
-            sharedPrefManager
+            sharedPrefManager,
+            exporter
         ), recordPrivateCalls = true)
     }
 

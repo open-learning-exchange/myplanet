@@ -33,8 +33,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val exporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
+
+    override suspend fun generateSubmissionPdf(submissionId: String): java.io.File? {
+        return exporter.generateSubmissionPdf(context, submissionId)
+    }
+
+    override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): java.io.File? {
+        return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
