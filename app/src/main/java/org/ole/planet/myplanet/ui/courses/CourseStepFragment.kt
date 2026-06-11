@@ -101,7 +101,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        return coursesRepository.getCourseStepData(stepId!!, user?.id)
+        return coursesRepository.getCourseStepData(stepId ?: "", user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

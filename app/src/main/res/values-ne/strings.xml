@@ -1320,5 +1320,6 @@
     <string name="hours_ago">%1$d घण्टा अघि</string>
     <string name="yesterday">हिजो</string>
     <string name="days_ago">%1$d दिन अघि</string>
+    <string name="removed_from_teamcourse">पाठ्यक्रम टोलीबाट हटाइयो</string>
 
 </resources>

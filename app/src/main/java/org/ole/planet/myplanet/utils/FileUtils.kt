@@ -20,6 +20,7 @@ import java.io.IOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.util.UUID
+import kotlin.math.roundToLong
 
 object FileUtils {
     @Volatile private var cachedExternalFilesDir: File? = null
@@ -293,7 +294,7 @@ object FileUtils {
     fun totalAvailableMemoryRatio(context: Context): Long {
         val total = totalMemoryCapacity(context)
         val available = totalAvailableMemory(context)
-        return Math.round(available.toDouble() / total.toDouble() * 100)
+        return (available.toDouble() / total.toDouble() * 100).roundToLong()
     }
 
     @JvmStatic
