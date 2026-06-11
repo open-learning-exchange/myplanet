@@ -395,11 +395,9 @@ class TeamsRepositoryImpl @Inject constructor(
     private suspend fun findTeamByAnyId(id: String): RealmMyTeam? {
         return withRealm { realm ->
             realm.where(RealmMyTeam::class.java)
-                .beginGroup()
                 .equalTo("_id", id)
                 .or()
                 .equalTo("teamId", id)
-                .endGroup()
                 .findFirst()?.let { realm.copyFromRealm(it) }
         }
     }
