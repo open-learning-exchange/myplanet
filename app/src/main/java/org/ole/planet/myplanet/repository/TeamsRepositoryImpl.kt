@@ -439,6 +439,25 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun getJoinRequestById(id: String?): RealmMyTeam? {
+        if (id.isNullOrEmpty()) return null
+        return findByField(RealmMyTeam::class.java, "_id", id)
+    }
+
+    override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
+        if (ids.isEmpty()) return emptyMap()
+        val teams = queryList(RealmMyTeam::class.java) {
+            beginGroup()
+            ids.forEachIndexed { index, id ->
+                if (index > 0) or()
+                equalTo("_id", id)
+            }
+            endGroup()
+        }
+        return teams.associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
+    }
+
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
         val request = findByField(RealmMyTeam::class.java, "_id", requestId)
         return if (request?.docType == "request") request.teamId else null
