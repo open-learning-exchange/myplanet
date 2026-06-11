@@ -62,7 +62,6 @@ object ServiceModule {
     @Singleton
     fun provideUploadManager(
         @ApplicationContext context: Context,
-        databaseService: DatabaseService,
         submissionsRepository: SubmissionsRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         gson: Gson,
@@ -81,14 +80,13 @@ object ServiceModule {
         photoUploader: org.ole.planet.myplanet.services.upload.PhotoUploader,
         achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader)
+        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader)
     }
 
     @Provides
     @Singleton
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
-        databaseService: DatabaseService,
         @AppPreferences preferences: SharedPreferences,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         userRepository: org.ole.planet.myplanet.repository.UserRepository,
@@ -98,7 +96,7 @@ object ServiceModule {
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         apiInterface: org.ole.planet.myplanet.data.api.ApiInterface
     ): UploadToShelfService {
-        return UploadToShelfService(context, databaseService, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
+        return UploadToShelfService(context, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
     }
 
     @Provides

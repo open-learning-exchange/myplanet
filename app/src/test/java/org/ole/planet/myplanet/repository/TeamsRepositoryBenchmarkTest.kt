@@ -38,6 +38,7 @@ class TeamsRepositoryBenchmarkTest {
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val userRepository: UserRepository = mockk(relaxed = true)
+    private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository> = mockk()
     private val realm: Realm = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
@@ -66,7 +67,8 @@ class TeamsRepositoryBenchmarkTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            userRepository
+            userRepository,
+            resourcesRepositoryLazy
         )
     }
 
