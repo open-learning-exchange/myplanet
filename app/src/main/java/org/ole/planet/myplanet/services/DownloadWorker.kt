@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.services
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -17,6 +18,7 @@ import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -29,7 +31,7 @@ class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
     private val apiInterface: ApiInterface, private val broadcastService: BroadcastService,
     private val dispatcherProvider: DispatcherProvider,
-    @org.ole.planet.myplanet.di.DownloadPreferences private val preferences: android.content.SharedPreferences
+    @DownloadPreferences private val preferences: SharedPreferences
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
