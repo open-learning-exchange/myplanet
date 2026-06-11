@@ -9,7 +9,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.robolectric.annotation.Config
-import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import org.junit.Rule
@@ -22,11 +21,9 @@ class ReferencesAdapterTest {
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var adapter: ReferencesAdapter
-    private lateinit var context: Context
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
 
         val ref1 = JsonObject()
         ref1.addProperty("name", "John Doe")

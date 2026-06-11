@@ -5,7 +5,6 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import com.google.gson.JsonSyntaxException
 import org.ole.planet.myplanet.databinding.RowOtherInfoBinding
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter.ReferencesViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -23,7 +22,6 @@ class ReferencesAdapter(list: List<String>) : ListAdapter<ReferenceRow, Referenc
             try {
                 obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
             }
             if (obj == null) {
                 obj = JsonObject()
