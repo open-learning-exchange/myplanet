@@ -34,7 +34,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -53,6 +52,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import retrofit2.Response
@@ -103,6 +103,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -344,7 +346,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.setText(getString(R.string.please_wait))
             customProgressDialog.show()
             try {
-                val messages = withContext(Dispatchers.IO) {
+                val messages = withContext(dispatcherProvider.io) {
                     val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
                     allConversations = conversations
                     loadedCount = minOf(PAGE_SIZE, conversations.size)
