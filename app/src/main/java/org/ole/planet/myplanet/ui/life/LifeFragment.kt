@@ -29,8 +29,6 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
     private var itemTouchHelper: ItemTouchHelper? = null
     @Inject
     lateinit var lifeRepository: LifeRepository
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
     private var _binding: FragmentLifeBinding? = null
     private val binding get() = checkNotNull(_binding)
     override fun getLayout(): Int = R.layout.fragment_life

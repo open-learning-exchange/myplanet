@@ -31,6 +31,7 @@ class CoursesViewModelTest {
     @Before
     fun setup() {
         io.mockk.every { dispatcherProvider.io } returns Dispatchers.Unconfined
+        io.mockk.every { dispatcherProvider.main } returns Dispatchers.Unconfined
         viewModel = CoursesViewModel(
             coursesRepository,
             dispatcherProvider,
@@ -42,7 +43,7 @@ class CoursesViewModelTest {
 
     @Test
     fun testRemoveCoursesWithProgress() = runTest {
-        viewModel.removeCourses(listOf("c1", "c2"), "u1", true)
+        viewModel.removeCourses(listOf("c1", "c2"), "u1", true) {}
         coVerify { coursesRepository.removeCourseFromShelf("c1", "u1") }
         coVerify { coursesRepository.deleteCourseProgress("c1") }
         coVerify { coursesRepository.removeCourseFromShelf("c2", "u1") }
@@ -51,7 +52,7 @@ class CoursesViewModelTest {
 
     @Test
     fun testRemoveCoursesWithoutProgress() = runTest {
-        viewModel.removeCourses(listOf("c1", "c2"), "u1", false)
+        viewModel.removeCourses(listOf("c1", "c2"), "u1", false) {}
         coVerify { coursesRepository.removeCourseFromShelf("c1", "u1") }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress("c1") }
         coVerify { coursesRepository.removeCourseFromShelf("c2", "u1") }
@@ -60,7 +61,7 @@ class CoursesViewModelTest {
 
     @Test
     fun testRemoveCoursesEmpty() = runTest {
-        viewModel.removeCourses(emptyList(), "u1", true)
+        viewModel.removeCourses(emptyList(), "u1", true) {}
         coVerify(exactly = 0) { coursesRepository.removeCourseFromShelf(any(), any()) }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress(any()) }
     }

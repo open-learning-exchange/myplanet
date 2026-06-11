@@ -78,9 +78,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     @Inject
     lateinit var prefManager: SharedPrefManager
 
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
     private val viewModel: ResourcesViewModel by viewModels()
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper

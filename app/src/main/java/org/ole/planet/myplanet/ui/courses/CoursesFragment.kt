@@ -55,9 +55,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private val viewModel: CoursesViewModel by viewModels()
 
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
-    @Inject
     lateinit var prefManager: SharedPrefManager
 
     @Inject
@@ -88,9 +85,12 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
         val courseIds = snapshot.mapNotNull { it.courseId }
-        viewModel.removeCourses(courseIds, userId, deleteProgress)
-        selectedItems?.clear()
-        Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+        viewModel.removeCourses(courseIds, userId, deleteProgress) {
+            if (isAdded) {
+                selectedItems?.clear()
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+            }
+        }
     }
 
     override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
