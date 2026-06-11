@@ -23,19 +23,22 @@ class ReferencesAdapter(list: List<String>) : ListAdapter<String, ReferencesView
 
     override fun onBindViewHolder(holder: ReferencesViewHolder, position: Int) {
         val jsonString = getItem(position)
-        val obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
-
-        holder.binding.tvRefName.text = getString("name", obj).ifBlank { "—" }
-        holder.binding.tvRefRelationship.text = getString("relationship", obj).ifBlank { "—" }
-        holder.binding.tvRefPhone.text = getString("phone", obj).ifBlank { "—" }
-        holder.binding.tvRefEmail.text = getString("email", obj).ifBlank { "—" }
+        try {
+            val obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
+            holder.binding.tvRefName.text = getString("name", obj).ifBlank { "—" }
+            holder.binding.tvRefRelationship.text = getString("relationship", obj).ifBlank { "—" }
+            holder.binding.tvRefPhone.text = getString("phone", obj).ifBlank { "—" }
+            holder.binding.tvRefEmail.text = getString("email", obj).ifBlank { "—" }
+        } catch (e: Exception) {
+            android.util.Log.w("ReferencesAdapter", "Malformed JSON: $jsonString", e)
+        }
     }
 
     class ReferencesViewHolder(val binding: RowOtherInfoBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<String>(
-            { oldItem, newItem -> oldItem == newItem },
+            { oldItem, newItem -> oldItem === newItem },
             { oldItem, newItem -> oldItem == newItem }
         )
     }
