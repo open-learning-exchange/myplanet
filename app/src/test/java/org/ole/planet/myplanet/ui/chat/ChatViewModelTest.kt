@@ -163,6 +163,7 @@ class ChatViewModelTest {
         viewModel.clearPaginationState()
         assertTrue(viewModel.allConversations.isEmpty())
         assertEquals(0, viewModel.loadedCount)
+    }
 
     @Test
     fun `loadChatHistoryScreenData fetches all data correctly when no caches are provided`() = runTest {
