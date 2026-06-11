@@ -56,10 +56,9 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
-    fun fetchCourseData_uses_dispatcherProvider_io() = runTest(testDispatcher) {
+    fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
-        verify { dispatcherProvider.io }
     }
 
     @Test

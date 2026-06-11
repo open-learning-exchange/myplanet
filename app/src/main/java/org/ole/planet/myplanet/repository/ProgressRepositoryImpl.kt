@@ -7,7 +7,6 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
@@ -27,7 +26,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
-    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> = withContext(dispatcherProvider.io) {
+    override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
         val courseIdsArray = courseIds.toTypedArray()
         val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
             `in`("courseId", courseIdsArray)
@@ -49,14 +48,14 @@ class ProgressRepositoryImpl @Inject constructor(
             progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
             map[courseId] = progressObject
         }
-        map
+        return map
     }
 
-    override suspend fun fetchCourseData(userId: String?): JsonArray = withContext(dispatcherProvider.io) {
+    override suspend fun fetchCourseData(userId: String?): JsonArray {
         val mycourses = coursesRepositoryLazy.get().getMyCourses(userId ?: "")
         val arr = JsonArray()
         val courseIds = mycourses.mapNotNull { it.courseId }
-        val courseProgress = getCourseProgressMap(userId, courseIds)
+        val courseProgress = getCourseProgress(courseIds, userId)
         mycourses.forEach { course ->
             val obj = JsonObject()
             obj.addProperty("courseName", course.courseTitle)
@@ -78,17 +77,17 @@ class ProgressRepositoryImpl @Inject constructor(
             }
             arr.add(obj)
         }
-        arr
+        return arr
     }
 
     override suspend fun getCurrentProgress(
         steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
-    ): Int = withContext(dispatcherProvider.io) {
+    ): Int {
         val progresses = queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
             equalTo("courseId", courseId)
         }
-        calculateCurrentProgress(steps, progresses)
+        return calculateCurrentProgress(steps, progresses)
     }
 
     private fun calculateCurrentProgress(
@@ -110,35 +109,6 @@ class ProgressRepositoryImpl @Inject constructor(
             i++
         }
         return i - 1
-    }
-
-    private suspend fun getCourseProgressMap(
-        userId: String?, courseIds: List<String>
-    ): HashMap<String?, JsonObject> {
-        val courseIdsArray = courseIds.toTypedArray()
-        val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
-            `in`("courseId", courseIdsArray)
-        }
-        val allProgresses = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
-            equalTo("userId", userId)
-            `in`("courseId", courseIdsArray)
-        }
-
-        val stepsByCourseId = allSteps.groupBy { it.courseId }
-        val progressesByCourseId = allProgresses.groupBy { it.courseId }
-
-        val map = HashMap<String?, JsonObject>()
-        for (courseId in courseIds) {
-            val progressObject = JsonObject()
-            val steps = stepsByCourseId[courseId] ?: emptyList()
-            val progresses = progressesByCourseId[courseId] ?: emptyList()
-            progressObject.addProperty("max", steps.size)
-            progressObject.addProperty(
-                "current", calculateCurrentProgress(steps, progresses)
-            )
-            map[courseId] = progressObject
-        }
-        return map
     }
 
     private suspend fun submissionMap(
@@ -176,13 +146,13 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> = withContext(dispatcherProvider.io) {
-        queryList(RealmCourseProgress::class.java) {
+    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
+        return queryList(RealmCourseProgress::class.java) {
             equalTo("userId", userId)
         }
     }
 
-    override suspend fun getCompletedCourses(userId: String): List<CourseCompletion> = withContext(dispatcherProvider.io) {
+    override suspend fun getCompletedCourses(userId: String): List<CourseCompletion> {
         val myCourses = coursesRepositoryLazy.get().getMyCourses(userId)
         val allProgressRecords = getProgressRecords(userId)
 
@@ -210,7 +180,7 @@ class ProgressRepositoryImpl @Inject constructor(
                 completedCourses.add(CourseCompletion(course.courseId, course.courseTitle))
             }
         }
-        completedCourses
+        return completedCourses
     }
 
     override suspend fun saveCourseProgress(
@@ -244,8 +214,8 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(dispatcherProvider.io) {
-        count(RealmUserChallengeActions::class.java) {
+    override suspend fun hasUserCompletedSync(userId: String): Boolean {
+        return count(RealmUserChallengeActions::class.java) {
             equalTo("userId", userId)
             equalTo("actionType", "sync")
         } > 0

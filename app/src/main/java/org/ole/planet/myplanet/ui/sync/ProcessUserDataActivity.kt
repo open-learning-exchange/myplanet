@@ -43,8 +43,6 @@ import org.ole.planet.myplanet.utils.FileUtils.installApk
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefData: SharedPrefManager
@@ -85,14 +83,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     fun checkDownloadResult(download: Download?) {
-        runOnUiThread {
+        lifecycleScope.launch(dispatcherProvider.main) {
             if (!isFinishing && !isDestroyed) {
                 customProgressDialog.show()
                 customProgressDialog.setText("${getString(R.string.downloading)} ${download?.progress}% ${getString(R.string.complete)}")
                 customProgressDialog.setProgress(download?.progress ?: 0)
                 if (download?.completeAll == true) {
                     safelyDismissDialog()
-                    installApk(this, download.fileUrl)
+                    installApk(this@ProcessUserDataActivity, download.fileUrl)
                 } else {
                     safelyDismissDialog()
                     showError(customProgressDialog, download?.message)
