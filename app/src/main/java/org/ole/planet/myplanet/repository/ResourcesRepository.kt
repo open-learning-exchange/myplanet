@@ -87,6 +87,9 @@ interface ResourcesRepository {
     suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
     suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
     suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
+    suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary>
+    suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary>
+    suspend fun getPublicLibraryItems(): List<RealmMyLibrary>
 }
 
 sealed class ResourceUrlsResponse {
