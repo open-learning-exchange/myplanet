@@ -1,68 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:layout_gravity="center"
-    app:cardElevation="2dp"
-    app:cardUseCompatPadding="true">
+    android:layout_height="wrap_content"
+    android:layout_marginStart="16dp"
+    android:layout_marginEnd="16dp"
+    android:layout_marginBottom="12dp"
+    app:cardBackgroundColor="@color/card_bg"
+    app:cardCornerRadius="20dp"
+    app:cardElevation="0dp"
+    app:strokeColor="@color/dash_line"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_gravity="center">
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
 
-        <FrameLayout
+        <LinearLayout
             android:id="@+id/myLifeImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_gravity="center"
-            android:foregroundGravity="center">
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="14dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?attr/selectableItemBackground">
 
-            <LinearLayout
-                android:layout_width="@dimen/dashboard_card_title"
-                android:layout_height="match_parent"
-                android:layout_gravity="center"
-                android:background="@color/md_purple_700"
-                android:gravity="center"
-                android:orientation="vertical"
-                android:padding="@dimen/padding_normal">
+            <FrameLayout
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:background="@drawable/bg_category_life">
 
                 <ImageView
-                    android:layout_width="@dimen/image_size_home_card"
-                    android:layout_height="@dimen/image_size_home_card"
-                    android:layout_marginLeft="16dp"
-                    android:layout_marginRight="16dp"
-                    app:srcCompat="@drawable/meetups"
-                    android:contentDescription="@string/txt_myLife" />
+                    android:layout_width="36dp"
+                    android:layout_height="36dp"
+                    android:layout_gravity="center"
+                    android:src="@drawable/meetups"
+                    app:tint="@color/cat_life_accent"
+                    android:contentDescription="@null" />
+            </FrameLayout>
 
-                <TextView
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="14dp"
+                android:orientation="vertical">
+
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:gravity="center"
-                    android:text="@string/txt_myLife"
-                    android:textColor="@color/md_white_1000" />
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
 
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/txt_myLife"
+                        android:textColor="@color/dash_ink"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/count_life"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_count_life"
+                        android:paddingStart="7dp"
+                        android:paddingEnd="7dp"
+                        android:paddingTop="2dp"
+                        android:paddingBottom="2dp"
+                        android:textColor="@color/cat_life_ink"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/txt_life_subline"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:textColor="@color/dash_ink_soft"
+                    android:textSize="12sp"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
             </LinearLayout>
 
-        </FrameLayout>
+            <ImageView
+                android:id="@+id/chevron_life"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:background="@drawable/oval_surface_2"
+                android:padding="8dp"
+                android:src="@drawable/ic_chevron_down"
+                app:tint="@color/dash_ink"
+                android:contentDescription="@null" />
+        </LinearLayout>
 
-        <HorizontalScrollView
+        <!-- Legacy flexbox kept for BaseDashboardFragment compat; always hidden -->
+        <com.google.android.flexbox.FlexboxLayout
+            android:id="@+id/flexboxLayoutMyLife"
             android:layout_width="0dp"
-            android:contentDescription="@string/txt_myLife"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:background="@color/card_bg">
+            android:layout_height="0dp"
+            android:visibility="gone"
+            app:flexWrap="nowrap"
+            app:alignItems="center" />
 
-            <com.google.android.flexbox.FlexboxLayout
-                android:id="@+id/flexboxLayoutMyLife"
-                android:layout_width="wrap_content"
-                android:layout_height="match_parent"
-                app:alignContent="stretch"
-                app:alignItems="stretch"
-                app:flexWrap="wrap" />
-        </HorizontalScrollView>
+        <!-- Expanded preview: up to 3 my-life rows -->
+        <LinearLayout
+            android:id="@+id/container_life_previews"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginStart="14dp"
+                android:layout_marginEnd="14dp"
+                android:background="@color/dash_line" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/btn_open_life"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginBottom="14dp"
+            android:text="@string/open_life_arrow"
+            android:textColor="@color/cat_life_accent"
+            android:textStyle="bold"
+            android:textSize="13sp"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
     </LinearLayout>
-
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>
