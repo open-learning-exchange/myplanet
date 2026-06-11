@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -36,7 +37,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val submissionsRepository: SubmissionsRepository,
     private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val syncManager: SyncManager
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -192,6 +194,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
             uploadExamResultWrapper()
+            syncManager.resumeHeavyTablesIfNeeded()
             if (!MainApplication.isSyncRunning.get()) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }

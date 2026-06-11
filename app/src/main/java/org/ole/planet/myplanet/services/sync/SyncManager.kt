@@ -72,6 +72,7 @@ class SyncManager @Inject constructor(
     private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
+    private val isHeavySyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
@@ -267,12 +268,18 @@ class SyncManager @Inject constructor(
 
             // Heavy tables start only after main sync fully completes — no overlap with resources/library
             val heavyTables = listOf("ratings", "courses_progress", "submissions", "login_activities", "team_activities")
-            syncScope.launch(dispatcherProvider.io) {
-                heavyTables.forEach { table ->
+            if (isHeavySyncing.compareAndSet(false, true)) {
+                syncScope.launch(dispatcherProvider.io) {
                     try {
-                        transactionSyncManager.syncDb(table)
-                    } catch (e: Exception) {
-                        Log.e("SyncPerf", "Background sync failed for $table: ${e.message}")
+                        heavyTables.forEach { table ->
+                            try {
+                                transactionSyncManager.syncDb(table, useCheckpoint = true)
+                            } catch (e: Exception) {
+                                Log.e("SyncPerf", "Background sync failed for $table: ${e.message}")
+                            }
+                        }
+                    } finally {
+                        isHeavySyncing.set(false)
                     }
                 }
             }
@@ -531,6 +538,29 @@ class SyncManager @Inject constructor(
             }
         }
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
+    }
+
+    fun resumeHeavyTablesIfNeeded() {
+        val heavyTables = listOf("ratings", "courses_progress", "submissions", "login_activities", "team_activities")
+        val pendingTables = heavyTables.filter { table ->
+            sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
+        }
+        if (pendingTables.isEmpty()) return
+        if (isSyncing.get()) return
+        if (!isHeavySyncing.compareAndSet(false, true)) return
+        syncScope.launch(dispatcherProvider.io) {
+            try {
+                pendingTables.forEach { table ->
+                    try {
+                        transactionSyncManager.syncDb(table, useCheckpoint = true)
+                    } catch (e: Exception) {
+                        Log.e("SyncPerf", "Resume failed for $table: ${e.message}")
+                    }
+                }
+            } finally {
+                isHeavySyncing.set(false)
+            }
+        }
     }
 
     fun cancelBackgroundSync() {

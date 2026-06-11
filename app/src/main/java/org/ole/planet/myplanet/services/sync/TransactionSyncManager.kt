@@ -151,26 +151,32 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncDb(table: String): Int = withContext(dispatcherProvider.io) {
+    suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = System.currentTimeMillis()
+        val checkpointKey = "heavy_sync_skip_$table"
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
-            // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
-                "ratings" -> 20        // Small batches for slow endpoint
-                "submissions" -> 100   // Medium batches for slow endpoint
-                "courses_progress", "login_activities", "team_activities" -> 200  // Smaller batches when running in background to reduce write-lock hold time
-                else -> 1000           // Large batches for fast endpoints
+                "ratings" -> 20
+                "submissions" -> 100
+                "courses_progress", "login_activities", "team_activities" -> 200
+                else -> 1000
             }
-            var skip = 0
+            var skip = if (useCheckpoint) {
+                val saved = sharedPrefManager.rawPreferences.getInt(checkpointKey, 0)
+                if (saved > 0) android.util.Log.d("SyncPerf", "  ↻ Resuming $table from skip=$saved")
+                saved
+            } else 0
             var totalDocs = 0
-            var batchNumber = 0
+            var batchNumber = if (useCheckpoint) skip / pageSize else 0
+            var syncCompletedFully = false
 
-            // Paginated fetching to avoid long-blocking API calls
             while (true) {
                 batchNumber++
+                if (useCheckpoint) {
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
+                }
                 val batchStartTime = System.currentTimeMillis()
-                // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
                 val response = apiInterface.findDocs(
                     UrlUtils.header,
@@ -185,7 +191,8 @@ class TransactionSyncManager @Inject constructor(
                 }
                 val arr = getJsonArray("rows", response.body())
                 if (arr.size() == 0) {
-                    break // No more documents
+                    syncCompletedFully = true
+                    break
                 }
                 org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
                     "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
@@ -287,8 +294,12 @@ class TransactionSyncManager @Inject constructor(
                 }
                 // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
+                    syncCompletedFully = true
                     break
                 }
+            }
+            if (useCheckpoint && syncCompletedFully) {
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
