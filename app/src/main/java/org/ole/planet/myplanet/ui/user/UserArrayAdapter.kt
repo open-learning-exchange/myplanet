@@ -58,8 +58,13 @@ class UserArrayAdapter(
         }
 
         holder.itemView.setOnClickListener {
+            val currentPos = holder.bindingAdapterPosition
+            if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
+            val previousUser = selectedUser
             selectedUser = user
-            submitList(currentList.toList())
+            val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
+            if (prevPos != -1) notifyItemChanged(prevPos)
+            notifyItemChanged(currentPos)
             onItemClick(user)
         }
     }
