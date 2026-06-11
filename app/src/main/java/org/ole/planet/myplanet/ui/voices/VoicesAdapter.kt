@@ -93,10 +93,8 @@ class VoicesAdapter(
         }
     )
 ) {
-    private var originalList: List<RealmNews> = emptyList()
 
     override fun submitList(list: List<RealmNews>?) {
-        originalList = list ?: emptyList()
         val finalList = mutableListOf<RealmNews>()
         parentNews?.let {
             preParseNews(it)
@@ -110,7 +108,6 @@ class VoicesAdapter(
     }
 
     override fun submitList(list: List<RealmNews>?, commitCallback: Runnable?) {
-        originalList = list ?: emptyList()
         val finalList = mutableListOf<RealmNews>()
         parentNews?.let {
             preParseNews(it)
@@ -165,7 +162,7 @@ class VoicesAdapter(
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember != nonTeamMember) {
             this.nonTeamMember = nonTeamMember
-            notifyItemRangeChanged(0, itemCount)
+            notifyDataSetChanged()
         }
     }
 
@@ -206,18 +203,12 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        val snapshotList = currentList.toMutableList()
-        val pos = snapshotList.indexOfFirst { it?.id == newsId }
-        if (pos != -1) {
-            snapshotList.removeAt(pos)
-            submitList(snapshotList)
-        } else if (parentNews?.id == newsId) {
-            submitList(emptyList())
-        }
         parentNews?.id?.let { pid ->
-            val current = replyCountCache[pid]
-            replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
-            notifyItemChanged(0)
+            if (pid == newsId) {
+                val current = replyCountCache[pid]
+                replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
+                notifyDataSetChanged()
+            }
         }
         listener?.onDataChanged()
     }
@@ -227,7 +218,7 @@ class VoicesAdapter(
         replyCountCache.remove(newsId)
         val index = currentList.indexOfFirst { it.id == newsId }
         if (index >= 0) {
-            notifyItemChanged(index)
+            notifyDataSetChanged()
         }
     }
 
@@ -294,7 +285,7 @@ class VoicesAdapter(
                     fetchingUserIds.remove(userId)
                     currentList.forEachIndexed { index, item ->
                         if (item.userId == userId) {
-                            notifyItemChanged(index)
+                            notifyDataSetChanged()
                         }
                     }
                 }
@@ -361,7 +352,7 @@ class VoicesAdapter(
                         voicesRepository,
                         { h, updatedNews, pos ->
                             showReplyButton(h, updatedNews, pos)
-                            notifyItemChanged(pos)
+                            notifyDataSetChanged()
                         },
                         onEditAction
                     )
@@ -414,7 +405,7 @@ class VoicesAdapter(
     fun updateParentNews(news: RealmNews?) {
         parentNews = news
         preParseNews(parentNews)
-        submitList(originalList)
+        submitList(currentList.filter { it.id != parentNews?.id })
     }
 
     private fun parseViewIn(viewIn: String?): JsonArray? {

@@ -133,7 +133,9 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     deletePostFn = { newsId ->
                         voicesViewModel.deletePost(newsId, "") {
-                            newsAdapter.removePost(newsId)
+                            val currentList = newsAdapter.currentList.toMutableList()
+                            currentList.removeAll { it.id == newsId }
+                            newsAdapter.submitList(currentList)
                         }
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->

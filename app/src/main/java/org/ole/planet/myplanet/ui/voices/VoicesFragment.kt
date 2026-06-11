@@ -251,7 +251,10 @@ class VoicesFragment : BaseVoicesFragment() {
             },
             deletePostFn = { newsId ->
                 voicesViewModel.deletePost(newsId, "") {
-                    adapterNews?.removePost(newsId)
+                    filteredNewsList = filteredNewsList.filter { it?.id != newsId }
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList, etSearch.text.toString().trim())
+                    setData(searchFilteredList)
                 }
             },
             shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
