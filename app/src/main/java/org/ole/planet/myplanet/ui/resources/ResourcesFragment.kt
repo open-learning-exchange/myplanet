@@ -755,7 +755,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch {
-                resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
+                viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
                         _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))

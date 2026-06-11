@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, CoursesProgressAdapter.CoursesProgressViewHolder>(DiffUtils.itemCallback({ old, new -> old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString }, { old, new -> getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new) })) {
+class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, CoursesProgressAdapter.CoursesProgressViewHolder>(DIFF_CALLBACK) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesProgressViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -40,14 +40,20 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
 
     private fun showStepMistakes(position: Int, binding: RowMyProgressBinding) {
         val item = getItem(position)
-        if (item.asJsonObject.has("stepMistake")) {
-            val stepMistake = item.asJsonObject["stepMistake"].asJsonObject
-            binding.llProgress.removeAllViews()
+        val stepMistake = if (item.asJsonObject.has("stepMistake")) item.asJsonObject["stepMistake"].asJsonObject else null
 
-            if (stepMistake.keySet().isNotEmpty()) {
-                binding.llHeader.visibility = View.VISIBLE
-                val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
-                stepMistake.keySet().forEach { stepKey ->
+        if (stepMistake != null && stepMistake.keySet().isNotEmpty()) {
+            binding.llHeader.visibility = View.VISIBLE
+            val keys = stepMistake.keySet().toList()
+            val textColor = ContextCompat.getColor(context, R.color.daynight_textColor)
+
+            val currentChildCount = binding.llProgress.childCount
+            val requiredChildCount = keys.size
+
+            if (currentChildCount > requiredChildCount) {
+                binding.llProgress.removeViews(requiredChildCount, currentChildCount - requiredChildCount)
+            } else if (currentChildCount < requiredChildCount) {
+                for (i in currentChildCount until requiredChildCount) {
                     val row = LinearLayout(context).apply {
                         layoutParams = LinearLayout.LayoutParams(
                             LinearLayout.LayoutParams.MATCH_PARENT,
@@ -59,14 +65,12 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
 
                     val stepView = TextView(context).apply {
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "${stepKey.toInt().plus(1)}"
                         gravity = Gravity.CENTER
                         setTextColor(textColor)
                     }
 
                     val mistakeView = TextView(context).apply {
                         layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        text = "${stepMistake[stepKey].asInt}"
                         gravity = Gravity.CENTER
                         setTextColor(textColor)
                     }
@@ -76,11 +80,20 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
 
                     binding.llProgress.addView(row)
                 }
-            } else {
-                binding.llHeader.visibility = View.GONE
+            }
+
+            for (i in keys.indices) {
+                val stepKey = keys[i]
+                val row = binding.llProgress.getChildAt(i) as LinearLayout
+                val stepView = row.getChildAt(0) as TextView
+                val mistakeView = row.getChildAt(1) as TextView
+
+                stepView.text = "${stepKey.toInt().plus(1)}"
+                mistakeView.text = "${stepMistake[stepKey].asInt}"
             }
         } else {
             binding.llHeader.visibility = View.GONE
+            binding.llProgress.removeAllViews()
         }
     }
 
@@ -91,6 +104,15 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
     }
 
     companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<JsonObject>(
+            areItemsTheSame = { old, new ->
+                old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString
+            },
+            areContentsTheSame = { old, new ->
+                getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new)
+            }
+        )
+
         private fun getCourseProgressComparisonData(item: JsonObject): List<Any?> {
             val courseName = item.asJsonObject["courseName"]?.asString
             val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt

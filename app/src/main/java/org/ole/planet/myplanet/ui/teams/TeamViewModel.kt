@@ -35,7 +35,8 @@ class TeamViewModel @Inject constructor(
     val taskList: StateFlow<List<RealmTeamTask>> = _taskList
 
     fun loadTasks(teamId: String) {
-        viewModelScope.launch {
+        loadTaskJob?.cancel()
+        loadTaskJob = viewModelScope.launch {
             teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
                 _taskList.value = tasks
             }
@@ -48,6 +49,7 @@ class TeamViewModel @Inject constructor(
     private var currentFromDashboard: Boolean = false
     private var currentType: String? = null
     private var loadJob: kotlinx.coroutines.Job? = null
+    private var loadTaskJob: kotlinx.coroutines.Job? = null
 
 
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
