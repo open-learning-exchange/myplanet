@@ -317,11 +317,10 @@ class CoursesRepositoryImpl @Inject constructor(
             courseIdsWithTags?.let {
                 query = query.`in`("courseId", it.toTypedArray())
             }
+            query = query.isNotEmpty("courseTitle")
 
-            val results = query.findAll()
-            val sortedList = results
-                .filter { !it.courseTitle.isNullOrBlank() }
-                .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
+            val sortedList = results.sortedBy { it.isMyCourse }
             realm.copyFromRealm(sortedList)
         }
     }
