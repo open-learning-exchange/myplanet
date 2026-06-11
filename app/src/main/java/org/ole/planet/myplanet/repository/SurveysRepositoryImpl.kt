@@ -17,6 +17,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -63,43 +64,8 @@ class SurveysRepositoryImpl @Inject constructor(
                 val sParentCode = sharedPrefManager.getParentCode()
                 val planetCode = sharedPrefManager.getPlanetCode()
 
-                val parentJsonString = try {
-                    JSONObject().apply {
-                        put("_id", exam.id)
-                        put("name", exam.name)
-                        put("courseId", exam.courseId ?: "")
-                        put("sourcePlanet", exam.sourcePlanet ?: "")
-                        put("teamShareAllowed", exam.isTeamShareAllowed)
-                        put("noOfQuestions", exam.noOfQuestions)
-                        put("isFromNation", exam.isFromNation)
-                    }.toString()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    "{}"
-                }
-
-                val userJsonString = try {
-                    JSONObject().apply {
-                        put("doc", JSONObject().apply {
-                            put("_id", userModel?.id)
-                            put("name", userModel?.name)
-                            put("userId", userModel?.id ?: "")
-                            put("teamPlanetCode", planetCode)
-                            put("status", "active")
-                            put("type", "team")
-                            put("createdBy", userModel?.id ?: "")
-                        })
-
-                        if (isTeam && teamId != null) {
-                            put("membershipDoc", JSONObject().apply {
-                                put("teamId", teamId)
-                            })
-                        }
-                    }.toString()
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                    "{}"
-                }
+                val parentJsonString = createParentJsonString(exam)
+                val userJsonString = createUserJsonString(userModel, planetCode, isTeam, teamId)
 
                 val teamName = if (isTeam && teamId != null) {
                     transactionRealm.where(RealmMyTeam::class.java)
@@ -116,26 +82,7 @@ class SurveysRepositoryImpl @Inject constructor(
                         .findFirst()
 
                     if (existingSurvey == null) {
-                        transactionRealm.createObject(RealmStepExam::class.java, newSurveyId).apply {
-                            this._rev = null
-                            this.createdDate = System.currentTimeMillis()
-                            this.updatedDate = System.currentTimeMillis()
-                            this.adoptionDate = System.currentTimeMillis()
-                            this.createdBy = userModel?.id
-                            this.totalMarks = exam.totalMarks
-                            this.name = "${exam.name} - $teamName"
-                            this.description = exam.description
-                            this.type = exam.type
-                            this.stepId = exam.stepId
-                            this.courseId = exam.courseId
-                            this.sourcePlanet = exam.sourcePlanet
-                            this.passingPercentage = exam.passingPercentage
-                            this.noOfQuestions = exam.noOfQuestions
-                            this.isFromNation = exam.isFromNation
-                            this.teamId = teamId
-                            this.sourceSurveyId = examId
-                            this.isTeamShareAllowed = false
-                        }
+                        createMappedSurvey(transactionRealm, newSurveyId, examId, exam, userModel, teamName, teamId)
 
                         val questions = transactionRealm.where(RealmExamQuestion::class.java)
                             .equalTo("examId", examId)
@@ -164,38 +111,142 @@ class SurveysRepositoryImpl @Inject constructor(
                 }
 
                 if (existingAdoption == null) {
-                    transactionRealm.createObject(RealmSubmission::class.java, adoptionId).apply {
-                        this.parentId = examId
-                        this.parent = parentJsonString
-                        this.userId = userId
-                        this.user = userJsonString
-                        this.type = "survey"
-                        this.status = ""
-                        this.uploaded = false
-                        this.source = planetCode
-                        this.parentCode = sParentCode
-                        this.startTime = System.currentTimeMillis()
-                        this.lastUpdateTime = System.currentTimeMillis()
-                        this.isUpdated = true
+                    createMappedSubmission(
+                        transactionRealm,
+                        adoptionId,
+                        examId,
+                        parentJsonString,
+                        userId,
+                        userJsonString,
+                        planetCode,
+                        sParentCode,
+                        isTeam,
+                        teamId
+                    )
+                }
+            }
+        }
+    }
 
-                        if (isTeam && teamId != null) {
-                            val team = transactionRealm.where(RealmMyTeam::class.java)
-                                .equalTo("_id", teamId)
-                                .findFirst()
+    private fun createParentJsonString(exam: RealmStepExam): String {
+        return try {
+            JSONObject().apply {
+                put("_id", exam.id)
+                put("name", exam.name)
+                put("courseId", exam.courseId ?: "")
+                put("sourcePlanet", exam.sourcePlanet ?: "")
+                put("teamShareAllowed", exam.isTeamShareAllowed)
+                put("noOfQuestions", exam.noOfQuestions)
+                put("isFromNation", exam.isFromNation)
+            }.toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "{}"
+        }
+    }
 
-                            if (team != null) {
-                                val teamRef = transactionRealm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-                                teamRef._id = team._id
-                                teamRef.name = team.name
-                                teamRef.type = team.type ?: "team"
-                                this.teamObject = teamRef
-                            }
+    private fun createUserJsonString(
+        userModel: org.ole.planet.myplanet.model.RealmUser?,
+        planetCode: String,
+        isTeam: Boolean,
+        teamId: String?
+    ): String {
+        return try {
+            JSONObject().apply {
+                put("doc", JSONObject().apply {
+                    put("_id", userModel?.id)
+                    put("name", userModel?.name)
+                    put("userId", userModel?.id ?: "")
+                    put("teamPlanetCode", planetCode)
+                    put("status", "active")
+                    put("type", "team")
+                    put("createdBy", userModel?.id ?: "")
+                })
 
-                            this.membershipDoc = transactionRealm.createObject(RealmMembershipDoc::class.java).apply {
-                                this.teamId = teamId
-                            }
-                        }
-                    }
+                if (isTeam && teamId != null) {
+                    put("membershipDoc", JSONObject().apply {
+                        put("teamId", teamId)
+                    })
+                }
+            }.toString()
+        } catch (e: Exception) {
+            e.printStackTrace()
+            "{}"
+        }
+    }
+
+    private fun createMappedSurvey(
+        transactionRealm: io.realm.Realm,
+        newSurveyId: String,
+        examId: String,
+        exam: RealmStepExam,
+        userModel: org.ole.planet.myplanet.model.RealmUser?,
+        teamName: String,
+        teamId: String
+    ) {
+        transactionRealm.createObject(RealmStepExam::class.java, newSurveyId).apply {
+            this._rev = null
+            this.createdDate = System.currentTimeMillis()
+            this.updatedDate = System.currentTimeMillis()
+            this.adoptionDate = System.currentTimeMillis()
+            this.createdBy = userModel?.id
+            this.totalMarks = exam.totalMarks
+            this.name = "${exam.name} - $teamName"
+            this.description = exam.description
+            this.type = exam.type
+            this.stepId = exam.stepId
+            this.courseId = exam.courseId
+            this.sourcePlanet = exam.sourcePlanet
+            this.passingPercentage = exam.passingPercentage
+            this.noOfQuestions = exam.noOfQuestions
+            this.isFromNation = exam.isFromNation
+            this.teamId = teamId
+            this.sourceSurveyId = examId
+            this.isTeamShareAllowed = false
+        }
+    }
+
+    private fun createMappedSubmission(
+        transactionRealm: io.realm.Realm,
+        adoptionId: String,
+        examId: String,
+        parentJsonString: String,
+        userId: String?,
+        userJsonString: String,
+        planetCode: String,
+        sParentCode: String,
+        isTeam: Boolean,
+        teamId: String?
+    ) {
+        transactionRealm.createObject(RealmSubmission::class.java, adoptionId).apply {
+            this.parentId = examId
+            this.parent = parentJsonString
+            this.userId = userId
+            this.user = userJsonString
+            this.type = "survey"
+            this.status = ""
+            this.uploaded = false
+            this.source = planetCode
+            this.parentCode = sParentCode
+            this.startTime = System.currentTimeMillis()
+            this.lastUpdateTime = System.currentTimeMillis()
+            this.isUpdated = true
+
+            if (isTeam && teamId != null) {
+                val team = transactionRealm.where(RealmMyTeam::class.java)
+                    .equalTo("_id", teamId)
+                    .findFirst()
+
+                if (team != null) {
+                    val teamRef = transactionRealm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
+                    teamRef._id = team._id
+                    teamRef.name = team.name
+                    teamRef.type = team.type ?: "team"
+                    this.teamObject = teamRef
+                }
+
+                this.membershipDoc = transactionRealm.createObject(RealmMembershipDoc::class.java).apply {
+                    this.teamId = teamId
                 }
             }
         }
