@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.core.content.edit
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.UUID
@@ -39,6 +40,8 @@ class SurveysRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
 ) : RealmRepository(databaseService, realmDispatcher), SurveysRepository {
+
+    private val reminderPrefs: SharedPreferences by lazy { context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE) }
 
     companion object {
         private const val PREF_SURVEY_REMINDERS = "survey_reminders"
@@ -457,16 +460,15 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override fun dueRemindersFlow(): Flow<List<String>> = flow {
-        val prefs = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
         while (true) {
             val currentTime = System.currentTimeMillis()
             val toShow = mutableListOf<String>()
             val toRemove = mutableListOf<String>()
 
-            for (entry in prefs.all) {
+            for (entry in reminderPrefs.all) {
                 if (entry.key.startsWith("reminder_time_")) {
                     val surveyIds = entry.key.removePrefix("reminder_time_")
-                    val reminderTime = prefs.getLong(entry.key, 0)
+                    val reminderTime = reminderPrefs.getLong(entry.key, 0)
                     if (reminderTime <= currentTime) {
                         toShow.add(surveyIds)
                         toRemove.add(surveyIds)
@@ -476,7 +478,7 @@ class SurveysRepositoryImpl @Inject constructor(
 
             if (toShow.isNotEmpty()) {
                 emit(toShow)
-                prefs.edit {
+                reminderPrefs.edit {
                     for (surveyIds in toRemove) {
                         remove("reminder_time_$surveyIds")
                         remove("reminder_surveys_$surveyIds")
@@ -491,27 +493,23 @@ class SurveysRepositoryImpl @Inject constructor(
         val currentTime = System.currentTimeMillis()
         val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
 
-        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
-        preferences.edit {
+        reminderPrefs.edit {
             putLong("reminder_time_$surveyIds", reminderTime)
                 .putString("reminder_surveys_$surveyIds", surveyIds)
         }
     }
 
     override suspend fun setLastSurveyDialogShown(time: Long) {
-        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
-        preferences.edit {
+        reminderPrefs.edit {
             putLong(KEY_LAST_SURVEY_DIALOG_SHOWN, time)
         }
     }
 
     override suspend fun getLastSurveyDialogShown(): Long {
-        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
-        return preferences.getLong(KEY_LAST_SURVEY_DIALOG_SHOWN, 0L)
+        return reminderPrefs.getLong(KEY_LAST_SURVEY_DIALOG_SHOWN, 0L)
     }
 
     override suspend fun isReminderScheduled(surveyIds: String): Boolean {
-        val preferences = context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE)
-        return preferences.contains("reminder_time_$surveyIds")
+        return reminderPrefs.contains("reminder_time_$surveyIds")
     }
 }
