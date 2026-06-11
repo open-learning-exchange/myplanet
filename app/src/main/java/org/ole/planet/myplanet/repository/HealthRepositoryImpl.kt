@@ -1,6 +1,14 @@
 package org.ole.planet.myplanet.repository
 
 import java.util.Date
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
+import org.ole.planet.myplanet.utils.UrlUtils
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
@@ -13,6 +21,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class HealthRepositoryImpl @Inject constructor(
+    private val apiInterface: ApiInterface,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider
@@ -99,4 +108,40 @@ class HealthRepositoryImpl @Inject constructor(
             org.ole.planet.myplanet.model.RealmHealthExamination.insert(realm, jsonDoc)
         }
     }
+
+    override suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?> {
+        val uploadedHealths = mutableMapOf<String, String?>()
+        val semaphore = Semaphore(5)
+        supervisorScope {
+            myHealths.map { pojo ->
+                async {
+                    semaphore.withPermit {
+                        try {
+                            val res = apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/health",
+                                serialize(pojo)
+                            )
+
+                            if (res.body() != null && res.body()?.has("id") == true) {
+                                val rev = res.body()?.get("rev")?.asString
+                                val id = pojo._id
+                                if (id != null) {
+                                    return@async id to rev
+                                }
+                            }
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                        }
+                        null
+                    }
+                }
+            }.awaitAll().filterNotNull().forEach { (id, rev) ->
+                uploadedHealths[id] = rev
+            }
+        }
+        return uploadedHealths
+    }
+
 }
