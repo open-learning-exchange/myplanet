@@ -6,5 +6,7 @@ data class ResourceListModel(
     val library: RealmMyLibrary,
     val item: ResourceItem,
     val rating: JsonObject?,
-    val tags: List<TagItem>
+    val tags: List<TagItem>,
+    var isOpened: Boolean = false,
+    var isLocallyOffline: Boolean = false
 )
