@@ -140,7 +140,6 @@ object DownloadUtils {
     @RequiresApi(Build.VERSION_CODES.S)
     fun openPriorityDownloadService(context: Context?, urls: ArrayList<String>) {
         context?.let { ctx ->
-            // TODO: Refactor DownloadUtils to support dependency injection for SharedPreferences
             val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
             val existingPriority = preferences.getStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, emptySet()) ?: emptySet()
@@ -156,7 +155,6 @@ object DownloadUtils {
     @RequiresApi(Build.VERSION_CODES.S)
     fun openDownloadService(context: Context?, urls: ArrayList<String>, fromSync: Boolean) {
         context?.let { ctx ->
-            // TODO: Refactor DownloadUtils to support dependency injection for SharedPreferences
             val preferences = ctx.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
             val existingUrls = preferences.getStringSet(DownloadService.PENDING_DOWNLOADS_KEY, emptySet()) ?: emptySet()
