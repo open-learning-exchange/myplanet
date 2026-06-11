@@ -175,19 +175,10 @@ object SyncTimeLogger {
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
     }
 
-    internal fun extractProcessName(endpoint: String): String {
-        val segments = endpoint.split("/")
-
-        val lastValidSegment = segments.lastOrNull {
-            it.isNotEmpty() && !it.startsWith("?")
-        } ?: return "Unknown"
-
-        val withoutQuery = lastValidSegment.substringBefore("?")
-        if (withoutQuery.isEmpty()) return "Unknown"
-
-        return withoutQuery.replaceFirstChar {
-            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
-        }
+    private fun extractProcessName(endpoint: String): String {
+        // Extract database/collection name from endpoint
+        val parts = endpoint.split("/")
+        return parts.getOrNull(parts.size - 2) ?: "unknown"
     }
 
     private fun shortenEndpoint(endpoint: String): String {

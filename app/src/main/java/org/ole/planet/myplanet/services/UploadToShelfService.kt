@@ -15,6 +15,7 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class UploadToShelfService @Inject constructor(
     @ApplicationContext private val context: Context,
+    private val dbService: DatabaseService,
     @AppPreferences private val sharedPreferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,

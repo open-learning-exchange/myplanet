@@ -18,6 +18,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -44,6 +45,7 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,

@@ -6,15 +6,14 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.services.upload.UploadConfig
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.services.upload.UploadedItem
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
+    dispatcherProvider: DispatcherProvider
+) : RealmRepository(databaseService, dispatcherProvider.io), UploadRepository {
 
     override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
         return withRealmAsync { realm ->

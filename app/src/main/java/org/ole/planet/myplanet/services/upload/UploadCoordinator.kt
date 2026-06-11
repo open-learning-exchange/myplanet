@@ -134,6 +134,13 @@ class UploadCoordinator @Inject constructor(
             }
 
             val dbId = config.dbIdExtractor?.invoke(copiedItem)
+            val jsonString = serialized.toString()
+            val chunkSize = 3000
+            var offset = 0
+            while (offset < jsonString.length) {
+                val end = minOf(offset + chunkSize, jsonString.length)
+                offset = end
+            }
             PreparedUpload(
                 item = copiedItem,
                 localId = localId,

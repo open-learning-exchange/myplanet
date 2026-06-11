@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowMyProgressBinding
 import org.ole.planet.myplanet.utils.DiffUtils
 
-class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, CoursesProgressAdapter.CoursesProgressViewHolder>(DIFF_CALLBACK) {
+class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObject, CoursesProgressAdapter.CoursesProgressViewHolder>(DiffUtils.itemCallback({ old, new -> old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString }, { old, new -> getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new) })) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CoursesProgressViewHolder {
         val binding = RowMyProgressBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -91,15 +91,6 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
     }
 
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<JsonObject>(
-            areItemsTheSame = { old, new ->
-                old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString
-            },
-            areContentsTheSame = { old, new ->
-                getCourseProgressComparisonData(old) == getCourseProgressComparisonData(new)
-            }
-        )
-
         private fun getCourseProgressComparisonData(item: JsonObject): List<Any?> {
             val courseName = item.asJsonObject["courseName"]?.asString
             val progressCurrent = item.asJsonObject["progress"]?.asJsonObject?.get("current")?.asInt

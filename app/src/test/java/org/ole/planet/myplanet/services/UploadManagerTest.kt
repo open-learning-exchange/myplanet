@@ -20,6 +20,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
@@ -47,6 +48,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 class UploadManagerTest {
     private lateinit var uploadManager: UploadManager
     private val context: Context = mockk(relaxed = true)
+    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
@@ -80,6 +82,7 @@ class UploadManagerTest {
         uploadManager = spyk(
             UploadManager(
                 context,
+                databaseService,
                 submissionsRepository,
                 sharedPrefManager,
                 gson,

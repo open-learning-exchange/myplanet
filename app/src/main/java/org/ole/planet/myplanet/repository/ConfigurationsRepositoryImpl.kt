@@ -35,8 +35,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
-import org.ole.planet.myplanet.di.RealmDispatcher
-import kotlinx.coroutines.CoroutineDispatcher
 
 class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -44,11 +42,10 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    databaseService: DatabaseService,
+    private val databaseService: DatabaseService,
     private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), ConfigurationsRepository {
+    private val dispatcherProvider: DispatcherProvider
+) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override suspend fun checkHealth(): String {
@@ -198,7 +195,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearAllData() {
-        executeTransaction { it.deleteAll() }
+        databaseService.executeTransactionAsync { it.deleteAll() }
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {

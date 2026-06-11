@@ -52,8 +52,7 @@ import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
-import org.ole.planet.myplanet.repository.UploadRepository
-import org.ole.planet.myplanet.repository.UploadRepositoryImpl
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -151,7 +150,14 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
+    companion object {
+        @Provides
+        @Singleton
+        fun provideUploadRepository(
+            databaseService: DatabaseService,
+            dispatcherProvider: DispatcherProvider
+        ): org.ole.planet.myplanet.repository.UploadRepository {
+            return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
+        }
+    }
 }

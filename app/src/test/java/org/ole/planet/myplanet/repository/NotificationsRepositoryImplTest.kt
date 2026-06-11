@@ -26,7 +26,6 @@ class NotificationsRepositoryImplTest {
 
     private lateinit var databaseService: DatabaseService
     private lateinit var userRepository: dagger.Lazy<UserRepository>
-    private lateinit var teamsRepository: dagger.Lazy<TeamsRepository>
     private lateinit var repository: NotificationsRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -34,8 +33,7 @@ class NotificationsRepositoryImplTest {
     fun setUp() {
         databaseService = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
-        teamsRepository = mockk(relaxed = true)
-        repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository)
+        repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository)
     }
 
     @Test

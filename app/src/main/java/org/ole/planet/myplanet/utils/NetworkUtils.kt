@@ -24,16 +24,14 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 object NetworkUtils {
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val coroutineScope: CoroutineScope by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-        entryPoint.applicationScope()
-    }
+    private val coroutineScope: CoroutineScope
+        get() {
+            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+            return entryPoint.applicationScope()
+        }
 
-    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
-    private val connectivityManager: ConnectivityManager by lazy {
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-    }
+    private val connectivityManager: ConnectivityManager
+        get() = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
     private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
 

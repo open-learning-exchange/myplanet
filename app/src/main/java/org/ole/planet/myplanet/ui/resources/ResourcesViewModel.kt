@@ -75,10 +75,6 @@ class ResourcesViewModel @Inject constructor(
         _syncState.value = SyncState.Idle
     }
 
-    suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
-        return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-    }
-
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
         val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
         return enrichedLibraries

@@ -149,17 +149,12 @@ class VoicesRepositoryImplTest {
 
         every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
         every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
-        every { mockRealmQuery.beginGroup() } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.or() } returns mockRealmQuery
-        every { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.endGroup() } returns mockRealmQuery
         every { mockRealmQuery.sort("time", io.realm.Sort.DESCENDING) } returns mockRealmQuery
 
         val realmResults = mockk<io.realm.RealmResults<RealmNews>>()
         every { mockRealmQuery.findAll() } returns realmResults
-        every { mockRealm.copyFromRealm(realmResults as Iterable<RealmNews>) } returns listOf(news1, news2)
+        every { realmResults.iterator() } returns mutableListOf(news1, news2, news3).iterator()
+        every { mockRealm.copyFromRealm(any<RealmNews>()) } answers { firstArg() }
 
         val result = repoWithRealGson.getNewsByTeamId("team1")
 

@@ -11,6 +11,7 @@ import androidx.lifecycle.lifecycleScope
 import com.afollestad.materialdialogs.MaterialDialog
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -142,7 +143,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     fun logout() {
         lifecycleScope.launch {
             profileDbHandler.logoutAsync()
-            withContext(dispatcherProvider.io) { SecurePrefs.clearCredentials(this@DashboardElementActivity) }
+            withContext(Dispatchers.IO) { SecurePrefs.clearCredentials(this@DashboardElementActivity) }
             prefData.setLoggedIn(false)
             prefData.setNotificationShown(false)
             NotificationUtils.cancelAll(this@DashboardElementActivity)

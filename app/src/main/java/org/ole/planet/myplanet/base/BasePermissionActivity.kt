@@ -17,8 +17,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
-import org.ole.planet.myplanet.utils.DispatcherProvider
-import javax.inject.Inject
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
@@ -26,9 +25,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
-
     fun checkPermission(strPermission: String?): Boolean {
         val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
         return result == PackageManager.PERMISSION_GRANTED
@@ -437,14 +433,14 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     fun checkNotificationPermissionStatus() {
         lifecycleScope.launch {
             val currentTime = System.currentTimeMillis()
-            val lastCheck = withContext(dispatcherProvider.io) {
+            val lastCheck = withContext(Dispatchers.IO) {
                 org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).getRawLong("last_notification_check", 0)
             }
             if (currentTime - lastCheck > 24 * 60 * 60 * 1000) {
                 if (!NotificationManagerCompat.from(this@BasePermissionActivity).areNotificationsEnabled()) {
                     onNotificationPermissionChanged(false)
                 }
-                withContext(dispatcherProvider.io) {
+                withContext(Dispatchers.IO) {
                     org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).setRawLong("last_notification_check", currentTime)
                 }
             }

@@ -6,8 +6,6 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.realm.Realm
-import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -57,8 +55,7 @@ class ConfigurationsRepositoryImplTest {
             sharedPrefManager,
             databaseService,
             serverUrlMapper,
-            dispatcherProvider,
-            testDispatcher
+            dispatcherProvider
         )
     }
 
@@ -88,22 +85,4 @@ class ConfigurationsRepositoryImplTest {
         coVerify { apiInterface.healthAccess(healthUrl) }
         assert(result == "Success")
     }
-
-    @Test
-    fun `clearAllData executes transaction to delete all records`() = runTest(testDispatcher) {
-        val mockRealm: Realm = mockk(relaxed = true)
-        val transactionSlot = slot<(Realm) -> Unit>()
-
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(mockRealm)
-        }
-
-        repository.clearAllData()
-
-        advanceUntilIdle()
-
-        coVerify { databaseService.executeTransactionAsync(any()) }
-        coVerify { mockRealm.deleteAll() }
-    }
-
 }

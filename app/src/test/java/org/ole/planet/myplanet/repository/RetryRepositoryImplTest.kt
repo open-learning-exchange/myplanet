@@ -18,7 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.services.upload.UploadError
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("UNCHECKED_CAST")
@@ -51,7 +51,7 @@ class RetryRepositoryImplTest {
             transactionSlot.captured.invoke(realm)
         }
 
-        val retryFailure = RetryFailure("itemId", "test error", 500)
+        val uploadError = UploadError("itemId", Exception("test error"), retryable = true, httpCode = 500)
 
         val op = mockk<RealmRetryOperation>(relaxed = true)
         every { realm.createObject(RealmRetryOperation::class.java, any()) } returns op
@@ -59,7 +59,7 @@ class RetryRepositoryImplTest {
 
 
         repository.enqueue(
-            "testUploadType", retryFailure, "testPayload", "testEndpoint",
+            "testUploadType", uploadError, "testPayload", "testEndpoint",
             "POST", "testDbId", "TestClass", "testUserId"
         )
 
@@ -96,9 +96,9 @@ class RetryRepositoryImplTest {
         every { query.equalTo("id", "opId") } returns query
         every { query.findFirst() } returns operation
 
-        val retryFailure = RetryFailure("itemId", "Test Error", 503)
+        val uploadError = UploadError("itemId", Exception("Test Error"), retryable = true, httpCode = 503)
 
-        repository.updateAttempt("opId", retryFailure)
+        repository.updateAttempt("opId", uploadError)
 
         assertEquals(2, operation.attemptCount)
         assertEquals("Test Error", operation.errorMessage)
@@ -126,9 +126,9 @@ class RetryRepositoryImplTest {
         every { query.equalTo("id", "opId") } returns query
         every { query.findFirst() } returns operation
 
-        val retryFailure = RetryFailure("itemId", "Unknown error", null)
+        val uploadError = UploadError("itemId", Exception(), retryable = false)
 
-        repository.updateAttempt("opId", retryFailure)
+        repository.updateAttempt("opId", uploadError)
 
         assertEquals(5, operation.attemptCount)
         assertEquals(RealmRetryOperation.STATUS_ABANDONED, operation.status)

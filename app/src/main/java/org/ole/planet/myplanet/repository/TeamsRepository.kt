@@ -69,8 +69,6 @@ interface TeamsRepository {
     suspend fun getTeamSummaryById(teamId: String): TeamSummary?
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
-    suspend fun getJoinRequestById(id: String?): RealmMyTeam?
-    suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
     fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>

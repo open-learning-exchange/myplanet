@@ -5,8 +5,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RealmRepository
+import org.ole.planet.myplanet.services.upload.UploadError
 
 class RetryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -15,7 +15,7 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun enqueue(
         uploadType: String,
-        failure: RetryFailure,
+        error: UploadError,
         payload: String,
         endpoint: String,
         httpMethod: String,
@@ -24,8 +24,8 @@ class RetryRepositoryImpl @Inject constructor(
         userId: String?
     ) {
         executeTransaction { realm ->
-            RealmRetryOperation.createFromRetryFailure(
-                realm, uploadType, failure, payload, endpoint,
+            RealmRetryOperation.createFromUploadError(
+                realm, uploadType, error, payload, endpoint,
                 httpMethod, dbId, modelClassName, userId
             )
         }
@@ -33,7 +33,7 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun updateAttempt(
         operationId: String,
-        failure: RetryFailure
+        error: UploadError
     ) {
         executeTransaction { realm ->
             realm.where(RealmRetryOperation::class.java)
@@ -42,8 +42,8 @@ class RetryRepositoryImpl @Inject constructor(
                     op.attemptCount += 1
                     op.lastAttemptTime = System.currentTimeMillis()
                     op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
-                    op.errorMessage = failure.message
-                    op.httpCode = failure.httpCode
+                    op.errorMessage = error.message
+                    op.httpCode = error.httpCode
 
                     if (op.attemptCount >= op.maxAttempts) {
                         op.status = RealmRetryOperation.STATUS_ABANDONED

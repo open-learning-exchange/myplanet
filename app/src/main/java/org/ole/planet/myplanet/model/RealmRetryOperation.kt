@@ -5,6 +5,7 @@ import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.UUID
+import org.ole.planet.myplanet.services.upload.UploadError
 
 open class RealmRetryOperation : RealmObject() {
     @PrimaryKey
@@ -48,10 +49,10 @@ open class RealmRetryOperation : RealmObject() {
         private const val MAX_DELAY_MS = 30 * 60 * 1000L
 
         @JvmStatic
-        fun createFromRetryFailure(
+        fun createFromUploadError(
             realm: Realm,
             uploadType: String,
-            failure: RetryFailure,
+            error: UploadError,
             payload: String,
             endpoint: String,
             httpMethod: String,
@@ -64,7 +65,7 @@ open class RealmRetryOperation : RealmObject() {
                 UUID.randomUUID().toString()
             )
             operation.uploadType = uploadType
-            operation.itemId = failure.itemId
+            operation.itemId = error.itemId
             operation.serializedPayload = payload
             operation.endpoint = endpoint
             operation.httpMethod = httpMethod
@@ -74,8 +75,8 @@ open class RealmRetryOperation : RealmObject() {
             operation.createdTime = System.currentTimeMillis()
             operation.lastAttemptTime = System.currentTimeMillis()
             operation.nextRetryTime = calculateNextRetryTime(1)
-            operation.errorMessage = failure.message
-            operation.httpCode = failure.httpCode
+            operation.errorMessage = error.message
+            operation.httpCode = error.httpCode
             operation.modelClassName = modelClassName
             operation.userId = userId
             return operation
