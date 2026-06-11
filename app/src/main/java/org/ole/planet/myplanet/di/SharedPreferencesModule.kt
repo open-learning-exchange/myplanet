@@ -20,6 +20,10 @@ annotation class AppPreferences
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultPreferences
 
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DownloadPreferences
+
 @Module
 @InstallIn(SingletonComponent::class)
 object SharedPreferencesModule {
@@ -36,5 +40,12 @@ object SharedPreferencesModule {
     @DefaultPreferences
     fun provideDefaultSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return PreferenceManager.getDefaultSharedPreferences(context)
+    }
+
+    @Provides
+    @Singleton
+    @DownloadPreferences
+    fun provideDownloadSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
+        return context.getSharedPreferences(org.ole.planet.myplanet.services.DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
     }
 }

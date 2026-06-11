@@ -271,7 +271,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val containsQuery = mutableListOf<RealmMyCourse>()
 
             for (item in data) {
-                val title = item.courseTitle?.let { normalizeText(it) } ?: continue
+                val title = item.courseTitleNormal ?: item.courseTitle?.let { normalizeText(it) } ?: continue
 
                 if (title.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
@@ -317,11 +317,10 @@ class CoursesRepositoryImpl @Inject constructor(
             courseIdsWithTags?.let {
                 query = query.`in`("courseId", it.toTypedArray())
             }
+            query = query.isNotEmpty("courseTitle")
 
-            val results = query.findAll()
-            val sortedList = results
-                .filter { !it.courseTitle.isNullOrBlank() }
-                .sortedWith(compareBy({ it.isMyCourse }, { it.courseTitle }))
+            val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
+            val sortedList = results.sortedBy { it.isMyCourse }
             realm.copyFromRealm(sortedList)
         }
     }
@@ -773,7 +772,9 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.courseId = JsonUtils.getString("_id", doc)
         myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", doc)
         myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc)
-        myMyCoursesDB?.courseTitle = JsonUtils.getString("courseTitle", doc)
+        val title = JsonUtils.getString("courseTitle", doc)
+        myMyCoursesDB?.courseTitle = title
+        myMyCoursesDB?.courseTitleNormal = title.let { normalizeText(it) }
         myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", doc)
         val description = JsonUtils.getString("description", doc)
         myMyCoursesDB?.description = description

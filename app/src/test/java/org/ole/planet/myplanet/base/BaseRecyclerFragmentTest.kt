@@ -19,7 +19,7 @@ class BaseRecyclerFragmentTest {
 
     class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
         override fun getLayout(): Int = 0
-        override suspend fun getAdapter(): androidx.recyclerview.widget.RecyclerView.Adapter<out androidx.recyclerview.widget.RecyclerView.ViewHolder> {
+        override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
             throw NotImplementedError()
         }
     }
