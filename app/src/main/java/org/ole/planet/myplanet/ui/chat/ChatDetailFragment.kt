@@ -52,6 +52,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
 import retrofit2.Response
@@ -100,6 +101,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 

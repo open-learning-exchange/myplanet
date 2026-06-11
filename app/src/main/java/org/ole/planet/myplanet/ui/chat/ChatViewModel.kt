@@ -16,12 +16,21 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.model.ChatShareTargets
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val chatRepository: ChatRepository,
+    private val userRepository: UserRepository,
+    private val teamsRepository: TeamsRepository,
+    private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     companion object {
@@ -32,6 +41,11 @@ class ChatViewModel @Inject constructor(
     internal var allConversations: List<RealmConversation> = emptyList()
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
+    private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
+    val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
+
+    private var cachedUser: RealmUser? = null
+    private var cachedShareTargets: ChatShareTargets? = null
 
     private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
     val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
@@ -56,6 +70,57 @@ class ChatViewModel @Inject constructor(
 
     private val _conversationSaveSuccess = MutableSharedFlow<Boolean>()
     val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
+
+    fun loadChatHistoryScreenData(
+        userId: String?,
+        parentCode: String?,
+        communityName: String?
+    ) {
+        viewModelScope.launch {
+            val data = withContext(dispatcherProvider.io) {
+                val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
+                val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
+                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+                val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
+
+                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
+            }
+            _screenData.value = data
+        }
+    }
+
+    private suspend fun loadCurrentUser(userId: String?): RealmUser? {
+        if (userId.isNullOrEmpty()) {
+            return null
+        }
+        return userRepository.getUserById(userId)
+    }
+
+    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
+        val teams = teamsRepository.getTeamSummaries(userId)
+        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
+        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
+            "$communityName@$parentCode"
+        } else {
+            null
+        }
+        val community = communityId?.let { id ->
+            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
+                _id = id,
+                name = communityName ?: "",
+                teamType = null,
+                teamPlanetCode = null,
+                createdDate = null,
+                type = null,
+                status = null,
+                teamId = null,
+                description = null,
+                services = null,
+                rules = null
+            )
+        }
+        return ChatShareTargets(community, teams, enterprises)
+    }
 
     fun continueConversation(id: String, query: String, response: String, rev: String) {
         if (query.isBlank() && response.isBlank()) return
