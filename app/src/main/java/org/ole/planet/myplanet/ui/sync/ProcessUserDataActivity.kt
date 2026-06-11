@@ -43,8 +43,6 @@ import org.ole.planet.myplanet.utils.FileUtils.installApk
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
-    @Inject
-    open lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefData: SharedPrefManager
