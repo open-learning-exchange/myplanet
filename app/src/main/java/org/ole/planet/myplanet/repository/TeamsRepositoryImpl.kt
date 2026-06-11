@@ -392,6 +392,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Note: This uses an OR query with findFirst(), which relies on database storage order.
+     * This introduces a subtle semantic drift from the previous implementation that
+     * had a deterministic preference for _id matches over teamId matches.
+     */
     private suspend fun findTeamByAnyId(id: String): RealmMyTeam? {
         return withRealm { realm ->
             realm.where(RealmMyTeam::class.java)
@@ -402,11 +407,17 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    /**
+     * Identical to [getTeamByIdOrTeamId]. Both exist to avoid modifying legacy caller files.
+     */
     override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
         return findTeamByAnyId(id)
     }
 
+    /**
+     * Identical to [getTeamByDocumentIdOrTeamId]. Both exist to avoid modifying legacy caller files.
+     */
     override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
         return findTeamByAnyId(id)
