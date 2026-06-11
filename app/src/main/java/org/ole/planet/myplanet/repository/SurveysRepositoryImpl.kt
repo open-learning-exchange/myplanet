@@ -400,8 +400,17 @@ class SurveysRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
+
+        val examCache = HashMap<String, RealmStepExam>()
+        val ids = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.toTypedArray()
+        if (ids.isNotEmpty()) {
+            realm.where(RealmStepExam::class.java).`in`("id", ids).findAll().forEach {
+                it.id?.let { id -> examCache[id] = it }
+            }
+        }
+
         documentList.forEach { jsonDoc ->
-            RealmStepExam.insertCourseStepsExams("", "", jsonDoc, realm)
+            RealmStepExam.insertCourseStepsExams("", "", jsonDoc, "", realm, examCache)
         }
     }
 
