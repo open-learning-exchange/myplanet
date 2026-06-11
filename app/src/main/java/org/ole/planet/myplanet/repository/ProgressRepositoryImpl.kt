@@ -251,9 +251,47 @@ class ProgressRepositoryImpl @Inject constructor(
         } > 0
     }
 
+    private fun insertCourseProgress(
+        mRealm: Realm,
+        act: JsonObject?,
+        existingProgress: RealmCourseProgress?,
+        localRecord: RealmCourseProgress?
+    ) {
+        val docId = JsonUtils.getString("_id", act)
+        val courseId = JsonUtils.getString("courseId", act)
+        val userId = JsonUtils.getString("userId", act)
+        val stepNum = JsonUtils.getInt("stepNum", act)
+
+        var courseProgress = existingProgress
+        if (courseProgress == null) {
+            val localPassed = localRecord?.passed ?: false
+            localRecord?.deleteFromRealm()
+
+            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, docId)
+            // Preserve a locally-confirmed passed=true in case the server hasn't caught up yet.
+            if (localPassed) courseProgress.passed = true
+        }
+        courseProgress?._id = docId
+        courseProgress?._rev = JsonUtils.getString("_rev", act)
+        if (courseProgress?.passed != true) {
+            courseProgress?.passed = JsonUtils.getBoolean("passed", act)
+        }
+        courseProgress?.stepNum = stepNum
+        courseProgress?.userId = userId
+        courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
+        courseProgress?.courseId = courseId
+        courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
+        courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
+        courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
+    }
+
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
         val docIds = ArrayList<String>()
+        val courseIds = mutableSetOf<String>()
+        val userIds = mutableSetOf<String>()
+        val stepNums = mutableSetOf<Int>()
+
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
@@ -261,6 +299,9 @@ class ProgressRepositoryImpl @Inject constructor(
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
                 docIds.add(id)
+                courseIds.add(JsonUtils.getString("courseId", jsonDoc))
+                userIds.add(JsonUtils.getString("userId", jsonDoc))
+                stepNums.add(JsonUtils.getInt("stepNum", jsonDoc))
             }
         }
 
@@ -273,45 +314,36 @@ class ProgressRepositoryImpl @Inject constructor(
             emptyMap()
         }
 
+        val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
+            realm.where(RealmCourseProgress::class.java)
+                .`in`("courseId", courseIds.toTypedArray())
+                .`in`("userId", userIds.toTypedArray())
+                .`in`("stepNum", stepNums.toTypedArray())
+                .findAll()
+        } else {
+            emptyList()
+        }
+
         documentList.forEach { act ->
             val docId = JsonUtils.getString("_id", act)
             val courseId = JsonUtils.getString("courseId", act)
             val userId = JsonUtils.getString("userId", act)
             val stepNum = JsonUtils.getInt("stepNum", act)
 
-            var courseProgress = existingProgresses[docId]
-            if (courseProgress == null) {
-                // Find any local-only record for the same step (pre-upload _id=null, or already
-                // uploaded with _id matching this doc) to avoid creating a duplicate.
-                val localRecord = realm.where(RealmCourseProgress::class.java)
-                    .equalTo("courseId", courseId)
-                    .equalTo("userId", userId)
-                    .equalTo("stepNum", stepNum)
-                    .beginGroup()
-                        .isNull("_id")
-                        .or()
-                        .equalTo("_id", docId)
-                    .endGroup()
-                    .findFirst()
-                val localPassed = localRecord?.passed ?: false
-                localRecord?.deleteFromRealm()
+            val existingProgress = existingProgresses[docId]
 
-                courseProgress = realm.createObject(RealmCourseProgress::class.java, docId)
-                // Preserve a locally-confirmed passed=true in case the server hasn't caught up yet.
-                if (localPassed) courseProgress.passed = true
-            }
-            courseProgress?._id = docId
-            courseProgress?._rev = JsonUtils.getString("_rev", act)
-            if (courseProgress?.passed != true) {
-                courseProgress?.passed = JsonUtils.getBoolean("passed", act)
-            }
-            courseProgress?.stepNum = stepNum
-            courseProgress?.userId = userId
-            courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
-            courseProgress?.courseId = courseId
-            courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
-            courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
-            courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
+            // Find local record manually instead of querying Realm again
+            val localRecord = if (existingProgress == null) {
+                localRecords.find {
+                    it.courseId == courseId &&
+                    it.userId == userId &&
+                    it.stepNum == stepNum &&
+                    (it._id == null || it._id == docId) &&
+                    it.isValid
+                }
+            } else null
+
+            insertCourseProgress(realm, act, existingProgress, localRecord)
         }
     }
 }
