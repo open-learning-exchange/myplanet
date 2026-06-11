@@ -62,7 +62,6 @@ object ServiceModule {
     @Singleton
     fun provideUploadManager(
         @ApplicationContext context: Context,
-        databaseService: DatabaseService,
         submissionsRepository: SubmissionsRepository,
         sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
         gson: Gson,
@@ -80,7 +79,7 @@ object ServiceModule {
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         photoUploader: org.ole.planet.myplanet.services.upload.PhotoUploader
     ): UploadManager {
-        return UploadManager(context, databaseService, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader)
+        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader)
     }
 
     @Provides
