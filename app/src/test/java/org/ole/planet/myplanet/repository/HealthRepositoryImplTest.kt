@@ -26,6 +26,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
@@ -42,6 +43,7 @@ class HealthRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
+    private val mockApiInterface: ApiInterface = mockk(relaxed = true)
     private val realm: Realm = mockk(relaxed = true)
     private val healthQuery: RealmQuery<RealmHealthExamination> = mockk(relaxed = true)
     private val userQuery: RealmQuery<RealmUser> = mockk(relaxed = true)
@@ -86,6 +88,7 @@ class HealthRepositoryImplTest {
         mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
 
         repository = HealthRepositoryImpl(
+            mockApiInterface,
             databaseService,
             UnconfinedTestDispatcher(),
             dispatcherProvider

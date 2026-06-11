@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.os.Build
+import androidx.recyclerview.widget.ListAdapter
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -37,7 +38,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder>
+    abstract suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

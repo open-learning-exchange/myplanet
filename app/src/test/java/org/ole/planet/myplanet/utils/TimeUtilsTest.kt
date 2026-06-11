@@ -302,4 +302,15 @@ class TimeUtilsTest {
         assertEquals("", TimeUtils.convertDDMMYYYYToISO(null))
         assertEquals("invalid", TimeUtils.convertDDMMYYYYToISO("invalid"))
     }
+
+    @Test
+    fun testFormatDateForCsv() {
+        val timestamp = 1710115200000L
+        val expected = java.time.format.DateTimeFormatter
+            .ofPattern("EEE MMM dd yyyy HH:mm:ss 'GMT'Z (z)", Locale.US)
+            .withZone(java.time.ZoneId.systemDefault())
+            .format(java.time.Instant.ofEpochMilli(timestamp))
+        val formatted = TimeUtils.formatDateForCsv(timestamp)
+        assertEquals(expected, formatted)
+    }
 }
