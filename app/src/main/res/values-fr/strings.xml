@@ -191,7 +191,7 @@
     <string name="arabic">عربى</string>
     <string name="french">français</string>
 
-    <string-array name="open_With">
+    <string-array name="open_with">
         <item>HTML</item>
         <item>PDF.js</item>
         <item>BeLL-Reader</item>
@@ -1326,4 +1326,13 @@
     <string name="days_ago">Il y a %1$d jour(s)</string>
     <string name="removed_from_teamcourse">Cours retiré de l\'équipe</string>
 
+    <string name="level_beginner">Débutant</string>
+    <string name="level_intermediate">Intermédiaire</string>
+    <string name="level_advanced">Avancé</string>
+    <string name="level_expert">Expert</string>
+    <string name="grade_all">Tous</string>
+    <string name="grade_pre_kindergarten">Pré-maternelle</string>
+    <string name="grade_kindergarten">Maternelle</string>
+    <string name="grade_college">Université</string>
+    <string name="grade_post_graduate">Post-Graduate</string>
 </resources>
