@@ -5,6 +5,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RealmRepository
 
 class RetryRepositoryImpl @Inject constructor(

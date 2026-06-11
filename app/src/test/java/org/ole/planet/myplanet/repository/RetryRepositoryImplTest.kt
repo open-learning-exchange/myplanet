@@ -18,6 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryFailure
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("UNCHECKED_CAST")

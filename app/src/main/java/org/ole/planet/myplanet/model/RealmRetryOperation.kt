@@ -5,7 +5,6 @@ import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.UUID
-import org.ole.planet.myplanet.repository.RetryFailure
 
 open class RealmRetryOperation : RealmObject() {
     @PrimaryKey
