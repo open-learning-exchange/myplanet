@@ -269,6 +269,7 @@ class ChatHistoryFragment : Fragment() {
             if (adapter == null) {
                 val newAdapter = ChatHistoryAdapter(
                     requireContext(),
+                    chatHistory,
                     currentUser,
                     sharedNewsMessages,
                     shareTargets
@@ -291,10 +292,10 @@ class ChatHistoryFragment : Fragment() {
                         }
                         (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
                             adapter.updateCachedData(currentUser, sharedNewsMessages)
+                            adapter.notifyChatShared(chat._id)
                         }
                     }
                 }
-                newAdapter.updateChatHistory(chatHistory)
                 newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
                     override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
                         conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
@@ -306,9 +307,14 @@ class ChatHistoryFragment : Fragment() {
                 })
                 binding.recyclerView.adapter = newAdapter
             } else {
+                fullChatHistory = chatHistory
                 adapter.updateCachedData(currentUser, sharedNewsMessages)
                 adapter.updateShareTargets(shareTargets)
-                adapter.updateChatHistory(chatHistory)
+                if (binding.searchBar.text.isNullOrEmpty()) {
+                    adapter.updateChatHistory(chatHistory)
+                } else {
+                    adapter.search(fullChatHistory, binding.searchBar.text.toString(), isFullSearch, isQuestion)
+                }
                 binding.searchBar.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.VISIBLE
             }

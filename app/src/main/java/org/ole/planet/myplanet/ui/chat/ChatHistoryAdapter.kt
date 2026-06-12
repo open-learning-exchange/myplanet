@@ -31,26 +31,26 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
-
+    private val initialChatHistory: List<RealmChatHistory>,
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
 ) : ListAdapter<RealmChatHistory, ChatHistoryAdapter.ViewHolderChat>(
-    object : androidx.recyclerview.widget.DiffUtil.ItemCallback<RealmChatHistory>() {
-        override fun areItemsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem ->
             val oldId = oldItem._id
             val newId = newItem._id
-            return oldId != null && newId != null && oldId == newId
-        }
-
-        override fun areContentsTheSame(oldItem: RealmChatHistory, newItem: RealmChatHistory): Boolean {
-            return oldItem._rev == newItem._rev &&
+            oldId != null && newId != null && oldId == newId
+        },
+        areContentsTheSame = { oldItem, newItem ->
+            oldItem._rev == newItem._rev &&
                 oldItem.lastUsed == newItem.lastUsed &&
                 oldItem.title == newItem.title &&
-                oldItem.conversations?.firstOrNull()?.query == newItem.conversations?.firstOrNull()?.query
+                oldItem.conversations?.firstOrNull()?.query ==
+                newItem.conversations?.firstOrNull()?.query
         }
-    }
+    )
 ) {
     private lateinit var rowChatHistoryBinding: RowChatHistoryBinding
     private var chatHistoryItemClickListener: OnChatHistoryItemClickListener? = null
@@ -59,6 +59,13 @@ class ChatHistoryAdapter(
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
 
+    init {
+        val sortedList = initialChatHistory.sortedByDescending { chat ->
+            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
+        }
+        submitList(sortedList)
+    }
+
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
@@ -66,6 +73,13 @@ class ChatHistoryAdapter(
 
     fun updateShareTargets(newTargets: ChatShareTargets) {
         shareTargets = newTargets
+    }
+
+    fun notifyChatShared(chatId: String?) {
+        val position = currentList.indexOfFirst { it._id == chatId }
+        if (position != -1) {
+            notifyItemChanged(position)
+        }
     }
 
     fun setChatHistoryItemClickListener(listener: OnChatHistoryItemClickListener) {
