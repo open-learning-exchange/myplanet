@@ -57,8 +57,6 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
