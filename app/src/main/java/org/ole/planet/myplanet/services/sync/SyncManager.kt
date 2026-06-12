@@ -72,7 +72,6 @@ class SyncManager @Inject constructor(
     private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
-    private val isHeavySyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
@@ -126,6 +125,8 @@ class SyncManager @Inject constructor(
     fun resetSyncStatus() {
         _syncStatus.value = SyncStatus.Idle
     }
+
+    fun isMainSyncActive(): Boolean = isSyncing.get()
 
     private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
@@ -266,23 +267,7 @@ class SyncManager @Inject constructor(
 
             logger.stopLogging()
 
-            // Heavy tables start only after main sync fully completes — no overlap with resources/library
-            val heavyTables = listOf("ratings", "courses_progress", "submissions", "login_activities", "team_activities")
-            if (isHeavySyncing.compareAndSet(false, true)) {
-                syncScope.launch(dispatcherProvider.io) {
-                    try {
-                        heavyTables.forEach { table ->
-                            try {
-                                transactionSyncManager.syncDb(table, useCheckpoint = true)
-                            } catch (e: Exception) {
-                                Log.e("SyncPerf", "Background sync failed for $table: ${e.message}")
-                            }
-                        }
-                    } finally {
-                        isHeavySyncing.set(false)
-                    }
-                }
-            }
+            HeavyTableSyncWorker.schedule(context)
 
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
@@ -324,7 +309,7 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(async {
                         logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb("login_activities")
+                        transactionSyncManager.syncDb("login_activities", useCheckpoint = true)
                         logger.endProcess("login_activities_sync")
                     })
 
@@ -390,13 +375,13 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(async {
                         logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb("courses_progress")
+                        transactionSyncManager.syncDb("courses_progress", useCheckpoint = true)
                         logger.endProcess("courses_progress_sync")
                     })
 
                     syncJobs.add(async {
                         logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb("ratings")
+                        transactionSyncManager.syncDb("ratings", useCheckpoint = true)
                         logger.endProcess("ratings_sync")
                     })
                 }
@@ -422,7 +407,7 @@ class SyncManager @Inject constructor(
                 if (syncTables?.contains("team_activities") == true) {
                     syncJobs.add(async {
                         logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb("team_activities")
+                        transactionSyncManager.syncDb("team_activities", useCheckpoint = true)
                         logger.endProcess("team_activities_sync")
                     })
                 }
@@ -480,7 +465,7 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(async {
                         logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb("submissions")
+                        transactionSyncManager.syncDb("submissions", useCheckpoint = true)
                         logger.endProcess("submissions_sync")
                     })
                 }
@@ -538,29 +523,6 @@ class SyncManager @Inject constructor(
             }
         }
         create(context, R.mipmap.ic_launcher, "Syncing data", "Please wait...")
-    }
-
-    fun resumeHeavyTablesIfNeeded() {
-        val heavyTables = listOf("ratings", "courses_progress", "submissions", "login_activities", "team_activities")
-        val pendingTables = heavyTables.filter { table ->
-            sharedPrefManager.rawPreferences.getInt("heavy_sync_skip_$table", 0) > 0
-        }
-        if (pendingTables.isEmpty()) return
-        if (isSyncing.get()) return
-        if (!isHeavySyncing.compareAndSet(false, true)) return
-        syncScope.launch(dispatcherProvider.io) {
-            try {
-                pendingTables.forEach { table ->
-                    try {
-                        transactionSyncManager.syncDb(table, useCheckpoint = true)
-                    } catch (e: Exception) {
-                        Log.e("SyncPerf", "Resume failed for $table: ${e.message}")
-                    }
-                }
-            } finally {
-                isHeavySyncing.set(false)
-            }
-        }
     }
 
     fun cancelBackgroundSync() {

@@ -61,12 +61,8 @@ class TransactionSyncManager @Inject constructor(
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
-            val response = apiInterface.getDocuments(
-                UrlUtils.header,
-                targetUrl
-            )
-            val code = response.code()
-            return code == 200
+            val response = apiInterface.getDocuments(UrlUtils.header, targetUrl)
+            return response.code() == 200 && response.body() != null
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -170,18 +166,20 @@ class TransactionSyncManager @Inject constructor(
             var totalDocs = 0
             var batchNumber = if (useCheckpoint) skip / pageSize else 0
             var syncCompletedFully = false
+            val url = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
 
             while (true) {
                 batchNumber++
                 if (useCheckpoint) {
-                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).apply()
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
                 }
                 val batchStartTime = System.currentTimeMillis()
                 val batchApiStartTime = System.currentTimeMillis()
                 val response = apiInterface.findDocs(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
-                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
+                    "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject() // Empty body for GET-style query
                 )
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
@@ -195,7 +193,7 @@ class TransactionSyncManager @Inject constructor(
                     break
                 }
                 org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
-                    "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
+                    "$url/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
                     arr.size()
@@ -299,7 +297,7 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
             if (useCheckpoint && syncCompletedFully) {
-                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).apply()
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
