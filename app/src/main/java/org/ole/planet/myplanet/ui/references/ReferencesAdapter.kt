@@ -31,6 +31,10 @@ class ReferencesAdapter(list: List<String>) : ListAdapter<String, ReferencesView
             holder.binding.tvRefEmail.text = getString("email", obj).ifBlank { "—" }
         } catch (e: Exception) {
             android.util.Log.w("ReferencesAdapter", "Malformed JSON: $jsonString", e)
+            holder.binding.tvRefName.text = "—"
+            holder.binding.tvRefRelationship.text = "—"
+            holder.binding.tvRefPhone.text = "—"
+            holder.binding.tvRefEmail.text = "—"
         }
     }
 
@@ -38,7 +42,7 @@ class ReferencesAdapter(list: List<String>) : ListAdapter<String, ReferencesView
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<String>(
-            { oldItem, newItem -> oldItem === newItem },
+            { oldItem, newItem -> oldItem == newItem },
             { oldItem, newItem -> oldItem == newItem }
         )
     }
