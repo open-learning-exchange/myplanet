@@ -823,47 +823,65 @@ val color = ContextCompat.getColor(context, R.color.primary)
 ## Testing Guidelines
 
 ### Current State
-- No formal testing framework currently configured
-- Manual testing on devices/emulators
 
-### Recommended Testing Approach
+The project has an established test suite (configured in `app/build.gradle`, versions in `gradle/libs.versions.toml`):
 
-**Unit Testing:**
+- **Unit tests (JVM)**: ~130 files in `app/src/test/`, covering `utils` (35), `repository` (25), `ui` (22), `services` (22), `model` (11), `base` (7), `data` (4), and `di` (2). Run on the JVM with Robolectric so Android resources are available (`testOptions { unitTests { includeAndroidResources = true } }`).
+- **Instrumented tests (device/emulator)**: in `app/src/androidTest/` — currently `DatabaseServiceTest` and `RealmUserTest`. This layer is sparse; user-facing flows (login/sync, take-course, exam submission) have no UI coverage yet and are the main gap.
+
+**Frameworks in use:**
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| JUnit 4 | 4.13.2 | Test runner / assertions |
+| MockK | 1.14.11 | Kotlin mocking (`mockk`, `mockk-agent`, `mockk-android`) |
+| Robolectric | 4.16.1 | Android framework on the JVM |
+| kotlinx-coroutines-test | — | `runTest`, dispatcher control |
+| androidx.test (core/ext/runner/arch) | — | Android test infra, `InstantTaskExecutorRule` |
+| hilt-android-testing | — | DI in tests |
+
+Note: tests use **MockK**, not Mockito. A `MainDispatcherRule` (`app/src/test/.../MainDispatcherRule.kt`) is provided to swap the main dispatcher in coroutine tests.
+
+### Running Tests
+
+```bash
+# All unit tests (default flavor, debug)
+./gradlew testDefaultDebugUnitTest
+
+# A single test class
+./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.CoursesRepositoryImplTest"
+
+# Instrumented tests (requires a connected device/emulator)
+./gradlew connectedDefaultDebugAndroidTest
+```
+
+### Writing Tests
+
+**Unit test (MockK + coroutines):**
 ```kotlin
-// Add to app/build.gradle
-testImplementation 'junit:junit:4.13.2'
-testImplementation 'org.mockito:mockito-core:5.3.1'
-testImplementation 'org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2'
-
-// Example unit test
 class CourseRepositoryTest {
+    @get:Rule val mainDispatcherRule = MainDispatcherRule()
+
     @Test
     fun `syncCourses returns success when API call succeeds`() = runTest {
-        // Arrange
-        val mockApi = mock(ApiInterface::class.java)
-        val repository = CourseRepositoryImpl(mockApi, mockDatabase)
+        val api = mockk<ApiInterface>()
+        coEvery { api.getCourses() } returns Response.success(emptyList())
+        val repository = CoursesRepositoryImpl(api, databaseService, dispatcher)
 
-        // Act
         val result = repository.syncCourses()
 
-        // Assert
         assertTrue(result.isSuccess)
     }
 }
 ```
 
-**Instrumented Testing:**
+**Instrumented test:**
 ```kotlin
-// Add to app/build.gradle
-androidTestImplementation 'androidx.test.ext:junit:1.1.5'
-androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
-
-// Example instrumented test
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
     @Test
     fun loginButton_clickWithValidCredentials_navigatesToDashboard() {
-        // Test UI interaction
+        // Test UI interaction with Espresso / device APIs
     }
 }
 ```
