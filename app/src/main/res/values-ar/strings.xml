@@ -1336,5 +1336,8 @@
     <string name="hours_ago">منذ %1$d ساعة</string>
     <string name="yesterday">أمس</string>
     <string name="days_ago">منذ %1$d أيام</string>
+    <string name="edit_meetup">تعديل الاجتماع</string>
+    <string name="meetup_updated">تم تحديث الاجتماع بنجاح</string>
+    <string name="meetup_not_updated">فشل تحديث الاجتماع</string>
 
 </resources>

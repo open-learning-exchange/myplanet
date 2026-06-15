@@ -318,7 +318,14 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = EventsAdapter()
+        meetupAdapter = EventsAdapter { meetup ->
+            meetupDialog?.dismiss()
+            val fragment = org.ole.planet.myplanet.ui.events.EventsDetailFragment()
+            val bundle = android.os.Bundle()
+            bundle.putString("id", meetup.id)
+            fragment.arguments = bundle
+            homeItemClickListener?.openCallFragment(fragment)
+        }
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 
