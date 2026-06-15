@@ -114,7 +114,7 @@ open class RealmMyLibrary : RealmObject() {
             if (this.userId == null) {
                 this.userId = RealmList()
             }
-            if (!this.userId!!.contains(userId)) {
+            if (this.userId?.contains(userId) == false) {
                 this.userId?.add(userId)
             }
             

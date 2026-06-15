@@ -1323,5 +1323,6 @@
     <string name="edit_meetup">Edit Meetup</string>
     <string name="meetup_updated">Meetup updated successfully</string>
     <string name="meetup_not_updated">Failed to update meetup</string>
+    <string name="removed_from_teamcourse">Course removed from team</string>
 
 </resources>

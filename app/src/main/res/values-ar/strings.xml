@@ -1339,5 +1339,6 @@
     <string name="edit_meetup">تعديل الاجتماع</string>
     <string name="meetup_updated">تم تحديث الاجتماع بنجاح</string>
     <string name="meetup_not_updated">فشل تحديث الاجتماع</string>
+    <string name="removed_from_teamcourse">تمت إزالة الدورة من الفريق</string>
 
 </resources>

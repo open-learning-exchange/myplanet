@@ -151,7 +151,7 @@ open class RealmMeetup : RealmObject() {
         }
 
         private fun checkNull(s: String?): String {
-            return if (TextUtils.isEmpty(s)) "" else s!!
+            return s.orEmpty()
         }
 
         @JvmStatic

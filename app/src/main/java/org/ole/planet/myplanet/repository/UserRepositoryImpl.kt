@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -61,7 +60,8 @@ class UserRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return withRealm { realm ->
@@ -922,7 +922,7 @@ class UserRepositoryImpl @Inject constructor(
             emptyMap()
         } else {
             val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
-            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
+            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id ?: "" }
         }
         HealthRecord(mhCopy, mm, list, userMap)
     }
@@ -1097,11 +1097,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
         if (userId.isNullOrEmpty()) return false
-        val actions = queryList(RealmUserChallengeActions::class.java) {
-            equalTo("userId", userId)
-            equalTo("actionType", "sync")
-        }
-        return actions.isNotEmpty()
+        return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
     }
 
     override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {

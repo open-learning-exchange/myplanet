@@ -18,7 +18,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -45,7 +44,6 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
@@ -61,7 +59,8 @@ class UploadManager @Inject constructor(
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
-    private val photoUploader: PhotoUploader
+    private val photoUploader: PhotoUploader,
+    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -136,40 +135,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        val list = userRepository.getAchievementsForUpload()
-        if (list.isEmpty()) return
-        withContext(dispatcherProvider.io) {
-            list.forEach { achievement ->
-                val id = achievement.get("_id")?.asString ?: return@forEach
-                val url = "${UrlUtils.getUrl()}/achievements/$id"
-                try {
-                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
-                    if (response.isSuccessful) {
-                        val rev = response.body()?.get("rev")?.asString
-                        userRepository.markAchievementUploaded(id, rev)
-                        val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
-                        if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
-                            uploadCvAttachment(id, rev, resumeFileName)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager", e)
-                }
-            }
-        }
-    }
-
-    private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
-        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
-        if (!cvFile.exists()) return
-        try {
-            val body = cvFile.readBytes().toRequestBody("application/pdf".toMediaTypeOrNull())
-            // CouchDB attachment key is always "resume.pdf"
-            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
-            apiInterface.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to upload CV attachment", e)
-        }
+        achievementUploader.uploadAchievement()
     }
 
     private suspend fun uploadCourseProgress() {

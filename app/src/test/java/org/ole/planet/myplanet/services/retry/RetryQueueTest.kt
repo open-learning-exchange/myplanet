@@ -23,6 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
@@ -115,7 +116,7 @@ class RetryQueueTest {
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
         coVerify(exactly = 0) { retryRepository.getExistingOperation(any<String>(), any<String>()) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<UploadError>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
+        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<RetryFailure>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
     }
 
     @Test
@@ -127,7 +128,7 @@ class RetryQueueTest {
 
         retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.enqueue("type", error, payload.toString(), "endpoint", "POST", null, "Model", null) }
+        coVerify(exactly = 1) { retryRepository.enqueue("type", RetryFailure(error.itemId, error.message, error.httpCode), payload.toString(), "endpoint", "POST", null, "Model", null) }
     }
 
     @Test
@@ -135,11 +136,11 @@ class RetryQueueTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
         val existingOp = RealmRetryOperation().apply { id = "op1" }
         coEvery { retryRepository.getExistingOperation("item1", "type") } returns existingOp
-        coEvery { retryRepository.updateAttempt("op1", error) } returns Unit
+        coEvery { retryRepository.updateAttempt("op1", any()) } returns Unit
 
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", error) }
+        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", RetryFailure(error.itemId, error.message, error.httpCode)) }
         coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
     }
 

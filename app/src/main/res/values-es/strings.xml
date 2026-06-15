@@ -1326,5 +1326,6 @@
     <string name="edit_meetup">Editar reunión</string>
     <string name="meetup_updated">Reunión actualizada con éxito</string>
     <string name="meetup_not_updated">" Error al actualizar la reunión"</string>
+    <string name="removed_from_teamcourse">Curso eliminado del equipo</string>
 
 </resources>

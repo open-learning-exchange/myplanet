@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -99,7 +100,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         Utilities.toast(activity, getString(R.string.removed_from_mycourse))
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
         val hostActivity = activity ?: throw CancellationException("Fragment detached")
 
         if (userModel == null) {
@@ -411,13 +412,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
+                    addToMyList()
                     val fragment = CoursesFragment().apply {
                         arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
                     }
                     homeItemClickListener?.openMyFragment(fragment)
                 }
             }
-            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                addToMyList()
+                dialog.cancel()
+    }
             .setOnDismissListener { addToMyList() }
 
         return builder.create()

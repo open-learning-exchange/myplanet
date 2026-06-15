@@ -30,6 +30,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
@@ -64,7 +65,11 @@ class DownloadService : Service() {
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
-    private lateinit var preferences: SharedPreferences
+
+    @Inject
+    @DownloadPreferences
+    lateinit var preferences: SharedPreferences
+
     private var currentDownloadUrl: String = ""
     private var originalDownloadUrl: String = ""
     private var fromSync = false
@@ -78,12 +83,14 @@ class DownloadService : Service() {
 
     private val downloadJob = SupervisorJob()
     private lateinit var downloadScope: CoroutineScope
+    private lateinit var broadcastService: BroadcastService
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
         downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+        broadcastService = getBroadcastService(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -98,7 +105,6 @@ class DownloadService : Service() {
         Log.d(TAG, "onStartCommand: fromSync=$fromSync queueRunning=$isQueueRunning")
 
         downloadScope.launch {
-            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
             if (!isQueueRunning) {
                 isQueueRunning = true
                 try {
@@ -324,7 +330,6 @@ class DownloadService : Service() {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
                 downloadScope.launch {
-                    val broadcastService = getBroadcastService(this@DownloadService)
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -345,6 +350,19 @@ class DownloadService : Service() {
         try {
             BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
                 FileOutputStream(tempFile).use { output ->
+                    val download = Download().apply {
+                        this.fileName = getFileNameFromUrl(url)
+                    }
+
+                    if (fileSize > 0) {
+                        totalFileSize = (fileSize / 1024.0).toInt()
+                        download.totalFileSize = totalFileSize
+                    } else {
+                        download.totalFileSize = 0
+                        download.progress = -1
+                        currentFileProgress = -1
+                    }
+
                     while (true) {
                         val readCount = bis.read(data)
                         if (readCount == -1) break
@@ -353,20 +371,10 @@ class DownloadService : Service() {
                             total += readCount
                             val current = (total / 1024.0).roundToInt().toDouble()
 
-                            val download = Download().apply {
-                                this.fileName = getFileNameFromUrl(url)
-                            }
-
                             if (fileSize > 0) {
-                                totalFileSize = (fileSize / 1024.0).toInt()
                                 val progress = (total * 100 / fileSize).toInt()
-                                download.totalFileSize = totalFileSize
                                 download.progress = progress
                                 currentFileProgress = progress
-                            } else {
-                                download.totalFileSize = 0
-                                download.progress = -1
-                                currentFileProgress = -1
                             }
 
                             val now = System.currentTimeMillis()
@@ -441,7 +449,6 @@ class DownloadService : Service() {
             putExtra("fromSync", fromSync)
         }
         downloadScope.launch {
-            val broadcastService = getBroadcastService(this@DownloadService)
             broadcastService.sendBroadcast(intent)
         }
     }
