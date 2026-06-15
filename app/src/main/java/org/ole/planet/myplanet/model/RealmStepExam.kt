@@ -46,15 +46,16 @@ open class RealmStepExam : RealmObject() {
                 val examId = JsonUtils.getString("_id", exam)
                 var myExam = examCache?.get(examId) ?: mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
                 if (myExam == null) {
-                    myExam = mRealm.createObject(RealmStepExam::class.java,
+                    val createdExam = mRealm.createObject(RealmStepExam::class.java,
                         if (TextUtils.isEmpty(examId)) {
                             parentId
                         } else {
                             examId
                         }
                     )
+                    myExam = createdExam
                     if (!TextUtils.isEmpty(examId)) {
-                        examCache?.put(examId, myExam!!)
+                        examCache?.put(examId, createdExam)
                     }
                 }
                 checkIdsAndInsert(myCoursesID, stepId, myExam)
