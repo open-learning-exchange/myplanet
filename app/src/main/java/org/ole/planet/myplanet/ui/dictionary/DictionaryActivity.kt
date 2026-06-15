@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utils.Constants
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -27,9 +26,6 @@ import org.ole.planet.myplanet.utils.Utilities
 class DictionaryActivity : BaseActivity() {
     @Inject
     lateinit var databaseService: DatabaseService
-
-    @Inject
-    override lateinit var dispatcherProvider: DispatcherProvider
 
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,9 +54,8 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryIfNeeded() {
-        var isEmpty = true
-        databaseService.withRealm { realm ->
-            isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
+        val isEmpty = databaseService.withRealmAsync { realm ->
+            realm.where(RealmDictionary::class.java).count() == 0L
         }
         if (isEmpty) {
             val context = this@DictionaryActivity
@@ -76,28 +71,25 @@ class DictionaryActivity : BaseActivity() {
                 null
             }
             json?.let { jsonArray ->
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { bgRealm ->
-                        jsonArray.forEach { js ->
-                            val doc = js.asJsonObject
-                            val dict = bgRealm.createObject(
-                                RealmDictionary::class.java, UUID.randomUUID().toString()
-                            )
-                            dict.code = JsonUtils.getString("code", doc)
-                            dict.language = JsonUtils.getString("language", doc)
-                            dict.advanceCode = JsonUtils.getString("advance_code", doc)
-                            dict.word = JsonUtils.getString("word", doc)
-                            dict.meaning = JsonUtils.getString("meaning", doc)
-                            dict.definition = JsonUtils.getString("definition", doc)
-                            dict.synonym = JsonUtils.getString("synonym", doc)
-                            dict.antonym = JsonUtils.getString("antonoym", doc)
-                        }
+                databaseService.executeTransactionAsync { bgRealm ->
+                    jsonArray.forEach { js ->
+                        val doc = js.asJsonObject
+                        val dict = bgRealm.createObject(
+                            RealmDictionary::class.java, UUID.randomUUID().toString()
+                        )
+                        dict.code = JsonUtils.getString("code", doc)
+                        dict.language = JsonUtils.getString("language", doc)
+                        dict.advanceCode = JsonUtils.getString("advance_code", doc)
+                        dict.word = JsonUtils.getString("word", doc)
+                        dict.meaning = JsonUtils.getString("meaning", doc)
+                        dict.definition = JsonUtils.getString("definition", doc)
+                        dict.synonym = JsonUtils.getString("synonym", doc)
+                        dict.antonym = JsonUtils.getString("antonoym", doc)
                     }
                 }
             }
-        } else {
-            setClickListener()
         }
+        setClickListener()
     }
 
     private suspend fun loadDictionaryCount(): Long {
@@ -106,16 +98,25 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
+    private data class DictionaryEntry(
+        val word: String?,
+        val definition: String?,
+        val synonym: String?,
+        val antonym: String?,
+    )
+
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            databaseService.withRealm { realm ->
-                val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
-                    .findFirst()
+            val query = fragmentDictionaryBinding.etSearch.text.toString()
+            lifecycleScope.launch {
+                val dict = databaseService.withRealmAsync { realm ->
+                    realm.where(RealmDictionary::class.java)
+                        .equalTo("word", query, Case.INSENSITIVE)
+                        .findFirst()
+                        ?.let {
+                            DictionaryEntry(it.word, it.definition, it.synonym, it.antonym)
+                        }
+                }
                 if (dict != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
                         "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
@@ -126,7 +127,7 @@ class DictionaryActivity : BaseActivity() {
                     )
                 } else {
                     Utilities.toast(
-                        this,
+                        this@DictionaryActivity,
                         getString(R.string.word_not_available_in_our_database)
                     )
                 }
