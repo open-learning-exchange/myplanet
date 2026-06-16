@@ -12,6 +12,7 @@ buildscript {
         classpath(libs.kotlin.gradle.plugin)
         classpath(libs.kotlin.serialization)
         classpath(libs.ksp.symbol.processing.gradle.plugin)
+        classpath(libs.androidx.baselineprofile.gradle.plugin)
     }
 }
 
