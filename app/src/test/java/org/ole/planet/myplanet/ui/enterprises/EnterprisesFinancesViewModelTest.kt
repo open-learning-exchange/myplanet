@@ -1,19 +1,17 @@
 package org.ole.planet.myplanet.ui.enterprises
 
-import kotlinx.coroutines.Dispatchers
+import io.mockk.coEvery
+import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.`when`
+import org.ole.planet.myplanet.MainDispatcherRule
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
 
@@ -24,16 +22,13 @@ class EnterprisesFinancesViewModelTest {
     private lateinit var viewModel: EnterprisesFinancesViewModel
     private val testDispatcher = StandardTestDispatcher()
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
-        teamsRepository = mock(TeamsRepository::class.java)
+        teamsRepository = mockk()
         viewModel = EnterprisesFinancesViewModel(teamsRepository)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
@@ -44,14 +39,14 @@ class EnterprisesFinancesViewModelTest {
         val startDate = 1000L
         val endDate = 2000L
 
-        `when`(
+        coEvery {
             teamsRepository.getTeamTransactionsWithBalance(
                 teamId = teamId,
                 startDate = startDate,
                 endDate = endDate,
                 sortAscending = sortAscending
             )
-        ).thenReturn(flowOf(mockTransactions))
+        } returns flowOf(mockTransactions)
 
         viewModel.getTeamTransactions(teamId, sortAscending, startDate, endDate)
         testDispatcher.scheduler.advanceUntilIdle()
