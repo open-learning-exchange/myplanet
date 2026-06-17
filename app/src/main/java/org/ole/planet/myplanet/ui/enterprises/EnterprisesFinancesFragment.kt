@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.DialogInterface
 import android.os.Bundle
+import androidx.fragment.app.viewModels
+import dagger.hilt.android.AndroidEntryPoint
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,7 +27,9 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 
+@AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
+    private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
     private lateinit var addTransactionBinding: AddTransactionBinding
@@ -33,7 +37,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
     private var isAsc = false
-    private var transactionsJob: Job? = null
     private var currentStartDate: Long? = null
     private var currentEndDate: Long? = null
 
@@ -209,6 +212,15 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         financeAdapter = EnterprisesFinancesAdapter(requireActivity())
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = financeAdapter
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.transactions.collectLatest { results ->
+                transactions = results
+                updatedFinanceList(results)
+                showNoData(binding.tvNodata, transactions.size, "finances")
+            }
+        }
+
         observeTransactions()
     }
 
@@ -307,8 +319,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        transactionsJob?.cancel()
-        transactionsJob = null
         transactions = emptyList()
         _binding = null
         super.onDestroyView()
@@ -319,18 +329,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         startDate: Long? = currentStartDate,
         endDate: Long? = currentEndDate,
     ) {
-        transactionsJob?.cancel()
-        transactionsJob = viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.getTeamTransactionsWithBalance(
-                teamId = teamId,
-                startDate = startDate,
-                endDate = endDate,
-                sortAscending = sortAscending,
-            ).collectLatest { results ->
-                transactions = results
-                updatedFinanceList(results)
-                showNoData(binding.tvNodata, transactions.size, "finances")
-            }
-        }
+        viewModel.getTeamTransactions(
+            teamId = teamId,
+            sortAscending = sortAscending,
+            startDate = startDate,
+            endDate = endDate
+        )
     }
 }
