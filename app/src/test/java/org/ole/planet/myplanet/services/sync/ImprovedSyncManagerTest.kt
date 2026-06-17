@@ -10,6 +10,7 @@ import io.mockk.mockkConstructor
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -45,6 +46,7 @@ class ImprovedSyncManagerTest {
     private val poolManager: RealmPoolManager = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
+    private val syncScope = CoroutineScope(testDispatcher)
 
     @Before
     fun setup() {
@@ -81,7 +83,8 @@ class ImprovedSyncManagerTest {
             standardStrategy,
             loginSyncManager,
             activitiesRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            syncScope
         )
     }
 

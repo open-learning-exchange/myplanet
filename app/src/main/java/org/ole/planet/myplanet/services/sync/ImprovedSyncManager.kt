@@ -8,6 +8,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import org.ole.planet.myplanet.di.ApplicationScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -32,7 +33,8 @@ class ImprovedSyncManager @Inject constructor(
     private val standardStrategy: StandardSyncStrategy,
     private val loginSyncManager: LoginSyncManager,
     private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
@@ -40,7 +42,6 @@ class ImprovedSyncManager @Inject constructor(
 
     private var isSyncing = false
     private var listener: OnSyncListener? = null
-    private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
@@ -90,16 +91,18 @@ class ImprovedSyncManager @Inject constructor(
 
     private fun startSyncProcess(syncMode: SyncMode, syncTables: List<String>?) {
         syncScope.launch {
-            try {
-                if (transactionSyncManager.authenticate()) {
-                    performSync(syncMode, syncTables)
-                } else {
-                    handleException("Authentication failed")
+            kotlinx.coroutines.withContext(dispatcherProvider.io) {
+                try {
+                    if (transactionSyncManager.authenticate()) {
+                        performSync(syncMode, syncTables)
+                    } else {
+                        handleException("Authentication failed")
+                    }
+                } catch (e: Exception) {
+                    handleException(e.message ?: "Unknown error")
+                } finally {
+                    cleanup()
                 }
-            } catch (e: Exception) {
-                handleException(e.message ?: "Unknown error")
-            } finally {
-                cleanup()
             }
         }
     }
