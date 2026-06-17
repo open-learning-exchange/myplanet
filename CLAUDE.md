@@ -7,9 +7,9 @@
 ### Key Characteristics
 - **Primary Language**: Kotlin (with Java compatibility layer)
 - **Min SDK**: 26 (Android 8.0)
-- **Target SDK**: 36 (Android 15)
-- **Current Version**: 0.53.38 (versionCode: 5338)
-- **Build System**: Gradle 9.4.1 with Android Gradle Plugin 9.1.1
+- **Target SDK**: 36 (Android 16); **Compile SDK**: 37
+- **Current Version**: 0.57.30 (versionCode: 5730)
+- **Build System**: Gradle 9.5.1 with Android Gradle Plugin 9.2.1
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -110,26 +110,26 @@ myplanet/
 
 ### Critical Files to Understand
 
-1. **`MainApplication.kt`** (~448 lines)
+1. **`MainApplication.kt`** (~480 lines)
    - Application initialization with Hilt DI
    - WorkManager scheduling (AutoSyncWorker, TaskNotificationWorker, NetworkMonitorWorker, RetryQueueWorker)
    - Server reachability checking with alternative URL mapping
    - Theme/locale management, ANR watchdog, uncaught exception handling
    - Location: `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt`
 
-2. **`SyncManager.kt`** (~1058 lines)
+2. **`SyncManager.kt`** (~991 lines)
    - Orchestrates data synchronization with server via StateFlow-based state management
    - Integrates with ImprovedSyncManager, TransactionSyncManager, RealtimeSyncManager
    - Semaphore-based concurrency control, adaptive batch processing
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt`
 
-3. **`UploadManager.kt`** (~770 lines)
+3. **`UploadManager.kt`** (~476 lines)
    - File and data uploads with batch processing (BATCH_SIZE = 50)
    - Integrates with UploadCoordinator for orchestrated uploads
    - Handles activities, submissions, photos, news uploads
    - Location: `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt`
 
-4. **`TeamsRepositoryImpl.kt`** (~1097 lines)
+4. **`TeamsRepositoryImpl.kt`** (~1715 lines — largest file; candidate for splitting by responsibility)
    - Team management with reactive Flow-based queries
    - Team creation, task management, membership roles
    - Location: `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt`
@@ -146,19 +146,19 @@ myplanet/
 
 | Category | Technology | Version | Purpose |
 |----------|-----------|---------|---------|
-| **Language** | Kotlin | 2.3.20 | Primary development language |
-| **Build System** | Gradle | 9.4.1 | Build automation |
-| **Build Plugin** | Android Gradle Plugin | 9.1.1 | Android build tooling |
+| **Language** | Kotlin | 2.4.0 | Primary development language |
+| **Build System** | Gradle | 9.5.1 | Build automation |
+| **Build Plugin** | Android Gradle Plugin | 9.2.1 | Android build tooling |
 | **DI Framework** | Dagger Hilt | 2.59.2 | Dependency injection |
-| **Database** | Realm | 10.19.0 | Local object database |
+| **Database** | Realm | 10.19.0 (Realm-Java, **EOL**) | Local object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
-| **HTTP Client** | OkHttp | 5.3.2 | HTTP communication |
-| **JSON** | Gson | 2.13.2 | JSON serialization |
-| **Async** | Kotlin Coroutines | 1.10.2 | Asynchronous programming |
+| **HTTP Client** | OkHttp | 5.4.0 | HTTP communication |
+| **JSON** | Gson | 2.14.0 | JSON serialization |
+| **Async** | Kotlin Coroutines | 1.11.0 | Asynchronous programming |
 | **Background Tasks** | AndroidX Work | 2.11.2 | Background job scheduling |
-| **UI Framework** | Material Design 3 | 1.13.0 | UI components |
-| **Image Loading** | Glide | 5.0.5 | Image loading and caching |
-| **Media Playback** | Media3 (ExoPlayer) | 1.10.0 | Audio/video playback |
+| **UI Framework** | Material Design 3 | 1.14.0 | UI components |
+| **Image Loading** | Glide | 5.0.7 | Image loading and caching |
+| **Media Playback** | Media3 (ExoPlayer) | 1.10.1 | Audio/video playback |
 | **Markdown** | Markwon | 4.6.2 | Markdown rendering |
 | **Maps** | OSMDroid | 6.1.20 | OpenStreetMap integration |
 | **Encryption** | Tink | 1.21.0 | Cryptographic operations |
@@ -383,8 +383,14 @@ git push -u origin claude/feature-name-sessionid
 - Triggers: All branches except `master` (includes `claude/**`, `codex/**`, `dependabot/**`, `jules/**`)
 - Runs on Ubuntu 24.04
 - Matrix builds both `default` and `lite` flavors with fail-fast disabled
-- Uses `gradle/actions/setup-gradle@v5` with caching
+- Uses `gradle/actions/setup-gradle@v6` with a remote Gradle build cache
 - Build command: `./gradlew assemble${FLAVOR}Debug --parallel --max-workers=4`
+
+**Test Workflow** (`.github/workflows/test.yml`)
+- Triggers: every push (all branches) + manual dispatch; `permissions: contents: read`
+- Runs `./gradlew testDefaultDebugUnitTest` — **fails the build on any unit-test failure**
+- `default` flavor only (the `lite` flavor's unit tests are not run in CI)
+- No instrumented (`androidTest`) execution in CI
 
 **Release Workflow** (`.github/workflows/release.yml`)
 - Triggers: `master` branch push or manual dispatch
@@ -503,26 +509,43 @@ open class RealmMyCourse : RealmObject() {
 - Primary keys use `@PrimaryKey` annotation
 - Nullable types use `?` suffix
 
-**Database Operations:**
-```kotlin
-// Query
-val courses = mRealm.where(RealmMyCourse::class.java)
-    .equalTo("userId", userId)
-    .findAll()
+**Database Operations — use `DatabaseService` (preferred pattern):**
 
-// Write
-mRealm.executeTransactionAsync { realm ->
+Data access goes through `data/DatabaseService.kt`, **not** raw `Realm` instances in the UI. `DatabaseService` opens a thread-local Realm, always closes it in a `finally`, and confines work to coroutine dispatchers. Repositories **return detached copies** (`copyFromRealm`) so Realm objects never cross threads or leak to the UI — only `DictionaryActivity` still uses the raw API directly, and new code should not.
+
+```kotlin
+// Read (suspend) — runs on the IO dispatcher, returns DETACHED copies
+val courses = databaseService.withRealmAsync { realm ->
+    realm.queryList(RealmMyCourse::class.java) {
+        equalTo("userId", userId)
+    } // queryList already applies copyFromRealm
+}
+
+// Single object, detached
+val course = databaseService.withRealmAsync { realm ->
+    realm.findCopyByField(RealmMyCourse::class.java, "_id", courseId)
+}
+
+// Write (suspend) — confined to a limited-parallelism Realm dispatcher
+databaseService.executeTransactionAsync { realm ->
     realm.copyToRealmOrUpdate(course)
 }
 
 // Delete
-mRealm.executeTransaction { realm ->
+databaseService.executeTransactionAsync { realm ->
     realm.where(RealmMyCourse::class.java)
         .equalTo("_id", courseId)
         .findFirst()
         ?.deleteFromRealm()
 }
 ```
+
+**Rules:**
+- Never return live `RealmObject`/`RealmResults` from a repository — return `copyFromRealm` copies (helpers `queryList` / `findCopyByField` do this for you).
+- Never hold a `Realm` instance as a long-lived field or pass it between threads; let `DatabaseService` manage open/close.
+- Do not call blocking Realm APIs on `Dispatchers.Main`; use the `withRealmAsync` / `executeTransactionAsync` suspend helpers.
+- Inject `DispatcherProvider` (don't hard-code `Dispatchers.IO`) so tests can substitute deterministic dispatchers.
+- The raw `mRealm.where(...).findAll()` style is **legacy**; prefer the helpers above.
 
 ### Dependency Injection Patterns
 
@@ -826,8 +849,9 @@ val color = ContextCompat.getColor(context, R.color.primary)
 
 The project has an established test suite (configured in `app/build.gradle`, versions in `gradle/libs.versions.toml`):
 
-- **Unit tests (JVM)**: ~130 files in `app/src/test/`, covering `utils` (35), `repository` (25), `ui` (22), `services` (22), `model` (11), `base` (7), `data` (4), and `di` (2). Run on the JVM with Robolectric so Android resources are available (`testOptions { unitTests { includeAndroidResources = true } }`).
+- **Unit tests (JVM)**: ~130 files in `app/src/test/`, covering `utils` (35), `repository` (25), `ui` (22), `services` (22), `model` (11), `base` (7), `data` (4), and `di` (2). Run on the JVM with Robolectric so Android resources are available (`testOptions { unitTests { includeAndroidResources = true } }`). Coverage spans nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Realm models, DI modules, and the API/auth layer.
 - **Instrumented tests (device/emulator)**: in `app/src/androidTest/` — currently `DatabaseServiceTest` and `RealmUserTest`. This layer is sparse; user-facing flows (login/sync, take-course, exam submission) have no UI coverage yet and are the main gap.
+- **CI enforcement**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push and fails the build on any test failure. (Instrumented tests are **not** run in CI.)
 
 **Frameworks in use:**
 
@@ -838,15 +862,18 @@ The project has an established test suite (configured in `app/build.gradle`, ver
 | Robolectric | 4.16.1 | Android framework on the JVM |
 | kotlinx-coroutines-test | — | `runTest`, dispatcher control |
 | androidx.test (core/ext/runner/arch) | — | Android test infra, `InstantTaskExecutorRule` |
-| hilt-android-testing | — | DI in tests |
+| hilt-android-testing | — | DI in tests (`kspTest`) |
 
-Note: tests use **MockK**, not Mockito. A `MainDispatcherRule` (`app/src/test/.../MainDispatcherRule.kt`) is provided to swap the main dispatcher in coroutine tests.
+Note: tests use **MockK**, not Mockito. Shared test infra — `MainDispatcherRule` and `TestDispatcherProvider` (`app/src/test/.../`) — swaps the main dispatcher and injects deterministic dispatchers in coroutine tests. Production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code.
 
 ### Running Tests
 
 ```bash
-# All unit tests (default flavor, debug)
+# Unit tests (default flavor) — what CI runs
 ./gradlew testDefaultDebugUnitTest
+
+# Unit tests (lite flavor) — NOT covered by CI; run locally when touching flavor-specific code
+./gradlew testLiteDebugUnitTest
 
 # A single test class
 ./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.CoursesRepositoryImplTest"
@@ -855,27 +882,33 @@ Note: tests use **MockK**, not Mockito. A `MainDispatcherRule` (`app/src/test/..
 ./gradlew connectedDefaultDebugAndroidTest
 ```
 
-### Writing Tests
+### Writing Tests (conventions used in this repo)
 
-**Unit test (MockK + coroutines):**
 ```kotlin
-class CourseRepositoryTest {
+// Repository/ViewModel unit test — MockK + coroutines-test
+class CoursesRepositoryImplTest {
     @get:Rule val mainDispatcherRule = MainDispatcherRule()
 
+    private val apiInterface: ApiInterface = mockk(relaxed = true)
+    private val databaseService: DatabaseService = mockk(relaxed = true)
+
     @Test
-    fun `syncCourses returns success when API call succeeds`() = runTest {
-        val api = mockk<ApiInterface>()
-        coEvery { api.getCourses() } returns Response.success(emptyList())
-        val repository = CoursesRepositoryImpl(api, databaseService, dispatcher)
-
-        val result = repository.syncCourses()
-
-        assertTrue(result.isSuccess)
+    fun `getCourses returns detached copies`() = runTest {
+        val repository = CoursesRepositoryImpl(apiInterface, databaseService, TestDispatcherProvider())
+        coEvery { databaseService.withRealmAsync<Any>(any()) } returns /* ... */
+        val result = repository.getCourses()
+        assertTrue(result.isNotEmpty())
     }
 }
 ```
 
-**Instrumented test:**
+**Conventions:**
+- Prefer **MockK** (`mockk`, `coEvery`, `coVerify`) — not Mockito.
+- Use `runTest { }` + `MainDispatcherRule` for coroutine code; inject `TestDispatcherProvider` instead of real dispatchers.
+- Use **Robolectric** (`@RunWith(RobolectricTestRunner::class)`) for tests needing Android framework classes without a device.
+- Add new tests next to existing ones (mirror the `main` package path) so CI picks them up automatically.
+
+**Instrumented test (device/emulator):**
 ```kotlin
 @RunWith(AndroidJUnit4::class)
 class LoginActivityTest {
@@ -907,19 +940,21 @@ When making changes, verify:
 **Never hardcode:**
 - API keys
 - Passwords
-- Server URLs (use gradle.properties)
+- Server URLs / server PINs
 - User credentials
 
-**Use gradle.properties for configuration:**
+> ⚠️ **KNOWN ISSUE — secrets currently committed.** `gradle.properties` is **tracked in git** (it is *not* gitignored) and holds real `PLANET_*_URL` / `PLANET_*_PIN` values. `app/build.gradle` bakes each into `BuildConfig`, and since `minifyEnabled=false` they are trivially recoverable from any shipped APK. These PINs are real CouchDB `satellite` credentials (used in `UrlUtils.header`, `ConfigurationsRepositoryImpl.buildCouchdbUrl`, and the `/healthaccess` PIN). **Do not add new secrets here.** Remediation: rotate the exposed PINs server-side, move values to an untracked file / CI secrets, gitignore `gradle.properties`, and purge it from git history.
+
+**Preferred pattern — inject config via untracked properties or CI secrets, then expose as `BuildConfig` fields:**
 ```properties
-# gradle.properties (gitignored)
-myplanet.server.url=https://example.org
-myplanet.server.pin=1234
+# A gitignored local file (e.g. local.properties / secrets.properties), or CI-injected -P properties
+PLANET_LEARNING_URL=https://example.org
+PLANET_LEARNING_PIN=****
 ```
 
 **Access in code:**
 ```kotlin
-val serverUrl = BuildConfig.SERVER_URL
+val serverUrl = BuildConfig.PLANET_LEARNING_URL
 ```
 
 ### Network Security
@@ -1111,32 +1146,33 @@ git rebase --continue
 
 | Purpose | File Path | Line Count |
 |---------|-----------|------------|
-| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~448 |
+| Main entry point | `app/src/main/java/org/ole/planet/myplanet/MainApplication.kt` | ~480 |
 | REST API endpoints | `app/src/main/java/org/ole/planet/myplanet/data/api/ApiInterface.kt` | ~65 |
-| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~1058 |
-| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~770 |
+| Sync orchestration | `app/src/main/java/org/ole/planet/myplanet/services/sync/SyncManager.kt` | ~991 |
+| Upload handling | `app/src/main/java/org/ole/planet/myplanet/services/UploadManager.kt` | ~476 |
 | Upload orchestration | `app/src/main/java/org/ole/planet/myplanet/services/upload/UploadCoordinator.kt` | ~309 |
-| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1097 |
-| Build configuration | `app/build.gradle` | ~250 |
-| Dependency versions | `gradle/libs.versions.toml` | ~200 |
+| Team management | `app/src/main/java/org/ole/planet/myplanet/repository/TeamsRepositoryImpl.kt` | ~1715 |
+| Realm abstraction | `app/src/main/java/org/ole/planet/myplanet/data/DatabaseService.kt` | ~109 |
+| Build configuration | `app/build.gradle` | ~236 |
+| Dependency versions | `gradle/libs.versions.toml` | ~130 |
 
 ---
 
 ## Codebase Inventory Summary
 
-### Source Files (427 total Kotlin files in `app/src/main/java`)
+### Source Files (446 total Kotlin files in `app/src/main/java`) + 132 test files (`app/src/test`, `app/src/androidTest`)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
-| `model/` | 83 | Realm database models + DTOs |
-| `repository/` | 46 | Data access abstraction (23 domains + utilities) |
-| `ui/` | 156 | User interface across 28 feature packages |
-| `services/` | 37 | Background tasks & managers (20 root + 3 sub-packages) |
+| `model/` | 87 | Realm database models + DTOs |
+| `repository/` | 49 | Data access abstraction (23 domain Interface+Impl pairs + utilities) |
+| `ui/` | 163 | User interface across 28 feature packages |
+| `services/` | 40 | Background tasks & managers (root-level + sync/upload/retry sub-packages) |
 | `di/` | 11 | Dependency injection (6 modules + 4 entry points + RealmDispatcher) |
 | `base/` | 12 | Reusable base classes |
 | `callback/` | 34 | Event listeners and interfaces |
 | `data/` | 8 | Data services, API, auth |
-| `utils/` | 39 | Helper utilities |
+| `utils/` | 41 | Helper utilities |
 | Root | 1 | MainApplication.kt |
 
 ### Resource Files
@@ -1158,6 +1194,6 @@ git rebase --continue
 
 ---
 
-**Last Updated**: 2026-04-20
-**Version**: 0.53.38
+**Last Updated**: 2026-06-16
+**Version**: 0.57.30
 **Maintainer**: Open Learning Exchange

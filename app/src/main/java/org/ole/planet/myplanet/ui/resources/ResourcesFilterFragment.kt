@@ -104,7 +104,7 @@ class ResourcesFilterFragment : DialogFragment(), AdapterView.OnItemClickListene
     }
 
     private fun initList() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val data = filterListener?.getData()
             languages = data?.get("languages")
             subjects = data?.get("subjects")
