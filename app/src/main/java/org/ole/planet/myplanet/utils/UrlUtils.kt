@@ -9,19 +9,26 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
-    private fun spm(): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+    @androidx.annotation.VisibleForTesting
+    var _spm: SharedPrefManager? = null
+    private val spm: SharedPrefManager
+        get() {
+            if (_spm == null) {
+                _spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+            }
+            return _spm!!
+        }
 
     val header: String
         get() {
-            val spm = spm()
+            val spm = spm
             val credentials = "${spm.getUrlUser()}:${spm.getUrlPwd()}".toByteArray()
             return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
         }
 
     val hostUrl: String
         get() {
-            val spm = spm()
+            val spm = spm
             var scheme = spm.getUrlScheme()
             var hostIp = spm.getUrlHost()
             val isAlternativeUrl = spm.isAlternativeUrl()
@@ -89,7 +96,7 @@ object UrlUtils {
     }
 
     fun getUrl(): String {
-        return dbUrl(spm())
+        return dbUrl(spm)
     }
 
     fun getUpdateUrl(spm: SharedPrefManager): String {
@@ -113,7 +120,7 @@ object UrlUtils {
     }
 
     fun getApkUpdateUrl(path: String?): String {
-        val url = baseUrl(spm())
+        val url = baseUrl(spm)
         return "$url$path"
     }
 }

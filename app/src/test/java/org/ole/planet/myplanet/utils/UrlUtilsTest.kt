@@ -46,6 +46,9 @@ class UrlUtilsTest {
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://example.com"
         every { sharedPrefManager.getProcessedAlternativeUrl() } returns "http://alternative.com"
+
+
+        UrlUtils._spm = null
     }
 
     @After
