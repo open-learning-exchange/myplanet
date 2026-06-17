@@ -21,9 +21,12 @@ data class CachedMyLifeItem(
 )
 
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
+class SharedPrefManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
+) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val gson = Gson()
+
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
