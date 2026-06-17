@@ -862,19 +862,74 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
-    private fun buildSubmissionPayload(
-        submission: RealmSubmission,
-        mRealm: io.realm.Realm,
-        context: android.content.Context,
-        source: String,
-        parentCode: String
-    ): JsonObject {
+    private data class PayloadData(
+        val user: RealmUser?,
+        val exam: RealmStepExam?,
+        val questions: List<RealmExamQuestion>
+    )
+
+    private fun getPayloadData(mRealm: io.realm.Realm, submission: RealmSubmission): PayloadData {
+        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+        val examId = submission.examIdFromParentId()
+        val exam = examId?.let { mRealm.where(RealmStepExam::class.java).equalTo("id", it).findFirst() }
+        val questions = exam?.id?.let { mRealm.where(RealmExamQuestion::class.java).equalTo("examId", it).findAll() } ?: emptyList()
+        return PayloadData(user, exam, questions)
+    }
+
+    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
+        val `object` = JsonObject()
+        val payloadData = getPayloadData(mRealm, submission)
+        val user = payloadData.user
+        val exam = payloadData.exam
+
+        if (!android.text.TextUtils.isEmpty(submission._id)) {
+            `object`.addProperty("_id", submission._id)
+        }
+        if (!android.text.TextUtils.isEmpty(submission._rev)) {
+            `object`.addProperty("_rev", submission._rev)
+        }
+        `object`.addProperty("parentId", submission.parentId)
+        `object`.addProperty("type", submission.type)
+
+        if (submission.teamObject != null) {
+            val teamJson = JsonObject()
+            teamJson.addProperty("_id", submission.teamObject?._id)
+            teamJson.addProperty("name", submission.teamObject?.name)
+            teamJson.addProperty("type", submission.teamObject?.type)
+            `object`.add("team", teamJson)
+        }
+
+        `object`.addProperty("grade", submission.grade)
+        `object`.addProperty("startTime", submission.startTime)
+        `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
+        `object`.addProperty("status", submission.status)
+        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
+        `object`.addProperty("sender", submission.sender)
+        `object`.addProperty("source", sharedPrefManager.getPlanetCode())
+        `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
+        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+        if (exam != null) {
+            `object`.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
+        } else {
+            val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
+            `object`.add("parent", parent)
+        }
+        if (android.text.TextUtils.isEmpty(submission.user)) {
+            `object`.add("user", user?.serialize())
+        } else {
+            `object`.add("user", JsonParser.parseString(submission.user))
+        }
+        `object`
+    }
+
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = databaseService.withRealmAsync { mRealm ->
         val jsonObject = JsonObject()
 
         try {
-            val examId = submission.examIdFromParentId()
-            val exam = examId?.let { mRealm.where(RealmStepExam::class.java).equalTo("id", it).findFirst() }
-            val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+            val payloadData = getPayloadData(mRealm, submission)
+            val exam = payloadData.exam
 
             if (!submission._id.isNullOrEmpty()) {
                 jsonObject.addProperty("_id", submission._id)
@@ -885,15 +940,6 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
             jsonObject.addProperty("parentId", submission.parentId ?: "")
             jsonObject.addProperty("type", submission.type ?: "survey")
-
-            if (submission.teamObject != null) {
-                val teamJson = JsonObject()
-                teamJson.addProperty("_id", submission.teamObject?._id)
-                teamJson.addProperty("name", submission.teamObject?.name)
-                teamJson.addProperty("type", submission.teamObject?.type)
-                jsonObject.add("team", teamJson)
-            }
-
             jsonObject.addProperty("grade", submission.grade)
             jsonObject.addProperty("startTime", submission.startTime)
             jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
@@ -905,17 +951,13 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
             jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
-
             if (exam != null) {
-                val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
-                jsonObject.add("parent", RealmStepExam.serializeExam(exam, questions))
+                jsonObject.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            if (submission.user.isNullOrEmpty()) {
-                jsonObject.add("user", user?.serialize())
-            } else {
+            if (!submission.user.isNullOrEmpty()) {
                 val userJson = JsonParser.parseString(submission.user).asJsonObject
                 if (submission.membershipDoc != null) {
                     val membershipJson = JsonObject()
@@ -927,32 +969,6 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-
-        return jsonObject
-    }
-
-    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
-        buildSubmissionPayload(
-            submission,
-            mRealm,
-            context,
-            sharedPrefManager.getPlanetCode(),
-            sharedPrefManager.getParentCode()
-        )
-    }
-
-    override suspend fun serializeSubmission(
-        submission: RealmSubmission,
-        context: android.content.Context,
-        source: String,
-        parentCode: String
-    ): JsonObject = databaseService.withRealmAsync { mRealm ->
-        buildSubmissionPayload(
-            submission,
-            mRealm,
-            context,
-            source,
-            parentCode
-        )
+        jsonObject
     }
 }
