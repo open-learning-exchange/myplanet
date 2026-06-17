@@ -178,7 +178,7 @@ class PlanFragment : BaseTeamFragment() {
                 )
 
                 if (wasUpdated) {
-                    val refreshedTeam = teamsRepository.getTeamByDocumentIdOrTeamId(teamIdentifier)
+                    val refreshedTeam = teamsRepository.getTeamByIdOrTeamId(teamIdentifier)
                         ?: (this@PlanFragment.team ?: team)
 
                     refreshedTeam.apply {

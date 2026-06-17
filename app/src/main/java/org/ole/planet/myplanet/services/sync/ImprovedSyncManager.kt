@@ -110,7 +110,10 @@ class ImprovedSyncManager @Inject constructor(
 
         initializeSync()
 
-        val tablesToSync = syncTables ?: syncOrder
+        val heavyTableSet = HeavyTableSyncWorker.ALL_HEAVY_TABLES.toSet()
+        val requested = syncTables ?: syncOrder
+        val tablesToSync = requested.filter { it !in heavyTableSet }
+        val heavyTablesToSchedule = requested.filter { it in heavyTableSet }
         val strategy = getStrategy(syncMode)
 
         coroutineScope {
@@ -133,6 +136,10 @@ class ImprovedSyncManager @Inject constructor(
         logger.endProcess("on_synced")
 
         logger.stopLogging()
+
+        if (heavyTablesToSchedule.isNotEmpty()) {
+            HeavyTableSyncWorker.schedule(context, heavyTablesToSchedule)
+        }
     }
 
     private suspend fun syncTable(table: String, strategy: SyncStrategy, logger: SyncTimeLogger) {
