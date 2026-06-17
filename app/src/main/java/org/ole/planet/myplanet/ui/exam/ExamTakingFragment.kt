@@ -50,6 +50,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val binding get() = _binding!!
     private var isCertified = false
     private var isExplicitSubmission = false
+    private var examTakingTextWatcher: TextWatcher? = null
     private val answerCache = mutableMapOf<String, AnswerData>()
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -188,7 +189,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
 
-        binding.etAnswer.addTextChangedListener(object : TextWatcher {
+        examTakingTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
@@ -209,7 +210,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 }
                 updateNavButtons()
             }
-        })
+        }
+        examTakingTextWatcher?.let { binding.etAnswer.addTextChangedListener(it) }
     }
 
     private fun saveCurrentAnswer() {
@@ -815,6 +817,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             }
         }
         answerTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
+        examTakingTextWatcher?.let { binding.etAnswer.removeTextChangedListener(it) }
+        examTakingTextWatcher = null
         selectedRatingButton = null
         dynamicRatingButtons = emptyList()
         _binding = null
