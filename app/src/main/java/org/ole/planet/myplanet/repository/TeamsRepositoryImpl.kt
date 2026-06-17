@@ -380,16 +380,20 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
-        if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
-    }
-
     override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
+        return withRealm { realm ->
+            val results = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", id)
+                .or()
+                .equalTo("teamId", id)
+                .findAll()
+
+            val exactMatch = results.firstOrNull { it._id == id }
+                ?: results.firstOrNull { it.teamId == id }
+
+            exactMatch?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {

@@ -344,7 +344,7 @@ class AchievementFragment : BaseContainerFragment() {
         if (binding.rvOtherInfo.adapter == null) {
             binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
         } else {
-            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitList(data.references)
+            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitJsonList(data.references)
         }
     }
 
