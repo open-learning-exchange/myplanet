@@ -10,8 +10,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -40,7 +42,7 @@ class ImprovedSyncManager @Inject constructor(
 
     private var isSyncing = false
     private var listener: OnSyncListener? = null
-    private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
+    private var syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
@@ -78,6 +80,9 @@ class ImprovedSyncManager @Inject constructor(
     ) {
         this.listener = listener
         if (!isSyncing) {
+            if (!syncScope.isActive) {
+                syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
+            }
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
             createLog(
@@ -186,6 +191,11 @@ class ImprovedSyncManager @Inject constructor(
         sharedPrefManager.setLastSync(Date().time)
         NotificationUtils.cancel(context, 111)
         listener?.onSyncComplete()
+        cancel()
+    }
+
+    fun cancel() {
+        syncScope.cancel()
     }
 
     private fun SyncMode.describe(): String {
