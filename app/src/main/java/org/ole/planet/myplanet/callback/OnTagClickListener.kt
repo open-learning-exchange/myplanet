@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.model.TagData
 
 interface OnTagClickListener {
     fun onTagClicked(tag: RealmTag) {}
-    fun onParentTagClicked(parent: TagData.Parent) {}
+    fun onParentTagClicked(parent: TagData.Parent)
     fun onCheckboxTagSelected(tag: RealmTag) {}
     fun hasChildren(tagId: String?): Boolean { return false }
     @JvmSuppressWildcards

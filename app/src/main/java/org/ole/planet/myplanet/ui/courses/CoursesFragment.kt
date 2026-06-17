@@ -365,6 +365,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         onTagClicked(realmTag)
     }
 
+    override fun onParentTagClicked(parent: org.ole.planet.myplanet.model.TagData.Parent) {}
+
     override fun onTagClicked(tag: RealmTag) {
         if (::filterController.isInitialized) filterController.addTag(tag)
     }
