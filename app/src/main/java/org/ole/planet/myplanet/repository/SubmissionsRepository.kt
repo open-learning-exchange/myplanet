@@ -54,4 +54,6 @@ interface SubmissionsRepository {
     fun insertSubmission(mRealm: io.realm.Realm, submission: com.google.gson.JsonObject)
     suspend fun getExamUploadPayload(submission: org.ole.planet.myplanet.model.RealmSubmission): com.google.gson.JsonObject
     suspend fun serializeSubmission(submission: org.ole.planet.myplanet.model.RealmSubmission, context: android.content.Context, source: String, parentCode: String): com.google.gson.JsonObject
+    suspend fun generateSubmissionPdf(submissionId: String): java.io.File?
+    suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): java.io.File?
 }
