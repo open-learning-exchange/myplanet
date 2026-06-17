@@ -1323,7 +1323,7 @@
     <string name="hours_ago">Hace %1$d h</string>
     <string name="yesterday">Ayer</string>
     <string name="days_ago">Hace %1$d día(s)</string>
-    <string name="please_complete_test">" por favor completa la prueba para terminar el curso"</string>
+    <string name="please_complete_test">Por favor completa la prueba para continuar</string>
     <string name="removed_from_teamcourse">Curso eliminado del equipo</string>
 
 </resources>
