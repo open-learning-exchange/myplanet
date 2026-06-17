@@ -241,7 +241,7 @@ class CoursesAdapter(
     }
 
     fun selectAllItems(selectAll: Boolean) {
-        val oldSelected = selectedItems.toSet()
+        val oldSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
         selectedItems.clear()
 
         if (selectAll) {
@@ -249,9 +249,11 @@ class CoursesAdapter(
             selectedItems.addAll(selectableCourses)
         }
 
+        val newSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
+
         currentList.forEachIndexed { index, course ->
-            val wasSelected = oldSelected.contains(course)
-            val isSelected = selectedItems.contains(course)
+            val wasSelected = oldSelectedIds.contains(course.courseId)
+            val isSelected = newSelectedIds.contains(course.courseId)
             if (wasSelected != isSelected) {
                 notifyItemChanged(index, SELECTION_PAYLOAD)
             }
@@ -376,7 +378,7 @@ class CoursesAdapter(
             }
             if (hasSelectionPayload) {
                 if (!isGuest && (isMyCourseLib || !course.isMyCourse)) {
-                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
                 }
             }
         }
@@ -457,7 +459,7 @@ class CoursesAdapter(
                 val showCheckbox = isMyCourseLib || !course.isMyCourse
                 if (showCheckbox) {
                     rowCourseBinding.checkbox.visibility = View.VISIBLE
-                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
                     rowCourseBinding.checkbox.setOnClickListener { view: View ->
                         rowCourseBinding.checkbox.contentDescription =
                             context.getString(R.string.select_res_course, course.courseTitle)
