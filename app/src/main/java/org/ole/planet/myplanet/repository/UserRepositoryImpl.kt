@@ -158,8 +158,9 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUser> {
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<RealmUser> {
         return withRealm { realm ->
+            val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
             val results = realm.where(RealmUser::class.java)
                 .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
                 .contains("lastName", query, io.realm.Case.INSENSITIVE).or()

@@ -325,7 +325,7 @@ class MyHealthFragment : Fragment() {
                     rv.visibility = View.GONE
                 }
 
-                val userModelList = userRepository.searchUsers(editable?.toString() ?: "", "joinDate", Sort.DESCENDING)
+                val userModelList = userRepository.searchUsers(editable?.toString() ?: "", "joinDate", true)
 
                 loadingJob.cancel()
                 if (isAdded) {
