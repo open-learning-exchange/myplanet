@@ -4,13 +4,12 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.UserListItemBinding
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 
 class UsersAdapter(
     private val onItemClickListener: OnUserProfileClickListener
@@ -43,14 +42,7 @@ class UsersAdapter(
                 binding.userNameTextView.text = account.fullName
             }
             val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
-            Glide.with(binding.userProfile.context)
-                .load(account.image)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .override(avatarSize, avatarSize)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.userProfile)
+            ImageUtils.loadProfileImage(account.image, binding.userProfile, avatarSize)
         }
     }
 
