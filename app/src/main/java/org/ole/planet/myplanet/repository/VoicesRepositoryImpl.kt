@@ -60,13 +60,11 @@ class VoicesRepositoryImpl @Inject constructor(
             val managedNewsMap = mutableMapOf<String, RealmNews>()
 
             if (ids.isNotEmpty()) {
-                ids.chunked(999).forEach { chunk ->
-                    val results = realm.where(RealmNews::class.java)
-                        .`in`("id", chunk.toTypedArray())
-                        .findAll()
-                    results.forEach { n ->
-                        n.id?.let { id -> managedNewsMap[id] = n }
-                    }
+                val results = realm.where(RealmNews::class.java)
+                    .`in`("id", ids.toTypedArray())
+                    .findAll()
+                results.forEach { n ->
+                    n.id?.let { id -> managedNewsMap[id] = n }
                 }
             }
 
