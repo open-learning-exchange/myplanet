@@ -17,6 +17,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
+import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.UserDataWorker
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -193,15 +195,19 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val workRequest = OneTimeWorkRequest.Builder(org.ole.planet.myplanet.services.UserDataWorker::class.java)
-            .setInputData(workDataOf("uploadType" to "login"))
+        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
+            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
             .build()
-        WorkManager.getInstance(this).enqueue(workRequest)
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "UploadUserData_Login",
+            ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
 
         WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequest.id).observe(this) { workInfo ->
             if (workInfo != null && workInfo.state.isFinished) {
                 if (workInfo.state == WorkInfo.State.SUCCEEDED) {
-                    val successMessage = workInfo.outputData.getString("successMessage")
+                    val successMessage = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
                     onSuccess(successMessage)
                 }
             }
@@ -212,11 +218,15 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val workRequest = OneTimeWorkRequest.Builder(org.ole.planet.myplanet.services.UserDataWorker::class.java)
-            .setInputData(workDataOf("uploadType" to "bulk"))
+        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
+            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
             .build()
 
-        WorkManager.getInstance(this).enqueue(workRequest)
+        WorkManager.getInstance(this).enqueueUniqueWork(
+            "UploadUserData_Bulk",
+            ExistingWorkPolicy.REPLACE,
+            workRequest
+        )
 
         WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequest.id).observe(this) { workInfo ->
             if (workInfo != null && workInfo.state.isFinished) {

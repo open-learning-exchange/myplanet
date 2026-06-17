@@ -9,9 +9,8 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.callback.OnSuccessListener
 
 @HiltWorker
@@ -23,90 +22,94 @@ class UserDataWorker @AssistedInject constructor(
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result = coroutineScope {
-        val uploadType = inputData.getString("uploadType") ?: ""
+        val uploadType = inputData.getString(KEY_UPLOAD_TYPE) ?: ""
 
         try {
-            if (uploadType == "login") {
+            if (uploadType == UPLOAD_TYPE_LOGIN) {
                 val deferred = CompletableDeferred<String?>()
                 uploadManager.uploadUserActivities(object : OnSuccessListener {
                     override fun onSuccess(success: String?) {
                         deferred.complete(success)
                     }
                 })
-                val successMsg = deferred.await()
-                val outputData = Data.Builder().putString("successMessage", successMsg).build()
+                val successMsg = withTimeoutOrNull(30000L) { deferred.await() }
+                val outputData = Data.Builder().putString(KEY_SUCCESS_MESSAGE, successMsg).build()
                 return@coroutineScope Result.success(outputData)
-            } else if (uploadType == "bulk") {
-                uploadManager.uploadAchievement()
-                uploadManager.uploadNews()
-                uploadManager.uploadResourceActivities("")
-                uploadManager.uploadCourseActivities()
-                uploadManager.uploadSearchActivity()
-                uploadManager.uploadRating()
-                uploadManager.uploadTeamTask()
-                uploadManager.uploadMeetups()
-                uploadManager.uploadAdoptedSurveys()
-                uploadManager.uploadSubmissions()
-                uploadManager.uploadCrashLog()
+            } else if (uploadType == UPLOAD_TYPE_BULK) {
+                runCatching { uploadManager.uploadAchievement() }
+                runCatching { uploadManager.uploadNews() }
+                runCatching { uploadManager.uploadResourceActivities("") }
+                runCatching { uploadManager.uploadCourseActivities() }
+                runCatching { uploadManager.uploadSearchActivity() }
+                runCatching { uploadManager.uploadRating() }
+                runCatching { uploadManager.uploadTeamTask() }
+                runCatching { uploadManager.uploadMeetups() }
+                runCatching { uploadManager.uploadAdoptedSurveys() }
+                runCatching { uploadManager.uploadSubmissions() }
+                runCatching { uploadManager.uploadCrashLog() }
 
-                val tasks = listOf(
-                    async {
-                        val d = CompletableDeferred<Unit>()
-                        uploadToShelfService.uploadUserData {
-                            uploadToShelfService.uploadHealth()
+                runCatching {
+                    val d = CompletableDeferred<Unit>()
+                    uploadToShelfService.uploadUserData {
+                        uploadToShelfService.uploadHealth()
+                        d.complete(Unit)
+                    }
+                    withTimeoutOrNull(30000L) { d.await() }
+                }
+
+                runCatching {
+                    val d = CompletableDeferred<Unit>()
+                    uploadManager.uploadUserActivities(object : OnSuccessListener {
+                        override fun onSuccess(success: String?) {
                             d.complete(Unit)
                         }
-                        d.await()
-                    },
-                    async {
-                        val d = CompletableDeferred<Unit>()
-                        uploadManager.uploadUserActivities(object : OnSuccessListener {
-                            override fun onSuccess(success: String?) {
-                                d.complete(Unit)
-                            }
-                        })
-                        d.await()
-                    },
-                    async {
-                        val d = CompletableDeferred<Unit>()
-                        uploadManager.uploadExamResult(object : OnSuccessListener {
-                            override fun onSuccess(success: String?) {
-                                d.complete(Unit)
-                            }
-                        })
-                        d.await()
-                    },
-                    async { uploadManager.uploadFeedback() },
-                    async {
-                        val d = CompletableDeferred<Unit>()
-                        uploadManager.uploadResource(object : OnSuccessListener {
-                            override fun onSuccess(success: String?) {
-                                d.complete(Unit)
-                            }
-                        })
-                        d.await()
-                        uploadManager.uploadTeams()
-                    },
-                    async {
-                        val d = CompletableDeferred<Unit>()
-                        uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
-                            override fun onSuccess(success: String?) {
-                                d.complete(Unit)
-                            }
-                        })
-                        d.await()
-                    },
-                    async {
-                        val d = CompletableDeferred<Unit>()
-                        uploadManager.uploadActivities(object : OnSuccessListener {
-                            override fun onSuccess(success: String?) {
-                                d.complete(Unit)
-                            }
-                        })
-                        d.await()
-                    }
-                )
-                tasks.awaitAll()
+                    })
+                    withTimeoutOrNull(30000L) { d.await() }
+                }
+
+                runCatching {
+                    val d = CompletableDeferred<Unit>()
+                    uploadManager.uploadExamResult(object : OnSuccessListener {
+                        override fun onSuccess(success: String?) {
+                            d.complete(Unit)
+                        }
+                    })
+                    withTimeoutOrNull(30000L) { d.await() }
+                }
+
+                runCatching { uploadManager.uploadFeedback() }
+
+                runCatching {
+                    val d = CompletableDeferred<Unit>()
+                    uploadManager.uploadResource(object : OnSuccessListener {
+                        override fun onSuccess(success: String?) {
+                            d.complete(Unit)
+                        }
+                    })
+                    withTimeoutOrNull(30000L) { d.await() }
+                    uploadManager.uploadTeams()
+                }
+
+                runCatching {
+                    val d = CompletableDeferred<Unit>()
+                    uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
+                        override fun onSuccess(success: String?) {
+                            d.complete(Unit)
+                        }
+                    })
+                    withTimeoutOrNull(30000L) { d.await() }
+                }
+
+                runCatching {
+                    val d = CompletableDeferred<Unit>()
+                    uploadManager.uploadActivities(object : OnSuccessListener {
+                        override fun onSuccess(success: String?) {
+                            d.complete(Unit)
+                        }
+                    })
+                    withTimeoutOrNull(30000L) { d.await() }
+                }
+
                 return@coroutineScope Result.success()
             }
             Result.success()
@@ -114,5 +117,12 @@ class UserDataWorker @AssistedInject constructor(
             Log.e("UserDataWorker", "Error uploading user data", e)
             Result.failure()
         }
+    }
+
+    companion object {
+        const val KEY_UPLOAD_TYPE = "uploadType"
+        const val UPLOAD_TYPE_LOGIN = "login"
+        const val UPLOAD_TYPE_BULK = "bulk"
+        const val KEY_SUCCESS_MESSAGE = "successMessage"
     }
 }
