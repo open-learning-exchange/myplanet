@@ -17,7 +17,7 @@ class ChatHistoryAdapterTest {
             viewIn = "[{\"_id\": \"viewer-2\"}]"
         }
         val sharedNews = listOf(news1, news2)
-        val cachedSharedViewInIds = ChatHistoryAdapterHelper.extractSharedViewInIds(sharedNews)
+        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(sharedNews)
 
         assertEquals(setOf("viewer-1", "viewer-2"), cachedSharedViewInIds["chat-1"])
     }
@@ -29,14 +29,14 @@ class ChatHistoryAdapterTest {
             viewIn = "invalid-json"
         }
         val sharedNews = listOf(news)
-        val cachedSharedViewInIds = ChatHistoryAdapterHelper.extractSharedViewInIds(sharedNews)
+        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(sharedNews)
 
         assertEquals(emptySet<String>(), cachedSharedViewInIds["chat-1"] ?: emptySet<String>())
     }
 
     @Test
     fun testExtractSharedViewInIds_nullChatId() {
-        val cachedSharedViewInIds = ChatHistoryAdapterHelper.extractSharedViewInIds(emptyList<RealmNews>())
+        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(emptyList<RealmNews>())
         assertEquals(emptyMap<String, Set<String>>(), cachedSharedViewInIds)
     }
 
@@ -46,10 +46,10 @@ class ChatHistoryAdapterTest {
             newsId = "chat-1"
             viewIn = "[{\"_id\": \"viewer-1\"}]"
         }
-        val cachedSharedViewInIds = ChatHistoryAdapterHelper.extractSharedViewInIds(listOf(news))
+        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(listOf(news))
         assertEquals(setOf("viewer-1"), cachedSharedViewInIds["chat-1"])
 
-        val emptyCache = ChatHistoryAdapterHelper.extractSharedViewInIds(emptyList<RealmNews>())
+        val emptyCache = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(emptyList<RealmNews>())
         assertEquals(emptyMap<String, Set<String>>(), emptyCache)
     }
 }

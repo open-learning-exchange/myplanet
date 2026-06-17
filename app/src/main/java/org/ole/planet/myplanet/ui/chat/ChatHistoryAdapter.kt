@@ -70,7 +70,7 @@ class ChatHistoryAdapter(
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
-        cachedSharedViewInIds = ChatHistoryAdapterHelper.extractSharedViewInIds(sharedNews)
+        cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(sharedNews)
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {

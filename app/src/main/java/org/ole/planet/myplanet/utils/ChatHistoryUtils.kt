@@ -1,11 +1,11 @@
-package org.ole.planet.myplanet.ui.chat
+package org.ole.planet.myplanet.utils
 
 import org.ole.planet.myplanet.model.RealmNews
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 
-object ChatHistoryAdapterHelper {
+object ChatHistoryUtils {
     fun extractSharedViewInIds(sharedNews: List<RealmNews>): Map<String, Set<String>> {
         if (sharedNews.isEmpty()) return emptyMap()
         return sharedNews
