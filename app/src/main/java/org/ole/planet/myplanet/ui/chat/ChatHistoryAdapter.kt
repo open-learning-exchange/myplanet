@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -70,7 +71,7 @@ class ChatHistoryAdapter(
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
-        cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(sharedNews)
+        cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {

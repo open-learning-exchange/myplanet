@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.chat
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 
 class ChatHistoryAdapterTest {
 
@@ -17,7 +18,7 @@ class ChatHistoryAdapterTest {
             viewIn = "[{\"_id\": \"viewer-2\"}]"
         }
         val sharedNews = listOf(news1, news2)
-        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(sharedNews)
+        val cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
 
         assertEquals(setOf("viewer-1", "viewer-2"), cachedSharedViewInIds["chat-1"])
     }
@@ -29,14 +30,14 @@ class ChatHistoryAdapterTest {
             viewIn = "invalid-json"
         }
         val sharedNews = listOf(news)
-        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(sharedNews)
+        val cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
 
         assertEquals(emptySet<String>(), cachedSharedViewInIds["chat-1"] ?: emptySet<String>())
     }
 
     @Test
     fun testExtractSharedViewInIds_nullChatId() {
-        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(emptyList<RealmNews>())
+        val cachedSharedViewInIds = extractSharedViewInIds(emptyList<RealmNews>())
         assertEquals(emptyMap<String, Set<String>>(), cachedSharedViewInIds)
     }
 
@@ -46,10 +47,10 @@ class ChatHistoryAdapterTest {
             newsId = "chat-1"
             viewIn = "[{\"_id\": \"viewer-1\"}]"
         }
-        val cachedSharedViewInIds = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(listOf(news))
+        val cachedSharedViewInIds = extractSharedViewInIds(listOf(news))
         assertEquals(setOf("viewer-1"), cachedSharedViewInIds["chat-1"])
 
-        val emptyCache = org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds(emptyList<RealmNews>())
+        val emptyCache = extractSharedViewInIds(emptyList<RealmNews>())
         assertEquals(emptyMap<String, Set<String>>(), emptyCache)
     }
 }
