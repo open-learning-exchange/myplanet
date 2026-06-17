@@ -84,6 +84,10 @@ fun <T : RealmModel> Realm.queryList(
     return where(clazz).apply(builder).findAll().let { copyFromRealm(it) }
 }
 
+fun <T : RealmModel> Realm.queryList(clazz: Class<T>, maxDepth: Int, builder: RealmQuery<T>.() -> Unit = {}): List<T> {
+    return where(clazz).apply(builder).findAll().let { copyFromRealm(it, maxDepth) }
+}
+
 fun <T : RealmModel, V : Any> Realm.findCopyByField(
     clazz: Class<T>,
     fieldName: String,

@@ -453,7 +453,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
 
         meetupDialog?.setOnDismissListener {
             eventDates.add(clickedCalendar)
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val calendarDays = eventDates.map { CalendarDay(it).apply {
                     imageResource = R.drawable.ic_calendar
                 } }

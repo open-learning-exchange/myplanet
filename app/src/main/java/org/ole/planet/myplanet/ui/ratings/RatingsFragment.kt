@@ -82,7 +82,7 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun observeViewModel() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.ratingState.collect { state ->
                     when (state) {
@@ -101,7 +101,7 @@ class RatingsFragment : DialogFragment() {
             }
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.userState.collect { user ->
                     isUserReady = user != null
@@ -111,7 +111,7 @@ class RatingsFragment : DialogFragment() {
             }
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.submitState.collect { state ->
                     currentSubmitState = state

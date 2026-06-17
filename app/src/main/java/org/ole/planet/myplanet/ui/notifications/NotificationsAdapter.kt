@@ -39,11 +39,14 @@ class NotificationsAdapter(
 
     private fun getDateFormat(): SimpleDateFormat {
         val currentLocale = Locale.getDefault()
-        if (dateFormat == null || lastLocale != currentLocale) {
-            dateFormat = SimpleDateFormat("MMM d, yyyy", currentLocale)
+        val cached = dateFormat
+        if (cached != null && lastLocale == currentLocale) {
+            return cached
+        }
+        return SimpleDateFormat("MMM d, yyyy", currentLocale).also {
+            dateFormat = it
             lastLocale = currentLocale
         }
-        return dateFormat!!
     }
 
     companion object {

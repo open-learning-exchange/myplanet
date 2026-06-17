@@ -171,7 +171,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             externalFilesDir = withContext(dispatcherProvider.io) {
                 requireContext().getExternalFilesDir(null)
             }
@@ -530,7 +530,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
         auth = headerAuth[0]
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val url = filePath ?: run {
                 return@launch
             }
