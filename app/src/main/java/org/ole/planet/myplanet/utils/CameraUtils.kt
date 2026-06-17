@@ -125,22 +125,24 @@ object CameraUtils {
     }
 
     private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
-        val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
-        if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
-            pictureFileDir.mkdirs()
-        }
-        val photoFile = "${Date().time}.jpg"
-        val filename = "${pictureFileDir.path}${File.separator}$photoFile"
-        val mainPicture = File(filename)
-        try {
-            FileOutputStream(mainPicture).use { fos ->
-                fos.write(data)
+        withContext(Dispatchers.IO) {
+            val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
+            if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
+                pictureFileDir.mkdirs()
             }
-            withContext(Dispatchers.Main) {
-                callback.onImageCapture(mainPicture.absolutePath)
+            val photoFile = "${Date().time}.jpg"
+            val filename = "${pictureFileDir.path}${File.separator}$photoFile"
+            val mainPicture = File(filename)
+            try {
+                FileOutputStream(mainPicture).use { fos ->
+                    fos.write(data)
+                }
+                withContext(Dispatchers.Main) {
+                    callback.onImageCapture(mainPicture.absolutePath)
+                }
+            } catch (error: Exception) {
+                error.printStackTrace()
             }
-        } catch (error: Exception) {
-            error.printStackTrace()
         }
     }
 
