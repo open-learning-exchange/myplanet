@@ -1571,7 +1571,8 @@ class TeamsRepositoryImpl @Inject constructor(
                         realmTx.where(RealmMyTeam::class.java)
                             .`in`("_id", ids.toTypedArray())
                             .findAll()
-                            .associateBy { it._id!! }
+                            .mapNotNull { team -> team._id?.let { it to team } }
+                            .toMap()
                             .toMutableMap()
                     } else {
                         mutableMapOf<String, RealmMyTeam>()

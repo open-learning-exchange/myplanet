@@ -174,14 +174,14 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private fun setupListeners() {
         binding.btnBack.setOnClickListener {
             saveCurrentAnswer()
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 updateAnsDb()
                 goToPreviousQuestion()
             }
         }
         binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 updateAnsDb()
                 goToNextQuestion()
             }
@@ -616,7 +616,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     return
                 }
 
-                lifecycleScope.launch {
+                viewLifecycleOwner.lifecycleScope.launch {
                     val cont = updateAnsDb()
                     if (this@ExamTakingFragment.type == "exam" && !cont) {
                         Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
