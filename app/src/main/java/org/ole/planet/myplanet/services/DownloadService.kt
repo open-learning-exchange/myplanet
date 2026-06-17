@@ -27,6 +27,7 @@ import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
@@ -496,6 +497,7 @@ class DownloadService : Service() {
             Log.e(TAG, "Error stopping foreground service", e)
         }
         downloadJob.cancel()
+        downloadScope.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }
