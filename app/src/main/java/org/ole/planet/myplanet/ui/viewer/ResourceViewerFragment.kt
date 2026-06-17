@@ -101,12 +101,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private val viewModel: ResourceViewerViewModel by viewModels()
 
-    @Inject lateinit var userSessionManager: UserSessionManager
-    @Inject lateinit var dispatcherProvider: DispatcherProvider
-    @Inject lateinit var ttsManager: TTSManager
-    @Inject lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
-    @Inject lateinit var serverUrlMapper: ServerUrlMapper
-    @Inject lateinit var sharedPrefManager: SharedPrefManager
     private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioRecordListener = object : OnAudioRecordListener {
@@ -171,7 +165,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder.setCaller(requireActivity(), requireContext())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            externalFilesDir = withContext(dispatcherProvider.io) {
+            externalFilesDir = withContext(viewModel.dispatcherProvider.io) {
                 requireContext().getExternalFilesDir(null)
             }
             resourceId?.let {
@@ -216,7 +210,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     private suspend fun isUrlDirectlyReachable(url: String): Boolean {
         return try {
-            withContext(dispatcherProvider.io) {
+            withContext(viewModel.dispatcherProvider.io) {
                 val cleanUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "http://$url" else url
                 val connection = java.net.URL(cleanUrl).openConnection() as java.net.HttpURLConnection
                 connection.connectTimeout = 5000
@@ -232,10 +226,10 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private suspend fun ensureServerUrlUpdated() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
+        val serverUrl = viewModel.sharedPrefManager.getServerUrl()
+        val mapping = viewModel.serverUrlMapper.processUrl(serverUrl)
         if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+            viewModel.serverUrlMapper.updateServerIfNecessary(mapping, viewModel.sharedPrefManager.rawPreferences) { url ->
                 isUrlDirectlyReachable(url)
             }
         }
@@ -250,7 +244,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         ensureServerUrlUpdated()
         filePath = UrlUtils.getUrl(library)
         showVideoLoading(getString(R.string.video_loading_connecting))
-        authSessionUpdater = authSessionUpdaterFactory.create(this)
+        authSessionUpdater = viewModel.authSessionUpdaterFactory.create(this)
     }
 
     private suspend fun setupVideoViewer() {
@@ -265,7 +259,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 filePath = UrlUtils.getUrl(library)
             }
             showVideoLoading(getString(R.string.video_loading_connecting))
-            authSessionUpdater = authSessionUpdaterFactory.create(this)
+            authSessionUpdater = viewModel.authSessionUpdaterFactory.create(this)
         } else {
             val resolvedPath = filePath?.let { resolveVideoPath(it) }
             val localFile = resolvedPath?.let { File(it) }
@@ -467,7 +461,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
         isExtractingText = true
-        lifecycleScope.launch(dispatcherProvider.io) {
+        lifecycleScope.launch(viewModel.dispatcherProvider.io) {
             pdfText = try {
                 PDFBoxResourceLoader.init(requireContext().applicationContext)
                 val document = PDDocument.load(file)
@@ -475,7 +469,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 document.close()
                 text
             } catch (e: Exception) { "" }
-            withContext(dispatcherProvider.main) { isExtractingText = false }
+            withContext(viewModel.dispatcherProvider.main) { isExtractingText = false }
         }
     }
 
@@ -487,7 +481,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             }
         }
         binding.fabReadAloud.setOnClickListener {
-            if (ttsManager.isSpeaking) ttsManager.stop() else ttsManager.speak(pdfText)
+            if (viewModel.ttsManager.isSpeaking) viewModel.ttsManager.stop() else viewModel.ttsManager.speak(pdfText)
         }
     }
 
@@ -535,7 +529,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             }
             streamVideoFromUrl(url, auth)
             if (isOnline) {
-                withContext(dispatcherProvider.io) {
+                withContext(viewModel.dispatcherProvider.io) {
                     if (!FileUtils.checkFileExist(requireContext(), url)) {
                         DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
                     }
@@ -551,7 +545,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     override fun onPause() {
         super.onPause()
         exoPlayer?.pause()
-        ttsManager.stop()
+        viewModel.ttsManager.stop()
     }
 
     override fun onDestroyView() {
