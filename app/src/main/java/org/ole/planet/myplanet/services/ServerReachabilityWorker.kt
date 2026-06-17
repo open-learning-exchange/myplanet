@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
+import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -192,6 +193,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 }
             }
             uploadExamResultWrapper()
+            HeavyTableSyncWorker.scheduleIfPending(applicationContext, sharedPrefManager)
             if (!MainApplication.isSyncRunning.get()) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
