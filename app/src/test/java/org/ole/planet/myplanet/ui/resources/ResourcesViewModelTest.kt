@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
@@ -35,7 +36,8 @@ class ResourcesViewModelTest {
             syncManager,
             sharedPrefManager,
             serverUrlMapper,
-            resourcesRepository
+            resourcesRepository,
+            TestDispatcherProvider(testDispatcher)
         )
     }
 
