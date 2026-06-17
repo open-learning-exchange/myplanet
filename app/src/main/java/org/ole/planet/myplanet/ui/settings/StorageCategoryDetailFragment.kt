@@ -242,11 +242,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
                 // Sync Realm: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
-                val allResources = resourcesRepository.getAllLibraries()
-                allResources.filter { it.resourceOffline && it.resourceId in deletedIds }.forEach { resource ->
-                    val id = resource._id ?: return@forEach
-                    resourcesRepository.updateLibraryItem(id) { it.resourceOffline = false }
-                }
+                resourcesRepository.clearOfflineFlagsForResourceIds(deletedIds)
             }
 
             // Notify parent to refresh, then dismiss

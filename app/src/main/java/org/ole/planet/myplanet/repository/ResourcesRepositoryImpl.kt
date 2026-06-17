@@ -268,6 +268,19 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun clearOfflineFlagsForResourceIds(resourceIds: Set<String>) {
+        if (resourceIds.isEmpty()) return
+        executeTransaction { realm ->
+            val results = realm.where(RealmMyLibrary::class.java)
+                .equalTo("resourceOffline", true)
+                .`in`("resourceId", resourceIds.toTypedArray())
+                .findAll()
+            results.forEach { library ->
+                library.resourceOffline = false
+            }
+        }
+    }
+
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
     }

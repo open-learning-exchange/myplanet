@@ -54,6 +54,7 @@ interface ResourcesRepository {
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
     suspend fun markResourceOfflineByLocalAddress(localAddress: String)
+    suspend fun clearOfflineFlagsForResourceIds(resourceIds: Set<String>)
     suspend fun markAllResourcesOffline(isOffline: Boolean)
     suspend fun saveSearchActivity(
         userName: String,
