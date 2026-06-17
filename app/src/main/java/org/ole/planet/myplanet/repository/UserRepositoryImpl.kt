@@ -142,8 +142,9 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUser::class.java)
     }
 
-    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
+    override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<RealmUser> {
         return queryList(RealmUser::class.java) {
+            val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
             sort(fieldName, sortOrder)
         }
     }

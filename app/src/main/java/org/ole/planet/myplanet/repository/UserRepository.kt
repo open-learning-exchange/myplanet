@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Sort
+
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
@@ -23,7 +23,7 @@ interface UserRepository {
     suspend fun getSyncedUserByName(name: String): RealmUser?
     suspend fun createGuestUser(username: String): RealmUser?
     suspend fun getAllUsers(): List<RealmUser>
-    suspend fun getUsersSortedBy(fieldName: String, sortOrder: Sort): List<RealmUser>
+    suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<RealmUser>
     suspend fun getPendingSyncUsers(limit: Int): List<RealmUser>
     suspend fun getMonthlyLoginCounts(
         userId: String,
