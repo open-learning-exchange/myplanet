@@ -194,27 +194,32 @@ class CoursesRepositoryImpl @Inject constructor(
                     if (validCourseIds.isEmpty()) return@executeTransaction
 
                     val chunkSize = 1000
-                    validCourseIds.chunked(chunkSize).forEach { chunk ->
-                        val courses = realm.where(RealmMyCourse::class.java)
-                            .`in`("courseId", chunk.toTypedArray())
-                            .findAll()
+                    val query = realm.where(RealmMyCourse::class.java)
+                    validCourseIds.chunked(chunkSize).forEachIndexed { index, chunk ->
+                        if (index > 0) query.or()
+                        query.`in`("courseId", chunk.toTypedArray())
+                    }
+                    val courses = query.findAll()
 
-                        if (courses.isNotEmpty()) {
-                            courses.forEach { course ->
-                                course.setUserId(userId)
-                            }
-
-                            val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
-                            if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
-                                realm.where(RealmRemovedLog::class.java)
-                                    .equalTo("type", "courses")
-                                    .equalTo("userId", userId)
-                                    .`in`("docId", foundCourseIds)
-                                    .findAll()
-                                    .deleteAllFromRealm()
-                            }
-                            courseFound = true
+                    if (courses.isNotEmpty()) {
+                        courses.forEach { course ->
+                            course.setUserId(userId)
                         }
+
+                        val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
+                        if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
+                            val logQuery = realm.where(RealmRemovedLog::class.java)
+                                .equalTo("type", "courses")
+                                .equalTo("userId", userId)
+                                .beginGroup()
+
+                            foundCourseIds.toList().chunked(chunkSize).forEachIndexed { index, chunk ->
+                                if (index > 0) logQuery.or()
+                                logQuery.`in`("docId", chunk.toTypedArray())
+                            }
+                            logQuery.endGroup().findAll().deleteAllFromRealm()
+                        }
+                        courseFound = true
                     }
                 }
 
