@@ -1325,5 +1325,6 @@
     <string name="yesterday">Hier</string>
     <string name="days_ago">Il y a %1$d jour(s)</string>
     <string name="please_complete_test">veuillez compléter le test pour terminer le cours</string>
+    <string name="removed_from_teamcourse">Cours retiré de l\'équipe</string>
 
 </resources>

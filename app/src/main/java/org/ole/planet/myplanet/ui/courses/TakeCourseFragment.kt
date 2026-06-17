@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils.getDialog
 import org.ole.planet.myplanet.utils.Utilities
 
-
 @AndroidEntryPoint
 class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnClickListener {
     private var isNextStepLocked = false
@@ -86,7 +85,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             currentCourse = course
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
-            steps = coursesRepository.getCourseSteps(courseId!!)
+            steps = coursesRepository.getCourseSteps(courseId ?: return@launch)
 
             if (cachedCourseProgress == null && isFetchingProgress.compareAndSet(false, true)) {
                 try {

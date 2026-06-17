@@ -33,8 +33,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val exporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
+
+    override suspend fun generateSubmissionPdf(submissionId: String): java.io.File? {
+        return exporter.generateSubmissionPdf(context, submissionId)
+    }
+
+    override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): java.io.File? {
+        return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
@@ -683,15 +692,16 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
             detachedSub = r.copyFromRealm(managedSub)
         }
-        return detachedSub!!
+        return detachedSub ?: error("Failed to create or retrieve submission")
     }
 
     private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {
-        var submission = sub
-        if (submission == null || (submission.status == "complete" && (submission.type == "exam" || submission.type == "survey"))) {
-            submission = mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
+        val submission = if (sub == null || (sub.status == "complete" && (sub.type == "exam" || sub.type == "survey"))) {
+            mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
+        } else {
+            sub
         }
-        submission!!.lastUpdateTime = Date().time
+        submission.lastUpdateTime = Date().time
         return submission
     }
 

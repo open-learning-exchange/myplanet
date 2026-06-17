@@ -13,8 +13,10 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -200,7 +202,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             if (maxEntry == null || maxEntry.value.first == 0) {
                 null
             } else {
-                Pair(maxEntry.value.second!!, maxEntry.value.first)
+                Pair(maxEntry.value.second ?: "", maxEntry.value.first)
             }
         }
     }
@@ -213,9 +215,11 @@ class ActivitiesRepositoryImpl @Inject constructor(
             if (activity.userId?.startsWith("guest") == true || activity.id == null || activity.userId == null) {
                 null
             } else {
+                val actId = activity.id ?: return@mapNotNull null
+                val actUserId = activity.userId ?: return@mapNotNull null
                 org.ole.planet.myplanet.model.LoginActivityData(
-                    activity.id!!,
-                    activity.userId!!,
+                    actId,
+                    actUserId,
                     serializeLoginActivities(activity, context)
                 )
             }
@@ -238,7 +242,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     override suspend fun recordSyncUserChallengeAction(userId: String) {
         executeTransaction { realm ->
             val action = realm.createObject(
-                org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java,
+                RealmUserChallengeActions::class.java,
                 UUID.randomUUID().toString()
             )
             action.userId = userId
@@ -323,6 +327,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
             activities.logoutTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("logoutTime", json)
             activities.androidId = org.ole.planet.myplanet.utils.JsonUtils.getString("androidId", json)
         }
+    }
+
+    override suspend fun hasUserSyncAction(userId: String?): Boolean {
+        if (userId.isNullOrEmpty()) return false
+        return hasUserCompletedSync(userId)
+    }
+
+    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(realmDispatcher) {
+        if (userId.isEmpty()) return@withContext false
+        count(RealmUserChallengeActions::class.java) {
+            equalTo("userId", userId)
+            equalTo("actionType", "sync")
+        } > 0
     }
 
     override suspend fun getRecentLogin(): RealmOfflineActivity? {
@@ -418,7 +435,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             realm.where(RealmOfflineActivity::class.java)
                 .`in`("_id", ids.toTypedArray())
                 .findAll()
-                .associateBy { it._id!! }
+                .associateBy { it._id ?: "" }
                 .toMutableMap()
         } else {
             mutableMapOf<String, RealmOfflineActivity>()

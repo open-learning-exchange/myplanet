@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -114,7 +115,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
@@ -754,7 +755,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch {
-                resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
+                viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
                         _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))

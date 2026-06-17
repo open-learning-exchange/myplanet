@@ -1321,5 +1321,6 @@
     <string name="yesterday">Yesterday</string>
     <string name="days_ago">%1$d days ago</string>
     <string name="please_complete_test">please complete the test to finish the course</string>
+    <string name="removed_from_teamcourse">Course removed from team</string>
 
 </resources>
