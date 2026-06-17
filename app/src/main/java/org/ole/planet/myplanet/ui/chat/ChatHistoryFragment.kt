@@ -124,7 +124,7 @@ class ChatHistoryFragment : Fragment() {
                 searchJob?.cancel()
                 searchJob = viewLifecycleOwner.lifecycleScope.launch {
                     delay(300)
-                    (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                    sharedViewModel.searchChats(s.toString(), isFullSearch, isQuestion)
                 }
             }
 
@@ -145,6 +145,7 @@ class ChatHistoryFragment : Fragment() {
                 params.topMargin = (20 * density).toInt()
             }
             binding.fullSearch.layoutParams = params
+            sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
         }
         observeScreenData()
 
@@ -168,6 +169,7 @@ class ChatHistoryFragment : Fragment() {
                         binding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
                     }
                 }
+                sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
             }
         }
     }
@@ -259,13 +261,12 @@ class ChatHistoryFragment : Fragment() {
                 user = data.currentUser
                 sharedNewsMessages = data.newsMessages
                 shareTargets = data.shareTargets
-                val chatHistory = data.chatHistory
 
                 val adapter = binding.recyclerView.adapter as? ChatHistoryAdapter
                 if (adapter == null) {
                     val newAdapter = ChatHistoryAdapter(
                         requireContext(),
-                        chatHistory,
+                        emptyList(),
                         user,
                         sharedNewsMessages,
                         shareTargets
@@ -305,16 +306,22 @@ class ChatHistoryFragment : Fragment() {
                 } else {
                     adapter.updateCachedData(user, sharedNewsMessages)
                     adapter.updateShareTargets(shareTargets)
-                    adapter.updateChatHistory(chatHistory)
                     binding.searchBar.visibility = View.VISIBLE
                     binding.recyclerView.visibility = View.VISIBLE
                 }
 
-                showNoData(binding.noChats, chatHistory.size, "chatHistory")
-                if (chatHistory.isEmpty()) {
+                if (data.chatHistory.isEmpty()) {
                     binding.searchBar.visibility = View.GONE
                     binding.recyclerView.visibility = View.GONE
                 }
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            sharedViewModel.filteredChats.collect { filteredHistory ->
+                val adapter = binding.recyclerView.adapter as? ChatHistoryAdapter
+                adapter?.updateChatHistory(filteredHistory)
+                showNoData(binding.noChats, filteredHistory.size, "chatHistory")
             }
         }
     }
