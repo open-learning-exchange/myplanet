@@ -48,6 +48,11 @@ class ThemeManagerTest {
 
         every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
         every { mockEntryPoint.sharedPrefManager() } returns mockSpm
+
+        // Reset the object state before each test
+        val spmField = ThemeManager::class.java.getDeclaredField("spm")
+        spmField.isAccessible = true
+        spmField.set(ThemeManager, null)
     }
 
     @After
