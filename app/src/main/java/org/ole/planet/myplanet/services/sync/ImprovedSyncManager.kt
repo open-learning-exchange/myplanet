@@ -7,8 +7,6 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.di.ApplicationScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -18,6 +16,7 @@ import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -91,18 +90,16 @@ class ImprovedSyncManager @Inject constructor(
 
     private fun startSyncProcess(syncMode: SyncMode, syncTables: List<String>?) {
         syncScope.launch {
-            kotlinx.coroutines.withContext(dispatcherProvider.io) {
-                try {
-                    if (transactionSyncManager.authenticate()) {
-                        performSync(syncMode, syncTables)
-                    } else {
-                        handleException("Authentication failed")
-                    }
-                } catch (e: Exception) {
-                    handleException(e.message ?: "Unknown error")
-                } finally {
-                    cleanup()
+            try {
+                if (transactionSyncManager.authenticate()) {
+                    performSync(syncMode, syncTables)
+                } else {
+                    handleException("Authentication failed")
                 }
+            } catch (e: Exception) {
+                handleException(e.message ?: "Unknown error")
+            } finally {
+                cleanup()
             }
         }
     }
