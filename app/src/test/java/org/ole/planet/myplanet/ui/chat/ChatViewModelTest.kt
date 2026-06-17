@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
