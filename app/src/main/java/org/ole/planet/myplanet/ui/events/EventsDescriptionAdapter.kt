@@ -9,19 +9,19 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 
-class EventsDescriptionAdapter(
-    private val map: HashMap<String, String>
-) : ListAdapter<String, EventsDescriptionAdapter.ViewHolder>(
-    object : DiffUtil.ItemCallback<String>() {
-        override fun areItemsTheSame(oldItem: String, newItem: String): Boolean {
-            return oldItem == newItem
+class EventsDescriptionAdapter : ListAdapter<EventsDescriptionAdapter.DescriptionItem, EventsDescriptionAdapter.ViewHolder>(
+    object : DiffUtil.ItemCallback<DescriptionItem>() {
+        override fun areItemsTheSame(oldItem: DescriptionItem, newItem: DescriptionItem): Boolean {
+            return oldItem.key == newItem.key
         }
 
-        override fun areContentsTheSame(oldItem: String, newItem: String): Boolean {
+        override fun areContentsTheSame(oldItem: DescriptionItem, newItem: DescriptionItem): Boolean {
             return oldItem == newItem
         }
     }
 ) {
+
+    data class DescriptionItem(val key: String, val value: String)
 
     class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val title: TextView = itemView.findViewById(R.id.title)
@@ -34,8 +34,8 @@ class EventsDescriptionAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val key = getItem(position)
-        holder.title.text = holder.itemView.context.getString(R.string.message_placeholder, "$key : ")
-        holder.description.text = holder.itemView.context.getString(R.string.message_placeholder, map[key])
+        val item = getItem(position)
+        holder.title.text = holder.itemView.context.getString(R.string.message_placeholder, "${item.key} : ")
+        holder.description.text = holder.itemView.context.getString(R.string.message_placeholder, item.value)
     }
 }

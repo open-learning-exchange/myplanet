@@ -25,11 +25,11 @@ import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUser
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
 
@@ -203,11 +203,11 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun setUpData(meetup: RealmMeetup) {
         binding.meetupTitle.text = meetup.title
         val map: HashMap<String, String> = getHashMap(meetup)
-        val keys = ArrayList(map.keys)
-        val eventsDescriptionAdapter = EventsDescriptionAdapter(map)
+        val items = map.map { EventsDescriptionAdapter.DescriptionItem(it.key, it.value) }
+        val eventsDescriptionAdapter = EventsDescriptionAdapter()
         listDesc?.layoutManager = LinearLayoutManager(requireContext())
         listDesc?.adapter = eventsDescriptionAdapter
-        eventsDescriptionAdapter.submitList(keys)
+        eventsDescriptionAdapter.submitList(items)
     }
 
     override fun onClick(view: View) {
