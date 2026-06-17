@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.base
 
 import android.os.Build
-import androidx.recyclerview.widget.ListAdapter
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmObject
 import kotlinx.coroutines.launch
