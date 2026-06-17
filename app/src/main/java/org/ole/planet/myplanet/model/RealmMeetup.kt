@@ -35,6 +35,7 @@ open class RealmMeetup : RealmObject() {
     var recurringNumber: Int = 10
     var sync: String? = null
     var sourcePlanet: String? = null
+    var updated: Boolean = false
 
     companion object {
         @JvmStatic
@@ -48,6 +49,7 @@ open class RealmMeetup : RealmObject() {
             if (myMeetupsDB == null) {
                 myMeetupsDB = mRealm.createObject(RealmMeetup::class.java, JsonUtils.getString("_id", meetupDoc))
             }
+            if (myMeetupsDB?.updated == true) return
             myMeetupsDB?.meetupId = JsonUtils.getString("_id", meetupDoc)
             myMeetupsDB?.userId = userId
             myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
@@ -81,6 +83,7 @@ open class RealmMeetup : RealmObject() {
             for (meetupDoc in documents) {
                 val id = JsonUtils.getString("_id", meetupDoc)
                 var myMeetupsDB = existingMeetups[id]
+                if (myMeetupsDB?.updated == true) continue
                 if (myMeetupsDB == null) {
                     myMeetupsDB = mRealm.createObject(RealmMeetup::class.java, id)
                     existingMeetups[id] = myMeetupsDB

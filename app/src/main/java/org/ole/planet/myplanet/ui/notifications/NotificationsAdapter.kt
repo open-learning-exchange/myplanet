@@ -33,6 +33,22 @@ class NotificationsAdapter(
         areContentsTheSame = { old, new -> old == new }
     )
 ) {
+
+    private var dateFormat: SimpleDateFormat? = null
+    private var lastLocale: Locale? = null
+
+    private fun getDateFormat(): SimpleDateFormat {
+        val currentLocale = Locale.getDefault()
+        val cached = dateFormat
+        if (cached != null && lastLocale == currentLocale) {
+            return cached
+        }
+        return SimpleDateFormat("MMM d, yyyy", currentLocale).also {
+            dateFormat = it
+            lastLocale = currentLocale
+        }
+    }
+
     companion object {
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM = 1
@@ -85,7 +101,7 @@ class NotificationsAdapter(
         }
     }
 
-    class ItemViewHolder(
+    inner class ItemViewHolder(
         private val binding: RowNotificationsBinding,
         private val onMarkAsReadClick: (String) -> Unit,
         private val onNotificationClick: (Notification) -> Unit,
@@ -131,7 +147,7 @@ class NotificationsAdapter(
                 diff < 86_400_000L -> context.getString(R.string.hours_ago, diff / 3_600_000L)
                 diff < 172_800_000L -> context.getString(R.string.yesterday)
                 diff < 604_800_000L -> context.getString(R.string.days_ago, diff / 86_400_000L)
-                else -> SimpleDateFormat("MMM d, yyyy", Locale.getDefault()).format(Date(createdAt))
+                else -> getDateFormat().format(Date(createdAt))
             }
         }
     }

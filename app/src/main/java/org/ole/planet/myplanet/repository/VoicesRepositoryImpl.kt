@@ -148,31 +148,17 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
         return withRealm { realm ->
-            val allNews = realm.where(RealmNews::class.java)
+            val query = realm.where(RealmNews::class.java)
                 .isEmpty("replyTo")
+                .beginGroup()
+                .equalTo("viewableBy", "teams", Case.INSENSITIVE)
+                .equalTo("viewableId", teamId, Case.INSENSITIVE)
+                .or()
+                .contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
+                .endGroup()
                 .sort("time", Sort.DESCENDING)
-                .findAll()
 
-            val filteredList = mutableListOf<RealmNews>()
-            for (news in allNews) {
-                if (!news.viewableBy.isNullOrEmpty() && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(teamId, ignoreCase = true)) {
-                    filteredList.add(realm.copyFromRealm(news))
-                } else if (!news.viewIn.isNullOrEmpty()) {
-                    try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                        for (e in ar) {
-                            val ob = e.asJsonObject
-                            if (ob["_id"].asString.equals(teamId, ignoreCase = true)) {
-                                filteredList.add(realm.copyFromRealm(news))
-                                break
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-            filteredList
+            realm.copyFromRealm(query.findAll())
         }
     }
 
@@ -221,29 +207,13 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
         return queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
+            beginGroup()
+            equalTo("viewableBy", "teams", Case.INSENSITIVE)
+            equalTo("viewableId", teamId, Case.INSENSITIVE)
+            or()
+            contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
+            endGroup()
             sort("time", Sort.DESCENDING)
-        }.map { discussions ->
-            discussions.filter { news ->
-                val viewableByTeams = !news.viewableBy.isNullOrEmpty() &&
-                        news.viewableBy.equals("teams", ignoreCase = true) &&
-                        news.viewableId.equals(teamId, ignoreCase = true)
-
-                val viewInTeam = if (!news.viewIn.isNullOrEmpty()) {
-                    try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                        ar.any { e ->
-                            val ob = e.asJsonObject
-                            ob["_id"].asString.equals(teamId, ignoreCase = true)
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                } else {
-                    false
-                }
-
-                viewableByTeams || viewInTeam
-            }
         }.flowOn(dispatcherProvider.default)
     }
 
@@ -638,7 +608,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        val imageList = queryList(RealmMyLibrary::class.java) {
+        val imageList = queryList(RealmMyLibrary::class.java, maxDepth = 0) {
             equalTo("isPrivate", true)
                 .greaterThan("createdDate", timestamp)
                 .equalTo("mediaType", "image")

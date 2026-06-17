@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.base
 
 import android.os.Build
+import androidx.recyclerview.widget.ListAdapter
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
+    @javax.inject.Inject lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
@@ -37,7 +39,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder>
+    abstract suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,7 +194,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open suspend fun deleteSelected(deleteProgress: Boolean) {
+    open fun deleteSelected(deleteProgress: Boolean) {
         val snapshot = selectedItems?.toList() ?: return
         for (item in snapshot) {
             val `object` = item as RealmObject
@@ -206,9 +208,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
-    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            coursesRepository.deleteCourseProgress(`object`.courseId)
+            viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                coursesRepository.deleteCourseProgress(`object`.courseId)
+            }
         }
     }
 

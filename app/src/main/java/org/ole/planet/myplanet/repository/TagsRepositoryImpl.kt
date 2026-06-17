@@ -137,6 +137,7 @@ class TagsRepositoryImpl @Inject constructor(
         }
 
         val tagCache = mutableMapOf<String, RealmTag>()
+        // Fetch existing tags upfront to avoid N+1 queries
         if (ids.isNotEmpty()) {
             val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
             for (tag in existingTags) {
@@ -144,23 +145,29 @@ class TagsRepositoryImpl @Inject constructor(
             }
         }
 
-        documentList.forEach { jsonDoc ->
+        for (jsonDoc in documentList) {
             insertIntoRealm(realm, jsonDoc, tagCache)
         }
     }
 
     override suspend fun insert(act: com.google.gson.JsonObject) {
         executeTransaction { realm ->
-            insertIntoRealm(realm, act)
+            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+            val tagCache = mutableMapOf<String, RealmTag>()
+            val existingTag = realm.where(RealmTag::class.java).equalTo("_id", id).findFirst()
+            if (existingTag != null) {
+                existingTag._id?.let { tagCache[it] = existingTag }
+            }
+            insertIntoRealm(realm, act, tagCache)
         }
     }
 
-    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject, cache: MutableMap<String, RealmTag>? = null) {
+    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject, cache: MutableMap<String, RealmTag>) {
         val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
-        var tag = if (cache != null) cache[id] else mRealm.where(RealmTag::class.java).equalTo("_id", id).findFirst()
+        var tag = cache[id]
         if (tag == null) {
             tag = mRealm.createObject(RealmTag::class.java, id)
-            cache?.put(id, tag)
+            cache[id] = tag
         }
         if (tag != null) {
             tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)

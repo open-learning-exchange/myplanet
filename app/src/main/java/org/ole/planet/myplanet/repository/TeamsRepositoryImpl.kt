@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -58,6 +57,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
+    private val resourcesRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -337,22 +337,10 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getTeamResources(teamId: String): List<org.ole.planet.myplanet.model.RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
-        val linkedResources = if (resourceIds.isEmpty()) {
-            emptyList()
-        } else {
-            queryList(RealmMyLibrary::class.java) {
-                `in`("resourceId", resourceIds.toTypedArray())
-            }
-        }
-
-        // Also get private resources belonging to this team
-        val privateResources = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", true)
-            equalTo("privateFor", teamId)
-        }
-
+        val linkedResources = resourcesRepositoryLazy.get().getLibraryItemsByResourceIds(resourceIds)
+        val privateResources = resourcesRepositoryLazy.get().getTeamPrivateResources(teamId)
         return (linkedResources + privateResources).distinctBy { it.id }
     }
 
@@ -392,16 +380,20 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
-        if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
-    }
-
     override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
+        return withRealm { realm ->
+            val results = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", id)
+                .or()
+                .equalTo("teamId", id)
+                .findAll()
+
+            val exactMatch = results.firstOrNull { it._id == id }
+                ?: results.firstOrNull { it.teamId == id }
+
+            exactMatch?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {
@@ -449,6 +441,25 @@ class TeamsRepositoryImpl @Inject constructor(
                 null
             }
         }
+    }
+
+
+    override suspend fun getJoinRequestById(id: String?): RealmMyTeam? {
+        if (id.isNullOrEmpty()) return null
+        return findByField(RealmMyTeam::class.java, "_id", id)
+    }
+
+    override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
+        if (ids.isEmpty()) return emptyMap()
+        val teams = queryList(RealmMyTeam::class.java) {
+            beginGroup()
+            ids.forEachIndexed { index, id ->
+                if (index > 0) or()
+                equalTo("_id", id)
+            }
+            endGroup()
+        }
+        return teams.associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
     }
 
     override suspend fun getJoinRequestTeamId(requestId: String): String? {
@@ -1213,7 +1224,8 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val existingUsers = sharedPrefManager.getSavedUsers().toMutableList()
         val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-        val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+        val existingNames = filteredExistingUsers.mapTo(HashSet()) { it.name }
+        val updatedUserList = userList.filterNot { user -> user.name in existingNames } + filteredExistingUsers
         sharedPrefManager.setSavedUsers(updatedUserList)
 
         teamMembers
@@ -1248,9 +1260,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 equalTo("teamId", teamId)
             }.mapNotNull { it.userId }.toSet()
 
+            val memberNames = members.mapTo(HashSet()) { it.name }
             val validAdmins = adminUsers.filter { admin ->
                 val adminFullId = "org.couchdb.user:${admin.name}"
-                adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()
+                adminFullId in teamUserIds && admin.name !in memberNames && !admin.name.isNullOrBlank()
             }
 
             if (validAdmins.isNotEmpty()) {
@@ -1436,14 +1449,10 @@ class TeamsRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
     }
 
-    override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getAvailableResourcesToAdd(teamId: String): List<org.ole.planet.myplanet.model.RealmMyLibrary> {
         val existing = getTeamResources(teamId)
         val existingIds = existing.mapNotNull { it._id }
-
-        val allLibraryItems = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-        }
-
+        val allLibraryItems = resourcesRepositoryLazy.get().getPublicLibraryItems()
         return allLibraryItems.filter { it._id !in existingIds }
     }
 
@@ -1562,7 +1571,8 @@ class TeamsRepositoryImpl @Inject constructor(
                         realmTx.where(RealmMyTeam::class.java)
                             .`in`("_id", ids.toTypedArray())
                             .findAll()
-                            .associateBy { it._id!! }
+                            .mapNotNull { team -> team._id?.let { it to team } }
+                            .toMap()
                             .toMutableMap()
                     } else {
                         mutableMapOf<String, RealmMyTeam>()

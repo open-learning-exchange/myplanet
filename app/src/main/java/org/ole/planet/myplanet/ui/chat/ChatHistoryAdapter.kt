@@ -28,11 +28,13 @@ import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
-    private var chatHistory: List<RealmChatHistory>,
+    chatHistoryList: List<RealmChatHistory>,
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
@@ -61,8 +63,37 @@ class ChatHistoryAdapter(
     private lateinit var expandableDetailList: HashMap<String, List<String>>
     private var cachedSharedViewInIds: Map<String, Set<String>> = emptyMap()
 
+    private data class PrecomputedChat(
+        val chat: RealmChatHistory,
+        val normalizedTitle: String?,
+        val normalizedQueries: List<String?>,
+        val normalizedResponses: List<String?>
+    )
+
+    private var precomputedChats: List<PrecomputedChat> = emptyList()
+
+    private var chatHistory: List<RealmChatHistory> = emptyList()
+        set(value) {
+            field = value
+            precomputedChats = buildPrecomputedChats(value)
+        }
+
+    private fun buildPrecomputedChats(chats: List<RealmChatHistory>): List<PrecomputedChat> {
+        return chats.map { chat ->
+            val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
+            } else {
+                chat.title?.let { normalizeText(it) }
+            }
+            val queries = chat.conversations?.map { it?.query?.let { q -> normalizeText(q) } } ?: emptyList()
+            val responses = chat.conversations?.map { it?.response?.let { r -> normalizeText(r) } } ?: emptyList()
+
+            PrecomputedChat(chat, title, queries, responses)
+        }
+    }
+
     init {
-        chatHistory = chatHistory.sortedByDescending { chat ->
+        chatHistory = chatHistoryList.sortedByDescending { chat ->
             maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
         }
         submitList(chatHistory)
@@ -105,13 +136,17 @@ class ChatHistoryAdapter(
             .replace(DIACRITICS_REGEX, "")
     }
 
-    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        val results = if (isFullSearch) {
-            fullConvoSearch(s, isQuestion)
-        } else {
-            searchByTitle(s)
+    suspend fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
+        val results = withContext(Dispatchers.Default) {
+            if (isFullSearch) {
+                fullConvoSearch(s, isQuestion)
+            } else {
+                searchByTitle(s)
+            }
         }
-        submitList(results)
+        withContext(Dispatchers.Main) {
+            submitList(results)
+        }
     }
 
     private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
@@ -124,21 +159,21 @@ class ChatHistoryAdapter(
         val startsWithQuery = mutableListOf<RealmChatHistory>()
         val containsQuery = mutableListOf<RealmChatHistory>()
 
-        for (chat in chatHistory) {
-            val conversations = chat.conversations
+        for (pChat in precomputedChats) {
+            val conversations = pChat.chat.conversations
             if (!conversations.isNullOrEmpty()) {
                 for (i in 0 until conversations.size) {
                     conversation = if (isQuestion) {
-                        conversations[i]?.query?.let { normalizeText(it) }
+                        pChat.normalizedQueries[i]
                     } else {
-                        conversations[i]?.response?.let { normalizeText(it) }
+                        pChat.normalizedResponses[i]
                     }
                     if (conversation == null) continue
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if (i == 0) inTitleStartQuery.add(chat) else startsWithQuery.add(chat)
+                        if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
                         break
                     } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
-                        if (i == 0) inTitleContainsQuery.add(chat) else containsQuery.add(chat)
+                        if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
                         break
                     }
                 }
@@ -155,17 +190,13 @@ class ChatHistoryAdapter(
         val startsWithQuery = mutableListOf<RealmChatHistory>()
         val containsQuery = mutableListOf<RealmChatHistory>()
 
-        for (chat in chatHistory) {
-            title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
-            } else {
-                chat.title?.let { normalizeText(it) }
-            }
+        for (pChat in precomputedChats) {
+            title = pChat.normalizedTitle
             if (title == null) continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(chat)
+                startsWithQuery.add(pChat.chat)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(chat)
+                containsQuery.add(pChat.chat)
             }
         }
         return startsWithQuery + containsQuery

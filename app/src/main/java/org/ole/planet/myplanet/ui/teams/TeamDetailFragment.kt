@@ -130,7 +130,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val user = userSessionManager.getUserModel()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamByIdOrTeamId(teamId)
                 }
 
                 else -> {
@@ -418,7 +418,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
             val updatedTeam = when {
-                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByIdOrTeamId(primaryTeamId)
                 fallbackTeamId.isNotEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
                 else -> null
             }

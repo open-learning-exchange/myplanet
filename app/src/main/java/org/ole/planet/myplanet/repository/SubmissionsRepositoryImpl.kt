@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
@@ -33,8 +34,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val exporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
+
+    override suspend fun generateSubmissionPdf(submissionId: String): java.io.File? {
+        return exporter.generateSubmissionPdf(context, submissionId)
+    }
+
+    override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): java.io.File? {
+        return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
+    }
 
     private fun RealmSubmission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
@@ -211,7 +221,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         val parentId = withRealm { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
             if (!courseId.isNullOrEmpty()) {
-                examId + "@" + courseId
+                "$examId@$courseId"
             } else {
                 examId
             }
@@ -227,7 +237,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
-    override suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject) {
+    override suspend fun markSubmissionComplete(id: String, payload: JsonObject) {
         update(RealmSubmission::class.java, "id", id) { sub ->
             sub.user = payload.toString()
             sub.status = "complete"
@@ -272,17 +282,19 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                     val choices = answer.valueChoices
                     if (!choices.isNullOrEmpty()) {
                         if (question.type?.startsWith("select") == true && !question.choices.isNullOrEmpty()) {
-                            formattedAnswer = choices.map { choiceId ->
+                            formattedAnswer = choices.joinToString(", ") { choiceId ->
                                 try {
-                                    val choicesArray = com.google.gson.JsonParser.parseString(question.choices).asJsonArray
+                                    val choicesArray = JsonParser.parseString(question.choices).asJsonArray
                                     val choiceObject = choicesArray.find {
-                                        it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get("id").asString == choiceId
+                                        it.isJsonObject && it.asJsonObject.has("id") && it.asJsonObject.get(
+                                            "id"
+                                        ).asString == choiceId
                                     }?.asJsonObject
                                     choiceObject?.get("text")?.asString ?: choiceId
-                                } catch (e: Exception) {
+                                } catch (_: Exception) {
                                     choiceId
                                 }
-                            }.joinToString(", ")
+                            }
                         } else {
                             formattedAnswer = choices.joinToString(", ")
                         }
@@ -343,7 +355,11 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {
-        return getSubmissionsByParentId(parentId, userId).map {
+        return queryList(RealmSubmission::class.java, maxDepth = 0) {
+            equalTo("parentId", parentId)
+                .equalTo("userId", userId)
+                .sort("startTime", Sort.DESCENDING)
+        }.map {
             SubmissionItem(
                 id = it.id,
                 lastUpdateTime = it.lastUpdateTime,
@@ -375,7 +391,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
-        val exam = findByField<RealmStepExam, String>(RealmStepExam::class.java, "stepId", stepId) ?: return true
+        val exam = findByField(RealmStepExam::class.java, "stepId", stepId) ?: return true
         return exam.id?.let {
             count(RealmSubmission::class.java) {
                 equalTo("userId", userId)
@@ -455,7 +471,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                 managedSub.parentId = parentId
 
                 try {
-                    val parentJsonString = com.google.gson.JsonObject().apply {
+                    val parentJsonString = JsonObject().apply {
                         addProperty("_id", exam.id ?: "")
                         addProperty("name", exam.name ?: "")
                         addProperty("courseId", exam.courseId ?: "")
@@ -490,10 +506,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                     managedSub.membershipDoc = membershipDoc
 
                     try {
-                        val userJson = com.google.gson.JsonObject()
+                        val userJson = JsonObject()
                         userJson.addProperty("age", userDob ?: "")
                         userJson.addProperty("gender", userGender ?: "")
-                        val membershipJson = com.google.gson.JsonObject()
+                        val membershipJson = JsonObject()
                         membershipJson.addProperty("teamId", teamId)
                         userJson.add("membershipDoc", membershipJson)
                         managedSub.user = userJson.toString()
@@ -602,10 +618,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             }
         }
 
-        if (type == "exam") {
-            return ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
+        return if (type == "exam") {
+            ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
         } else {
-            return true
+            true
         }
     }
 
@@ -697,11 +713,11 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
@@ -716,7 +732,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             return
         }
 
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", submission)
+        val id = JsonUtils.getString("_id", submission)
         var transactionStarted = false
 
         try {
@@ -728,7 +744,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
             val isNewSubmission = sub == null
             val hadLocalChanges = !isNewSubmission && sub.isUpdated
-            val serverStatus = org.ole.planet.myplanet.utils.JsonUtils.getString("status", submission)
+            val serverStatus = JsonUtils.getString("status", submission)
             val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
                 (sub.status == "complete" || sub.status == "requires grading")
             val skipOverwrite = hadLocalChanges || isStatusDowngrade
@@ -766,45 +782,45 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             sub?.status = serverStatus
             sub?.isUpdated = false
         }
-        sub?._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", submission)
-        sub?.grade = org.ole.planet.myplanet.utils.JsonUtils.getLong("grade", submission)
-        sub?.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", submission)
-        sub?.uploaded = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", submission).isNotEmpty()
-        sub?.startTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("startTime", submission)
-        sub?.lastUpdateTime = org.ole.planet.myplanet.utils.JsonUtils.getLong("lastUpdateTime", submission)
-        sub?.parentId = org.ole.planet.myplanet.utils.JsonUtils.getString("parentId", submission)
-        sub?.sender = org.ole.planet.myplanet.utils.JsonUtils.getString("sender", submission)
-        sub?.source = org.ole.planet.myplanet.utils.JsonUtils.getString("source", submission)
-        sub?.parentCode = org.ole.planet.myplanet.utils.JsonUtils.getString("parentCode", submission)
-        sub?.parent = org.ole.planet.myplanet.utils.JsonUtils.gson.toJson(org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("parent", submission))
-        sub?.user = org.ole.planet.myplanet.utils.JsonUtils.gson.toJson(org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("user", submission))
+        sub?._rev = JsonUtils.getString("_rev", submission)
+        sub?.grade = JsonUtils.getLong("grade", submission)
+        sub?.type = JsonUtils.getString("type", submission)
+        sub?.uploaded = JsonUtils.getString("_rev", submission).isNotEmpty()
+        sub?.startTime = JsonUtils.getLong("startTime", submission)
+        sub?.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
+        sub?.parentId = JsonUtils.getString("parentId", submission)
+        sub?.sender = JsonUtils.getString("sender", submission)
+        sub?.source = JsonUtils.getString("source", submission)
+        sub?.parentCode = JsonUtils.getString("parentCode", submission)
+        sub?.parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
+        sub?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
     }
 
     private fun updateTeam(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
         if (submission.has("team") && submission.get("team").isJsonObject) {
             val teamJson = submission.getAsJsonObject("team")
-            val teamRef = mRealm.createObject(org.ole.planet.myplanet.model.RealmTeamReference::class.java)
-            teamRef._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", teamJson)
-            teamRef.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", teamJson)
-            teamRef.type = org.ole.planet.myplanet.utils.JsonUtils.getString("type", teamJson)
+            val teamRef = mRealm.createObject(RealmTeamReference::class.java)
+            teamRef._id = JsonUtils.getString("_id", teamJson)
+            teamRef.name = JsonUtils.getString("name", teamJson)
+            teamRef.type = JsonUtils.getString("type", teamJson)
             sub?.teamObject = teamRef
         }
     }
 
     private fun updateMembership(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
-        val userJson = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("user", submission)
+        val userJson = JsonUtils.getJsonObject("user", submission)
         if (userJson.has("membershipDoc")) {
-            val membershipJson = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("membershipDoc", userJson)
+            val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
             if (membershipJson.entrySet().isNotEmpty()) {
                 val membership = mRealm.createObject(RealmMembershipDoc::class.java)
-                membership.teamId = org.ole.planet.myplanet.utils.JsonUtils.getString("teamId", membershipJson)
+                membership.teamId = JsonUtils.getString("teamId", membershipJson)
                 sub?.membershipDoc = membership
             }
         }
     }
 
     private fun updateUserId(sub: RealmSubmission?, submission: JsonObject) {
-        val userId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("user", submission))
+        val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
         sub?.userId = if (userId.contains("@")) {
             val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
             if (us[0].startsWith("org.couchdb.user:")) us[0] else "org.couchdb.user:${us[0]}"
@@ -829,15 +845,15 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                 val realmAnswer = RealmAnswer()
                 realmAnswer.id = UUID.randomUUID().toString()
 
-                realmAnswer.value = org.ole.planet.myplanet.utils.JsonUtils.getString("value", answerJson)
-                realmAnswer.mistakes = org.ole.planet.myplanet.utils.JsonUtils.getInt("mistakes", answerJson)
-                realmAnswer.isPassed = org.ole.planet.myplanet.utils.JsonUtils.getBoolean("passed", answerJson)
+                realmAnswer.value = JsonUtils.getString("value", answerJson)
+                realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
+                realmAnswer.isPassed = JsonUtils.getBoolean("passed", answerJson)
                 realmAnswer.submissionId = sub?._id
                 realmAnswer.examId = sub?.parentId
 
                 val examIdPart = sub?.parentId?.split("@")?.get(0) ?: sub?.parentId
                 realmAnswer.questionId = if (answerJson.has("questionId")) {
-                    org.ole.planet.myplanet.utils.JsonUtils.getString("questionId", answerJson)
+                    JsonUtils.getString("questionId", answerJson)
                 } else {
                     "$examIdPart-$i"
                 }
@@ -881,9 +897,9 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`.addProperty("startTime", submission.startTime)
         `object`.addProperty("lastUpdateTime", submission.lastUpdateTime)
         `object`.addProperty("status", submission.status)
-        `object`.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
-        `object`.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
-        `object`.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
@@ -892,13 +908,13 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
             `object`.add("parent", RealmStepExam.serializeExam(exam, questions))
         } else {
-            val parent = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
+            val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
         if (android.text.TextUtils.isEmpty(submission.user)) {
             `object`.add("user", user?.serialize())
         } else {
-            `object`.add("user", com.google.gson.JsonParser.parseString(submission.user))
+            `object`.add("user", JsonParser.parseString(submission.user))
         }
         `object`
     }
@@ -926,9 +942,9 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             jsonObject.addProperty("startTime", submission.startTime)
             jsonObject.addProperty("lastUpdateTime", submission.lastUpdateTime)
             jsonObject.addProperty("status", submission.status ?: "pending")
-            jsonObject.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
-            jsonObject.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
-            jsonObject.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
+            jsonObject.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            jsonObject.addProperty("deviceName", NetworkUtils.getDeviceName())
+            jsonObject.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(context))
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
@@ -937,11 +953,11 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                 val questions = exam.id?.let { surveysRepositoryProvider.get().getExamQuestions(it) } ?: emptyList()
                 jsonObject.add("parent", RealmStepExam.serializeExam(exam, questions))
             } else if (!submission.parent.isNullOrEmpty()) {
-                jsonObject.add("parent", com.google.gson.JsonParser.parseString(submission.parent))
+                jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
             if (!submission.user.isNullOrEmpty()) {
-                val userJson = com.google.gson.JsonParser.parseString(submission.user).asJsonObject
+                val userJson = JsonParser.parseString(submission.user).asJsonObject
                 if (submission.membershipDoc != null) {
                     val membershipJson = JsonObject()
                     membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
