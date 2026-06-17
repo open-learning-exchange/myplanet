@@ -84,4 +84,24 @@ class TeamCalendarViewModel @Inject constructor(
             _createMeetupResult.emit(success)
         }
     }
+
+    suspend fun updateMeetup(
+        meetupId: String, title: String, description: String,
+        startDate: Long, endDate: Long, startTime: String,
+        endTime: String, meetupLocation: String, meetupLink: String,
+        recurring: String
+    ): Boolean {
+        return eventsRepository.updateMeetup(
+            meetupId = meetupId,
+            title = title,
+            description = description,
+            startDate = startDate,
+            endDate = endDate,
+            startTime = startTime,
+            endTime = endTime,
+            meetupLocation = meetupLocation,
+            meetupLink = meetupLink,
+            recurring = recurring
+        )
+    }
 }
