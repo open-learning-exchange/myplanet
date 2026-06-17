@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
@@ -152,10 +153,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
         if (versionInfo != null) {
             onUpdateAvailable(versionInfo, intent.getBooleanExtra("cancelable", false))
+            forceSyncTrigger()
         } else {
-            configurationsRepository.checkVersion(this, prefData)
+            lifecycleScope.launch {
+                val result = configurationsRepository.checkVersion()
+                when (result) {
+                    is ConfigurationsRepository.VersionCheckResult.UpdateAvailable -> onUpdateAvailable(result.info, result.cancelable)
+                    is ConfigurationsRepository.VersionCheckResult.Error -> onError(result.msg, result.blockSync)
+                }
+                forceSyncTrigger()
+            }
         }
-        forceSyncTrigger()
     }
 
     private fun setupAdditionalListeners() {

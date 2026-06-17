@@ -86,15 +86,12 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
-        val baseUrl = UrlUtils.baseUrl(spm)
-        if (baseUrl.isEmpty()) {
-            callback.onError(context.getString(R.string.server_url_not_configured), true)
-            return
-        }
-
-        serviceScope.launch(dispatcherProvider.io) {
-            callback.onCheckingVersion()
+    override suspend fun checkVersion(): ConfigurationsRepository.VersionCheckResult {
+        return withContext(dispatcherProvider.io) {
+            val baseUrl = UrlUtils.baseUrl(sharedPrefManager)
+            if (baseUrl.isEmpty()) {
+                return@withContext ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.server_url_not_configured), true)
+            }
 
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
             val currentTime = System.currentTimeMillis()
@@ -107,8 +104,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 if (cachedVersionDetail != null && cachedApkVersion != -1) {
                     try {
                         val cachedInfo = JsonUtils.gson.fromJson(cachedVersionDetail, MyPlanet::class.java)
-                        handleVersionEvaluation(cachedInfo, cachedApkVersion, callback)
-                        return@launch
+                        return@withContext handleVersionEvaluation(cachedInfo, cachedApkVersion)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -116,10 +112,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = fetchVersionInfo(spm)
+                val planetInfo = fetchVersionInfo(sharedPrefManager)
                 if (planetInfo == null) {
-                    callback.onError(context.getString(R.string.version_not_found), true)
-                    return@launch
+                    return@withContext ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.version_not_found), true)
                 }
 
                 sharedPrefManager.rawPreferences.edit {
@@ -128,32 +123,26 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
                 sharedPrefManager.setVersionDetail(JsonUtils.gson.toJson(planetInfo))
 
-                val rawApkVersion = fetchApkVersionString(spm)
+                val rawApkVersion = fetchApkVersionString(sharedPrefManager)
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                    return@launch
+                    return@withContext ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.planet_is_up_to_date), false)
                 }
 
                 val apkVersion = VersionUtils.parseApkVersionString(versionStr)
-                    ?: run {
-                        callback.onError(
-                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                            false
-                        )
-                        return@launch
-                    }
+                    ?: return@withContext ConfigurationsRepository.VersionCheckResult.Error(
+                        context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                        false
+                    )
 
                 sharedPrefManager.rawPreferences.edit {
                     putInt("cachedApkVersion", apkVersion)
                 }
 
-                handleVersionEvaluation(planetInfo, apkVersion, callback)
+                return@withContext handleVersionEvaluation(planetInfo, apkVersion)
             } catch (e: Exception) {
                 e.printStackTrace()
-                withContext(dispatcherProvider.main) {
-                    callback.onError(context.getString(R.string.connection_failed), true)
-                }
+                return@withContext ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.connection_failed), true)
             }
         }
     }
@@ -424,17 +413,17 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-    private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
-        val currentVersion = VersionUtils.getVersionCode(context)
-        serviceScope.launch(dispatcherProvider.main) {
+    private suspend fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int): ConfigurationsRepository.VersionCheckResult {
+        return withContext(dispatcherProvider.main) {
+            val currentVersion = VersionUtils.getVersionCode(context)
             if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-                callback.onUpdateAvailable(info, false)
+                ConfigurationsRepository.VersionCheckResult.UpdateAvailable(info, false)
             } else if (apkVersion > currentVersion) {
-                callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+                ConfigurationsRepository.VersionCheckResult.UpdateAvailable(info, currentVersion >= info.minapkcode)
             } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-                callback.onUpdateAvailable(info, true)
+                ConfigurationsRepository.VersionCheckResult.UpdateAvailable(info, true)
             } else {
-                callback.onError(context.getString(R.string.planet_is_up_to_date), false)
+                ConfigurationsRepository.VersionCheckResult.Error(context.getString(R.string.planet_is_up_to_date), false)
             }
         }
     }

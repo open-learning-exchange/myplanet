@@ -23,7 +23,6 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.ConfigurationsRepository.CheckVersionCallback
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.startDownloadUpdate
@@ -41,7 +40,7 @@ class AutoSyncWorker @AssistedInject constructor(
     private val uploadToShelfService: UploadToShelfService,
     private val configurationsRepository: ConfigurationsRepository,
     private val dispatcherProvider: DispatcherProvider
-) : CoroutineWorker(context, workerParams), OnSyncListener, CheckVersionCallback, OnSuccessListener {
+) : CoroutineWorker(context, workerParams), OnSyncListener, OnSuccessListener {
 
     private lateinit var workerScope: CoroutineScope
     private var syncContinuation: CancellableContinuation<Unit>? = null
@@ -63,9 +62,14 @@ class AutoSyncWorker @AssistedInject constructor(
                     Utilities.toast(context, "Syncing started...")
                 }
             }
-            suspendCancellableCoroutine { continuation ->
-                syncContinuation = continuation
-                configurationsRepository.checkVersion(this@AutoSyncWorker, sharedPrefManager)
+            val result = configurationsRepository.checkVersion()
+            when (result) {
+                is ConfigurationsRepository.VersionCheckResult.UpdateAvailable -> {
+                    onUpdateAvailable(result.info, result.cancelable)
+                }
+                is ConfigurationsRepository.VersionCheckResult.Error -> {
+                    onError(result.msg, result.blockSync)
+                }
             }
         }
         return@coroutineScope Result.success()
@@ -87,7 +91,7 @@ class AutoSyncWorker @AssistedInject constructor(
         }
     }
 
-    override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
+    private fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         workerScope.launch(dispatcherProvider.main) {
             startDownloadUpdate(context, UrlUtils.getApkUpdateUrl(info?.localapkpath), null, workerScope, configurationsRepository)
         }
@@ -95,7 +99,7 @@ class AutoSyncWorker @AssistedInject constructor(
         syncContinuation = null
     }
 
-    override fun onError(msg: String, blockSync: Boolean) {
+    private fun onError(msg: String, blockSync: Boolean) {
         if (blockSync) {
             syncContinuation?.takeIf { it.isActive }?.resume(Unit)
             syncContinuation = null

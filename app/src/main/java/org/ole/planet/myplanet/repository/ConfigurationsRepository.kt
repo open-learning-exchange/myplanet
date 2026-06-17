@@ -5,17 +5,16 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 
 interface ConfigurationsRepository {
     suspend fun checkHealth(): String
-    fun checkVersion(callback: CheckVersionCallback, spm: SharedPrefManager)
+    suspend fun checkVersion(): VersionCheckResult
     suspend fun checkServerAvailability(): Boolean
     suspend fun checkServerAvailability(url: String): Boolean
     suspend fun checkCheckSum(path: String): Boolean
     suspend fun clearAllData()
     suspend fun getMinApk(url: String, pin: String): ConfigurationResult
 
-    interface CheckVersionCallback {
-        fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean)
-        fun onCheckingVersion() {}
-        fun onError(msg: String, blockSync: Boolean)
+    sealed class VersionCheckResult {
+        data class UpdateAvailable(val info: MyPlanet?, val cancelable: Boolean) : VersionCheckResult()
+        data class Error(val msg: String, val blockSync: Boolean) : VersionCheckResult()
     }
 
     sealed class ConfigurationResult {

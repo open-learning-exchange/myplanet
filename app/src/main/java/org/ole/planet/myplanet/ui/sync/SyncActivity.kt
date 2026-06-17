@@ -78,7 +78,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepository.CheckVersionCallback {
+abstract class SyncActivity : ProcessUserDataActivity() {
     private var serverDialogBinding: DialogServerUrlBinding? = null
     private lateinit var syncDate: TextView
     lateinit var lblLastSyncDate: TextView
@@ -222,7 +222,13 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun onVersionCheckSuccess() {
                     isSync = false
                     forceSync = true
-                    configurationsRepository.checkVersion(this@SyncActivity, prefData)
+                    lifecycleScope.launch {
+                        val result = configurationsRepository.checkVersion()
+                        when (result) {
+                            is ConfigurationsRepository.VersionCheckResult.UpdateAvailable -> onUpdateAvailable(result.info, result.cancelable)
+                            is ConfigurationsRepository.VersionCheckResult.Error -> onError(result.msg, result.blockSync)
+                        }
+                    }
                 }
 
                 override fun onContinueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
@@ -758,7 +764,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         syncFailed = false
     }
 
-    override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
+    protected fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
         lifecycleScope.launch {
             val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
             if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
@@ -783,7 +789,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    override fun onError(msg: String, blockSync: Boolean) {
+    protected fun onError(msg: String, blockSync: Boolean) {
         lifecycleScope.launch {
             Utilities.toast(this@SyncActivity, msg)
             if (msg.startsWith("Config")) {
