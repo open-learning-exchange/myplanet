@@ -241,6 +241,7 @@ class CoursesAdapter(
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        val oldSelected = selectedItems.toSet()
         selectedItems.clear()
 
         if (selectAll) {
@@ -248,8 +249,12 @@ class CoursesAdapter(
             selectedItems.addAll(selectableCourses)
         }
 
-        if (currentList.isNotEmpty()) {
-            notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
+        currentList.forEachIndexed { index, course ->
+            val wasSelected = oldSelected.contains(course)
+            val isSelected = selectedItems.contains(course)
+            if (wasSelected != isSelected) {
+                notifyItemChanged(index, SELECTION_PAYLOAD)
+            }
         }
 
         listener?.onSelectedListChange(selectedItems)
