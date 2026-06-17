@@ -177,4 +177,19 @@ class CoursesViewModel @Inject constructor(
             isMyCourse = this.isMyCourse
         )
     }
+
+    fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean, onComplete: () -> Unit) {
+        if (courseIds.isEmpty()) return
+        viewModelScope.launch(dispatcherProvider.io) {
+            courseIds.forEach { courseId ->
+                coursesRepository.removeCourseFromShelf(courseId, userId)
+                if (deleteProgress) {
+                    coursesRepository.deleteCourseProgress(courseId)
+                }
+            }
+            withContext(dispatcherProvider.main) {
+                onComplete()
+            }
+        }
+    }
 }
