@@ -67,14 +67,21 @@ class HealthRepositoryImpl @Inject constructor(
     override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
         if (idToRevMap.isNotEmpty()) {
             executeTransaction { realm ->
-                idToRevMap.keys.chunked(999).forEach { chunk ->
-                    val managedPojos = realm.where(RealmHealthExamination::class.java)
-                        .`in`("_id", chunk.toTypedArray())
-                        .findAll()
-                    managedPojos.forEach { managedPojo ->
-                        managedPojo._rev = idToRevMap[managedPojo._id]
-                        managedPojo.isUpdated = false
+                val idList = idToRevMap.keys.toList()
+                val chunks = idList.chunked(999)
+
+                val query = realm.where(RealmHealthExamination::class.java)
+                chunks.forEachIndexed { index, chunk ->
+                    if (index > 0) {
+                        query.or()
                     }
+                    query.`in`("_id", chunk.toTypedArray())
+                }
+
+                val managedPojos = query.findAll()
+                managedPojos.forEach { managedPojo ->
+                    managedPojo._rev = idToRevMap[managedPojo._id]
+                    managedPojo.isUpdated = false
                 }
             }
         }
