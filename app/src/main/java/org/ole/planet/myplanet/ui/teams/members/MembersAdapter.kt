@@ -148,18 +148,7 @@ class MembersAdapter(
                 }
 
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = object : ArrayAdapter<CharSequence>(
-                    context,
-                    android.R.layout.simple_list_item_1,
-                    overflowMenuOptions
-                ) {
-                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                        val view = super.getView(position, convertView, parent) as TextView
-                        val color = ContextCompat.getColor(context, R.color.daynight_textColor)
-                        view.setTextColor(color)
-                        return view
-                    }
-                }
+                val adapter = MembersSubListAdapter(context, overflowMenuOptions.toList())
                 builder.setAdapter(adapter) { _, i ->
                     if (isOwnCard) {
                         when (i) {
