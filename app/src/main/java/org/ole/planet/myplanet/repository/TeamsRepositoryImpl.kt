@@ -380,16 +380,20 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamByDocumentIdOrTeamId(id: String): RealmMyTeam? {
-        if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
-    }
-
     override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-            ?: findByField(RealmMyTeam::class.java, "teamId", id)
+        return withRealm { realm ->
+            val results = realm.where(RealmMyTeam::class.java)
+                .equalTo("_id", id)
+                .or()
+                .equalTo("teamId", id)
+                .findAll()
+
+            val exactMatch = results.firstOrNull { it._id == id }
+                ?: results.firstOrNull { it.teamId == id }
+
+            exactMatch?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getTeamLinks(): List<RealmMyTeam> {
@@ -1220,7 +1224,8 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val existingUsers = sharedPrefManager.getSavedUsers().toMutableList()
         val filteredExistingUsers = existingUsers.filter { it.source != "team" }
-        val updatedUserList = userList.filterNot { user -> filteredExistingUsers.any { it.name == user.name } } + filteredExistingUsers
+        val existingNames = filteredExistingUsers.mapTo(HashSet()) { it.name }
+        val updatedUserList = userList.filterNot { user -> user.name in existingNames } + filteredExistingUsers
         sharedPrefManager.setSavedUsers(updatedUserList)
 
         teamMembers
@@ -1255,9 +1260,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 equalTo("teamId", teamId)
             }.mapNotNull { it.userId }.toSet()
 
+            val memberNames = members.mapTo(HashSet()) { it.name }
             val validAdmins = adminUsers.filter { admin ->
                 val adminFullId = "org.couchdb.user:${admin.name}"
-                adminFullId in teamUserIds && !members.any { it.name == admin.name } && !admin.name.isNullOrBlank()
+                adminFullId in teamUserIds && admin.name !in memberNames && !admin.name.isNullOrBlank()
             }
 
             if (validAdmins.isNotEmpty()) {

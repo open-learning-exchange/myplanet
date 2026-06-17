@@ -12,8 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,6 +21,7 @@ import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class MembersAdapter(
@@ -95,14 +94,7 @@ class MembersAdapter(
             lastVisitDate
         )
         val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
-        Glide.with(binding.memberImage.context)
-            .load(member.userImage)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .override(avatarSize, avatarSize)
-            .circleCrop()
-            .placeholder(R.drawable.profile)
-            .error(R.drawable.profile)
-            .into(binding.memberImage)
+        ImageUtils.loadProfileImage(member.userImage, binding.memberImage, avatarSize)
 
         if (memberData.isLeader) {
             binding.tvIsLeader.visibility = View.VISIBLE
