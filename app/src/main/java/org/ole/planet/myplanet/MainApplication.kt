@@ -226,6 +226,12 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         super.onCreate()
         context = this
         setupCriticalProperties()
+
+        dagger.hilt.android.EntryPointAccessors.fromApplication(
+            this,
+            org.ole.planet.myplanet.di.CoreDependenciesEntryPoint::class.java
+        ).realmDispatcherProvider().start()
+
         LocaleUtils.preload(this)
         warmUpMainThreadRealm()
         performDeferredInitialization()
@@ -474,6 +480,12 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
+
+        dagger.hilt.android.EntryPointAccessors.fromApplication(
+            this,
+            org.ole.planet.myplanet.di.CoreDependenciesEntryPoint::class.java
+        ).realmDispatcherProvider().shutdown()
+
         super.onTerminate()
         stopListenNetworkState()
     }

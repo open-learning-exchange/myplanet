@@ -19,4 +19,5 @@ interface CoreDependenciesEntryPoint {
     fun userSessionManager(): UserSessionManager
     fun serverUrlMapper(): ServerUrlMapper
     fun dispatcherProvider(): DispatcherProvider
+    fun realmDispatcherProvider(): RealmDispatcherProvider
 }
