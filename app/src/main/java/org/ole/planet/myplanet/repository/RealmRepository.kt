@@ -37,6 +37,10 @@ open class RealmRepository(
             realm.queryList(clazz, builder)
         }
 
+    protected suspend fun <T : RealmObject> queryList(clazz: Class<T>, maxDepth: Int, builder: RealmQuery<T>.() -> Unit = {}): List<T> = withRealm(false) { realm ->
+        realm.queryList(clazz, maxDepth, builder)
+    }
+
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
