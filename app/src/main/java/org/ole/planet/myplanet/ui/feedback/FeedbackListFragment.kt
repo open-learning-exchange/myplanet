@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
+    @Inject lateinit var dispatcherProvider: DispatcherProvider
+
     private var _binding: FragmentFeedbackListBinding? = null
     private val binding get() = _binding!!
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
@@ -40,9 +42,6 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener {
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     private val serverUrl: String
     get() = sharedPrefManager.getServerUrl()

@@ -5,12 +5,11 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = null) :
@@ -31,13 +30,8 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
             binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 
             if (!TextUtils.isEmpty(user.userImage)) {
-                Glide.with(binding.ivUser.context)
-                    .load(user.userImage)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(binding.ivUser)
+                val avatarSize = binding.ivUser.context.resources.getDimensionPixelSize(R.dimen._80dp)
+                ImageUtils.loadProfileImage(user.userImage, binding.ivUser, avatarSize)
             } else {
                 binding.ivUser.setImageResource(R.drawable.profile)
             }
