@@ -13,6 +13,8 @@ import com.google.gson.JsonArray
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
@@ -27,8 +29,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(

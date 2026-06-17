@@ -47,13 +47,13 @@ import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
+import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.VoicesRepositoryImpl
-import org.ole.planet.myplanet.repository.UploadRepository
-import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 
 @Module
 @InstallIn(SingletonComponent::class)

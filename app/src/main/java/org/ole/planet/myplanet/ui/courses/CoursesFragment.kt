@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
-import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -10,6 +9,7 @@ import android.widget.Button
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint

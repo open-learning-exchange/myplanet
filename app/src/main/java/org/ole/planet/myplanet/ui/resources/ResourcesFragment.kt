@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
-import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -15,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject

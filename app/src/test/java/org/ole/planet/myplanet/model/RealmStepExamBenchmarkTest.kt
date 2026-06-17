@@ -1,18 +1,18 @@
 package org.ole.planet.myplanet.model
 
+import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.mockkStatic
+import io.mockk.unmockkAll
 import io.realm.Realm
+import io.realm.RealmQuery
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.JsonUtils
-import io.mockk.every
-import io.mockk.mockk
-import io.realm.RealmQuery
-import android.text.TextUtils
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
 
 class RealmStepExamBenchmarkTest {
 

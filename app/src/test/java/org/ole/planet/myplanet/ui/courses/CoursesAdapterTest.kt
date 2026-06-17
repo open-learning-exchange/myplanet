@@ -3,18 +3,18 @@ package org.ole.planet.myplanet.ui.courses
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
+import io.realm.Realm
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mock
-import org.mockito.Mockito.verify
 import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.model.Course
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import io.realm.Realm
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [32], application = android.app.Application::class)
