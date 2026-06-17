@@ -488,8 +488,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun onParentTagClicked(parent: org.ole.planet.myplanet.model.TagData.Parent) {}
-
     override fun onTagClicked(tag: RealmTag) {
         tvSelected.visibility = View.VISIBLE
         flexBoxTags.removeAllViews()
