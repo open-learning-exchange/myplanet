@@ -36,12 +36,6 @@ data class JoinRequestNotification(
     val requestId: String
 )
 
-data class TeamUploadData(
-    val teamId: String?,
-    val serialized: JsonObject,
-    val isDeletePending: Boolean = false
-)
-
 interface TeamsRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)
