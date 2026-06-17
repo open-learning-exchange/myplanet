@@ -30,6 +30,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
@@ -70,6 +71,10 @@ class DownloadService : Service() {
     @DownloadPreferences
     lateinit var preferences: SharedPreferences
 
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
+
     private var currentDownloadUrl: String = ""
     private var originalDownloadUrl: String = ""
     private var fromSync = false
@@ -81,15 +86,13 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
 
-    private val downloadJob = SupervisorJob()
-    private lateinit var downloadScope: CoroutineScope
+    private var currentJob: kotlinx.coroutines.Job? = null
     private lateinit var broadcastService: BroadcastService
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
         broadcastService = getBroadcastService(this)
     }
 
@@ -104,17 +107,18 @@ class DownloadService : Service() {
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
         Log.d(TAG, "onStartCommand: fromSync=$fromSync queueRunning=$isQueueRunning")
 
-        downloadScope.launch {
-            if (!isQueueRunning) {
+        if (!isQueueRunning) {
+            currentJob?.cancel()
+            currentJob = appScope.launch(dispatcherProvider.io) {
                 isQueueRunning = true
                 try {
                     processDownloadQueue()
                 } finally {
                     isQueueRunning = false
                 }
-            } else {
-                Log.d(TAG, "Queue already running, new URLs will be picked up by current loop")
             }
+        } else {
+            Log.d(TAG, "Queue already running, new URLs will be picked up by current loop")
         }
 
         return START_STICKY
@@ -329,7 +333,7 @@ class DownloadService : Service() {
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                downloadScope.launch {
+                appScope.launch(dispatcherProvider.io) {
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -448,7 +452,7 @@ class DownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        downloadScope.launch {
+        appScope.launch(dispatcherProvider.io) {
             broadcastService.sendBroadcast(intent)
         }
     }
@@ -495,7 +499,7 @@ class DownloadService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
         }
-        downloadJob.cancel()
+        currentJob?.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }
