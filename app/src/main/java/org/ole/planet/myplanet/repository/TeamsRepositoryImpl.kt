@@ -1494,12 +1494,15 @@ class TeamsRepositoryImpl @Inject constructor(
             } else {
                 mutableMapOf()
             }
+            val newLogs = mutableListOf<RealmTeamLog>()
             for (json in logs) {
                 val id = JsonUtils.getString("_id", json)
                 var tag = existingLogs[id]
                 if (tag == null) {
-                    tag = realm.createObject(RealmTeamLog::class.java, id)
+                    tag = RealmTeamLog()
+                    tag.id = id
                     existingLogs[id] = tag
+                    newLogs.add(tag)
                 }
                 if (tag != null) {
                     tag._rev = JsonUtils.getString("_rev", json)
@@ -1512,6 +1515,9 @@ class TeamsRepositoryImpl @Inject constructor(
                     tag.teamId = JsonUtils.getString("teamId", json)
                     tag.teamType = JsonUtils.getString("teamType", json)
                 }
+            }
+            if (newLogs.isNotEmpty()) {
+                realm.insert(newLogs)
             }
         }
     }
@@ -1699,12 +1705,15 @@ class TeamsRepositoryImpl @Inject constructor(
         } else {
             mutableMapOf()
         }
+        val newLogs = mutableListOf<RealmTeamLog>()
         for (json in documentList) {
             val id = JsonUtils.getString("_id", json)
             var tag = existingLogs[id]
             if (tag == null) {
-                tag = realm.createObject(RealmTeamLog::class.java, id)
+                tag = RealmTeamLog()
+                tag.id = id
                 existingLogs[id] = tag
+                newLogs.add(tag)
             }
             if (tag != null) {
                 tag._rev = JsonUtils.getString("_rev", json)
@@ -1717,6 +1726,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 tag.teamId = JsonUtils.getString("teamId", json)
                 tag.teamType = JsonUtils.getString("teamType", json)
             }
+        }
+        if (newLogs.isNotEmpty()) {
+            realm.insert(newLogs)
         }
     }
 }
