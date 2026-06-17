@@ -42,7 +42,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext)
+        sharedPrefManager = SharedPrefManager(mockContext, Gson())
     }
 
     @Test
