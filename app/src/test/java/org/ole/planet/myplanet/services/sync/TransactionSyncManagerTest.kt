@@ -102,6 +102,7 @@ class TransactionSyncManagerTest {
     fun authenticate_success_returnsTrue() = testScope.runTest {
         val mockResponse = mockk<Response<DocumentResponse>>()
         every { mockResponse.code() } returns 200
+        every { mockResponse.body() } returns mockk<DocumentResponse>()
         coEvery { apiInterface.getDocuments(any(), any()) } returns mockResponse
 
         val result = transactionSyncManager.authenticate()

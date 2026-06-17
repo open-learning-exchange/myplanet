@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
+import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -78,9 +79,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     @Inject
     lateinit var prefManager: SharedPrefManager
 
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
     private val viewModel: ResourcesViewModel by viewModels()
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
@@ -114,7 +112,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
@@ -264,9 +262,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        deleteSelected(true)
-                    }
+                    deleteSelected(true)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -727,7 +723,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
@@ -754,7 +750,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch {
-                resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
+                viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
                         _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))

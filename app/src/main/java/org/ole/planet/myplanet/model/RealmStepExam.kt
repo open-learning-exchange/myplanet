@@ -34,24 +34,29 @@ open class RealmStepExam : RealmObject() {
     companion object {
         @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
-            insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm)
+            insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm, null)
         }
 
+        @JvmOverloads
         @JvmStatic
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm) {
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm, examCache: HashMap<String, RealmStepExam>? = null) {
             val isInTransaction = mRealm.isInTransaction
 
             val performInsert = {
-                var myExam = mRealm.where(RealmStepExam::class.java).equalTo("id", JsonUtils.getString("_id", exam)).findFirst()
+                val examId = JsonUtils.getString("_id", exam)
+                var myExam = examCache?.get(examId) ?: mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
                 if (myExam == null) {
-                    val id = JsonUtils.getString("_id", exam)
-                    myExam = mRealm.createObject(RealmStepExam::class.java,
-                        if (TextUtils.isEmpty(id)) {
+                    val createdExam = mRealm.createObject(RealmStepExam::class.java,
+                        if (TextUtils.isEmpty(examId)) {
                             parentId
                         } else {
-                            id
+                            examId
                         }
                     )
+                    myExam = createdExam
+                    if (!TextUtils.isEmpty(examId)) {
+                        examCache?.put(examId, createdExam)
+                    }
                 }
                 checkIdsAndInsert(myCoursesID, stepId, myExam)
                 myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"

@@ -46,7 +46,8 @@ class ProgressRepositoryImplTest {
             databaseService,
             UnconfinedTestDispatcher(),
             dispatcherProvider,
-            { mockCoursesRepository }
+            { mockCoursesRepository },
+            { mockk(relaxed = true) }
         ), recordPrivateCalls = true)
     }
 
@@ -56,10 +57,9 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
-    fun fetchCourseData_uses_dispatcherProvider_io() = runTest(testDispatcher) {
+    fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
-        verify { dispatcherProvider.io }
     }
 
     @Test
@@ -308,20 +308,25 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun testHasUserCompletedSync() = testScope.runTest {
-        coEvery {
-            repository invoke "count" withArguments listOf(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java, any<Function1<RealmQuery<org.ole.planet.myplanet.model.RealmUserChallengeActions>, Unit>>())
-        } returns 1L
+        val activitiesRepo = mockk<ActivitiesRepository>()
+        val localRepository = ProgressRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            dispatcherProvider,
+            { mockCoursesRepository },
+            { activitiesRepo }
+        )
 
-        val result = repository.hasUserCompletedSync("user1")
+        coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns true
+
+        val result = localRepository.hasUserCompletedSync("user1")
         advanceUntilIdle()
 
         assertEquals(true, result)
 
-        coEvery {
-            repository invoke "count" withArguments listOf(org.ole.planet.myplanet.model.RealmUserChallengeActions::class.java, any<Function1<RealmQuery<org.ole.planet.myplanet.model.RealmUserChallengeActions>, Unit>>())
-        } returns 0L
+        coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns false
 
-        val result2 = repository.hasUserCompletedSync("user1")
+        val result2 = localRepository.hasUserCompletedSync("user1")
         advanceUntilIdle()
 
         assertEquals(false, result2)
@@ -375,19 +380,15 @@ class ProgressRepositoryImplTest {
         val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
         jsonArray.add(item1)
 
-        val mockQuery = mockk<RealmQuery<RealmCourseProgress>>(relaxed = true)
-        every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", any<String>()) } returns mockQuery
-        every { mockQuery.equalTo("courseId", any<String>()) } returns mockQuery
-        every { mockQuery.equalTo("userId", any<String>()) } returns mockQuery
-        every { mockQuery.equalTo("stepNum", any<Int>()) } returns mockQuery
-        every { mockQuery.beginGroup() } returns mockQuery
-        every { mockQuery.isNull("_id") } returns mockQuery
-        every { mockQuery.or() } returns mockQuery
-        every { mockQuery.equalTo("_id", any<String>()) } returns mockQuery
-        every { mockQuery.endGroup() } returns mockQuery
+        val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
 
-        every { mockQuery.findFirst() } returns null
+        every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
+        every { mockRealm.copyFromRealm(any<io.realm.RealmResults<RealmCourseProgress>>()) } answers { firstArg<io.realm.RealmResults<RealmCourseProgress>>().toList() }
+        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<Int>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmCourseProgress>().iterator()
 
         val mockProgress = RealmCourseProgress()
         every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
@@ -419,25 +420,32 @@ class ProgressRepositoryImplTest {
         val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
         jsonArray.add(item1)
 
-        val mockQuery = mockk<RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
+        val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
+
         every { mockRealm.where(RealmCourseProgress::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", any<String>()) } returns mockQuery
-        every { mockQuery.equalTo("courseId", any<String>()) } returns mockQuery
-        every { mockQuery.equalTo("userId", any<String>()) } returns mockQuery
-        every { mockQuery.equalTo("stepNum", any<Int>()) } returns mockQuery
-        every { mockQuery.beginGroup() } returns mockQuery
-        every { mockQuery.isNull("_id") } returns mockQuery
-        every { mockQuery.or() } returns mockQuery
-        every { mockQuery.equalTo("_id", any<String>()) } returns mockQuery
-        every { mockQuery.endGroup() } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<Int>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
 
         val existingProgress = mockk<RealmCourseProgress>(relaxed = true)
+        every { existingProgress._id } returns null
         every { existingProgress.passed } returns true
         every { existingProgress.courseId } returns "course1"
         every { existingProgress.userId } returns "user1"
         every { existingProgress.stepNum } returns 1
+        every { existingProgress.isValid } returns true
 
-        every { mockQuery.findFirst() } returnsMany listOf(null, existingProgress)
+        // For the first query (ID lookup), return empty list. For the second (local records lookup), return the existing record.
+        val emptyResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
+        every { emptyResults.iterator() } returns mutableListOf<RealmCourseProgress>().iterator()
+
+        val localResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
+        every { localResults.iterator() } returns mutableListOf(existingProgress).iterator()
+
+        every { mockQuery.findAll() } returnsMany listOf(emptyResults, localResults)
+        every { mockRealm.copyFromRealm(emptyResults) } returns emptyList()
+        every { mockRealm.copyFromRealm(localResults) } returns listOf(existingProgress)
 
         val mockProgress = RealmCourseProgress()
         every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress

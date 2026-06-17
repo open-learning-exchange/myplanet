@@ -26,7 +26,7 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         if (currentConfig == null || currentConfig.realmDirectory.name == Realm.DEFAULT_REALM_NAME) {
             val config = RealmConfiguration.Builder()
                 .name(Realm.DEFAULT_REALM_NAME)
-                .schemaVersion(11)
+                .schemaVersion(12)
                 .migration(RealmMigrations())
                 .build()
             Realm.setDefaultConfiguration(config)
@@ -82,6 +82,10 @@ fun <T : RealmModel> Realm.queryList(
     builder: RealmQuery<T>.() -> Unit = {}
 ): List<T> {
     return where(clazz).apply(builder).findAll().let { copyFromRealm(it) }
+}
+
+fun <T : RealmModel> Realm.queryList(clazz: Class<T>, maxDepth: Int, builder: RealmQuery<T>.() -> Unit = {}): List<T> {
+    return where(clazz).apply(builder).findAll().let { copyFromRealm(it, maxDepth) }
 }
 
 fun <T : RealmModel, V : Any> Realm.findCopyByField(
