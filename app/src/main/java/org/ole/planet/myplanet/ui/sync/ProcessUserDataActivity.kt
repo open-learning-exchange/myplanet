@@ -17,17 +17,18 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
+import androidx.work.OneTimeWorkRequest
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BasePermissionActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -55,10 +56,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     @Inject
     lateinit var userRepository: UserRepository
-
-    @Inject
-    @ApplicationScope
-    lateinit var applicationScope: CoroutineScope
 
     val customProgressDialog: DialogUtils.CustomProgressDialog by lazy {
         DialogUtils.CustomProgressDialog(this)
@@ -196,8 +193,18 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        applicationScope.launch(dispatcherProvider.io) {
-            uploadManager.uploadUserActivities(this@ProcessUserDataActivity)
+        val workRequest = OneTimeWorkRequest.Builder(org.ole.planet.myplanet.services.UserDataWorker::class.java)
+            .setInputData(workDataOf("uploadType" to "login"))
+            .build()
+        WorkManager.getInstance(this).enqueue(workRequest)
+
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequest.id).observe(this) { workInfo ->
+            if (workInfo != null && workInfo.state.isFinished) {
+                if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+                    val successMessage = workInfo.outputData.getString("successMessage")
+                    onSuccess(successMessage)
+                }
+            }
         }
     }
 
@@ -205,86 +212,23 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        applicationScope.launch(dispatcherProvider.io) {
-            val asyncOperationsCounter = AtomicInteger(0)
-            val totalAsyncOperations = 6
-            val activity = this@ProcessUserDataActivity
+        val workRequest = OneTimeWorkRequest.Builder(org.ole.planet.myplanet.services.UserDataWorker::class.java)
+            .setInputData(workDataOf("uploadType" to "bulk"))
+            .build()
 
-            suspend fun checkAllOperationsComplete() {
-                if (asyncOperationsCounter.incrementAndGet() == totalAsyncOperations) {
-                    withContext(dispatcherProvider.main) {
-                        if (!activity.isFinishing && !activity.isDestroyed) {
-                            customProgressDialog.dismiss()
-                            Toast.makeText(activity, "upload complete", Toast.LENGTH_SHORT).show()
+        WorkManager.getInstance(this).enqueue(workRequest)
+
+        WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequest.id).observe(this) { workInfo ->
+            if (workInfo != null && workInfo.state.isFinished) {
+                lifecycleScope.launch(dispatcherProvider.main) {
+                    if (!isFinishing && !isDestroyed) {
+                        customProgressDialog.dismiss()
+                        if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
                         }
                     }
                 }
             }
-
-            uploadManager.uploadAchievement()
-            uploadManager.uploadNews()
-            uploadManager.uploadResourceActivities("")
-            uploadManager.uploadCourseActivities()
-            uploadManager.uploadSearchActivity()
-            uploadManager.uploadRating()
-            uploadManager.uploadTeamTask()
-            uploadManager.uploadMeetups()
-            uploadManager.uploadAdoptedSurveys()
-            uploadManager.uploadSubmissions()
-            uploadManager.uploadCrashLog()
-
-            uploadToShelfService.uploadUserData {
-                uploadToShelfService.uploadHealth()
-                applicationScope.launch {
-                    checkAllOperationsComplete()
-                }
-            }
-
-            uploadManager.uploadUserActivities(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            uploadManager.uploadExamResult(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            applicationScope.launch(dispatcherProvider.io) {
-                val success = uploadManager.uploadFeedback()
-                checkAllOperationsComplete()
-            }
-
-            uploadManager.uploadResource(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch(dispatcherProvider.io) {
-                        uploadManager.uploadTeams()
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            uploadManager.uploadSubmitPhotos(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
-
-            uploadManager.uploadActivities(object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    applicationScope.launch {
-                        checkAllOperationsComplete()
-                    }
-                }
-            })
         }
     }
 
