@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
+import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -14,8 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.repository.EventsRepository
-import java.util.UUID
-import javax.inject.Inject
 
 data class MeetupCreationParams(
     val title: String,
@@ -34,7 +34,8 @@ data class MeetupCreationParams(
 
 @HiltViewModel
 class TeamCalendarViewModel @Inject constructor(
-    private val eventsRepository: EventsRepository
+    private val eventsRepository: EventsRepository,
+    private val gson: Gson
 ) : ViewModel() {
 
     private val _meetups = MutableStateFlow<List<RealmMeetup>>(emptyList())
@@ -68,13 +69,13 @@ class TeamCalendarViewModel @Inject constructor(
                 val jo = JsonObject()
                 jo.addProperty("type", "local")
                 jo.addProperty("planetCode", params.teamPlanetCode)
-                sync = Gson().toJson(jo)
+                sync = gson.toJson(jo)
                 if (params.recurringText != null) {
                     recurring = params.recurringText
                 }
                 val ob = JsonObject()
                 ob.addProperty("teams", params.teamId)
-                link = Gson().toJson(ob)
+                link = gson.toJson(ob)
                 teamId = params.teamId
             }
             val success = eventsRepository.createMeetup(meetup)
