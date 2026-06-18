@@ -426,26 +426,32 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun insert(doc: com.google.gson.JsonObject) {
-        val id = doc.get("_id")?.asString ?: return
-        val existingNotification = findByField(RealmNotification::class.java, "id", id)
-        val notification = existingNotification ?: RealmNotification().apply { this.id = id }
-
-        notification.apply {
+    private fun parseNotification(doc: com.google.gson.JsonObject): RealmNotification? {
+        val id = doc.get("_id")?.asString ?: return null
+        return RealmNotification().apply {
+            this.id = id
             userId = doc.get("user")?.asString ?: ""
             message = doc.get("message")?.asString ?: ""
             type = doc.get("type")?.asString ?: ""
             link = doc.get("link")?.asString
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
-            // Preserve local read state if a change is pending upload
-            if (!needsSync) {
-                isRead = doc.get("status")?.asString != "unread"
-            }
+            isRead = doc.get("status")?.asString != "unread"
             createdAt = doc.get("time")?.let { java.util.Date(it.asLong) } ?: java.util.Date()
             isFromServer = true
         }
-        save(notification)
+    }
+
+    override suspend fun insert(doc: com.google.gson.JsonObject) {
+        val parsed = parseNotification(doc) ?: return
+        executeTransaction { realm ->
+            val existing = realm.where(RealmNotification::class.java).equalTo("id", parsed.id).findFirst()
+            if (existing?.needsSync == true) {
+                parsed.needsSync = true
+                parsed.isRead = existing.isRead
+            }
+            realm.copyToRealmOrUpdate(parsed)
+        }
     }
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
@@ -472,24 +478,13 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
         documentList.forEach { jsonDoc ->
-            val id = jsonDoc.get("_id")?.asString ?: return@forEach
-            val notification = realm.where(RealmNotification::class.java)
-                .equalTo("id", id).findFirst()
-                ?: realm.createObject(RealmNotification::class.java, id)
-            notification.apply {
-                userId = jsonDoc.get("user")?.asString ?: ""
-                message = jsonDoc.get("message")?.asString ?: ""
-                type = jsonDoc.get("type")?.asString ?: ""
-                link = jsonDoc.get("link")?.asString
-                priority = jsonDoc.get("priority")?.asInt ?: 0
-                rev = jsonDoc.get("_rev")?.asString
-                // Preserve local read state if a change is pending upload
-                if (!needsSync) {
-                    isRead = jsonDoc.get("status")?.asString != "unread"
-                }
-                createdAt = jsonDoc.get("time")?.let { java.util.Date(it.asLong) } ?: java.util.Date()
-                isFromServer = true
+            val parsed = parseNotification(jsonDoc) ?: return@forEach
+            val existing = realm.where(RealmNotification::class.java).equalTo("id", parsed.id).findFirst()
+            if (existing?.needsSync == true) {
+                parsed.needsSync = true
+                parsed.isRead = existing.isRead
             }
+            realm.copyToRealmOrUpdate(parsed)
         }
     }
 }
