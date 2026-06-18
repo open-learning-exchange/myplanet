@@ -14,16 +14,19 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 data class CachedMyLifeItem(
-    val imageId: String?,
-    val title: String?,
-    val isVisible: Boolean,
-    val weight: Int
+    var imageId: String?,
+    var title: String?,
+    var isVisible: Boolean,
+    var weight: Int
 )
 
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
+class SharedPrefManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
+) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val gson = Gson()
+
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
@@ -272,6 +275,11 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
 
     fun isNotificationShown(): Boolean = pref.getBoolean(KEY_NOTIFICATION_SHOWN, false)
     fun setNotificationShown(value: Boolean) = pref.edit { putBoolean(KEY_NOTIFICATION_SHOWN, value) }
+
+    fun getBetaAutoDownload(): Boolean {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        return defaultPreferences.getBoolean("beta_auto_download", false)
+    }
 
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }

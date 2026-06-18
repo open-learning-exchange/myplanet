@@ -33,7 +33,6 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -238,7 +237,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun performDeferredInitialization() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
             MarkdownUtils.warmUp(this@MainApplication)

@@ -320,8 +320,7 @@ class CoursesRepositoryImpl @Inject constructor(
             query = query.isNotEmpty("courseTitle")
 
             val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
-            val sortedList = results.sortedBy { it.isMyCourse }
-            realm.copyFromRealm(sortedList, 0)
+            realm.copyFromRealm(results, 0)
         }
     }
 

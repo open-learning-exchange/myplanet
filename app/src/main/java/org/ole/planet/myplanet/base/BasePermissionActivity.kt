@@ -27,6 +27,8 @@ import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
+    open lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
 
     fun checkPermission(strPermission: String?): Boolean {
@@ -438,14 +440,14 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         lifecycleScope.launch {
             val currentTime = System.currentTimeMillis()
             val lastCheck = withContext(dispatcherProvider.io) {
-                org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).getRawLong("last_notification_check", 0)
+                sharedPrefManager.getRawLong("last_notification_check", 0)
             }
             if (currentTime - lastCheck > 24 * 60 * 60 * 1000) {
                 if (!NotificationManagerCompat.from(this@BasePermissionActivity).areNotificationsEnabled()) {
                     onNotificationPermissionChanged(false)
                 }
                 withContext(dispatcherProvider.io) {
-                    org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).setRawLong("last_notification_check", currentTime)
+                    sharedPrefManager.setRawLong("last_notification_check", currentTime)
                 }
             }
         }
