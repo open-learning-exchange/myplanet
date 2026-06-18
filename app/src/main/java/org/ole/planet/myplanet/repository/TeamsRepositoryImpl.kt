@@ -352,30 +352,26 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseIds.isEmpty()) {
-                    return@runCatching
-                }
-                update(RealmMyTeam::class.java, "_id", teamId) { team ->
-                    courseIds.forEach { courseId ->
-                        if (team.courses?.contains(courseId) != true) {
-                            team.courses?.add(courseId)
-                        }
+        return runCatching {
+            if (courseIds.isEmpty()) {
+                return@runCatching
+            }
+            update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                courseIds.forEach { courseId ->
+                    if (team.courses?.contains(courseId) != true) {
+                        team.courses?.add(courseId)
                     }
-                    team.updated = true
                 }
+                team.updated = true
             }
         }
     }
 
     override suspend fun removeCourseFromTeam(teamId: String, courseId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                update(RealmMyTeam::class.java, "_id", teamId) { team ->
-                    team.courses?.remove(courseId)
-                    team.updated = true
-                }
+        return runCatching {
+            update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                team.courses?.remove(courseId)
+                team.updated = true
             }
         }
     }
