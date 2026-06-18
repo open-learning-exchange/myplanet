@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.ResourceItem
@@ -18,13 +19,15 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
     private val syncManager: SyncManager,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
@@ -47,8 +50,10 @@ class ResourcesViewModel @Inject constructor(
         val mapping = serverUrlMapper.processUrl(sharedPrefManager.getServerUrl())
 
         viewModelScope.launch {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                isServerReachable(url)
+            withContext(dispatcherProvider.io) {
+                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                    isServerReachable(url)
+                }
             }
             startSyncManager()
         }
