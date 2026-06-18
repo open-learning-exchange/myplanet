@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -251,7 +252,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
     inner class ResourceAdapter(
         private val onItemClicked: (ResourceItem) -> Unit
-    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(ResourceDiffCallback()) {
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(DiffUtils.itemCallback(areItemsTheSame = { o, n -> o.resourceId == n.resourceId }, areContentsTheSame = { o, n -> o == n }, getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null })) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
@@ -288,22 +289,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private class ResourceDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<ResourceItem>() {
-        override fun areItemsTheSame(oldItem: ResourceItem, newItem: ResourceItem): Boolean {
-            return oldItem.resourceId == newItem.resourceId
-        }
-
-        override fun areContentsTheSame(oldItem: ResourceItem, newItem: ResourceItem): Boolean {
-            return oldItem == newItem
-        }
-
-        override fun getChangePayload(oldItem: ResourceItem, newItem: ResourceItem): Any? {
-            if (oldItem.copy(isChecked = newItem.isChecked) == newItem) {
-                return true
-            }
-            return null
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()
