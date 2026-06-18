@@ -1,11 +1,10 @@
 package org.ole.planet.myplanet.utils
 
-import de.rtner.misc.BinTools
 import de.rtner.security.auth.spi.PBKDF2Engine
 import de.rtner.security.auth.spi.PBKDF2Parameters
+import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
-import java.util.Locale
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -87,10 +86,15 @@ class AndroidDecrypter {
         @JvmStatic
         fun androidDecrypter(usrId: String?, usrRawPwd: String?, dbPwdKeyValue: String?, dbSalt: String?): Boolean {
             try {
+                if (dbPwdKeyValue == null) return false
                 val p = PBKDF2Parameters("HmacSHA1", "utf-8", dbSalt?.toByteArray(), 10)
                 val dk = PBKDF2Engine(p).deriveKey(usrRawPwd, 20)
-                return dbPwdKeyValue.equals(BinTools.bin2hex(dk).lowercase(Locale.ROOT), ignoreCase = true)
-
+                val expected = try {
+                    hexStringToByteArray(dbPwdKeyValue)
+                } catch (e: Exception) {
+                    return false
+                }
+                return MessageDigest.isEqual(dk, expected)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
