@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 object UrlUtils {
     private var spmInstance: SharedPrefManager? = null
 
-    private fun getSpm(): SharedPrefManager {
+    private fun spm(): SharedPrefManager {
         return spmInstance ?: synchronized(this) {
             spmInstance ?: EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager().also { spmInstance = it }
         }
@@ -24,14 +24,14 @@ object UrlUtils {
 
     val header: String
         get() {
-            val spm = getSpm()
+            val spm = spm()
             val credentials = "${spm.getUrlUser()}:${spm.getUrlPwd()}".toByteArray()
             return "Basic ${Base64.encodeToString(credentials, Base64.NO_WRAP)}"
         }
 
     val hostUrl: String
         get() {
-            val spm = getSpm()
+            val spm = spm()
             var scheme = spm.getUrlScheme()
             var hostIp = spm.getUrlHost()
             val isAlternativeUrl = spm.isAlternativeUrl()
@@ -99,7 +99,7 @@ object UrlUtils {
     }
 
     fun getUrl(): String {
-        return dbUrl(getSpm())
+        return dbUrl(spm())
     }
 
     fun getUpdateUrl(spm: SharedPrefManager): String {
@@ -123,7 +123,7 @@ object UrlUtils {
     }
 
     fun getApkUpdateUrl(path: String?): String {
-        val url = baseUrl(getSpm())
+        val url = baseUrl(spm())
         return "$url$path"
     }
 }
