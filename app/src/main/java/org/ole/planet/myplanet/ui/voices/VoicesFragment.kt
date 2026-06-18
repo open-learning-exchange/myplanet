@@ -104,7 +104,8 @@ class VoicesFragment : BaseVoicesFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     val filtered = news.map { it as RealmNews? }
-                    val (labels, labelFiltered) = voicesViewModel.filterNewsByLabel(filtered, selectedLabel)
+                    val labels = voicesViewModel.collectLabels(filtered)
+                    val labelFiltered = voicesViewModel.filterByLabel(filtered, selectedLabel)
                     val searchFiltered =
                         applySearchFilter(labelFiltered, etSearch.text.toString().trim())
                     if (_binding != null) {
@@ -142,8 +143,7 @@ class VoicesFragment : BaseVoicesFragment() {
                     if (n != null) {
                         n.sortDate = n.calculateSortDate()
                         filteredNewsList = listOf(n) + filteredNewsList
-                        val (_, labelFiltered) = voicesViewModel.filterNewsByLabel(filteredNewsList, selectedLabel)
-                        labelFilteredList = labelFiltered
+                        labelFilteredList = voicesViewModel.filterByLabel(filteredNewsList, selectedLabel)
                         searchFilteredList = applySearchFilter(labelFilteredList)
                         setData(searchFilteredList)
                     }
@@ -361,11 +361,12 @@ class VoicesFragment : BaseVoicesFragment() {
         binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 selectedLabel = labelAdapter?.getItem(position) ?: "All"
-                val (_, labelFiltered) = voicesViewModel.filterNewsByLabel(filteredNewsList, selectedLabel)
-                labelFilteredList = labelFiltered
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
-                scrollToTop()
+                viewLifecycleOwner.lifecycleScope.launch {
+                    labelFilteredList = voicesViewModel.filterByLabel(filteredNewsList, selectedLabel)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
@@ -373,19 +374,38 @@ class VoicesFragment : BaseVoicesFragment() {
     
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
-        val labels = precomputedLabels ?: voicesViewModel.filterNewsByLabel(filteredNewsList, selectedLabel).first
-        val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
-        val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
-        labelAdapter = adapter
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.filterByLabel.adapter = adapter
 
-        val position = labels.indexOf(selectedLabel)
-        if (position >= 0) {
-            binding.filterByLabel.setSelection(position)
+        if (precomputedLabels != null) {
+            val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
+            val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, precomputedLabels)
+            labelAdapter = adapter
+            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.filterByLabel.adapter = adapter
+
+            val position = precomputedLabels.indexOf(selectedLabel)
+            if (position >= 0) {
+                binding.filterByLabel.setSelection(position)
+            } else {
+                selectedLabel = "All"
+                binding.filterByLabel.setSelection(0)
+            }
         } else {
-            selectedLabel = "All"
-            binding.filterByLabel.setSelection(0)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val labels = voicesViewModel.collectLabels(filteredNewsList)
+                val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
+                val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
+                labelAdapter = adapter
+                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                binding.filterByLabel.adapter = adapter
+
+                val position = labels.indexOf(selectedLabel)
+                if (position >= 0) {
+                    binding.filterByLabel.setSelection(position)
+                } else {
+                    selectedLabel = "All"
+                    binding.filterByLabel.setSelection(0)
+                }
+            }
         }
     }
     

@@ -85,23 +85,18 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
-    fun filterNewsByLabel(
-        newsList: List<RealmNews?>,
-        selectedLabel: String
-    ): Pair<List<String>, List<RealmNews?>> {
-        val labelDisplayToValue = mutableMapOf<String, String>()
+    suspend fun collectLabels(newsList: List<RealmNews?>): List<String> = withContext(dispatcherProvider.default) {
         val allLabels = mutableSetOf<String>()
         allLabels.add("All")
 
-        Constants.LABELS.forEach { (labelName, labelValue) ->
+        Constants.LABELS.forEach { (labelName, _) ->
             allLabels.add(labelName)
-            labelDisplayToValue[labelName] = labelValue
         }
 
         allLabels.add("Shared Chat")
 
         newsList.forEach { news ->
-            val sharedTeamName = extractSharedTeamName(news)
+            val sharedTeamName = JsonUtils.extractSharedTeamName(news)
             if (sharedTeamName.isNotEmpty()) {
                 allLabels.add(sharedTeamName)
             }
@@ -110,48 +105,43 @@ class VoicesViewModel @Inject constructor(
                 val labelName = Constants.LABELS.entries.find { it.value == label }?.key
                     ?: VoicesLabelManager.formatLabelValue(label)
                 allLabels.add(labelName)
+            }
+        }
+
+        allLabels.sorted()
+    }
+
+    suspend fun filterByLabel(
+        newsList: List<RealmNews?>,
+        selectedLabel: String
+    ): List<RealmNews?> = withContext(dispatcherProvider.default) {
+        if (selectedLabel == "All") return@withContext newsList
+
+        val labelDisplayToValue = mutableMapOf<String, String>()
+        Constants.LABELS.forEach { (labelName, labelValue) ->
+            labelDisplayToValue[labelName] = labelValue
+        }
+        newsList.forEach { news ->
+            news?.labels?.forEach { label ->
+                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    ?: VoicesLabelManager.formatLabelValue(label)
                 labelDisplayToValue.putIfAbsent(labelName, label)
             }
         }
 
-        val displayLabels = allLabels.sorted()
-
-        val filteredList = if (selectedLabel == "All") {
-            newsList
-        } else {
-            newsList.filter { news ->
-                when {
-                    selectedLabel == "Shared Chat" -> {
-                        news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
-                    }
-                    labelDisplayToValue.containsKey(selectedLabel) -> {
-                        val labelValue = labelDisplayToValue[selectedLabel]
-                        news?.labels?.contains(labelValue) == true
-                    }
-                    else -> {
-                        extractSharedTeamName(news) == selectedLabel
-                    }
+        newsList.filter { news ->
+            when {
+                selectedLabel == "Shared Chat" -> {
+                    news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
+                }
+                labelDisplayToValue.containsKey(selectedLabel) -> {
+                    val labelValue = labelDisplayToValue[selectedLabel]
+                    news?.labels?.contains(labelValue) == true
+                }
+                else -> {
+                    JsonUtils.extractSharedTeamName(news) == selectedLabel
                 }
             }
         }
-
-        return Pair(displayLabels, filteredList)
-    }
-
-    private fun extractSharedTeamName(news: RealmNews?): String {
-        if (!news?.viewIn.isNullOrEmpty()) {
-            try {
-                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                if (ar.size() > 1) {
-                    val ob = ar[0].asJsonObject
-                    if (ob.has("name") && !ob.get("name").isJsonNull) {
-                        return ob.get("name").asString
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return ""
     }
 }
