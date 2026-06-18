@@ -191,7 +191,7 @@
     <string name="arabic">عربى</string>
     <string name="french">français</string>
 
-    <string-array name="open_With">
+    <string-array name="open_with">
         <item>HTML</item>
         <item>PDF.js</item>
         <item>BeLL-Reader</item>
@@ -1325,4 +1325,13 @@
     <string name="meetup_not_updated">भेटघाट अपडेट गर्न असफल भयो</string>
     <string name="removed_from_teamcourse">पाठ्यक्रम टोलीबाट हटाइयो</string>
 
+    <string name="level_beginner">प्राथमिक</string>
+    <string name="level_intermediate">मध्यमिक</string>
+    <string name="level_advanced">उन्नत</string>
+    <string name="level_expert">विशेषज्ञ</string>
+    <string name="grade_all">सबै</string>
+    <string name="grade_pre_kindergarten">पूर्व-किन्दरगर्टन</string>
+    <string name="grade_kindergarten">किन्दरगर्टन</string>
+    <string name="grade_college">कलेज</string>
+    <string name="grade_post_graduate">पोस्ट-स्नातक</string>
 </resources>

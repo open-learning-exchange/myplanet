@@ -13,6 +13,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.CourseLevel
+import org.ole.planet.myplanet.model.GradeLevel
 import org.ole.planet.myplanet.model.RealmTag
 
 data class FilterState(
@@ -51,11 +53,13 @@ class CourseFilterController(
 
     private fun setupSpinners() {
         val ctx = rootView.context
-        val gradeAdapter = ArrayAdapter.createFromResource(ctx, R.array.grade_level, R.layout.spinner_item)
+        val gradeAdapter = ArrayAdapter(ctx, R.layout.spinner_item, GradeLevel.ALL_GRADES.map { it.displayString(ctx) })
         gradeAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnGrade.adapter = gradeAdapter
 
-        val subjectAdapter = ArrayAdapter.createFromResource(ctx, R.array.subject_level, R.layout.spinner_item)
+        val subjectItems = listOf(ctx.getString(R.string.grade_all)) +
+            CourseLevel.entries.map { ctx.getString(it.displayRes) }
+        val subjectAdapter = ArrayAdapter(ctx, R.layout.spinner_item, subjectItems)
         subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
         spnSubject.adapter = subjectAdapter
 
@@ -126,8 +130,8 @@ class CourseFilterController(
     fun filterApplied(): Boolean = currentState().isActive
 
     fun currentState(): FilterState {
-        val grade = spnGrade.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
-        val subject = spnSubject.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
+        val grade = GradeLevel.ALL_GRADES.getOrNull(spnGrade.selectedItemPosition)?.serverValue ?: ""
+        val subject = CourseLevel.entries.getOrNull(spnSubject.selectedItemPosition - 1)?.serverValue ?: ""
         return FilterState(
             searchText = etSearch.text.toString().trim(),
             grade = grade,

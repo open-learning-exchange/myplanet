@@ -191,7 +191,7 @@
     <string name="arabic">عربى</string>
     <string name="french">français</string>
 
-    <string-array name="open_With">
+    <string-array name="open_with">
         <item>HTML</item>
         <item>PDF.js</item>
         <item>Lecturerka BeLL</item>
@@ -1325,4 +1325,13 @@
     <string name="meetup_not_updated">Cusboonaysiinta kulanka wey fashilantay</string>
     <string name="removed_from_teamcourse">Koorska waxaa laga saaray kooxda</string>
 
+    <string name="level_beginner">Bilaash</string>
+    <string name="level_intermediate">Dhexe</string>
+    <string name="level_advanced">Sare</string>
+    <string name="level_expert">Farsamo</string>
+    <string name="grade_all">Dhammaan</string>
+    <string name="grade_pre_kindergarten">Dugsiga barbaarinta ka hor</string>
+    <string name="grade_kindergarten">Xanaanada</string>
+    <string name="grade_college">Kolej</string>
+    <string name="grade_post_graduate">Qalinjabinta ka dib</string>
 </resources>

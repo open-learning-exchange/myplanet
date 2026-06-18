@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.model.CourseLevel
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -101,9 +102,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         } else {
             fragmentUserInformationBinding.btnAdditionalFields.visibility = View.GONE
             val langArray = resources.getStringArray(R.array.language)
-            val levelArray = resources.getStringArray(R.array.level)
+            val levelDisplayStrings = CourseLevel.entries.map { getString(it.displayRes) }
             val adapterLang = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, langArray)
-            val adapterLevel = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, levelArray)
+            val adapterLevel = ArrayAdapter(requireContext(), R.layout.become_a_member_spinner_layout, levelDisplayStrings)
             adapterLang.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             adapterLevel.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
             fragmentUserInformationBinding.spnLang.adapter = adapterLang
@@ -235,7 +236,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
         var level = ""
         if (fragmentUserInformationBinding.llLevel.isVisible) {
-            level = fragmentUserInformationBinding.spnLevel.selectedItem.toString()
+            level = CourseLevel.entries.getOrNull(fragmentUserInformationBinding.spnLevel.selectedItemPosition)?.serverValue ?: ""
         }
 
         var gender = ""

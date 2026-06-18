@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.model.CourseLevel
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -91,7 +92,7 @@ class BecomeMemberActivity : BaseActivity() {
             activityBecomeMemberBinding.etMname.text.toString(),
             activityBecomeMemberBinding.etEmail.text.toString(),
             activityBecomeMemberBinding.spnLang.selectedItem.toString(),
-            activityBecomeMemberBinding.spnLevel.selectedItem.toString(),
+            CourseLevel.entries.getOrNull(activityBecomeMemberBinding.spnLevel.selectedItemPosition)?.serverValue ?: "",
             activityBecomeMemberBinding.etPhone.text.toString(),
             dob,
             selectedGender()
@@ -192,8 +193,8 @@ class BecomeMemberActivity : BaseActivity() {
         activityBecomeMemberBinding.txtDob.setOnClickListener {
             showDatePickerDialog()
         }
-        val levels = resources.getStringArray(R.array.level)
-        val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
+        val levelDisplayStrings = CourseLevel.entries.map { getString(it.displayRes) }
+        val lvAdapter = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levelDisplayStrings)
         activityBecomeMemberBinding.spnLevel.adapter = lvAdapter
 
         val username = intent.getStringExtra("username") ?: ""

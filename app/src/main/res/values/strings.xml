@@ -70,6 +70,15 @@
     <string name="button_update">Update</string>
     <string name="level">level</string>
     <string name="select_level">Select Level</string>
+    <string name="level_beginner">Beginner</string>
+    <string name="level_intermediate">Intermediate</string>
+    <string name="level_advanced">Advanced</string>
+    <string name="level_expert">Expert</string>
+    <string name="grade_all">All</string>
+    <string name="grade_pre_kindergarten">Pre-Kindergarten</string>
+    <string name="grade_kindergarten">Kindergarten</string>
+    <string name="grade_college">College</string>
+    <string name="grade_post_graduate">Post-Graduate</string>
     <string name="male">male</string>
     <string name="female">female</string>
     <string name="gender">Gender</string>
@@ -169,29 +178,29 @@
     <string name="no_member_selected">No member selected. Please try again</string>
 
     <string-array name="level">
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>@string/level_beginner</item>
+        <item>@string/level_intermediate</item>
+        <item>@string/level_advanced</item>
+        <item>@string/level_expert</item>
     </string-array>
 
     <string-array name="language">
-        <item>English</item>
-        <item>नेपाली</item>
-        <item>Français</item>
-        <item>Español</item>
-        <item>عربى</item>
-        <item>Somali</item>
+        <item>@string/english</item>
+        <item>@string/nepali</item>
+        <item>@string/french</item>
+        <item>@string/spanish</item>
+        <item>@string/arabic</item>
+        <item>@string/somali</item>
     </string-array>
 
-    <string name="english">english</string>
-    <string name="spanish">español</string>
-    <string name="somali">somali</string>
-    <string name="nepali">नेपाली</string>
-    <string name="arabic">عربى</string>
-    <string name="french">français</string>
+    <string name="english" translatable="false">English</string>
+    <string name="spanish" translatable="false">Español</string>
+    <string name="somali" translatable="false">Somali</string>
+    <string name="nepali" translatable="false">नेपाली</string>
+    <string name="arabic" translatable="false">عربى</string>
+    <string name="french" translatable="false">Français</string>
 
-    <string-array name="open_With">
+    <string-array name="open_with" translatable="false">
         <item>HTML</item>
         <item>PDF.js</item>
         <item>BeLL-Reader</item>
@@ -349,8 +358,8 @@
     </string-array>
 
     <string-array name="transaction_type">
-        <item>Credit</item>
-        <item>Debit</item>
+        <item>@string/credit</item>
+        <item>@string/debit</item>
     </string-array>
 
     <string-array name="sort_by_date">
@@ -367,9 +376,9 @@
     </string-array>
 
     <string-array name="grade_level">
-        <item>All</item>
-        <item>Pre-Kindergarten</item>
-        <item>Kindergarten</item>
+        <item>@string/grade_all</item>
+        <item>@string/grade_pre_kindergarten</item>
+        <item>@string/grade_kindergarten</item>
         <item>1</item>
         <item>2</item>
         <item>3</item>
@@ -382,19 +391,19 @@
         <item>10</item>
         <item>11</item>
         <item>12</item>
-        <item>College</item>
-        <item>Post-Graduate</item>
+        <item>@string/grade_college</item>
+        <item>@string/grade_post_graduate</item>
     </string-array>
 
     <string-array name="subject_level">
-        <item>All</item>
-        <item>Beginner</item>
-        <item>Intermediate</item>
-        <item>Advanced</item>
-        <item>Expert</item>
+        <item>@string/grade_all</item>
+        <item>@string/level_beginner</item>
+        <item>@string/level_intermediate</item>
+        <item>@string/level_advanced</item>
+        <item>@string/level_expert</item>
     </string-array>
 
-    <string-array name="diagnosis_list">
+    <string-array name="diagnosis_list" translatable="false">
         <item>Acute Otitis Media</item>
         <item>Acute Respiratory Infection</item>
         <item>Amebiasis</item>

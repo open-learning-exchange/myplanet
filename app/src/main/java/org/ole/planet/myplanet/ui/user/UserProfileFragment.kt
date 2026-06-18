@@ -55,8 +55,8 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.R.array.language
-import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
+import org.ole.planet.myplanet.model.CourseLevel
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUser
@@ -327,19 +327,20 @@ class UserProfileFragment : Fragment() {
     }
 
     private fun setupLevelSpinner(binding: EditProfileDialogBinding) {
-        val levels = resources.getStringArray(subject_level).toMutableList().apply { remove("All") }
-        levels.add(0, getString(R.string.select_level))
+        val levelDisplayStrings = listOf(getString(R.string.select_level)) +
+            CourseLevel.entries.map { getString(it.displayRes) }
         selectedLevel = Utilities.checkNA(model?.level)
-        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levels)
+        val levelAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, levelDisplayStrings)
         levelAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.level.adapter = levelAdapter
 
-        val levelPosition = levels.indexOf(selectedLevel)
-        if (levelPosition > 0) binding.level.setSelection(levelPosition) else binding.level.setSelection(0)
+        val currentEnum = CourseLevel.fromServerValue(selectedLevel)
+        val levelPosition = if (currentEnum != null) CourseLevel.entries.indexOf(currentEnum) + 1 else 0
+        binding.level.setSelection(levelPosition)
 
         binding.level.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                selectedLevel = if (position == 0) "" else levels[position]
+                selectedLevel = CourseLevel.entries.getOrNull(position - 1)?.serverValue ?: ""
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {}

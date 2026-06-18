@@ -96,7 +96,7 @@ class AddResourceActivity : AppCompatActivity() {
             showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
         }
         setupHintSpinner(binding.spnLang, getString(R.string.language), resources.getStringArray(R.array.language))
-        setupHintSpinner(binding.spnOpenWith, getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
+        setupHintSpinner(binding.spnOpenWith, getString(R.string.select_open_with), resources.getStringArray(R.array.open_with))
         setupHintSpinner(binding.spnMedia, getString(R.string.select_media), resources.getStringArray(R.array.media))
         setupHintSpinner(binding.spnResourceType, getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
         binding.etTitle.setOnFocusChangeListener { _, hasFocus ->
