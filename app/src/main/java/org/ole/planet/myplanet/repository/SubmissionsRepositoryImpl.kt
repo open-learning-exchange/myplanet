@@ -723,24 +723,25 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             }
         }
         documentList.forEach { jsonDoc ->
-            insertSubmission(realm, jsonDoc)
+            insertSubmissionInternal(realm, jsonDoc)
         }
     }
 
-    override fun insertSubmission(mRealm: io.realm.Realm, submission: JsonObject) {
+    override suspend fun insertSubmission(submission: JsonObject) {
+        if (submission.has("_attachments")) return
+        executeTransaction { mRealm ->
+            insertSubmissionInternal(mRealm, submission)
+        }
+    }
+
+    private fun insertSubmissionInternal(mRealm: io.realm.Realm, submission: JsonObject) {
         if (submission.has("_attachments")) {
             return
         }
 
         val id = JsonUtils.getString("_id", submission)
-        var transactionStarted = false
 
         try {
-            if (!mRealm.isInTransaction) {
-                mRealm.beginTransaction()
-                transactionStarted = true
-            }
-
             var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
             val isNewSubmission = sub == null
             val hadLocalChanges = !isNewSubmission && sub.isUpdated
@@ -758,15 +759,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             updateMembership(mRealm, sub, submission)
             updateUserId(sub, submission)
             updateAnswers(mRealm, sub, submission, skipOverwrite)
-
-            if (transactionStarted) {
-                mRealm.commitTransaction()
-            }
         } catch (e: Exception) {
             e.printStackTrace()
-            if (transactionStarted && mRealm.isInTransaction) {
-                mRealm.cancelTransaction()
-            }
         }
     }
 
@@ -868,14 +862,26 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
+    private data class PayloadData(
+        val user: RealmUser?,
+        val exam: RealmStepExam?,
+        val questions: List<RealmExamQuestion>
+    )
+
+    private fun getPayloadData(mRealm: io.realm.Realm, submission: RealmSubmission): PayloadData {
+        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+        val examId = submission.examIdFromParentId()
+        val exam = examId?.let { mRealm.where(RealmStepExam::class.java).equalTo("id", it).findFirst() }
+        val questions = exam?.id?.let { mRealm.where(RealmExamQuestion::class.java).equalTo("examId", it).findAll() } ?: emptyList()
+        return PayloadData(user, exam, questions)
+    }
+
     override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
         val `object` = JsonObject()
-        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
-        var examId = submission.parentId
-        if (submission.parentId?.contains("@") == true) {
-            examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
-        }
-        val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
+        val payloadData = getPayloadData(mRealm, submission)
+        val user = payloadData.user
+        val exam = payloadData.exam
+
         if (!android.text.TextUtils.isEmpty(submission._id)) {
             `object`.addProperty("_id", submission._id)
         }
@@ -905,8 +911,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
         `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
         if (exam != null) {
-            val questions = mRealm.where(RealmExamQuestion::class.java).equalTo("examId", exam.id).findAll()
-            `object`.add("parent", RealmStepExam.serializeExam(exam, questions))
+            `object`.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
         } else {
             val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
@@ -919,15 +924,12 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = databaseService.withRealmAsync { mRealm ->
         val jsonObject = JsonObject()
 
         try {
-            var examId = submission.parentId
-            if (submission.parentId?.contains("@") == true) {
-                examId = submission.parentId?.split("@".toRegex())?.dropLastWhile { it.isEmpty() }?.toTypedArray()?.get(0)
-            }
-            val exam = examId?.let { getExamById(it) }
+            val payloadData = getPayloadData(mRealm, submission)
+            val exam = payloadData.exam
 
             if (!submission._id.isNullOrEmpty()) {
                 jsonObject.addProperty("_id", submission._id)
@@ -950,8 +952,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             jsonObject.addProperty("parentCode", parentCode)
             jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
             if (exam != null) {
-                val questions = exam.id?.let { surveysRepositoryProvider.get().getExamQuestions(it) } ?: emptyList()
-                jsonObject.add("parent", RealmStepExam.serializeExam(exam, questions))
+                jsonObject.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
@@ -968,6 +969,6 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        return jsonObject
+        jsonObject
     }
 }

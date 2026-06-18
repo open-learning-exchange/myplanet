@@ -67,7 +67,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     @Inject
     lateinit var loginSyncManager: LoginSyncManager
     @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+    override lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var binding: ActivityLoginBinding
     private lateinit var usernameWatcher: TextWatcher

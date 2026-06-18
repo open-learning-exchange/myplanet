@@ -69,6 +69,18 @@ class CoursesAdapter(
     private var isAscending = true
     private var isTitleAscending = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
+    private val courseIdToPosition = mutableMapOf<String, Int>()
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<Course>,
+        currentList: MutableList<Course>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        courseIdToPosition.clear()
+        currentList.forEachIndexed { index, course ->
+            course.courseId?.let { courseIdToPosition[it] = index }
+        }
+    }
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -107,8 +119,8 @@ class CoursesAdapter(
             if (courseId.isNullOrEmpty()) {
                 return@forEach
             }
-            val index = currentList.indexOfFirst { it.courseId == courseId }
-            if (index != -1) {
+            val index = courseIdToPosition[courseId]
+            if (index != null && index != -1) {
                 notifyItemChanged(index, TAG_PAYLOAD)
             }
         }
@@ -120,8 +132,8 @@ class CoursesAdapter(
     }
 
     private fun dispatchPayloadByCourseId(courseId: String?, payload: Any) {
-        val index = currentList.indexOfFirst { it.courseId == courseId }
-        if (index != -1) {
+        val index = courseIdToPosition[courseId]
+        if (index != null && index != -1) {
             notifyItemChanged(index, payload)
         }
     }
@@ -163,8 +175,8 @@ class CoursesAdapter(
                 if (courseId.isNullOrEmpty()) {
                     return@forEach
                 }
-                val index = currentList.indexOfFirst { it.courseId == courseId }
-                if (index != -1) {
+                val index = courseIdToPosition[courseId]
+                if (index != null && index != -1) {
                     notifyItemChanged(index, bundle)
                 }
             }
@@ -241,6 +253,7 @@ class CoursesAdapter(
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        val oldSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
         selectedItems.clear()
 
         if (selectAll) {
@@ -248,8 +261,14 @@ class CoursesAdapter(
             selectedItems.addAll(selectableCourses)
         }
 
-        if (currentList.isNotEmpty()) {
-            notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
+        val newSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
+
+        currentList.forEachIndexed { index, course ->
+            val wasSelected = oldSelectedIds.contains(course.courseId)
+            val isSelected = newSelectedIds.contains(course.courseId)
+            if (wasSelected != isSelected) {
+                notifyItemChanged(index, SELECTION_PAYLOAD)
+            }
         }
 
         listener?.onSelectedListChange(selectedItems)
@@ -371,7 +390,7 @@ class CoursesAdapter(
             }
             if (hasSelectionPayload) {
                 if (!isGuest && (isMyCourseLib || !course.isMyCourse)) {
-                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
                 }
             }
         }
@@ -452,7 +471,7 @@ class CoursesAdapter(
                 val showCheckbox = isMyCourseLib || !course.isMyCourse
                 if (showCheckbox) {
                     rowCourseBinding.checkbox.visibility = View.VISIBLE
-                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
                     rowCourseBinding.checkbox.setOnClickListener { view: View ->
                         rowCourseBinding.checkbox.contentDescription =
                             context.getString(R.string.select_res_course, course.courseTitle)

@@ -186,7 +186,7 @@ class VoicesAdapter(
             val news = getNews(holder, position)
 
             if (news?.isValid == true) {
-                val sharedTeamName = extractSharedTeamName(news)
+                val sharedTeamName = org.ole.planet.myplanet.utils.JsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -231,17 +231,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun extractSharedTeamName(news: RealmNews): String {
-        val ar = news.parsedViewIn
 
-        if (ar != null && ar.size() > 1) {
-            val ob = ar[0].asJsonObject
-            if (ob.has("name") && !ob.get("name").isJsonNull) {
-                return ob.get("name").asString
-            }
-        }
-        return ""
-    }
 
     private fun resetViews(holder: VoicesViewHolder) {
         with(holder.binding) {

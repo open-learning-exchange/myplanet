@@ -34,7 +34,7 @@ import org.ole.planet.myplanet.utils.VersionUtils
 class BecomeMemberActivity : BaseActivity() {
 
     @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+    override lateinit var sharedPrefManager: SharedPrefManager
 
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
