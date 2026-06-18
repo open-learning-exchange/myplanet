@@ -319,8 +319,7 @@ class CoursesRepositoryImpl @Inject constructor(
             }
             query = query.isNotEmpty("courseTitle")
 
-            val results = query.sort("isMyCourse", io.realm.Sort.ASCENDING, "courseTitle", io.realm.Sort.ASCENDING).findAll()
-
+            val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
             realm.copyFromRealm(results, 0)
         }
     }
