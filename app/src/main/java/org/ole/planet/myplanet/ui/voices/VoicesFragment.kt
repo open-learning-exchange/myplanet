@@ -7,7 +7,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
@@ -61,7 +60,7 @@ class VoicesFragment : BaseVoicesFragment() {
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
-    private var labelAdapter: ArrayAdapter<String>? = null
+    private var labelAdapter: VoicesLabelAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -358,35 +357,23 @@ class VoicesFragment : BaseVoicesFragment() {
     
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
         updateLabelSpinner(precomputedLabels)
-
-        binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedLabel = labelAdapter?.getItem(position) ?: "All"
-                labelFilteredList = applyLabelFilter(filteredNewsList)
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
-                scrollToTop()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
     }
     
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
-        val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
-        val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
-        labelAdapter = adapter
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.filterByLabel.adapter = adapter
 
-        val position = labels.indexOf(selectedLabel)
-        if (position >= 0) {
-            binding.filterByLabel.setSelection(position)
-        } else {
-            selectedLabel = "All"
-            binding.filterByLabel.setSelection(0)
+        val adapter = VoicesLabelAdapter { label ->
+            selectedLabel = label
+            labelFilteredList = applyLabelFilter(filteredNewsList)
+            searchFilteredList = applySearchFilter(labelFilteredList)
+            setData(searchFilteredList)
+            scrollToTop()
         }
+        labelAdapter = adapter
+        binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+        binding.filterByLabel.adapter = adapter
+        adapter.submitList(labels)
     }
     
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
@@ -470,7 +457,6 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     override fun onDestroyView() {
-        binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
         labelAdapter = null
         _binding = null
