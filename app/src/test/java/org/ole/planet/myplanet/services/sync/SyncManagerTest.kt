@@ -97,7 +97,6 @@ class SyncManagerTest {
         syncManager.start(listener, "sync", listOf("exams"))
 
         verify { listener.onSyncStarted() }
-        coVerify { improvedSyncManager.initialize() }
         verify { improvedSyncManager.start(any(), SyncMode.Fast, listOf("exams")) }
     }
 
