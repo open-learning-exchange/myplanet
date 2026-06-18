@@ -6,7 +6,6 @@ import android.os.Trace
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
@@ -95,6 +94,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             if (user?.id?.startsWith("guest") == true) {
@@ -356,24 +356,33 @@ class VoicesFragment : BaseVoicesFragment() {
     }
     
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
+        val binding = _binding ?: return
+        if (labelAdapter == null) {
+            labelAdapter = VoicesLabelAdapter(
+                selectedLabel = selectedLabel,
+                onItemClick = { label ->
+                    selectedLabel = label
+                    labelAdapter?.setSelectedLabel(label)
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                }
+            )
+            binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+            binding.filterByLabel.adapter = labelAdapter
+        }
         updateLabelSpinner(precomputedLabels)
     }
     
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
-        val binding = _binding ?: return
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
+        labelAdapter?.submitList(labels)
 
-        val adapter = VoicesLabelAdapter { label ->
-            selectedLabel = label
-            labelFilteredList = applyLabelFilter(filteredNewsList)
-            searchFilteredList = applySearchFilter(labelFilteredList)
-            setData(searchFilteredList)
-            scrollToTop()
+        val position = labels.indexOf(selectedLabel)
+        if (position >= 0) {
+            _binding?.filterByLabel?.scrollToPosition(position)
         }
-        labelAdapter = adapter
-        binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
-        binding.filterByLabel.adapter = adapter
-        adapter.submitList(labels)
     }
     
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
