@@ -4,7 +4,6 @@ import android.app.Application
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.realm.Sort
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -182,7 +181,7 @@ class DashboardViewModelTest {
             RealmUser().apply { name = "User 2" }
         )
 
-        coEvery { userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING) } returns users
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
 
         viewModel.loadUsers()
         advanceUntilIdle()
