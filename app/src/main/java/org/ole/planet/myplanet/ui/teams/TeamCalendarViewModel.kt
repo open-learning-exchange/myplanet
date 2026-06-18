@@ -34,7 +34,8 @@ data class MeetupCreationParams(
 
 @HiltViewModel
 class TeamCalendarViewModel @Inject constructor(
-    private val eventsRepository: EventsRepository
+    private val eventsRepository: EventsRepository,
+    private val gson: Gson
 ) : ViewModel() {
 
     private val _meetups = MutableStateFlow<List<RealmMeetup>>(emptyList())
@@ -68,13 +69,13 @@ class TeamCalendarViewModel @Inject constructor(
                 val jo = JsonObject()
                 jo.addProperty("type", "local")
                 jo.addProperty("planetCode", params.teamPlanetCode)
-                sync = Gson().toJson(jo)
+                sync = gson.toJson(jo)
                 if (params.recurringText != null) {
                     recurring = params.recurringText
                 }
                 val ob = JsonObject()
                 ob.addProperty("teams", params.teamId)
-                link = Gson().toJson(ob)
+                link = gson.toJson(ob)
                 teamId = params.teamId
             }
             val success = eventsRepository.createMeetup(meetup)
