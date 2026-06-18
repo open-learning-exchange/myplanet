@@ -6,7 +6,9 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -34,9 +36,24 @@ class ResourcesViewModel @Inject constructor(
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+
+    private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
+    val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
+
+    private var observeOpenedResourcesJob: Job? = null
+
     fun notifyDownloadComplete() {
         _downloadComplete.value = true
         _downloadComplete.value = false
+    }
+
+    fun observeOpenedResourceIds(userId: String) {
+        observeOpenedResourcesJob?.cancel()
+        observeOpenedResourcesJob = viewModelScope.launch {
+            resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                _openedResourceIds.value = ids
+            }
+        }
     }
 
     fun startResourcesSync() {

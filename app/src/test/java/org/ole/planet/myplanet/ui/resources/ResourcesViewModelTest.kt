@@ -80,4 +80,16 @@ class ResourcesViewModelTest {
 
         assertTrue(result.isSuccess)
     }
+
+    @Test
+    fun `observeOpenedResourceIds updates openedResourceIds state flow`() = runTest {
+        val userId = "user123"
+        val mockFlow = kotlinx.coroutines.flow.flowOf(setOf("res1", "res2"))
+        coEvery { resourcesRepository.observeOpenedResourceIds(userId) } returns mockFlow
+
+        viewModel.observeOpenedResourceIds(userId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(setOf("res1", "res2"), viewModel.openedResourceIds.value)
+    }
 }
