@@ -5,8 +5,11 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ArrayAdapter
+import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import java.time.Instant
@@ -145,7 +148,7 @@ class MembersAdapter(
                 }
 
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = MembersSubListAdapter(context, overflowMenuOptions.toList())
+                val adapter = MemberMenuAdapter(context, overflowMenuOptions.toList())
                 builder.setAdapter(adapter) { _, i ->
                     if (isOwnCard) {
                         when (i) {
@@ -171,4 +174,16 @@ class MembersAdapter(
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    private class MemberMenuAdapter(
+        context: Context,
+        items: List<CharSequence>
+    ) : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, items) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent) as TextView
+            val color = ContextCompat.getColor(context, R.color.daynight_textColor)
+            view.setTextColor(color)
+            return view
+        }
+    }
 }
