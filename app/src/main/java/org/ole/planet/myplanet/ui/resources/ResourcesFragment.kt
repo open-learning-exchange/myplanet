@@ -198,8 +198,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
             val userId = userModel?.id
             if (userId != null) {
+                viewModel.observeOpenedResourceIds(userId)
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userId).collectLatest { openedResourceIds ->
+                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
