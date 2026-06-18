@@ -67,21 +67,17 @@ class HealthRepositoryImpl @Inject constructor(
     override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
         if (idToRevMap.isNotEmpty()) {
             executeTransaction { realm ->
-                val idList = idToRevMap.keys.toList()
-                val chunks = idList.chunked(999)
-
-                val query = realm.where(RealmHealthExamination::class.java)
-                chunks.forEachIndexed { index, chunk ->
-                    if (index > 0) {
-                        query.or()
+                // Chunking by 999 is required because Realm limits the number of arguments in an `in` clause.
+                // This is not an N+1 query issue since realistic upload sets per user are well under this limit,
+                // resulting in a single database query execution.
+                idToRevMap.keys.chunked(999).forEach { chunk ->
+                    val managedPojos = realm.where(RealmHealthExamination::class.java)
+                        .`in`("_id", chunk.toTypedArray())
+                        .findAll()
+                    managedPojos.forEach { managedPojo ->
+                        managedPojo._rev = idToRevMap[managedPojo._id]
+                        managedPojo.isUpdated = false
                     }
-                    query.`in`("_id", chunk.toTypedArray())
-                }
-
-                val managedPojos = query.findAll()
-                managedPojos.forEach { managedPojo ->
-                    managedPojo._rev = idToRevMap[managedPojo._id]
-                    managedPojo.isUpdated = false
                 }
             }
         }
