@@ -88,13 +88,17 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         val planetCode = user?.planetCode
         val parentCode = user?.parentCode
         saveInProgress = lifecycleScope.launch {
+            val passed = when {
+                stepExams.isEmpty() && stepSurvey.isEmpty() -> true
+                else -> {
+                    val examCompleted = stepExams.isEmpty() || submissionsRepository.isStepCompleted(stepId, userId)
+                    val surveyCompleted = stepSurvey.isEmpty() || submissionsRepository.hasSubmission(stepSurvey[0].id, step.courseId, userId, "survey")
+                    if (examCompleted && surveyCompleted) true else null
+                }
+            }
             progressRepository.saveCourseProgress(
-                userId,
-                planetCode,
-                parentCode,
-                step.courseId,
-                stepNumber,
-                if (stepExams.isEmpty()) true else null
+                userId, planetCode, parentCode,
+                step.courseId, stepNumber, passed
             )
         }
         saveInProgress?.invokeOnCompletion { saveInProgress = null }
