@@ -273,6 +273,11 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun isNotificationShown(): Boolean = pref.getBoolean(KEY_NOTIFICATION_SHOWN, false)
     fun setNotificationShown(value: Boolean) = pref.edit { putBoolean(KEY_NOTIFICATION_SHOWN, value) }
 
+    fun getBetaAutoDownload(): Boolean {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        return defaultPreferences.getBoolean("beta_auto_download", false)
+    }
+
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
 

@@ -25,6 +25,8 @@ import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUser
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
@@ -41,7 +43,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private var meetUpId: String? = null
     var user: RealmUser? = null
     private var listUsers: ListView? = null
-    private var listDesc: ListView? = null
+    private var listDesc: RecyclerView? = null
     private var tvJoined: TextView? = null
 
     private var editStartDate: Long = 0
@@ -201,20 +203,11 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun setUpData(meetup: RealmMeetup) {
         binding.meetupTitle.text = meetup.title
         val map: HashMap<String, String> = getHashMap(meetup)
-        val keys = ArrayList(map.keys)
-        listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertedView = convertView
-                if (convertedView == null) {
-                    convertedView = LayoutInflater.from(activity).inflate(R.layout.row_description, parent, false)
-                }
-                (convertedView?.findViewById<View>(R.id.title) as TextView).text =
-                    context.getString(R.string.message_placeholder, "${getItem(position)} : ")
-                (convertedView.findViewById<View>(R.id.description) as TextView).text =
-                    context.getString(R.string.message_placeholder, map[getItem(position)])
-                return convertedView
-            }
-        }
+        val items = map.map { EventsDescriptionAdapter.DescriptionItem(it.key, it.value) }
+        val eventsDescriptionAdapter = EventsDescriptionAdapter()
+        listDesc?.layoutManager = LinearLayoutManager(requireContext())
+        listDesc?.adapter = eventsDescriptionAdapter
+        eventsDescriptionAdapter.submitList(items)
     }
 
     override fun onClick(view: View) {
