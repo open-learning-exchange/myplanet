@@ -6,7 +6,6 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.android.asCoroutineDispatcher
-
 import kotlin.coroutines.CoroutineContext
 
 @Singleton
@@ -15,23 +14,23 @@ class RealmDispatcherProvider @Inject constructor() : CoroutineDispatcher() {
     private var _dispatcher: CoroutineDispatcher? = null
 
     private val dispatcher: CoroutineDispatcher
-        get() = _dispatcher ?: throw IllegalStateException("RealmDispatcherProvider not started")
+        @Synchronized get() {
+            if (_dispatcher == null) {
+                handlerThread = HandlerThread("RealmQueryThread").also { it.start() }
+                _dispatcher = Handler(handlerThread!!.looper).asCoroutineDispatcher()
+            }
+            return _dispatcher!!
+        }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
         dispatcher.dispatch(context, block)
     }
 
     override fun isDispatchNeeded(context: CoroutineContext): Boolean {
-        return _dispatcher?.isDispatchNeeded(context) ?: true
+        return dispatcher.isDispatchNeeded(context)
     }
 
-    fun start() {
-        if (handlerThread == null) {
-            handlerThread = HandlerThread("RealmQueryThread").also { it.start() }
-            _dispatcher = Handler(handlerThread!!.looper).asCoroutineDispatcher()
-        }
-    }
-
+    @Synchronized
     fun shutdown() {
         handlerThread?.quitSafely()
         handlerThread = null

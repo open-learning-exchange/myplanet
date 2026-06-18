@@ -36,8 +36,6 @@ class RealmDispatcherInjectionTest {
 
     @Test
     fun testRealmDispatcherProviderInjection() {
-        realmDispatcherProvider.start()
-
         assertNotNull(realmDispatcherProvider)
         assertNotNull(injectedDispatcher)
 
