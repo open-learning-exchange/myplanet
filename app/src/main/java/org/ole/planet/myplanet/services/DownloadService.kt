@@ -82,7 +82,6 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
 
-    private val downloadJob = SupervisorJob()
     private lateinit var downloadScope: CoroutineScope
     private lateinit var broadcastService: BroadcastService
 
@@ -90,7 +89,7 @@ class DownloadService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+        downloadScope = CoroutineScope(SupervisorJob() + dispatcherProvider.io)
         broadcastService = getBroadcastService(this)
     }
 
@@ -496,7 +495,6 @@ class DownloadService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
         }
-        downloadJob.cancel()
         downloadScope.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
