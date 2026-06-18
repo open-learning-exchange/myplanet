@@ -43,18 +43,6 @@ class CoursesProgressFragment : Fragment() {
         }
     }
 
-    companion object {
-        fun getCourseProgress(courseData: JsonArray, courseId: String): JsonObject? {
-            courseData.forEach { element ->
-                val course = element.asJsonObject
-                if (course.get("courseId").asString == courseId) {
-                    return course.getAsJsonObject("progress")
-                }
-            }
-            return null
-        }
-    }
-
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null

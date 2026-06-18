@@ -628,6 +628,26 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getResourceTitlesMap(): Map<String, String> {
+        return withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .isNotNull("resourceId")
+                .findAll()
+                .associate { (it.resourceId ?: "") to (it.title ?: "") }
+        }
+    }
+
+    override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
+        if (resourceIds.isEmpty()) return
+        executeTransaction { realm ->
+            val results = realm.where(RealmMyLibrary::class.java)
+                .`in`("resourceId", resourceIds.toTypedArray())
+                .equalTo("resourceOffline", true)
+                .findAll()
+            results.forEach { it.resourceOffline = false }
+        }
+    }
+
     companion object {
         private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
