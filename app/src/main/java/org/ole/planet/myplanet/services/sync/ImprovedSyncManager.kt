@@ -7,7 +7,6 @@ import java.util.Date
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -15,8 +14,8 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -25,22 +24,20 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 @Singleton
 class ImprovedSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val transactionSyncManager: TransactionSyncManager,
     private val standardStrategy: StandardSyncStrategy,
     private val loginSyncManager: LoginSyncManager,
     private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    @param:ApplicationScope private val syncScope: CoroutineScope
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
-    private val poolManager = RealmPoolManager.getInstance()
 
     private var isSyncing = false
     private var listener: OnSyncListener? = null
-    private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
@@ -66,10 +63,6 @@ class ImprovedSyncManager @Inject constructor(
         "feedback",
         "notifications"
     )
-
-    suspend fun initialize() {
-        poolManager.initializePool(context, databaseService)
-    }
 
     fun start(
         listener: OnSyncListener?,
