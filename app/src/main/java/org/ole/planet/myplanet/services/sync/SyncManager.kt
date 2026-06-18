@@ -68,6 +68,7 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
+    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
     private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
     private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
 ) {
@@ -962,7 +963,7 @@ class SyncManager @Inject constructor(
                         "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
                         "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
                         "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
-                        "teams" -> processedCount += teamsRepository.batchInsertMyTeams(documentsToProcess)
+                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
                     }
                     val realmDuration = System.currentTimeMillis() - realmStartTime
                     logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)

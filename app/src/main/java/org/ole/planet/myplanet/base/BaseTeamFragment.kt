@@ -29,6 +29,8 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
+    lateinit var teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository
+    @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
     val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()

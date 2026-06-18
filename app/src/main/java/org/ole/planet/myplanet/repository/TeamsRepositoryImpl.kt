@@ -58,7 +58,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>,
-) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
+) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")

@@ -6,12 +6,6 @@ import com.google.gson.JsonObject
 import io.realm.Realm
 import org.ole.planet.myplanet.model.RealmTeamLog
 
-data class TeamUploadData(
-    val teamId: String?,
-    val serialized: JsonObject,
-    val isDeletePending: Boolean = false
-)
-
 interface TeamsSyncRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)

@@ -36,10 +36,13 @@ data class JoinRequestNotification(
     val requestId: String
 )
 
+data class TeamUploadData(
+    val teamId: String?,
+    val serialized: JsonObject,
+    val isDeletePending: Boolean = false
+)
+
 interface TeamsRepository {
-    suspend fun getTeamsForUpload(): List<TeamUploadData>
-    suspend fun markTeamUploaded(teamId: String?, rev: String)
-    suspend fun deleteLocalTeamRecord(teamId: String?)
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
     suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam>
@@ -103,7 +106,6 @@ interface TeamsRepository {
         teamId: String, name: String, description: String, services: String, rules: String,
         teamType: String, isPublic: Boolean, createdBy: String
     ): Boolean
-    suspend fun syncTeamActivities()
     suspend fun getTeamTransactionsWithBalance(
         teamId: String, startDate: Long? = null,
         endDate: Long? = null, sortAscending: Boolean = false
@@ -130,13 +132,5 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 
-    suspend fun insertTeamLog(json: JsonObject)
-    suspend fun insertTeamLogs(logs: List<JsonObject>)
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
-    fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
-    fun insertMyTeam(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
-    suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun bulkInsertTasksFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun bulkInsertTeamActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }
