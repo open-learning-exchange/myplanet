@@ -268,19 +268,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun clearOfflineFlagsForResourceIds(resourceIds: Set<String>) {
-        if (resourceIds.isEmpty()) return
-        executeTransaction { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceOffline", true)
-                .`in`("resourceId", resourceIds.toTypedArray())
-                .findAll()
-            results.forEach { library ->
-                library.resourceOffline = false
-            }
-        }
-    }
-
     private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
         return results.filter { it.needToUpdate() }
     }
@@ -638,6 +625,26 @@ class ResourcesRepositoryImpl @Inject constructor(
             val rating = resourceId?.let { map[it] }
             val tags = resourceId?.let { tagsMap[it] } ?: emptyList()
             LibraryWithMetadata(library, rating, tags)
+        }
+    }
+
+    override suspend fun getResourceTitlesMap(): Map<String, String> {
+        return withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .isNotNull("resourceId")
+                .findAll()
+                .associate { (it.resourceId ?: "") to (it.title ?: "") }
+        }
+    }
+
+    override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
+        if (resourceIds.isEmpty()) return
+        executeTransaction { realm ->
+            val results = realm.where(RealmMyLibrary::class.java)
+                .`in`("resourceId", resourceIds.toTypedArray())
+                .equalTo("resourceOffline", true)
+                .findAll()
+            results.forEach { it.resourceOffline = false }
         }
     }
 
