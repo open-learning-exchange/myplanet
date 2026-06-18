@@ -16,11 +16,6 @@ object ApiClient {
         MainApplication.apiClientInitialized.await()
     }
 
-    /**
-     * Runs [operation] with up to [MAX_ATTEMPTS] attempts, retrying on a null or
-     * unsuccessful response (exceptions are treated as a null result by
-     * [RetryUtils.retry]). Returns the last response, or null if every attempt failed.
-     */
     suspend fun <T> executeWithRetryAndWrap(operation: suspend () -> Response<T>?): Response<T>? {
         return RetryUtils.retry(
             maxAttempts = MAX_ATTEMPTS,
@@ -30,12 +25,6 @@ object ApiClient {
         )
     }
 
-    /**
-     * Same retry policy as [executeWithRetryAndWrap], mapping the outcome to a typed
-     * [NetworkResult]: [NetworkResult.Success] for a 2xx with a body,
-     * [NetworkResult.Error] for an HTTP error, and [NetworkResult.Exception] when every
-     * attempt failed without producing a response.
-     */
     suspend fun <T> executeWithResult(operation: suspend () -> Response<T>?): NetworkResult<T> {
         var lastException: Exception? = null
         val response = executeWithRetryAndWrap {
