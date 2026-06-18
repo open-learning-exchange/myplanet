@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -92,7 +93,6 @@ class RealmRepositoryTest {
 
         every { frozenInitial.realm } returns frozenRealmInitial
         every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns copiedInitialList
-        every { frozenInitial.isEmpty() } returns false
 
         val listenerSlot = slot<RealmChangeListener<RealmResults<TestRealmObject>>>()
         every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
@@ -229,7 +229,7 @@ class RealmRepositoryTest {
         every { initialResults.isLoaded } returns true
         every { initialResults.freeze() } returns frozenInitial
         every { frozenInitial.isEmpty() } returns true
-        // frozenInitial.realm is NOT mocked because it should not be accessed.
+        every { frozenInitial.realm } returns frozenRealmInitial
         every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
 
         val emittedLists = mutableListOf<List<TestRealmObject>>()
@@ -240,6 +240,7 @@ class RealmRepositoryTest {
             }
         }
 
+        advanceUntilIdle()
         assertEquals(1, emittedLists.size)
         assertEquals(emptyList<TestRealmObject>(), emittedLists[0])
         verify(exactly = 0) { frozenRealmInitial.copyFromRealm(any<RealmResults<TestRealmObject>>()) }
