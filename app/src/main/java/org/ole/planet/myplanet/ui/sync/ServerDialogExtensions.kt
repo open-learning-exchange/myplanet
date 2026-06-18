@@ -178,12 +178,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
             val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
             binding.inputServerUrl.setText(actualUrl)
             binding.inputServerPassword.setText(ServerConfigUtils.getPinForUrl(actualUrl))
-            val protocol = if (
-                actualUrl == BuildConfig.PLANET_XELA_URL ||
-                actualUrl == BuildConfig.PLANET_SANPABLO_URL ||
-                actualUrl == BuildConfig.PLANET_URIUR_URL ||
-                isLocalNetwork(actualUrl)
-            ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
+            val protocol = ServerConfigUtils.getDefaultProtocol(actualUrl)
             prefData.setServerProtocol(protocol)
             if (serverCheck) performSync(dialog)
         },
@@ -331,12 +326,3 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     protocolSemantics()
 }
 
-private fun isLocalNetwork(url: String): Boolean {
-    val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
-    return host.startsWith("192.168.") ||
-            host.startsWith("10.") ||
-            host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")) ||
-            host == "localhost" ||
-            host == "127.0.0.1" ||
-            host.endsWith(".local")
-}
