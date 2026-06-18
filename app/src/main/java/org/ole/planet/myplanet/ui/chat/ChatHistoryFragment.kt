@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -68,6 +69,8 @@ class ChatHistoryFragment : Fragment() {
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
@@ -268,7 +271,8 @@ class ChatHistoryFragment : Fragment() {
                         chatHistory,
                         user,
                         sharedNewsMessages,
-                        shareTargets
+                        shareTargets,
+                        dispatcherProvider
                     ) { map, chat ->
                         if (!isAdded || _binding == null) {
                             return@ChatHistoryAdapter

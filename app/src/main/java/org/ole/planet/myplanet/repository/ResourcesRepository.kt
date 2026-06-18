@@ -90,6 +90,8 @@ interface ResourcesRepository {
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary>
     suspend fun getPublicLibraryItems(): List<RealmMyLibrary>
+    suspend fun getResourceTitlesMap(): Map<String, String>
+    suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
 }
 
 sealed class ResourceUrlsResponse {

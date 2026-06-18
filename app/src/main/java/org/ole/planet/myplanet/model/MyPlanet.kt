@@ -6,12 +6,10 @@ import android.content.Context
 import android.os.Build
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import dagger.hilt.android.EntryPointAccessors
 import java.io.Serializable
 import java.util.Calendar
 import java.util.Date
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -39,7 +37,7 @@ class MyPlanet : Serializable {
             postJSON.addProperty("parentCode", model.parentCode)
             postJSON.addProperty("createdOn", model.planetCode)
             postJSON.addProperty("type", "usages")
-            postJSON.add("usages", getTabletUsages(context))
+            postJSON.add("usages", getTabletUsages(context, spm))
             return postJSON
         }
 
@@ -63,9 +61,8 @@ class MyPlanet : Serializable {
         }
 
         @JvmStatic
-        fun getTabletUsages(context: Context): JsonArray {
+        fun getTabletUsages(context: Context, spm: SharedPrefManager): JsonArray {
             val cal = Calendar.getInstance()
-            val spm = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
             cal.timeInMillis = spm.getLastUsageUploaded()
             val arr = JsonArray()
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
