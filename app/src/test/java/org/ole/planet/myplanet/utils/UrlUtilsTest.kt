@@ -48,7 +48,7 @@ class UrlUtilsTest {
         every { sharedPrefManager.getProcessedAlternativeUrl() } returns "http://alternative.com"
 
 
-        UrlUtils._spm = null
+        UrlUtils.resetForTesting()
     }
 
     @After
