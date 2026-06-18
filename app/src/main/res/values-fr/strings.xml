@@ -1325,6 +1325,9 @@
     <string name="yesterday">Hier</string>
     <string name="days_ago">Il y a %1$d jour(s)</string>
     <string name="please_complete_test">Veuillez compléter le test pour continuer</string>
+    <string name="edit_meetup">Modifier la réunion</string>
+    <string name="meetup_updated">Réunion mise à jour avec succès</string>
+    <string name="meetup_not_updated">Échec de la mise à jour de la réunion</string>
     <string name="removed_from_teamcourse">Cours retiré de l\'équipe</string>
 
 </resources>

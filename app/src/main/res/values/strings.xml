@@ -1321,6 +1321,9 @@
     <string name="yesterday">Yesterday</string>
     <string name="days_ago">%1$d days ago</string>
     <string name="please_complete_test">please complete the test to proceed</string>
+    <string name="edit_meetup">Edit Meetup</string>
+    <string name="meetup_updated">Meetup updated successfully</string>
+    <string name="meetup_not_updated">Failed to update meetup</string>
     <string name="removed_from_teamcourse">Course removed from team</string>
 
 </resources>

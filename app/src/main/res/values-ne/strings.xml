@@ -1321,6 +1321,9 @@
     <string name="yesterday">हिजो</string>
     <string name="days_ago">%1$d दिन अघि</string>
     <string name="please_complete_test">कृपया अगाडि बढ्नको लागि परीक्षण पूरा गर्नुहोस्</string>
+    <string name="edit_meetup">भेटघाट सम्पादन गर्नुहोस्</string>
+    <string name="meetup_updated">भेटघाट सफलतापूर्वक अपडेट भयो</string>
+    <string name="meetup_not_updated">भेटघाट अपडेट गर्न असफल भयो</string>
     <string name="removed_from_teamcourse">पाठ्यक्रम टोलीबाट हटाइयो</string>
 
 </resources>

@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.app.AlertDialog
-import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -10,6 +9,7 @@ import android.widget.Button
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -56,9 +56,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private val viewModel: CoursesViewModel by viewModels()
 
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
-
-    @Inject
     lateinit var prefManager: SharedPrefManager
 
     @Inject
@@ -84,20 +81,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         loadDataAsync()
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        withContext(dispatcherProvider.io) {
-            snapshot.forEach { course ->
-                course.courseId?.let { courseId ->
-                    coursesRepository.removeCourseFromShelf(courseId, userId)
-                    if (deleteProgress) coursesRepository.deleteCourseProgress(courseId)
-                }
+        val courseIds = snapshot.mapNotNull { it.courseId }
+        viewModel.removeCourses(courseIds, userId, deleteProgress) {
+            if (isAdded) {
+                selectedItems?.clear()
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
             }
         }
-        selectedItems?.clear()
-        Utilities.toast(activity, getString(R.string.removed_from_mycourse))
     }
 
     override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
@@ -239,19 +233,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             isGuest = userModel?.isGuest() ?: true,
             onRemoveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
-                    selectionController.clearAll(adapterCourses)
-                    adapterCourses.removeCourses(courseIds)
-                }
+                deleteSelected(true)
+                selectionController.clearAll(adapterCourses)
+                adapterCourses.removeCourses(courseIds)
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
-                    selectionController.clearAll(adapterCourses)
-                    adapterCourses.removeCourses(courseIds)
-                }
+                deleteSelected(true)
+                selectionController.clearAll(adapterCourses)
+                adapterCourses.removeCourses(courseIds)
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {

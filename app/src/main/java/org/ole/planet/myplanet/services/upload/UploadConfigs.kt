@@ -139,7 +139,13 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmMeetup::class,
         endpoint = "meetups",
         queryBuilder = { query ->
-            query.isNull("meetupId").or().isEmpty("meetupId")
+            query.beginGroup()
+                .isNull("meetupId").or().isEmpty("meetupId")
+                .endGroup()
+                .or()
+                .beginGroup()
+                .equalTo("updated", true)
+                .endGroup()
         },
         serializer = UploadSerializer.Simple(RealmMeetup::serialize),
         idExtractor = { it.id },
@@ -147,6 +153,7 @@ class UploadConfigs @Inject constructor(
         additionalUpdates = { _, meetup, uploadedItem ->
             meetup.meetupId = uploadedItem.remoteId
             meetup.meetupIdRev = uploadedItem.remoteRev
+            meetup.updated = false
         }
     )
 

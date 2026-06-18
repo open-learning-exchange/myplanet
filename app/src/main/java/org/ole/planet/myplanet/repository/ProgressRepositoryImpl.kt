@@ -104,8 +104,6 @@ class ProgressRepositoryImpl @Inject constructor(
         }
 
         var i = 1
-        // Loop looks for the first missing step from 1 to stepsSize.
-        // It returns the number of consecutive completed steps from the start.
         while (i <= stepsSize && completed[i]) {
             i++
         }
@@ -157,13 +155,15 @@ class ProgressRepositoryImpl @Inject constructor(
         val myCourses = coursesRepositoryLazy.get().getMyCourses(userId)
         val allProgressRecords = getProgressRecords(userId)
 
+        val progressByCourse = allProgressRecords.groupBy { it.courseId }
+
         val completedCourses = mutableListOf<CourseCompletion>()
-        myCourses.forEachIndexed { index, course ->
+        myCourses.forEach { course ->
             val hasValidId = !course.courseId.isNullOrBlank()
             val hasValidTitle = !course.courseTitle.isNullOrBlank()
 
             // Get progress records for this specific course
-            val courseProgressRecords = allProgressRecords.filter { it.courseId == course.courseId }
+            val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
 
             // Count UNIQUE steps that are passed (matches web: step.passed === true)
             val passedStepNumbers = courseProgressRecords
@@ -292,6 +292,10 @@ class ProgressRepositoryImpl @Inject constructor(
             emptyList()
         }
 
+        val localRecordsByKey = localRecords
+            .filter { it.isValid }
+            .groupBy { Triple(it.courseId, it.userId, it.stepNum) }
+
         documentList.forEach { act ->
             val docId = JsonUtils.getString("_id", act)
             val courseId = JsonUtils.getString("courseId", act)
@@ -302,16 +306,21 @@ class ProgressRepositoryImpl @Inject constructor(
 
             // Find local record manually instead of querying Realm again
             val localRecord = if (existingProgress == null) {
-                localRecords.find {
-                    it.courseId == courseId &&
-                    it.userId == userId &&
-                    it.stepNum == stepNum &&
-                    (it._id == null || it._id == docId) &&
-                    it.isValid
-                }
+                localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
+                    ?.find { it._id == null || it._id == docId }
             } else null
 
             insertCourseProgress(realm, act, existingProgress, localRecord)
         }
+    }
+
+    override fun findProgressForCourse(courseData: com.google.gson.JsonArray, courseId: String): com.google.gson.JsonObject? {
+        courseData.forEach { element ->
+            val course = element.asJsonObject
+            if (course.get("courseId").asString == courseId) {
+                return course.getAsJsonObject("progress")
+            }
+        }
+        return null
     }
 }

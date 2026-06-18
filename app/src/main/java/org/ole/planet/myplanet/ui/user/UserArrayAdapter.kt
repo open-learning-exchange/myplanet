@@ -6,12 +6,11 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
@@ -40,13 +39,8 @@ class UserArrayAdapter(
         holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 
         if (!TextUtils.isEmpty(user.userImage)) {
-            Glide.with(context)
-                .load(user.userImage)
-                .diskCacheStrategy(DiskCacheStrategy.ALL)
-                .circleCrop()
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(holder.binding.ivUser)
+            val avatarSize = context.resources.getDimensionPixelSize(R.dimen._80dp)
+            ImageUtils.loadProfileImage(user.userImage, holder.binding.ivUser, avatarSize)
         } else {
             holder.binding.ivUser.setImageResource(R.drawable.profile)
         }

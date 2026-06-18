@@ -22,6 +22,7 @@ import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -56,8 +57,6 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -100,8 +99,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var isExtractingText = false
     private var externalFilesDir: File? = null
 
-    @Inject lateinit var personalsRepository: PersonalsRepository
-    @Inject lateinit var resourcesRepository: ResourcesRepository
+    private val viewModel: ResourceViewerViewModel by viewModels()
+
     @Inject lateinit var userSessionManager: UserSessionManager
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
@@ -123,7 +122,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             if (::library.isInitialized) {
                 lifecycleScope.launch {
                     val id = library.id ?: return@launch
-                    resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
+                    viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
                 }
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
@@ -171,12 +170,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             externalFilesDir = withContext(dispatcherProvider.io) {
                 requireContext().getExternalFilesDir(null)
             }
             resourceId?.let {
-                library = resourcesRepository.getLibraryItemById(it) ?: return@launch
+                library = viewModel.getLibraryItemById(it) ?: return@launch
             }
             setupViewer()
         }
@@ -530,7 +529,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
         auth = headerAuth[0]
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val url = filePath ?: run {
                 return@launch
             }

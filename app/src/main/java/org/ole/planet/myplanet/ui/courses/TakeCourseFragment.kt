@@ -51,6 +51,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var currentCourseProgress = 0
     private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
+    private var lastPositionBeforeExam = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -103,7 +104,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.previousStep.visibility = View.GONE
             }
 
-            position = if (currentStep > 0) currentStep else 0
+            position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
+            lastPositionBeforeExam = -1
             setNavigationButtons()
             binding.viewPager2.adapter =
                 CoursesPagerAdapter(
@@ -136,10 +138,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onResume() {
         super.onResume()
         if (this::steps.isInitialized) {
-            val currentPosition = binding.viewPager2.currentItem
+            val currentPosition = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else binding.viewPager2.currentItem
             updateStepDisplay(currentPosition)
-
-            // Update Next/Finish button visibility when returning from exam
+            if (lastPositionBeforeExam > 0) {
+                binding.viewPager2.setCurrentItem(lastPositionBeforeExam, false)
+            }
             if (currentPosition >= steps.size) {
                 binding.nextStep.visibility = View.GONE
                 binding.finishStep.visibility = View.VISIBLE
@@ -147,6 +150,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.nextStep.visibility = View.VISIBLE
                 binding.finishStep.visibility = View.GONE
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (this::steps.isInitialized && _binding != null) {
+            lastPositionBeforeExam = binding.viewPager2.currentItem
         }
     }
 
@@ -176,7 +186,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         }
         binding.courseStepProgressBar.max = steps.size
         binding.courseStepProgressBar.progress = position
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             val currentProgress = coursesRepository.getCurrentProgress(steps, userModel?.id, courseId)
             currentCourseProgress = currentProgress
             if (currentProgress < steps.size) {
@@ -191,7 +201,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         val containsUserId = currentCourse?.userId?.contains(userModel?.id) == true
         val stepsSize = steps.size
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             if (!isGuest && !containsUserId) {
                 binding.btnRemove.visibility = View.VISIBLE
                 binding.btnRemove.text = getString(R.string.join)
@@ -260,7 +270,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun changeNextButtonState(position: Int) {
         if (courseId == "4e6b78800b6ad18b4e8b0e1e38a98cac") {
             val stepId = steps.getOrNull(position - 1)?.id
-            lifecycleScope.launch {
+            viewLifecycleOwner.lifecycleScope.launch {
                 val stepData = stepId?.let { coursesRepository.getCourseStepData(it, userModel?.id) }
                 val hasExam = stepData?.stepExams?.isNotEmpty() == true
                 val hasSurvey = stepData?.stepSurvey?.isNotEmpty() == true

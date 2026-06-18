@@ -10,6 +10,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -47,10 +48,10 @@ class CoursesViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
-    val coursesState: StateFlow<CoursesUiState> = _coursesState
+    val coursesState: StateFlow<CoursesUiState> = _coursesState.asStateFlow()
 
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
-    val syncStatus: StateFlow<SyncStatus> = _syncStatus
+    val syncStatus: StateFlow<SyncStatus> = _syncStatus.asStateFlow()
 
     fun resetSyncStatus() {
         _syncStatus.value = SyncStatus.Idle
@@ -135,7 +136,13 @@ class CoursesViewModel @Inject constructor(
 
                     val (map, progressMap) = coroutineScope {
                         val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                        val progressDeferred = async { coursesRepository.getCourseProgress(userId, allCourseIds) }
+                        val progressDeferred = async {
+                            if (isMyCourseLib) {
+                                coursesRepository.getCourseProgress(userId, allCourseIds)
+                            } else {
+                                null
+                            }
+                        }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
 
@@ -176,5 +183,20 @@ class CoursesViewModel @Inject constructor(
             numberOfSteps = this.getNumberOfSteps(),
             isMyCourse = this.isMyCourse
         )
+    }
+
+    fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean, onComplete: () -> Unit) {
+        if (courseIds.isEmpty()) return
+        viewModelScope.launch(dispatcherProvider.io) {
+            courseIds.forEach { courseId ->
+                coursesRepository.removeCourseFromShelf(courseId, userId)
+                if (deleteProgress) {
+                    coursesRepository.deleteCourseProgress(courseId)
+                }
+            }
+            withContext(dispatcherProvider.main) {
+                onComplete()
+            }
+        }
     }
 }
