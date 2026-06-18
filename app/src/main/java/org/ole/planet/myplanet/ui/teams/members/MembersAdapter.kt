@@ -148,18 +148,7 @@ class MembersAdapter(
                 }
 
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = object : ArrayAdapter<CharSequence>(
-                    context,
-                    android.R.layout.simple_list_item_1,
-                    overflowMenuOptions
-                ) {
-                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                        val view = super.getView(position, convertView, parent) as TextView
-                        val color = ContextCompat.getColor(context, R.color.daynight_textColor)
-                        view.setTextColor(color)
-                        return view
-                    }
-                }
+                val adapter = MemberMenuAdapter(context, overflowMenuOptions.toList())
                 builder.setAdapter(adapter) { _, i ->
                     if (isOwnCard) {
                         when (i) {
@@ -185,4 +174,16 @@ class MembersAdapter(
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    private class MemberMenuAdapter(
+        context: Context,
+        items: List<CharSequence>
+    ) : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, items) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent) as TextView
+            val color = ContextCompat.getColor(context, R.color.daynight_textColor)
+            view.setTextColor(color)
+            return view
+        }
+    }
 }
