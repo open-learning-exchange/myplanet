@@ -163,6 +163,7 @@ class SyncManager @Inject constructor(
         if (betaSync) {
             syncScope.cancel()
         }
+        improvedSyncManager.get().cancel()
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)

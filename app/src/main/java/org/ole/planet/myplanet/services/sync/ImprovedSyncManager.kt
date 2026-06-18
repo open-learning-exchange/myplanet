@@ -4,9 +4,12 @@ import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -36,8 +39,10 @@ class ImprovedSyncManager @Inject constructor(
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
 
-    private var isSyncing = false
+    private val isSyncing = AtomicBoolean(false)
+    private val isCanceled = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
+    private var syncJob: Job? = null
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
@@ -70,7 +75,8 @@ class ImprovedSyncManager @Inject constructor(
         syncTables: List<String>? = null
     ) {
         this.listener = listener
-        if (!isSyncing) {
+        if (isSyncing.compareAndSet(false, true)) {
+            isCanceled.set(false)
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
             createLog(
@@ -82,13 +88,15 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     private fun startSyncProcess(syncMode: SyncMode, syncTables: List<String>?) {
-        syncScope.launch {
+        syncJob = syncScope.launch {
             try {
                 if (transactionSyncManager.authenticate()) {
                     performSync(syncMode, syncTables)
                 } else {
                     handleException("Authentication failed")
                 }
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
                 handleException(e.message ?: "Unknown error")
             } finally {
@@ -165,7 +173,6 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     private fun initializeSync() {
-        isSyncing = true
         NotificationUtils.create(
             context,
             org.ole.planet.myplanet.R.mipmap.ic_launcher,
@@ -175,10 +182,17 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     private fun cleanup() {
-        isSyncing = false
+        isSyncing.set(false)
         sharedPrefManager.setLastSync(Date().time)
         NotificationUtils.cancel(context, 111)
-        listener?.onSyncComplete()
+        if (!isCanceled.get()) {
+            listener?.onSyncComplete()
+        }
+    }
+
+    fun cancel() {
+        isCanceled.set(true)
+        syncJob?.cancel()
     }
 
     private fun SyncMode.describe(): String {
@@ -188,10 +202,10 @@ class ImprovedSyncManager @Inject constructor(
             SyncMode.Optimized -> "Optimized"
         }
     }
-    
+
     private fun handleException(message: String) {
         if (listener != null) {
-            isSyncing = false
+            isSyncing.set(false)
             org.ole.planet.myplanet.MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
         }
