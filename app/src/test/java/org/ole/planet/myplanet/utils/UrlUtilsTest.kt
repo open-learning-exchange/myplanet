@@ -30,6 +30,7 @@ class UrlUtilsTest {
 
     @Before
     fun setUp() {
+        sharedPrefManager = mockk(relaxed = true)
         mockSpm = mockk(relaxed = true)
         mockEntryPoint = mockk()
         every { mockEntryPoint.sharedPrefManager() } returns mockSpm
@@ -42,7 +43,7 @@ class UrlUtilsTest {
         every { MainApplication.context } returns mockContext
 
         mockkObject(UrlUtils)
-        sharedPrefManager = mockk(relaxed = true)
+        UrlUtils.setSpmForTesting(sharedPrefManager)
         every { sharedPrefManager.isAlternativeUrl() } returns false
         every { sharedPrefManager.getCouchdbUrl() } returns "http://example.com"
         every { sharedPrefManager.getProcessedAlternativeUrl() } returns "http://alternative.com"
@@ -50,15 +51,17 @@ class UrlUtilsTest {
 
     @After
     fun tearDown() {
+        io.mockk.clearAllMocks()
         unmockkAll()
+        UrlUtils.setSpmForTesting(null) // Reset to prevent bleeding
     }
 
     @Test
     fun `hostUrl fallback behavior when toUri throws Exception`() {
-        every { mockSpm.getUrlScheme() } returns "http"
-        every { mockSpm.getUrlHost() } returns "fallback.org"
-        every { mockSpm.isAlternativeUrl() } returns true
-        every { mockSpm.getProcessedAlternativeUrl() } returns "invalid://url"
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "fallback.org"
+        every { sharedPrefManager.isAlternativeUrl() } returns true
+        every { sharedPrefManager.getProcessedAlternativeUrl() } returns "invalid://url"
 
         mockkStatic(Uri::class)
         every { Uri.parse("invalid://url") } throws RuntimeException("Simulated URI Exception")
@@ -70,10 +73,10 @@ class UrlUtilsTest {
 
     @Test
     fun `hostUrl successfully returns alternative URL`() {
-        every { mockSpm.getUrlScheme() } returns "http"
-        every { mockSpm.getUrlHost() } returns "fallback.org"
-        every { mockSpm.isAlternativeUrl() } returns true
-        every { mockSpm.getProcessedAlternativeUrl() } returns "https://newhost.com"
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "fallback.org"
+        every { sharedPrefManager.isAlternativeUrl() } returns true
+        every { sharedPrefManager.getProcessedAlternativeUrl() } returns "https://newhost.com"
 
         val result = UrlUtils.hostUrl
 
@@ -82,10 +85,10 @@ class UrlUtilsTest {
 
     @Test
     fun `hostUrl successfully returns standard URL`() {
-        every { mockSpm.getUrlScheme() } returns "http"
-        every { mockSpm.getUrlHost() } returns "standard.org"
-        every { mockSpm.isAlternativeUrl() } returns false
-        every { mockSpm.getProcessedAlternativeUrl() } returns ""
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "standard.org"
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getProcessedAlternativeUrl() } returns ""
 
         val result = UrlUtils.hostUrl
 
@@ -94,10 +97,10 @@ class UrlUtilsTest {
 
     @Test
     fun `hostUrl successfully returns URL when alternativeUrl is true but value is empty`() {
-        every { mockSpm.getUrlScheme() } returns "http"
-        every { mockSpm.getUrlHost() } returns "fallback.org"
-        every { mockSpm.isAlternativeUrl() } returns true
-        every { mockSpm.getProcessedAlternativeUrl() } returns ""
+        every { sharedPrefManager.getUrlScheme() } returns "http"
+        every { sharedPrefManager.getUrlHost() } returns "fallback.org"
+        every { sharedPrefManager.isAlternativeUrl() } returns true
+        every { sharedPrefManager.getProcessedAlternativeUrl() } returns ""
 
         val result = UrlUtils.hostUrl
 

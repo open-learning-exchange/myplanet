@@ -9,9 +9,20 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
-    private val spm: SharedPrefManager by lazy {
-        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+    private var _spm: SharedPrefManager? = null
+
+    @androidx.annotation.VisibleForTesting
+    fun setSpmForTesting(spm: SharedPrefManager?) {
+        _spm = spm
     }
+
+    private val spm: SharedPrefManager
+        get() {
+            if (_spm == null) {
+                _spm = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+            }
+            return _spm!!
+        }
 
     val header: String
         get() {
