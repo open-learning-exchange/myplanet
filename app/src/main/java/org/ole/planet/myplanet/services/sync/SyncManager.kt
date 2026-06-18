@@ -171,6 +171,7 @@ class SyncManager @Inject constructor(
             syncScope.cancel()
             ThreadSafeRealmManager.closeThreadRealm()
         }
+        improvedSyncManager.get().cancel()
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
