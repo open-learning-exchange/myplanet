@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
@@ -35,7 +36,8 @@ class ResourcesViewModelTest {
             syncManager,
             sharedPrefManager,
             serverUrlMapper,
-            resourcesRepository
+            resourcesRepository,
+            TestDispatcherProvider(testDispatcher)
         )
     }
 
@@ -77,5 +79,17 @@ class ResourcesViewModelTest {
         val result = viewModel.addResourcesToUserLibrary(resourceIds, userId)
 
         assertTrue(result.isSuccess)
+    }
+
+    @Test
+    fun `observeOpenedResourceIds updates openedResourceIds state flow`() = runTest {
+        val userId = "user123"
+        val mockFlow = kotlinx.coroutines.flow.flowOf(setOf("res1", "res2"))
+        coEvery { resourcesRepository.observeOpenedResourceIds(userId) } returns mockFlow
+
+        viewModel.observeOpenedResourceIds(userId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(setOf("res1", "res2"), viewModel.openedResourceIds.value)
     }
 }

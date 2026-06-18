@@ -171,9 +171,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
 
         // Build a map of resourceId → title from Realm (one query)
-        val titleMap = resourcesRepository.getAllLibraries()
-            .filter { it.resourceId != null }
-            .associate { (it.resourceId ?: "") to (it.title ?: getString(R.string.storage_unknown_resource)) }
+        val titleMap = resourcesRepository.getResourceTitlesMap()
 
         // Group files by resourceId directory
         val grouped = mutableMapOf<String, MutableList<File>>()
@@ -192,7 +190,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
         return grouped.map { (resourceId, files) ->
             val totalSize = files.sumOf { it.length() }
-            val title = titleMap[resourceId] ?: getString(R.string.storage_unknown_resource)
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: getString(R.string.storage_unknown_resource)
             ResourceItem(resourceId, title, files, totalSize)
         }.sortedBy { it.title }
     }
@@ -242,11 +240,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
                 // Sync Realm: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
-                val allResources = resourcesRepository.getAllLibraries()
-                allResources.filter { it.resourceOffline && it.resourceId in deletedIds }.forEach { resource ->
-                    val id = resource._id ?: return@forEach
-                    resourcesRepository.updateLibraryItem(id) { it.resourceOffline = false }
-                }
+                resourcesRepository.markResourcesAsNotOffline(deletedIds)
             }
 
             // Notify parent to refresh, then dismiss
