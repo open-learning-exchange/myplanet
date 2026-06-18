@@ -14,16 +14,19 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 data class CachedMyLifeItem(
-    val imageId: String?,
-    val title: String?,
-    val isVisible: Boolean,
-    val weight: Int
+    var imageId: String?,
+    var title: String?,
+    var isVisible: Boolean,
+    var weight: Int
 )
 
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
+class SharedPrefManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
+) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val gson = Gson()
+
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
