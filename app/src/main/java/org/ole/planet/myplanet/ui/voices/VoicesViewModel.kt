@@ -10,8 +10,13 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import com.google.gson.JsonArray
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.VoicesLabelManager
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
@@ -80,4 +85,63 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
+    suspend fun collectLabels(newsList: List<RealmNews?>): List<String> = withContext(dispatcherProvider.default) {
+        val allLabels = mutableSetOf<String>()
+        allLabels.add("All")
+
+        Constants.LABELS.forEach { (labelName, _) ->
+            allLabels.add(labelName)
+        }
+
+        allLabels.add("Shared Chat")
+
+        newsList.forEach { news ->
+            val sharedTeamName = JsonUtils.extractSharedTeamName(news)
+            if (sharedTeamName.isNotEmpty()) {
+                allLabels.add(sharedTeamName)
+            }
+
+            news?.labels?.forEach { label ->
+                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    ?: VoicesLabelManager.formatLabelValue(label)
+                allLabels.add(labelName)
+            }
+        }
+
+        allLabels.sorted()
+    }
+
+    suspend fun filterByLabel(
+        newsList: List<RealmNews?>,
+        selectedLabel: String
+    ): List<RealmNews?> = withContext(dispatcherProvider.default) {
+        if (selectedLabel == "All") return@withContext newsList
+
+        val labelDisplayToValue = mutableMapOf<String, String>()
+        Constants.LABELS.forEach { (labelName, labelValue) ->
+            labelDisplayToValue[labelName] = labelValue
+        }
+        newsList.forEach { news ->
+            news?.labels?.forEach { label ->
+                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    ?: VoicesLabelManager.formatLabelValue(label)
+                labelDisplayToValue.putIfAbsent(labelName, label)
+            }
+        }
+
+        newsList.filter { news ->
+            when {
+                selectedLabel == "Shared Chat" -> {
+                    news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
+                }
+                labelDisplayToValue.containsKey(selectedLabel) -> {
+                    val labelValue = labelDisplayToValue[selectedLabel]
+                    news?.labels?.contains(labelValue) == true
+                }
+                else -> {
+                    JsonUtils.extractSharedTeamName(news) == selectedLabel
+                }
+            }
+        }
+    }
 }
