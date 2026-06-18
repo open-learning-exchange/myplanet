@@ -14,10 +14,10 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 data class CachedMyLifeItem(
-    val imageId: String?,
-    val title: String?,
-    val isVisible: Boolean,
-    val weight: Int
+    var imageId: String?,
+    var title: String?,
+    var isVisible: Boolean,
+    var weight: Int
 )
 
 @Singleton

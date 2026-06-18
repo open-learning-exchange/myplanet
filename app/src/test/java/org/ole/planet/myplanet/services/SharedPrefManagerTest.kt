@@ -42,7 +42,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext, Gson())
+        sharedPrefManager = SharedPrefManager(mockContext, org.ole.planet.myplanet.di.NetworkModule.provideGson())
     }
 
     @Test
@@ -58,7 +58,7 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("savedUsers", capture(jsonSlot)) }
         verify { mockEditor.apply() }
 
-        val expectedJson = Gson().toJson(users)
+        val expectedJson = org.ole.planet.myplanet.di.NetworkModule.provideGson().toJson(users)
         assertEquals(expectedJson, jsonSlot.captured)
 
         // Retrieve mocked using the generated JSON
