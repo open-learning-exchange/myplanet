@@ -313,4 +313,14 @@ class ProgressRepositoryImpl @Inject constructor(
             insertCourseProgress(realm, act, existingProgress, localRecord)
         }
     }
+
+    override fun findProgressForCourse(courseData: com.google.gson.JsonArray, courseId: String): com.google.gson.JsonObject? {
+        courseData.forEach { element ->
+            val course = element.asJsonObject
+            if (course.get("courseId").asString == courseId) {
+                return course.getAsJsonObject("progress")
+            }
+        }
+        return null
+    }
 }

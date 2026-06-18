@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.Utilities.getCloudConfig
 
 class ResourcesAdapter(
@@ -45,16 +46,14 @@ class ResourcesAdapter(
         private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
         private const val OFFLINE_STATUS_PAYLOAD = "OFFLINE_STATUS_PAYLOAD"
 
-        private val ITEM_CALLBACK = object : androidx.recyclerview.widget.DiffUtil.ItemCallback<ResourceListModel>() {
-            override fun areItemsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-                return oldItem.item.id == newItem.item.id
-            }
-
-            override fun areContentsTheSame(oldItem: ResourceListModel, newItem: ResourceListModel): Boolean {
-                return oldItem == newItem
-            }
-
-            override fun getChangePayload(oldItem: ResourceListModel, newItem: ResourceListModel): Any? {
+        private val ITEM_CALLBACK = DiffUtils.itemCallback<ResourceListModel>(
+            areItemsTheSame = { oldItem, newItem ->
+                oldItem.item.id == newItem.item.id
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem == newItem
+            },
+            getChangePayload = { oldItem, newItem ->
                 val payloads = mutableListOf<String>()
                 if (oldItem.isOpened != newItem.isOpened) {
                     payloads.add(OPENED_RESOURCE_PAYLOAD)
@@ -62,9 +61,9 @@ class ResourcesAdapter(
                 if (oldItem.item.isOffline != newItem.item.isOffline || oldItem.isLocallyOffline != newItem.isLocallyOffline) {
                     payloads.add(OFFLINE_STATUS_PAYLOAD)
                 }
-                return payloads.ifEmpty { null }
+                payloads.ifEmpty { null }
             }
-        }
+        )
     }
 
     private val locallyOfflineIds = mutableSetOf<String>()
