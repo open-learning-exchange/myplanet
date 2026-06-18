@@ -500,4 +500,25 @@ class ProgressRepositoryImplTest {
 
         assertEquals(0, result.size)
     }
+
+    @Test
+    fun testFindProgressForCourse() {
+        val jsonArray = com.google.gson.JsonArray()
+        val course1 = com.google.gson.JsonObject().apply {
+            addProperty("courseId", "course1")
+            add("progress", com.google.gson.JsonObject().apply { addProperty("max", 10) })
+        }
+        val course2 = com.google.gson.JsonObject().apply {
+            addProperty("courseId", "course2")
+            add("progress", com.google.gson.JsonObject().apply { addProperty("max", 20) })
+        }
+        jsonArray.add(course1)
+        jsonArray.add(course2)
+
+        val result1 = repository.findProgressForCourse(jsonArray, "course1")
+        assertEquals(10, result1?.get("max")?.asInt)
+
+        val result2 = repository.findProgressForCourse(jsonArray, "course3")
+        assertEquals(null, result2)
+    }
 }

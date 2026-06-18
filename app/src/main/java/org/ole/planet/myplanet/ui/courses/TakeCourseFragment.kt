@@ -48,6 +48,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var currentCourseProgress = 0
     private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
+    private var lastPositionBeforeExam = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -100,7 +101,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.previousStep.visibility = View.GONE
             }
 
-            position = if (currentStep > 0) currentStep else 0
+            position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
+            lastPositionBeforeExam = -1
             setNavigationButtons()
             binding.viewPager2.adapter =
                 CoursesPagerAdapter(
@@ -133,10 +135,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     override fun onResume() {
         super.onResume()
         if (this::steps.isInitialized) {
-            val currentPosition = binding.viewPager2.currentItem
+            val currentPosition = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else binding.viewPager2.currentItem
             updateStepDisplay(currentPosition)
-
-            // Update Next/Finish button visibility when returning from exam
+            if (lastPositionBeforeExam > 0) {
+                binding.viewPager2.setCurrentItem(lastPositionBeforeExam, false)
+            }
             if (currentPosition >= steps.size) {
                 binding.nextStep.visibility = View.GONE
                 binding.finishStep.visibility = View.VISIBLE
@@ -144,6 +147,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.nextStep.visibility = View.VISIBLE
                 binding.finishStep.visibility = View.GONE
             }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (this::steps.isInitialized && _binding != null) {
+            lastPositionBeforeExam = binding.viewPager2.currentItem
         }
     }
 

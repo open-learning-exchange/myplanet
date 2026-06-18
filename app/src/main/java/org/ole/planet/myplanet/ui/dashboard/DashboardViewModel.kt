@@ -314,7 +314,7 @@ class DashboardViewModel @Inject constructor(
                 val courseName = withContext(dispatcherProvider.io) { coursesRepository.getCourseTitleById(courseId) }
                 val hasUnfinishedSurvey = submissionsRepository.hasPendingSurvey(courseId, userId)
 
-                val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
+                val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
                 val today = java.time.LocalDate.now()
                 val endDate = java.time.LocalDate.of(2025, 1, 16)

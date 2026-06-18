@@ -10,6 +10,7 @@ import io.mockk.mockkConstructor
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,7 +21,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -33,7 +33,6 @@ class ImprovedSyncManagerTest {
 
     private lateinit var syncManager: ImprovedSyncManager
     private val context: Context = mockk(relaxed = true)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val settings: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
@@ -42,15 +41,11 @@ class ImprovedSyncManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
 
-    private val poolManager: RealmPoolManager = mockk(relaxed = true)
-
     private val testDispatcher = StandardTestDispatcher()
+    private val syncScope = CoroutineScope(testDispatcher)
 
     @Before
     fun setup() {
-        mockkObject(RealmPoolManager.Companion)
-        every { RealmPoolManager.getInstance() } returns poolManager
-
         mockkStatic(NotificationUtils::class)
         every { NotificationUtils.create(any(), any(), any(), any()) } returns Unit
         every { NotificationUtils.cancel(any(), any()) } returns Unit
@@ -74,30 +69,20 @@ class ImprovedSyncManagerTest {
         every { anyConstructed<AdaptiveBatchProcessor>().getOptimalConfig(any()) } returns SyncConfig()
         syncManager = ImprovedSyncManager(
             context,
-            databaseService,
             settings,
             sharedPrefManager,
             transactionSyncManager,
             standardStrategy,
             loginSyncManager,
             activitiesRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            syncScope
         )
     }
 
     @After
     fun tearDown() {
         unmockkAll()
-    }
-
-    @Test
-    fun testInitialize() = runTest(testDispatcher) {
-        coEvery { poolManager.initializePool(any(), any(), any()) } returns Unit
-
-        syncManager.initialize()
-        advanceUntilIdle()
-
-        coVerify { poolManager.initializePool(context, databaseService, any()) }
     }
 
     @Test
