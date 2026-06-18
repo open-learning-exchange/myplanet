@@ -69,6 +69,18 @@ class CoursesAdapter(
     private var isAscending = true
     private var isTitleAscending = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
+    private val courseIdToPosition = mutableMapOf<String, Int>()
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<Course>,
+        currentList: MutableList<Course>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        courseIdToPosition.clear()
+        currentList.forEachIndexed { index, course ->
+            course.courseId?.let { courseIdToPosition[it] = index }
+        }
+    }
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
@@ -107,8 +119,8 @@ class CoursesAdapter(
             if (courseId.isNullOrEmpty()) {
                 return@forEach
             }
-            val index = currentList.indexOfFirst { it.courseId == courseId }
-            if (index != -1) {
+            val index = courseIdToPosition[courseId]
+            if (index != null && index != -1) {
                 notifyItemChanged(index, TAG_PAYLOAD)
             }
         }
@@ -120,8 +132,8 @@ class CoursesAdapter(
     }
 
     private fun dispatchPayloadByCourseId(courseId: String?, payload: Any) {
-        val index = currentList.indexOfFirst { it.courseId == courseId }
-        if (index != -1) {
+        val index = courseIdToPosition[courseId]
+        if (index != null && index != -1) {
             notifyItemChanged(index, payload)
         }
     }
@@ -163,8 +175,8 @@ class CoursesAdapter(
                 if (courseId.isNullOrEmpty()) {
                     return@forEach
                 }
-                val index = currentList.indexOfFirst { it.courseId == courseId }
-                if (index != -1) {
+                val index = courseIdToPosition[courseId]
+                if (index != null && index != -1) {
                     notifyItemChanged(index, bundle)
                 }
             }
