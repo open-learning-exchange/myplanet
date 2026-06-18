@@ -26,7 +26,7 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
@@ -86,7 +86,7 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
 
-    private var currentJob: kotlinx.coroutines.Job? = null
+    private var currentJob: Job? = null
     private lateinit var broadcastService: BroadcastService
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -109,7 +109,7 @@ class DownloadService : Service() {
 
         if (!isQueueRunning) {
             currentJob?.cancel()
-            currentJob = appScope.launch(dispatcherProvider.io) {
+            currentJob = appScope.launch {
                 isQueueRunning = true
                 try {
                     processDownloadQueue()
@@ -333,7 +333,7 @@ class DownloadService : Service() {
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                appScope.launch(dispatcherProvider.io) {
+                appScope.launch {
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -452,7 +452,7 @@ class DownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        appScope.launch(dispatcherProvider.io) {
+        appScope.launch {
             broadcastService.sendBroadcast(intent)
         }
     }
