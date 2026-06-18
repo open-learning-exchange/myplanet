@@ -78,11 +78,6 @@ class SyncManager @Inject constructor(
     private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
-    private val initializationJob: Job by lazy {
-        syncScope.launch {
-            improvedSyncManager.get().initialize()
-        }
-    }
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
@@ -126,11 +121,11 @@ class SyncManager @Inject constructor(
         _syncStatus.value = SyncStatus.Idle
     }
 
+    fun isMainSyncActive(): Boolean = isSyncing.get()
+
     private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
-                initializationJob.join()
-
                 val manager = improvedSyncManager.get()
                 val syncMode = if (sharedPrefManager.getFastSync()) {
                     SyncMode.Fast
@@ -167,7 +162,6 @@ class SyncManager @Inject constructor(
     private fun destroy() {
         if (betaSync) {
             syncScope.cancel()
-            ThreadSafeRealmManager.closeThreadRealm()
         }
         cancelBackgroundSync()
         cancel(context, 111)
@@ -265,17 +259,7 @@ class SyncManager @Inject constructor(
 
             logger.stopLogging()
 
-            // Heavy tables start only after main sync fully completes — no overlap with resources/library
-            val heavyTables = listOf("ratings", "courses_progress", "submissions", "login_activities", "team_activities")
-            syncScope.launch(dispatcherProvider.io) {
-                heavyTables.forEach { table ->
-                    try {
-                        transactionSyncManager.syncDb(table)
-                    } catch (e: Exception) {
-                        Log.e("SyncPerf", "Background sync failed for $table: ${e.message}")
-                    }
-                }
-            }
+            HeavyTableSyncWorker.schedule(context)
 
             val syncEndTime = System.currentTimeMillis()
             val totalSyncTime = syncEndTime - syncStartTime
@@ -317,7 +301,7 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(async {
                         logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb("login_activities")
+                        transactionSyncManager.syncDb("login_activities", useCheckpoint = true)
                         logger.endProcess("login_activities_sync")
                     })
 
@@ -383,13 +367,13 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(async {
                         logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb("courses_progress")
+                        transactionSyncManager.syncDb("courses_progress", useCheckpoint = true)
                         logger.endProcess("courses_progress_sync")
                     })
 
                     syncJobs.add(async {
                         logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb("ratings")
+                        transactionSyncManager.syncDb("ratings", useCheckpoint = true)
                         logger.endProcess("ratings_sync")
                     })
                 }
@@ -415,7 +399,7 @@ class SyncManager @Inject constructor(
                 if (syncTables?.contains("team_activities") == true) {
                     syncJobs.add(async {
                         logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb("team_activities")
+                        transactionSyncManager.syncDb("team_activities", useCheckpoint = true)
                         logger.endProcess("team_activities_sync")
                     })
                 }
@@ -473,7 +457,7 @@ class SyncManager @Inject constructor(
 
                     syncJobs.add(async {
                         logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb("submissions")
+                        transactionSyncManager.syncDb("submissions", useCheckpoint = true)
                         logger.endProcess("submissions_sync")
                     })
                 }

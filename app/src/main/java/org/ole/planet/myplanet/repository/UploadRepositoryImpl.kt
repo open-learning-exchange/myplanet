@@ -4,10 +4,10 @@ import android.util.Log
 import io.realm.RealmObject
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.services.upload.UploadConfig
 import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadedItem
 
 @Singleton

@@ -50,7 +50,7 @@ class CoursesRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
-        return queryList(RealmMyCourse::class.java) {
+        return queryList(RealmMyCourse::class.java, maxDepth = 0) {
             isNotEmpty("courseTitle")
         }
     }
@@ -321,7 +321,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
             val sortedList = results.sortedBy { it.isMyCourse }
-            realm.copyFromRealm(sortedList)
+            realm.copyFromRealm(sortedList, 0)
         }
     }
 

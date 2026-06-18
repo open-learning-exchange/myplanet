@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.app.AlertDialog
-import androidx.recyclerview.widget.ListAdapter
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
@@ -15,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
@@ -78,9 +78,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var prefManager: SharedPrefManager
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     private val viewModel: ResourcesViewModel by viewModels()
     
@@ -265,9 +262,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        deleteSelected(true)
-                    }
+                    deleteSelected(true)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -728,7 +723,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 

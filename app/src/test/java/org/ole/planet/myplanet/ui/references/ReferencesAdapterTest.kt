@@ -1,17 +1,17 @@
 package org.ole.planet.myplanet.ui.references
 
 import android.os.Build
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.robolectric.annotation.Config
-import androidx.test.core.app.ApplicationProvider
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import org.junit.Rule
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)

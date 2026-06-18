@@ -446,12 +446,12 @@ class VoicesRepositoryImpl @Inject constructor(
         return false
     }
 
-    private val dateFormat = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-    }
+    private val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     private fun getDateFromTimestamp(timestamp: Long): String {
-        return dateFormat.get()?.format(java.util.Date(timestamp)) ?: ""
+        return java.time.Instant.ofEpochMilli(timestamp)
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(dateFormatter)
     }
 
     override suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews> {
@@ -608,7 +608,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        val imageList = queryList(RealmMyLibrary::class.java) {
+        val imageList = queryList(RealmMyLibrary::class.java, maxDepth = 0) {
             equalTo("isPrivate", true)
                 .greaterThan("createdDate", timestamp)
                 .equalTo("mediaType", "image")

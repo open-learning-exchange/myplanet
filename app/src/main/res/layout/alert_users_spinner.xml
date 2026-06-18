@@ -10,6 +10,5 @@
         android:layout_width="match_parent"
         android:layout_height="300dp"
         android:layout_gravity="center"
-        android:padding="@dimen/padding_normal"
-        app:backgroundTint="@color/daynight_textColor" />
+        android:padding="@dimen/padding_normal" />
 </LinearLayout>
