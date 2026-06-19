@@ -210,7 +210,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            viewLifecycleOwner.lifecycleScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                 coursesRepository.deleteCourseProgress(`object`.courseId)
             }
         }
