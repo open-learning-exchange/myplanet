@@ -234,6 +234,25 @@
                         android:layout_weight="1"
                         android:entries="@array/subject_level" />
                 </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:padding="4dp"
+                        android:textColor="@color/daynight_textColor"
+                        android:text="@string/progress" />
+                    <Spinner
+                        android:id="@+id/spn_progress"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
             </LinearLayout>
 
             <LinearLayout

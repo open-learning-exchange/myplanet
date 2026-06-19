@@ -1325,5 +1325,13 @@
     <string name="meetup_updated">भेटघाट सफलतापूर्वक अपडेट भयो</string>
     <string name="meetup_not_updated">भेटघाट अपडेट गर्न असफल भयो</string>
     <string name="removed_from_teamcourse">पाठ्यक्रम टोलीबाट हटाइयो</string>
+    <string name="progress">प्रगति</string>
+    <string-array name="progress_filter">
+        <item>सबै</item>
+        <item>सुरु नभएको</item>
+        <item>प्रगतिमा</item>
+        <item>पूरा भएको</item>
+    </string-array>
+
 
 </resources>

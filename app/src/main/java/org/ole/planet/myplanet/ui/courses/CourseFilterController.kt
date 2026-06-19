@@ -19,10 +19,11 @@ data class FilterState(
     val searchText: String,
     val grade: String,
     val subject: String,
-    val tagNames: List<String>
+    val tagNames: List<String>,
+    val progressFilter: String = ""
 ) {
     val isActive: Boolean
-        get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty()
+        get() = searchText.isNotEmpty() || grade.isNotEmpty() || subject.isNotEmpty() || tagNames.isNotEmpty() || progressFilter.isNotEmpty()
 }
 
 class CourseFilterController(
@@ -34,6 +35,7 @@ class CourseFilterController(
     private lateinit var etSearch: EditText
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
+    private lateinit var spnProgress: Spinner
     private lateinit var tvSelected: TextView
     val searchTags: MutableList<RealmTag> = ArrayList()
     private var searchJob: Job? = null
@@ -43,6 +45,7 @@ class CourseFilterController(
         etSearch = rootView.findViewById(R.id.et_search)
         spnGrade = rootView.findViewById(R.id.spn_grade)
         spnSubject = rootView.findViewById(R.id.spn_subject)
+        spnProgress = rootView.findViewById(R.id.spn_progress)
         tvSelected = rootView.findViewById(R.id.tv_selected)
         setupSpinners()
         setupSearchWatcher()
@@ -57,6 +60,11 @@ class CourseFilterController(
 
         val subjectAdapter = ArrayAdapter.createFromResource(ctx, R.array.subject_level, R.layout.spinner_item)
         subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
+
+        val progressAdapter = ArrayAdapter.createFromResource(ctx, R.array.progress_filter, R.layout.spinner_item)   // ADD
+        progressAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)                                  // ADD
+        spnProgress.adapter = progressAdapter                                                                        // ADD
+
         spnSubject.adapter = subjectAdapter
 
         val spinnerListener = object : AdapterView.OnItemSelectedListener {
@@ -69,6 +77,7 @@ class CourseFilterController(
         }
         spnGrade.onItemSelectedListener = spinnerListener
         spnSubject.onItemSelectedListener = spinnerListener
+        spnProgress.onItemSelectedListener = spinnerListener
     }
 
     private fun setupSearchWatcher() {
@@ -119,6 +128,7 @@ class CourseFilterController(
         tvSelected.text = ""
         spnGrade.setSelection(0)
         spnSubject.setSelection(0)
+        spnProgress.setSelection(0)
         onFilterChanged(currentState())
         onScrollToTop()
     }
@@ -128,11 +138,13 @@ class CourseFilterController(
     fun currentState(): FilterState {
         val grade = spnGrade.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         val subject = spnSubject.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
+        val progress = spnProgress.selectedItem?.toString()?.takeIf { it != "All" } ?: ""
         return FilterState(
             searchText = etSearch.text.toString().trim(),
             grade = grade,
             subject = subject,
-            tagNames = searchTags.mapNotNull { it.name }
+            tagNames = searchTags.mapNotNull { it.name },
+            progressFilter = progress
         )
     }
 
