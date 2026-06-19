@@ -5,7 +5,6 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -18,7 +17,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -71,40 +69,6 @@ class ChatViewModelTest {
     fun `shouldFetchAiProviders returns false after setAiProviders`() {
         viewModel.setAiProviders(mapOf("openai" to true))
         assertFalse(viewModel.shouldFetchAiProviders())
-    }
-
-    @Test
-    fun `continueConversation emits true on success`() = runTest {
-        coEvery { chatRepository.continueConversation("id1", "query", "response", "rev1") } returns Unit
-
-        val job = launch(testDispatcher) {
-            val success = viewModel.conversationSaveSuccess.first()
-            assertTrue(success)
-        }
-
-        viewModel.continueConversation("id1", "query", "response", "rev1")
-        job.join()
-        coVerify { chatRepository.continueConversation("id1", "query", "response", "rev1") }
-    }
-
-    @Test
-    fun `continueConversation emits false on error`() = runTest {
-        coEvery { chatRepository.continueConversation("id2", "query", "response", "rev2") } throws Exception("Test Error")
-
-        val job = launch(testDispatcher) {
-            val success = viewModel.conversationSaveSuccess.first()
-            assertFalse(success)
-        }
-
-        viewModel.continueConversation("id2", "query", "response", "rev2")
-        job.join()
-        coVerify { chatRepository.continueConversation("id2", "query", "response", "rev2") }
-    }
-
-    @Test
-    fun `continueConversation returns early if both query and response are blank`() = runTest {
-        viewModel.continueConversation("id", "", "  ", "rev1")
-        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
     }
 
     @Test

@@ -54,7 +54,6 @@ interface ResourcesRepository {
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
     suspend fun markResourceOfflineByLocalAddress(localAddress: String)
-    suspend fun clearOfflineFlagsForResourceIds(resourceIds: Set<String>)
     suspend fun markAllResourcesOffline(isOffline: Boolean)
     suspend fun saveSearchActivity(
         userName: String,
@@ -91,6 +90,8 @@ interface ResourcesRepository {
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary>
     suspend fun getPublicLibraryItems(): List<RealmMyLibrary>
+    suspend fun getResourceTitlesMap(): Map<String, String>
+    suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
 }
 
 sealed class ResourceUrlsResponse {

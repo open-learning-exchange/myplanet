@@ -58,7 +58,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>,
-) : RealmRepository(databaseService, realmDispatcher), TeamsRepository {
+) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")
@@ -352,30 +352,26 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                if (courseIds.isEmpty()) {
-                    return@runCatching
-                }
-                update(RealmMyTeam::class.java, "_id", teamId) { team ->
-                    courseIds.forEach { courseId ->
-                        if (team.courses?.contains(courseId) != true) {
-                            team.courses?.add(courseId)
-                        }
+        return runCatching {
+            if (courseIds.isEmpty()) {
+                return@runCatching
+            }
+            update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                courseIds.forEach { courseId ->
+                    if (team.courses?.contains(courseId) != true) {
+                        team.courses?.add(courseId)
                     }
-                    team.updated = true
                 }
+                team.updated = true
             }
         }
     }
 
     override suspend fun removeCourseFromTeam(teamId: String, courseId: String): Result<Unit> {
-        return withContext(databaseService.ioDispatcher) {
-            runCatching {
-                update(RealmMyTeam::class.java, "_id", teamId) { team ->
-                    team.courses?.remove(courseId)
-                    team.updated = true
-                }
+        return runCatching {
+            update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                team.courses?.remove(courseId)
+                team.updated = true
             }
         }
     }
@@ -1494,12 +1490,15 @@ class TeamsRepositoryImpl @Inject constructor(
             } else {
                 mutableMapOf()
             }
+            val newLogs = mutableListOf<RealmTeamLog>()
             for (json in logs) {
                 val id = JsonUtils.getString("_id", json)
                 var tag = existingLogs[id]
                 if (tag == null) {
-                    tag = realm.createObject(RealmTeamLog::class.java, id)
+                    tag = RealmTeamLog()
+                    tag.id = id
                     existingLogs[id] = tag
+                    newLogs.add(tag)
                 }
                 if (tag != null) {
                     tag._rev = JsonUtils.getString("_rev", json)
@@ -1512,6 +1511,9 @@ class TeamsRepositoryImpl @Inject constructor(
                     tag.teamId = JsonUtils.getString("teamId", json)
                     tag.teamType = JsonUtils.getString("teamType", json)
                 }
+            }
+            if (newLogs.isNotEmpty()) {
+                realm.insert(newLogs)
             }
         }
     }
@@ -1699,12 +1701,15 @@ class TeamsRepositoryImpl @Inject constructor(
         } else {
             mutableMapOf()
         }
+        val newLogs = mutableListOf<RealmTeamLog>()
         for (json in documentList) {
             val id = JsonUtils.getString("_id", json)
             var tag = existingLogs[id]
             if (tag == null) {
-                tag = realm.createObject(RealmTeamLog::class.java, id)
+                tag = RealmTeamLog()
+                tag.id = id
                 existingLogs[id] = tag
+                newLogs.add(tag)
             }
             if (tag != null) {
                 tag._rev = JsonUtils.getString("_rev", json)
@@ -1717,6 +1722,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 tag.teamId = JsonUtils.getString("teamId", json)
                 tag.teamType = JsonUtils.getString("teamType", json)
             }
+        }
+        if (newLogs.isNotEmpty()) {
+            realm.insert(newLogs)
         }
     }
 }

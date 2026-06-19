@@ -342,7 +342,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
-                    teamsRepository.syncTeamActivities()
+                    teamsSyncRepository.syncTeamActivities()
                 }
             }
         }
