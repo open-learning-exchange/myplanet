@@ -12,12 +12,12 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import java.util.Calendar
 import java.util.HashMap
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
@@ -25,6 +25,8 @@ import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUser
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
@@ -35,13 +37,10 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class EventsDetailFragment : Fragment(), View.OnClickListener {
     private var _binding: FragmentEventsDetailBinding? = null
     private val binding get() = _binding!!
-    private var meetups: RealmMeetup? = null
-    @Inject lateinit var userSessionManager: UserSessionManager
-    @Inject lateinit var eventsRepository: EventsRepository
+    private val viewModel: EventsDetailViewModel by viewModels()
     private var meetUpId: String? = null
-    var user: RealmUser? = null
     private var listUsers: ListView? = null
-    private var listDesc: ListView? = null
+    private var listDesc: RecyclerView? = null
     private var tvJoined: TextView? = null
 
     private var editStartDate: Long = 0
@@ -71,18 +70,43 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        viewModel.loadData(meetUpId)
+
         viewLifecycleOwner.lifecycleScope.launch {
-            user = userSessionManager.getUserModel()
-            meetups = meetUpId?.takeIf { it.isNotBlank() }?.let { eventsRepository.getMeetupByLocalId(it) }
-            meetups?.let { setUpData(it) }
-            updateAttendanceButton()
-            val members = meetUpId?.takeIf { it.isNotBlank() }?.let { eventsRepository.getJoinedMembers(it) }.orEmpty()
-            setUserList(members)
+            viewModel.meetup.collect { meetup ->
+                meetup?.let { setUpData(it) }
+                updateAttendanceButton()
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.members.collect { members ->
+                setUserList(members)
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.user.collect {
+                updateAttendanceButton()
+            }
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.updateSuccess.collect { success ->
+                if (success == true) {
+                    Toast.makeText(requireContext(), getString(R.string.meetup_updated), Toast.LENGTH_SHORT).show()
+                    viewModel.resetUpdateSuccess()
+                } else if (success == false) {
+                    Toast.makeText(requireContext(), getString(R.string.meetup_not_updated), Toast.LENGTH_SHORT).show()
+                    viewModel.resetUpdateSuccess()
+                }
+            }
         }
     }
 
     private fun showEditDialog() {
-        val meetup = meetups ?: return
+        val meetup = viewModel.meetup.value ?: return
         val dialogBinding = AddMeetupBinding.inflate(LayoutInflater.from(requireContext()))
 
         dialogBinding.tvTitle.text = getString(R.string.edit_meetup)
@@ -146,28 +170,19 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
                 else -> "none"
             }
 
-            viewLifecycleOwner.lifecycleScope.launch {
-                val success = eventsRepository.updateMeetup(
-                    meetupId = meetup.id ?: return@launch,
-                    title = newTitle,
-                    description = dialogBinding.etDescription.text.toString().trim(),
-                    startDate = editStartDate,
-                    endDate = editEndDate,
-                    startTime = editStartTime,
-                    endTime = editEndTime,
-                    meetupLocation = dialogBinding.etLocation.text.toString().trim(),
-                    meetupLink = dialogBinding.etLink.text.toString().trim(),
-                    recurring = recurring
-                )
-                if (success) {
-                    meetups = eventsRepository.getMeetupByLocalId(meetup.id ?: return@launch)
-                    meetups?.let { setUpData(it) }
-                    dialog.dismiss()
-                    Toast.makeText(requireContext(), getString(R.string.meetup_updated), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(requireContext(), getString(R.string.meetup_not_updated), Toast.LENGTH_SHORT).show()
-                }
-            }
+            viewModel.updateMeetup(
+                meetupId = meetup.id ?: return@setOnClickListener,
+                title = newTitle,
+                description = dialogBinding.etDescription.text.toString().trim(),
+                startDate = editStartDate,
+                endDate = editEndDate,
+                startTime = editStartTime,
+                endTime = editEndTime,
+                meetupLocation = dialogBinding.etLocation.text.toString().trim(),
+                meetupLink = dialogBinding.etLink.text.toString().trim(),
+                recurring = recurring
+            )
+            dialog.dismiss()
         }
 
         dialog.show()
@@ -201,20 +216,11 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun setUpData(meetup: RealmMeetup) {
         binding.meetupTitle.text = meetup.title
         val map: HashMap<String, String> = getHashMap(meetup)
-        val keys = ArrayList(map.keys)
-        listDesc?.adapter = object : ArrayAdapter<String?>(requireActivity(), R.layout.row_description, keys) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                var convertedView = convertView
-                if (convertedView == null) {
-                    convertedView = LayoutInflater.from(activity).inflate(R.layout.row_description, parent, false)
-                }
-                (convertedView?.findViewById<View>(R.id.title) as TextView).text =
-                    context.getString(R.string.message_placeholder, "${getItem(position)} : ")
-                (convertedView.findViewById<View>(R.id.description) as TextView).text =
-                    context.getString(R.string.message_placeholder, map[getItem(position)])
-                return convertedView
-            }
-        }
+        val items = map.map { EventsDescriptionAdapter.DescriptionItem(it.key, it.value) }
+        val eventsDescriptionAdapter = EventsDescriptionAdapter()
+        listDesc?.layoutManager = LinearLayoutManager(requireContext())
+        listDesc?.adapter = eventsDescriptionAdapter
+        eventsDescriptionAdapter.submitList(items)
     }
 
     override fun onClick(view: View) {
@@ -223,16 +229,13 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
 
     private fun leaveJoinMeetUp() {
         val meetupId = meetUpId ?: return
-        viewLifecycleOwner.lifecycleScope.launch {
-            meetups = eventsRepository.toggleAttendance(meetupId, user?.id)
-            updateAttendanceButton()
-            val members = eventsRepository.getJoinedMembers(meetupId)
-            setUserList(members)
-        }
+        viewModel.toggleAttendance(meetupId)
     }
 
     private fun updateAttendanceButton() {
-        val isJoined = !meetups?.userId.isNullOrEmpty()
+        val meetup = viewModel.meetup.value
+        val user = viewModel.user.value
+        val isJoined = !meetup?.userId.isNullOrEmpty()
         binding.btnLeave.setText(if (isJoined) R.string.leave else R.string.join)
         binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true
     }

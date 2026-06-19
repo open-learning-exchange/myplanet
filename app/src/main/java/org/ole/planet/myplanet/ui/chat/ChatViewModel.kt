@@ -5,11 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -67,10 +64,6 @@ class ChatViewModel @Inject constructor(
 
     private val _aiProvidersError = MutableStateFlow(false)
     val aiProvidersError: StateFlow<Boolean> = _aiProvidersError.asStateFlow()
-
-    private val _conversationSaveSuccess = MutableSharedFlow<Boolean>()
-    val conversationSaveSuccess: SharedFlow<Boolean> = _conversationSaveSuccess.asSharedFlow()
-
     fun loadChatHistoryScreenData(
         userId: String?,
         parentCode: String?,
@@ -121,20 +114,6 @@ class ChatViewModel @Inject constructor(
         }
         return ChatShareTargets(community, teams, enterprises)
     }
-
-    fun continueConversation(id: String, query: String, response: String, rev: String) {
-        if (query.isBlank() && response.isBlank()) return
-
-        viewModelScope.launch {
-            try {
-                chatRepository.continueConversation(id, query, response, rev)
-                _conversationSaveSuccess.emit(true)
-            } catch (e: Exception) {
-                _conversationSaveSuccess.emit(false)
-            }
-        }
-    }
-
     suspend fun parseAndBuildInitialPage(newsConversations: String?): List<ChatMessage> {
         val parsedConversations = withContext(dispatcherProvider.io) {
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()

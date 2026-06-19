@@ -25,7 +25,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -115,9 +114,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var isSync = false
     var forceSync = false
     var syncFailed = false
-    val defaultPref: SharedPreferences by lazy {
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-    }
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -549,7 +545,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     downloadAdditionalResources()
 
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                    val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
                         withContext(dispatcherProvider.io) {
                             resourceDownloadCoordinator.startBackgroundDownload(

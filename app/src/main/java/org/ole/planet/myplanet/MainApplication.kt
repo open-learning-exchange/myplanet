@@ -70,6 +70,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
+    lateinit var realmDispatcherProvider: org.ole.planet.myplanet.di.RealmDispatcherProvider
+
+    @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
@@ -473,6 +476,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
+        realmDispatcherProvider.shutdown()
         super.onTerminate()
         stopListenNetworkState()
     }
