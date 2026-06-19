@@ -301,7 +301,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
 
         checkList(filteredList.size)
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        showNoData(tvMessage, filteredList.size, "resources")
     }
 
     private fun setupCollectionsButton() {
