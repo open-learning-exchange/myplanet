@@ -328,6 +328,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupAddResourceButtonListener() {
+        binding.addResource.visibility = if (isMyCourseLib) View.VISIBLE else View.GONE
         binding.addResource.setOnClickListener {
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
