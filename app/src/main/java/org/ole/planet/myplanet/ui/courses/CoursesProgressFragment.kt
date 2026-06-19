@@ -7,8 +7,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -40,18 +38,6 @@ class CoursesProgressFragment : Fragment() {
                 val list = jsonArray.map { it.asJsonObject }
                 progressAdapter.submitList(list)
             }
-        }
-    }
-
-    companion object {
-        fun getCourseProgress(courseData: JsonArray, courseId: String): JsonObject? {
-            courseData.forEach { element ->
-                val course = element.asJsonObject
-                if (course.get("courseId").asString == courseId) {
-                    return course.getAsJsonObject("progress")
-                }
-            }
-            return null
         }
     }
 

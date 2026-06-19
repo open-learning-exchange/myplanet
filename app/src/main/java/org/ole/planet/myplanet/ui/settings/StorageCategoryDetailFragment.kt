@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -171,9 +172,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
 
         // Build a map of resourceId → title from Realm (one query)
-        val titleMap = resourcesRepository.getAllLibraries()
-            .filter { it.resourceId != null }
-            .associate { (it.resourceId ?: "") to (it.title ?: getString(R.string.storage_unknown_resource)) }
+        val titleMap = resourcesRepository.getResourceTitlesMap()
 
         // Group files by resourceId directory
         val grouped = mutableMapOf<String, MutableList<File>>()
@@ -192,7 +191,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
         return grouped.map { (resourceId, files) ->
             val totalSize = files.sumOf { it.length() }
-            val title = titleMap[resourceId] ?: getString(R.string.storage_unknown_resource)
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: getString(R.string.storage_unknown_resource)
             ResourceItem(resourceId, title, files, totalSize)
         }.sortedBy { it.title }
     }
@@ -242,11 +241,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
                 // Sync Realm: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
-                val allResources = resourcesRepository.getAllLibraries()
-                allResources.filter { it.resourceOffline && it.resourceId in deletedIds }.forEach { resource ->
-                    val id = resource._id ?: return@forEach
-                    resourcesRepository.updateLibraryItem(id) { it.resourceOffline = false }
-                }
+                resourcesRepository.markResourcesAsNotOffline(deletedIds)
             }
 
             // Notify parent to refresh, then dismiss
@@ -257,7 +252,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
     inner class ResourceAdapter(
         private val onItemClicked: (ResourceItem) -> Unit
-    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(ResourceDiffCallback()) {
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(DiffUtils.itemCallback(areItemsTheSame = { o, n -> o.resourceId == n.resourceId }, areContentsTheSame = { o, n -> o == n }, getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null })) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
@@ -294,22 +289,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
-    private class ResourceDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<ResourceItem>() {
-        override fun areItemsTheSame(oldItem: ResourceItem, newItem: ResourceItem): Boolean {
-            return oldItem.resourceId == newItem.resourceId
-        }
-
-        override fun areContentsTheSame(oldItem: ResourceItem, newItem: ResourceItem): Boolean {
-            return oldItem == newItem
-        }
-
-        override fun getChangePayload(oldItem: ResourceItem, newItem: ResourceItem): Any? {
-            if (oldItem.copy(isChecked = newItem.isChecked) == newItem) {
-                return true
-            }
-            return null
-        }
-    }
 
     override fun onDestroyView() {
         super.onDestroyView()

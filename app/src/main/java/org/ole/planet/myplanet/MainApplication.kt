@@ -33,7 +33,6 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -69,6 +68,9 @@ import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 class MainApplication : Application(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var realmDispatcherProvider: org.ole.planet.myplanet.di.RealmDispatcherProvider
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -235,7 +237,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun performDeferredInitialization() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
             MarkdownUtils.warmUp(this@MainApplication)
@@ -474,6 +476,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
+        realmDispatcherProvider.shutdown()
         super.onTerminate()
         stopListenNetworkState()
     }

@@ -68,6 +68,7 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
+    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
     private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
     private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
 ) {
@@ -78,11 +79,6 @@ class SyncManager @Inject constructor(
     private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
-    private val initializationJob: Job by lazy {
-        syncScope.launch {
-            improvedSyncManager.get().initialize()
-        }
-    }
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
@@ -131,8 +127,6 @@ class SyncManager @Inject constructor(
     private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
         syncScope.launch {
             try {
-                initializationJob.join()
-
                 val manager = improvedSyncManager.get()
                 val syncMode = if (sharedPrefManager.getFastSync()) {
                     SyncMode.Fast
@@ -169,7 +163,6 @@ class SyncManager @Inject constructor(
     private fun destroy() {
         if (betaSync) {
             syncScope.cancel()
-            ThreadSafeRealmManager.closeThreadRealm()
         }
         cancelBackgroundSync()
         cancel(context, 111)
@@ -962,7 +955,7 @@ class SyncManager @Inject constructor(
                         "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
                         "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
                         "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
-                        "teams" -> processedCount += teamsRepository.batchInsertMyTeams(documentsToProcess)
+                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
                     }
                     val realmDuration = System.currentTimeMillis() - realmStartTime
                     logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)

@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatRequest
-import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
-import retrofit2.Response
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -37,11 +35,41 @@ class ChatRepositoryImpl @Inject constructor(
         query: String,
         user: String?,
         aiProvider: AiProvider
-    ): Response<ChatResponse> {
-        val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
-        val jsonContent = JsonUtils.gson.toJson(chatData)
-        val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
-        return chatApiService.sendChatRequest(requestBody)
+    ): ChatResult {
+        return try {
+            val chatData = ChatRequest(data = ContentData(user ?: "", query, aiProvider), save = true)
+            val jsonContent = JsonUtils.gson.toJson(chatData)
+            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val response = chatApiService.sendChatRequest(requestBody)
+            val responseBody = response.body()
+            if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
+                val chatResponse = responseBody.chat ?: ""
+                val id = responseBody.couchDBResponse?.id ?: ""
+                val rev = responseBody.couchDBResponse?.rev ?: ""
+                val jsonObject = JsonObject().apply {
+                    addProperty("_rev", rev)
+                    addProperty("_id", id)
+                    addProperty("aiProvider", aiProvider.name)
+                    addProperty("user", user)
+                    addProperty("title", query)
+                    addProperty("createdDate", java.util.Date().time)
+                    addProperty("updatedDate", java.util.Date().time)
+                    val conversationsArray = JsonArray()
+                    val conversationObject = JsonObject().apply {
+                        addProperty("query", query)
+                        addProperty("response", chatResponse)
+                    }
+                    conversationsArray.add(conversationObject)
+                    add("conversations", conversationsArray)
+                }
+                saveNewChat(jsonObject)
+                ChatResult.Success(chatResponse, id, rev)
+            } else {
+                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+            }
+        } catch (e: Exception) {
+            ChatResult.Error(e.message ?: "Request failed")
+        }
     }
 
     override suspend fun sendContinueChatRequest(
@@ -50,11 +78,26 @@ class ChatRepositoryImpl @Inject constructor(
         aiProvider: AiProvider,
         id: String,
         rev: String
-    ): Response<ChatResponse> {
-        val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
-        val jsonContent = JsonUtils.gson.toJson(continueChatData)
-        val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
-        return chatApiService.sendChatRequest(requestBody)
+    ): ChatResult {
+        return try {
+            val continueChatData = ContinueChatRequest(data = Data(user ?: "", message, aiProvider, id, rev), save = true)
+            val jsonContent = JsonUtils.gson.toJson(continueChatData)
+            val requestBody = jsonContent.toRequestBody("application/json".toMediaTypeOrNull())
+            val response = chatApiService.sendChatRequest(requestBody)
+            val responseBody = response.body()
+            if (response.isSuccessful && responseBody != null && responseBody.status == "Success") {
+                val chatResponse = responseBody.chat ?: ""
+                val newRev = responseBody.couchDBResponse?.rev ?: rev
+                continueConversation(id, message, chatResponse, newRev)
+                ChatResult.Success(chatResponse, id, newRev)
+            } else {
+                continueConversation(id, message, "", rev)
+                ChatResult.Error(responseBody?.message ?: response.message() ?: "Request failed")
+            }
+        } catch (e: Exception) {
+            continueConversation(id, message, "", rev)
+            ChatResult.Error(e.message ?: "Request failed")
+        }
     }
 
     override suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>? {
@@ -85,13 +128,13 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveNewChat(chat: JsonObject) {
+    private suspend fun saveNewChat(chat: JsonObject) {
         executeTransaction { realm ->
             insertChatsBatchInternal(realm, listOf(chat))
         }
     }
 
-    override suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
+    private suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
         executeTransaction { realm ->
             addConversation(realm, id, query, response, rev)
         }
