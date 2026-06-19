@@ -4,9 +4,9 @@ import android.os.Handler
 import android.os.HandlerThread
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.CoroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.android.asCoroutineDispatcher
-import kotlin.coroutines.CoroutineContext
 
 @Singleton
 class RealmDispatcherProvider @Inject constructor() : CoroutineDispatcher() {

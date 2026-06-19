@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.courses
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import io.realm.Realm
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
