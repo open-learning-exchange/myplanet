@@ -139,6 +139,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindTeamsSyncRepository(impl: TeamsRepositoryImpl): org.ole.planet.myplanet.repository.TeamsSyncRepository
+
+    @Binds
+    @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 
     @Binds

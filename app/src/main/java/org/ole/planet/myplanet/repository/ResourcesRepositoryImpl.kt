@@ -39,7 +39,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
-    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
+    private val teamsSyncRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
@@ -210,7 +211,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         if (teamId != null) {
-            teamsRepositoryLazy.get().syncTeamActivities()
+            teamsSyncRepositoryLazy.get().syncTeamActivities()
         }
 
         return Result.success(Unit)

@@ -58,6 +58,7 @@ class UploadManagerTest {
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
+    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private lateinit var photoUploader: PhotoUploader
@@ -92,6 +93,7 @@ class UploadManagerTest {
                 uploadConfigs,
                 resourcesRepository,
                 teamsRepository,
+                teamsSyncRepository,
                 apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
