@@ -14,7 +14,6 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatRequest
-import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
