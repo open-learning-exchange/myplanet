@@ -28,10 +28,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     @RealmDispatcher
-    fun provideRealmDispatcher(): CoroutineDispatcher {
-        // Realm async queries and change listeners require a thread with a Looper.
-        val handlerThread = HandlerThread("RealmQueryThread").also { it.start() }
-        return Handler(handlerThread.looper).asCoroutineDispatcher()
+    fun provideRealmDispatcher(provider: RealmDispatcherProvider): CoroutineDispatcher {
+        return provider
     }
 
     // Realm initialization is handled in DatabaseService
