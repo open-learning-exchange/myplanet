@@ -122,7 +122,11 @@ open class RealmRepository(
     }.flowOn(realmDispatcher)
         .conflate()
         .map { frozenResults ->
-            frozenResults.realm.copyFromRealm(frozenResults)
+            if (frozenResults.isEmpty()) {
+                emptyList()
+            } else {
+                frozenResults.realm.copyFromRealm(frozenResults)
+            }
         }
         .flowOn(databaseService.ioDispatcher)
 

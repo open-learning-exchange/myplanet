@@ -18,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
@@ -211,5 +212,38 @@ class RealmRepositoryTest {
         // Even though removeChangeListener threw, realm.close() should still be called
         verify(exactly = 1) { initialResults.removeChangeListener(listenerSlot.captured) }
         verify(exactly = 1) { realm.close() }
+    }
+
+    @Test
+    fun `queryListFlow emits empty list immediately when frozenResults is empty without calling copyFromRealm`() = runTest {
+        val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
+        val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenInitial = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenRealmInitial = mockk<Realm>(relaxed = true)
+        val listenerSlot = slot<RealmChangeListener<RealmResults<TestRealmObject>>>()
+
+        every { realm.where(TestRealmObject::class.java) } returns realmQuery
+        every { realmQuery.findAll() } returns initialResults
+
+        every { initialResults.isValid } returns true
+        every { initialResults.isLoaded } returns true
+        every { initialResults.freeze() } returns frozenInitial
+        every { frozenInitial.isEmpty() } returns true
+        every { frozenInitial.realm } returns frozenRealmInitial
+        every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
+
+        val emittedLists = mutableListOf<List<TestRealmObject>>()
+
+        val job = launch(testDispatcher) {
+            repository.queryFlow().collect {
+                emittedLists.add(it)
+            }
+        }
+
+        advanceUntilIdle()
+        assertEquals(1, emittedLists.size)
+        assertEquals(emptyList<TestRealmObject>(), emittedLists[0])
+        verify(exactly = 0) { frozenRealmInitial.copyFromRealm(any<RealmResults<TestRealmObject>>()) }
+        job.cancel()
     }
 }

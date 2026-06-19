@@ -13,7 +13,7 @@ class CheckboxAdapter(
     private val checkChangeListener: CheckChangeListener? = null
 ) : ListAdapter<String, CheckboxAdapter.ViewHolder>(DiffUtils.itemCallback<String>({ old, new -> old == new }, { old, new -> old == new })) {
 
-    val selectedItemsList = ArrayList<Int>()
+    val selectedItemsList = HashSet<Int>()
 
     init {
         selectedItemsList.addAll(initialSelectedItems)
@@ -41,7 +41,7 @@ class CheckboxAdapter(
             if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
 
             if (selectedItemsList.contains(currentPos)) {
-                selectedItemsList.remove(Integer.valueOf(currentPos))
+                selectedItemsList.remove(currentPos)
                 holder.checkedTextView.isChecked = false
             } else {
                 selectedItemsList.add(currentPos)

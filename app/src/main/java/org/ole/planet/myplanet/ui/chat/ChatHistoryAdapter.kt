@@ -13,7 +13,6 @@ import com.google.gson.JsonArray
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
@@ -38,6 +38,7 @@ class ChatHistoryAdapter(
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
+    private val dispatcherProvider: DispatcherProvider,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
 ) : ListAdapter<RealmChatHistory, ChatHistoryAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
@@ -137,14 +138,14 @@ class ChatHistoryAdapter(
     }
 
     suspend fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        val results = withContext(Dispatchers.Default) {
+        val results = withContext(dispatcherProvider.default) {
             if (isFullSearch) {
                 fullConvoSearch(s, isQuestion)
             } else {
                 searchByTitle(s)
             }
         }
-        withContext(Dispatchers.Main) {
+        withContext(dispatcherProvider.main) {
             submitList(results)
         }
     }

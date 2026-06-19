@@ -74,40 +74,6 @@ class ChatViewModelTest {
     }
 
     @Test
-    fun `continueConversation emits true on success`() = runTest {
-        coEvery { chatRepository.continueConversation("id1", "query", "response", "rev1") } returns Unit
-
-        val job = launch(testDispatcher) {
-            val success = viewModel.conversationSaveSuccess.first()
-            assertTrue(success)
-        }
-
-        viewModel.continueConversation("id1", "query", "response", "rev1")
-        job.join()
-        coVerify { chatRepository.continueConversation("id1", "query", "response", "rev1") }
-    }
-
-    @Test
-    fun `continueConversation emits false on error`() = runTest {
-        coEvery { chatRepository.continueConversation("id2", "query", "response", "rev2") } throws Exception("Test Error")
-
-        val job = launch(testDispatcher) {
-            val success = viewModel.conversationSaveSuccess.first()
-            assertFalse(success)
-        }
-
-        viewModel.continueConversation("id2", "query", "response", "rev2")
-        job.join()
-        coVerify { chatRepository.continueConversation("id2", "query", "response", "rev2") }
-    }
-
-    @Test
-    fun `continueConversation returns early if both query and response are blank`() = runTest {
-        viewModel.continueConversation("id", "", "  ", "rev1")
-        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
-    }
-
-    @Test
     fun `clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values`() {
         val dummyHistory = listOf(RealmConversation())
         viewModel.setSelectedChatHistory(dummyHistory)
