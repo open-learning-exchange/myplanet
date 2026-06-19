@@ -55,6 +55,7 @@ class UploadManager @Inject constructor(
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>,
     private val apiInterface: ApiInterface,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
@@ -275,7 +276,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        val teamsToUpload = teamsRepository.get().getTeamsForUpload()
+        val teamsToUpload = teamsSyncRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
             teamsToUpload.processInBatches { batch ->
@@ -288,7 +289,7 @@ class UploadManager @Inject constructor(
                                 "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
                             )
                             if (response.isSuccessful) {
-                                teamsRepository.get().deleteLocalTeamRecord(id)
+                                teamsSyncRepository.get().deleteLocalTeamRecord(id)
                             }
                         } else {
                             val response = apiInterface.postDoc(
@@ -300,7 +301,7 @@ class UploadManager @Inject constructor(
 
                             if (`object` != null) {
                                 val rev = getString("rev", `object`)
-                                teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                                teamsSyncRepository.get().markTeamUploaded(teamData.teamId, rev)
                             }
                         }
                     } catch (e: IOException) {

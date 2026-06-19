@@ -24,11 +24,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.util.Date
 import java.util.concurrent.Executor
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -43,21 +40,13 @@ object CameraUtils {
     private var backgroundHandler: Handler? = null
     private var backgroundThread: HandlerThread? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
-    private var cameraJob = SupervisorJob()
-    private var cameraScope: CoroutineScope? = null
 
-    private fun startBackgroundThread(dispatcher: CoroutineDispatcher) {
+    private fun startBackgroundThread() {
         if (backgroundThread == null || backgroundThread?.isAlive == false) {
             backgroundThread = HandlerThread("CameraBackground").apply {
                 start()
                 backgroundHandler = Handler(looper)
             }
-        }
-        if (cameraJob.isCancelled) {
-            cameraJob = SupervisorJob()
-            cameraScope = CoroutineScope(dispatcher + cameraJob)
-        } else if (cameraScope == null) {
-            cameraScope = CoroutineScope(dispatcher + cameraJob)
         }
     }
 
@@ -70,7 +59,6 @@ object CameraUtils {
             backgroundHandler = null
         } catch (e: InterruptedException) {
             Thread.currentThread().interrupt()
-            cameraScope?.cancel()
             e.printStackTrace()
         }
     }
@@ -79,15 +67,14 @@ object CameraUtils {
     fun release() {
         closeCamera()
         stopBackgroundThread()
-        cameraScope?.cancel()
     }
 
     @JvmStatic
-    fun capturePhoto(dispatcher: CoroutineDispatcher, callback: ImageCaptureCallback) {
+    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
-        startBackgroundThread(dispatcher)
+        startBackgroundThread()
         openCamera(context)
         imageReader = ImageReader.newInstance(IMAGE_WIDTH, IMAGE_HEIGHT, ImageFormat.JPEG, 1)
         imageReader?.setOnImageAvailableListener({ reader ->
@@ -97,7 +84,7 @@ object CameraUtils {
                 val bytes = ByteArray(buffer.capacity())
                 buffer.get(bytes)
                 image.close()
-                cameraScope?.launch {
+                scope.launch {
                     savePicture(bytes, callback)
                 }
             }
@@ -138,22 +125,24 @@ object CameraUtils {
     }
 
     private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
-        val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
-        if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
-            pictureFileDir.mkdirs()
-        }
-        val photoFile = "${Date().time}.jpg"
-        val filename = "${pictureFileDir.path}${File.separator}$photoFile"
-        val mainPicture = File(filename)
-        try {
-            FileOutputStream(mainPicture).use { fos ->
-                fos.write(data)
+        withContext(Dispatchers.IO) {
+            val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
+            if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
+                pictureFileDir.mkdirs()
             }
-            withContext(Dispatchers.Main) {
-                callback.onImageCapture(mainPicture.absolutePath)
+            val photoFile = "${Date().time}.jpg"
+            val filename = "${pictureFileDir.path}${File.separator}$photoFile"
+            val mainPicture = File(filename)
+            try {
+                FileOutputStream(mainPicture).use { fos ->
+                    fos.write(data)
+                }
+                withContext(Dispatchers.Main) {
+                    callback.onImageCapture(mainPicture.absolutePath)
+                }
+            } catch (error: Exception) {
+                error.printStackTrace()
             }
-        } catch (error: Exception) {
-            error.printStackTrace()
         }
     }
 

@@ -64,12 +64,7 @@ class UserRepositoryImpl @Inject constructor(
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmUser::class.java, "id", userId)
     }
 
     override suspend fun getUsersByIds(userIds: List<String>): List<RealmUser> {
@@ -150,32 +145,26 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingSyncUsers(limit: Int): List<RealmUser> {
-        return withRealm { realm ->
-            val results = realm.where(RealmUser::class.java)
-                .isEmpty("_id").or().equalTo("isUpdated", true)
-                .findAll()
-            realm.copyFromRealm(results.take(limit))
-        }
+        return queryList(RealmUser::class.java) {
+            isEmpty("_id").or().equalTo("isUpdated", true)
+        }.take(limit)
     }
 
     override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<RealmUser> {
-        return withRealm { realm ->
-            val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
-            val results = realm.where(RealmUser::class.java)
-                .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
-                .contains("lastName", query, io.realm.Case.INSENSITIVE).or()
-                .contains("name", query, io.realm.Case.INSENSITIVE)
-                .sort(sortField, sortOrder).findAll()
-            realm.copyFromRealm(results)
+        val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
+        return queryList(RealmUser::class.java) {
+            contains("firstName", query, io.realm.Case.INSENSITIVE).or()
+            contains("lastName", query, io.realm.Case.INSENSITIVE).or()
+            contains("name", query, io.realm.Case.INSENSITIVE)
+            sort(sortField, sortOrder)
         }
     }
 
     override suspend fun isUserExists(name: String?): Boolean {
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("name", name)
-                .not().beginsWith("_id", "guest").count() > 0
-        }
+        return count(RealmUser::class.java) {
+            equalTo("name", name)
+            not().beginsWith("_id", "guest")
+        } > 0
     }
 
     override fun parseLeadersJson(jsonString: String): List<RealmUser> {
@@ -443,14 +432,13 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        if (userId == null) {
+        val id = userId
+        if (id == null) {
             android.util.Log.e("UserRepositoryImpl", "Failed to save user: userId is null after populateUsersTable")
             return null
         }
 
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmUser::class.java, "id", id)
     }
 
     override suspend fun fetchUserSecurityData(name: String) {
@@ -484,10 +472,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        return withRealm { realm ->
-            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            if (user != null) realm.copyFromRealm(user) else null
-        }
+        return findByField(RealmUser::class.java, "id", userId)
     }
 
     override suspend fun updateSecurityData(
@@ -582,14 +567,9 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return queryList(RealmUser::class.java) {
+            equalTo("id", userId).or().equalTo("_id", userId)
+        }.firstOrNull()
     }
 
     override suspend fun getUserProfile(): RealmUser? {
@@ -1034,12 +1014,10 @@ class UserRepositoryImpl @Inject constructor(
             } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
         }
 
-        val isTaken = withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("name", username)
-                .not().beginsWith("_id", "guest")
-                .count() > 0L
-        }
+        val isTaken = count(RealmUser::class.java) {
+            equalTo("name", username)
+            not().beginsWith("_id", "guest")
+        } > 0L
 
         return if (isTaken) context.getString(R.string.username_taken) else null
     }
@@ -1071,9 +1049,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser? {
         try {
-            val user = databaseService.withRealmAsync { realm ->
-                realm.where(RealmUser::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
-            }
+            val user = if (username != null) findByField(RealmUser::class.java, "name", username) else null
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
@@ -1094,7 +1070,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasAtLeastOneUser(): Boolean {
-        return withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+        return count(RealmUser::class.java) > 0
     }
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
@@ -1113,12 +1089,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        return withRealm { realm ->
-            val achievement = realm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-            achievement?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmAchievement::class.java, "_id", achievementId)
     }
 
     override suspend fun updateAchievement(

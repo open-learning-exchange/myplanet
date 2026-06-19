@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import retrofit2.Response
@@ -133,31 +134,6 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun saveNewChat_executesTransaction() = runTest {
-        val chatObj = JsonObject()
-
-        coEvery { chatRepository.saveNewChat(any()) } answers { callOriginal() }
-
-        chatRepository.saveNewChat(chatObj)
-
-        coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-    }
-
-    @Test
-    fun continueConversation_executesTransaction() = runTest {
-        val id = "123"
-        val query = "hello"
-        val response = "hi"
-        val rev = "1-rev"
-
-        coEvery { chatRepository.continueConversation(any(), any(), any(), any()) } answers { callOriginal() }
-
-        chatRepository.continueConversation(id, query, response, rev)
-
-        coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-    }
-
-    @Test
     fun insertChatHistoryList_executesTransaction() = runTest {
         val chatObj1 = JsonObject().apply {
             addProperty("_id", "1")
@@ -239,14 +215,15 @@ class ChatRepositoryImplTest {
         val query = "test query"
         val user = "testUser"
         val aiProvider = AiProvider("OpenAI", "GPT-4")
-        val mockResponse = Response.success(ChatResponse())
+        val couchDb = org.ole.planet.myplanet.model.CouchDBResponse(ok = true, id = "test-id", rev = "test-rev")
+        val mockResponse = retrofit2.Response.success(org.ole.planet.myplanet.model.ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendNewChatRequest(query, user, aiProvider)
 
-        assertEquals(mockResponse, result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<RequestBody>()) }
+        assertEquals(ChatResult.Success("test chat", "test-id", "test-rev"), result)
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
     }
 
     @Test
@@ -256,13 +233,14 @@ class ChatRepositoryImplTest {
         val aiProvider = AiProvider("OpenAI", "GPT-4")
         val id = "chat-123"
         val rev = "1-rev"
-        val mockResponse = Response.success(ChatResponse())
+        val couchDb = org.ole.planet.myplanet.model.CouchDBResponse(ok = true, id = id, rev = "2-rev")
+        val mockResponse = retrofit2.Response.success(org.ole.planet.myplanet.model.ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendContinueChatRequest(message, user, aiProvider, id, rev)
 
-        assertEquals(mockResponse, result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<RequestBody>()) }
+        assertEquals(ChatResult.Success("test chat", id, "2-rev"), result)
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
     }
 }

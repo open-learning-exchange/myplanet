@@ -1320,6 +1320,7 @@
     <string name="hours_ago">%1$d saacad ka hor</string>
     <string name="yesterday">Shalay</string>
     <string name="days_ago">%1$d maalmood ka hor</string>
+    <string name="please_complete_test">Fadlan dhamee imtixaanka si aad u sii wadato</string>
     <string name="edit_meetup">Wax ka beddel kulanka</string>
     <string name="meetup_updated">Kulanka si guul leh ayaa loo cusboonaysiiyay</string>
     <string name="meetup_not_updated">Cusboonaysiinta kulanka wey fashilantay</string>
