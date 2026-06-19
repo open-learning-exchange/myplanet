@@ -61,10 +61,9 @@ class CourseFilterController(
         val subjectAdapter = ArrayAdapter.createFromResource(ctx, R.array.subject_level, R.layout.spinner_item)
         subjectAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
 
-        val progressAdapter = ArrayAdapter.createFromResource(ctx, R.array.progress_filter, R.layout.spinner_item)   // ADD
-        progressAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)                                  // ADD
-        spnProgress.adapter = progressAdapter                                                                        // ADD
-
+        val progressAdapter = ArrayAdapter.createFromResource(ctx, R.array.progress_filter, R.layout.spinner_item)
+        progressAdapter.setDropDownViewResource(R.layout.custom_simple_list_item_1)
+        spnProgress.adapter = progressAdapter
         spnSubject.adapter = subjectAdapter
 
         val spinnerListener = object : AdapterView.OnItemSelectedListener {
