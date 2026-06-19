@@ -187,26 +187,29 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        // Since insertSubmission is called on `this`, spyk can track it
-        every { repository.insertSubmission(any(), any()) } answers { }
+        // Since insertSubmissionInternal is called on `this`, spyk can track it
+        every { repository["insertSubmissionInternal"](any<Realm>(), any<JsonObject>()) } answers { }
 
         repository.bulkInsertFromSync(realm, jsonArray)
-        verify(exactly = 1) { repository.insertSubmission(realm, any()) }
+        verify(exactly = 1) { repository["insertSubmissionInternal"](realm, any<JsonObject>()) }
     }
 
     @Test
-    fun `insertSubmission skips if _attachments present`() {
-        val realm = mockk<Realm>(relaxed = true)
+    fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
-        repository.insertSubmission(realm, submission)
-        verify(exactly = 0) { realm.beginTransaction() }
+        repository.insertSubmission(submission)
+        coVerify(exactly = 0) { databaseService.executeTransactionAsync(any()) }
     }
 
     @Test
-    fun `insertSubmission performs happy path creation`() {
+    fun `insertSubmission performs happy path creation`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
         val query = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
-        every { realm.isInTransaction } returns false
         every { realm.where(RealmSubmission::class.java) } returns query
         every { query.equalTo(any<String>(), any<String>()) } returns query
         every { query.findFirst() } returns null
@@ -223,11 +226,9 @@ class SubmissionsRepositoryImplTest {
         every { repository["updateUserId"](any<RealmSubmission>(), any<JsonObject>()) } answers { }
         every { repository["updateAnswers"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>(), any<Boolean>()) } answers { }
 
-        repository.insertSubmission(realm, submission)
+        repository.insertSubmission(submission)
 
-        verify(exactly = 1) { realm.beginTransaction() }
         verify(exactly = 1) { realm.createObject(RealmSubmission::class.java, "test_id") }
-        verify(exactly = 1) { realm.commitTransaction() }
     }
 
     @Test

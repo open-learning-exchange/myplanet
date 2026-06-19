@@ -7,6 +7,7 @@ import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
 import io.realm.RealmList
+import org.ole.planet.myplanet.model.RealmNews
 
 object JsonUtils {
     val gson: Gson by lazy {
@@ -20,6 +21,27 @@ object JsonUtils {
             e.printStackTrace()
             default
         }
+    }
+
+    @JvmStatic
+    fun extractSharedTeamName(news: RealmNews?): String {
+        if (news == null) return ""
+        val ar = news.parsedViewIn ?: if (!news.viewIn.isNullOrEmpty()) {
+            try {
+                gson.fromJson(news.viewIn, JsonArray::class.java)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        } else null
+
+        if (ar != null && ar.size() > 1) {
+            val ob = ar[0].asJsonObject
+            if (ob.has("name") && !ob.get("name").isJsonNull) {
+                return ob.get("name").asString
+            }
+        }
+        return ""
     }
 
     @JvmStatic

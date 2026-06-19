@@ -27,7 +27,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
@@ -43,10 +42,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -55,7 +54,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
-import retrofit2.Response
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
@@ -442,19 +440,7 @@ class ChatDetailFragment : Fragment() {
                         _rev = selectedRev
                     }
                 }
-                launch {
-                    sharedViewModel.conversationSaveSuccess.collect { success ->
-                        if (success) {
-                            if (isAdded && activity is DashboardActivity) {
-                                (activity as DashboardActivity).refreshChatHistory()
-                            }
-                        } else {
-                            if (isAdded) {
-                                Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-                            }
-                        }
-                    }
-                }
+
             }
         }
     }
@@ -662,59 +648,32 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = chatRepository.sendNewChatRequest(query, userName, aiProvider)
-                handleResponse(response, query, null)
-            } catch (t: Exception) {
-                handleFailure(t.message, query, null)
-            }
+            val result = chatRepository.sendNewChatRequest(query, userName, aiProvider)
+            handleChatResult(result)
         }
     }
 
     private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
-                handleResponse(response, query, id)
-            } catch (t: Exception) {
-                handleFailure(t.message, query, id)
-            }
+            val result = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+            handleChatResult(result)
         }
     }
 
-    private fun handleResponse(response: Response<ChatResponse>, query: String, id: String?) {
-        val responseBody = response.body()
-        if (response.isSuccessful && responseBody != null) {
-            if (responseBody.status == "Success") {
-                responseBody.chat?.let { chatResponse ->
-                    processSuccessfulResponse(chatResponse, responseBody, query, id)
+    private fun handleChatResult(result: ChatResult) {
+        when (result) {
+            is ChatResult.Success -> {
+                mAdapter.addResponse(result.response, ChatMessage.RESPONSE_SOURCE_NETWORK)
+                _rev = result.rev
+                currentID = result.id
+                if (isAdded && activity is DashboardActivity) {
+                    (activity as DashboardActivity).refreshChatHistory()
                 }
-            } else {
-                showError(responseBody.message)
             }
-        } else {
-            showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
-            val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
-            realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
+            is ChatResult.Error -> {
+                showError(result.message)
+            }
         }
-        enableUI()
-    }
-
-    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
-        mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
-        responseBody.couchDBResponse?.rev?.let { _rev = it }
-        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
-        if (realmChatId != null) {
-            sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
-        } else {
-            saveNewChat(query, chatResponse, responseBody)
-        }
-    }
-
-    private fun handleFailure(errorMessage: String?, query: String, id: String?) {
-        showError(errorMessage)
-        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
-        realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
         enableUI()
     }
 
@@ -724,63 +683,6 @@ class ChatDetailFragment : Fragment() {
             binding.textGchatIndicator.text = context?.getString(R.string.message_placeholder, message)
         }
     }
-
-    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatResponse) {
-        val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                chatRepository.saveNewChat(jsonObject)
-                if (isAdded && activity is DashboardActivity) {
-                    (activity as DashboardActivity).refreshChatHistory()
-                }
-            } catch (e: Exception) {
-                if (isAdded) {
-                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatResponse): JsonObject =
-        JsonObject().apply {
-            val id = responseBody.couchDBResponse?.id
-            val rev = responseBody.couchDBResponse?.rev
-            if (id != null) {
-                currentID = id
-            }
-            if (rev != null) {
-                _rev = rev
-            }
-            addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
-            addProperty("_id", responseBody.couchDBResponse?.id ?: "")
-            addProperty("aiProvider", aiName)
-            addProperty("user", user?.name)
-            addProperty("title", query)
-            addProperty("createdDate", Date().time)
-            addProperty("updatedDate", Date().time)
-
-            val conversationsArray = JsonArray()
-            val conversationObject = JsonObject().apply {
-                addProperty("query", query)
-                addProperty("response", chatResponse)
-            }
-            conversationsArray.add(conversationObject)
-            add("conversations", conversationsArray)
-        }
-
-    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
-        val realmChatId = when {
-            id.isNotBlank() -> id
-            _id.isNotBlank() -> _id
-            currentID.isNotBlank() -> currentID
-            else -> return
-        }
-
-        if (query.isBlank() && chatResponse.isBlank()) return
-
-        sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
-    }
-
 
     private fun loadMoreConversations() {
         val (newMessages, hasLoadMoreAbove) = sharedViewModel.loadMoreConversations()

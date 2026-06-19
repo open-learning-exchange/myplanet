@@ -22,4 +22,5 @@ interface ProgressRepository {
     )
     suspend fun hasUserCompletedSync(userId: String): Boolean
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun findProgressForCourse(courseData: JsonArray, courseId: String): JsonObject?
 }
