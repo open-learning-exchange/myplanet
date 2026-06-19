@@ -17,6 +17,7 @@ interface RepositoryDependenciesEntryPoint {
     fun configurationsRepository(): ConfigurationsRepository
     fun communityRepository(): CommunityRepository
     fun teamsRepository(): TeamsRepository
+    fun teamsSyncRepository(): org.ole.planet.myplanet.repository.TeamsSyncRepository
     fun submissionsRepository(): SubmissionsRepository
     fun resourcesRepository(): ResourcesRepository
 }

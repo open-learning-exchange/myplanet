@@ -18,7 +18,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -28,7 +27,6 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 @Singleton
 class ImprovedSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val transactionSyncManager: TransactionSyncManager,
@@ -39,7 +37,6 @@ class ImprovedSyncManager @Inject constructor(
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
-    private val poolManager = RealmPoolManager.getInstance()
 
     private var isSyncing = AtomicBoolean(false)
     private var isCanceled = AtomicBoolean(false)
@@ -70,10 +67,6 @@ class ImprovedSyncManager @Inject constructor(
         "feedback",
         "notifications"
     )
-
-    suspend fun initialize() {
-        poolManager.initializePool(context, databaseService)
-    }
 
     fun start(
         listener: OnSyncListener?,
