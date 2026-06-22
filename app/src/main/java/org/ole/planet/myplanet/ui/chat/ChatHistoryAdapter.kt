@@ -9,7 +9,6 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonArray
 import java.text.Normalizer
 import java.util.Date
 import java.util.Locale
@@ -25,9 +24,9 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
+import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils

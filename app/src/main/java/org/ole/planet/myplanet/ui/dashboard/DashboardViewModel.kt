@@ -7,7 +7,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

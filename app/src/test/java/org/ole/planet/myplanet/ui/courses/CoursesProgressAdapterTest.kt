@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
 import android.os.Build
-import android.view.View
 import android.widget.LinearLayout
-import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.google.gson.JsonObject
 import org.junit.Assert.assertEquals
