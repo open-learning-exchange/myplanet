@@ -230,7 +230,6 @@ class VoicesFragment : BaseVoicesFragment() {
             parentNews = null,
             teamName = "",
             teamId = null,
-            userSessionManager = userSessionManager,
             isTeamLeaderFn = { onResult -> onResult(false) },
             getUserFn = { userId, onResult ->
                 viewLifecycleOwner.lifecycleScope.launch {
