@@ -346,7 +346,12 @@ class MyHealthFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        showRecords()
+        val uid = userId
+        if (!uid.isNullOrEmpty()) {
+            getHealthRecords(uid)
+        } else {
+            showRecords()
+        }
     }
 
     private fun showRecords() {
