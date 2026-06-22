@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -64,5 +63,17 @@ class CoursesViewModelTest {
         viewModel.removeCourses(emptyList(), "u1", true) {}
         coVerify(exactly = 0) { coursesRepository.removeCourseFromShelf(any(), any()) }
         coVerify(exactly = 0) { coursesRepository.deleteCourseProgress(any()) }
+    }
+
+    @Test
+    fun testLoadCourses_MyCoursesLib_CallsGetCourseProgress() = runTest {
+        viewModel.loadCourses(true, "u1")
+        coVerify { coursesRepository.getCourseProgress("u1", any<List<String>>()) }
+    }
+
+    @Test
+    fun testLoadCourses_NotMyCoursesLib_SkipsGetCourseProgress() = runTest {
+        viewModel.loadCourses(false, "u1")
+        coVerify(exactly = 0) { coursesRepository.getCourseProgress(any<String>(), any<List<String>>()) }
     }
 }

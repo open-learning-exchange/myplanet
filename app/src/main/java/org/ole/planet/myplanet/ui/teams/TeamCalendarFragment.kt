@@ -22,8 +22,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.applandeo.materialcalendarview.CalendarDay
 import com.applandeo.materialcalendarview.CalendarView
 import com.applandeo.materialcalendarview.listeners.OnCalendarDayClickListener
-import com.google.gson.Gson
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.net.MalformedURLException
 import java.net.URL
@@ -32,8 +30,6 @@ import java.time.Instant
 import java.time.ZoneId
 import java.util.Calendar
 import java.util.Locale
-import java.util.UUID
-import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -41,7 +37,6 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities

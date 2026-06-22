@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.courses
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
-import io.realm.Realm
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -48,7 +47,9 @@ class CoursesAdapterTest {
         adapter.selectAllItems(true)
 
         assertEquals(true, adapter.areAllSelected())
-        verify(mockObserver).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(3), org.mockito.ArgumentMatchers.any())
+        verify(mockObserver, times(1)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
+        verify(mockObserver, times(0)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
+        verify(mockObserver, times(1)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(2), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
     }
 
     @Test
@@ -63,7 +64,7 @@ class CoursesAdapterTest {
         adapter.selectAllItems(false)
 
         assertEquals(false, adapter.areAllSelected())
-        verify(mockObserver, times(2)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(2), org.mockito.ArgumentMatchers.any())
+        verify(mockObserver, times(2)).onItemRangeChanged(org.mockito.ArgumentMatchers.eq(0), org.mockito.ArgumentMatchers.eq(1), org.mockito.ArgumentMatchers.any())
     }
 
     @Test

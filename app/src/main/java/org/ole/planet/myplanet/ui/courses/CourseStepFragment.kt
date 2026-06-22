@@ -292,7 +292,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 b.putInt("stepNum", stepNumber)
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
-                capturePhoto(dispatcherProvider.default, this)
+                capturePhoto(viewLifecycleOwner.lifecycleScope, this)
             }
         }
 

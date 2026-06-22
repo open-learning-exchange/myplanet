@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.viewer
 
 import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
@@ -9,7 +10,6 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import javax.inject.Inject
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
