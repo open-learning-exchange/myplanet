@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils.installApk
 
 @AndroidEntryPoint
