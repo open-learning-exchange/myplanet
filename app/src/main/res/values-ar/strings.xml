@@ -1336,10 +1336,17 @@
     <string name="hours_ago">منذ %1$d ساعة</string>
     <string name="yesterday">أمس</string>
     <string name="days_ago">منذ %1$d أيام</string>
+    <string name="please_complete_test">يرجى إكمال الاختبار للمتابعة</string>
     <string name="edit_meetup">تعديل الاجتماع</string>
     <string name="meetup_updated">تم تحديث الاجتماع بنجاح</string>
     <string name="meetup_not_updated">فشل تحديث الاجتماع</string>
     <string name="removed_from_teamcourse">تمت إزالة الدورة من الفريق</string>
-    <string name="please_complete_test">يرجى إكمال الاختبار للمتابعة</string>
+    <string name="progress">التقدم</string>
+    <string-array name="progress_filter">
+        <item>الكل</item>
+        <item>لم يبدأ</item>
+        <item>قيد التقدم</item>
+        <item>مكتمل</item>
+    </string-array>
 
 </resources>

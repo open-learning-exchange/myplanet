@@ -116,7 +116,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     parentNews = news,
                     teamName = "",
                     teamId = null,
-                    userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult -> onResult(false) },
                     getUserFn = { userId, onResult ->
                         lifecycleScope.launch {

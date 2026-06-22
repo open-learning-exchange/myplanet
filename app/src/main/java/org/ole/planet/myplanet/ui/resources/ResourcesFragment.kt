@@ -301,7 +301,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
 
         checkList(filteredList.size)
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        showNoData(tvMessage, filteredList.size, "resources")
     }
 
     private fun setupCollectionsButton() {
@@ -328,6 +328,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupAddResourceButtonListener() {
+        binding.addResource.visibility = if (isMyCourseLib) View.VISIBLE else View.GONE
         binding.addResource.setOnClickListener {
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
