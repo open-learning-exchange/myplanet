@@ -9,6 +9,7 @@ import androidx.core.net.toUri
 import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.realm.Realm
+import io.realm.RealmList
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -357,6 +358,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 return@runCatching
             }
             update(RealmMyTeam::class.java, "_id", teamId) { team ->
+                if (team.courses == null) {
+                    team.courses = RealmList()
+                }
                 courseIds.forEach { courseId ->
                     if (team.courses?.contains(courseId) != true) {
                         team.courses?.add(courseId)
