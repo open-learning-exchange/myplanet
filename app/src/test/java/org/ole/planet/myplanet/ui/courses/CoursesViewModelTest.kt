@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.courses
 
-import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers

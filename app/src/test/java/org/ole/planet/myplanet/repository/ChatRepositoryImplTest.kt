@@ -27,8 +27,8 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import retrofit2.Response

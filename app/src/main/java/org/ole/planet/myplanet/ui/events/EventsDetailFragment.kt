@@ -14,8 +14,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.ArrayList
 import java.util.Calendar
 import java.util.HashMap
 import kotlinx.coroutines.launch
@@ -25,10 +26,6 @@ import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUser
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import org.ole.planet.myplanet.repository.EventsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
