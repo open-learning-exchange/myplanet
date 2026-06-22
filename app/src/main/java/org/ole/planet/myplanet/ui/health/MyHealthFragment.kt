@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -266,7 +265,7 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            val users = userRepository.getUsersSortedBy("joinDate", true)
             userModelList = users
             adapter = HealthUsersAdapter { selected ->
                 userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
@@ -299,10 +298,10 @@ class MyHealthFragment : Fragment() {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val (sortBy, sort) = when (p2) {
-                        0 -> "joinDate" to Sort.DESCENDING
-                        1 -> "joinDate" to Sort.ASCENDING
-                        2 -> "name" to Sort.ASCENDING
-                        else -> "name" to Sort.DESCENDING
+                        0 -> "joinDate" to true
+                        1 -> "joinDate" to false
+                        2 -> "name" to false
+                        else -> "name" to true
                     }
                     val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     if (isAdded) {
@@ -325,7 +324,7 @@ class MyHealthFragment : Fragment() {
                     rv.visibility = View.GONE
                 }
 
-                val userModelList = userRepository.searchUsers(editable?.toString() ?: "", "joinDate", Sort.DESCENDING)
+                val userModelList = userRepository.searchUsers(editable?.toString() ?: "", "joinDate", true)
 
                 loadingJob.cancel()
                 if (isAdded) {

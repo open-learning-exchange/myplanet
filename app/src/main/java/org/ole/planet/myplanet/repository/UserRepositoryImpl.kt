@@ -137,8 +137,9 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUser::class.java)
     }
 
-    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
+    override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<RealmUser> {
         return queryList(RealmUser::class.java) {
+            val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
             sort(fieldName, sortOrder)
         }
     }
@@ -149,7 +150,8 @@ class UserRepositoryImpl @Inject constructor(
         }.take(limit)
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUser> {
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<RealmUser> {
+        val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
         return queryList(RealmUser::class.java) {
             contains("firstName", query, io.realm.Case.INSENSITIVE).or()
             contains("lastName", query, io.realm.Case.INSENSITIVE).or()

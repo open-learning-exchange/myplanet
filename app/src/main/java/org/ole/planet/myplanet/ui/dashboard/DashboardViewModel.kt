@@ -4,7 +4,6 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
@@ -197,7 +196,7 @@ class DashboardViewModel @Inject constructor(
     fun loadUsers() {
         viewModelScope.launch {
             val users = withContext(dispatcherProvider.io) {
-                userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+                userRepository.getUsersSortedBy("joinDate", true)
             }
             _uiState.update { it.copy(users = users) }
         }
