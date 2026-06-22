@@ -52,6 +52,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var confirmation: AlertDialog
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var selectionJob: Job? = null
+    private var pendingScrollState: android.os.Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
 
     @Inject
@@ -73,6 +74,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun loadDataAsync() {
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
+        if (::recyclerView.isInitialized) {
+            pendingScrollState = recyclerView.layoutManager?.onSaveInstanceState()
+        }
         viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
@@ -163,6 +167,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         selectionController.clearAll(adapterCourses)
                         checkList()
                         showNoData(tvMessage, state.courses.size, "courses")
+                        pendingScrollState?.let { saved ->
+                            recyclerView.layoutManager?.onRestoreInstanceState(saved)
+                            pendingScrollState = null
+                        }
                     }
                 }
             }
