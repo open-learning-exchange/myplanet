@@ -9,10 +9,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import java.text.Normalizer
 import java.util.Date
-import java.util.Locale
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
@@ -28,7 +25,6 @@ import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.utils.DiffUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
@@ -37,7 +33,6 @@ class ChatHistoryAdapter(
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
-    private val dispatcherProvider: DispatcherProvider,
     private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
 ) : ListAdapter<RealmChatHistory, ChatHistoryAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
@@ -63,40 +58,8 @@ class ChatHistoryAdapter(
     private lateinit var expandableDetailList: HashMap<String, List<String>>
     private var cachedSharedViewInIds: Map<String, Set<String>> = emptyMap()
 
-    private data class PrecomputedChat(
-        val chat: RealmChatHistory,
-        val normalizedTitle: String?,
-        val normalizedQueries: List<String?>,
-        val normalizedResponses: List<String?>
-    )
-
-    private var precomputedChats: List<PrecomputedChat> = emptyList()
-
-    private var chatHistory: List<RealmChatHistory> = emptyList()
-        set(value) {
-            field = value
-            precomputedChats = buildPrecomputedChats(value)
-        }
-
-    private fun buildPrecomputedChats(chats: List<RealmChatHistory>): List<PrecomputedChat> {
-        return chats.map { chat ->
-            val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
-            } else {
-                chat.title?.let { normalizeText(it) }
-            }
-            val queries = chat.conversations?.map { it?.query?.let { q -> normalizeText(q) } } ?: emptyList()
-            val responses = chat.conversations?.map { it?.response?.let { r -> normalizeText(r) } } ?: emptyList()
-
-            PrecomputedChat(chat, title, queries, responses)
-        }
-    }
-
     init {
-        chatHistory = chatHistoryList.sortedByDescending { chat ->
-            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
-        }
-        submitList(chatHistory)
+        submitList(chatHistoryList)
     }
 
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
@@ -120,98 +83,13 @@ class ChatHistoryAdapter(
         chatHistoryItemClickListener = listener
     }
 
-    fun filter(query: String) {
-        val filteredChatHistory = chatHistory.filter { chat ->
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
-            } else {
-                chat.title?.contains(query, ignoreCase = true) == true
-            }
-        }
-        submitList(filteredChatHistory)
-    }
-
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
-
-    suspend fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        val results = withContext(dispatcherProvider.default) {
-            if (isFullSearch) {
-                fullConvoSearch(s, isQuestion)
-            } else {
-                searchByTitle(s)
-            }
-        }
-        withContext(dispatcherProvider.main) {
-            submitList(results)
-        }
-    }
-
-    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
-        var conversation: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
-        val inTitleStartQuery = mutableListOf<RealmChatHistory>()
-        val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
-
-        for (pChat in precomputedChats) {
-            val conversations = pChat.chat.conversations
-            if (!conversations.isNullOrEmpty()) {
-                for (i in 0 until conversations.size) {
-                    conversation = if (isQuestion) {
-                        pChat.normalizedQueries[i]
-                    } else {
-                        pChat.normalizedResponses[i]
-                    }
-                    if (conversation == null) continue
-                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
-                        break
-                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
-                        if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
-                        break
-                    }
-                }
-            }
-        }
-        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
-    }
-
-    private fun searchByTitle(s: String): List<RealmChatHistory> {
-        var title: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
-
-        for (pChat in precomputedChats) {
-            title = pChat.normalizedTitle
-            if (title == null) continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(pChat.chat)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(pChat.chat)
-            }
-        }
-        return startsWithQuery + containsQuery
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
         rowChatHistoryBinding = RowChatHistoryBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
-        chatHistory = newChatHistory.sortedByDescending { chat ->
-            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
-        }
-        submitList(chatHistory)
+        submitList(newChatHistory)
     }
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
@@ -369,8 +247,4 @@ class ChatHistoryAdapter(
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
-
-    companion object {
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-    }
 }

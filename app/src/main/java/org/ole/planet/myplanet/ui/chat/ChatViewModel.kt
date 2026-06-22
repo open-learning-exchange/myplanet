@@ -7,11 +7,14 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.text.Normalizer
+import java.util.Locale
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -30,16 +33,30 @@ class ChatViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
+    private data class PrecomputedChat(
+        val chat: RealmChatHistory,
+        val normalizedTitle: String?,
+        val normalizedQueries: List<String?>,
+        val normalizedResponses: List<String?>
+    )
+
     companion object {
         const val PAGE_SIZE = 20
+        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var allConversations: List<RealmConversation> = emptyList()
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
+    private var allChats: List<RealmChatHistory> = emptyList()
+    private var precomputedChats: List<PrecomputedChat> = emptyList()
+
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
+
+    private val _filteredChats = MutableStateFlow<List<RealmChatHistory>>(emptyList())
+    val filteredChats: StateFlow<List<RealmChatHistory>> = _filteredChats.asStateFlow()
 
     private var cachedUser: RealmUser? = null
     private var cachedShareTargets: ChatShareTargets? = null
@@ -76,10 +93,108 @@ class ChatViewModel @Inject constructor(
                 val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
                 val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
 
+                allChats = sortChats(chatHistory)
+                precomputedChats = buildPrecomputedChats(allChats)
                 ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
             }
             _screenData.value = data
+            _filteredChats.value = allChats
         }
+    }
+
+    private fun sortChats(chats: List<RealmChatHistory>): List<RealmChatHistory> {
+        return chats.sortedByDescending { chat ->
+            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
+        }
+    }
+
+    private fun buildPrecomputedChats(chats: List<RealmChatHistory>): List<PrecomputedChat> {
+        return chats.map { chat ->
+            val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
+                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
+            } else {
+                chat.title?.let { normalizeText(it) }
+            }
+            val queries = chat.conversations?.map { it?.query?.let { q -> normalizeText(q) } } ?: emptyList()
+            val responses = chat.conversations?.map { it?.response?.let { r -> normalizeText(r) } } ?: emptyList()
+
+            PrecomputedChat(chat, title, queries, responses)
+        }
+    }
+
+    private fun normalizeText(str: String): String {
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+            .replace(DIACRITICS_REGEX, "")
+    }
+
+    fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
+        if (query.isBlank()) {
+            _filteredChats.value = allChats
+            return
+        }
+        viewModelScope.launch {
+            val results = withContext(dispatcherProvider.default) {
+                if (isFullSearch) {
+                    fullConvoSearch(query, isQuestion)
+                } else {
+                    searchByTitle(query)
+                }
+            }
+            _filteredChats.value = results
+        }
+    }
+
+    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
+        var conversation: String?
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
+        val normalizedQuery = normalizeText(s)
+        val inTitleStartQuery = mutableListOf<RealmChatHistory>()
+        val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
+        val startsWithQuery = mutableListOf<RealmChatHistory>()
+        val containsQuery = mutableListOf<RealmChatHistory>()
+
+        for (pChat in precomputedChats) {
+            val conversations = pChat.chat.conversations
+            if (!conversations.isNullOrEmpty()) {
+                for (i in 0 until conversations.size) {
+                    conversation = if (isQuestion) {
+                        pChat.normalizedQueries[i]
+                    } else {
+                        pChat.normalizedResponses[i]
+                    }
+                    if (conversation == null) continue
+                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
+                        if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
+                        break
+                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
+                        if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
+                        break
+                    }
+                }
+            }
+        }
+        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
+    }
+
+    private fun searchByTitle(s: String): List<RealmChatHistory> {
+        var title: String?
+        val queryParts = s.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { normalizeText(it) }
+        val normalizedQuery = normalizeText(s)
+        val startsWithQuery = mutableListOf<RealmChatHistory>()
+        val containsQuery = mutableListOf<RealmChatHistory>()
+
+        for (pChat in precomputedChats) {
+            title = pChat.normalizedTitle
+            if (title == null) continue
+            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                startsWithQuery.add(pChat.chat)
+            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                containsQuery.add(pChat.chat)
+            }
+        }
+        return startsWithQuery + containsQuery
     }
 
     private suspend fun loadCurrentUser(userId: String?): RealmUser? {
