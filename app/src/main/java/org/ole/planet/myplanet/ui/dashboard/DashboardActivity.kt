@@ -163,7 +163,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
-            notificationManager = NotificationUtils.getInstance(this@DashboardActivity)
+            notificationManager = withContext(dispatcherProvider.io) {
+                NotificationUtils.getInstance(this@DashboardActivity)
+            }
         }
     }
 

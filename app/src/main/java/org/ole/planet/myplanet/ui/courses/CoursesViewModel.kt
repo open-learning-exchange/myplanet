@@ -157,17 +157,40 @@ class CoursesViewModel @Inject constructor(
         }
     }
 
-    fun filterCourses(isMyCourseLib: Boolean, userId: String?, searchText: String, selectedGrade: String, selectedSubject: String, tagNames: List<String>) {
+    fun filterCourses(
+        isMyCourseLib: Boolean,
+        userId: String?,
+        searchText: String,
+        selectedGrade: String,
+        selectedSubject: String,
+        tagNames: List<String>,
+        progressFilter: String = ""
+    ) {
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
-
                 val map = _coursesState.value.map
                 val progressMap = _coursesState.value.progressMap
                 val tagsMap = _coursesState.value.tagsMap
 
-                processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap, tagsMap)
+                val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
+                    myCourses
+                } else {
+                    myCourses.filter { course ->
+                        val p = progressMap[course.courseId]
+                        val current = p?.get("current")?.asInt ?: 0
+                        val max = p?.get("max")?.asInt ?: 0
+                        when (progressFilter) {
+                            "Not Started" -> current == 0
+                            "In Progress" -> current > 0 && current < max
+                            "Completed"   -> max > 0 && current >= max
+                            else -> true
+                        }
+                    }
+                }
+
+                processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, map, progressMap, tagsMap)
             }
         }
     }

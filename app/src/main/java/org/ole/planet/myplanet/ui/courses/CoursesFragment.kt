@@ -228,7 +228,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             rootView = requireView(),
             scope = viewLifecycleOwner.lifecycleScope,
             onFilterChanged = { state ->
-                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade,
+                    state.subject, state.tagNames, state.progressFilter)
             },
             onScrollToTop = { scrollToTop() }
         )
@@ -480,7 +481,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         if (::filterController.isInitialized) {
             val state = filterController.currentState()
-            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter)
             scrollToTop()
         }
     }
