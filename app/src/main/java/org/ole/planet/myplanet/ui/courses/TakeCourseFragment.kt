@@ -52,6 +52,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
     private var lastPositionBeforeExam = -1
+    private var pendingJoinDialog = false
+    private var courseDetailContentReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -212,7 +214,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 ) { _: DialogInterface?, _: Int ->
                     addRemoveCourse()
                 }
-                joinDialog?.show()
+
+                pendingJoinDialog = true
+                maybeShowJoinDialog()
+                binding.viewPager2.postDelayed({
+                    courseDetailContentReady = true
+                    maybeShowJoinDialog()
+                }, JOIN_DIALOG_FALLBACK_MS)
             } else {
                 binding.btnRemove.visibility = View.GONE
             }
@@ -224,11 +232,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 detachedCurrentCourse?.courseId?.let { courseId ->
                     detachedCurrentCourse.courseTitle?.let { courseTitle ->
                         detachedUserModel?.name?.let { userName ->
-                            coursesRepository.logCourseVisit(
-                                courseId,
-                                courseTitle,
-                                userName
-                            )
+                            coursesRepository.logCourseVisit(courseId, courseTitle, userName)
                         }
                     }
                 }
@@ -249,6 +253,17 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                 binding.courseProgress.visibility = View.GONE
             }
         }
+    }
+
+    fun onCourseDetailContentReady() {
+        courseDetailContentReady = true
+        maybeShowJoinDialog()
+    }
+
+    private fun maybeShowJoinDialog() {
+        if (!pendingJoinDialog || !courseDetailContentReady || _binding == null || !isAdded) return
+        pendingJoinDialog = false
+        joinDialog?.show()
     }
 
     override fun onPageScrolled(position: Int, positionOffset: Float, positionOffsetPixels: Int) {}
@@ -432,6 +447,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private val isValidClickLeft: Boolean get() = binding.viewPager2.adapter != null && binding.viewPager2.currentItem > 0
 
     companion object {
+        private const val JOIN_DIALOG_FALLBACK_MS = 5000L
+
         @JvmStatic
         fun newInstance(b: Bundle?): TakeCourseFragment {
             val takeCourseFragment = TakeCourseFragment()
