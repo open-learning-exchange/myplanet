@@ -39,6 +39,12 @@ class ResourcesAdapter(
     private var isAscending = true
     private var isTitleAscending = true
 
+    init {
+        if (context is OnHomeItemClickListener) {
+            homeItemClickListener = context
+        }
+    }
+
     companion object {
         private const val SELECTION_PAYLOAD = "SELECTION_PAYLOAD"
         private const val RATING_PAYLOAD = "RATING_PAYLOAD"

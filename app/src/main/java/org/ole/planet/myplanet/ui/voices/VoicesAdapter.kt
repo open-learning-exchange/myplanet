@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -53,7 +52,6 @@ class VoicesAdapter(
     private var parentNews: RealmNews?,
     private val teamName: String = "",
     private val teamId: String? = null,
-    private val userSessionManager: UserSessionManager,
     private val isTeamLeaderFn: ((Boolean) -> Unit) -> Unit,
     private val getUserFn: (String, (RealmUser?) -> Unit) -> Unit,
     private val getReplyCountFn: (String, (Int) -> Unit) -> (() -> Unit),
@@ -129,7 +127,6 @@ class VoicesAdapter(
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
-    private val profileDbHandler = userSessionManager
     private val userCache = object : LinkedHashMap<String, RealmUser?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, RealmUser?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
@@ -150,7 +147,16 @@ class VoicesAdapter(
             return
         }
         isTeamLeaderFn { isLeader ->
+            val changed = _isTeamLeader != isLeader
             _isTeamLeader = isLeader
+            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount)
+        }
+    }
+
+    fun setCurrentUser(user: RealmUser?) {
+        if (currentUser !== user) {
+            currentUser = user
+            if (itemCount > 0) notifyItemRangeChanged(0, itemCount)
         }
     }
 
@@ -185,8 +191,8 @@ class VoicesAdapter(
             holder.bind(position)
             val news = getNews(holder, position)
 
-            if (news?.isValid == true) {
-                val sharedTeamName = org.ole.planet.myplanet.utils.JsonUtils.extractSharedTeamName(news)
+            if (news.isValid) {
+                val sharedTeamName = JsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
                 val userModel = configureUser(holder, news)
@@ -316,16 +322,11 @@ class VoicesAdapter(
     }
 
     private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: RealmNews) {
-        if (news.sharedBy == currentUser?._id && !fromLogin && !nonTeamMember && teamName.isEmpty()) {
-            holder.binding.imgDelete.visibility = View.VISIBLE
-        }
-
-        if (news.userId == currentUser?._id || news.sharedBy == currentUser?._id) {
+        if (canDelete(news)) {
             holder.binding.imgDelete.setOnClickListener {
                 val pos = holder.bindingAdapterPosition
                 val snapshotList = currentList.toMutableList()
                 val newsToDelete = snapshotList.getOrNull(pos)
-                val isParent = parentNews != null && pos == 0
                 AlertDialog.Builder(context, R.style.AlertDialogTheme)
                     .setMessage(R.string.delete_record)
                     .setPositiveButton(R.string.ok) { _: DialogInterface?, _: Int ->
@@ -338,7 +339,7 @@ class VoicesAdapter(
             }
         }
 
-        if (news.userId == currentUser?._id) {
+        if (canEdit(news)) {
             holder.binding.imgEdit.setOnClickListener {
                 onEditAction {
                     VoicesActions.showEditAlert(
@@ -464,7 +465,7 @@ class VoicesAdapter(
                     }
                 }
             } catch (e: IllegalStateException) {
-                // If Realm manages the object and we are on a different thread, mutating @Ignore fields might throw.
+                // If Realm manages the object, and we are on a different thread, mutating @Ignore fields might throw.
                 e.printStackTrace()
             }
         }
@@ -485,23 +486,31 @@ class VoicesAdapter(
 
     private fun isGuestUser() = currentUser?.id?.startsWith("guest") == true
 
+    private fun matchesCurrentUser(id: String?): Boolean {
+        if (id.isNullOrEmpty()) return false
+        return id == currentUser?._id || id == currentUser?.id
+    }
+
     private fun isOwner(news: RealmNews?): Boolean =
-        news?.userId == currentUser?._id
+        matchesCurrentUser(news?.userId)
 
     private fun isSharedByCurrentUser(news: RealmNews?): Boolean =
-        news?.sharedBy == currentUser?._id
+        matchesCurrentUser(news?.sharedBy)
 
     private fun isAdmin(): Boolean =
-        currentUser?.level.equals("admin", ignoreCase = true)
+        currentUser?.isManager() == true
 
     private fun isLoggedInAndMember(): Boolean =
         !fromLogin && !nonTeamMember
 
+    private fun canModerate(): Boolean =
+        !fromLogin && (isAdmin() || isTeamLeader())
+
     private fun canEdit(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isAdmin() || isTeamLeader())
+        !fromLogin && (isOwner(news) || canModerate())
 
     private fun canDelete(news: RealmNews?): Boolean =
-        isLoggedInAndMember() && (isOwner(news) || isSharedByCurrentUser(news) || isAdmin() || isTeamLeader())
+        !fromLogin && (isOwner(news) || isSharedByCurrentUser(news) || canModerate())
 
     private fun canReply(): Boolean =
         isLoggedInAndMember() && !isGuestUser()
@@ -518,11 +527,6 @@ class VoicesAdapter(
 
     fun isTeamLeader(): Boolean {
         return _isTeamLeader ?: false
-    }
-
-    fun invalidateTeamLeaderCache() {
-        _isTeamLeader = null
-        fetchTeamLeaderStatus()
     }
 
     private fun applyReplyCount(binding: RowNewsBinding, replyCount: Int, position: Int) {
