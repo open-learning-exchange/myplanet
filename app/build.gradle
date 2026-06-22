@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< 14060-not-able-to-add-a-rating
         versionCode = 5800
         versionName = "0.58.0"
+=======
+        versionCode = 5799
+        versionName = "0.57.99"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }

@@ -1325,5 +1325,12 @@
     <string name="meetup_updated">Kulanka si guul leh ayaa loo cusboonaysiiyay</string>
     <string name="meetup_not_updated">Cusboonaysiinta kulanka wey fashilantay</string>
     <string name="removed_from_teamcourse">Koorska waxaa laga saaray kooxda</string>
+    <string name="progress">Horumar</string>
+    <string-array name="progress_filter">
+        <item>Dhammaan</item>
+        <item>Lama bilaabin</item>
+        <item>Socda</item>
+        <item>Dhammaystiran</item>
+    </string-array>
 
 </resources>
