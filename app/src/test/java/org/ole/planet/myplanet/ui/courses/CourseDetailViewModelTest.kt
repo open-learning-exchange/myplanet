@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.content.Context
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -10,12 +11,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUser
@@ -50,8 +53,19 @@ class CourseDetailViewModelTest {
 
     private val courseId = "course_1"
 
+    private var originalContext: Context? = null
+
     @Before
     fun setUp() {
+        // loadCourseDetail builds the markdown base URL from MainApplication.context, which is
+        // otherwise uninitialized in a plain JVM unit test and would surface as an Error state.
+        try {
+            originalContext = MainApplication.context
+        } catch (e: Exception) {
+            // UninitializedPropertyAccessException if context was never set
+        }
+        MainApplication.testContext = mockk<Context>(relaxed = true)
+
         viewModel = CourseDetailViewModel(
             coursesRepository,
             submissionsRepository,
@@ -59,6 +73,11 @@ class CourseDetailViewModelTest {
             userSessionManager,
             dispatcherProvider
         )
+    }
+
+    @After
+    fun tearDown() {
+        MainApplication.testContext = originalContext
     }
 
     private fun stubCourseLoad(
