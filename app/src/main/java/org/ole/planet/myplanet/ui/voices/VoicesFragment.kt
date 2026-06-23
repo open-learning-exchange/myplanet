@@ -6,8 +6,6 @@ import android.os.Trace
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
@@ -15,6 +13,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
+import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.OptIn
@@ -34,7 +33,9 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesViewModel
+import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.textChanges
@@ -57,7 +58,8 @@ class VoicesFragment : BaseVoicesFragment() {
     private var labelFilteredList: List<RealmNews?> = listOf()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
-    private var labelAdapter: ArrayAdapter<String>? = null
+    private val labelDisplayToValue = mutableMapOf<String, String>()
+    private var labelAdapter: VoicesLabelAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -92,6 +94,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             if (user?.id?.startsWith("guest") == true) {
@@ -352,61 +355,116 @@ class VoicesFragment : BaseVoicesFragment() {
     }
     
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
-        updateLabelSpinner(precomputedLabels)
-
-        binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedLabel = labelAdapter?.getItem(position) ?: "All"
-                viewLifecycleOwner.lifecycleScope.launch {
-                    labelFilteredList = voicesViewModel.filterByLabel(filteredNewsList, selectedLabel)
+        val binding = _binding ?: return
+        if (labelAdapter == null) {
+            labelAdapter = VoicesLabelAdapter(
+                selectedLabel = selectedLabel,
+                onItemClick = { label ->
+                    selectedLabel = label
+                    labelAdapter?.setSelectedLabel(label)
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
                     searchFilteredList = applySearchFilter(labelFilteredList)
                     setData(searchFilteredList)
                     scrollToTop()
                 }
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            )
+            binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+            binding.filterByLabel.adapter = labelAdapter
+        }
+        updateLabelSpinner(precomputedLabels)
+    }
+
+    private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
+        val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
+        labelAdapter?.submitList(labels)
+
+        val position = labels.indexOf(selectedLabel)
+        if (position >= 0) {
+            _binding?.filterByLabel?.scrollToPosition(position)
         }
     }
-    
-    private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
-        val binding = _binding ?: return
 
-        if (precomputedLabels != null) {
-            val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
-            val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, precomputedLabels)
-            labelAdapter = adapter
-            adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            binding.filterByLabel.adapter = adapter
+    private fun collectAllLabels(list: List<RealmNews?>): List<String> {
+        labelDisplayToValue.clear()
 
-            val position = precomputedLabels.indexOf(selectedLabel)
-            if (position >= 0) {
-                binding.filterByLabel.setSelection(position)
-            } else {
-                selectedLabel = "All"
-                binding.filterByLabel.setSelection(0)
+        val allLabels = mutableSetOf<String>()
+        allLabels.add("All")
+
+        Constants.LABELS.forEach { (labelName, labelValue) ->
+            allLabels.add(labelName)
+            labelDisplayToValue[labelName] = labelValue
+        }
+
+        allLabels.add("Shared Chat")
+
+        list.forEach { news ->
+            if (!news?.viewIn.isNullOrEmpty()) {
+                try {
+                    val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                    if (ar.size() > 1) {
+                        val ob = ar[0].asJsonObject
+                        if (ob.has("name") && !ob.get("name").isJsonNull) {
+                            val sharedTeamName = ob.get("name").asString
+                            if (sharedTeamName.isNotEmpty()) {
+                                allLabels.add(sharedTeamName)
+                            }
+                        }
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
-        } else {
-            viewLifecycleOwner.lifecycleScope.launch {
-                val labels = voicesViewModel.collectLabels(filteredNewsList)
-                val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
-                val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
-                labelAdapter = adapter
-                adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                binding.filterByLabel.adapter = adapter
 
-                val position = labels.indexOf(selectedLabel)
-                if (position >= 0) {
-                    binding.filterByLabel.setSelection(position)
-                } else {
-                    selectedLabel = "All"
-                    binding.filterByLabel.setSelection(0)
+            news?.labels?.forEach { label ->
+                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                    ?: VoicesLabelManager.formatLabelValue(label)
+                allLabels.add(labelName)
+                labelDisplayToValue.putIfAbsent(labelName, label)
+            }
+        }
+
+        return allLabels.sorted()
+    }
+
+    private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
+        if (selectedLabel == "All") {
+            return list
+        }
+
+        return list.filter { news ->
+            when {
+                selectedLabel == "Shared Chat" -> {
+                    news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
+                }
+                labelDisplayToValue.containsKey(selectedLabel) -> {
+                    val labelValue = labelDisplayToValue[selectedLabel]
+                    news?.labels?.contains(labelValue) == true
+                }
+                else -> {
+                    extractSharedTeamName(news) == selectedLabel
                 }
             }
         }
     }
-    
+
+    private fun extractSharedTeamName(news: RealmNews?): String {
+        if (!news?.viewIn.isNullOrEmpty()) {
+            try {
+                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                if (ar.size() > 1) {
+                    val ob = ar[0].asJsonObject
+                    if (ob.has("name") && !ob.get("name").isJsonNull) {
+                        return ob.get("name").asString
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+        return ""
+    }
+
     override fun onDestroyView() {
-        binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
         labelAdapter = null
         _binding = null
