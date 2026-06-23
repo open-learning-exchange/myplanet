@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ItemReorderHelper
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities

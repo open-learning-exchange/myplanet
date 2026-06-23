@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.utils
 
-import org.ole.planet.myplanet.model.RealmNews
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
+import org.ole.planet.myplanet.model.RealmNews
 
 object ChatHistoryUtils {
     fun extractSharedViewInIds(sharedNews: List<RealmNews>): Map<String, Set<String>> {

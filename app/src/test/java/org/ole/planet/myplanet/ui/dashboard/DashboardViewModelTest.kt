@@ -182,7 +182,7 @@ class DashboardViewModelTest {
             RealmUser().apply { name = "User 2" }
         )
 
-        coEvery { userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING) } returns users
+        coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
 
         viewModel.loadUsers()
         advanceUntilIdle()

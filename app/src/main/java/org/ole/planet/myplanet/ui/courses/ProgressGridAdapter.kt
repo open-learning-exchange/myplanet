@@ -18,9 +18,8 @@ class ProgressGridAdapter(private val context: Context) :
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
     ) {
-    private lateinit var rowMyProgressGridBinding: RowMyProgressGridBinding
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyProgress {
-        rowMyProgressGridBinding =
+        val rowMyProgressGridBinding =
             RowMyProgressGridBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolderMyProgress(rowMyProgressGridBinding)
     }

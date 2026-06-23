@@ -60,13 +60,11 @@ class VoicesRepositoryImpl @Inject constructor(
             val managedNewsMap = mutableMapOf<String, RealmNews>()
 
             if (ids.isNotEmpty()) {
-                ids.chunked(999).forEach { chunk ->
-                    val results = realm.where(RealmNews::class.java)
-                        .`in`("id", chunk.toTypedArray())
-                        .findAll()
-                    results.forEach { n ->
-                        n.id?.let { id -> managedNewsMap[id] = n }
-                    }
+                val results = realm.where(RealmNews::class.java)
+                    .`in`("id", ids.toTypedArray())
+                    .findAll()
+                results.forEach { n ->
+                    n.id?.let { id -> managedNewsMap[id] = n }
                 }
             }
 
@@ -446,12 +444,12 @@ class VoicesRepositoryImpl @Inject constructor(
         return false
     }
 
-    private val dateFormat = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-    }
+    private val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     private fun getDateFromTimestamp(timestamp: Long): String {
-        return dateFormat.get()?.format(java.util.Date(timestamp)) ?: ""
+        return java.time.Instant.ofEpochMilli(timestamp)
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(dateFormatter)
     }
 
     override suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews> {

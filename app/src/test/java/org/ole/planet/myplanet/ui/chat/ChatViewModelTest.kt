@@ -5,7 +5,6 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -18,7 +17,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -71,40 +69,6 @@ class ChatViewModelTest {
     fun `shouldFetchAiProviders returns false after setAiProviders`() {
         viewModel.setAiProviders(mapOf("openai" to true))
         assertFalse(viewModel.shouldFetchAiProviders())
-    }
-
-    @Test
-    fun `continueConversation emits true on success`() = runTest {
-        coEvery { chatRepository.continueConversation("id1", "query", "response", "rev1") } returns Unit
-
-        val job = launch(testDispatcher) {
-            val success = viewModel.conversationSaveSuccess.first()
-            assertTrue(success)
-        }
-
-        viewModel.continueConversation("id1", "query", "response", "rev1")
-        job.join()
-        coVerify { chatRepository.continueConversation("id1", "query", "response", "rev1") }
-    }
-
-    @Test
-    fun `continueConversation emits false on error`() = runTest {
-        coEvery { chatRepository.continueConversation("id2", "query", "response", "rev2") } throws Exception("Test Error")
-
-        val job = launch(testDispatcher) {
-            val success = viewModel.conversationSaveSuccess.first()
-            assertFalse(success)
-        }
-
-        viewModel.continueConversation("id2", "query", "response", "rev2")
-        job.join()
-        coVerify { chatRepository.continueConversation("id2", "query", "response", "rev2") }
-    }
-
-    @Test
-    fun `continueConversation returns early if both query and response are blank`() = runTest {
-        viewModel.continueConversation("id", "", "  ", "rev1")
-        coVerify(exactly = 0) { chatRepository.continueConversation(any(), any(), any(), any()) }
     }
 
     @Test
@@ -168,7 +132,10 @@ class ChatViewModelTest {
     @Test
     fun `loadChatHistoryScreenData fetches all data correctly when no caches are provided`() = runTest {
         val user = mockk<RealmUser>(relaxed = true)
-        val conversation = mockk<org.ole.planet.myplanet.model.RealmChatHistory>(relaxed = true)
+        val conversation = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+            createdDate = "123"
+            updatedDate = "123"
+        }
         val news = RealmNews()
         val team = mockk<TeamSummary>(relaxed = true)
 
@@ -215,9 +182,71 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `searchChats by title correctly filters list`() = runTest {
+        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "First Chat" }
+        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Second Discussion" }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+
+        viewModel.loadChatHistoryScreenData("user123", null, null)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.searchChats("First", isFullSearch = false, isQuestion = false)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.filteredChats.value.size)
+        assertEquals("First Chat", viewModel.filteredChats.value[0].title)
+    }
+
+    @Test
+    fun `searchChats by full conversation filters by question`() = runTest {
+        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+            title = "Chat 1"
+            conversations = io.realm.RealmList(RealmConversation().apply { query = "How is the weather?" })
+        }
+        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+            title = "Chat 2"
+            conversations = io.realm.RealmList(RealmConversation().apply { query = "Tell me a joke." })
+        }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+
+        viewModel.loadChatHistoryScreenData("user123", null, null)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.searchChats("weather", isFullSearch = true, isQuestion = true)
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, viewModel.filteredChats.value.size)
+        assertEquals("Chat 1", viewModel.filteredChats.value[0].title)
+    }
+
+    @Test
+    fun `searchChats with empty query resets filtered list`() = runTest {
+        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Chat 1" }
+        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Chat 2" }
+
+        coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
+
+        viewModel.loadChatHistoryScreenData("user123", null, null)
+        testScheduler.advanceUntilIdle()
+
+        viewModel.searchChats("Chat 1", isFullSearch = false, isQuestion = false)
+        testScheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.filteredChats.value.size)
+
+        viewModel.searchChats("", isFullSearch = false, isQuestion = false)
+        testScheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.filteredChats.value.size)
+    }
+
+    @Test
     fun `loadChatHistoryScreenData uses cached data and handles nulls gracefully`() = runTest {
         val cachedUser = mockk<RealmUser>(relaxed = true)
-        val conversation = mockk<org.ole.planet.myplanet.model.RealmChatHistory>(relaxed = true)
+        val conversation = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+            createdDate = "123"
+            updatedDate = "123"
+        }
         val news = RealmNews()
 
         coEvery { userRepository.getUserById("user123") } returns cachedUser

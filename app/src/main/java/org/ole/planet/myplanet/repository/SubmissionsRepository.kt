@@ -51,7 +51,7 @@ interface SubmissionsRepository {
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission
     suspend fun getPhotosByIds(ids: Array<String>): List<org.ole.planet.myplanet.model.RealmSubmitPhotos>
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun insertSubmission(mRealm: io.realm.Realm, submission: com.google.gson.JsonObject)
+    suspend fun insertSubmission(submission: com.google.gson.JsonObject)
     suspend fun getExamUploadPayload(submission: org.ole.planet.myplanet.model.RealmSubmission): com.google.gson.JsonObject
     suspend fun serializeSubmission(submission: org.ole.planet.myplanet.model.RealmSubmission, context: android.content.Context, source: String, parentCode: String): com.google.gson.JsonObject
     suspend fun generateSubmissionPdf(submissionId: String): java.io.File?

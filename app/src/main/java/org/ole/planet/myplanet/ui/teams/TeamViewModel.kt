@@ -26,6 +26,7 @@ sealed class TeamActionResult {
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
@@ -112,7 +113,7 @@ class TeamViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-                teamsRepository.syncTeamActivities()
+                teamsSyncRepository.syncTeamActivities()
             }
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
@@ -122,7 +123,7 @@ class TeamViewModel @Inject constructor(
         viewModelScope.launch {
             withContext(dispatcherProvider.io) {
                 teamsRepository.leaveTeam(teamId, userId)
-                teamsRepository.syncTeamActivities()
+                teamsSyncRepository.syncTeamActivities()
             }
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }

@@ -104,8 +104,8 @@ class VoicesFragment : BaseVoicesFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     val filtered = news.map { it as RealmNews? }
-                    val labels = collectAllLabels(filtered)
-                    val labelFiltered = applyLabelFilter(filtered)
+                    val labels = voicesViewModel.collectLabels(filtered)
+                    val labelFiltered = voicesViewModel.filterByLabel(filtered, selectedLabel)
                     val searchFiltered =
                         applySearchFilter(labelFiltered, etSearch.text.toString().trim())
                     if (_binding != null) {
@@ -143,7 +143,7 @@ class VoicesFragment : BaseVoicesFragment() {
                     if (n != null) {
                         n.sortDate = n.calculateSortDate()
                         filteredNewsList = listOf(n) + filteredNewsList
-                        labelFilteredList = applyLabelFilter(filteredNewsList)
+                        labelFilteredList = voicesViewModel.filterByLabel(filteredNewsList, selectedLabel)
                         searchFilteredList = applySearchFilter(labelFilteredList)
                         setData(searchFilteredList)
                     }
@@ -233,7 +233,6 @@ class VoicesFragment : BaseVoicesFragment() {
             parentNews = null,
             teamName = "",
             teamId = null,
-            userSessionManager = userSessionManager,
             isTeamLeaderFn = { onResult -> onResult(false) },
             getUserFn = { userId, onResult ->
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -374,7 +373,7 @@ class VoicesFragment : BaseVoicesFragment() {
         }
         updateLabelSpinner(precomputedLabels)
     }
-    
+
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
         labelAdapter?.submitList(labels)
@@ -384,7 +383,7 @@ class VoicesFragment : BaseVoicesFragment() {
             _binding?.filterByLabel?.scrollToPosition(position)
         }
     }
-    
+
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
         labelDisplayToValue.clear()
 
@@ -426,12 +425,12 @@ class VoicesFragment : BaseVoicesFragment() {
 
         return allLabels.sorted()
     }
-    
+
     private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
         if (selectedLabel == "All") {
             return list
         }
-        
+
         return list.filter { news ->
             when {
                 selectedLabel == "Shared Chat" -> {
@@ -447,7 +446,7 @@ class VoicesFragment : BaseVoicesFragment() {
             }
         }
     }
-    
+
     private fun extractSharedTeamName(news: RealmNews?): String {
         if (!news?.viewIn.isNullOrEmpty()) {
             try {

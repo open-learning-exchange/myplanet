@@ -488,7 +488,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
         if (`object` != null) {
             val usages = `object`.getAsJsonArray("usages")
-            usages.addAll(org.ole.planet.myplanet.model.MyPlanet.getTabletUsages(context))
+            usages.addAll(org.ole.planet.myplanet.model.MyPlanet.getTabletUsages(context, sharedPrefManager))
             `object`.add("usages", usages)
         } else {
             `object` = org.ole.planet.myplanet.model.MyPlanet.getMyPlanetActivities(context, sharedPrefManager, userModel)
