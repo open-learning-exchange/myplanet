@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
@@ -20,11 +21,13 @@ import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MarkdownUtils
 
 sealed interface CourseDetailUiState {
     object Loading : CourseDetailUiState
     data class Success(
         val course: RealmMyCourse,
+        val markdownDescription: String,
         val examCount: Int,
         val resources: List<RealmMyLibrary>,
         val downloadedResources: List<RealmMyLibrary>,
@@ -90,8 +93,15 @@ class CourseDetailViewModel @Inject constructor(
                             }
                         }
 
+                        val markdownDescription = MarkdownUtils.prependBaseUrlToImages(
+                            course.description,
+                            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                            600, 350
+                        )
+
                         CourseDetailUiState.Success(
                             course = course,
+                            markdownDescription = markdownDescription,
                             examCount = examCount,
                             resources = resources,
                             downloadedResources = downloadedResources,

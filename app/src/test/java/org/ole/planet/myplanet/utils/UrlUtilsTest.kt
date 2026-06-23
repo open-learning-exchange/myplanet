@@ -32,6 +32,7 @@ class UrlUtilsTest {
     fun setUp() {
         mockSpm = mockk(relaxed = true)
         mockEntryPoint = mockk()
+        UrlUtils.resetForTesting()
         every { mockEntryPoint.sharedPrefManager() } returns mockSpm
 
         mockkStatic(EntryPointAccessors::class)
