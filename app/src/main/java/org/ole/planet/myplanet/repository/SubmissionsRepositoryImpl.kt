@@ -326,11 +326,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return runCatching {
             submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
                 val jsonObject = JsonParser.parseString(userJson).asJsonObject
-                if (jsonObject.has("name")) {
-                    jsonObject.get("name").asString.takeIf { it.isNotBlank() }
-                } else {
-                    null
-                }
+                JsonUtils.getString("name", jsonObject).takeIf { it.isNotBlank() }
             }
         }.getOrNull()
     }

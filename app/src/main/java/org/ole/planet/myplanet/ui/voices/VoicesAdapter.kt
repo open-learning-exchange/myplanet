@@ -233,7 +233,7 @@ class VoicesAdapter(
         replyCountCache.remove(newsId)
         val index = currentList.indexOfFirst { it.id == newsId }
         if (index >= 0) {
-            notifyItemChanged(index)
+            safeNotifyItemChanged(index)
         }
     }
 
@@ -290,7 +290,7 @@ class VoicesAdapter(
                     fetchingUserIds.remove(userId)
                     currentList.forEachIndexed { index, item ->
                         if (item.userId == userId) {
-                            notifyItemChanged(index)
+                            safeNotifyItemChanged(index)
                         }
                     }
                 }
@@ -352,7 +352,7 @@ class VoicesAdapter(
                         voicesRepository,
                         { h, updatedNews, pos ->
                             showReplyButton(h, updatedNews, pos)
-                            notifyItemChanged(pos)
+                            safeNotifyItemChanged(pos)
                         },
                         onEditAction
                     )
@@ -628,6 +628,21 @@ class VoicesAdapter(
                 }
                 .setNegativeButton(R.string.cancel, null)
                 .show()
+        }
+    }
+
+    // Notifying the adapter while the RecyclerView is laying out/scrolling throws
+    // IllegalStateException. Async callbacks (user fetch, edit, etc.) can resolve
+    // synchronously during onBindViewHolder, so defer the notify to the RV handler.
+    private fun safeNotifyItemChanged(position: Int) {
+        if (position < 0) return
+        val rv = recyclerView
+        if (rv != null && (rv.isComputingLayout || rv.scrollState != RecyclerView.SCROLL_STATE_IDLE)) {
+            rv.post {
+                if (position < itemCount) notifyItemChanged(position)
+            }
+        } else {
+            notifyItemChanged(position)
         }
     }
 

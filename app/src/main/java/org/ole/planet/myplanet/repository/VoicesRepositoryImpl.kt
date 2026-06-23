@@ -174,8 +174,7 @@ class VoicesRepositoryImpl @Inject constructor(
             val array = gson.fromJson(viewIn, JsonArray::class.java)
             array?.any { element ->
                 element != null && element.isJsonObject &&
-                    element.asJsonObject.has("_id") &&
-                    element.asJsonObject.get("_id").asString.equals(userIdentifier, ignoreCase = true)
+                    JsonUtils.getString("_id", element.asJsonObject).equals(userIdentifier, ignoreCase = true)
             } == true
         } catch (throwable: Throwable) {
             false
