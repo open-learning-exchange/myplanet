@@ -101,7 +101,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
+        private lateinit var instance: MainApplication
+
+        val context: Context get() = instance.applicationContext
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
@@ -226,7 +228,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        context = this
+        instance = this
         setupCriticalProperties()
         LocaleUtils.preload(this)
         warmUpMainThreadRealm()
