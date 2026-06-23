@@ -9,6 +9,7 @@ import android.net.TrafficStats
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.lifecycle.DefaultLifecycleObserver
@@ -103,7 +104,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private lateinit var instance: MainApplication
 
-        val context: Context get() = instance.applicationContext
+        @VisibleForTesting
+        var testContext: Context? = null
+
+        val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false

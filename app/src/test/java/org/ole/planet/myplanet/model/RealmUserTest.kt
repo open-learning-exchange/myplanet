@@ -43,14 +43,12 @@ class RealmUserTest {
         } catch (e: Exception) {
             // UninitializedPropertyAccessException if context was never set
         }
-        MainApplication.context = mockContext
+        MainApplication.testContext = mockContext
     }
 
     @After
     fun tearDown() {
-        if (originalContext != null) {
-            MainApplication.context = originalContext!!
-        }
+        MainApplication.testContext = originalContext
         Dispatchers.resetMain()
         unmockkAll()
     }

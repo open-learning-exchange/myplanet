@@ -28,7 +28,7 @@ class MainApplicationTest {
     @Before
     fun setup() {
         mockContext = mockk(relaxed = true)
-        MainApplication.context = mockContext
+        MainApplication.testContext = mockContext
 
         mockEntryPoint = mockk(relaxed = true)
         mockServerUrlMapper = mockk(relaxed = true)
@@ -44,6 +44,7 @@ class MainApplicationTest {
 
     @After
     fun tearDown() {
+        MainApplication.testContext = null
         unmockkAll()
     }
 
