@@ -9,13 +9,11 @@ import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
 import org.ole.planet.myplanet.model.StepItem
-import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
@@ -75,13 +73,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(binding.gradeLevel, course.gradeLevel, binding.ltGradeLevel)
         setTextViewVisibility(binding.language, course.languageOfInstruction, binding.ltLanguage)
 
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            course.description,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
-            600,
-            350
-        )
-        setMarkdownText(binding.description, markdownContentWithLocalPaths)
+        setMarkdownText(binding.description, state.markdownDescription)
 
         binding.noOfExams.text = context?.getString(
             R.string.number_placeholder,
