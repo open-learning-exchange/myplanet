@@ -427,16 +427,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         return addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    override suspend fun getOpenedResourceIds(userId: String): Set<String> {
-        val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
-        val userName = user?.name ?: return emptySet()
-
-        return queryList(RealmResourceActivity::class.java) {
-            equalTo("user", userName)
-            equalTo("type", "resource_opened")
-        }.mapNotNull { it.resourceId }.toSet()
-    }
-
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
         val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
         val userName = user?.name ?: return flowOf(emptySet())
