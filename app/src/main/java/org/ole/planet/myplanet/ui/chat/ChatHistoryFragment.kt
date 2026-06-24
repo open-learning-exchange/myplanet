@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -294,32 +295,28 @@ class ChatHistoryFragment : Fragment() {
         })
         binding.recyclerView.adapter = newAdapter
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            sharedViewModel.screenData.collect { data ->
-                if (data == null) return@collect
+        collectLatestWhenStarted(sharedViewModel.screenData) { data ->
+            if (data == null) return@collectLatestWhenStarted
 
-                user = data.currentUser
-                sharedNewsMessages = data.newsMessages
-                shareTargets = data.shareTargets
+            user = data.currentUser
+            sharedNewsMessages = data.newsMessages
+            shareTargets = data.shareTargets
 
-                newAdapter.updateCachedData(user, sharedNewsMessages)
-                newAdapter.updateShareTargets(shareTargets)
+            newAdapter.updateCachedData(user, sharedNewsMessages)
+            newAdapter.updateShareTargets(shareTargets)
 
-                if (data.chatHistory.isNotEmpty()) {
-                    binding.searchBar.visibility = View.VISIBLE
-                    binding.recyclerView.visibility = View.VISIBLE
-                } else {
-                    binding.searchBar.visibility = View.GONE
-                    binding.recyclerView.visibility = View.GONE
-                }
+            if (data.chatHistory.isNotEmpty()) {
+                binding.searchBar.visibility = View.VISIBLE
+                binding.recyclerView.visibility = View.VISIBLE
+            } else {
+                binding.searchBar.visibility = View.GONE
+                binding.recyclerView.visibility = View.GONE
             }
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            sharedViewModel.filteredChats.collect { filteredHistory ->
-                newAdapter.updateChatHistory(filteredHistory)
-                showNoData(binding.noChats, filteredHistory.size, "chatHistory")
-            }
+        collectLatestWhenStarted(sharedViewModel.filteredChats) { filteredHistory ->
+            newAdapter.updateChatHistory(filteredHistory)
+            showNoData(binding.noChats, filteredHistory.size, "chatHistory")
         }
     }
 
