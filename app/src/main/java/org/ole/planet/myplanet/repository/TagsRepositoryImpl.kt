@@ -150,15 +150,20 @@ class TagsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun insert(act: com.google.gson.JsonObject) {
+    override suspend fun insert(documentList: List<com.google.gson.JsonObject>) {
+        if (documentList.isEmpty()) return
         executeTransaction { realm ->
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+            val ids = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }
             val tagCache = mutableMapOf<String, RealmTag>()
-            val existingTag = realm.where(RealmTag::class.java).equalTo("_id", id).findFirst()
-            if (existingTag != null) {
-                existingTag._id?.let { tagCache[it] = existingTag }
+            if (ids.isNotEmpty()) {
+                val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
+                for (tag in existingTags) {
+                    tag._id?.let { tagCache[it] = tag }
+                }
             }
-            insertIntoRealm(realm, act, tagCache)
+            for (act in documentList) {
+                insertIntoRealm(realm, act, tagCache)
+            }
         }
     }
 
