@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.text.TextUtils
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
