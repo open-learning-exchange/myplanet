@@ -160,8 +160,8 @@ class SubmissionsAdapter(
     }
 
     companion object {
-        private const val PAYLOAD_EXAM_UPDATE = "payload_exam_update"
-        private const val PAYLOAD_SUBMISSION_COUNT_UPDATE = "payload_submission_count_update"
+        const val PAYLOAD_EXAM_UPDATE = "payload_exam_update"
+        const val PAYLOAD_SUBMISSION_COUNT_UPDATE = "payload_submission_count_update"
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
