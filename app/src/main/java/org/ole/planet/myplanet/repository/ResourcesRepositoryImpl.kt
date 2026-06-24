@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import androidx.annotation.VisibleForTesting
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -321,7 +321,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             add("level", getJsonArrayFromList(levels))
             add("mediaType", getJsonArrayFromList(mediums))
         }
-        val filterPayload = Gson().toJson(filter)
+        val filterPayload = JsonUtils.gson.toJson(filter)
 
         executeTransaction { realm ->
             val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
@@ -468,13 +468,16 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
         val validCurrentIds = currentIds.filterNotNull().toSet()
         executeTransaction { realm ->
-            realm.where(RealmMyLibrary::class.java)
+            val query = realm.where(RealmMyLibrary::class.java)
                 .isNotNull("_rev")
                 .notEqualTo("_rev", "")
                 .equalTo("isPrivate", false)
-                .findAll()
-                .filter { it.resourceId !in validCurrentIds }
-                .forEach { it.deleteFromRealm() }
+
+            if (validCurrentIds.isNotEmpty()) {
+                query.not().`in`("resourceId", validCurrentIds.toTypedArray())
+            }
+
+            query.findAll().deleteAllFromRealm()
         }
     }
 
