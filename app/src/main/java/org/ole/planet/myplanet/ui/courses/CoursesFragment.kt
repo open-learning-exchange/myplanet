@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -148,9 +149,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             selectionController.clearAll(null)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.coursesState.collectLatest { state ->
-                if (!::adapterCourses.isInitialized) return@collectLatest
+        collectLatestWhenStarted(viewModel.coursesState) { state ->
+            if (!::adapterCourses.isInitialized) return@collectLatestWhenStarted
 
                 if (isMyCourseLib) {
                     val courseIds = state.courses.mapNotNull { it.courseId }
@@ -174,11 +174,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     }
                 }
             }
-        }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.syncStatus.collectLatest { status ->
-                when (status) {
+        collectLatestWhenStarted(viewModel.syncStatus) { status ->
+            when (status) {
                     is SyncStatus.Idle -> {}
                     is SyncStatus.Syncing -> {
                         if (isAdded && !requireActivity().isFinishing) {
@@ -212,7 +210,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     }
                 }
             }
-        }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
