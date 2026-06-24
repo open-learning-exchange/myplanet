@@ -22,7 +22,6 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         if (RealmLog.getLevel() != targetLogLevel) {
             RealmLog.setLevel(targetLogLevel)
         }
-
     }
 
     fun createManagedRealmInstance(): Realm = Realm.getInstance(realmConfiguration)

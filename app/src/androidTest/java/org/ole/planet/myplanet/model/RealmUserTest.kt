@@ -46,7 +46,6 @@ class RealmUserTest {
                 .allowQueriesOnUiThread(true)
                 .schemaVersion(1)
                 .build()
-            Realm.setDefaultConfiguration(realmConfiguration)
         }
 
         val testDispatcherProvider = object : DispatcherProvider {

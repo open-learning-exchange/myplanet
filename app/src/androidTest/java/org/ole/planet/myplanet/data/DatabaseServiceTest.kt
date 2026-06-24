@@ -34,8 +34,6 @@ class DatabaseServiceTest {
             .allowQueriesOnUiThread(true)
             .schemaVersion(1)
             .build()
-        Realm.setDefaultConfiguration(realmConfiguration)
-
         databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), org.ole.planet.myplanet.utils.DefaultDispatcherProvider(), realmConfiguration)
     }
 
