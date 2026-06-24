@@ -21,7 +21,7 @@ class UploadRepositoryImpl @Inject constructor(
             val query = realm.where(config.modelClass.java)
             val filteredQuery = config.queryBuilder(query)
             val results = filteredQuery.findAll()
-            results.map { realm.copyFromRealm(it) }
+            realm.copyFromRealm(results)
         }
     }
 
