@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< fix-sync-manager-cancellation-17370151503995738763
         versionCode = 5835
         versionName = "0.58.35"
+=======
+        versionCode = 5834
+        versionName = "0.58.34"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
