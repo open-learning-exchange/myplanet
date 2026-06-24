@@ -204,7 +204,11 @@ class VoicesAdapter(
                 for (payload in payloads) {
                     when (payload) {
                         PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
-                        PAYLOAD_USER_FETCHED -> configureUser(holder, news)
+                        PAYLOAD_USER_FETCHED -> {
+                            val userModel = configureUser(holder, news)
+                            val currentLeader = getCurrentLeader(userModel, news)
+                            setMemberClickListeners(holder, userModel, currentLeader)
+                        }
                         PAYLOAD_EDIT_ACTION -> {
                             configureEditDeleteButtons(holder, news)
                             showReplyButton(holder, news, position)
