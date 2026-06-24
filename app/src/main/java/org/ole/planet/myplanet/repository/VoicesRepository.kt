@@ -37,7 +37,6 @@ interface VoicesRepository {
     suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit>
     suspend fun updateTeamNotification(teamId: String, count: Int)
     suspend fun getFilteredNews(teamId: String): List<RealmNews>
-    suspend fun getReplies(newsId: String?): List<RealmNews>
     suspend fun getReplyCount(newsId: String?): Int
     suspend fun deleteNews(newsId: String)
     suspend fun deletePost(newsId: String, teamName: String)
@@ -50,6 +49,5 @@ interface VoicesRepository {
     suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
     suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
     suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
 }
