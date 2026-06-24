@@ -45,7 +45,13 @@ class VoicesLabelAdapter(
     }
 
     fun setSelectedLabel(label: String) {
+        val oldSelectedLabel = selectedLabel
         selectedLabel = label
-        notifyDataSetChanged()
+
+        val oldPosition = currentList.indexOf(oldSelectedLabel)
+        val newPosition = currentList.indexOf(selectedLabel)
+
+        if (oldPosition != -1) notifyItemChanged(oldPosition)
+        if (newPosition != -1) notifyItemChanged(newPosition)
     }
 }
