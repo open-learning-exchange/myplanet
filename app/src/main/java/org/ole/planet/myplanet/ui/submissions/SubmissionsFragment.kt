@@ -9,17 +9,15 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
@@ -57,19 +55,18 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
 
         viewModel.setFilter(type ?: "", "")
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            combine(
-                viewModel.submissions,
-                viewModel.exams,
-                viewModel.submissionCounts
-            ) { submissions, exams, counts ->
-                Triple(submissions, exams, counts)
-            }.collectLatest { (submissions, exams, counts) ->
-                adapter.setExams(exams)
-                adapter.setSubmissionCounts(counts)
-                adapter.submitList(submissions)
-                updateEmptyState(submissions.size)
-            }
+        val combinedFlow = combine(
+            viewModel.submissions,
+            viewModel.exams,
+            viewModel.submissionCounts
+        ) { submissions, exams, counts ->
+            Triple(submissions, exams, counts)
+        }
+        collectLatestWhenStarted(combinedFlow) { (submissions, exams, counts) ->
+            adapter.setExams(exams)
+            adapter.setSubmissionCounts(counts)
+            adapter.submitList(submissions)
+            updateEmptyState(submissions.size)
         }
 
         textWatcher = object : TextWatcher {
