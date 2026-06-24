@@ -13,6 +13,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -383,9 +384,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             selectPage(targetPageId)
             MainApplication.showDownload = false
 
-            val delay = if (isAlreadyOnTargetPage) 50L else 300L
+            val delayMs = if (isAlreadyOnTargetPage) 50L else 300L
 
-            binding.root.postDelayed({
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(delayMs)
                 val pageListener = childFragmentManager.fragments.firstOrNull {
                     it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
                 } as? OnTeamPageListener
@@ -405,7 +407,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         }
                     }
                 }
-            }, delay)
+            }
         }
     }
 
