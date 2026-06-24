@@ -31,6 +31,11 @@ class ChatRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
 
+    @androidx.annotation.VisibleForTesting
+    internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
+        org.ole.planet.myplanet.MainApplication.isServerReachable(url)
+    }
+
     override suspend fun sendNewChatRequest(
         query: String,
         user: String?,
@@ -100,10 +105,10 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>? {
+    override suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>? {
         val mapping = serverUrlMapper.processUrl(serverUrl)
         serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
+            reachabilityCheck(url)
         }
         return chatApiService.fetchAiProviders()
     }
