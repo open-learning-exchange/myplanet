@@ -28,7 +28,7 @@ class NetworkUtilsStateTest {
     @Before
     fun init() {
         hiltRule.inject()
-        org.ole.planet.myplanet.MainApplication.context = ApplicationProvider.getApplicationContext()
+        org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
     }
 
     @Test

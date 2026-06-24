@@ -19,6 +19,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
@@ -217,10 +218,11 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
                 pendingJoinDialog = true
                 maybeShowJoinDialog()
-                binding.viewPager2.postDelayed({
+                viewLifecycleOwner.lifecycleScope.launch {
+                    delay(JOIN_DIALOG_FALLBACK_MS)
                     courseDetailContentReady = true
                     maybeShowJoinDialog()
-                }, JOIN_DIALOG_FALLBACK_MS)
+                }
             } else {
                 binding.btnRemove.visibility = View.GONE
             }

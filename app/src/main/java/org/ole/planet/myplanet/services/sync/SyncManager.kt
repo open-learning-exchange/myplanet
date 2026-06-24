@@ -46,6 +46,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -544,9 +545,7 @@ class SyncManager @Inject constructor(
                 apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0")
             }?.let { response ->
                 response.body()?.let { body ->
-                    if (body.has("total_rows")) {
-                        totalRows = body.get("total_rows").asInt
-                    }
+                    totalRows = getInt("total_rows", body)
                 }
             }
             val countApiDuration = System.currentTimeMillis() - countApiStartTime

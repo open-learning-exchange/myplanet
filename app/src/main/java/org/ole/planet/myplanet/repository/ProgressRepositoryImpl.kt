@@ -317,7 +317,7 @@ class ProgressRepositoryImpl @Inject constructor(
     override fun findProgressForCourse(courseData: com.google.gson.JsonArray, courseId: String): com.google.gson.JsonObject? {
         courseData.forEach { element ->
             val course = element.asJsonObject
-            if (course.get("courseId").asString == courseId) {
+            if (JsonUtils.getString("courseId", course) == courseId) {
                 return course.getAsJsonObject("progress")
             }
         }

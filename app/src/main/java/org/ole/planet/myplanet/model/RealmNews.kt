@@ -119,8 +119,8 @@ open class RealmNews : RealmObject() {
                 val ar = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
-                    if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
-                        return obj.get("sharedDate").asLong
+                    if (JsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
+                        return JsonUtils.getLong("sharedDate", obj)
                     }
                 }
             }
@@ -191,8 +191,8 @@ open class RealmNews : RealmObject() {
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject
                                         val conversationMap = HashMap<String, String>()
-                                        conversationMap["query"] = conversationObj.get("query").asString
-                                        conversationMap["response"] = conversationObj.get("response").asString
+                                        conversationMap["query"] = JsonUtils.getString("query", conversationObj)
+                                        conversationMap["response"] = JsonUtils.getString("response", conversationObj)
                                         conversationsList.add(conversationMap)
                                     }
                                     news.conversations = JsonUtils.gson.toJson(conversationsList)
