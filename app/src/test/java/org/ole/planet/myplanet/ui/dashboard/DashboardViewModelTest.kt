@@ -4,7 +4,6 @@ import android.app.Application
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.realm.Sort
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
