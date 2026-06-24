@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemVoiceLabelBinding
 import org.ole.planet.myplanet.utils.DiffUtils
-import androidx.core.content.ContextCompat
-import org.ole.planet.myplanet.R
 
 class VoicesLabelAdapter(
     private var selectedLabel: String = "All",
