@@ -3,9 +3,9 @@ package org.ole.planet.myplanet.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRetryOperation
@@ -34,50 +34,54 @@ class SettingsViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _clearDataEvent = MutableSharedFlow<Unit>()
-    val clearDataEvent: SharedFlow<Unit> = _clearDataEvent.asSharedFlow()
+    private val _clearDataEvent = Channel<Unit>(Channel.BUFFERED)
+    val clearDataEvent: Flow<Unit> = _clearDataEvent.receiveAsFlow()
 
-    private val _clearRetryQueueEvent = MutableSharedFlow<Boolean>()
-    val clearRetryQueueEvent: SharedFlow<Boolean> = _clearRetryQueueEvent.asSharedFlow()
+    private val _clearRetryQueueEvent = Channel<Boolean>(Channel.BUFFERED)
+    val clearRetryQueueEvent: Flow<Boolean> = _clearRetryQueueEvent.receiveAsFlow()
 
-    private val _retryQueueDetailsEvent = MutableSharedFlow<RetryQueueDetails>()
-    val retryQueueDetailsEvent: SharedFlow<RetryQueueDetails> = _retryQueueDetailsEvent.asSharedFlow()
+    private val _retryQueueDetailsEvent = Channel<RetryQueueDetails>(Channel.BUFFERED)
+    val retryQueueDetailsEvent: Flow<RetryQueueDetails> = _retryQueueDetailsEvent.receiveAsFlow()
 
-    private val _downloadCompleteEvent = MutableSharedFlow<List<RealmMyLibrary>>()
-    val downloadCompleteEvent: SharedFlow<List<RealmMyLibrary>> = _downloadCompleteEvent.asSharedFlow()
+    private val _downloadCompleteEvent = Channel<List<RealmMyLibrary>>(Channel.BUFFERED)
+    val downloadCompleteEvent: Flow<List<RealmMyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
+
+    fun isCurrentlyProcessing(): Boolean {
+        return retryQueue.isCurrentlyProcessing()
+    }
     fun clearAllData() {
         viewModelScope.launch(dispatcherProvider.io) {
             configurationsRepository.clearAllData()
             sharedPrefManager.clearPreferences()
-            _clearDataEvent.emit(Unit)
+            _clearDataEvent.send(Unit)
         }
     }
 
     fun clearRetryQueue() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val cleared = retryQueue.safeClearQueue()
-            _clearRetryQueueEvent.emit(cleared)
+            _clearRetryQueueEvent.send(cleared)
         }
     }
 
     fun fetchRetryQueueDetails() {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             val pendingCount = retryQueue.getPendingCount()
             val pendingOps = retryQueue.getPendingOperations()
             val isProcessing = retryQueue.isCurrentlyProcessing()
-            _retryQueueDetailsEvent.emit(RetryQueueDetails(pendingCount, pendingOps, isProcessing))
+            _retryQueueDetailsEvent.send(RetryQueueDetails(pendingCount, pendingOps, isProcessing))
         }
     }
 
     fun downloadFiles(libraryList: List<RealmMyLibrary>?) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatcherProvider.io) {
             var files = libraryList
             try {
                 files = libraryList ?: resourcesRepository.getAllLibrariesToSync()
                 resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
             } finally {
-                _downloadCompleteEvent.emit(files ?: emptyList())
+                _downloadCompleteEvent.send(files ?: emptyList())
             }
         }
     }

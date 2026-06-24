@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.settings
 
-
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -32,7 +31,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -53,7 +51,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -103,8 +100,6 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        @Inject
-        lateinit var dispatcherProvider: DispatcherProvider
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -183,7 +178,7 @@ class SettingsActivity : AppCompatActivity() {
                                 clearButton.isEnabled = !isProcessing && pendingCount > 0
 
                                 retryButton.setOnClickListener {
-                                    if (!isProcessing) {
+                                    if (!viewModel.isCurrentlyProcessing()) {
                                         RetryQueueWorker.triggerImmediateRetry(requireContext())
                                         Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
                                         retryDialog.dismiss()
