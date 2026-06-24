@@ -10,11 +10,10 @@ import org.ole.planet.myplanet.databinding.ItemVoiceLabelBinding
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class VoicesLabelAdapter(
-    private var selectedLabel: String = "All",
     private val onItemClick: (String) -> Unit
-) : ListAdapter<String, VoicesLabelAdapter.ViewHolder>(
-    DiffUtils.itemCallback<String>(
-        { oldItem, newItem -> oldItem == newItem },
+) : ListAdapter<VoiceLabelItem, VoicesLabelAdapter.ViewHolder>(
+    DiffUtils.itemCallback<VoiceLabelItem>(
+        { oldItem, newItem -> oldItem.label == newItem.label },
         { oldItem, newItem -> oldItem == newItem }
     )
 ) {
@@ -27,11 +26,11 @@ class VoicesLabelAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val label = getItem(position)
-        holder.binding.tvLabel.text = label
+        val item = getItem(position)
+        holder.binding.tvLabel.text = item.label
 
         val context = holder.itemView.context
-        if (label == selectedLabel) {
+        if (item.isSelected) {
             holder.binding.tvLabel.background = ContextCompat.getDrawable(context, R.drawable.bg_primary)
             holder.binding.tvLabel.setTextColor(ContextCompat.getColor(context, android.R.color.white))
         } else {
@@ -40,12 +39,7 @@ class VoicesLabelAdapter(
         }
 
         holder.itemView.setOnClickListener {
-            onItemClick(label)
+            onItemClick(item.label)
         }
-    }
-
-    fun setSelectedLabel(label: String) {
-        selectedLabel = label
-        notifyDataSetChanged()
     }
 }
