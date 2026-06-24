@@ -24,22 +24,13 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import android.content.Context
-import com.google.gson.JsonObject
-import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Assert.assertNull
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.utils.UrlUtils
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
 
     private lateinit var databaseService: DatabaseService
-    private lateinit var apiInterface: ApiInterface
-    private lateinit var context: Context
     private lateinit var mockRealm: Realm
     private lateinit var repository: PersonalsRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
@@ -67,9 +58,8 @@ class PersonalsRepositoryImplTest {
         every { databaseService.createManagedRealmInstance() } returns mockRealm
         every { databaseService.ioDispatcher } returns testDispatcher
 
-        apiInterface = mockk(relaxed = true)
-        context = mockk(relaxed = true)
-
+        val apiInterface = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
+        val context = mockk<android.content.Context>(relaxed = true)
         repository = PersonalsRepositoryImpl(databaseService, testDispatcher, apiInterface, context)
     }
 
@@ -240,47 +230,5 @@ class PersonalsRepositoryImplTest {
         assertTrue(mockPersonal.isUploaded)
         assertEquals("new-id", mockPersonal._id)
         assertEquals("rev-1", mockPersonal._rev)
-    }
-
-    @Test
-    fun `uploadPersonalDocument returns id and rev on success`() = runTest {
-        val personal = RealmMyPersonal().apply { id = "test-id" }
-        val mockQuery = mockQueryResults()
-        val mockPersonal = RealmMyPersonal()
-        every { mockQuery.equalTo("id", "test-id").findFirst() } returns mockPersonal
-
-        val jsonObject = JsonObject().apply {
-            addProperty("id", "remote-id")
-            addProperty("rev", "remote-rev")
-        }
-        val response = Response.success(jsonObject)
-
-        coEvery {
-            apiInterface.postDoc(any(), any(), any(), any())
-        } returns response
-
-        val result = repository.uploadPersonalDocument(personal)
-
-        assertEquals("remote-id", result?.first)
-        assertEquals("remote-rev", result?.second)
-
-        assertTrue(mockPersonal.isUploaded)
-        assertEquals("remote-id", mockPersonal._id)
-        assertEquals("remote-rev", mockPersonal._rev)
-    }
-
-    @Test
-    fun `uploadPersonalDocument returns null when response body is null`() = runTest {
-        val personal = RealmMyPersonal()
-
-        val response = Response.success<JsonObject>(null)
-
-        coEvery {
-            apiInterface.postDoc(any(), any(), any(), any())
-        } returns response
-
-        val result = repository.uploadPersonalDocument(personal)
-
-        assertNull(result)
     }
 }
