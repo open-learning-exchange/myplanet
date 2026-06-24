@@ -71,7 +71,6 @@ interface ResourcesRepository {
     suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit>
-    suspend fun getOpenedResourceIds(userId: String): Set<String>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
     suspend fun getDownloadSuggestionList(userId: String? = null): List<RealmMyLibrary>
     suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
