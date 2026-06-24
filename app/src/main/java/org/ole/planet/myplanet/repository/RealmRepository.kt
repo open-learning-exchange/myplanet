@@ -1,20 +1,21 @@
 package org.ole.planet.myplanet.repository
 
 import io.realm.Realm
-import io.realm.RealmChangeListener
+import io.realm.OrderedRealmCollectionChangeListener
+import io.realm.OrderedCollectionChangeSet
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import io.realm.log.RealmLog
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.FlowPreview
-import kotlin.OptIn
+
+
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.debounce
+
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
@@ -58,7 +59,7 @@ open class RealmRepository(
             realm.where(clazz).apply(builder).count()
         }
 
-    @OptIn(FlowPreview::class)
+
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -66,7 +67,7 @@ open class RealmRepository(
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
-        var listener: RealmChangeListener<RealmResults<T>>? = null
+        var listener: OrderedRealmCollectionChangeListener<RealmResults<T>>? = null
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
@@ -111,8 +112,10 @@ open class RealmRepository(
             emitResults(initialResults, "Error sending initial results")
 
             results = initialResults
-            listener = RealmChangeListener<RealmResults<T>> { changedResults ->
-                emitResults(changedResults, "Error sending changed results")
+            listener = OrderedRealmCollectionChangeListener<RealmResults<T>> { changedResults, changeSet ->
+                if (changeSet == null || changeSet.insertions.isNotEmpty() || changeSet.deletions.isNotEmpty() || changeSet.changes.isNotEmpty()) {
+                    emitResults(changedResults, "Error sending changed results")
+                }
             }
             results.addChangeListener(listener)
 
@@ -125,7 +128,7 @@ open class RealmRepository(
         }
     }.flowOn(realmDispatcher)
         .conflate()
-        .debounce(250)
+
         .map { frozenResults ->
             if (frozenResults.isEmpty()) {
                 emptyList()
