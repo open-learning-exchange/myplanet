@@ -10,6 +10,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)
@@ -31,10 +32,14 @@ class EventsDescriptionAdapterTest {
             EventsDescriptionAdapter.DescriptionItem("Time", "10:00 AM")
         )
 
-        val commitCallback = Runnable {}
-        adapter.submitList(initialList, commitCallback)
-        // Ensure UI thread has processed the updates in Robolectric
-        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        var committed = false
+        adapter.submitList(initialList) {
+            committed = true
+        }
+
+        while (!committed) {
+            ShadowLooper.idleMainLooper()
+        }
 
         assertEquals(2, adapter.itemCount)
 
@@ -54,8 +59,14 @@ class EventsDescriptionAdapterTest {
             EventsDescriptionAdapter.DescriptionItem("Location", "Online")
         )
 
-        adapter.submitList(updatedList, commitCallback)
-        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        var updatedCommitted = false
+        adapter.submitList(updatedList) {
+            updatedCommitted = true
+        }
+
+        while (!updatedCommitted) {
+            ShadowLooper.idleMainLooper()
+        }
 
         assertEquals(2, adapter.itemCount)
 
