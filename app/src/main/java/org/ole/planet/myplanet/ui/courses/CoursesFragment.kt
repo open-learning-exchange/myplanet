@@ -486,6 +486,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
+    override fun onRatingChanged(type: String, id: String) {
+        if (type == "course" && ::adapterCourses.isInitialized) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.refreshCourseRatings(model?.id)
+                adapterCourses.refreshWithDiff(id)
+            }
+        }
+    }
+
     private fun RealmMyCourse.toCourse(): Course {
         return Course(
             courseId = this.courseId ?: "",

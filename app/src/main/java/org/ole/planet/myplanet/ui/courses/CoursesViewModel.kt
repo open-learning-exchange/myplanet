@@ -157,6 +157,17 @@ class CoursesViewModel @Inject constructor(
         }
     }
 
+    suspend fun refreshCourseRatings(userId: String?) {
+        withContext(dispatcherProvider.io) {
+            try {
+                val map = coursesRepository.getCourseRatings(userId)
+                _coursesState.value = _coursesState.value.copy(map = map)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun filterCourses(
         isMyCourseLib: Boolean,
         userId: String?,
