@@ -22,7 +22,7 @@ class ChatShareTargetAdapter(
     }
 
     override fun getChildId(listPosition: Int, expandedListPosition: Int): Long {
-        return expandedListPosition.toLong()
+        return getChild(listPosition, expandedListPosition).hashCode().toLong()
     }
 
     override fun getChildView(lstPosn: Int, expandedListPosition: Int, isLastChild: Boolean, convertView: View?, parent: ViewGroup): View {
@@ -54,7 +54,7 @@ class ChatShareTargetAdapter(
     }
 
     override fun getGroupId(listPosition: Int): Long {
-        return listPosition.toLong()
+        return getGroup(listPosition).hashCode().toLong()
     }
 
     override fun getGroupView(listPosition: Int, isExpanded: Boolean, convertView: View?, parent: ViewGroup): View {
@@ -74,7 +74,7 @@ class ChatShareTargetAdapter(
     }
 
     override fun hasStableIds(): Boolean {
-        return false
+        return true
     }
 
     override fun isChildSelectable(listPosition: Int, expandedListPosition: Int): Boolean {
