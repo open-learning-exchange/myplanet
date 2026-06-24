@@ -173,7 +173,7 @@ class UploadManager @Inject constructor(
 
                             result.items.forEach { item ->
                                 libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
                                 }
                             }
                         }
@@ -189,7 +189,7 @@ class UploadManager @Inject constructor(
 
                             result.succeeded.forEach { item ->
                                 libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
                                 }
                             }
                         }
