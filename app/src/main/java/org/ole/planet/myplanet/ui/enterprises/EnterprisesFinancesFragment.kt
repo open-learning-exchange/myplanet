@@ -252,33 +252,31 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                 val type = addTransactionBinding.spnType.selectedItem.toString()
                 val note = "${addTransactionBinding.tlNote.editText?.text}".trim { it <= ' ' }
                 val amount = "${addTransactionBinding.tlAmount.editText?.text}".trim { it <= ' ' }
-                if (note.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.note_is_required))
-                } else if (amount.isEmpty()) {
-                    Utilities.toast(activity, getString(R.string.amount_is_required))
-                } else if (date == null) {
-                    Utilities.toast(activity, getString(R.string.date_is_required))
-                } else {
-                    val amountValue = amount.toIntOrNull()
-                    if (amountValue == null) {
-                        Utilities.toast(activity, getString(R.string.amount_is_required))
-                        return@setPositiveButton
-                    }
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val capturedDate = date ?: return@launch
-                        val result = teamsRepository.createTransaction(
-                            teamId = teamId,
-                            type = type,
-                            note = note,
-                            amount = amountValue,
-                            date = capturedDate.timeInMillis,
-                            parentCode = user?.parentCode,
-                            planetCode = user?.planetCode,
-                        )
-                        if (result.isSuccess) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = viewModel.addTransaction(
+                        teamId = teamId,
+                        type = type,
+                        note = note,
+                        amountString = amount,
+                        dateMillis = date?.timeInMillis,
+                        parentCode = user?.parentCode,
+                        planetCode = user?.planetCode
+                    )
+                    when (result) {
+                        is TransactionResult.Success -> {
                             Utilities.toast(activity, getString(R.string.transaction_added))
-                        } else {
-                            val errorMessage = result.exceptionOrNull()?.localizedMessage
+                        }
+                        is TransactionResult.NoteRequired -> {
+                            Utilities.toast(activity, getString(R.string.note_is_required))
+                        }
+                        is TransactionResult.AmountRequired -> {
+                            Utilities.toast(activity, getString(R.string.amount_is_required))
+                        }
+                        is TransactionResult.DateRequired -> {
+                            Utilities.toast(activity, getString(R.string.date_is_required))
+                        }
+                        is TransactionResult.Error -> {
+                            val errorMessage = result.message
                                 ?: getString(R.string.no_data_available_please_check_and_try_again)
                             Utilities.toast(activity, errorMessage)
                         }

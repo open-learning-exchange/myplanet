@@ -54,4 +54,113 @@ class EnterprisesFinancesViewModelTest {
         val actualTransactions = viewModel.transactions.first()
         assertEquals(mockTransactions, actualTransactions)
     }
+
+    @Test
+    fun `addTransaction returns NoteRequired when note is empty`() = runTest {
+        val result = viewModel.addTransaction(
+            teamId = "teamId",
+            type = "type",
+            note = "",
+            amountString = "100",
+            dateMillis = 1000L,
+            parentCode = "parent",
+            planetCode = "planet"
+        )
+        assertEquals(TransactionResult.NoteRequired, result)
+    }
+
+    @Test
+    fun `addTransaction returns AmountRequired when amount is empty`() = runTest {
+        val result = viewModel.addTransaction(
+            teamId = "teamId",
+            type = "type",
+            note = "note",
+            amountString = "",
+            dateMillis = 1000L,
+            parentCode = "parent",
+            planetCode = "planet"
+        )
+        assertEquals(TransactionResult.AmountRequired, result)
+    }
+
+    @Test
+    fun `addTransaction returns AmountRequired when amount is invalid`() = runTest {
+        val result = viewModel.addTransaction(
+            teamId = "teamId",
+            type = "type",
+            note = "note",
+            amountString = "abc",
+            dateMillis = 1000L,
+            parentCode = "parent",
+            planetCode = "planet"
+        )
+        assertEquals(TransactionResult.AmountRequired, result)
+    }
+
+    @Test
+    fun `addTransaction returns DateRequired when date is null`() = runTest {
+        val result = viewModel.addTransaction(
+            teamId = "teamId",
+            type = "type",
+            note = "note",
+            amountString = "100",
+            dateMillis = null,
+            parentCode = "parent",
+            planetCode = "planet"
+        )
+        assertEquals(TransactionResult.DateRequired, result)
+    }
+
+    @Test
+    fun `addTransaction returns Success when repository succeeds`() = runTest {
+        coEvery {
+            teamsRepository.createTransaction(
+                teamId = "teamId",
+                type = "type",
+                note = "note",
+                amount = 100,
+                date = 1000L,
+                parentCode = "parent",
+                planetCode = "planet"
+            )
+        } returns Result.success(Unit)
+
+        val result = viewModel.addTransaction(
+            teamId = "teamId",
+            type = "type",
+            note = "note",
+            amountString = "100",
+            dateMillis = 1000L,
+            parentCode = "parent",
+            planetCode = "planet"
+        )
+        assertEquals(TransactionResult.Success, result)
+    }
+
+    @Test
+    fun `addTransaction returns Error when repository fails`() = runTest {
+        val exception = Exception("Repository error")
+        coEvery {
+            teamsRepository.createTransaction(
+                teamId = "teamId",
+                type = "type",
+                note = "note",
+                amount = 100,
+                date = 1000L,
+                parentCode = "parent",
+                planetCode = "planet"
+            )
+        } returns Result.failure(exception)
+
+        val result = viewModel.addTransaction(
+            teamId = "teamId",
+            type = "type",
+            note = "note",
+            amountString = "100",
+            dateMillis = 1000L,
+            parentCode = "parent",
+            planetCode = "planet"
+        )
+        assertEquals(TransactionResult.Error("Repository error"), result)
+    }
 }

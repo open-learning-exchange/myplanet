@@ -41,4 +41,49 @@ class EnterprisesFinancesViewModel @Inject constructor(
             }
         }
     }
+
+    suspend fun addTransaction(
+        teamId: String,
+        type: String,
+        note: String,
+        amountString: String,
+        dateMillis: Long?,
+        parentCode: String?,
+        planetCode: String?
+    ): TransactionResult {
+        if (note.isEmpty()) {
+            return TransactionResult.NoteRequired
+        }
+        if (amountString.isEmpty()) {
+            return TransactionResult.AmountRequired
+        }
+        if (dateMillis == null) {
+            return TransactionResult.DateRequired
+        }
+        val amountValue = amountString.toIntOrNull() ?: return TransactionResult.AmountRequired
+
+        val result = teamsRepository.createTransaction(
+            teamId = teamId,
+            type = type,
+            note = note,
+            amount = amountValue,
+            date = dateMillis,
+            parentCode = parentCode,
+            planetCode = planetCode
+        )
+
+        return if (result.isSuccess) {
+            TransactionResult.Success
+        } else {
+            TransactionResult.Error(result.exceptionOrNull()?.localizedMessage)
+        }
+    }
+}
+
+sealed class TransactionResult {
+    object Success : TransactionResult()
+    object NoteRequired : TransactionResult()
+    object AmountRequired : TransactionResult()
+    object DateRequired : TransactionResult()
+    data class Error(val message: String?) : TransactionResult()
 }
