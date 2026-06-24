@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
 
 data class DashboardUiState(
@@ -346,8 +347,8 @@ class DashboardViewModel @Inject constructor(
 
     private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {
         return if (progress != null) {
-            val max = progress.get("max").asInt
-            val current = progress.get("current").asInt
+            val max = JsonUtils.getInt("max", progress)
+            val current = JsonUtils.getInt("current", progress)
             if (current == max) {
                 application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
             } else {
