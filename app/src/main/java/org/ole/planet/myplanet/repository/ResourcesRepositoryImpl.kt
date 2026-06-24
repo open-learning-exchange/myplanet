@@ -193,24 +193,52 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveLocalResource(
-        resource: RealmMyLibrary,
-        userId: String?,
-        isPrivateTeamResource: Boolean,
-        teamId: String?
+        request: LocalResourceRequest
     ): Result<Unit> {
-        val title = resource.title ?: return Result.failure(Exception("Title is missing"))
+        val title = request.title ?: return Result.failure(Exception("Title is missing"))
 
         if (resourceTitleExists(title)) {
             return Result.failure(Exception("Resource title already exists"))
         }
 
-        saveLibraryItem(resource)
+        val id = UUID.randomUUID().toString()
+        val resource = RealmMyLibrary().apply {
+            this.id = id
+            this.title = title
+            this.addedBy = request.addedBy
+            this.author = request.author
+            this.resourceId = id
+            this.year = request.year
+            this.description = request.description
+            this.publisher = request.publisher
+            this.linkToLicense = request.linkToLicense
+            this.openWith = request.openWith
+            this.language = request.language
+            this.mediaType = request.mediaType
+            this.resourceType = request.resourceType
+            this.subject = request.subjects
+            this.setUserId(io.realm.RealmList())
+            this.level = request.levels
+            this.createdDate = Calendar.getInstance().timeInMillis
+            this.resourceFor = request.resourceFor
+            this.resourceLocalAddress = request.resourceUrl
+            this.resourceOffline = true
+            this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
+            this.isPrivate = request.isPrivateTeamResource
+            this.privateFor = if (request.isPrivateTeamResource) request.teamId else null
 
-        if (!isPrivateTeamResource) {
-            markResourceAdded(userId, resource.id ?: "")
+            if (!request.isPrivateTeamResource) {
+                setUserId(request.userId)
+            }
         }
 
-        if (teamId != null) {
+        saveLibraryItem(resource)
+
+        if (!request.isPrivateTeamResource) {
+            markResourceAdded(request.userId, resource.id ?: "")
+        }
+
+        if (request.teamId != null) {
             teamsSyncRepositoryLazy.get().syncTeamActivities()
         }
 
@@ -397,16 +425,6 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit> {
         val resourceIds = resources.mapNotNull { it.resourceId }
         return addResourcesToUserLibrary(resourceIds, userId)
-    }
-
-    override suspend fun getOpenedResourceIds(userId: String): Set<String> {
-        val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
-        val userName = user?.name ?: return emptySet()
-
-        return queryList(RealmResourceActivity::class.java) {
-            equalTo("user", userName)
-            equalTo("type", "resource_opened")
-        }.mapNotNull { it.resourceId }.toSet()
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
