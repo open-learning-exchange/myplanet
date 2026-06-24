@@ -1504,17 +1504,15 @@ class TeamsRepositoryImpl @Inject constructor(
                     existingLogs[id] = tag
                     newLogs.add(tag)
                 }
-                if (tag != null) {
-                    tag._rev = JsonUtils.getString("_rev", json)
-                    tag._id = JsonUtils.getString("_id", json)
-                    tag.type = JsonUtils.getString("type", json)
-                    tag.user = JsonUtils.getString("user", json)
-                    tag.createdOn = JsonUtils.getString("createdOn", json)
-                    tag.parentCode = JsonUtils.getString("parentCode", json)
-                    tag.time = JsonUtils.getLong("time", json)
-                    tag.teamId = JsonUtils.getString("teamId", json)
-                    tag.teamType = JsonUtils.getString("teamType", json)
-                }
+                tag._rev = JsonUtils.getString("_rev", json)
+                tag._id = JsonUtils.getString("_id", json)
+                tag.type = JsonUtils.getString("type", json)
+                tag.user = JsonUtils.getString("user", json)
+                tag.createdOn = JsonUtils.getString("createdOn", json)
+                tag.parentCode = JsonUtils.getString("parentCode", json)
+                tag.time = JsonUtils.getLong("time", json)
+                tag.teamId = JsonUtils.getString("teamId", json)
+                tag.teamType = JsonUtils.getString("teamType", json)
             }
             if (newLogs.isNotEmpty()) {
                 realm.insert(newLogs)
@@ -1715,17 +1713,15 @@ class TeamsRepositoryImpl @Inject constructor(
                 existingLogs[id] = tag
                 newLogs.add(tag)
             }
-            if (tag != null) {
-                tag._rev = JsonUtils.getString("_rev", json)
-                tag._id = JsonUtils.getString("_id", json)
-                tag.type = JsonUtils.getString("type", json)
-                tag.user = JsonUtils.getString("user", json)
-                tag.createdOn = JsonUtils.getString("createdOn", json)
-                tag.parentCode = JsonUtils.getString("parentCode", json)
-                tag.time = JsonUtils.getLong("time", json)
-                tag.teamId = JsonUtils.getString("teamId", json)
-                tag.teamType = JsonUtils.getString("teamType", json)
-            }
+            tag._rev = JsonUtils.getString("_rev", json)
+            tag._id = JsonUtils.getString("_id", json)
+            tag.type = JsonUtils.getString("type", json)
+            tag.user = JsonUtils.getString("user", json)
+            tag.createdOn = JsonUtils.getString("createdOn", json)
+            tag.parentCode = JsonUtils.getString("parentCode", json)
+            tag.time = JsonUtils.getLong("time", json)
+            tag.teamId = JsonUtils.getString("teamId", json)
+            tag.teamType = JsonUtils.getString("teamType", json)
         }
         if (newLogs.isNotEmpty()) {
             realm.insert(newLogs)
