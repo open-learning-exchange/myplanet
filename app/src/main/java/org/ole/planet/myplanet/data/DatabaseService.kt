@@ -12,7 +12,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider) {
+class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider, private val realmConfiguration: RealmConfiguration) {
     val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
     private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
 
@@ -22,21 +22,13 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         if (RealmLog.getLevel() != targetLogLevel) {
             RealmLog.setLevel(targetLogLevel)
         }
-        val currentConfig = Realm.getDefaultConfiguration()
-        if (currentConfig == null || currentConfig.realmDirectory.name == Realm.DEFAULT_REALM_NAME) {
-            val config = RealmConfiguration.Builder()
-                .name(Realm.DEFAULT_REALM_NAME)
-                .schemaVersion(12)
-                .migration(RealmMigrations())
-                .build()
-            Realm.setDefaultConfiguration(config)
-        }
+
     }
 
-    fun createManagedRealmInstance(): Realm = Realm.getDefaultInstance()
+    fun createManagedRealmInstance(): Realm = Realm.getInstance(realmConfiguration)
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
-        val realm = Realm.getDefaultInstance()
+        val realm = Realm.getInstance(realmConfiguration)
         return try {
             block(realm)
         } finally {
@@ -58,7 +50,7 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(realmDispatcher) {
-            val realm = Realm.getDefaultInstance()
+            val realm = Realm.getInstance(realmConfiguration)
             try {
                 realm.executeTransaction { r ->
                     transaction(r)

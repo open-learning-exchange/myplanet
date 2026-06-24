@@ -18,8 +18,18 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabaseService(@ApplicationContext context: Context, dispatcherProvider: DispatcherProvider): DatabaseService {
-        return DatabaseService(context, dispatcherProvider)
+    fun provideRealmConfiguration(): io.realm.RealmConfiguration {
+        return io.realm.RealmConfiguration.Builder()
+            .name(io.realm.Realm.DEFAULT_REALM_NAME)
+            .schemaVersion(12)
+            .migration(org.ole.planet.myplanet.data.RealmMigrations())
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideDatabaseService(@ApplicationContext context: Context, dispatcherProvider: DispatcherProvider, realmConfiguration: io.realm.RealmConfiguration): DatabaseService {
+        return DatabaseService(context, dispatcherProvider, realmConfiguration)
     }
 
     @Provides
