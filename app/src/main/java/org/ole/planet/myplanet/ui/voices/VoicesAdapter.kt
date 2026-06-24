@@ -91,6 +91,13 @@ class VoicesAdapter(
         }
     )
 ) {
+    companion object {
+        const val PAYLOAD_STATE_CHANGED = "PAYLOAD_STATE_CHANGED"
+        const val PAYLOAD_REPLY_COUNT = "PAYLOAD_REPLY_COUNT"
+        const val PAYLOAD_USER_FETCHED = "PAYLOAD_USER_FETCHED"
+        const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
+    }
+
     private var originalList: List<RealmNews> = emptyList()
 
     override fun submitList(list: List<RealmNews>?) {
@@ -149,14 +156,14 @@ class VoicesAdapter(
         isTeamLeaderFn { isLeader ->
             val changed = _isTeamLeader != isLeader
             _isTeamLeader = isLeader
-            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount)
+            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
         }
     }
 
     fun setCurrentUser(user: RealmUser?) {
         if (currentUser !== user) {
             currentUser = user
-            if (itemCount > 0) notifyItemRangeChanged(0, itemCount)
+            if (itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
         }
     }
 
@@ -171,7 +178,7 @@ class VoicesAdapter(
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember != nonTeamMember) {
             this.nonTeamMember = nonTeamMember
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
         }
     }
 
@@ -182,6 +189,30 @@ class VoicesAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return VoicesViewHolder(binding)
+    }
+
+    @SuppressLint("SetTextI18n")
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty() || payloads.contains(PAYLOAD_STATE_CHANGED)) {
+            onBindViewHolder(holder, position)
+            return
+        }
+        if (holder is VoicesViewHolder) {
+            val news = getNews(holder, position)
+            if (news.isValid) {
+                for (payload in payloads) {
+                    when (payload) {
+                        PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
+                        PAYLOAD_USER_FETCHED -> configureUser(holder, news)
+                        PAYLOAD_EDIT_ACTION -> {
+                            configureEditDeleteButtons(holder, news)
+                            showReplyButton(holder, news, position)
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -223,7 +254,7 @@ class VoicesAdapter(
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
             replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
-            notifyItemChanged(0)
+            notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
         }
         listener?.onDataChanged()
     }
@@ -233,7 +264,7 @@ class VoicesAdapter(
         replyCountCache.remove(newsId)
         val index = currentList.indexOfFirst { it.id == newsId }
         if (index >= 0) {
-            safeNotifyItemChanged(index)
+            safeNotifyItemChanged(index, PAYLOAD_REPLY_COUNT)
         }
     }
 
@@ -290,7 +321,7 @@ class VoicesAdapter(
                     fetchingUserIds.remove(userId)
                     currentList.forEachIndexed { index, item ->
                         if (item.userId == userId) {
-                            safeNotifyItemChanged(index)
+                            safeNotifyItemChanged(index, PAYLOAD_USER_FETCHED)
                         }
                     }
                 }
@@ -352,7 +383,7 @@ class VoicesAdapter(
                         voicesRepository,
                         { h, updatedNews, pos ->
                             showReplyButton(h, updatedNews, pos)
-                            safeNotifyItemChanged(pos)
+                            safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
                         },
                         onEditAction
                     )
@@ -634,15 +665,15 @@ class VoicesAdapter(
     // Notifying the adapter while the RecyclerView is laying out/scrolling throws
     // IllegalStateException. Async callbacks (user fetch, edit, etc.) can resolve
     // synchronously during onBindViewHolder, so defer the notify to the RV handler.
-    private fun safeNotifyItemChanged(position: Int) {
+    private fun safeNotifyItemChanged(position: Int, payload: Any) {
         if (position < 0) return
         val rv = recyclerView
         if (rv != null && (rv.isComputingLayout || rv.scrollState != RecyclerView.SCROLL_STATE_IDLE)) {
             rv.post {
-                if (position < itemCount) notifyItemChanged(position)
+                if (position < itemCount) notifyItemChanged(position, payload)
             }
         } else {
-            notifyItemChanged(position)
+            notifyItemChanged(position, payload)
         }
     }
 
