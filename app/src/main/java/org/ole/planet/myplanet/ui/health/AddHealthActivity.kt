@@ -7,6 +7,7 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ImageView
 import android.widget.Spinner
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
@@ -17,7 +18,6 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -25,8 +25,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class AddHealthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHealthBinding
-    @Inject
-    lateinit var userRepository: UserRepository
+    private val viewModel: AddHealthViewModel by viewModels()
     var userId: String? = null
     private var myHealth: RealmMyHealth? = null
 
@@ -40,7 +39,6 @@ class AddHealthActivity : AppCompatActivity() {
         userId = intent.getStringExtra("userId")
         findViewById<View>(R.id.btn_submit).setOnClickListener {
             createMyHealth()
-            Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
         }
 
         val contactTypes = resources.getStringArray(R.array.contact_type)
@@ -90,10 +88,7 @@ class AddHealthActivity : AppCompatActivity() {
             "notes" to otherNeed
         )
 
-        lifecycleScope.launch {
-            userId?.let { userRepository.updateUserHealthProfile(it, userData) }
-            finish()
-        }
+        userId?.let { viewModel.saveHealthData(it, userData) }
     }
 
     private fun initViews() {
@@ -101,48 +96,53 @@ class AddHealthActivity : AppCompatActivity() {
     }
 
     private fun populate() {
+        userId?.let { viewModel.loadHealthData(it) }
+
         val progressBar = findViewById<View>(R.id.progressBar)
-        progressBar.visibility = View.VISIBLE
 
         lifecycleScope.launch {
-            val userModel = userId?.let { userRepository.getUserById(it) }
-            val decodedHealth = userId?.let { userRepository.getHealthProfile(it) }
+            viewModel.isLoading.collect { isLoading ->
+                progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            }
+        }
 
-            val healthData = HealthData(
-                decodedHealth,
-                userModel?.firstName,
-                userModel?.middleName,
-                userModel?.lastName,
-                userModel?.email,
-                userModel?.phoneNumber,
-                userModel?.dob,
-                userModel?.birthPlace
-            )
+        lifecycleScope.launch {
+            viewModel.healthData.collect { healthData ->
+                healthData?.let {
+                    myHealth = it.myHealth
+                    val health = myHealth?.profile
 
-            progressBar.visibility = View.GONE
-            myHealth = healthData.myHealth
-            val health = myHealth?.profile
+                    binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                    binding.etContact.editText?.setText(health?.emergencyContact)
+                    val contactTypes = resources.getStringArray(R.array.contact_type)
+                    val contactType = health?.emergencyContactType
+                    if (!contactType.isNullOrEmpty()) {
+                        val index = contactTypes.indexOf(contactType)
+                        if (index >= 0) {
+                            binding.spnContactType.setSelection(index)
+                        }
+                    }
+                    binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+                    binding.etOtherNeed.editText?.setText(health?.notes)
 
-            binding.etEmergency.editText?.setText(health?.emergencyContactName)
-            binding.etContact.editText?.setText(health?.emergencyContact)
-            val contactTypes = resources.getStringArray(R.array.contact_type)
-            val contactType = health?.emergencyContactType
-            if (!contactType.isNullOrEmpty()) {
-                val index = contactTypes.indexOf(contactType)
-                if (index >= 0) {
-                    binding.spnContactType.setSelection(index)
+                    binding.etFname.editText?.setText(it.firstName)
+                    binding.etMname.editText?.setText(it.middleName)
+                    binding.etLname.editText?.setText(it.lastName)
+                    binding.etEmail.editText?.setText(it.email)
+                    binding.etPhone.editText?.setText(it.phoneNumber)
+                    binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(it.dob))
+                    binding.etBirthplace.editText?.setText(it.birthPlace)
                 }
             }
-            binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
-            binding.etOtherNeed.editText?.setText(health?.notes)
+        }
 
-            binding.etFname.editText?.setText(healthData.firstName)
-            binding.etMname.editText?.setText(healthData.middleName)
-            binding.etLname.editText?.setText(healthData.lastName)
-            binding.etEmail.editText?.setText(healthData.email)
-            binding.etPhone.editText?.setText(healthData.phoneNumber)
-            binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(healthData.dob))
-            binding.etBirthplace.editText?.setText(healthData.birthPlace)
+        lifecycleScope.launch {
+            viewModel.isSaved.collect { isSaved ->
+                if (isSaved) {
+                    Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
+                    finish()
+                }
+            }
         }
     }
 
@@ -151,14 +151,4 @@ class AddHealthActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    data class HealthData(
-        val myHealth: RealmMyHealth?,
-        val firstName: String?,
-        val middleName: String?,
-        val lastName: String?,
-        val email: String?,
-        val phoneNumber: String?,
-        val dob: String?,
-        val birthPlace: String?
-    )
 }
