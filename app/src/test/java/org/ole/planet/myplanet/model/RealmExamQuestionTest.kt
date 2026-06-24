@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import io.mockk.slot
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.Called
