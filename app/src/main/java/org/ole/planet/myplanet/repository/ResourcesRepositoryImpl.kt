@@ -381,11 +381,13 @@ class ResourcesRepositoryImpl @Inject constructor(
                     libraryItems.forEach { libraryItem ->
                         libraryItem.setUserId(userId)
                     }
+                }
 
+                if (resourceIds.isNotEmpty()) {
                     val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
                         .equalTo("type", "resources")
                         .equalTo("userId", userId)
-                        .`in`("docId", chunk.toTypedArray())
+                        .`in`("docId", resourceIds.toTypedArray())
                         .findAll()
 
                     removedLogs.deleteAllFromRealm()
