@@ -41,15 +41,6 @@ class LifeAdapter(
     private val show = 1f
 
     private val drawableCache = mutableMapOf<String, Int>()
-    private val fragmentCache = mapOf<String, () -> Fragment>(
-        "ic_mypersonals" to { PersonalsFragment() },
-        "ic_submissions" to { SubmissionsFragment() },
-        "ic_my_survey" to { newInstance("survey") },
-        "ic_myhealth" to { MyHealthFragment() },
-        "ic_calendar" to { CalendarFragment() },
-        "ic_references" to { ReferencesFragment() },
-        "my_achievement" to { AchievementFragment() }
-    )
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
@@ -70,7 +61,7 @@ class LifeAdapter(
             holder.imageView.contentDescription = context.getString(R.string.icon, myLife.title)
 
             holder.imageView.setOnClickListener { view: View ->
-                val fragment = myLife.imageId?.let { fragmentCache[it]?.invoke() } ?: findFragment(myLife.imageId)
+                val fragment = findFragment(myLife.imageId)
                 if (fragment != null) {
                     transactionFragment(fragment, view)
                 }
@@ -141,18 +132,18 @@ class LifeAdapter(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
-        // Kept for backward compatibility if accessed externally, but internally LifeAdapter uses fragmentCache
+        private val fragmentCache = mapOf<String, () -> Fragment>(
+            "ic_mypersonals" to { PersonalsFragment() },
+            "ic_submissions" to { SubmissionsFragment() },
+            "ic_my_survey" to { newInstance("survey") },
+            "ic_myhealth" to { MyHealthFragment() },
+            "ic_calendar" to { CalendarFragment() },
+            "ic_references" to { ReferencesFragment() },
+            "my_achievement" to { AchievementFragment() }
+        )
+
         fun findFragment(frag: String?): Fragment? {
-            when (frag) {
-                "ic_mypersonals" -> return PersonalsFragment()
-                "ic_submissions" -> return SubmissionsFragment()
-                "ic_my_survey" -> return newInstance("survey")
-                "ic_myhealth" -> return MyHealthFragment()
-                "ic_calendar" -> return CalendarFragment()
-                "ic_references" -> return ReferencesFragment()
-                "my_achievement" -> return AchievementFragment()
-            }
-            return null
+            return frag?.let { fragmentCache[it]?.invoke() }
         }
 
         fun transactionFragment(f: Fragment?, view: View) {
