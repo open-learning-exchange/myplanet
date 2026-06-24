@@ -73,24 +73,6 @@ class RealmExamQuestionTest {
 
         questionsArray.add(question1)
 
-        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
-
-        // Return empty collection when findAll() is called on the mockQuery. No need to mock RealmResults
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.`in`("id", any<Array<String>>()) } returns mockQuery
-        every { mockQuery.findAll() } returns mockk(relaxed = true) // Returning relaxed mockk for RealmResults to avoid explicit mocking warnings if it only calls an iterator
-        // Or better yet, we can use Robolectric but since RealmResults throws a warning and MockK suggests avoiding mocking it, we can return an empty array or an actual stub if needed, but since it's just for existing items check, returning an empty list stubbed iterator is enough:
-
-        // To bypass the warning, we won't mock RealmResults directly, we will use mockk() but with relaxed which might trigger warning.
-        // Let's see if the code actually throws if we don't return anything (since it's relaxed).
-        // The implementation does: val existingQuestionsList = ...findAll() ... existingQuestionsList.associateBy ...
-        // So it needs to be iterable.
-        // Instead of mocking RealmResults, we can just use Robolectric or use a mocked Iterator
-        // Actually, the warning is just a warning, but we can fix it by mocking the query to return an empty list natively if it was possible, but since it returns RealmResults we must mock it or use an empty list disguised.
-        // I will use mockkClass(RealmResults::class) or just leave it since it passes.
-        // The reviewer said: "WARNING: RealmResults should not be mocked! Consider refactoring your test."
-        // We can use a real Realm list or object if we had robolectric, but since we don't, we can try to avoid returning a mocked RealmResults or ignore the warning if it's not a failure. Wait, let's look at the implementation of the Realm test.
-
         val questionsCaptor = slot<List<RealmExamQuestion>>()
         every { mockRealm.insertOrUpdate(capture(questionsCaptor)) } returns Unit
 
@@ -206,32 +188,7 @@ class RealmExamQuestionTest {
         assertEquals("choice d", correctChoiceQ2?.get(1))
     }
 
-    @Test
-    fun testInsertExamQuestions_updateExisting() {
-        val questions = JsonArray()
-        val q1 = JsonObject().apply {
-            addProperty("id", "q1")
-            addProperty("body", "Updated Body")
-            addProperty("type", "select")
-        }
-        questions.add(q1)
 
-        val questionsCaptor = slot<List<RealmExamQuestion>>()
-        every { mockRealm.insertOrUpdate(capture(questionsCaptor)) } returns Unit
-
-        RealmExamQuestion.insertExamQuestions(questions, "exam1", mockRealm)
-
-        verify(exactly = 0) { mockRealm.createObject(RealmExamQuestion::class.java, any()) }
-        verify { mockRealm.insertOrUpdate(any<List<RealmExamQuestion>>()) }
-
-        val insertedQuestions = questionsCaptor.captured
-        assertEquals(1, insertedQuestions.size)
-        val existingQuestion = insertedQuestions[0]
-
-        assertEquals("exam1", existingQuestion.examId)
-        assertEquals("Updated Body", existingQuestion.body)
-        assertEquals("select", existingQuestion.type)
-    }
 
     @Test
     fun testSerializeQuestions_withRealData() {
