@@ -223,6 +223,10 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
                     }
                     PAYLOAD_NON_TEAM_MEMBER_CHANGED -> {
                         showReplyButton(holder, news, position)
+                        showShareButton(holder, news)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
                     }
                 }
             }
