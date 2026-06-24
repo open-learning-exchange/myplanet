@@ -29,6 +29,27 @@ data class UploadedResourceInfo(
     val title: String?
 )
 
+data class LocalResourceRequest(
+    val title: String?,
+    val addedBy: String?,
+    val author: String?,
+    val year: String?,
+    val description: String?,
+    val publisher: String?,
+    val linkToLicense: String?,
+    val openWith: String?,
+    val language: String?,
+    val mediaType: String?,
+    val resourceType: String?,
+    val subjects: io.realm.RealmList<String>?,
+    val levels: io.realm.RealmList<String>?,
+    val resourceFor: io.realm.RealmList<String>?,
+    val resourceUrl: String?,
+    val userId: String?,
+    val isPrivateTeamResource: Boolean,
+    val teamId: String?
+)
+
 interface ResourcesRepository {
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
@@ -48,7 +69,7 @@ interface ResourcesRepository {
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
     suspend fun saveLibraryItem(item: RealmMyLibrary)
-    suspend fun saveLocalResource(resource: RealmMyLibrary, userId: String?, isPrivateTeamResource: Boolean, teamId: String?): Result<Unit>
+    suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
