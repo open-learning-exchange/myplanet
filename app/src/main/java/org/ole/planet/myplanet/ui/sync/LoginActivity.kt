@@ -23,6 +23,9 @@ import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.activity.viewModels
+import org.ole.planet.myplanet.ui.sync.viewmodel.LoginViewModel
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
@@ -80,11 +83,36 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
     private var cachedTeams: List<RealmMyTeam>? = null
+    private val loginViewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+
+        if (mAdapter == null) {
+            mAdapter = UsersAdapter(this@LoginActivity)
+            binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+            binding.recyclerView.adapter = mAdapter
+        }
+
+        collectLatestWhenStarted(loginViewModel.savedUsers) { savedUsers ->
+            mAdapter?.submitList(savedUsers.toMutableList())
+            val hasUsers = savedUsers.isNotEmpty()
+            binding.tvWelcome.setText(if (hasUsers) R.string.welcome_back else R.string.welcome_new)
+            binding.tvSubtitle.setText(if (hasUsers) R.string.sign_in_to_continue else R.string.sign_in_to_get_started)
+        }
+
+        collectLatestWhenStarted(loginViewModel.users) { realmUsers ->
+            users = realmUsers
+        }
+
+        collectLatestWhenStarted(loginViewModel.teams) { teams ->
+            cachedTeams = teams
+            if (teams.isNotEmpty()) {
+                setupTeamDropdown(teams)
+            }
+        }
 
         bindViews()
         setupAvailableSpace()
@@ -419,15 +447,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun loadTeamsAsync() {
-        if (cachedTeams != null) {
-            setupTeamDropdown(cachedTeams)
-            return
-        }
-        lifecycleScope.launch {
-            val teams = teamsRepository.getAllActiveTeams()
-            cachedTeams = teams
-            setupTeamDropdown(teams)
-        }
+        loginViewModel.loadTeamsAsync()
     }
 
     private fun setupTeamDropdown(teams: List<RealmMyTeam>?) {
@@ -545,30 +565,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun getTeamMembers() {
-        lifecycleScope.launch {
-            selectedTeamId = prefData.getSelectedTeamId().toString()
-            val teamId = selectedTeamId
-            if (!teamId.isNullOrEmpty()) {
-                users = teamsRepository.getJoinedMembersAndSave(teamId)
-            }
-            setupAndPopulateRecyclerView()
-        }
+        selectedTeamId = prefData.getSelectedTeamId().toString()
+        val teamId = selectedTeamId
+        loginViewModel.getTeamMembers(teamId)
+        setupAndPopulateRecyclerView()
     }
 
-    private suspend fun setupAndPopulateRecyclerView() {
-        if (mAdapter == null) {
-            mAdapter = UsersAdapter(this@LoginActivity)
-            binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
-            binding.recyclerView.adapter = mAdapter
-        }
-
-        val savedUsers = withContext(dispatcherProvider.io) { prefData.getSavedUsers().toMutableList() }
-        mAdapter?.submitList(savedUsers)
-
-        val hasUsers = savedUsers.isNotEmpty()
-        binding.tvWelcome.setText(if (hasUsers) R.string.welcome_back else R.string.welcome_new)
-        binding.tvSubtitle.setText(if (hasUsers) R.string.sign_in_to_continue else R.string.sign_in_to_get_started)
-
+    private fun setupAndPopulateRecyclerView() {
         binding.recyclerView.isNestedScrollingEnabled = true
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
@@ -658,49 +661,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     fun saveUsers(name: String?, password: String?, source: String) {
         lifecycleScope.launch {
-            val encryptedPassword = if (password?.isNotEmpty() == true) {
-                SecurePrefs.encryptString(this@LoginActivity, password)
-            } else {
-                password
-            }
-            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
-            if (source == "guest") {
-                val newUser = User("", name, encryptedPassword, "", "guest")
-                var newUserIndex = -1
-                for (i in existingUsers.indices) {
-                    if (existingUsers[i].name == newUser.name?.trim { it <= ' ' }) {
-                        newUserIndex = i
-                        break
-                    }
-                }
-                if (newUserIndex != -1) {
-                    existingUsers[newUserIndex] = newUser
+            val encryptedPassword = withContext(dispatcherProvider.io) {
+                if (password?.isNotEmpty() == true) {
+                    SecurePrefs.encryptString(this@LoginActivity, password)
                 } else {
-                    existingUsers.add(newUser)
+                    password
                 }
-                prefData.setSavedUsers(existingUsers)
-            } else if (source == "member") {
-                val userModel = profileDbHandler.getUserModel()
-                var userProfile = userModel?.userImage
-                val userName: String? = userModel?.name
-                if (userProfile == null) {
-                    userProfile = ""
-                }
-                val newUser = User(userName, name, encryptedPassword, userProfile, "member")
-                var newUserIndex = -1
-                for (i in existingUsers.indices) {
-                    if (existingUsers[i].fullName == newUser.fullName?.trim { it <= ' ' }) {
-                        newUserIndex = i
-                        break
-                    }
-                }
-                if (newUserIndex != -1) {
-                    existingUsers[newUserIndex] = newUser
-                } else {
-                    existingUsers.add(newUser)
-                }
-                prefData.setSavedUsers(existingUsers)
             }
+            val userModel = profileDbHandler.getUserModel()
+            val userProfile = userModel?.userImage ?: ""
+            val userName = userModel?.name
+            loginViewModel.saveUsers(name, encryptedPassword, source, userProfile, userName)
         }
     }
 
@@ -723,24 +694,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun resetGuestAsMember(username: String?) {
-        val existingUsers = prefData.getSavedUsers().toMutableList()
-        var newUserExists = false
-        for ((_, name) in existingUsers) {
-            if (name == username) {
-                newUserExists = true
-                break
-            }
-        }
-        if (newUserExists) {
-            val iterator = existingUsers.iterator()
-            while (iterator.hasNext()) {
-                val (_, name) = iterator.next()
-                if (name == username) {
-                    iterator.remove()
-                }
-            }
-            prefData.setSavedUsers(existingUsers)
-        }
+        loginViewModel.resetGuestAsMember(username)
     }
 
     override fun onResume() {
