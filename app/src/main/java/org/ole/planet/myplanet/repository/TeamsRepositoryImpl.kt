@@ -444,6 +444,45 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
 
+
+    override suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo? {
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId) ?: return null
+        return TeamLabelInfo(
+            teamId = team._id ?: "",
+            name = team.name ?: "",
+            type = team.type ?: ""
+        )
+    }
+
+    override suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo? {
+        if (requestId.isNullOrEmpty()) return null
+        val req = findByField(RealmMyTeam::class.java, "_id", requestId) ?: return null
+        return JoinRequestInfo(
+            id = req._id ?: "",
+            teamId = req.teamId ?: "",
+            userId = req.userId ?: ""
+        )
+    }
+
+    override suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo> {
+        if (requestIds.isEmpty()) return emptyList()
+        val requests = queryList(RealmMyTeam::class.java) {
+            beginGroup()
+            requestIds.forEachIndexed { index, id ->
+                if (index > 0) or()
+                equalTo("_id", id)
+            }
+            endGroup()
+        }
+        return requests.map {
+            JoinRequestInfo(
+                id = it._id ?: "",
+                teamId = it.teamId ?: "",
+                userId = it.userId ?: ""
+            )
+        }
+    }
+
     override suspend fun getJoinRequestById(id: String?): RealmMyTeam? {
         if (id.isNullOrEmpty()) return null
         return findByField(RealmMyTeam::class.java, "_id", id)

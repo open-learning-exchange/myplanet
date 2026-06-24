@@ -27,6 +27,18 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
+data class TeamLabelInfo(
+    val teamId: String,
+    val name: String,
+    val type: String
+)
+
+data class JoinRequestInfo(
+    val id: String,
+    val teamId: String,
+    val userId: String
+)
+
 data class JoinRequestNotification(
     val requesterName: String,
     val teamName: String,
@@ -63,6 +75,10 @@ interface TeamsRepository {
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getJoinRequestById(id: String?): RealmMyTeam?
+    suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo?
+    suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo?
+    suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>
+
     suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
