@@ -455,16 +455,28 @@ class SurveysRepositoryImpl @Inject constructor(
             }
         }
 
-        val examCache = HashMap<String, RealmStepExam>()
-        val ids = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.toTypedArray()
-        if (ids.isNotEmpty()) {
-            realm.where(RealmStepExam::class.java).`in`("id", ids).findAll().forEach {
-                it.id?.let { id -> examCache[id] = it }
+        val examsToInsert = mutableListOf<RealmStepExam>()
+        val questionsToInsert = mutableListOf<org.ole.planet.myplanet.model.RealmExamQuestion>()
+
+        documentList.forEach { jsonDoc ->
+            val exam = RealmStepExam.mapToDetached("", "", jsonDoc, "")
+            examsToInsert.add(exam)
+
+            val examId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            val oldQuestions = realm.where(org.ole.planet.myplanet.model.RealmExamQuestion::class.java)
+                .equalTo("examId", examId).findAll()
+            if (oldQuestions == null || oldQuestions.isEmpty()) {
+                val questions = org.ole.planet.myplanet.model.RealmExamQuestion.mapToDetached(
+                    org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("questions", jsonDoc),
+                    examId
+                )
+                questionsToInsert.addAll(questions)
             }
         }
 
-        documentList.forEach { jsonDoc ->
-            RealmStepExam.insertCourseStepsExams("", "", jsonDoc, "", realm, examCache)
+        realm.insertOrUpdate(examsToInsert)
+        if (questionsToInsert.isNotEmpty()) {
+            realm.insertOrUpdate(questionsToInsert)
         }
     }
 

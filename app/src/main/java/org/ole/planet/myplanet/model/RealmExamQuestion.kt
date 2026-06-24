@@ -44,10 +44,10 @@ open class RealmExamQuestion : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
-            if (questions.size() == 0) return
+        fun mapToDetached(questions: JsonArray, examId: String?): List<RealmExamQuestion> {
+            if (questions.size() == 0) return emptyList()
 
-            val questionIds = mutableListOf<String>()
+            val detachedList = mutableListOf<RealmExamQuestion>()
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
                 val questionId = if (question.has("id")) {
@@ -55,48 +55,36 @@ open class RealmExamQuestion : RealmObject() {
                 } else {
                     "$examId-${i}"
                 }
-                questionIds.add(questionId)
-            }
 
-            val existingQuestionsList = if (questionIds.isNotEmpty()) {
-                mRealm.where(RealmExamQuestion::class.java)
-                    .`in`("id", questionIds.toTypedArray())
-                    .findAll()
-            } else {
-                emptyList()
-            }
-            val existingQuestionsMap = existingQuestionsList.associateBy { it.id }.toMutableMap()
-
-            for (i in 0 until questions.size()) {
-                val question = questions[i].asJsonObject
-                val questionId = questionIds[i]
-
-                var myQuestion = existingQuestionsMap[questionId]
-
-                if (myQuestion == null) {
-                    myQuestion = mRealm.createObject(RealmExamQuestion::class.java, questionId)
-                    existingQuestionsMap[questionId] = myQuestion
+                val myQuestion = RealmExamQuestion()
+                myQuestion.id = questionId
+                myQuestion.examId = examId
+                myQuestion.body = JsonUtils.getString("body", question)
+                myQuestion.type = JsonUtils.getString("type", question)
+                myQuestion.header = JsonUtils.getString("title", question)
+                myQuestion.marks = JsonUtils.getString("marks", question)
+                myQuestion.choices = if (question.has("choices")) {
+                    JsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
+                } else {
+                    "[]"
                 }
 
-                myQuestion.apply {
-                    this.examId = examId
-                    body = JsonUtils.getString("body", question)
-                    type = JsonUtils.getString("type", question)
-                    header = JsonUtils.getString("title", question)
-                    marks = JsonUtils.getString("marks", question)
-                    choices = if (question.has("choices")) {
-                        JsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", question))
-                    } else {
-                        "[]"
-                    }
-
-                    hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
-                    scaleMax = JsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
-                    val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
-                    if (isMultipleChoice) {
-                        insertCorrectChoice(question["choices"].asJsonArray, question, this)
-                    }
+                myQuestion.hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
+                myQuestion.scaleMax = JsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
+                val isMultipleChoice = myQuestion.type?.startsWith("select") == true && question.has("choices")
+                if (isMultipleChoice) {
+                    insertCorrectChoice(question["choices"].asJsonArray, question, myQuestion)
                 }
+                detachedList.add(myQuestion)
+            }
+            return detachedList
+        }
+
+@JvmStatic
+        fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
+            val detachedQuestions = mapToDetached(questions, examId)
+            if (detachedQuestions.isNotEmpty()) {
+                mRealm.insertOrUpdate(detachedQuestions)
             }
         }
 
