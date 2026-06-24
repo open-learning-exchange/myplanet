@@ -121,10 +121,7 @@ class RealmStepExamTest {
         every { mockQuery.findFirst() } returns null
 
         val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
-        every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, null as String?) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
+        every { mockRealm.insertOrUpdate(any<RealmStepExam>()) }
 
         val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
         val mockQuestionsResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
@@ -133,7 +130,7 @@ class RealmStepExamTest {
         every { mockQuestionsQuery.findAll() } returns mockQuestionsResults
         every { mockQuestionsResults.isEmpty() } returns true
 
-        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
+        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) }
 
         // Calling the 4 arg which delegates to 5 arg with empty string
         RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, mockRealm)
@@ -167,10 +164,7 @@ class RealmStepExamTest {
         val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
         val parentId = "parent-nation-id"
         // Ensure ambiguity is removed by explicitly testing specific arg logic
-        every { mockRealm.createObject(RealmStepExam::class.java, parentId) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
+        every { mockRealm.insertOrUpdate(any<RealmStepExam>()) }
 
         val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
         val mockQuestionsResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
@@ -179,7 +173,7 @@ class RealmStepExamTest {
         every { mockQuestionsQuery.findAll() } returns mockQuestionsResults
         every { mockQuestionsResults.isEmpty() } returns true
 
-        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
+        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) }
 
         // Explicitly calling the 5 arg method
         RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, parentId, mockRealm)

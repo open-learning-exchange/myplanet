@@ -46,7 +46,7 @@ class RealmExamQuestionTest {
         RealmExamQuestion.insertExamQuestions(emptyArray, "exam123", mockRealm)
 
         verify(exactly = 0) { mockRealm.where(RealmExamQuestion::class.java) }
-        verify(exactly = 0) { mockRealm.createObject(RealmExamQuestion::class.java, any<String>()) }
+        verify(exactly = 0) { mockRealm.insertOrUpdate(any<Collection<RealmExamQuestion>>()) }
     }
 
     @Test
@@ -95,7 +95,7 @@ class RealmExamQuestionTest {
         // We will mock the findAll to return a fake list? No, findAll returns RealmResults.
 
         val mockQuestion = spyk(RealmExamQuestion())
-        every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns mockQuestion
+        every { mockRealm.insertOrUpdate(any<Collection<RealmExamQuestion>>()) }
 
         RealmExamQuestion.insertExamQuestions(questionsArray, "exam123", mockRealm)
 
@@ -174,7 +174,7 @@ class RealmExamQuestionTest {
         val mockQ2 = RealmExamQuestion().apply { id = "q2" }
 
         every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns mockQ1
-        every { mockRealm.createObject(RealmExamQuestion::class.java, "q2") } returns mockQ2
+
 
         RealmExamQuestion.insertExamQuestions(questions, "examId", mockRealm)
 
