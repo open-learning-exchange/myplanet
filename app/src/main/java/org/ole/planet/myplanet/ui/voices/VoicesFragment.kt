@@ -16,7 +16,7 @@ import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -92,7 +92,6 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.btnNewVoice.visibility = View.GONE
             }
 
-            setupLabelFilter()
             voicesViewModel.observeCommunityNews(getUserIdentifier())
 
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -114,8 +113,14 @@ class VoicesFragment : BaseVoicesFragment() {
                     voicesViewModel.createNewsSuccess.collectLatest { n ->
                         binding.btnSubmit.isEnabled = true
                         if (n != null) {
-                            n.sortDate = n.calculateSortDate()
+                            binding.etMessage.setText(R.string.empty_text)
+                            binding.llAddNews.visibility = View.GONE
+                            binding.btnNewVoice.text = getString(R.string.new_voice)
+                            imageList.clear()
+                            llImage?.removeAllViews()
                             scrollToTop()
+                        } else {
+                            org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
                         }
                     }
                 }
@@ -127,7 +132,6 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            binding.etMessage.setText(R.string.empty_text)
             val map = HashMap<String?, String>()
             map["message"] = message
             map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
@@ -135,14 +139,9 @@ class VoicesFragment : BaseVoicesFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            binding.llAddNews.visibility = View.GONE
-            binding.btnNewVoice.text = getString(R.string.new_voice)
             binding.btnSubmit.isEnabled = false
 
             user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList()) }
-            imageList.clear()
-            llImage?.removeAllViews()
-            // The button will be re-enabled when createNewsSuccess emits
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -322,7 +321,7 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    @OptIn(FlowPreview::class)
     private fun setupSearchTextListener() {
         etSearch.textChanges()
             .debounce(300)
