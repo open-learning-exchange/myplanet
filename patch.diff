@@ -1,0 +1,17 @@
+--- app/src/main/java/org/ole/planet/myplanet/ui/user/UserArrayAdapter.kt
++++ app/src/main/java/org/ole/planet/myplanet/ui/user/UserArrayAdapter.kt
+@@ -51,13 +51,10 @@
+
+         holder.itemView.setOnClickListener {
+             val currentPos = holder.bindingAdapterPosition
+             if (currentPos == RecyclerView.NO_POSITION) return@setOnClickListener
+-            val previousUser = selectedUser
+             selectedUser = user
+-            val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
+-            if (prevPos != -1) notifyItemChanged(prevPos)
+-            notifyItemChanged(currentPos)
++            submitList(currentList.toList())
+             onItemClick(user)
+         }
+     }
+ }
