@@ -157,6 +157,17 @@ class CoursesViewModel @Inject constructor(
         }
     }
 
+    suspend fun refreshCourseRatings(userId: String?) {
+        withContext(dispatcherProvider.io) {
+            try {
+                val map = coursesRepository.getCourseRatings(userId)
+                _coursesState.value = _coursesState.value.copy(map = map)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     fun filterCourses(
         isMyCourseLib: Boolean,
         userId: String?,
@@ -193,19 +204,6 @@ class CoursesViewModel @Inject constructor(
                 processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, map, progressMap, tagsMap)
             }
         }
-    }
-
-    private fun RealmMyCourse.toCourse(): Course {
-        return Course(
-            courseId = this.courseId ?: "",
-            courseTitle = this.courseTitle ?: "",
-            description = this.description ?: "",
-            gradeLevel = this.gradeLevel ?: "",
-            subjectLevel = this.subjectLevel ?: "",
-            createdDate = this.createdDate,
-            numberOfSteps = this.getNumberOfSteps(),
-            isMyCourse = this.isMyCourse
-        )
     }
 
     fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean, onComplete: () -> Unit) {

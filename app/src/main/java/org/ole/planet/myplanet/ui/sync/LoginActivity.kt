@@ -549,7 +549,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             selectedTeamId = prefData.getSelectedTeamId().toString()
             val teamId = selectedTeamId
             if (!teamId.isNullOrEmpty()) {
-                users = teamsRepository.getJoinedMembersAndSave(teamId)
+                users = teamsRepository.refreshJoinedMembersForLogin(teamId)
             }
             setupAndPopulateRecyclerView()
         }
