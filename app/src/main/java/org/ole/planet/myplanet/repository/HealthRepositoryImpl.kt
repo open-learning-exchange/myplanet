@@ -104,9 +104,10 @@ class HealthRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmHealthExamination.insert(realm, jsonDoc)
+        val examinations = documentList.map { jsonDoc ->
+            RealmHealthExamination.fromJson(jsonDoc)
         }
+        realm.insertOrUpdate(examinations)
     }
 
     override suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?> {

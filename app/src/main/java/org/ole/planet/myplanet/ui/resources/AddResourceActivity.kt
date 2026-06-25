@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
@@ -143,25 +144,31 @@ class AddResourceActivity : AppCompatActivity() {
     private fun saveResource() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
-        val id = UUID.randomUUID().toString()
         val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
 
-        val resource = RealmMyLibrary().apply {
-            this.id = id
-            this.title = title
-            createResource(this, id)
-            if (!isPrivateTeamResource) {
-                setUserId(userModel?.id)
-            }
-        }
+        val request = LocalResourceRequest(
+            title = title,
+            addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' },
+            author = binding.etAuthor.text.toString().trim { it <= ' ' },
+            year = binding.etYear.text.toString().trim { it <= ' ' },
+            description = binding.etDescription.text.toString().trim { it <= ' ' },
+            publisher = binding.etPublisher.text.toString().trim { it <= ' ' },
+            linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' },
+            openWith = if (binding.spnOpenWith.selectedItemPosition > 0) binding.spnOpenWith.selectedItem.toString() else "",
+            language = if (binding.spnLang.selectedItemPosition > 0) binding.spnLang.selectedItem.toString() else "",
+            mediaType = if (binding.spnMedia.selectedItemPosition > 0) binding.spnMedia.selectedItem.toString() else "",
+            resourceType = if (binding.spnResourceType.selectedItemPosition > 0) binding.spnResourceType.selectedItem.toString() else "",
+            subjects = subjects,
+            levels = levels,
+            resourceFor = resourceFor,
+            resourceUrl = resourceUrl,
+            userId = userModel?.id,
+            isPrivateTeamResource = isPrivateTeamResource,
+            teamId = teamId
+        )
         binding.btnSubmit.isEnabled = false
         lifecycleScope.launch {
-            val result = resourcesRepository.saveLocalResource(
-                resource,
-                userModel?.id,
-                isPrivateTeamResource,
-                teamId
-            )
+            val result = resourcesRepository.saveLocalResource(request)
 
             if (result.isSuccess) {
                 val message = if (isPrivateTeamResource) {
@@ -176,30 +183,6 @@ class AddResourceActivity : AppCompatActivity() {
                 binding.btnSubmit.isEnabled = true
             }
         }
-    }
-
-    private fun createResource(resource: RealmMyLibrary, id: String) {
-        resource.addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' }
-        resource.author = binding.etAuthor.text.toString().trim { it <= ' ' }
-        resource.resourceId = id
-        resource.year = binding.etYear.text.toString().trim { it <= ' ' }
-        resource.description = binding.etDescription.text.toString().trim { it <= ' ' }
-        resource.publisher = binding.etPublisher.text.toString().trim { it <= ' ' }
-        resource.linkToLicense = binding.etLinkToLicense.text.toString().trim { it <= ' ' }
-        resource.openWith = if (binding.spnOpenWith.selectedItemPosition > 0) binding.spnOpenWith.selectedItem.toString() else ""
-        resource.language = if (binding.spnLang.selectedItemPosition > 0) binding.spnLang.selectedItem.toString() else ""
-        resource.mediaType = if (binding.spnMedia.selectedItemPosition > 0) binding.spnMedia.selectedItem.toString() else ""
-        resource.resourceType = if (binding.spnResourceType.selectedItemPosition > 0) binding.spnResourceType.selectedItem.toString() else ""
-        resource.subject = subjects
-        resource.setUserId(RealmList())
-        resource.level = levels
-        resource.createdDate = Calendar.getInstance().timeInMillis
-        resource.resourceFor = resourceFor
-        resource.resourceLocalAddress = resourceUrl
-        resource.resourceOffline = true
-        resource.filename = resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
-        resource.isPrivate = binding.cbPrivateResource.isChecked && teamId != null
-        resource.privateFor = if (binding.cbPrivateResource.isChecked && teamId != null) teamId else null
     }
 
     private fun validate(title: String): Boolean {

@@ -30,7 +30,7 @@ class ResourcesAdapter(
     private var openedResourceIds: Set<String>
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
 
-    private val selectedItems: MutableList<ResourceListModel> = ArrayList()
+    private val selectedItemIds = mutableSetOf<String>()
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -117,7 +117,7 @@ class ResourcesAdapter(
             holder.rowLibraryBinding.title.text = library.title
             holder.rowLibraryBinding.description.text = library.description
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.rating_count_format, library.timesRated)
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.any { it.item.id == model.item.id }
+            holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
             holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(library.averageRating)) "0.0" else String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDoubleOrNull() ?: 0.0)
             holder.rowLibraryBinding.tvDate.text = org.ole.planet.myplanet.utils.TimeUtils.formatDate(library.createdDate)
 
@@ -142,14 +142,17 @@ class ResourcesAdapter(
                     holder.rowLibraryBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, library.title ?: "")
                     val isChecked = (view as CheckBox).isChecked
-                    if (isChecked) {
-                        if (selectedItems.none { it.item.id == model.item.id }) {
-                            selectedItems.add(model)
+                    model.item.id?.let { itemId ->
+                        if (isChecked) {
+                            selectedItemIds.add(itemId)
+                        } else {
+                            selectedItemIds.remove(itemId)
                         }
-                    } else {
-                        selectedItems.removeAll { it.item.id == model.item.id }
                     }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems.map { it.item })
+                    if (listener != null) {
+                        val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
+                        listener?.onSelectedListChange(selectedResources)
+                    }
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -158,21 +161,31 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return currentList.isNotEmpty() && selectedItems.size == currentList.size
+        return currentList.isNotEmpty() && selectedItemIds.size == currentList.size
     }
 
     fun selectAllItems(selectAll: Boolean) {
         if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(currentList)
+            currentList.forEachIndexed { index, model ->
+                model.item.id?.let { itemId ->
+                    if (selectedItemIds.add(itemId)) {
+                        notifyItemChanged(index, SELECTION_PAYLOAD)
+                    }
+                }
+            }
         } else {
-            selectedItems.clear()
+            currentList.forEachIndexed { index, model ->
+                model.item.id?.let { itemId ->
+                    if (selectedItemIds.remove(itemId)) {
+                        notifyItemChanged(index, SELECTION_PAYLOAD)
+                    }
+                }
+            }
         }
 
-        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
-
         if (listener != null) {
-            listener?.onSelectedListChange(selectedItems.map { it.item })
+            val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
+            listener?.onSelectedListChange(selectedResources)
         }
     }
 
@@ -197,7 +210,7 @@ class ResourcesAdapter(
                 handled = true
             }
             if (flatPayloads.contains(SELECTION_PAYLOAD)) {
-                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.any { it.item.id == model.item.id }
+                holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
                 handled = true
             }
             if (flatPayloads.contains(OPENED_RESOURCE_PAYLOAD) || flatPayloads.contains(OFFLINE_STATUS_PAYLOAD)) {
