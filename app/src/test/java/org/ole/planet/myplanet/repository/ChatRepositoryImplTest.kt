@@ -64,7 +64,8 @@ class ChatRepositoryImplTest {
         coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers { }
         coEvery { chatApiService.fetchAiProviders() } returns mockResponse
 
-        val result = chatRepository.fetchAiProviders(serverUrl) { true }
+        chatRepository.reachabilityCheck = { true }
+        val result = chatRepository.fetchAiProviders(serverUrl)
 
         assertEquals(mockResponse, result)
         verify(exactly = 1) { serverUrlMapper.processUrl(serverUrl) }

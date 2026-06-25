@@ -17,9 +17,10 @@ import okio.Buffer
 import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.repository.DownloadRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -29,7 +30,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
-    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService,
+    private val downloadRepository: DownloadRepository, private val broadcastService: BroadcastService,
     private val dispatcherProvider: DispatcherProvider,
     @DownloadPreferences private val preferences: SharedPreferences
 ) : CoroutineWorker(context, workerParams) {
@@ -83,14 +84,15 @@ class DownloadWorker @AssistedInject constructor(
             return true
         }
         return try {
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
-            if (response.isSuccessful) {
-                response.body()?.let {
-                    downloadFileBody(it, url, index, total)
+            val response = downloadRepository.downloadFileResponse(url, UrlUtils.header)
+            when (response) {
+                is DownloadResult.Success -> {
+                    downloadFileBody(response.body, url, index, total)
                     true
-                } ?: false
-            } else {
-                false
+                }
+                is DownloadResult.Error -> {
+                    false
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
