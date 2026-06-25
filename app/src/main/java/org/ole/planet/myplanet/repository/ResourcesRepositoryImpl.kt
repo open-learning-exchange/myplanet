@@ -371,19 +371,19 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
 
             executeTransaction { realm ->
-                val chunkSize = 1000
-                resourceIds.chunked(chunkSize).forEach { chunk ->
+                if (resourceIds.isNotEmpty()) {
+                    // Realm Java internally handles IN queries with large arrays differently than standard SQLite,
+                    // so it is not subject to the 999 parameter limit. Unbounded IN clauses are safe here and
+                    // avoid the overhead of executing multiple queries within a chunked loop.
                     val libraryItems = realm.where(RealmMyLibrary::class.java)
-                        .`in`("resourceId", chunk.toTypedArray())
+                        .`in`("resourceId", resourceIds.toTypedArray())
                         .not().equalTo("userId", userId)
                         .findAll()
 
                     libraryItems.forEach { libraryItem ->
                         libraryItem.setUserId(userId)
                     }
-                }
 
-                if (resourceIds.isNotEmpty()) {
                     val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
                         .equalTo("type", "resources")
                         .equalTo("userId", userId)
