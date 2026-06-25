@@ -12,7 +12,7 @@ sealed class ChatResult {
 interface ChatRepository {
     suspend fun sendNewChatRequest(query: String, user: String?, aiProvider: AiProvider): ChatResult
     suspend fun sendContinueChatRequest(message: String, user: String?, aiProvider: AiProvider, id: String, rev: String): ChatResult
-    suspend fun fetchAiProviders(serverUrl: String, isServerReachable: suspend (String) -> Boolean): Map<String, Boolean>?
+    suspend fun fetchAiProviders(serverUrl: String): Map<String, Boolean>?
     suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun insertChatHistoryList(chats: List<JsonObject>)
