@@ -69,29 +69,31 @@ class RealmMeetupTest {
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
         every { mockQuery.findFirst() } returns null
-
-        val newMeetup = mockk<RealmMeetup>(relaxed = true)
-        every { mockRealm.createObject(RealmMeetup::class.java, "meetup1") } returns newMeetup
+        every { mockRealm.insertOrUpdate(any<RealmMeetup>()) } returns Unit
 
         RealmMeetup.insert(userId, meetupDoc, mockRealm)
 
-        verify { newMeetup.meetupId = "meetup1" }
-        verify { newMeetup.userId = userId }
-        verify { newMeetup.meetupIdRev = "rev1" }
-        verify { newMeetup.title = "Test Meetup" }
-        verify { newMeetup.description = "Test Description" }
-        verify { newMeetup.startDate = 1600000000000 }
-        verify { newMeetup.endDate = 1600003600000 }
-        verify { newMeetup.recurring = "weekly" }
-        verify { newMeetup.startTime = "10:00" }
-        verify { newMeetup.endTime = "11:00" }
-        verify { newMeetup.category = "tech" }
-        verify { newMeetup.meetupLocation = "Room 1" }
-        verify { newMeetup.meetupLink = "http://meetup.com" }
-        verify { newMeetup.creator = "creator1" }
-        verify { newMeetup.day = """["Monday"]""" }
-        verify { newMeetup.link = """{"teams":"team1"}""" }
-        verify { newMeetup.teamId = "team1" }
+        verify {
+            mockRealm.insertOrUpdate(withArg<RealmMeetup> {
+                assertEquals("meetup1", it.meetupId)
+                assertEquals(userId, it.userId)
+                assertEquals("rev1", it.meetupIdRev)
+                assertEquals("Test Meetup", it.title)
+                assertEquals("Test Description", it.description)
+                assertEquals(1600000000000, it.startDate)
+                assertEquals(1600003600000, it.endDate)
+                assertEquals("weekly", it.recurring)
+                assertEquals("10:00", it.startTime)
+                assertEquals("11:00", it.endTime)
+                assertEquals("tech", it.category)
+                assertEquals("Room 1", it.meetupLocation)
+                assertEquals("http://meetup.com", it.meetupLink)
+                assertEquals("creator1", it.creator)
+                assertEquals("""["Monday"]""", it.day)
+                assertEquals("""{"teams":"team1"}""", it.link)
+                assertEquals("team1", it.teamId)
+            })
+        }
     }
 
     @Test
@@ -107,16 +109,24 @@ class RealmMeetupTest {
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
 
-        val existingMeetup = mockk<RealmMeetup>(relaxed = true)
+        val existingMeetup = RealmMeetup()
+        existingMeetup.createdDate = 12345L
+        existingMeetup.sync = "synced"
         every { mockQuery.findFirst() } returns existingMeetup
+        every { mockRealm.insertOrUpdate(any<RealmMeetup>()) } returns Unit
 
         RealmMeetup.insert(userId, meetupDoc, mockRealm)
 
-        verify(exactly = 0) { mockRealm.createObject(RealmMeetup::class.java, "meetup1") }
-        verify { existingMeetup.meetupId = "meetup1" }
-        verify { existingMeetup.userId = userId }
-        verify { existingMeetup.meetupIdRev = "rev2" }
-        verify { existingMeetup.title = "Updated Meetup" }
+        verify {
+            mockRealm.insertOrUpdate(withArg<RealmMeetup> {
+                assertEquals("meetup1", it.meetupId)
+                assertEquals(userId, it.userId)
+                assertEquals("rev2", it.meetupIdRev)
+                assertEquals("Updated Meetup", it.title)
+                assertEquals(12345L, it.createdDate)
+                assertEquals("synced", it.sync)
+            })
+        }
     }
 
     @Test
@@ -129,13 +139,15 @@ class RealmMeetupTest {
         every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
         every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
         every { mockQuery.findFirst() } returns null
-
-        val newMeetup = mockk<RealmMeetup>(relaxed = true)
-        every { mockRealm.createObject(RealmMeetup::class.java, "meetup1") } returns newMeetup
+        every { mockRealm.insertOrUpdate(any<RealmMeetup>()) } returns Unit
 
         RealmMeetup.insert(mockRealm, meetupDoc)
 
-        verify { newMeetup.userId = "" }
+        verify {
+            mockRealm.insertOrUpdate(withArg<RealmMeetup> {
+                assertEquals("", it.userId)
+            })
+        }
     }
 
     @Test

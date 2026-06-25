@@ -17,12 +17,20 @@ class ChatShareTargetAdapter(
     private val expandableDetailList: HashMap<String, List<String>>,
     private val sharedChildren: Set<String> = emptySet()
 ) : BaseExpandableListAdapter() {
+
+    private var nextId = 0L
+    private val groupIds = mutableMapOf<String, Long>()
+    private val childIds = mutableMapOf<Pair<String, String>, Long>()
+
     override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
         return expandableDetailList[expandableTitleList[lstPosn]]?.get(expandedListPosition) ?: ""
     }
 
     override fun getChildId(listPosition: Int, expandedListPosition: Int): Long {
-        return expandedListPosition.toLong()
+        val group = getGroup(listPosition) as String
+        val child = getChild(listPosition, expandedListPosition) as String
+        val key = Pair(group, child)
+        return childIds.getOrPut(key) { nextId++ }
     }
 
     override fun getChildView(lstPosn: Int, expandedListPosition: Int, isLastChild: Boolean, convertView: View?, parent: ViewGroup): View {
@@ -54,7 +62,8 @@ class ChatShareTargetAdapter(
     }
 
     override fun getGroupId(listPosition: Int): Long {
-        return listPosition.toLong()
+        val group = getGroup(listPosition) as String
+        return groupIds.getOrPut(group) { nextId++ }
     }
 
     override fun getGroupView(listPosition: Int, isExpanded: Boolean, convertView: View?, parent: ViewGroup): View {
@@ -74,7 +83,7 @@ class ChatShareTargetAdapter(
     }
 
     override fun hasStableIds(): Boolean {
-        return false
+        return true
     }
 
     override fun isChildSelectable(listPosition: Int, expandedListPosition: Int): Boolean {

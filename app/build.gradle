@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< refactor-collect-latest-courses-3903183736294946528
         versionCode = 5877
         versionName = "0.58.77"
+=======
+        versionCode = 5876
+        versionName = "0.58.76"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
