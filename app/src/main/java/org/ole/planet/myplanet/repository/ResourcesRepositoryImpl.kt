@@ -372,9 +372,6 @@ class ResourcesRepositoryImpl @Inject constructor(
 
             executeTransaction { realm ->
                 if (resourceIds.isNotEmpty()) {
-                    // Realm Java internally handles IN queries with large arrays differently than standard SQLite,
-                    // so it is not subject to the 999 parameter limit. Unbounded IN clauses are safe here and
-                    // avoid the overhead of executing multiple queries within a chunked loop.
                     val libraryItems = realm.where(RealmMyLibrary::class.java)
                         .`in`("resourceId", resourceIds.toTypedArray())
                         .not().equalTo("userId", userId)
