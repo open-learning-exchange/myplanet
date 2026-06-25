@@ -846,11 +846,25 @@ val color = ContextCompat.getColor(context, R.color.primary)
 ## Testing Guidelines
 
 ### Current State
-- **A real unit-test suite exists**: ~130 unit tests in `app/src/test/` + 2 instrumented tests in `app/src/androidTest/` (132 test files total).
-- **Stack**: JUnit4, **MockK** (`mockk` / `mockk-android`), **Robolectric**, `kotlinx-coroutines-test`, AndroidX Test (`core`/`ext`/`runner`/`arch-core-testing`), and **Hilt testing** (`hilt-android-testing` with `kspTest`). Dependencies are declared in `app/build.gradle` (test block) and `gradle/libs.versions.toml`.
-- **Coverage**: nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Realm models, DI modules, and the API/auth layer.
-- **Shared test infra**: `MainDispatcherRule`, `TestDispatcherProvider` (inject deterministic dispatchers — production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code).
+
+The project has an established test suite (configured in `app/build.gradle`, versions in `gradle/libs.versions.toml`):
+
+- **Unit tests (JVM)**: ~130 files in `app/src/test/`, covering `utils` (35), `repository` (25), `ui` (22), `services` (22), `model` (11), `base` (7), `data` (4), and `di` (2). Run on the JVM with Robolectric so Android resources are available (`testOptions { unitTests { includeAndroidResources = true } }`). Coverage spans nearly all 23 repositories, the sync managers (`services/sync/`), upload/retry services, most ViewModels, many `utils/`, several Realm models, DI modules, and the API/auth layer.
+- **Instrumented tests (device/emulator)**: in `app/src/androidTest/` — currently `DatabaseServiceTest` and `RealmUserTest`. This layer is sparse; user-facing flows (login/sync, take-course, exam submission) have no UI coverage yet and are the main gap.
 - **CI enforcement**: `.github/workflows/test.yml` runs `./gradlew testDefaultDebugUnitTest` on every push and fails the build on any test failure. (Instrumented tests are **not** run in CI.)
+
+**Frameworks in use:**
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| JUnit 4 | 4.13.2 | Test runner / assertions |
+| MockK | 1.14.11 | Kotlin mocking (`mockk`, `mockk-agent`, `mockk-android`) |
+| Robolectric | 4.16.1 | Android framework on the JVM |
+| kotlinx-coroutines-test | — | `runTest`, dispatcher control |
+| androidx.test (core/ext/runner/arch) | — | Android test infra, `InstantTaskExecutorRule` |
+| hilt-android-testing | — | DI in tests (`kspTest`) |
+
+Note: tests use **MockK**, not Mockito. Shared test infra — `MainDispatcherRule` and `TestDispatcherProvider` (`app/src/test/.../`) — swaps the main dispatcher and injects deterministic dispatchers in coroutine tests. Production code uses an injectable `DispatcherProvider`, so avoid hard-coding `Dispatchers.*` in new code.
 
 ### Running Tests
 
@@ -864,7 +878,7 @@ val color = ContextCompat.getColor(context, R.color.primary)
 # A single test class
 ./gradlew testDefaultDebugUnitTest --tests "org.ole.planet.myplanet.repository.CoursesRepositoryImplTest"
 
-# Instrumented tests (needs a connected device/emulator)
+# Instrumented tests (requires a connected device/emulator)
 ./gradlew connectedDefaultDebugAndroidTest
 ```
 
@@ -893,6 +907,17 @@ class CoursesRepositoryImplTest {
 - Use `runTest { }` + `MainDispatcherRule` for coroutine code; inject `TestDispatcherProvider` instead of real dispatchers.
 - Use **Robolectric** (`@RunWith(RobolectricTestRunner::class)`) for tests needing Android framework classes without a device.
 - Add new tests next to existing ones (mirror the `main` package path) so CI picks them up automatically.
+
+**Instrumented test (device/emulator):**
+```kotlin
+@RunWith(AndroidJUnit4::class)
+class LoginActivityTest {
+    @Test
+    fun loginButton_clickWithValidCredentials_navigatesToDashboard() {
+        // Test UI interaction with Espresso / device APIs
+    }
+}
+```
 
 ### Manual Testing Checklist
 
