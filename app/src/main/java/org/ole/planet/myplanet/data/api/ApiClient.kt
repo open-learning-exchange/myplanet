@@ -1,20 +1,12 @@
 package org.ole.planet.myplanet.data.api
 
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.utils.RetryUtils
 import retrofit2.Response
-import retrofit2.Retrofit
 
 object ApiClient {
-    lateinit var client: Retrofit
-
     private const val MAX_ATTEMPTS = 3
     private const val RETRY_DELAY_MS = 2000L
-
-    suspend fun ensureInitialized() {
-        MainApplication.apiClientInitialized.await()
-    }
 
     suspend fun <T> executeWithRetryAndWrap(operation: suspend () -> Response<T>?): Response<T>? {
         return RetryUtils.retry(
