@@ -118,7 +118,13 @@ class RatingsFragment : DialogFragment() {
                     when (state) {
                         is RatingsViewModel.SubmitState.Success -> {
                             Utilities.toast(activity, "Thank you, your rating is submitted.")
-                            ratingListener?.onRatingChanged()
+                            val t = type
+                            val i = id
+                            if (t != null && i != null) {
+                                ratingListener?.onRatingChanged(t, i)
+                            } else {
+                                ratingListener?.onRatingChanged()
+                            }
                             dismiss()
                         }
                         is RatingsViewModel.SubmitState.Error -> {
