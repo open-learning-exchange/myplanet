@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.os.Looper
 import android.util.Patterns
 import android.webkit.MimeTypeMap
 import android.widget.Toast
@@ -39,19 +40,27 @@ object Utilities {
     @JvmStatic
     fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
-        MainApplication.applicationScope.launch(Dispatchers.Main) {
-            if (!isAppInForeground()) {
-                return@launch
+        if (Looper.myLooper() == Looper.getMainLooper()) {
+            showToastIfValid(context, message, duration)
+        } else {
+            MainApplication.applicationScope.launch(Dispatchers.Main) {
+                showToastIfValid(context, message, duration)
             }
+        }
+    }
 
-            val visualContext = getActivityFromContext(context)
+    private fun showToastIfValid(context: Context, message: CharSequence?, duration: Int) {
+        if (!isAppInForeground()) {
+            return
+        }
 
-            if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
-                try {
-                    Toast.makeText(visualContext, message, duration).show()
-                } catch (e: IllegalAccessException) {
-                    e.printStackTrace()
-                }
+        val visualContext = getActivityFromContext(context)
+
+        if (visualContext != null && !visualContext.isFinishing && !visualContext.isDestroyed) {
+            try {
+                Toast.makeText(visualContext, message, duration).show()
+            } catch (e: IllegalAccessException) {
+                e.printStackTrace()
             }
         }
     }
