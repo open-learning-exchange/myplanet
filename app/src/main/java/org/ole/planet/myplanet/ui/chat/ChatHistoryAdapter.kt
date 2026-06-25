@@ -75,7 +75,7 @@ class ChatHistoryAdapter(
     fun notifyChatShared(chatId: String?) {
         val position = currentList.indexOfFirst { it._id == chatId }
         if (position != -1) {
-            notifyItemChanged(position)
+            notifyItemChanged(position, PAYLOAD_CHAT_SHARED)
         }
     }
 
@@ -90,6 +90,14 @@ class ChatHistoryAdapter(
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
         submitList(newChatHistory)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolderChat, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(PAYLOAD_CHAT_SHARED)) {
+            bindShareChat(holder, getItem(position))
+            return
+        }
+        super.onBindViewHolder(holder, position, payloads)
     }
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
@@ -114,6 +122,10 @@ class ChatHistoryAdapter(
             )
         }
 
+        bindShareChat(holder, item)
+    }
+
+    private fun bindShareChat(holder: ViewHolderChat, item: RealmChatHistory) {
         holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
 
         holder.rowChatHistoryBinding.shareChat.setOnClickListener {
@@ -247,4 +259,8 @@ class ChatHistoryAdapter(
     }
 
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
+
+    companion object {
+        const val PAYLOAD_CHAT_SHARED = "PAYLOAD_CHAT_SHARED"
+    }
 }

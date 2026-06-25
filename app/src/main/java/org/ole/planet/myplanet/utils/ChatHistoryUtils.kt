@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import org.ole.planet.myplanet.model.RealmNews
@@ -15,7 +14,7 @@ object ChatHistoryUtils {
                 else {
                     val ids = newsEntries.flatMap { news ->
                         try {
-                            val array = Gson().fromJson(news.viewIn, JsonArray::class.java)
+                            val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
                             val list = mutableListOf<String>()
                             for (i in 0 until array.size()) {
                                 val elem = array.get(i) as JsonElement
