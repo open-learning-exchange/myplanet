@@ -270,4 +270,43 @@ class UploadManagerTest {
 
         coVerify { listener.onSuccess("Resource upload failed: $errorMessage") }
     }
+
+    @Test
+    fun `uploadMyPersonal delegates to personalsRepository and calls uploadAttachment`() = testScope.runTest {
+        val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
+        every { mockPersonal.isUploaded } returns false
+
+        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns Pair("remote-id", "remote-rev")
+
+        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        advanceUntilIdle()
+
+        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
+        assert(result == "Personal resource uploaded successfully")
+    }
+
+    @Test
+    fun `uploadMyPersonal returns failure message when response is null`() = testScope.runTest {
+        val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
+        every { mockPersonal.isUploaded } returns false
+
+        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns null
+
+        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        advanceUntilIdle()
+
+        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
+        assert(result == "Failed to upload personal resource: No response")
+    }
+
+    @Test
+    fun `uploadMyPersonal returns already uploaded message`() = testScope.runTest {
+        val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
+        every { mockPersonal.isUploaded } returns true
+
+        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        advanceUntilIdle()
+
+        assert(result == "Resource already uploaded")
+    }
 }
