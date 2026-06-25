@@ -59,6 +59,17 @@ class CoursesAdapter(
         submitList(currentList.toList())
     }
 
+    override fun refreshWithDiff(id: String) {
+        val index = currentList.indexOfFirst { it.courseId == id }
+        if (index != -1) {
+            val bundle = Bundle()
+            bundle.putBoolean(RATING_PAYLOAD, true)
+            notifyItemChanged(index, bundle)
+            return
+        }
+        submitList(currentList.toList())
+    }
+
     private val externalFilesBaseUrl = "file://${FileUtils.getExternalFilesDir(context)}/ole/"
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
@@ -78,7 +89,7 @@ class CoursesAdapter(
         super.onCurrentListChanged(previousList, currentList)
         courseIdToPosition.clear()
         currentList.forEachIndexed { index, course ->
-            course.courseId?.let { courseIdToPosition[it] = index }
+            courseIdToPosition[course.courseId] = index
         }
     }
 

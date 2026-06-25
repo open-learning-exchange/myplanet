@@ -38,10 +38,10 @@ class TeamsVoicesViewModel @Inject constructor(
 
     private var observeJob: kotlinx.coroutines.Job? = null
 
-    suspend fun getFilteredNews(teamId: String): List<RealmNews?> = withContext(dispatcherProvider.io) {
+    suspend fun getFilteredNews(teamId: String): List<RealmNews?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
         voicesRepository.updateTeamNotification(teamId, newsList.size)
-        newsList
+        return newsList
     }
 
     fun observeDiscussions(teamId: String) {
@@ -60,16 +60,16 @@ class TeamsVoicesViewModel @Inject constructor(
         }
     }
 
-    suspend fun isTeamLeader(teamId: String, userId: String?): Boolean = withContext(dispatcherProvider.io) {
-        teamsRepository.isTeamLeader(teamId, userId)
+    suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
+        return teamsRepository.isTeamLeader(teamId, userId)
     }
 
-    suspend fun getUserById(userId: String): RealmUser? = withContext(dispatcherProvider.io) {
-        userRepository.getUserById(userId)
+    suspend fun getUserById(userId: String): RealmUser? {
+        return userRepository.getUserById(userId)
     }
 
-    suspend fun getReplyCount(newsId: String): Int = withContext(dispatcherProvider.io) {
-        voicesRepository.getReplyCount(newsId)
+    suspend fun getReplyCount(newsId: String): Int {
+        return voicesRepository.getReplyCount(newsId)
     }
 
     /**
@@ -78,7 +78,7 @@ class TeamsVoicesViewModel @Inject constructor(
      * and the adapter callback will not fire. This limitation is accepted to keep the adapter
      * interface simple without needing complex Flow correlation for individual items.
      */
-    suspend fun deletePost(newsId: String, teamName: String) = withContext(dispatcherProvider.io) {
+    suspend fun deletePost(newsId: String, teamName: String) {
         voicesRepository.deletePost(newsId, teamName)
     }
 
@@ -88,12 +88,12 @@ class TeamsVoicesViewModel @Inject constructor(
      * and the adapter callback will not fire. This limitation is accepted to keep the adapter
      * interface simple without needing complex Flow correlation for individual items.
      */
-    suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> = withContext(dispatcherProvider.io) {
-        voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
+    suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
+        return voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
     }
 
-    suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? = withContext(dispatcherProvider.io) {
-        voicesRepository.getLibraryResource(resourceId)
+    suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
+        return voicesRepository.getLibraryResource(resourceId)
     }
 
 }

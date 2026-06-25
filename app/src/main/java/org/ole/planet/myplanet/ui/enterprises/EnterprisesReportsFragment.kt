@@ -131,9 +131,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                                 // archived successfully
                             }
                             is ReportEvent.Error -> {
-                                view?.let {
-                                    Snackbar.make(it, event.message, Snackbar.LENGTH_LONG).show()
-                                } ?: Utilities.toast(requireContext(), event.message)
+                                Snackbar.make(view, event.message, Snackbar.LENGTH_LONG).show()
                             }
                         }
                     }
