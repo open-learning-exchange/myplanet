@@ -306,12 +306,15 @@ class HealthRepositoryImplTest {
         every { JsonUtils.getJsonObject("doc", item2) } returns doc2
         every { JsonUtils.getString("_id", doc2) } returns "_design/doc"
 
-        every { RealmHealthExamination.insert(realm, doc1) } returns Unit
+        val detachedExamination = mockk<RealmHealthExamination>()
+        every { RealmHealthExamination.fromJson(doc1) } returns detachedExamination
+        every { realm.insertOrUpdate(any<List<RealmHealthExamination>>()) } returns Unit
 
         repository.bulkInsertFromSync(realm, jsonArray)
         advanceUntilIdle()
 
-        verify(exactly = 1) { RealmHealthExamination.insert(realm, doc1) }
-        verify(exactly = 0) { RealmHealthExamination.insert(realm, doc2) }
+        verify(exactly = 1) { RealmHealthExamination.fromJson(doc1) }
+        verify(exactly = 0) { RealmHealthExamination.fromJson(doc2) }
+        verify(exactly = 1) { realm.insertOrUpdate(listOf(detachedExamination)) }
     }
 }

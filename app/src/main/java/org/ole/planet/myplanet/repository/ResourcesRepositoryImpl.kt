@@ -399,10 +399,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
 
             executeTransaction { realm ->
-                val chunkSize = 1000
-                resourceIds.chunked(chunkSize).forEach { chunk ->
+                if (resourceIds.isNotEmpty()) {
                     val libraryItems = realm.where(RealmMyLibrary::class.java)
-                        .`in`("resourceId", chunk.toTypedArray())
+                        .`in`("resourceId", resourceIds.toTypedArray())
                         .not().equalTo("userId", userId)
                         .findAll()
 
@@ -413,7 +412,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
                         .equalTo("type", "resources")
                         .equalTo("userId", userId)
-                        .`in`("docId", chunk.toTypedArray())
+                        .`in`("docId", resourceIds.toTypedArray())
                         .findAll()
 
                     removedLogs.deleteAllFromRealm()
