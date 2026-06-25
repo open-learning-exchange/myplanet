@@ -30,7 +30,6 @@
             android:text="@string/note"
             android:textSize="@dimen/text_size_mid"
             android:textColor="@color/daynight_textColor" />
-
         <ImageView
             android:id="@+id/financeImage"
             android:layout_width="64dp"
@@ -42,6 +41,7 @@
             android:scaleType="centerCrop"
             android:visibility="gone" />
     </LinearLayout>
+
     <TextView
         android:id="@+id/credit"
         android:layout_width="0dp"
