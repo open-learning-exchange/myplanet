@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
-class AddHealthViewModel @Inject constructor(
+class HealthViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
 

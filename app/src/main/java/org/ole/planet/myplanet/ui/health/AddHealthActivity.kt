@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class AddHealthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHealthBinding
-    private val viewModel: AddHealthViewModel by viewModels()
+    private val viewModel: HealthViewModel by viewModels()
     var userId: String? = null
     private var myHealth: RealmMyHealth? = null
 
