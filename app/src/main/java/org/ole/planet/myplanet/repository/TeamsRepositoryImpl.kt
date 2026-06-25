@@ -1202,7 +1202,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
     }
 
-    override suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
+    override suspend fun refreshJoinedMembersForLogin(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
         val teamMembers = getJoinedMembers(teamId)
         val userList = teamMembers.map {
             User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
