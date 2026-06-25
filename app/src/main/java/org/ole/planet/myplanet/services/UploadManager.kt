@@ -213,20 +213,9 @@ class UploadManager @Inject constructor(
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
-                    val response = apiInterface.postDoc(
-                        UrlUtils.header, "application/json",
-                        "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
-                    )
-
-                    val `object` = response.body()
-                    if (`object` != null) {
-                        val rev = getString("rev", `object`)
-                        val id = getString("id", `object`)
-
-                        personal.id?.let { personalId ->
-                            personalsRepository.updatePersonalAfterSync(personalId, id, rev)
-                        }
-
+                    val result = personalsRepository.uploadPersonalDocument(personal)
+                    if (result != null) {
+                        val (id, rev) = result
                         uploadAttachment(id, rev, personal) { }
                         "Personal resource uploaded successfully"
                     } else {
