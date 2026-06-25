@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
@@ -197,20 +198,25 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
             .build()
-        WorkManager.getInstance(this).enqueueUniqueWork(
+        val workManager = WorkManager.getInstance(this)
+        workManager.enqueueUniqueWork(
             "UploadUserData_Login",
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
 
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequest.id).observe(this) { workInfo ->
-            if (workInfo != null && workInfo.state.isFinished) {
-                if (workInfo.state == WorkInfo.State.SUCCEEDED) {
-                    val successMessage = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
-                    onSuccess(successMessage)
+        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
+        liveData.observe(this, object : Observer<WorkInfo?> {
+            override fun onChanged(workInfo: WorkInfo?) {
+                if (workInfo != null && workInfo.state.isFinished) {
+                    liveData.removeObserver(this)
+                    if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+                        val successMessage = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
+                        onSuccess(successMessage)
+                    }
                 }
             }
-        }
+        })
     }
 
     private fun uploadBulkData() {
@@ -221,24 +227,29 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
             .build()
 
-        WorkManager.getInstance(this).enqueueUniqueWork(
+        val workManager = WorkManager.getInstance(this)
+        workManager.enqueueUniqueWork(
             "UploadUserData_Bulk",
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
 
-        WorkManager.getInstance(this).getWorkInfoByIdLiveData(workRequest.id).observe(this) { workInfo ->
-            if (workInfo != null && workInfo.state.isFinished) {
-                lifecycleScope.launch(dispatcherProvider.main) {
-                    if (!isFinishing && !isDestroyed) {
-                        customProgressDialog.dismiss()
-                        if (workInfo.state == WorkInfo.State.SUCCEEDED) {
-                            Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
+        liveData.observe(this, object : Observer<WorkInfo?> {
+            override fun onChanged(workInfo: WorkInfo?) {
+                if (workInfo != null && workInfo.state.isFinished) {
+                    liveData.removeObserver(this)
+                    lifecycleScope.launch(dispatcherProvider.main) {
+                        if (!isFinishing && !isDestroyed) {
+                            customProgressDialog.dismiss()
+                            if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+                                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                            }
                         }
                     }
                 }
             }
-        }
+        })
     }
 
     protected fun hideKeyboard(view: View?) {

@@ -11,6 +11,7 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 @HiltWorker
@@ -36,13 +37,8 @@ class NetworkMonitorWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result {
         return try {
-            var wasConnected = false
-            NetworkUtils.isNetworkConnectedFlow.collect { isConnected ->
-                if (isConnected && !wasConnected) {
-                    scheduleServerReachabilityCheck()
-                }
-                wasConnected = isConnected
-            }
+            NetworkUtils.isNetworkConnectedFlow.first { it }
+            scheduleServerReachabilityCheck()
 
             Result.success()
         } catch (e: Exception) {
