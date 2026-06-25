@@ -801,6 +801,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private fun continueSyncProcess() {
         try {
             lifecycleScope.launch {
+                processedUrl = UrlUtils.getUrl()
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
