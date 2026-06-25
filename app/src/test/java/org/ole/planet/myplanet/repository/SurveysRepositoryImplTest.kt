@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysRepositoryImplTest {
@@ -102,7 +103,8 @@ class SurveysRepositoryImplTest {
             UnconfinedTestDispatcher(),
             userSessionManager,
             sharedPrefManager,
-            dispatcherProvider
+            dispatcherProvider,
+            TestTimeProvider()
         )
     }
 

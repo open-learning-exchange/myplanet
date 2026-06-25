@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
+import android.os.SystemClock
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
@@ -16,13 +17,13 @@ class StandardSyncStrategy @Inject constructor(
         table: String,
         config: SyncConfig
     ): Flow<SyncResult> = flow {
-        val startTime = System.currentTimeMillis()
+        val startTime = SystemClock.elapsedRealtime()
         
         try {
             // Use the existing TransactionSyncManager for standard sync
             val processedItems = transactionSyncManager.syncDb(table)
 
-            val endTime = System.currentTimeMillis()
+            val endTime = SystemClock.elapsedRealtime()
             emit(
                 SyncResult(
                     table = table,
@@ -33,7 +34,7 @@ class StandardSyncStrategy @Inject constructor(
                 )
             )
         } catch (e: Exception) {
-            val endTime = System.currentTimeMillis()
+            val endTime = SystemClock.elapsedRealtime()
             emit(
                 SyncResult(
                     table = table,

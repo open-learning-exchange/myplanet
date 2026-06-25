@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryImplTest {
@@ -72,7 +73,8 @@ class TeamsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             mockUserRepository,
-            mockk()
+            mockk(),
+            TestTimeProvider()
         )
     }
 

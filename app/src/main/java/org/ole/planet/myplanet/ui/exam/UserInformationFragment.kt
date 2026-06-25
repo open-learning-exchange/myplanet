@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.exam
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -117,14 +118,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onClick(view: View) {
         when (view.id) {
             R.id.btn_cancel -> {
-                syncStartTime = System.currentTimeMillis()
+                syncStartTime = SystemClock.elapsedRealtime()
                 Log.d("UserInformationFragment", "Cancel button clicked - Mini survey sync timer started at: $syncStartTime")
                 if (isAdded) {
                     dialog?.dismiss()
                 }
             }
             R.id.btn_submit -> {
-                syncStartTime = System.currentTimeMillis()
+                syncStartTime = SystemClock.elapsedRealtime()
                 Log.d("UserInformationFragment", "Submit button clicked - Mini survey sync timer started at: $syncStartTime")
                 submitForm()
             }
@@ -329,7 +330,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         submissionUploadExecutor.execute {
             Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
             Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
-            val checkStartTime = System.currentTimeMillis()
+            val checkStartTime = SystemClock.elapsedRealtime()
 
             val primaryCheck = async {
                 try {
@@ -361,7 +362,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
             val primaryAvailable = primaryCheck.await()
             val alternativeAvailable = alternativeCheck.await()
-            val checkDuration = System.currentTimeMillis() - checkStartTime
+            val checkDuration = SystemClock.elapsedRealtime() - checkStartTime
             Log.d("UserInformationFragment", "Server checks completed in ${checkDuration}ms. Primary: $primaryAvailable, Alternative: $alternativeAvailable")
 
             if (primaryAvailable || alternativeAvailable) {
@@ -375,7 +376,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 }
                 uploadSubmissionsWithTiming(capturedSyncStartTime)
             } else {
-                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${System.currentTimeMillis() - capturedSyncStartTime}ms")
+                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${SystemClock.elapsedRealtime() - capturedSyncStartTime}ms")
             }
         }
     }

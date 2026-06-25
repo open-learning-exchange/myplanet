@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
@@ -39,6 +40,7 @@ class SurveysRepositoryImpl @Inject constructor(
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider,
 ) : RealmRepository(databaseService, realmDispatcher), SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy { context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE) }
@@ -186,9 +188,9 @@ class SurveysRepositoryImpl @Inject constructor(
     ) {
         transactionRealm.createObject(RealmStepExam::class.java, newSurveyId).apply {
             this._rev = null
-            this.createdDate = System.currentTimeMillis()
-            this.updatedDate = System.currentTimeMillis()
-            this.adoptionDate = System.currentTimeMillis()
+            this.createdDate = timeProvider.now()
+            this.updatedDate = timeProvider.now()
+            this.adoptionDate = timeProvider.now()
             this.createdBy = userModel?.id
             this.totalMarks = exam.totalMarks
             this.name = "${exam.name} - $teamName"
@@ -228,8 +230,8 @@ class SurveysRepositoryImpl @Inject constructor(
             this.uploaded = false
             this.source = planetCode
             this.parentCode = sParentCode
-            this.startTime = System.currentTimeMillis()
-            this.lastUpdateTime = System.currentTimeMillis()
+            this.startTime = timeProvider.now()
+            this.lastUpdateTime = timeProvider.now()
             this.isUpdated = true
 
             if (isTeam && teamId != null) {
@@ -470,7 +472,7 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override fun dueRemindersFlow(): Flow<List<String>> = flow {
         while (true) {
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val toShow = mutableListOf<String>()
             val toRemove = mutableListOf<String>()
 
@@ -499,7 +501,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }.flowOn(dispatcherProvider.io)
 
     override suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int) {
-        val currentTime = System.currentTimeMillis()
+        val currentTime = timeProvider.now()
         val reminderTime = currentTime + timeUnit.toMillis(value.toLong())
 
         reminderPrefs.edit {

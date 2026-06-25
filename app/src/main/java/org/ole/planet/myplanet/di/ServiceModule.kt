@@ -51,12 +51,13 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+        timeProvider: org.ole.planet.myplanet.utils.TimeProvider,
         teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
         teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
         coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
         eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
     ): SyncManager {
-        return SyncManager(context, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
+        return SyncManager(context, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
     }
 
     @Provides
@@ -80,9 +81,10 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
         photoUploader: org.ole.planet.myplanet.services.upload.PhotoUploader,
-        achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader
+        achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader,
+        timeProvider: org.ole.planet.myplanet.utils.TimeProvider
     ): UploadManager {
-        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader)
+        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
     }
 
     @Provides

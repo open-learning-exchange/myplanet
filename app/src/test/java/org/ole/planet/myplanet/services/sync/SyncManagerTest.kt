@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SyncManagerTest {
@@ -71,6 +72,7 @@ class SyncManagerTest {
             testScope,
             activitiesRepository,
             dispatcherProvider,
+            TestTimeProvider(),
             teamsRepository,
             teamsSyncRepository,
             coursesRepository,

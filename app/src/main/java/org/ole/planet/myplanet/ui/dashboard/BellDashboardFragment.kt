@@ -41,6 +41,7 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
@@ -53,6 +54,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+
+    @Inject
+    lateinit var timeProvider: TimeProvider
 
     companion object {
         private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
@@ -149,7 +153,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun checkPendingSurveys() {
         viewLifecycleOwner.lifecycleScope.launch {
             val lastShown = surveysRepository.getLastSurveyDialogShown()
-            if (System.currentTimeMillis() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
+            if (timeProvider.now() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
 
             val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
             if (pendingSurveys.isNotEmpty()) {
@@ -273,7 +277,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            surveysRepository.setLastSurveyDialogShown(System.currentTimeMillis())
+            surveysRepository.setLastSurveyDialogShown(timeProvider.now())
         }
 
         surveyListDialog?.dismiss()

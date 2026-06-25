@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
@@ -61,7 +63,8 @@ class UploadManager @Inject constructor(
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
     private val photoUploader: PhotoUploader,
-    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader
+    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader,
+    private val timeProvider: TimeProvider
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -120,7 +123,7 @@ class UploadManager @Inject constructor(
     private fun createImage(user: RealmUser?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
-        `object`.addProperty("createdDate", System.currentTimeMillis())
+        `object`.addProperty("createdDate", timeProvider.now())
         `object`.addProperty("filename", getString("fileName", imgObject))
         `object`.addProperty("private", true)
         user?.id?.let { `object`.addProperty("addedBy", it) }
@@ -237,7 +240,7 @@ class UploadManager @Inject constructor(
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
         Log.d("UploadManager", "uploadSubmissions called with buttonClickTime: $buttonClickTime")
-        val startTime = if (buttonClickTime > 0) buttonClickTime else System.currentTimeMillis()
+        val startTime = if (buttonClickTime > 0) buttonClickTime else SystemClock.elapsedRealtime()
 
         if (buttonClickTime > 0) {
             Log.d("UploadManager", "Mini survey sync timer started from button click at: $startTime")
@@ -257,7 +260,7 @@ class UploadManager @Inject constructor(
         } catch (e: Exception) {
             Log.e("UploadManager", "Error uploading submissions", e)
         } finally {
-            val endTime = System.currentTimeMillis()
+            val endTime = SystemClock.elapsedRealtime()
             val duration = endTime - startTime
             Log.d("UploadManager", "Mini survey sync completed at: $endTime")
             Log.d("UploadManager", "Total time from button click to sync completion: ${duration}ms (${duration / 1000.0}s)")

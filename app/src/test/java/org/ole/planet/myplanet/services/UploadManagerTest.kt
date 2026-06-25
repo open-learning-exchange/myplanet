@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
@@ -99,7 +100,8 @@ class UploadManagerTest {
                 TestDispatcherProvider(testDispatcher),
                 testScope,
                 photoUploader,
-                achievementUploader
+                achievementUploader,
+                TestTimeProvider()
             )
         )
     }
