@@ -20,6 +20,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -60,19 +61,19 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
 
         viewModel.setFilter(type ?: "", "")
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            combine(
-                viewModel.submissions,
-                viewModel.exams,
-                viewModel.submissionCounts
-            ) { submissions, exams, counts ->
-                Triple(submissions, exams, counts)
-            }.collectLatest { (submissions, exams, counts) ->
-                adapter.setExams(exams)
-                adapter.setSubmissionCounts(counts)
-                adapter.submitList(submissions)
-                updateEmptyState(submissions.size)
-            }
+        collectLatestWhenStarted(viewModel.submissions) { submissions ->
+            adapter.submitList(submissions)
+            updateEmptyState(submissions.size)
+        }
+
+        collectLatestWhenStarted(viewModel.exams) { exams ->
+            adapter.setExams(exams)
+            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_EXAM_UPDATE)
+        }
+
+        collectLatestWhenStarted(viewModel.submissionCounts) { counts ->
+            adapter.setSubmissionCounts(counts)
+            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_SUBMISSION_COUNT_UPDATE)
         }
 
         textWatcher = object : TextWatcher {
