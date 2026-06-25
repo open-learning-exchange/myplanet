@@ -21,7 +21,8 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideRealmConfiguration(): RealmConfiguration {
+    fun provideRealmConfiguration(@ApplicationContext context: Context): RealmConfiguration {
+        Realm.init(context)
         return RealmConfiguration.Builder()
             .name(Realm.DEFAULT_REALM_NAME)
             .schemaVersion(12)

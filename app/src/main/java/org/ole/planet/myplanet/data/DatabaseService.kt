@@ -17,7 +17,6 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
     private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
 
     init {
-        Realm.init(context)
         val targetLogLevel = if (BuildConfig.DEBUG) LogLevel.DEBUG else LogLevel.ERROR
         if (RealmLog.getLevel() != targetLogLevel) {
             RealmLog.setLevel(targetLogLevel)
