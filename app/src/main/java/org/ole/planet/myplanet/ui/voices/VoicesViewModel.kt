@@ -27,9 +27,7 @@ class VoicesViewModel @Inject constructor(
 
     fun deletePost(newsId: String, teamName: String, onComplete: () -> Unit) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                voicesRepository.deletePost(newsId, teamName)
-            }
+            voicesRepository.deletePost(newsId, teamName)
             onComplete()
         }
     }
@@ -43,9 +41,7 @@ class VoicesViewModel @Inject constructor(
         onResult: (Result<Unit>) -> Unit
     ) {
         viewModelScope.launch {
-            val result = withContext(dispatcherProvider.io) {
-                voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-            }
+            val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
             onResult(result)
         }
     }
@@ -53,34 +49,26 @@ class VoicesViewModel @Inject constructor(
     // Note: The following are read-only suspend functions designed to be called directly from
     // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
     suspend fun getUserById(userId: String): RealmUser? {
-        return withContext(dispatcherProvider.io) {
-            userRepository.getUserById(userId)
-        }
+        return userRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {
-        return withContext(dispatcherProvider.io) {
-            try {
-                voicesRepository.getReplyCount(newsId)
-            } catch (e: Exception) {
-                0
-            }
+        return try {
+            voicesRepository.getReplyCount(newsId)
+        } catch (e: Exception) {
+            0
         }
     }
 
     suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
-        return withContext(dispatcherProvider.io) {
-            voicesRepository.getLibraryResource(resourceId)
-        }
+        return voicesRepository.getLibraryResource(resourceId)
     }
 
     suspend fun isTeamLeader(teamId: String?, userId: String?): Boolean {
-        return withContext(dispatcherProvider.io) {
-            try {
-                if (teamId != null) teamsRepository.isTeamLeader(teamId, userId) else false
-            } catch (e: Exception) {
-                false
-            }
+        return try {
+            if (teamId != null) teamsRepository.isTeamLeader(teamId, userId) else false
+        } catch (e: Exception) {
+            false
         }
     }
 
