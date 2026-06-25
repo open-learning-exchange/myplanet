@@ -14,7 +14,6 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 
 object ImageViewerUtils {
-    /** Shows a fullscreen, pinch-to-zoom dialog for the image at [imagePath]. */
     fun showZoomableImage(context: Context, imagePath: String) {
         val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
         val view = LayoutInflater.from(context).inflate(R.layout.dialog_zoomable_image, null)

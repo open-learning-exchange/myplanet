@@ -8,6 +8,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmMyTeam : RealmObject() {
@@ -56,19 +57,17 @@ open class RealmMyTeam : RealmObject() {
     var imageName: String? = null
 
     companion object {
-        /** Name of the first `_attachments` entry on a report/transaction doc, or null. */
         @JvmStatic
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = doc.getAsJsonObject("_attachments") ?: return null
             return attachments.keySet().firstOrNull()
         }
 
-        /** Local file where a synced report/transaction image attachment is stored. */
         @JvmStatic
         fun getAttachmentFile(context: android.content.Context, teamId: String?, imageName: String?): java.io.File? {
             if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
             return java.io.File(
-                "${org.ole.planet.myplanet.utils.FileUtils.getOlePath(context)}team_attachments/$teamId/$imageName"
+                "${getOlePath(context)}team_attachments/$teamId/$imageName"
             )
         }
 
