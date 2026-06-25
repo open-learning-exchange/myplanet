@@ -476,9 +476,18 @@ class NotificationsRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            val parsed = parseNotification(jsonDoc) ?: return@forEach
-            val existing = realm.where(RealmNotification::class.java).equalTo("id", parsed.id).findFirst()
+        val parsedList = documentList.mapNotNull { parseNotification(it) }
+        val ids = parsedList.map { it.id }.toTypedArray()
+        val existingNotifications = if (ids.isNotEmpty()) {
+            realm.where(RealmNotification::class.java)
+                .`in`("id", ids)
+                .findAll()
+                .associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+        parsedList.forEach { parsed ->
+            val existing = existingNotifications[parsed.id]
             if (existing?.needsSync == true) {
                 parsed.needsSync = true
                 parsed.isRead = existing.isRead

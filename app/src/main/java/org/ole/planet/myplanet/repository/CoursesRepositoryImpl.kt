@@ -55,28 +55,6 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllCourses(orderBy: String, sort: io.realm.Sort): List<RealmMyCourse> {
-        return withRealm { realm ->
-            val results = realm.where(RealmMyCourse::class.java)
-                .isNotEmpty("courseTitle")
-                .sort(orderBy, sort)
-                .findAll()
-            realm.copyFromRealm(results)
-        }
-    }
-
-    override fun getAllCourses(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-        return libs.onEach { it.isMyCourse = it.userId?.contains(userId) == true }
-    }
-
-    override fun getMyCourseByUserId(userId: String?, libs: List<RealmMyCourse>?): List<RealmMyCourse> {
-        return libs?.filter { it.userId?.contains(userId) == true } ?: emptyList()
-    }
-
-    override fun getOurCourse(userId: String?, libs: List<RealmMyCourse>): List<RealmMyCourse> {
-        return libs.filter { it.userId?.contains(userId) != true }
-    }
-
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
         if (userId == null) return emptyList()
         return courses.filter { it.userId?.contains(userId) == true }
@@ -173,13 +151,6 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             course?.courseSteps?.map { it.id } ?: emptyList()
         }
-    }
-
-    override suspend fun markCourseAdded(courseId: String, userId: String?): Result<Boolean> {
-        if (courseId.isBlank()) {
-            return Result.success(false)
-        }
-        return markCoursesAdded(listOf(courseId), userId)
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
