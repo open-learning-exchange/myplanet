@@ -843,8 +843,7 @@ class UserRepositoryImpl @Inject constructor(
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
                 latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
 
-                val gson = com.google.gson.Gson()
-                val jsonElement = gson.toJsonTree(mutableObj)
+                val jsonElement = JsonUtils.gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
 
                 val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
@@ -903,8 +902,8 @@ class UserRepositoryImpl @Inject constructor(
         val userMap = if (userIds.isEmpty()) {
             emptyMap()
         } else {
-            val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
-            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id ?: "" }
+            val users = realm.where(RealmUser::class.java).isNotNull("id").`in`("id", userIds.toTypedArray()).findAll()
+            realm.copyFromRealm(users).associateBy { it.id ?: "" }
         }
         HealthRecord(mhCopy, mm, list, userMap)
     }
@@ -1242,7 +1241,7 @@ class UserRepositoryImpl @Inject constructor(
             achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
             achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
             achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
-            achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+            achievement?.sendToNation = act.get("sendToNation")?.asString ?: "false"
             achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
             achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
             achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)

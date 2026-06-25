@@ -27,6 +27,18 @@ data class TeamMemberStatus(
     val hasPendingRequest: Boolean
 )
 
+data class TeamLabelInfo(
+    val teamId: String,
+    val name: String,
+    val type: String
+)
+
+data class JoinRequestInfo(
+    val id: String,
+    val teamId: String,
+    val userId: String
+)
+
 data class JoinRequestNotification(
     val requesterName: String,
     val teamName: String,
@@ -42,7 +54,6 @@ data class TeamUploadData(
 interface TeamsRepository {
     suspend fun getAllActiveTeams(): List<RealmMyTeam>
     suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>>
-    suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam>
     suspend fun getResourceIds(teamId: String): List<String>
     suspend fun getResourceIdsByUser(userId: String?): List<String>
     suspend fun getTeamSummaries(userId: String?): List<TeamSummary>
@@ -63,6 +74,10 @@ interface TeamsRepository {
     suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>?
     suspend fun getJoinRequestTeamId(requestId: String): String?
     suspend fun getJoinRequestById(id: String?): RealmMyTeam?
+    suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo?
+    suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo?
+    suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>
+
     suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
     suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>>
     suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification>
@@ -114,7 +129,7 @@ interface TeamsRepository {
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?
     suspend fun getJoinedMembers(teamId: String): List<RealmUser>
-    suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser>
+    suspend fun refreshJoinedMembersForLogin(teamId: String): List<RealmUser>
     suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData>
     suspend fun getJoinedMemberCount(teamId: String): Int
     suspend fun getAssignee(userId: String): RealmUser?
