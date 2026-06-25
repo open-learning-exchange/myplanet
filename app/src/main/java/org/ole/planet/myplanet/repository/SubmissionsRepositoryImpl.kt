@@ -58,7 +58,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
+    override fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
         }
