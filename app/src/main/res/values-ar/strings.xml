@@ -1045,6 +1045,9 @@
     <string name="profit_loss">الربح / الخسارة</string>
     <string name="ending_balance">الرصيد النهائي</string>
     <string name="reports_summary">ملخص التقارير</string>
+    <string name="report_image">صورة التقرير</string>
+    <string name="finance_image">صورة المعاملة</string>
+    <string name="change_image">تغيير الصورة</string>
     <string name="summary">ملخص</string>
     <string name="other_income">دخل آخر</string>
     <string name="add_reports">إضافة تقارير</string>

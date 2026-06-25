@@ -78,7 +78,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 TeamUploadData(
                     teamId = team._id,
                     serialized = RealmMyTeam.serialize(team, realm),
-                    isDeletePending = team.isDeletePending
+                    isDeletePending = team.isDeletePending,
+                    imageName = team.imageName
                 )
             }
         }
@@ -620,7 +621,8 @@ class TeamsRepositoryImpl @Inject constructor(
                     description = team.description,
                     type = team.type,
                     amount = team.amount,
-                    balance = balance
+                    balance = balance,
+                    imageName = team.imageName
                 )
             )
         }
@@ -635,13 +637,16 @@ class TeamsRepositoryImpl @Inject constructor(
         date: Long,
         parentCode: String?,
         planetCode: String?,
+        imageName: String?,
+        imageData: ByteArray?,
     ): Result<Unit> {
         if (teamId.isBlank()) {
             return Result.failure(IllegalArgumentException("teamId cannot be blank"))
         }
         return runCatching {
+            val transactionId = UUID.randomUUID().toString()
             val transaction = RealmMyTeam().apply {
-                _id = UUID.randomUUID().toString()
+                _id = transactionId
                 status = "active"
                 this.date = date
                 this.type = type
@@ -655,6 +660,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 updated = true
             }
             save(transaction)
+            if (imageName != null && imageData != null) {
+                attachTeamImage(transactionId, imageName, imageData)
+            }
         }
     }
 
@@ -666,6 +674,19 @@ class TeamsRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?: realm.createObject(RealmMyTeam::class.java, reportId)
             RealmMyTeam.populateTeamFields(report, reportEntry)
+        }
+    }
+
+    override suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
+        if (teamId.isBlank()) return
+        val destFile = RealmMyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        withContext(dispatcherProvider.io) {
+            destFile.parentFile?.mkdirs()
+            destFile.writeBytes(imageData)
+        }
+        update(RealmMyTeam::class.java, "_id", teamId) { team ->
+            team.imageName = imageName
+            team.updated = true
         }
     }
 

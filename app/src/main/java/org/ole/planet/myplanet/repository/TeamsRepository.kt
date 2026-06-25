@@ -48,7 +48,8 @@ data class JoinRequestNotification(
 data class TeamUploadData(
     val teamId: String?,
     val serialized: JsonObject,
-    val isDeletePending: Boolean = false
+    val isDeletePending: Boolean = false,
+    val imageName: String? = null
 )
 
 interface TeamsRepository {
@@ -105,6 +106,7 @@ interface TeamsRepository {
     suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>>
     suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String
     suspend fun addReport(report: JsonObject)
+    suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray)
     suspend fun updateReport(reportId: String, payload: JsonObject)
     suspend fun archiveReport(reportId: String)
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
@@ -124,7 +126,8 @@ interface TeamsRepository {
     ): Flow<List<Transaction>>
     suspend fun createTransaction(
         teamId: String, type: String, note: String, amount: Int, date: Long,
-        parentCode: String?, planetCode: String?
+        parentCode: String?, planetCode: String?,
+        imageName: String? = null, imageData: ByteArray? = null
     ): Result<Unit>
     suspend fun respondToMemberRequest(teamId: String, userId: String, accept: Boolean): Result<Unit>
     suspend fun getTeamType(teamId: String): String?

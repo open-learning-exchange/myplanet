@@ -3,16 +3,19 @@ package org.ole.planet.myplanet.ui.enterprises
 import android.app.Activity
 import android.app.DatePickerDialog
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
+import com.bumptech.glide.Glide
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -33,6 +36,7 @@ import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -47,8 +51,13 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private var endTimeStamp: String? = null
     lateinit var teamType: String
     private lateinit var createFileLauncher: ActivityResultLauncher<Intent>
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
     private val viewModel: EnterprisesViewModel by viewModels()
     private var activeDialog: AlertDialog? = null
+    private var selectedImageUri: Uri? = null
+    private var dialogImagePreview: ImageView? = null
+    private val fromCommunity: Boolean
+        get() = arguments?.getBoolean("fromCommunity", false) == true
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentReportsBinding.inflate(inflater, container, false)
@@ -89,6 +98,16 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 } ?: Utilities.toast(requireContext(), getString(R.string.export_cancelled))
             }
         }
+
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                selectedImageUri = uri
+                dialogImagePreview?.let { preview ->
+                    preview.visibility = View.VISIBLE
+                    Glide.with(this).load(uri).into(preview)
+                }
+            }
+        }
         return binding.root
     }
 
@@ -107,8 +126,9 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     isMemberFlow.collectLatest { isMember ->
-                        binding.addReports.isVisible = isMember
-                        reportsAdapter.setNonTeamMember(!isMember)
+                        val canManage = if (fromCommunity) user?.isManager() == true else isMember
+                        binding.addReports.isVisible = canManage
+                        reportsAdapter.setNonTeamMember(!canManage)
                     }
                 }
                 launch {
@@ -143,6 +163,11 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
     private fun showAddReportDialog() {
         val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
         val v: View = dialogAddReportBinding.root
+        selectedImageUri = null
+        dialogImagePreview = dialogAddReportBinding.reportImagePreview
+        dialogAddReportBinding.btnAddReportImage.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
         val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
         builder.setTitle(R.string.add_report)
             .setView(v)
@@ -169,6 +194,9 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         submit?.setOnClickListener {
             if (isValidReportForm(dialogAddReportBinding)) {
+                val imageUri = selectedImageUri
+                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                 viewModel.addReport(
                     description = dialogAddReportBinding.summary.text.toString(),
                     beginningBalance = dialogAddReportBinding.beginningBalance.text.toString().toIntOrNull() ?: 0,
@@ -180,19 +208,36 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     endDate = endTimeStamp?.toLongOrNull() ?: 0L,
                     teamId = teamId,
                     teamType = team?.teamType,
-                    teamPlanetCode = team?.teamPlanetCode
+                    teamPlanetCode = team?.teamPlanetCode,
+                    imageName = imageName,
+                    imageData = imageData
                 )
             }
         }
 
         cancel?.setOnClickListener { activeDialog?.dismiss() }
 
-        activeDialog?.setOnDismissListener { activeDialog = null }
+        activeDialog?.setOnDismissListener {
+            activeDialog = null
+            dialogImagePreview = null
+            selectedImageUri = null
+        }
     }
 
     private fun showEditReportDialog(currentReport: RealmMyTeam) {
         val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
         val v: View = dialogAddReportBinding.root
+        selectedImageUri = null
+        dialogImagePreview = dialogAddReportBinding.reportImagePreview
+        val existingImage = RealmMyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
+        if (existingImage != null && existingImage.exists()) {
+            dialogAddReportBinding.reportImagePreview.visibility = View.VISIBLE
+            Glide.with(this).load(existingImage).into(dialogAddReportBinding.reportImagePreview)
+            dialogAddReportBinding.btnAddReportImage.text = getString(R.string.change_image)
+        }
+        dialogAddReportBinding.btnAddReportImage.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
         val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
         builder.setTitle("Edit Report")
             .setView(v)
@@ -232,6 +277,9 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     return@setOnClickListener
                 }
 
+                val imageUri = selectedImageUri
+                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                 viewModel.updateReport(
                     reportId = reportId,
                     description = dialogAddReportBinding.summary.text.toString(),
@@ -241,14 +289,20 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                     wages = dialogAddReportBinding.personnel.text.toString().toIntOrNull() ?: currentReport.wages,
                     otherExpenses = dialogAddReportBinding.nonPersonnel.text.toString().toIntOrNull() ?: currentReport.otherExpenses,
                     startDate = startTimeStamp?.toLongOrNull() ?: currentReport.startDate,
-                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate
+                    endDate = endTimeStamp?.toLongOrNull() ?: currentReport.endDate,
+                    imageName = imageName,
+                    imageData = imageData
                 )
             }
         }
 
         cancel?.setOnClickListener { activeDialog?.dismiss() }
 
-        activeDialog?.setOnDismissListener { activeDialog = null }
+        activeDialog?.setOnDismissListener {
+            activeDialog = null
+            dialogImagePreview = null
+            selectedImageUri = null
+        }
     }
 
     private fun showDeleteReportDialog(report: RealmMyTeam) {

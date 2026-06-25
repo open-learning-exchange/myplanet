@@ -1041,6 +1041,9 @@
     <string name="profit_loss">नाफा/घाटा</string>
     <string name="ending_balance">अन्तिम मौज्दात</string>
     <string name="reports_summary">प्रतिवेदनहरूको सारांश</string>
+    <string name="report_image">रिपोर्ट छवि</string>
+    <string name="finance_image">लेनदेन छवि</string>
+    <string name="change_image">तस्बिर परिवर्तन गर्नुहोस्</string>
     <string name="summary">सारांश</string>
     <string name="other_income">अन्य आय</string>
     <string name="add_reports">रिपोर्टहरू थप्नुहोस्</string>
