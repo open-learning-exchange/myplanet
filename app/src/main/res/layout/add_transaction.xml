@@ -58,4 +58,22 @@
         android:padding="@dimen/padding_normal"
         android:textColor="@color/colorPrimaryDark"
         android:textSize="18sp" />
+
+    <Button
+        android:id="@+id/btn_add_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/padding_normal"
+        android:layout_marginTop="@dimen/padding_small"
+        android:text="@string/add_image" />
+
+    <ImageView
+        android:id="@+id/image_preview"
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_margin="@dimen/padding_normal"
+        android:adjustViewBounds="true"
+        android:contentDescription="@string/finance_image"
+        android:scaleType="centerCrop"
+        android:visibility="gone" />
 </LinearLayout>

@@ -1041,6 +1041,9 @@
     <string name="profit_loss">Ganancia/Pérdida</string>
     <string name="ending_balance">Saldo final</string>
     <string name="reports_summary">Resumen de informes</string>
+    <string name="report_image">Imagen del informe</string>
+    <string name="finance_image">Imagen de la transacción</string>
+    <string name="change_image">Cambiar imagen</string>
     <string name="summary">Resumen</string>
     <string name="other_income">Otros ingresos</string>
     <string name="add_reports">Agregar informes</string>

@@ -1046,6 +1046,7 @@
     <string name="reports_summary">Reports Summary</string>
     <string name="report_image">Report image</string>
     <string name="finance_image">Transaction image</string>
+    <string name="change_image">Change Image</string>
     <string name="summary">Summary</string>
     <string name="other_income">Other Income</string>
     <string name="add_reports">Add Reports</string>

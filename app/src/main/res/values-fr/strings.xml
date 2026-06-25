@@ -1042,6 +1042,9 @@
     <string name="profit_loss">Bénéfice/Perte</string>
     <string name="ending_balance">Solde final</string>
     <string name="reports_summary">Résumé des rapports</string>
+    <string name="report_image">Image du rapport</string>
+    <string name="finance_image">Image de la transaction</string>
+    <string name="change_image">Changer l’image</string>
     <string name="summary">Résumé</string>
     <string name="other_income">Autres revenus</string>
     <string name="add_reports">Ajouter des rapports</string>
