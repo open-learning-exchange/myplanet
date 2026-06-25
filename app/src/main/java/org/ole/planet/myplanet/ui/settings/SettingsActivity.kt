@@ -15,7 +15,10 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
@@ -26,8 +29,8 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
@@ -48,7 +51,6 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -90,26 +92,113 @@ class SettingsActivity : AppCompatActivity() {
 
     @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
+        private val viewModel: SettingsViewModel by viewModels()
         @Inject
         lateinit var profileDbHandler: UserSessionManager
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        @Inject
-        lateinit var retryQueue: RetryQueue
-        @Inject
-        lateinit var configurationsRepository: ConfigurationsRepository
-        @Inject
-        lateinit var dispatcherProvider: DispatcherProvider
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
+
+
+        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            super.onViewCreated(view, savedInstanceState)
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    launch {
+                        viewModel.clearDataEvent.collectLatest {
+                            restartApp()
+                        }
+                    }
+                    launch {
+                        viewModel.downloadCompleteEvent.collectLatest { files ->
+                            libraryList = files
+                            val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
+                            autoDownload?.isEnabled = true
+                        }
+                    }
+                    launch {
+                        viewModel.clearRetryQueueEvent.collectLatest { cleared ->
+                            if (cleared) {
+                                Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
+                            } else {
+                                Utilities.toast(requireActivity(), "Cannot clear while processing")
+                            }
+                        }
+                    }
+                    launch {
+                        viewModel.retryQueueDetailsEvent.collectLatest { detailsData ->
+                            val pendingCount = detailsData.pendingCount
+                            val pendingOps = detailsData.pendingOps
+                            val isProcessing = detailsData.isProcessing
+
+                            val details = buildString {
+                                if (isProcessing) {
+                                    appendLine("⏳ Currently processing retries...")
+                                    appendLine()
+                                }
+                                appendLine(getString(R.string.pending_retries, pendingCount.toInt()))
+                                appendLine()
+                                if (pendingOps.isNotEmpty()) {
+                                    appendLine("Details:")
+                                    pendingOps.take(10).forEach { op ->
+                                        val statusIcon = when (op.status) {
+                                            RealmRetryOperation.STATUS_IN_PROGRESS -> "🔄"
+                                            RealmRetryOperation.STATUS_PENDING -> "⏸"
+                                            else -> "❓"
+                                        }
+                                        appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
+                                    }
+                                    if (pendingOps.size > 10) {
+                                        appendLine("... and ${pendingOps.size - 10} more")
+                                    }
+                                } else {
+                                    appendLine("No pending operations")
+                                }
+                            }
+
+                            val retryDialog = AlertDialog.Builder(requireActivity())
+                                .setTitle(R.string.retry_queue_status)
+                                .setMessage(details)
+                                .setPositiveButton(R.string.trigger_retry_now, null)
+                                .setNegativeButton(R.string.clear_retry_queue, null)
+                                .setNeutralButton(R.string.cancel, null)
+                                .create()
+
+                            retryDialog.setOnShowListener {
+                                val retryButton = retryDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                                val clearButton = retryDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+
+                                // Disable buttons if processing
+                                retryButton.isEnabled = !isProcessing && pendingCount > 0
+                                clearButton.isEnabled = !isProcessing && pendingCount > 0
+
+                                retryButton.setOnClickListener {
+                                    if (!viewModel.isCurrentlyProcessing()) {
+                                        RetryQueueWorker.triggerImmediateRetry(requireContext())
+                                        Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
+                                        retryDialog.dismiss()
+                                    } else {
+                                        Utilities.toast(requireActivity(), "Retry already in progress")
+                                    }
+                                }
+
+                                clearButton.setOnClickListener {
+                                    viewModel.clearRetryQueue()
+                                    retryDialog.dismiss()
+                                }
+                            }
+
+                            retryDialog.show()
+                        }
+                    }
+                }
+            }
+        }
 
         override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
             val view = super.onCreateView(inflater, container, savedInstanceState)
@@ -152,14 +241,7 @@ class SettingsActivity : AppCompatActivity() {
                 if (isChecked) {
                     preference.isEnabled = false
                     defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    lifecycleScope.launch {
-                        try {
-                            val files = libraryList ?: resourcesRepository.getAllLibrariesToSync().also { libraryList = it }
-                            resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
-                        } finally {
-                            preference.isEnabled = true
-                        }
-                    }
+                    viewModel.downloadFiles(libraryList)
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }
@@ -196,81 +278,7 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun showRetryQueueDialog() {
-            lifecycleScope.launch {
-                val pendingCount = retryQueue.getPendingCount()
-                val pendingOps = retryQueue.getPendingOperations()
-                val isProcessing = retryQueue.isCurrentlyProcessing()
-
-                val details = buildString {
-                    if (isProcessing) {
-                        appendLine("⏳ Currently processing retries...")
-                        appendLine()
-                    }
-                    appendLine(getString(R.string.pending_retries, pendingCount.toInt()))
-                    appendLine()
-                    if (pendingOps.isNotEmpty()) {
-                        appendLine("Details:")
-                        pendingOps.take(10).forEach { op ->
-                            val statusIcon = when (op.status) {
-                                RealmRetryOperation.STATUS_IN_PROGRESS -> "🔄"
-                                RealmRetryOperation.STATUS_PENDING -> "⏸"
-                                else -> "❓"
-                            }
-                            appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
-                        }
-                        if (pendingOps.size > 10) {
-                            appendLine("... and ${pendingOps.size - 10} more")
-                        }
-                    } else {
-                        appendLine("No pending operations")
-                    }
-                }
-
-                withContext(dispatcherProvider.main) {
-                    val dialog = AlertDialog.Builder(requireActivity())
-                        .setTitle(R.string.retry_queue_status)
-                        .setMessage(details)
-                        .setPositiveButton(R.string.trigger_retry_now, null)
-                        .setNegativeButton(R.string.clear_retry_queue, null)
-                        .setNeutralButton(R.string.cancel, null)
-                        .create()
-
-                    dialog.setOnShowListener {
-                        val retryButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                        val clearButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
-
-                        // Disable buttons if processing
-                        retryButton.isEnabled = !isProcessing && pendingCount > 0
-                        clearButton.isEnabled = !isProcessing && pendingCount > 0
-
-                        retryButton.setOnClickListener {
-                            if (!retryQueue.isCurrentlyProcessing()) {
-                                RetryQueueWorker.triggerImmediateRetry(requireContext())
-                                Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
-                                dialog.dismiss()
-                            } else {
-                                Utilities.toast(requireActivity(), "Retry already in progress")
-                            }
-                        }
-
-                        clearButton.setOnClickListener {
-                            lifecycleScope.launch {
-                                val cleared = retryQueue.safeClearQueue()
-                                withContext(dispatcherProvider.main) {
-                                    if (cleared) {
-                                        Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
-                                    } else {
-                                        Utilities.toast(requireActivity(), "Cannot clear while processing")
-                                    }
-                                    dialog.dismiss()
-                                }
-                            }
-                        }
-                    }
-
-                    dialog.show()
-                }
-            }
+            viewModel.fetchRetryQueueDetails()
         }
 
         private fun clearDataButtonInit() {
@@ -279,13 +287,7 @@ class SettingsActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            lifecycleScope.launch(dispatcherProvider.io) {
-                                configurationsRepository.clearAllData()
-                                sharedPrefManager.clearPreferences()
-                                withContext(dispatcherProvider.main) {
-                                    restartApp()
-                                }
-                            }
+                            viewModel.clearAllData()
                         }.setNegativeButton(R.string.no, null).show()
                     false
                 }
