@@ -16,6 +16,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
@@ -31,6 +33,7 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     lateinit var userSessionManager: UserSessionManager
 
     private lateinit var textWatcher: TextWatcher
+    private var searchJob: Job? = null
     private lateinit var adapter: SubmissionsAdapter
     var type: String? = ""
 
@@ -75,7 +78,11 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                viewModel.setFilter(type ?: "", charSequence.toString())
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(300)
+                    viewModel.setFilter(type ?: "", charSequence.toString())
+                }
             }
             override fun afterTextChanged(editable: Editable) {}
         }
