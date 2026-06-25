@@ -83,6 +83,35 @@ class TeamsRepositoryImplTest {
     }
 
     @Test
+    fun `test refreshJoinedMembersForLogin uses getJoinedMembers and saves users`() = runTest(testDispatcher) {
+        val teamId = "test_team_id"
+        val mockUser = org.ole.planet.myplanet.model.RealmUser().apply {
+            name = "Test User"
+            userImage = "http://example.com/image.png"
+        }
+        val mockTeamMembers = listOf(mockUser)
+
+        val spyRepository = io.mockk.spyk(teamsRepository)
+        coEvery { spyRepository.getJoinedMembers(teamId) } returns mockTeamMembers
+
+        val existingSavedUsers = emptyList<org.ole.planet.myplanet.model.User>()
+        every { sharedPrefManager.getSavedUsers() } returns existingSavedUsers
+
+        every { sharedPrefManager.setSavedUsers(any()) } returns Unit
+
+        val result = spyRepository.refreshJoinedMembersForLogin(teamId)
+
+        org.junit.Assert.assertEquals(mockTeamMembers, result)
+
+        io.mockk.verify {
+            sharedPrefManager.getSavedUsers()
+            sharedPrefManager.setSavedUsers(match { list ->
+                list.size == 1 && list[0].name == "Test User" && list[0].image == "http://example.com/image.png" && list[0].source == "team"
+            })
+        }
+    }
+
+    @Test
     fun `test syncTeamActivities uses dispatcherProvider io`() = runTest(testDispatcher) {
         // We will mock MainApplication object to avoid real network call
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)

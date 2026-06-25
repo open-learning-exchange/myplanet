@@ -91,6 +91,12 @@ class VoicesAdapter(
         }
     )
 ) {
+    companion object {
+        const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
+        const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
+        const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
+    }
+
     private var originalList: List<RealmNews> = emptyList()
 
     override fun submitList(list: List<RealmNews>?) {
@@ -149,14 +155,14 @@ class VoicesAdapter(
         isTeamLeaderFn { isLeader ->
             val changed = _isTeamLeader != isLeader
             _isTeamLeader = isLeader
-            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount)
+            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_TEAM_LEADER_CHANGED)
         }
     }
 
     fun setCurrentUser(user: RealmUser?) {
         if (currentUser !== user) {
             currentUser = user
-            if (itemCount > 0) notifyItemRangeChanged(0, itemCount)
+            if (itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_CURRENT_USER_CHANGED)
         }
     }
 
@@ -171,7 +177,7 @@ class VoicesAdapter(
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember != nonTeamMember) {
             this.nonTeamMember = nonTeamMember
-            notifyItemRangeChanged(0, itemCount)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_NON_TEAM_MEMBER_CHANGED)
         }
     }
 
@@ -182,6 +188,49 @@ class VoicesAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val binding = RowNewsBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return VoicesViewHolder(binding)
+    }
+
+
+override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+            return
+        }
+
+        if (holder is VoicesViewHolder) {
+            val news = getNews(holder, position)
+            if (!news.isValid) return
+
+            for (payload in payloads) {
+                when (payload) {
+                    PAYLOAD_TEAM_LEADER_CHANGED -> {
+                        configureEditDeleteButtons(holder, news)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                    }
+                    PAYLOAD_CURRENT_USER_CHANGED -> {
+                        val userModel = configureUser(holder, news)
+                        configureEditDeleteButtons(holder, news)
+                        showShareButton(holder, news)
+                        showReplyButton(holder, news, position)
+                        updateReplyCount(holder, news, position)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        val currentLeader = getCurrentLeader(userModel, news)
+                        setMemberClickListeners(holder, userModel, currentLeader)
+                    }
+                    PAYLOAD_NON_TEAM_MEMBER_CHANGED -> {
+                        showReplyButton(holder, news, position)
+                        showShareButton(holder, news)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                    }
+                }
+            }
+        }
     }
 
     @SuppressLint("SetTextI18n")
