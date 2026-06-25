@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+
 @Singleton
 class ImprovedSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,

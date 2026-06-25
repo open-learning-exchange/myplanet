@@ -1,8 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import io.realm.Realm
 import io.realm.OrderedRealmCollectionChangeListener
-import io.realm.OrderedCollectionChangeSet
+import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults

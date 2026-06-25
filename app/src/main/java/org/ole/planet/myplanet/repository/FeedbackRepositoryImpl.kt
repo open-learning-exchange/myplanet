@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.Sort
 import java.util.Date
 import java.util.UUID

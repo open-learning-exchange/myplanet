@@ -19,12 +19,11 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.activity.viewModels
-import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
@@ -59,6 +58,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {

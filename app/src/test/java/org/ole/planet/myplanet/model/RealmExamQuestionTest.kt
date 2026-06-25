@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import io.mockk.slot
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.Called
@@ -10,11 +9,11 @@ import io.mockk.impl.annotations.MockK
 import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkClass
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.Realm
-import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.junit.After
 import org.junit.Assert.assertEquals
