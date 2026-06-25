@@ -1241,7 +1241,7 @@ class UserRepositoryImpl @Inject constructor(
             achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
             achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
             achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
-            achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+            achievement?.sendToNation = act.get("sendToNation")?.asString ?: "false"
             achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
             achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
             achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)
