@@ -53,8 +53,25 @@ open class RealmMyTeam : RealmObject() {
     var startDate: Long = 0
     var endDate: Long = 0
     var updatedDate: Long = 0
+    var imageName: String? = null
 
     companion object {
+        /** Name of the first `_attachments` entry on a report/transaction doc, or null. */
+        @JvmStatic
+        fun getFirstAttachmentName(doc: JsonObject): String? {
+            val attachments = doc.getAsJsonObject("_attachments") ?: return null
+            return attachments.keySet().firstOrNull()
+        }
+
+        /** Local file where a synced report/transaction image attachment is stored. */
+        @JvmStatic
+        fun getAttachmentFile(context: android.content.Context, teamId: String?, imageName: String?): java.io.File? {
+            if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
+            return java.io.File(
+                "${org.ole.planet.myplanet.utils.FileUtils.getOlePath(context)}team_attachments/$teamId/$imageName"
+            )
+        }
+
         @JvmStatic
         fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             val hadLocalChanges = team.updated
@@ -94,6 +111,7 @@ open class RealmMyTeam : RealmObject() {
             team.startDate = JsonUtils.getLong("startDate", doc)
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            getFirstAttachmentName(doc)?.let { team.imageName = it }
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
@@ -137,6 +155,7 @@ open class RealmMyTeam : RealmObject() {
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
             team.updated = JsonUtils.getBoolean("updated", doc)
+            getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 
         @JvmStatic

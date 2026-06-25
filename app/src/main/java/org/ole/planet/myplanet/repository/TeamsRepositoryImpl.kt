@@ -581,7 +581,8 @@ class TeamsRepositoryImpl @Inject constructor(
                     description = team.description,
                     type = team.type,
                     amount = team.amount,
-                    balance = balance
+                    balance = balance,
+                    imageName = team.imageName
                 )
             )
         }

@@ -120,5 +120,12 @@ class RealmMigrations : RealmMigration {
                 ?.addIndex("courseTitleNormal")
             version++
         }
+
+        if (version == 12L) {
+            schema.get("RealmMyTeam")
+                ?.addField("imageName", String::class.java)
+                ?.setNullable("imageName", true)
+            version++
+        }
     }
 }

@@ -16,15 +16,32 @@
         android:text="@string/date"
         android:textSize="@dimen/text_size_mid"
         android:textColor="@color/daynight_textColor" />
-   <TextView
-        android:id="@+id/note"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="2"
-        android:padding="@dimen/padding_small"
-        android:text="@string/note"
-        android:textSize="@dimen/text_size_mid"
-        android:textColor="@color/daynight_textColor" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/note"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/padding_small"
+            android:text="@string/note"
+            android:textSize="@dimen/text_size_mid"
+            android:textColor="@color/daynight_textColor" />
+
+        <ImageView
+            android:id="@+id/financeImage"
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_marginStart="@dimen/padding_small"
+            android:layout_marginTop="@dimen/padding_small"
+            android:adjustViewBounds="true"
+            android:contentDescription="@string/finance_image"
+            android:scaleType="centerCrop"
+            android:visibility="gone" />
+    </LinearLayout>
     <TextView
         android:id="@+id/credit"
         android:layout_width="0dp"
