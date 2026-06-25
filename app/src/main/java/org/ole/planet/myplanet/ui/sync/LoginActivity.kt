@@ -690,7 +690,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     fun invalidateTeamsCacheAndReload() {
         cachedTeams = null
-        loadTeamsAsync()
+        loginViewModel.loadTeamsAsync(force = true)
     }
 
     private fun resetGuestAsMember(username: String?) {

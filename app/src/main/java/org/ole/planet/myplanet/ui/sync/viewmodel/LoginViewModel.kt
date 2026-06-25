@@ -36,8 +36,8 @@ class LoginViewModel @Inject constructor(
         loadSavedUsers()
     }
 
-    fun loadTeamsAsync() {
-        if (_teams.value.isNotEmpty()) {
+    fun loadTeamsAsync(force: Boolean = false) {
+        if (!force && _teams.value.isNotEmpty()) {
             return
         }
         viewModelScope.launch { // Launch on main to safely emit Realm objects
@@ -51,6 +51,7 @@ class LoginViewModel @Inject constructor(
             if (!teamId.isNullOrEmpty()) {
                 val teamMembers = teamsRepository.getJoinedMembersAndSave(teamId)
                 _users.value = teamMembers
+                loadSavedUsers() // Refresh saved users after joining team
             } else {
                 _users.value = emptyList()
             }
