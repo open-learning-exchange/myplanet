@@ -25,7 +25,6 @@ import java.io.FileOutputStream
 import java.util.Date
 import java.util.concurrent.Executor
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -70,7 +69,7 @@ object CameraUtils {
     }
 
     @JvmStatic
-    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback) {
+    fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
         }
@@ -85,7 +84,7 @@ object CameraUtils {
                 buffer.get(bytes)
                 image.close()
                 scope.launch {
-                    savePicture(bytes, callback)
+                    savePicture(bytes, callback, dispatcherProvider)
                 }
             }
         }, backgroundHandler)
@@ -124,8 +123,8 @@ object CameraUtils {
         imageReader = null
     }
 
-    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback) {
-        withContext(Dispatchers.IO) {
+    private suspend fun savePicture(data: ByteArray, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
+        withContext(dispatcherProvider.io) {
             val pictureFileDir = File("${FileUtils.getOlePath(context)}/userimages")
             if (!pictureFileDir.exists() && !pictureFileDir.mkdirs()) {
                 pictureFileDir.mkdirs()
@@ -137,7 +136,7 @@ object CameraUtils {
                 FileOutputStream(mainPicture).use { fos ->
                     fos.write(data)
                 }
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     callback.onImageCapture(mainPicture.absolutePath)
                 }
             } catch (error: Exception) {
