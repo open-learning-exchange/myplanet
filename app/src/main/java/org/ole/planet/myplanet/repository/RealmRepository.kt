@@ -56,7 +56,6 @@ open class RealmRepository(
             realm.where(clazz).apply(builder).count()
         }
 
-
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
