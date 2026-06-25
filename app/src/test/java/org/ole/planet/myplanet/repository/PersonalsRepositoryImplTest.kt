@@ -58,7 +58,9 @@ class PersonalsRepositoryImplTest {
         every { databaseService.createManagedRealmInstance() } returns mockRealm
         every { databaseService.ioDispatcher } returns testDispatcher
 
-        repository = PersonalsRepositoryImpl(databaseService, testDispatcher)
+        val apiInterface = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
+        val context = mockk<android.content.Context>(relaxed = true)
+        repository = PersonalsRepositoryImpl(databaseService, testDispatcher, apiInterface, context)
     }
 
     @After

@@ -305,16 +305,6 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getReplies(newsId: String?): List<RealmNews> {
-        return withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun getReplyCount(newsId: String?): Int {
         return withRealm { realm ->
             realm.where(RealmNews::class.java)
@@ -586,22 +576,6 @@ class VoicesRepositoryImpl @Inject constructor(
         existingConcatenatedLinks.addAll(linksToProcess)
         val jsonConcatenatedLinks = JsonUtils.gson.toJson(existingConcatenatedLinks)
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
-    }
-
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            insertNewsToRealm(realm, jsonDoc)
-        }
-        saveConcatenatedLinksToPrefs()
     }
 
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
