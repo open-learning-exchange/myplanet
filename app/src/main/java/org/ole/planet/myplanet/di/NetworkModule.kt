@@ -42,6 +42,9 @@ annotation class StandardRetrofit
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    private const val CONNECT_TIMEOUT_SECONDS = 10L
+    private const val READ_TIMEOUT_SECONDS = 60L
+    private const val WRITE_TIMEOUT_SECONDS = 120L
 
     @Provides
     @Singleton
@@ -70,7 +73,12 @@ object NetworkModule {
     @Singleton
     @StandardHttpClient
     fun provideStandardOkHttpClient(broadcastService: BroadcastService): OkHttpClient {
-        return buildOkHttpClient(10, 10, 10, RetryInterceptor(broadcastService))
+        return buildOkHttpClient(
+            CONNECT_TIMEOUT_SECONDS,
+            READ_TIMEOUT_SECONDS,
+            WRITE_TIMEOUT_SECONDS,
+            RetryInterceptor(broadcastService)
+        )
     }
 
     @Provides
