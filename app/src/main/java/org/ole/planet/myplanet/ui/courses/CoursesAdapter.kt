@@ -89,7 +89,7 @@ class CoursesAdapter(
         super.onCurrentListChanged(previousList, currentList)
         courseIdToPosition.clear()
         currentList.forEachIndexed { index, course ->
-            course.courseId?.let { courseIdToPosition[it] = index }
+            courseIdToPosition[course.courseId] = index
         }
     }
 

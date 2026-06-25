@@ -20,6 +20,8 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
+private val httpsPrefixRegex = Regex("^https?://")
+
 fun SyncActivity.showConfigurationUIElements(
     binding: DialogServerUrlBinding,
     manualSelected: Boolean,
@@ -115,17 +117,17 @@ fun SyncActivity.refreshServerList() {
     )
 
     val pinnedUrl = prefData.getServerUrl()
-    val urlWithoutProtocol = pinnedUrl.replace(Regex("^https?://"), "")
+    val urlWithoutProtocol = pinnedUrl.replace(httpsPrefixRegex, "")
 
     // build the final list — if showing more, still pin selected server at top
     val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty()) {
         val pinnedServer = filteredList.find {
-            it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol
+            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
         }
         if (pinnedServer != null) {
             // pinned server at top, then everyone else without the duplicate
             listOf(pinnedServer) + filteredList.filter {
-                it.url.replace(Regex("^https?://"), "") != urlWithoutProtocol
+                it.url.replace(httpsPrefixRegex, "") != urlWithoutProtocol
             }
         } else {
             filteredList
@@ -138,7 +140,7 @@ fun SyncActivity.refreshServerList() {
     serverAddressAdapter?.submitList(finalList) {
         // this runs AFTER the list diff is done and views are updated
         val pinnedIndex = finalList.indexOfFirst {
-            it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol
+            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
         }
         if (pinnedIndex != -1) {
             serverAddressAdapter?.setSelectedPosition(pinnedIndex)
@@ -167,7 +169,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     serverListAddresses = ServerConfigUtils.getServerAddresses(this)
     val storedUrl = prefData.getServerUrl().takeIf { it.isNotEmpty() }
     val storedPin = prefData.getServerPin().takeIf { it.isNotEmpty() }
-    val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
+    val urlWithoutProtocol = storedUrl?.replace(httpsPrefixRegex, "")
     val filteredList = ServerConfigUtils.getFilteredList(
         showAdditionalServers,
         serverListAddresses,
@@ -175,7 +177,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
     )
     serverAddressAdapter = ServerAddressAdapter(
         onItemClick = { serverListAddress ->
-            val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
+            val actualUrl = serverListAddress.url.replace(httpsPrefixRegex, "")
             binding.inputServerUrl.setText(actualUrl)
             binding.inputServerPassword.setText(ServerConfigUtils.getPinForUrl(actualUrl))
             val protocol = ServerConfigUtils.getDefaultProtocol(actualUrl)
@@ -194,7 +196,7 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
         // runs AFTER list is ready
         if (urlWithoutProtocol != null && !syncFailed) {
             val position = filteredList.indexOfFirst {
-                it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol
+                it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
             }
             if (position != -1) {
                 serverAddressAdapter?.setSelectedPosition(position)
