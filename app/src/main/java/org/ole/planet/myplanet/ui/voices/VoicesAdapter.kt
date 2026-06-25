@@ -92,7 +92,9 @@ class VoicesAdapter(
     )
 ) {
     companion object {
-        const val PAYLOAD_STATE_CHANGED = "PAYLOAD_STATE_CHANGED"
+        const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
+        const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
+        const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
         const val PAYLOAD_REPLY_COUNT = "PAYLOAD_REPLY_COUNT"
         const val PAYLOAD_USER_FETCHED = "PAYLOAD_USER_FETCHED"
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
@@ -156,14 +158,14 @@ class VoicesAdapter(
         isTeamLeaderFn { isLeader ->
             val changed = _isTeamLeader != isLeader
             _isTeamLeader = isLeader
-            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
+            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_TEAM_LEADER_CHANGED)
         }
     }
 
     fun setCurrentUser(user: RealmUser?) {
         if (currentUser !== user) {
             currentUser = user
-            if (itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
+            if (itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_CURRENT_USER_CHANGED)
         }
     }
 
@@ -178,7 +180,7 @@ class VoicesAdapter(
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember != nonTeamMember) {
             this.nonTeamMember = nonTeamMember
-            notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
+            notifyItemRangeChanged(0, itemCount, PAYLOAD_NON_TEAM_MEMBER_CHANGED)
         }
     }
 
@@ -191,28 +193,55 @@ class VoicesAdapter(
         return VoicesViewHolder(binding)
     }
 
+
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.isEmpty() || payloads.contains(PAYLOAD_STATE_CHANGED)) {
-            onBindViewHolder(holder, position)
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
             return
         }
+
         if (holder is VoicesViewHolder) {
             val news = getNews(holder, position)
-            if (news.isValid) {
-                for (payload in payloads) {
-                    when (payload) {
-                        PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
-                        PAYLOAD_USER_FETCHED -> {
-                            val userModel = configureUser(holder, news)
-                            val currentLeader = getCurrentLeader(userModel, news)
-                            setMemberClickListeners(holder, userModel, currentLeader)
-                        }
-                        PAYLOAD_EDIT_ACTION -> {
-                            configureEditDeleteButtons(holder, news)
-                            showReplyButton(holder, news, position)
-                        }
+            if (!news.isValid) return
+
+            for (payload in payloads) {
+                when (payload) {
+                    PAYLOAD_TEAM_LEADER_CHANGED -> {
+                        configureEditDeleteButtons(holder, news)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                    }
+                    PAYLOAD_CURRENT_USER_CHANGED -> {
+                        val userModel = configureUser(holder, news)
+                        configureEditDeleteButtons(holder, news)
+                        showShareButton(holder, news)
+                        showReplyButton(holder, news, position)
+                        updateReplyCount(holder, news, position)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                        val currentLeader = getCurrentLeader(userModel, news)
+                        setMemberClickListeners(holder, userModel, currentLeader)
+                    }
+                    PAYLOAD_NON_TEAM_MEMBER_CHANGED -> {
+                        showReplyButton(holder, news, position)
+                        showShareButton(holder, news)
+                        val canManageLabels = canAddLabel(news)
+                        labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
+                        labelManager.showChips(holder.binding, news, canManageLabels)
+                    }
+                    PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
+                    PAYLOAD_USER_FETCHED -> {
+                        val userModel = configureUser(holder, news)
+                        val currentLeader = getCurrentLeader(userModel, news)
+                        setMemberClickListeners(holder, userModel, currentLeader)
+                    }
+                    PAYLOAD_EDIT_ACTION -> {
+                        configureEditDeleteButtons(holder, news)
+                        showReplyButton(holder, news, position)
                     }
                 }
             }
