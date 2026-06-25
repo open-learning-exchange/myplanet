@@ -13,13 +13,11 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.HashMap
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
@@ -29,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class EventsDetailFragment : Fragment(), View.OnClickListener {
@@ -70,34 +69,26 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
 
         viewModel.loadData(meetUpId)
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.meetup.collect { meetup ->
-                meetup?.let { setUpData(it) }
-                updateAttendanceButton()
-            }
+        collectWhenStarted(viewModel.meetup) { meetup ->
+            meetup?.let { setUpData(it) }
+            updateAttendanceButton()
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.members.collect { members ->
-                setUserList(members)
-            }
+        collectWhenStarted(viewModel.members) { members ->
+            setUserList(members)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.user.collect {
-                updateAttendanceButton()
-            }
+        collectWhenStarted(viewModel.user) {
+            updateAttendanceButton()
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.updateSuccess.collect { success ->
-                if (success == true) {
-                    Toast.makeText(requireContext(), getString(R.string.meetup_updated), Toast.LENGTH_SHORT).show()
-                    viewModel.resetUpdateSuccess()
-                } else if (success == false) {
-                    Toast.makeText(requireContext(), getString(R.string.meetup_not_updated), Toast.LENGTH_SHORT).show()
-                    viewModel.resetUpdateSuccess()
-                }
+        collectWhenStarted(viewModel.updateSuccess) { success ->
+            if (success == true) {
+                Toast.makeText(requireContext(), getString(R.string.meetup_updated), Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateSuccess()
+            } else if (success == false) {
+                Toast.makeText(requireContext(), getString(R.string.meetup_not_updated), Toast.LENGTH_SHORT).show()
+                viewModel.resetUpdateSuccess()
             }
         }
     }
