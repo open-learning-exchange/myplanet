@@ -226,7 +226,6 @@
         android:text="@string/add_image"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/ltNonPersonnel" />
-
     <ImageView
         android:id="@+id/reportImagePreview"
         android:layout_width="120dp"
