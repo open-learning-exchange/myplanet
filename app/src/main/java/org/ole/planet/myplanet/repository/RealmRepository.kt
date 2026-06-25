@@ -124,7 +124,6 @@ open class RealmRepository(
         }
     }.flowOn(realmDispatcher)
         .conflate()
-
         .map { frozenResults ->
             if (frozenResults.isEmpty()) {
                 emptyList()
