@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.SubmissionItem
 
 interface SubmissionsRepository {
     fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>>
-    suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>>
+    fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>>
     suspend fun getPendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission>
     suspend fun getSurveyTitlesFromSubmissions(submissions: List<RealmSubmission>): List<String>
@@ -27,6 +27,7 @@ interface SubmissionsRepository {
     suspend fun hasPendingOfflineSubmissions(): Boolean
     suspend fun hasPendingExamResults(): Boolean
     suspend fun createSurveySubmission(examId: String, userId: String?)
+    suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun markSubmissionComplete(id: String, payload: com.google.gson.JsonObject)
     suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
