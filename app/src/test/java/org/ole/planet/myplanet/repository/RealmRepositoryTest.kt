@@ -6,9 +6,8 @@ import io.mockk.just
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
-import io.realm.Realm
 import io.realm.OrderedRealmCollectionChangeListener
-import io.realm.OrderedCollectionChangeSet
+import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
