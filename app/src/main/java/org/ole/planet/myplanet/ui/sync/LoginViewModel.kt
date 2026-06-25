@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.sync.viewmodel
+package org.ole.planet.myplanet.ui.sync
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

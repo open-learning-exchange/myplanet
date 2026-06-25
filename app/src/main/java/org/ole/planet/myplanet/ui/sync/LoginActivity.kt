@@ -24,7 +24,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.activity.viewModels
-import org.ole.planet.myplanet.ui.sync.viewmodel.LoginViewModel
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
