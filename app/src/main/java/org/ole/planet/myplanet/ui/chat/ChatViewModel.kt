@@ -87,16 +87,16 @@ class ChatViewModel @Inject constructor(
         communityName: String?
     ) {
         viewModelScope.launch {
-            val data = withContext(dispatcherProvider.io) {
-                val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
-                val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-                val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
+            val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
+            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
+            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+            val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
 
+            withContext(dispatcherProvider.default) {
                 allChats = sortChats(chatHistory)
                 precomputedChats = buildPrecomputedChats(allChats)
-                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
             }
+            val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
             _screenData.value = data
             _filteredChats.value = allChats
         }

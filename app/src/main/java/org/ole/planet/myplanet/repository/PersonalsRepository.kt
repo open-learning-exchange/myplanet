@@ -23,4 +23,6 @@ interface PersonalsRepository {
     suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal>
 
     suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String)
+
+    suspend fun uploadPersonalDocument(personal: RealmMyPersonal): Pair<String, String>?
 }
