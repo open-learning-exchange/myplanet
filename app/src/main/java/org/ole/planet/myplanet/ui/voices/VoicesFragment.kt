@@ -358,10 +358,10 @@ class VoicesFragment : BaseVoicesFragment() {
         val binding = _binding ?: return
         if (labelAdapter == null) {
             labelAdapter = VoicesLabelAdapter(
-                selectedLabel = selectedLabel,
                 onItemClick = { label ->
                     selectedLabel = label
-                    labelAdapter?.setSelectedLabel(label)
+                    val currentItems = labelAdapter?.currentList ?: return@VoicesLabelAdapter
+                    labelAdapter?.submitList(currentItems.map { it.copy(isSelected = it.label == label) })
                     labelFilteredList = applyLabelFilter(filteredNewsList)
                     searchFilteredList = applySearchFilter(labelFilteredList)
                     setData(searchFilteredList)
@@ -376,7 +376,8 @@ class VoicesFragment : BaseVoicesFragment() {
 
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
-        labelAdapter?.submitList(labels)
+        val items = labels.map { VoicesLabelItem(it, it == selectedLabel) }
+        labelAdapter?.submitList(items)
 
         val position = labels.indexOf(selectedLabel)
         if (position >= 0) {
