@@ -11,8 +11,8 @@ import org.ole.planet.myplanet.utils.DiffUtils
 
 class VoicesLabelAdapter(
     private val onItemClick: (String) -> Unit
-) : ListAdapter<VoiceLabelItem, VoicesLabelAdapter.ViewHolder>(
-    DiffUtils.itemCallback<VoiceLabelItem>(
+) : ListAdapter<VoicesLabelItem, VoicesLabelAdapter.ViewHolder>(
+    DiffUtils.itemCallback<VoicesLabelItem>(
         { oldItem, newItem -> oldItem.label == newItem.label },
         { oldItem, newItem -> oldItem == newItem }
     )

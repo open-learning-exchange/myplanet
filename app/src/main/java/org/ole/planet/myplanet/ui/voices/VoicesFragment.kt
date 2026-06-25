@@ -376,7 +376,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
-        val items = labels.map { VoiceLabelItem(it, it == selectedLabel) }
+        val items = labels.map { VoicesLabelItem(it, it == selectedLabel) }
         labelAdapter?.submitList(items)
 
         val position = labels.indexOf(selectedLabel)
