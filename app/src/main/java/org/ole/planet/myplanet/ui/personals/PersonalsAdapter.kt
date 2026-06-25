@@ -79,7 +79,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPerson
             "aac", "mp3" -> openAudioFile(context, path)
             "mp4" -> context.startActivity(
                 Intent(context, ResourceViewerActivity::class.java)
-                    .putExtra("TOUCHED_FILE", Uri.fromFile(path?.let { File(it) }).toString())
+                    .putExtra("TOUCHED_FILE", Uri.fromFile(File(path)).toString())
                     .putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
             )
         }
