@@ -58,7 +58,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
+    override fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
         }
@@ -227,6 +227,20 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             }
         }
         getOrCreateSubmission(userId, parentId)
+    }
+
+    override suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>) {
+        val parentId = withRealm { realm ->
+            val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
+            if (!courseId.isNullOrEmpty()) {
+                "$examId@$courseId"
+            } else {
+                examId
+            }
+        }
+        userIds.forEach { userId ->
+            getOrCreateSubmission(userId, parentId)
+        }
     }
 
     override suspend fun saveSubmission(submission: RealmSubmission) {

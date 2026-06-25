@@ -329,7 +329,7 @@ class ChatHistoryFragment : Fragment() {
         sharedViewModel.setAiProvidersError(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
+            val providers = chatRepository.fetchAiProviders(serverUrl)
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 sharedViewModel.setAiProvidersError(true)
