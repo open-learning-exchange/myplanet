@@ -42,16 +42,4 @@ class VoicesLabelAdapter(
             onItemClick(item.label)
         }
     }
-
-    fun setSelectedLabel(label: String) {
-        val oldIndex = currentList.indexOf(selectedLabel)
-        val newIndex = currentList.indexOf(label)
-        selectedLabel = label
-        if (oldIndex != RecyclerView.NO_POSITION) {
-            notifyItemChanged(oldIndex)
-        }
-        if (newIndex != RecyclerView.NO_POSITION) {
-            notifyItemChanged(newIndex)
-        }
-    }
 }
