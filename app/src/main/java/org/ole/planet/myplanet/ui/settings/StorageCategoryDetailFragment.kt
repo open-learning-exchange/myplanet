@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
-import androidx.core.os.bundleOf
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -66,11 +65,11 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             extensions: List<String>,
             allKnownExtensions: List<String>
         ) = StorageCategoryDetailFragment().apply {
-            arguments = bundleOf(
-                ARG_LABEL to label,
-                ARG_EXTENSIONS to ArrayList(extensions),
-                ARG_ALL_KNOWN to ArrayList(allKnownExtensions)
-            )
+            arguments = Bundle().apply {
+                putString(ARG_LABEL, label)
+                putStringArrayList(ARG_EXTENSIONS, ArrayList(extensions))
+                putStringArrayList(ARG_ALL_KNOWN, ArrayList(allKnownExtensions))
+            }
         }
     }
 
@@ -245,7 +244,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             }
 
             // Notify parent to refresh, then dismiss
-            parentFragmentManager.setFragmentResult(RESULT_KEY, bundleOf())
+            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
             dismiss()
         }
     }
