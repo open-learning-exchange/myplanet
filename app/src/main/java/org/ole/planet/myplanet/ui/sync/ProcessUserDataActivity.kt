@@ -254,7 +254,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
     protected fun hideKeyboard(view: View?) {
         val `in` = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
-        `in`.hideSoftInputFromWindow(view?.windowToken, InputMethodManager.HIDE_NOT_ALWAYS)
+        `in`.hideSoftInputFromWindow(view?.windowToken, 0)
     }
 
 

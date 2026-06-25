@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
+    private val parentScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
@@ -56,15 +57,19 @@ class InlineResourceAdapter(
 
     private var externalFilesDir: java.io.File? = null
 
-    class ViewHolder(val binding: ItemInlineResourceBinding, dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
-        private val scope = CoroutineScope(dispatcherProvider.main + SupervisorJob())
+    class ViewHolder(val binding: ItemInlineResourceBinding, private val parentScope: CoroutineScope, private val dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
+        private var previewJob: Job? = null
 
         fun cancelPreviousPreviews() {
-            scope.coroutineContext.cancelChildren()
+            previewJob?.cancel()
+            previewJob = null
         }
 
         fun launchPreview(block: suspend CoroutineScope.() -> Unit): Job {
-            return scope.launch(block = block)
+            cancelPreviousPreviews()
+            val job = parentScope.launch(dispatcherProvider.main, block = block)
+            previewJob = job
+            return job
         }
     }
 
@@ -73,7 +78,7 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding, dispatcherProvider)
+        return ViewHolder(binding, parentScope, dispatcherProvider)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
