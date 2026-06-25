@@ -4,21 +4,16 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class EventsDescriptionAdapter : ListAdapter<EventsDescriptionAdapter.DescriptionItem, EventsDescriptionAdapter.ViewHolder>(
-    object : DiffUtil.ItemCallback<DescriptionItem>() {
-        override fun areItemsTheSame(oldItem: DescriptionItem, newItem: DescriptionItem): Boolean {
-            return oldItem.key == newItem.key
-        }
-
-        override fun areContentsTheSame(oldItem: DescriptionItem, newItem: DescriptionItem): Boolean {
-            return oldItem == newItem
-        }
-    }
+    DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.key == newItem.key },
+        areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+    )
 ) {
 
     data class DescriptionItem(val key: String, val value: String)

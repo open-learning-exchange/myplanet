@@ -14,14 +14,10 @@ class DefaultLabelManipulator(
     private val dispatcherProvider: DispatcherProvider
 ) : LabelManipulator {
     override suspend fun addLabel(newsId: String, label: String) {
-        withContext(dispatcherProvider.io) {
-            voicesRepository.addLabel(newsId, label)
-        }
+        voicesRepository.addLabel(newsId, label)
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
-        withContext(dispatcherProvider.io) {
-            voicesRepository.removeLabel(newsId, label)
-        }
+        voicesRepository.removeLabel(newsId, label)
     }
 }

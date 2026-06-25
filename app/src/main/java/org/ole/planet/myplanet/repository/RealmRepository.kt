@@ -1,7 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import io.realm.Realm
-import io.realm.RealmChangeListener
+import io.realm.OrderedRealmCollectionChangeListener
+import io.realm.OrderedCollectionChangeSet
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -62,7 +63,7 @@ open class RealmRepository(
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
-        var listener: RealmChangeListener<RealmResults<T>>? = null
+        var listener: OrderedRealmCollectionChangeListener<RealmResults<T>>? = null
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
@@ -107,8 +108,10 @@ open class RealmRepository(
             emitResults(initialResults, "Error sending initial results")
 
             results = initialResults
-            listener = RealmChangeListener<RealmResults<T>> { changedResults ->
-                emitResults(changedResults, "Error sending changed results")
+            listener = OrderedRealmCollectionChangeListener<RealmResults<T>> { changedResults, changeSet ->
+                if (changeSet == null || changeSet.insertions.isNotEmpty() || changeSet.deletions.isNotEmpty() || changeSet.changes.isNotEmpty()) {
+                    emitResults(changedResults, "Error sending changed results")
+                }
             }
             results.addChangeListener(listener)
 
