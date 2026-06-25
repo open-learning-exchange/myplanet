@@ -179,7 +179,7 @@ class NotificationsRepositoryImpl @Inject constructor(
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
-                val teamObject = teamsRepository.get().getTeamById(teamId)
+                val teamObject = teamsRepository.get().getTeamLabelInfo(teamId)
                 TaskNotificationResult(teamId, teamObject?.name, teamObject?.type)
             } else {
                 null
@@ -194,17 +194,16 @@ class NotificationsRepositoryImpl @Inject constructor(
             } else {
                 it
             }
-            teamsRepository.get().getJoinRequestById(actualJoinRequestId)?.teamId
+            teamsRepository.get().getJoinRequestInfo(actualJoinRequestId)?.teamId
         }
     }
 
     override suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String> {
-        val joinRequest = teamsRepository.get().getJoinRequestById(relatedId)
-        val team = joinRequest?.teamId?.let { tid ->
-            teamsRepository.get().getTeamById(tid)
-        }
+        val joinRequest = teamsRepository.get().getJoinRequestInfo(relatedId)
+        val teamName = joinRequest?.teamId?.let { tid ->
+            teamsRepository.get().getTeamLabelInfo(tid)?.name
+        } ?: "Unknown Team"
         val uid = joinRequest?.userId
-        val teamName = team?.name ?: "Unknown Team"
 
         val requester = uid?.let { userRepository.get().getUserById(it) }
         return Pair(requester?.name ?: "Unknown User", teamName)
@@ -243,18 +242,18 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun getJoinRequestDetailsBatch(relatedIds: List<String>): Map<String, Pair<String, String>> {
         if (relatedIds.isEmpty()) return emptyMap()
 
-        val joinRequests = relatedIds.mapNotNull { teamsRepository.get().getJoinRequestById(it) }
+        val joinRequests = teamsRepository.get().getJoinRequestsInfo(relatedIds)
 
-        val teamIds = joinRequests.mapNotNull { it.teamId }.distinct()
+        val teamIds = joinRequests.map { it.teamId }.filter { it.isNotEmpty() }.distinct()
 
         val teamMap = teamsRepository.get().getTeamNamesByIds(teamIds)
 
         val intermediateList = mutableListOf<Triple<String, String, String>>()
         joinRequests.forEach { jr ->
-            val id = jr._id
-            if (!id.isNullOrEmpty()) {
-                val tName = teamMap[jr.teamId ?: ""] ?: "Unknown Team"
-                intermediateList.add(Triple(id, jr.userId ?: "", tName))
+            val id = jr.id
+            if (id.isNotEmpty()) {
+                val tName = teamMap[jr.teamId] ?: "Unknown Team"
+                intermediateList.add(Triple(id, jr.userId, tName))
             }
         }
 
@@ -280,8 +279,8 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getTaskTeamName(taskTitle: String): String? {
         val taskObj = findByField(RealmTeamTask::class.java, "title", taskTitle)
-        val team = taskObj?.teamId?.let { teamsRepository.get().getTeamById(it) }
-        return team?.name
+        val teamInfo = taskObj?.teamId?.let { teamsRepository.get().getTeamLabelInfo(it) }
+        return teamInfo?.name
     }
 
     override suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String> {
@@ -477,9 +476,18 @@ class NotificationsRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            val parsed = parseNotification(jsonDoc) ?: return@forEach
-            val existing = realm.where(RealmNotification::class.java).equalTo("id", parsed.id).findFirst()
+        val parsedList = documentList.mapNotNull { parseNotification(it) }
+        val ids = parsedList.map { it.id }.toTypedArray()
+        val existingNotifications = if (ids.isNotEmpty()) {
+            realm.where(RealmNotification::class.java)
+                .`in`("id", ids)
+                .findAll()
+                .associateBy { it.id }
+        } else {
+            emptyMap()
+        }
+        parsedList.forEach { parsed ->
+            val existing = existingNotifications[parsed.id]
             if (existing?.needsSync == true) {
                 parsed.needsSync = true
                 parsed.isRead = existing.isRead
