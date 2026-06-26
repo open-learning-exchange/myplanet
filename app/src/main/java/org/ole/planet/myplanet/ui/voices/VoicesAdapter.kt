@@ -38,7 +38,8 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
-import org.ole.planet.myplanet.ui.viewer.VideoViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ImageUtils
@@ -178,17 +179,6 @@ class VoicesAdapter(
 
     fun setVideoList(videoList: List<String>?) {
         this.videoList = videoList
-    }
-
-    fun addItem(news: RealmNews?) {
-        val newList = currentList.toMutableList()
-        if (news != null) newList.add(0, news)
-        submitList(newList) {
-            recyclerView?.post {
-                recyclerView?.scrollToPosition(0)
-                recyclerView?.smoothScrollToPosition(0)
-            }
-        }
     }
 
     fun setFromLogin(fromLogin: Boolean) {
@@ -981,7 +971,7 @@ class VoicesAdapter(
         playIcon.setBackgroundResource(R.drawable.circle_background)
         val padding = (8 * context.resources.displayMetrics.density).toInt()
         playIcon.setPadding(padding, padding, padding, padding)
-        playIcon.setColorFilter(android.graphics.Color.WHITE)
+        playIcon.setColorFilter(Color.WHITE)
 
         frameLayout.addView(thumbnailView)
         frameLayout.addView(playIcon)
@@ -1056,7 +1046,7 @@ class VoicesAdapter(
                 playIcon.setBackgroundResource(R.drawable.circle_background)
                 val padding = (8 * context.resources.displayMetrics.density).toInt()
                 playIcon.setPadding(padding, padding, padding, padding)
-                playIcon.setColorFilter(android.graphics.Color.WHITE)
+                playIcon.setColorFilter(Color.WHITE)
 
                 frameLayout.addView(thumbnailView)
                 frameLayout.addView(playIcon)
@@ -1071,9 +1061,10 @@ class VoicesAdapter(
     }
 
     private fun playVideo(context: Context, videoPath: String) {
-        val intent = Intent(context, VideoViewerActivity::class.java)
-        intent.putExtra("videoType", "offline")
-        intent.putExtra("videoURL", videoPath)
+        val intent = Intent(context, ResourceViewerActivity::class.java)
+        intent.putExtra("TOUCHED_FILE", videoPath)
+        intent.putExtra("isFullPath", true)
+        intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
         context.startActivity(intent)
     }
 
