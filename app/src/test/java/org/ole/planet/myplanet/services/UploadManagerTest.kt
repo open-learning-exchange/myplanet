@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import com.google.gson.Gson
 import dagger.Lazy
@@ -71,6 +72,8 @@ class UploadManagerTest {
     @Before
     fun setup() {
         mockkStatic(Log::class)
+        mockkStatic(SystemClock::class)
+        every { SystemClock.elapsedRealtime() } returns 0L
         io.mockk.mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
         every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mockHeader"
         every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "http://mock.url"
@@ -277,6 +280,7 @@ class UploadManagerTest {
     fun `uploadMyPersonal delegates to personalsRepository and calls uploadAttachment`() = testScope.runTest {
         val mockPersonal = mockk<org.ole.planet.myplanet.model.RealmMyPersonal>(relaxed = true)
         every { mockPersonal.isUploaded } returns false
+        every { mockPersonal.path } returns null
 
         coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns Pair("remote-id", "remote-rev")
 
