@@ -13,6 +13,7 @@ import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
@@ -130,7 +131,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val user = userSessionManager.getUserModel()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamByIdOrTeamId(teamId)
                 }
 
                 else -> {
@@ -342,7 +343,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
-                    teamsRepository.syncTeamActivities()
+                    teamsSyncRepository.syncTeamActivities()
                 }
             }
         }
@@ -360,7 +361,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     team?.let { currentTeam ->
                         user?.let { currentUser ->
                             viewLifecycleOwner.lifecycleScope.launch {
-                                teamsRepository.leaveTeam(currentTeam._id!!, currentUser.id)
+                                val teamId = currentTeam._id ?: return@launch
+                                teamsRepository.leaveTeam(teamId, currentUser.id)
                                 Utilities.toast(activity, getString(R.string.left_team))
                                 val lastPageId =
                                     currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
@@ -382,9 +384,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             selectPage(targetPageId)
             MainApplication.showDownload = false
 
-            val delay = if (isAlreadyOnTargetPage) 50L else 300L
+            val delayMs = if (isAlreadyOnTargetPage) 50L else 300L
 
-            binding.root.postDelayed({
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(delayMs)
                 val pageListener = childFragmentManager.fragments.firstOrNull {
                     it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
                 } as? OnTeamPageListener
@@ -404,7 +407,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         }
                     }
                 }
-            }, delay)
+            }
         }
     }
 
@@ -417,7 +420,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
             val updatedTeam = when {
-                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByIdOrTeamId(primaryTeamId)
                 fallbackTeamId.isNotEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
                 else -> null
             }

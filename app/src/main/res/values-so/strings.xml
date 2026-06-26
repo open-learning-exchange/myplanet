@@ -897,6 +897,14 @@
     <string name="image_resource">deriska sawirka</string>
     <string name="play_audio">bixi codka</string>
     <string name="video_player">qalabka fiidyowga</string>
+    <string name="video_unavailable">Fiidyowga lama heli karo — faylku lama helin oo xiriirka serverka lama samayn karin</string>
+    <string name="video_playback_error">Khalad ku yimid ciyaarta fiidyowga. Isku day mar kale ama hubi xiriirkaaga</string>
+    <string name="video_loading_checking_server">Hubi helitaanka serverka…</string>
+    <string name="video_loading_connecting">La xiriiraya serverka…</string>
+    <string name="video_loading_buffering">Kaydinta…</string>
+    <string name="video_loading_local">Soo dejinaya fiidyowga…</string>
+    <string name="unable_to_play_video">Ma ciyaari karo fiidyowga</string>
+    <string name="go_back">Ku laabo</string>
     <string name="progress_bar">balka soo socda</string>
     <string name="web_view">barashada webka</string>
     <string name="invalid_configuration">Dhamaan Suurtagal ah oo Serveryaasha ah</string>
@@ -1033,6 +1041,9 @@
     <string name="profit_loss">Faa\'iido/Qasaaro</string>
     <string name="ending_balance">Hadhsiga dhammaadka</string>
     <string name="reports_summary">Dulmar Warbixino</string>
+    <string name="report_image">Sawirka warbixinta</string>
+    <string name="finance_image">Sawirka macaamilka</string>
+    <string name="change_image">Beddel sawirka</string>
     <string name="summary">Dulmar</string>
     <string name="other_income">Dakhliga kale</string>
     <string name="add_reports">Ku dar warbixino</string>
@@ -1320,5 +1331,32 @@
     <string name="sync_chip_syncing">La waafajinayaa…</string>
     <string name="sync_chip_offline">Khadka kama jiro</string>
     <string name="desc_is_required">Sharaxaadda waa loo baahan yahay</string>
+    <string name="notification_group_system">Nidaam</string>
+    <string name="notification_group_other">Kale</string>
+    <string name="notif_group_join_requests">Codsiyada Ku-Biiritaanka</string>
+    <string name="notif_group_team_updates">Cusboonaysiinta Kooxda</string>
+    <string name="notif_group_new_voices">Codadka Cusub</string>
+    <string name="notif_group_voice_replies">Jawaabaha Codka</string>
+    <string name="selected_count">%1$d la doortay</string>
+    <string name="mark_selected_as_read">Calaamadee akhrinta</string>
+    <string name="delete_selected">Tirtir</string>
+    <string name="cancel_selection">Jooji doortashada</string>
+    <string name="just_now">Hadda uun</string>
+    <string name="minutes_ago">%1$d daqiiqo ka hor</string>
+    <string name="hours_ago">%1$d saacad ka hor</string>
+    <string name="yesterday">Shalay</string>
+    <string name="days_ago">%1$d maalmood ka hor</string>
+    <string name="please_complete_test">Fadlan dhamee imtixaanka si aad u sii wadato</string>
+    <string name="edit_meetup">Wax ka beddel kulanka</string>
+    <string name="meetup_updated">Kulanka si guul leh ayaa loo cusboonaysiiyay</string>
+    <string name="meetup_not_updated">Cusboonaysiinta kulanka wey fashilantay</string>
+    <string name="removed_from_teamcourse">Koorska waxaa laga saaray kooxda</string>
+    <string name="progress">Horumar</string>
+    <string-array name="progress_filter">
+        <item>Dhammaan</item>
+        <item>Lama bilaabin</item>
+        <item>Socda</item>
+        <item>Dhammaystiran</item>
+    </string-array>
 
 </resources>

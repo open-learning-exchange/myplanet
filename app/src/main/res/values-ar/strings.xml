@@ -901,6 +901,14 @@
     <string name="image_resource">مصدر الصورة</string>
     <string name="play_audio">تشغيل الصوت</string>
     <string name="video_player">مشغل الفيديو</string>
+    <string name="video_unavailable">الفيديو غير متاح — الملف غير موجود ولا يمكن الاتصال بالخادم</string>
+    <string name="video_playback_error">خطأ في تشغيل الفيديو. حاول مرة أخرى أو تحقق من اتصالك</string>
+    <string name="video_loading_checking_server">جارٍ التحقق من توفر الخادم…</string>
+    <string name="video_loading_connecting">جارٍ الاتصال بالخادم…</string>
+    <string name="video_loading_buffering">جارٍ التخزين المؤقت…</string>
+    <string name="video_loading_local">جارٍ تحميل الفيديو…</string>
+    <string name="unable_to_play_video">تعذر تشغيل الفيديو</string>
+    <string name="go_back">رجوع</string>
     <string name="progress_bar">شريط التقدم</string>
     <string name="web_view">عرض الويب</string>
     <string name="invalid_configuration">تكوينات الخادم غير صالحة</string>
@@ -1037,6 +1045,9 @@
     <string name="profit_loss">الربح / الخسارة</string>
     <string name="ending_balance">الرصيد النهائي</string>
     <string name="reports_summary">ملخص التقارير</string>
+    <string name="report_image">صورة التقرير</string>
+    <string name="finance_image">صورة المعاملة</string>
+    <string name="change_image">تغيير الصورة</string>
     <string name="summary">ملخص</string>
     <string name="other_income">دخل آخر</string>
     <string name="add_reports">إضافة تقارير</string>
@@ -1336,5 +1347,32 @@
     <string name="sync_chip_syncing">جارٍ المزامنة…</string>
     <string name="sync_chip_offline">غير متصل</string>
     <string name="desc_is_required">الوصف مطلوب</string>
+    <string name="notification_group_system">النظام</string>
+    <string name="notification_group_other">أخرى</string>
+    <string name="notif_group_join_requests">طلبات الانضمام</string>
+    <string name="notif_group_team_updates">تحديثات الفريق</string>
+    <string name="notif_group_new_voices">أصوات جديدة</string>
+    <string name="notif_group_voice_replies">ردود صوتية</string>
+    <string name="selected_count">تم تحديد %1$d</string>
+    <string name="mark_selected_as_read">تعليم كمقروء</string>
+    <string name="delete_selected">حذف</string>
+    <string name="cancel_selection">إلغاء التحديد</string>
+    <string name="just_now">الآن</string>
+    <string name="minutes_ago">منذ %1$d دقيقة</string>
+    <string name="hours_ago">منذ %1$d ساعة</string>
+    <string name="yesterday">أمس</string>
+    <string name="days_ago">منذ %1$d أيام</string>
+    <string name="please_complete_test">يرجى إكمال الاختبار للمتابعة</string>
+    <string name="edit_meetup">تعديل الاجتماع</string>
+    <string name="meetup_updated">تم تحديث الاجتماع بنجاح</string>
+    <string name="meetup_not_updated">فشل تحديث الاجتماع</string>
+    <string name="removed_from_teamcourse">تمت إزالة الدورة من الفريق</string>
+    <string name="progress">التقدم</string>
+    <string-array name="progress_filter">
+        <item>الكل</item>
+        <item>لم يبدأ</item>
+        <item>قيد التقدم</item>
+        <item>مكتمل</item>
+    </string-array>
 
 </resources>

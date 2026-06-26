@@ -18,9 +18,7 @@ import com.opencsv.CSVReaderBuilder
 import java.io.File
 import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,12 +26,15 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.ResourceOpener
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
+    private val parentScope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
     DiffUtils.itemCallback<RealmMyLibrary>(
@@ -55,15 +56,19 @@ class InlineResourceAdapter(
 
     private var externalFilesDir: java.io.File? = null
 
-    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
-        private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    class ViewHolder(val binding: ItemInlineResourceBinding, private val parentScope: CoroutineScope, private val dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
+        private var previewJob: Job? = null
 
         fun cancelPreviousPreviews() {
-            scope.coroutineContext.cancelChildren()
+            previewJob?.cancel()
+            previewJob = null
         }
 
         fun launchPreview(block: suspend CoroutineScope.() -> Unit): Job {
-            return scope.launch(block = block)
+            cancelPreviousPreviews()
+            val job = parentScope.launch(dispatcherProvider.main, block = block)
+            previewJob = job
+            return job
         }
     }
 
@@ -72,7 +77,16 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding)
+        return ViewHolder(binding, parentScope, dispatcherProvider)
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        for (i in 0 until recyclerView.childCount) {
+            val child = recyclerView.getChildAt(i)
+            val holder = recyclerView.getChildViewHolder(child) as? ViewHolder
+            holder?.cancelPreviousPreviews()
+        }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -189,7 +203,7 @@ class InlineResourceAdapter(
     private fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
         holder.launchPreview {
-            val bitmap = withContext(Dispatchers.IO) {
+            val bitmap = withContext(dispatcherProvider.io) {
                 try {
                     ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
                         PdfRenderer(fd).use { renderer ->
@@ -218,7 +232,7 @@ class InlineResourceAdapter(
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
         if (!file.exists()) return
         holder.launchPreview {
-            val durationText = withContext(Dispatchers.IO) {
+            val durationText = withContext(dispatcherProvider.io) {
                 val retriever = MediaMetadataRetriever()
                 try {
                     retriever.setDataSource(file.absolutePath)
@@ -238,7 +252,7 @@ class InlineResourceAdapter(
     private fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
         holder.launchPreview {
-            val preview = withContext(Dispatchers.IO) {
+            val preview = withContext(dispatcherProvider.io) {
                 try {
                     val sb = StringBuilder()
                     CSVReaderBuilder(FileReader(file))
@@ -266,7 +280,7 @@ class InlineResourceAdapter(
     private fun showTextPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
         holder.launchPreview {
-            val text = withContext(Dispatchers.IO) {
+            val text = withContext(dispatcherProvider.io) {
                 try {
                     file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
                 } catch (e: Exception) {

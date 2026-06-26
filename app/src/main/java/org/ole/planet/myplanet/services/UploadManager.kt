@@ -18,7 +18,6 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -45,7 +44,6 @@ private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
 @Singleton
 class UploadManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
     private val submissionsRepository: SubmissionsRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
@@ -57,11 +55,13 @@ class UploadManager @Inject constructor(
     private val uploadConfigs: UploadConfigs,
     private val resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>,
     private val apiInterface: ApiInterface,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
-    private val photoUploader: PhotoUploader
+    private val photoUploader: PhotoUploader,
+    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
@@ -136,40 +136,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadAchievement() {
-        val list = userRepository.getAchievementsForUpload()
-        if (list.isEmpty()) return
-        withContext(dispatcherProvider.io) {
-            list.forEach { achievement ->
-                val id = achievement.get("_id")?.asString ?: return@forEach
-                val url = "${UrlUtils.getUrl()}/achievements/$id"
-                try {
-                    val response = apiInterface.putDoc(UrlUtils.header, "application/json", url, achievement)
-                    if (response.isSuccessful) {
-                        val rev = response.body()?.get("rev")?.asString
-                        userRepository.markAchievementUploaded(id, rev)
-                        val resumeFileName = achievement.get("resumeFileName")?.asString ?: ""
-                        if (resumeFileName.isNotEmpty() && !rev.isNullOrEmpty()) {
-                            uploadCvAttachment(id, rev, resumeFileName)
-                        }
-                    }
-                } catch (e: Exception) {
-                    Log.e(TAG, "Exception in UploadManager", e)
-                }
-            }
-        }
-    }
-
-    private suspend fun uploadCvAttachment(docId: String, rev: String, resumeFileName: String) {
-        val cvFile = File(FileUtils.getOlePath(context) + "cv/$resumeFileName")
-        if (!cvFile.exists()) return
-        try {
-            val body = cvFile.readBytes().toRequestBody("application/pdf".toMediaTypeOrNull())
-            // CouchDB attachment key is always "resume.pdf"
-            val url = "${UrlUtils.getUrl()}/achievements/$docId/resume.pdf"
-            apiInterface.uploadResource(FileUploader.getHeaderMap("application/pdf", rev), url, body)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to upload CV attachment", e)
-        }
+        achievementUploader.uploadAchievement()
     }
 
     private suspend fun uploadCourseProgress() {
@@ -206,7 +173,7 @@ class UploadManager @Inject constructor(
 
                             result.items.forEach { item ->
                                 libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
                                 }
                             }
                         }
@@ -222,7 +189,7 @@ class UploadManager @Inject constructor(
 
                             result.succeeded.forEach { item ->
                                 libMap[item.localId]?.let { library ->
-                                    uploadAttachment(item.remoteId ?: "", item.remoteRev ?: "", library, l)
+                                    uploadAttachment(item.remoteId, item.remoteRev, library, l)
                                 }
                             }
                         }
@@ -246,20 +213,9 @@ class UploadManager @Inject constructor(
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
-                    val response = apiInterface.postDoc(
-                        UrlUtils.header, "application/json",
-                        "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
-                    )
-
-                    val `object` = response.body()
-                    if (`object` != null) {
-                        val rev = getString("rev", `object`)
-                        val id = getString("id", `object`)
-
-                        personal.id?.let { personalId ->
-                            personalsRepository.updatePersonalAfterSync(personalId, id, rev)
-                        }
-
+                    val result = personalsRepository.uploadPersonalDocument(personal)
+                    if (result != null) {
+                        val (id, rev) = result
                         uploadAttachment(id, rev, personal) { }
                         "Personal resource uploaded successfully"
                     } else {
@@ -309,7 +265,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeams() {
-        val teamsToUpload = teamsRepository.get().getTeamsForUpload()
+        val teamsToUpload = teamsSyncRepository.get().getTeamsForUpload()
 
         withContext(dispatcherProvider.io) {
             teamsToUpload.processInBatches { batch ->
@@ -322,7 +278,7 @@ class UploadManager @Inject constructor(
                                 "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
                             )
                             if (response.isSuccessful) {
-                                teamsRepository.get().deleteLocalTeamRecord(id)
+                                teamsSyncRepository.get().deleteLocalTeamRecord(id)
                             }
                         } else {
                             val response = apiInterface.postDoc(
@@ -334,7 +290,10 @@ class UploadManager @Inject constructor(
 
                             if (`object` != null) {
                                 val rev = getString("rev", `object`)
-                                teamsRepository.get().markTeamUploaded(teamData.teamId, rev)
+                                teamsSyncRepository.get().markTeamUploaded(teamData.teamId, rev)
+                                if (!teamData.imageName.isNullOrEmpty() && teamData.teamId != null && rev.isNotEmpty()) {
+                                    uploadTeamImageAttachment(teamData.teamId, rev, teamData.imageName)
+                                }
                             }
                         }
                     } catch (e: IOException) {
@@ -342,6 +301,25 @@ class UploadManager @Inject constructor(
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String) {
+        val imageFile = org.ole.planet.myplanet.model.RealmMyTeam
+            .getAttachmentFile(context, teamId, imageName) ?: return
+        if (!imageFile.exists()) return
+        try {
+            val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
+            val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
+            val encodedName = android.net.Uri.encode(imageName)
+            val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
+            val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
+            val newRev = response.body()?.get("rev")?.asString
+            if (!newRev.isNullOrEmpty()) {
+                teamsSyncRepository.get().markTeamUploaded(teamId, newRev)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to upload team image attachment", e)
         }
     }
 

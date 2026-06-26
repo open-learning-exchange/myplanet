@@ -4,10 +4,8 @@ import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +34,7 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
 
 data class DashboardUiState(
@@ -87,7 +86,10 @@ class DashboardViewModel @Inject constructor(
     private val _challengeDialogEvent = MutableSharedFlow<ChallengeDialogData>(extraBufferCapacity = 1)
     val challengeDialogEvent: SharedFlow<ChallengeDialogData> = _challengeDialogEvent.asSharedFlow()
 
-    private var userContentJob: Job? = null
+    private var libraryJob: Job? = null
+    private var coursesJob: Job? = null
+    private var teamsJob: Job? = null
+    private var profileJob: Job? = null
 
     fun setUnreadNotifications(count: Int) {
         _uiState.update { it.copy(unreadNotifications = count) }
@@ -130,56 +132,49 @@ class DashboardViewModel @Inject constructor(
 
     fun loadUserContent(userId: String?) {
         if (userId == null) return
-        userContentJob?.cancel()
-        userContentJob = viewModelScope.launch {
-            val libraryDeferred = async(dispatcherProvider.io) {
-                val result = resourcesRepository.getMyLibrary(userId)
-                result
+
+        libraryJob?.cancel()
+        libraryJob = viewModelScope.launch(dispatcherProvider.main) {
+            val myLibrary = withContext(dispatcherProvider.io) {
+                resourcesRepository.getMyLibrary(userId)
             }
-
-            launch(dispatcherProvider.main) {
-                var isFirstEmission = true
-                coursesRepository.getMyCoursesFlow(userId)
-                    .flowOn(dispatcherProvider.io)
-                    .collect { courses ->
-                        if (isFirstEmission) {
-                            isFirstEmission = false
-                        }
-                        _uiState.update { it.copy(courses = courses) }
-                    }
-            }
-
-            launch(dispatcherProvider.main) {
-                var isFirstEmission = true
-                teamsRepository.getMyTeamsFlow(userId)
-                    .flowOn(dispatcherProvider.io)
-                    .collect { teams ->
-                        if (isFirstEmission) {
-                            isFirstEmission = false
-                        }
-                        _uiState.update { it.copy(teams = teams) }
-                    }
-            }
-
-            launch(dispatcherProvider.main) {
-                val (userName, fullName) = withContext(dispatcherProvider.io) {
-                    val user = userRepository.getUserById(userId)
-                    val userName = user?.name
-                    val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-                    Pair(userName, fullName)
-                }
-                _uiState.update { it.copy(fullName = fullName) }
-
-                if (userName != null) {
-                    val count = withContext(dispatcherProvider.io) {
-                        activitiesRepository.getOfflineLoginCount(userName)
-                    }
-                    _uiState.update { it.copy(offlineLogins = count) }
-                }
-            }
-
-            val myLibrary = libraryDeferred.await()
             _uiState.update { it.copy(library = myLibrary) }
+        }
+
+        coursesJob?.cancel()
+        coursesJob = viewModelScope.launch(dispatcherProvider.main) {
+            coursesRepository.getMyCoursesFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .collect { courses ->
+                    _uiState.update { it.copy(courses = courses) }
+                }
+        }
+
+        teamsJob?.cancel()
+        teamsJob = viewModelScope.launch(dispatcherProvider.main) {
+            teamsRepository.getMyTeamsFlow(userId)
+                .flowOn(dispatcherProvider.io)
+                .collect { teams ->
+                    _uiState.update { it.copy(teams = teams) }
+                }
+        }
+
+        profileJob?.cancel()
+        profileJob = viewModelScope.launch(dispatcherProvider.main) {
+            val (userName, fullName) = withContext(dispatcherProvider.io) {
+                val user = userRepository.getUserById(userId)
+                val userName = user?.name
+                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+                Pair(userName, fullName)
+            }
+            _uiState.update { it.copy(fullName = fullName) }
+
+            if (userName != null) {
+                val count = withContext(dispatcherProvider.io) {
+                    activitiesRepository.getOfflineLoginCount(userName)
+                }
+                _uiState.update { it.copy(offlineLogins = count) }
+            }
         }
     }
 
@@ -202,7 +197,7 @@ class DashboardViewModel @Inject constructor(
     fun loadUsers() {
         viewModelScope.launch {
             val users = withContext(dispatcherProvider.io) {
-                userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+                userRepository.getUsersSortedBy("joinDate", true)
             }
             _uiState.update { it.copy(users = users) }
         }
@@ -294,8 +289,8 @@ class DashboardViewModel @Inject constructor(
             val survey = withContext(dispatcherProvider.io) {
                 surveysRepository.getSurvey(surveyId)
             }
-            if (survey != null && survey.id != null) {
-                _surveyNavigationEvent.emit(survey.id!!)
+            survey?.id?.let { id ->
+                _surveyNavigationEvent.emit(id)
             }
         }
     }
@@ -318,7 +313,7 @@ class DashboardViewModel @Inject constructor(
                 val courseName = withContext(dispatcherProvider.io) { coursesRepository.getCourseTitleById(courseId) }
                 val hasUnfinishedSurvey = submissionsRepository.hasPendingSurvey(courseId, userId)
 
-                val progress = org.ole.planet.myplanet.ui.courses.CoursesProgressFragment.getCourseProgress(courseData, courseId)
+                val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
                 val today = java.time.LocalDate.now()
                 val endDate = java.time.LocalDate.of(2025, 1, 16)
@@ -352,8 +347,8 @@ class DashboardViewModel @Inject constructor(
 
     private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {
         return if (progress != null) {
-            val max = progress.get("max").asInt
-            val current = progress.get("current").asInt
+            val max = JsonUtils.getInt("max", progress)
+            val current = JsonUtils.getInt("current", progress)
             if (current == max) {
                 application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
             } else {

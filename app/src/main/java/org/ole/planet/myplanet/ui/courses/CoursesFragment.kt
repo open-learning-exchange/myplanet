@@ -9,6 +9,7 @@ import android.widget.Button
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
@@ -37,9 +38,9 @@ import org.ole.planet.myplanet.ui.resources.CollectionsFragment
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
@@ -52,10 +53,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var confirmation: AlertDialog
     private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var selectionJob: Job? = null
+    private var pendingScrollState: android.os.Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
     lateinit var prefManager: SharedPrefManager
@@ -76,6 +75,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun loadDataAsync() {
         val hostActivity = activity ?: return
         if (hostActivity.isFinishing) return
+        if (::recyclerView.isInitialized) {
+            pendingScrollState = recyclerView.layoutManager?.onSaveInstanceState()
+        }
         viewModel.loadCourses(isMyCourseLib, model?.id)
     }
 
@@ -83,23 +85,20 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         loadDataAsync()
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        withContext(dispatcherProvider.io) {
-            snapshot.forEach { course ->
-                course.courseId?.let { courseId ->
-                    coursesRepository.removeCourseFromShelf(courseId, userId)
-                    if (deleteProgress) coursesRepository.deleteCourseProgress(courseId)
-                }
+        val courseIds = snapshot.mapNotNull { it.courseId }
+        viewModel.removeCourses(courseIds, userId, deleteProgress) {
+            if (isAdded) {
+                selectedItems?.clear()
+                Utilities.toast(activity, getString(R.string.removed_from_mycourse))
             }
         }
-        selectedItems?.clear()
-        Utilities.toast(activity, getString(R.string.removed_from_mycourse))
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
         val hostActivity = activity ?: throw CancellationException("Fragment detached")
 
         if (userModel == null) {
@@ -150,9 +149,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             selectionController.clearAll(null)
         }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.coursesState.collectLatest { state ->
-                if (!::adapterCourses.isInitialized) return@collectLatest
+        collectLatestWhenStarted(viewModel.coursesState) { state ->
+            if (!::adapterCourses.isInitialized) return@collectLatestWhenStarted
 
                 if (isMyCourseLib) {
                     val courseIds = state.courses.mapNotNull { it.courseId }
@@ -169,14 +167,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                         selectionController.clearAll(adapterCourses)
                         checkList()
                         showNoData(tvMessage, state.courses.size, "courses")
+                        pendingScrollState?.let { saved ->
+                            recyclerView.layoutManager?.onRestoreInstanceState(saved)
+                            pendingScrollState = null
+                        }
                     }
                 }
             }
-        }
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.syncStatus.collectLatest { status ->
-                when (status) {
+        collectLatestWhenStarted(viewModel.syncStatus) { status ->
+            when (status) {
                     is SyncStatus.Idle -> {}
                     is SyncStatus.Syncing -> {
                         if (isAdded && !requireActivity().isFinishing) {
@@ -210,7 +210,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                     }
                 }
             }
-        }
 
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
@@ -226,7 +225,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             rootView = requireView(),
             scope = viewLifecycleOwner.lifecycleScope,
             onFilterChanged = { state ->
-                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade,
+                    state.subject, state.tagNames, state.progressFilter)
             },
             onScrollToTop = { scrollToTop() }
         )
@@ -238,19 +238,15 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             isGuest = userModel?.isGuest() ?: true,
             onRemoveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
-                    selectionController.clearAll(adapterCourses)
-                    adapterCourses.removeCourses(courseIds)
-                }
+                deleteSelected(true)
+                selectionController.clearAll(adapterCourses)
+                adapterCourses.removeCourses(courseIds)
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    deleteSelected(true)
-                    selectionController.clearAll(adapterCourses)
-                    adapterCourses.removeCourses(courseIds)
-                }
+                deleteSelected(true)
+                selectionController.clearAll(adapterCourses)
+                adapterCourses.removeCourses(courseIds)
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {
@@ -411,13 +407,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext(), profileDbHandler)
                 } else {
+                    addToMyList()
                     val fragment = CoursesFragment().apply {
                         arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
                     }
                     homeItemClickListener?.openMyFragment(fragment)
                 }
             }
-            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int -> dialog.cancel() }
+            .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                addToMyList()
+                dialog.cancel()
+    }
             .setOnDismissListener { addToMyList() }
 
         return builder.create()
@@ -478,21 +478,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
         if (::filterController.isInitialized) {
             val state = filterController.currentState()
-            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames)
+            viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade, state.subject, state.tagNames, state.progressFilter)
             scrollToTop()
         }
     }
 
-    private fun RealmMyCourse.toCourse(): Course {
-        return Course(
-            courseId = this.courseId ?: "",
-            courseTitle = this.courseTitle ?: "",
-            description = this.description ?: "",
-            gradeLevel = this.gradeLevel ?: "",
-            subjectLevel = this.subjectLevel ?: "",
-            createdDate = this.createdDate,
-            numberOfSteps = this.getNumberOfSteps(),
-            isMyCourse = this.isMyCourse
-        )
+    override fun onRatingChanged(type: String, id: String) {
+        if (type == "course" && ::adapterCourses.isInitialized) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                viewModel.refreshCourseRatings(model?.id)
+                adapterCourses.refreshWithDiff(id)
+            }
+        }
     }
 }

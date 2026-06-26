@@ -4,18 +4,19 @@ import android.content.Context
 import android.content.SharedPreferences
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -25,7 +26,6 @@ import org.ole.planet.myplanet.utils.SyncTimeLogger
 @Singleton
 class ImprovedSyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val transactionSyncManager: TransactionSyncManager,
@@ -36,11 +36,11 @@ class ImprovedSyncManager @Inject constructor(
 ) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
-    private val poolManager = RealmPoolManager.getInstance()
 
-    private var isSyncing = false
+    private var isSyncing = AtomicBoolean(false)
+    private var isCanceled = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
-    private val syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
+    private var syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
@@ -67,17 +67,14 @@ class ImprovedSyncManager @Inject constructor(
         "notifications"
     )
 
-    suspend fun initialize() {
-        poolManager.initializePool(context, databaseService)
-    }
-
     fun start(
         listener: OnSyncListener?,
         syncMode: SyncMode = SyncMode.Standard,
         syncTables: List<String>? = null
     ) {
         this.listener = listener
-        if (!isSyncing) {
+        if (isSyncing.compareAndSet(false, true)) {
+            isCanceled.set(false)
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
             createLog(
@@ -110,7 +107,10 @@ class ImprovedSyncManager @Inject constructor(
 
         initializeSync()
 
-        val tablesToSync = syncTables ?: syncOrder
+        val heavyTableSet = HeavyTableSyncWorker.ALL_HEAVY_TABLES.toSet()
+        val requested = syncTables ?: syncOrder
+        val tablesToSync = requested.filter { it !in heavyTableSet }
+        val heavyTablesToSchedule = requested.filter { it in heavyTableSet }
         val strategy = getStrategy(syncMode)
 
         coroutineScope {
@@ -133,6 +133,10 @@ class ImprovedSyncManager @Inject constructor(
         logger.endProcess("on_synced")
 
         logger.stopLogging()
+
+        if (heavyTablesToSchedule.isNotEmpty()) {
+            HeavyTableSyncWorker.schedule(context, heavyTablesToSchedule)
+        }
     }
 
     private suspend fun syncTable(table: String, strategy: SyncStrategy, logger: SyncTimeLogger) {
@@ -165,7 +169,6 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     private fun initializeSync() {
-        isSyncing = true
         NotificationUtils.create(
             context,
             org.ole.planet.myplanet.R.mipmap.ic_launcher,
@@ -175,10 +178,17 @@ class ImprovedSyncManager @Inject constructor(
     }
 
     private fun cleanup() {
-        isSyncing = false
+        isSyncing.set(false)
         sharedPrefManager.setLastSync(Date().time)
         NotificationUtils.cancel(context, 111)
-        listener?.onSyncComplete()
+        if (!isCanceled.get()) {
+            listener?.onSyncComplete()
+        }
+    }
+
+    fun cancel() {
+        isCanceled.set(true)
+        syncScope.coroutineContext.cancelChildren()
     }
 
     private fun SyncMode.describe(): String {
@@ -191,7 +201,7 @@ class ImprovedSyncManager @Inject constructor(
     
     private fun handleException(message: String) {
         if (listener != null) {
-            isSyncing = false
+            isSyncing.set(false)
             org.ole.planet.myplanet.MainApplication.syncFailedCount++
             listener?.onSyncFailed(message)
         }

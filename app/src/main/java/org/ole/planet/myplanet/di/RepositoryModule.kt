@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.di
 
 import dagger.Binds
-import dagger.Provides
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
@@ -48,6 +45,8 @@ import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TagsRepositoryImpl
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsRepositoryImpl
+import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.UploadRepositoryImpl
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserRepositoryImpl
 import org.ole.planet.myplanet.repository.UserSyncRepository
@@ -140,6 +139,10 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
+    abstract fun bindTeamsSyncRepository(impl: TeamsRepositoryImpl): org.ole.planet.myplanet.repository.TeamsSyncRepository
+
+    @Binds
+    @Singleton
     abstract fun bindUserRepository(impl: UserRepositoryImpl): UserRepository
 
     @Binds
@@ -150,14 +153,7 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindVoicesRepository(impl: VoicesRepositoryImpl): VoicesRepository
 
-    companion object {
-        @Provides
-        @Singleton
-        fun provideUploadRepository(
-            databaseService: DatabaseService,
-            dispatcherProvider: DispatcherProvider
-        ): org.ole.planet.myplanet.repository.UploadRepository {
-            return org.ole.planet.myplanet.repository.UploadRepositoryImpl(databaseService, dispatcherProvider)
-        }
-    }
+    @Binds
+    @Singleton
+    abstract fun bindUploadRepository(impl: UploadRepositoryImpl): UploadRepository
 }

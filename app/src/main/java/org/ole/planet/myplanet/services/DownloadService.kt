@@ -26,10 +26,12 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import okhttp3.ResponseBody
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.di.getBroadcastService
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.DownloadResult
@@ -64,7 +66,15 @@ class DownloadService : Service() {
     private var notificationBuilder: NotificationCompat.Builder? = null
     private var notificationManager: NotificationManager? = null
     private var totalFileSize = 0
-    private lateinit var preferences: SharedPreferences
+
+    @Inject
+    @DownloadPreferences
+    lateinit var preferences: SharedPreferences
+
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
+
     private var currentDownloadUrl: String = ""
     private var originalDownloadUrl: String = ""
     private var fromSync = false
@@ -76,14 +86,14 @@ class DownloadService : Service() {
     private var isCurrentDownloadPriority = false
     private var isQueueRunning = false
 
-    private val downloadJob = SupervisorJob()
-    private lateinit var downloadScope: CoroutineScope
+    private var currentJob: Job? = null
+    private lateinit var broadcastService: BroadcastService
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
         super.onCreate()
-        downloadScope = CoroutineScope(downloadJob + dispatcherProvider.io)
+        broadcastService = getBroadcastService(this)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -97,18 +107,18 @@ class DownloadService : Service() {
         fromSync = intent?.getBooleanExtra("fromSync", false) == true
         Log.d(TAG, "onStartCommand: fromSync=$fromSync queueRunning=$isQueueRunning")
 
-        downloadScope.launch {
-            preferences = getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
-            if (!isQueueRunning) {
+        if (!isQueueRunning) {
+            currentJob?.cancel()
+            currentJob = appScope.launch {
                 isQueueRunning = true
                 try {
                     processDownloadQueue()
                 } finally {
                     isQueueRunning = false
                 }
-            } else {
-                Log.d(TAG, "Queue already running, new URLs will be picked up by current loop")
             }
+        } else {
+            Log.d(TAG, "Queue already running, new URLs will be picked up by current loop")
         }
 
         return START_STICKY
@@ -323,8 +333,7 @@ class DownloadService : Service() {
         if (!fromSync) {
             if (message == "File Not Found") {
                 val intent = Intent(RESOURCE_NOT_FOUND_ACTION)
-                downloadScope.launch {
-                    val broadcastService = getBroadcastService(this@DownloadService)
+                appScope.launch {
                     broadcastService.sendBroadcast(intent)
                 }
             }
@@ -345,6 +354,19 @@ class DownloadService : Service() {
         try {
             BufferedInputStream(body.byteStream(), 1024 * 8).use { bis ->
                 FileOutputStream(tempFile).use { output ->
+                    val download = Download().apply {
+                        this.fileName = getFileNameFromUrl(url)
+                    }
+
+                    if (fileSize > 0) {
+                        totalFileSize = (fileSize / 1024.0).toInt()
+                        download.totalFileSize = totalFileSize
+                    } else {
+                        download.totalFileSize = 0
+                        download.progress = -1
+                        currentFileProgress = -1
+                    }
+
                     while (true) {
                         val readCount = bis.read(data)
                         if (readCount == -1) break
@@ -353,20 +375,10 @@ class DownloadService : Service() {
                             total += readCount
                             val current = (total / 1024.0).roundToInt().toDouble()
 
-                            val download = Download().apply {
-                                this.fileName = getFileNameFromUrl(url)
-                            }
-
                             if (fileSize > 0) {
-                                totalFileSize = (fileSize / 1024.0).toInt()
                                 val progress = (total * 100 / fileSize).toInt()
-                                download.totalFileSize = totalFileSize
                                 download.progress = progress
                                 currentFileProgress = progress
-                            } else {
-                                download.totalFileSize = 0
-                                download.progress = -1
-                                currentFileProgress = -1
                             }
 
                             val now = System.currentTimeMillis()
@@ -440,8 +452,7 @@ class DownloadService : Service() {
             putExtra("download", download)
             putExtra("fromSync", fromSync)
         }
-        downloadScope.launch {
-            val broadcastService = getBroadcastService(this@DownloadService)
+        appScope.launch {
             broadcastService.sendBroadcast(intent)
         }
     }
@@ -488,7 +499,7 @@ class DownloadService : Service() {
         } catch (e: Exception) {
             Log.e(TAG, "Error stopping foreground service", e)
         }
-        downloadJob.cancel()
+        currentJob?.cancel()
         notificationManager?.cancel(ONGOING_NOTIFICATION_ID)
         super.onDestroy()
     }

@@ -114,7 +114,7 @@ open class RealmMyLibrary : RealmObject() {
             if (this.userId == null) {
                 this.userId = RealmList()
             }
-            if (!this.userId!!.contains(userId)) {
+            if (this.userId?.contains(userId) == false) {
                 this.userId?.add(userId)
             }
             
@@ -218,34 +218,40 @@ open class RealmMyLibrary : RealmObject() {
             }
         }
 
-        private fun insertResources(doc: JsonObject, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
-            insertMyLibrary("", doc, mRealm, spm)
+        @JvmStatic
+        fun insertResources(doc: JsonObject, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
+            return insertMyLibrary("", doc, mRealm, spm)
         }
 
         @JvmStatic
-        fun createStepResource(mRealm: Realm, res: JsonObject, myCoursesID: String?, stepId: String?, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
-            insertMyLibrary("", stepId, myCoursesID, res, mRealm, spm)
+        fun createStepResource(mRealm: Realm?, res: JsonObject, myCoursesID: String?, stepId: String?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
+            return insertMyLibrary("", stepId, myCoursesID, res, mRealm, spm)
         }
 
         @JvmStatic
-        fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
-            insertMyLibrary(userId, "", "", doc, mRealm, spm)
+        fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
+            return insertMyLibrary(userId, "", "", doc, mRealm, spm)
         }
 
         @JvmStatic
-        fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager) {
-            if (doc.entrySet().isEmpty()) return
+        fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
+            if (doc.entrySet().isEmpty()) return null
             val resourceId = JsonUtils.getString("_id", doc)
-            var resource = mRealm.where(RealmMyLibrary::class.java).equalTo("id", resourceId).findFirst()
+            var resource = mRealm?.where(RealmMyLibrary::class.java)?.equalTo("id", resourceId)?.findFirst()
             val wasPrivate = resource?.isPrivate == true
             val hadPrivateFor = resource?.privateFor
             val hadRev = resource?._rev
             val isLocalOnlyPrivate = hadRev.isNullOrBlank() && wasPrivate && !hadPrivateFor.isNullOrBlank()
             if (resource == null) {
-                resource = mRealm.createObject(RealmMyLibrary::class.java, resourceId)
+                resource = if (mRealm != null) {
+                    mRealm.createObject(RealmMyLibrary::class.java, resourceId)
+                } else {
+                    RealmMyLibrary().apply { id = resourceId }
+                }
             }
             resource?.apply {
-                setUserId(userId)
+                if (this.userId == null) this.userId = RealmList()
+                setUserId(userId, mRealm)
                 _id = resourceId
                 if (!stepId.isNullOrBlank()) {
                     this.stepId = stepId
@@ -266,7 +272,11 @@ open class RealmMyLibrary : RealmObject() {
                     attachments.entrySet().forEach { (key, attachmentValue) ->
                         val attachmentObj = attachmentValue.asJsonObject
 
-                        val realmAttachment = mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
+                        val realmAttachment = if (mRealm != null) {
+                            mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
+                        } else {
+                            RealmAttachment().apply { id = UUID.randomUUID().toString() }
+                        }
                         realmAttachment.apply {
                             name = key
                             contentType = attachmentObj.get("content_type")?.asString
@@ -305,9 +315,13 @@ open class RealmMyLibrary : RealmObject() {
                 resourceType = JsonUtils.getString("resourceType", doc)
                 timesRated = JsonUtils.getInt("timesRated", doc)
                 medium = JsonUtils.getString("medium", doc)
+                if (this.resourceFor == null) this.resourceFor = RealmList()
                 setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), this)
+                if (this.subject == null) this.subject = RealmList()
                 setSubject(JsonUtils.getJsonArray("subject", doc), this)
+                if (this.level == null) this.level = RealmList()
                 setLevel(JsonUtils.getJsonArray("level", doc), this)
+                if (this.tag == null) this.tag = RealmList()
                 setTag(JsonUtils.getJsonArray("tags", doc), this)
                 if (!isLocalOnlyPrivate) {
                     isPrivate = JsonUtils.getBoolean("private", doc)
@@ -318,8 +332,10 @@ open class RealmMyLibrary : RealmObject() {
                         }
                     }
                 }
+                if (this.languages == null) this.languages = RealmList()
                 setLanguages(JsonUtils.getJsonArray("languages", doc), this)
             }
+            return resource
         }
 
         @JvmStatic

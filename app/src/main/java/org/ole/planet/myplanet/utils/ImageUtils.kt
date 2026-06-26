@@ -6,6 +6,17 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 
 object ImageUtils {
+    fun loadProfileImage(image: String?, imageView: ImageView, sizePx: Int) {
+        Glide.with(imageView.context)
+            .load(image)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .override(sizePx, sizePx)
+            .circleCrop()
+            .placeholder(R.drawable.profile)
+            .error(R.drawable.profile)
+            .into(imageView)
+    }
+
     fun loadImage(userImage: String?, imageView: ImageView) {
         if (!userImage.isNullOrEmpty()) {
             Glide.with(imageView.context)

@@ -5,10 +5,10 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.verify
-import io.mockk.slot
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -58,7 +58,9 @@ class PersonalsRepositoryImplTest {
         every { databaseService.createManagedRealmInstance() } returns mockRealm
         every { databaseService.ioDispatcher } returns testDispatcher
 
-        repository = PersonalsRepositoryImpl(databaseService, testDispatcher)
+        val apiInterface = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
+        val context = mockk<android.content.Context>(relaxed = true)
+        repository = PersonalsRepositoryImpl(databaseService, testDispatcher, apiInterface, context)
     }
 
     @After

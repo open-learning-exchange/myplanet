@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.components.FragmentNavigator.replaceFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
 
@@ -23,8 +24,9 @@ class CommunityServicesFragment : BaseTeamFragment() {
     private var binding: FragmentCommunityServicesBinding? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentCommunityServicesBinding.inflate(inflater, container, false)
-        return binding!!.root
+        val b = FragmentCommunityServicesBinding.inflate(inflater, container, false)
+        binding = b
+        return b.root
     }
 
     override fun onDestroyView() {
@@ -44,7 +46,7 @@ class CommunityServicesFragment : BaseTeamFragment() {
             binding?.tvDescription?.visibility = View.VISIBLE
             binding?.tvNoDescription?.visibility = View.GONE
         }
-        val basePath = requireContext().getExternalFilesDir(null)?.let { externalDir ->
+        val basePath = FileUtils.getExternalFilesDir(requireContext())?.let { externalDir ->
             "file://${externalDir.absolutePath}/ole/"
         }.orEmpty()
         val markdownContentWithLocalPaths = prependBaseUrlToImages(

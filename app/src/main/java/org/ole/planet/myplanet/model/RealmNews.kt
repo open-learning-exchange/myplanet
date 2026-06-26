@@ -8,6 +8,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Ignore
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
@@ -18,6 +19,7 @@ open class RealmNews : RealmObject() {
     var id: String? = null
     var _id: String? = null
     var _rev: String? = null
+    @Index
     var userId: String? = null
     var user: String? = null
     var message: String? = null
@@ -117,8 +119,8 @@ open class RealmNews : RealmObject() {
                 val ar = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
                 for (elem in ar) {
                     val obj = elem.asJsonObject
-                    if (obj.has("section") && obj.get("section").asString.equals("community", true) && obj.has("sharedDate")) {
-                        return obj.get("sharedDate").asLong
+                    if (JsonUtils.getString("section", obj).equals("community", true) && obj.has("sharedDate")) {
+                        return JsonUtils.getLong("sharedDate", obj)
                     }
                 }
             }
@@ -189,8 +191,8 @@ open class RealmNews : RealmObject() {
                                     conversationsArray.forEach { conversationElement ->
                                         val conversationObj = conversationElement.asJsonObject
                                         val conversationMap = HashMap<String, String>()
-                                        conversationMap["query"] = conversationObj.get("query").asString
-                                        conversationMap["response"] = conversationObj.get("response").asString
+                                        conversationMap["query"] = JsonUtils.getString("query", conversationObj)
+                                        conversationMap["response"] = JsonUtils.getString("response", conversationObj)
                                         conversationsList.add(conversationMap)
                                     }
                                     news.conversations = JsonUtils.gson.toJson(conversationsList)

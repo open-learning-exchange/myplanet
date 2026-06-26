@@ -17,6 +17,8 @@ import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
@@ -30,10 +32,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -41,6 +40,7 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -60,17 +60,13 @@ class ChatHistoryFragment : Fragment() {
     lateinit var serverUrlMapper: ServerUrlMapper
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
-    private var memoizedShareTargets: ChatShareTargets? = null
     private var searchBarWatcher: TextWatcher? = null
+    private var searchJob: Job? = null
     
     @Inject
     lateinit var syncManager: SyncManager
     @Inject
     lateinit var chatRepository: ChatRepository
-    @Inject
-    lateinit var userRepository: UserRepository
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
@@ -126,7 +122,11 @@ class ChatHistoryFragment : Fragment() {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.search(s.toString(), isFullSearch, isQuestion)
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    delay(300)
+                    sharedViewModel.searchChats(s.toString(), isFullSearch, isQuestion)
+                }
             }
 
             override fun afterTextChanged(s: Editable?) {}
@@ -146,7 +146,9 @@ class ChatHistoryFragment : Fragment() {
                 params.topMargin = (20 * density).toInt()
             }
             binding.fullSearch.layoutParams = params
+            sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
         }
+        observeScreenData()
 
         binding.toggleGroup.addOnButtonCheckedListener { _, checkedId, isChecked ->
             if(isChecked){
@@ -168,6 +170,7 @@ class ChatHistoryFragment : Fragment() {
                         binding.btnQuestions.setTextColor(ContextCompat.getColor(requireContext(), R.color.hint_color))
                     }
                 }
+                sharedViewModel.searchChats(binding.searchBar.text.toString(), isFullSearch, isQuestion)
             }
         }
     }
@@ -244,112 +247,77 @@ class ChatHistoryFragment : Fragment() {
     }
 
     fun refreshChatHistory() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val cachedUser = user
-            val cachedTargets = memoizedShareTargets
+        sharedViewModel.loadChatHistoryScreenData(
+            sharedPrefManager.getUserId(),
+            sharedPrefManager.getParentCode(),
+            sharedPrefManager.getCommunityName()
+        )
+    }
 
-            val currentUser = cachedUser ?: loadCurrentUser(sharedPrefManager.getUserId())
-            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-            val targets = cachedTargets ?: loadShareTargets(
-                sharedPrefManager.getParentCode(),
-                sharedPrefManager.getCommunityName(),
-                currentUser?._id
-            )
-
-            user = currentUser
-            sharedNewsMessages = newsMessages
-            shareTargets = targets
-            memoizedShareTargets = targets
-
-            val adapter = binding.recyclerView.adapter as? ChatHistoryAdapter
-            if (adapter == null) {
-                val newAdapter = ChatHistoryAdapter(
-                    requireContext(),
-                    chatHistory,
-                    currentUser,
-                    sharedNewsMessages,
-                    shareTargets
-                ) { map, chat ->
-                    if (!isAdded || _binding == null) {
-                        return@ChatHistoryAdapter
-                    }
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        val currentUser = user
-                        val chatId = chat._id ?: ""
-                        val viewInId = map["viewInId"] ?: ""
-                        if (chatId.isNotEmpty() && viewInId.isNotEmpty() &&
-                            voicesRepository.isAlreadyShared(chatId, viewInId)) {
-                            Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
-                            return@launch
-                        }
-                        val createdNews = voicesRepository.createNews(map, currentUser, null)
-                        if (currentUser?.planetCode != null) {
-                            sharedNewsMessages = sharedNewsMessages + createdNews
-                        }
-                        (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                            adapter.updateCachedData(currentUser, sharedNewsMessages)
-                            adapter.notifyChatShared(chat._id)
-                        }
-                    }
+    private fun observeScreenData() {
+        val newAdapter = ChatHistoryAdapter(
+            requireContext(),
+            emptyList(),
+            user,
+            sharedNewsMessages,
+            shareTargets
+        ) { map, chat ->
+            if (!isAdded || _binding == null) {
+                return@ChatHistoryAdapter
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                val currentUser = user
+                val chatId = chat._id ?: ""
+                val viewInId = map["viewInId"] ?: ""
+                if (chatId.isNotEmpty() && viewInId.isNotEmpty() &&
+                    voicesRepository.isAlreadyShared(chatId, viewInId)) {
+                    Snackbar.make(binding.root, getString(R.string.chat_already_shared_to_destination), Snackbar.LENGTH_SHORT).show()
+                    return@launch
                 }
-                newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
-                    override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
-                        conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
-                        sharedViewModel.setSelectedId(id)
-                        rev?.let { sharedViewModel.setSelectedRev(it) }
-                        aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
-                        binding.slidingPaneLayout.openPane()
-                    }
-                })
-                binding.recyclerView.adapter = newAdapter
-            } else {
-                adapter.updateCachedData(currentUser, sharedNewsMessages)
-                adapter.updateShareTargets(shareTargets)
-                adapter.updateChatHistory(chatHistory)
+                val createdNews = voicesRepository.createNews(map, currentUser, null)
+                if (currentUser?.planetCode != null) {
+                    sharedNewsMessages = sharedNewsMessages + createdNews
+                }
+                (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
+                    adapter.updateCachedData(currentUser, sharedNewsMessages)
+                    adapter.notifyChatShared(chat._id)
+                }
+            }
+        }
+        newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
+            override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
+                conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
+                sharedViewModel.setSelectedId(id)
+                rev?.let { sharedViewModel.setSelectedRev(it) }
+                aiProvider?.let { sharedViewModel.setSelectedAiProvider(it) }
+                binding.slidingPaneLayout.openPane()
+            }
+        })
+        binding.recyclerView.adapter = newAdapter
+
+        collectLatestWhenStarted(sharedViewModel.screenData) { data ->
+            if (data == null) return@collectLatestWhenStarted
+
+            user = data.currentUser
+            sharedNewsMessages = data.newsMessages
+            shareTargets = data.shareTargets
+
+            newAdapter.updateCachedData(user, sharedNewsMessages)
+            newAdapter.updateShareTargets(shareTargets)
+
+            if (data.chatHistory.isNotEmpty()) {
                 binding.searchBar.visibility = View.VISIBLE
                 binding.recyclerView.visibility = View.VISIBLE
-            }
-
-            showNoData(binding.noChats, chatHistory.size, "chatHistory")
-            if (chatHistory.isEmpty()) {
+            } else {
                 binding.searchBar.visibility = View.GONE
                 binding.recyclerView.visibility = View.GONE
             }
         }
-    }
 
-    private suspend fun loadCurrentUser(userId: String?): RealmUser? {
-        if (userId.isNullOrEmpty()) {
-            return null
+        collectLatestWhenStarted(sharedViewModel.filteredChats) { filteredHistory ->
+            newAdapter.updateChatHistory(filteredHistory)
+            showNoData(binding.noChats, filteredHistory.size, "chatHistory")
         }
-        return userRepository.getUserById(userId)
-    }
-
-    private suspend fun loadShareTargets(parentCode: String?, communityName: String?, userId: String?): ChatShareTargets {
-        val teams = teamsRepository.getTeamSummaries(userId)
-        val enterprises = teamsRepository.getShareableEnterpriseSummaries(userId)
-        val communityId = if (!communityName.isNullOrBlank() && !parentCode.isNullOrBlank()) {
-            "$communityName@$parentCode"
-        } else {
-            null
-        }
-        val community = communityId?.let { id ->
-            teamsRepository.getTeamSummaryById(id) ?: TeamSummary(
-                _id = id,
-                name = communityName ?: "",
-                teamType = null,
-                teamPlanetCode = null,
-                createdDate = null,
-                type = null,
-                status = null,
-                teamId = null,
-                description = null,
-                services = null,
-                rules = null
-            )
-        }
-        return ChatShareTargets(community, teams, enterprises)
     }
 
     private fun checkAiProvidersIfNeeded() {
@@ -361,7 +329,7 @@ class ChatHistoryFragment : Fragment() {
         sharedViewModel.setAiProvidersError(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
+            val providers = chatRepository.fetchAiProviders(serverUrl)
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 sharedViewModel.setAiProvidersError(true)
@@ -393,7 +361,6 @@ class ChatHistoryFragment : Fragment() {
         searchBarWatcher = null
         sharedNewsMessages = emptyList()
         shareTargets = ChatShareTargets(null, emptyList(), emptyList())
-        memoizedShareTargets = null
         user = null
         _binding = null
         super.onDestroyView()

@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -17,4 +18,5 @@ interface CoreDependenciesEntryPoint {
     fun databaseService(): DatabaseService
     fun userSessionManager(): UserSessionManager
     fun serverUrlMapper(): ServerUrlMapper
+    fun dispatcherProvider(): DispatcherProvider
 }

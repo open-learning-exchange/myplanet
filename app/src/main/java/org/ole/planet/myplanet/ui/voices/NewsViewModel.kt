@@ -23,9 +23,7 @@ class NewsViewModel @Inject constructor(
 
     fun getPrivateImageUrlsCreatedAfter(timestamp: Long) {
         viewModelScope.launch {
-            val urls = withContext(dispatcherProvider.io) {
-                voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
-            }
+            val urls = voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp)
             _privateImageUrls.emit(urls)
         }
     }

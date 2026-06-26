@@ -46,6 +46,7 @@ class TransactionSyncManager @Inject constructor(
     private val userSyncRepository: UserSyncRepository,
     private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>,
     private val notificationsRepository: org.ole.planet.myplanet.repository.NotificationsRepository,
     private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository,
     private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository,
@@ -61,12 +62,8 @@ class TransactionSyncManager @Inject constructor(
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
-            val response = apiInterface.getDocuments(
-                UrlUtils.header,
-                targetUrl
-            )
-            val code = response.code()
-            return code == 200
+            val response = apiInterface.getDocuments(UrlUtils.header, targetUrl)
+            return response.code() == 200 && response.body() != null
         } catch (e: Exception) {
             e.printStackTrace()
         }
@@ -151,31 +148,39 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    suspend fun syncDb(table: String): Int = withContext(dispatcherProvider.io) {
+    suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
         val syncStartTime = System.currentTimeMillis()
+        val checkpointKey = "heavy_sync_skip_$table"
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
-            // Determine pagination size based on table (smaller for slow endpoints)
             val pageSize = when (table) {
-                "ratings" -> 20        // Small batches for slow endpoint
-                "submissions" -> 100   // Medium batches for slow endpoint
-                "courses_progress", "login_activities", "team_activities" -> 200  // Smaller batches when running in background to reduce write-lock hold time
-                else -> 1000           // Large batches for fast endpoints
+                "ratings" -> 20
+                "submissions" -> 100
+                "courses_progress", "login_activities", "team_activities" -> 200
+                else -> 1000
             }
-            var skip = 0
+            var skip = if (useCheckpoint) {
+                val saved = sharedPrefManager.rawPreferences.getInt(checkpointKey, 0)
+                if (saved > 0) android.util.Log.d("SyncPerf", "  ↻ Resuming $table from skip=$saved")
+                saved
+            } else 0
             var totalDocs = 0
-            var batchNumber = 0
+            var batchNumber = if (useCheckpoint) skip / pageSize else 0
+            var syncCompletedFully = false
+            val url = UrlUtils.getUrl()
+            val authHeader = UrlUtils.header
 
-            // Paginated fetching to avoid long-blocking API calls
             while (true) {
                 batchNumber++
+                if (useCheckpoint) {
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                }
                 val batchStartTime = System.currentTimeMillis()
-                // Time the batch API call (much faster with pagination)
                 val batchApiStartTime = System.currentTimeMillis()
                 val response = apiInterface.findDocs(
-                    UrlUtils.header,
+                    authHeader,
                     "application/json",
-                    UrlUtils.getUrl() + "/" + table + "/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
+                    "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject() // Empty body for GET-style query
                 )
                 val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
@@ -185,10 +190,11 @@ class TransactionSyncManager @Inject constructor(
                 }
                 val arr = getJsonArray("rows", response.body())
                 if (arr.size() == 0) {
-                    break // No more documents
+                    syncCompletedFully = true
+                    break
                 }
                 org.ole.planet.myplanet.utils.SyncTimeLogger.logApiCall(
-                    "${UrlUtils.getUrl()}/$table/_all_docs (batch $batchNumber)",
+                    "$url/$table/_all_docs (batch $batchNumber)",
                     batchApiDuration,
                     response.isSuccessful,
                     arr.size()
@@ -239,7 +245,7 @@ class TransactionSyncManager @Inject constructor(
                             "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                             "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
-                            "team_activities" -> teamsRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
+                            "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
@@ -249,8 +255,8 @@ class TransactionSyncManager @Inject constructor(
                                 org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                             }
                             "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
-                            "teams" -> teamsRepository.get().bulkInsertFromSync(mRealm, arr)
-                            "tasks" -> teamsRepository.get().bulkInsertTasksFromSync(mRealm, arr)
+                            "teams" -> teamsSyncRepository.get().bulkInsertFromSync(mRealm, arr)
+                            "tasks" -> teamsSyncRepository.get().bulkInsertTasksFromSync(mRealm, arr)
                             "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
                             "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                             "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
@@ -277,6 +283,9 @@ class TransactionSyncManager @Inject constructor(
                 if (table == "achievements") {
                     downloadCvAttachmentsFromBatch(arr)
                 }
+                if (table == "teams") {
+                    downloadTeamAttachmentsFromBatch(arr)
+                }
                 totalDocs += arr.size()
                 skip += arr.size()
                 val batchDuration = System.currentTimeMillis() - batchStartTime
@@ -287,8 +296,12 @@ class TransactionSyncManager @Inject constructor(
                 }
                 // If we got less than pageSize, we're done
                 if (arr.size() < pageSize) {
+                    syncCompletedFully = true
                     break
                 }
+            }
+            if (useCheckpoint && syncCompletedFully) {
+                sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
             }
             val totalDuration = System.currentTimeMillis() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
@@ -317,6 +330,37 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun downloadTeamAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
+        for (j in arr) {
+            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val docId = getString("_id", jsonDoc)
+            if (docId.startsWith("_design")) continue
+            val attachmentName = org.ole.planet.myplanet.model.RealmMyTeam
+                .getFirstAttachmentName(jsonDoc) ?: continue
+            val destFile = org.ole.planet.myplanet.model.RealmMyTeam
+                .getAttachmentFile(context, docId, attachmentName) ?: continue
+            if (!destFile.exists()) {
+                downloadTeamAttachment(docId, attachmentName, destFile)
+            }
+        }
+    }
+
+    private suspend fun downloadTeamAttachment(docId: String, attachmentName: String, destFile: java.io.File) {
+        try {
+            val encodedName = android.net.Uri.encode(attachmentName)
+            val url = "${UrlUtils.getUrl()}/teams/$docId/$encodedName"
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    destFile.parentFile?.mkdirs()
+                    destFile.outputStream().use { out ->
+                        body.byteStream().use { it.copyTo(out) }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     private suspend fun downloadCvAttachment(docId: String, destFile: java.io.File) {

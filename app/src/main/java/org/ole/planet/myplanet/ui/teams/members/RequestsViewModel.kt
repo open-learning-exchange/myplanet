@@ -24,6 +24,7 @@ data class RequestsUiState(
 @HiltViewModel
 class RequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
     private val userSessionManager: UserSessionManager,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
@@ -54,10 +55,11 @@ class RequestsViewModel @Inject constructor(
         _uiState.value = optimisticState
 
         viewModelScope.launch(dispatcherProvider.io) {
-            val result = teamsRepository.respondToMemberRequest(teamId, user.id!!, isAccepted)
+            val userId = user.id ?: run { _uiState.value = originalState; return@launch }
+            val result = teamsRepository.respondToMemberRequest(teamId, userId, isAccepted)
             if (result.isSuccess) {
                 _successAction.emit(Unit)
-                launch { teamsRepository.syncTeamActivities() }
+                launch { teamsSyncRepository.syncTeamActivities() }
             } else {
                 _uiState.value = originalState
             }

@@ -26,36 +26,29 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.snackbar.Snackbar
-import com.google.gson.JsonArray
-import com.google.gson.JsonObject
 import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.AndroidEntryPoint
-import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.ChatResponse
-import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
-import retrofit2.Response
 
 @AndroidEntryPoint
 class ChatDetailFragment : Fragment() {
@@ -84,8 +77,6 @@ class ChatDetailFragment : Fragment() {
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var textBeforeVoice: String = ""
-    private var allConversations: List<RealmConversation> = emptyList()
-    private var loadedCount = 0
 
     private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
         if (isGranted) {
@@ -103,6 +94,8 @@ class ChatDetailFragment : Fragment() {
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -344,12 +337,7 @@ class ChatDetailFragment : Fragment() {
             customProgressDialog.setText(getString(R.string.please_wait))
             customProgressDialog.show()
             try {
-                val messages = withContext(Dispatchers.IO) {
-                    val conversations = JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
-                    allConversations = conversations
-                    loadedCount = minOf(PAGE_SIZE, conversations.size)
-                    buildInitialPage()
-                }
+                val messages = sharedViewModel.parseAndBuildInitialPage(newsConversations)
                 mAdapter.submitList(messages) {
                     binding.recyclerGchat.post {
                         binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -409,14 +397,11 @@ class ChatDetailFragment : Fragment() {
                 launch {
                     sharedViewModel.selectedChatHistory.collect { conversations ->
                         mAdapter.clearData()
-                        allConversations = emptyList()
-                        loadedCount = 0
+                        sharedViewModel.clearPaginationState()
                         binding.editGchatMessage.text.clear()
                         binding.textGchatIndicator.visibility = View.GONE
                         if (!conversations.isNullOrEmpty()) {
-                            allConversations = conversations
-                            loadedCount = minOf(PAGE_SIZE, conversations.size)
-                            val messages = buildInitialPage()
+                            val messages = sharedViewModel.processChatHistory(conversations)
                             mAdapter.submitList(messages) {
                                 binding.recyclerGchat.post {
                                     binding.recyclerGchat.scrollToPosition(mAdapter.itemCount - 1)
@@ -450,19 +435,7 @@ class ChatDetailFragment : Fragment() {
                         _rev = selectedRev
                     }
                 }
-                launch {
-                    sharedViewModel.conversationSaveSuccess.collect { success ->
-                        if (success) {
-                            if (isAdded && activity is DashboardActivity) {
-                                (activity as DashboardActivity).refreshChatHistory()
-                            }
-                        } else {
-                            if (isAdded) {
-                                Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-                            }
-                        }
-                    }
-                }
+
             }
         }
     }
@@ -476,7 +449,7 @@ class ChatDetailFragment : Fragment() {
         sharedViewModel.setAiProvidersError(false)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val providers = chatRepository.fetchAiProviders(serverUrl) { url -> org.ole.planet.myplanet.MainApplication.isServerReachable(url) }
+            val providers = chatRepository.fetchAiProviders(serverUrl)
             sharedViewModel.setAiProvidersLoading(false)
             if (providers == null || providers.values.all { !it }) {
                 val cachedProviders = getCachedProviderAvailability()
@@ -569,8 +542,7 @@ class ChatDetailFragment : Fragment() {
 
     private fun clearConversation() {
         mAdapter.clearData()
-        allConversations = emptyList()
-        loadedCount = 0
+        sharedViewModel.clearPaginationState()
         _id = ""
         _rev = ""
         currentID = ""
@@ -671,59 +643,32 @@ class ChatDetailFragment : Fragment() {
 
     private fun sendNewChatRequest(query: String, userName: String?, aiProvider: AiProvider) {
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = chatRepository.sendNewChatRequest(query, userName, aiProvider)
-                handleResponse(response, query, null)
-            } catch (t: Exception) {
-                handleFailure(t.message, query, null)
-            }
+            val result = chatRepository.sendNewChatRequest(query, userName, aiProvider)
+            handleChatResult(result)
         }
     }
 
     private fun sendContinueChatRequest(query: String, userName: String?, aiProvider: AiProvider, id: String, rev: String) {
         viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                val response = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
-                handleResponse(response, query, id)
-            } catch (t: Exception) {
-                handleFailure(t.message, query, id)
-            }
+            val result = chatRepository.sendContinueChatRequest(query, userName, aiProvider, id, rev)
+            handleChatResult(result)
         }
     }
 
-    private fun handleResponse(response: Response<ChatResponse>, query: String, id: String?) {
-        val responseBody = response.body()
-        if (response.isSuccessful && responseBody != null) {
-            if (responseBody.status == "Success") {
-                responseBody.chat?.let { chatResponse ->
-                    processSuccessfulResponse(chatResponse, responseBody, query, id)
+    private fun handleChatResult(result: ChatResult) {
+        when (result) {
+            is ChatResult.Success -> {
+                mAdapter.addResponse(result.response, ChatMessage.RESPONSE_SOURCE_NETWORK)
+                _rev = result.rev
+                currentID = result.id
+                if (isAdded && activity is DashboardActivity) {
+                    (activity as DashboardActivity).refreshChatHistory()
                 }
-            } else {
-                showError(responseBody.message)
             }
-        } else {
-            showError(response.message() ?: context?.getString(R.string.request_failed_please_retry))
-            val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
-            realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
+            is ChatResult.Error -> {
+                showError(result.message)
+            }
         }
-        enableUI()
-    }
-
-    private fun processSuccessfulResponse(chatResponse: String, responseBody: ChatResponse, query: String, id: String?) {
-        mAdapter.addResponse(chatResponse, ChatMessage.RESPONSE_SOURCE_NETWORK)
-        responseBody.couchDBResponse?.rev?.let { _rev = it }
-        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
-        if (realmChatId != null) {
-            sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
-        } else {
-            saveNewChat(query, chatResponse, responseBody)
-        }
-    }
-
-    private fun handleFailure(errorMessage: String?, query: String, id: String?) {
-        showError(errorMessage)
-        val realmChatId = id?.takeIf { it.isNotBlank() } ?: _id.takeIf { it.isNotBlank() } ?: currentID.takeIf { it.isNotBlank() }
-        realmChatId?.let { sharedViewModel.continueConversation(it, query, "", _rev) }
         enableUI()
     }
 
@@ -734,88 +679,9 @@ class ChatDetailFragment : Fragment() {
         }
     }
 
-    private fun saveNewChat(query: String, chatResponse: String, responseBody: ChatResponse) {
-        val jsonObject = buildChatHistoryObject(query, chatResponse, responseBody)
-        viewLifecycleOwner.lifecycleScope.launch {
-            try {
-                chatRepository.saveNewChat(jsonObject)
-                if (isAdded && activity is DashboardActivity) {
-                    (activity as DashboardActivity).refreshChatHistory()
-                }
-            } catch (e: Exception) {
-                if (isAdded) {
-                    Snackbar.make(binding.root, getString(R.string.failed_to_save_chat), Snackbar.LENGTH_LONG).show()
-                }
-            }
-        }
-    }
-
-    private fun buildChatHistoryObject(query: String, chatResponse: String, responseBody: ChatResponse): JsonObject =
-        JsonObject().apply {
-            val id = responseBody.couchDBResponse?.id
-            val rev = responseBody.couchDBResponse?.rev
-            if (id != null) {
-                currentID = id
-            }
-            if (rev != null) {
-                _rev = rev
-            }
-            addProperty("_rev", responseBody.couchDBResponse?.rev ?: "")
-            addProperty("_id", responseBody.couchDBResponse?.id ?: "")
-            addProperty("aiProvider", aiName)
-            addProperty("user", user?.name)
-            addProperty("title", query)
-            addProperty("createdDate", Date().time)
-            addProperty("updatedDate", Date().time)
-
-            val conversationsArray = JsonArray()
-            val conversationObject = JsonObject().apply {
-                addProperty("query", query)
-                addProperty("response", chatResponse)
-            }
-            conversationsArray.add(conversationObject)
-            add("conversations", conversationsArray)
-        }
-
-    private fun continueConversationRealm(id: String, query: String, chatResponse: String) {
-        val realmChatId = when {
-            id.isNotBlank() -> id
-            _id.isNotBlank() -> _id
-            currentID.isNotBlank() -> currentID
-            else -> return
-        }
-
-        if (query.isBlank() && chatResponse.isBlank()) return
-
-        sharedViewModel.continueConversation(realmChatId, query, chatResponse, _rev)
-    }
-
-    private fun buildMessagesSlice(startIndex: Int, endIndex: Int): List<ChatMessage> {
-        val messages = mutableListOf<ChatMessage>()
-        for (i in startIndex until endIndex) {
-            val conv = allConversations[i]
-            conv.query?.let { messages.add(ChatMessage(it, ChatMessage.QUERY)) }
-            conv.response?.let { messages.add(ChatMessage(it, ChatMessage.RESPONSE, ChatMessage.RESPONSE_SOURCE_SHARED_VIEW_MODEL)) }
-        }
-        return messages
-    }
-
-    private fun buildInitialPage(): List<ChatMessage> {
-        val total = allConversations.size
-        val startIndex = maxOf(0, total - loadedCount)
-        val messages = mutableListOf<ChatMessage>()
-        if (startIndex > 0) messages.add(ChatMessage("", ChatMessage.LOAD_MORE))
-        messages.addAll(buildMessagesSlice(startIndex, total))
-        return messages
-    }
-
     private fun loadMoreConversations() {
-        val total = allConversations.size
-        val prevStartIndex = maxOf(0, total - loadedCount)
-        loadedCount = minOf(loadedCount + PAGE_SIZE, total)
-        val newStartIndex = maxOf(0, total - loadedCount)
-        val newMessages = buildMessagesSlice(newStartIndex, prevStartIndex)
-        mAdapter.prependMessages(newMessages, hasLoadMoreAbove = newStartIndex > 0)
+        val (newMessages, hasLoadMoreAbove) = sharedViewModel.loadMoreConversations()
+        mAdapter.prependMessages(newMessages, hasLoadMoreAbove = hasLoadMoreAbove)
     }
 
     private fun clearChatDetail() {
@@ -848,28 +714,30 @@ class ChatDetailFragment : Fragment() {
         if (!courseTitle.isNullOrBlank()) sb.append("Course \"$courseTitle\"")
         if (stepNumber > 0) sb.append(", Step $stepNumber")
         if (!stepTitle.isNullOrBlank()) sb.append(": \"$stepTitle\"")
-        if (!selectedText.isNullOrBlank()) {
-            val passage = selectedText!!.take(300)
-            sb.append(". Highlighted passage: \"$passage${if (selectedText!!.length > 300) "..." else ""}\"")
-        } else if (!stepDescription.isNullOrBlank()) {
-            val desc = stepDescription!!.take(400)
-            sb.append(". Content: $desc${if (stepDescription!!.length > 400) "..." else ""}")
+        val text = selectedText
+        val desc = stepDescription
+        if (!text.isNullOrBlank()) {
+            val passage = text.take(300)
+            sb.append(". Highlighted passage: \"$passage${if (text.length > 300) "..." else ""}\"")
+        } else if (!desc.isNullOrBlank()) {
+            val truncated = desc.take(400)
+            sb.append(". Content: $truncated${if (desc.length > 400) "..." else ""}")
         }
         sb.append("]\n\n")
         return sb.toString()
     }
 
     private fun buildBannerText(): String {
+        val title = stepTitle
         val label = when {
-            stepNumber > 0 && !stepTitle.isNullOrBlank() -> "Step $stepNumber: $stepTitle"
-            !stepTitle.isNullOrBlank() -> stepTitle!!
+            stepNumber > 0 && !title.isNullOrBlank() -> "Step $stepNumber: $title"
+            !title.isNullOrBlank() -> title
             else -> courseTitle ?: ""
         }
         return getString(R.string.course_context_banner, label)
     }
 
     companion object {
-        private const val PAGE_SIZE = 20
         const val ARG_COURSE_TITLE = "course_title"
         const val ARG_STEP_TITLE = "step_title"
         const val ARG_STEP_DESCRIPTION = "step_description"

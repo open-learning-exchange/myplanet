@@ -72,5 +72,60 @@ class RealmMigrations : RealmMigration {
                 ?.addIndex("subjectLevel")
             version++
         }
+
+        if (version == 10L) {
+            schema.get("RealmOfflineActivity")
+                ?.addIndex("userId")
+                ?.addIndex("type")
+            schema.get("RealmCourseActivity")
+                ?.addIndex("courseId")
+                ?.addIndex("type")
+            schema.get("RealmCourseProgress")
+                ?.addIndex("userId")
+                ?.addIndex("courseId")
+            schema.get("RealmStepExam")
+                ?.addIndex("courseId")
+            schema.get("RealmRating")
+                ?.addIndex("userId")
+            schema.get("RealmHealthExamination")
+                ?.addIndex("userId")
+            schema.get("RealmSubmission")
+                ?.addIndex("type")
+                ?.addIndex("userId")
+            schema.get("RealmMyLife")
+                ?.addIndex("userId")
+            schema.get("RealmNotification")
+                ?.addIndex("userId")
+                ?.addIndex("type")
+            schema.get("RealmRemovedLog")
+                ?.addIndex("userId")
+                ?.addIndex("type")
+            schema.get("RealmTeamLog")
+                ?.addIndex("teamId")
+                ?.addIndex("type")
+            schema.get("RealmTeamTask")
+                ?.addIndex("teamId")
+            schema.get("RealmTeamNotification")
+                ?.addIndex("type")
+            schema.get("RealmResourceActivity")
+                ?.addIndex("type")
+            schema.get("RealmNews")
+                ?.addIndex("userId")
+            version++
+        }
+
+        if (version == 11L) {
+            schema.get("RealmMyCourse")
+                ?.addField("courseTitleNormal", String::class.java)
+                ?.addIndex("courseTitleNormal")
+            version++
+        }
+
+        if (version == 12L) {
+            schema.get("RealmMyTeam")
+                ?.addField("imageName", String::class.java)
+                ?.setNullable("imageName", true)
+            version++
+        }
     }
 }

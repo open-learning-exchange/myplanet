@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import android.widget.Toast
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -33,7 +31,7 @@ object ResourceOpener {
     private fun openResource(activity: Activity, item: RealmMyLibrary, isOnline: Boolean, type: ResourceViewerFragment.ResourceType? = null) {
         val resolvedType = type ?: resolveType(item)
         val filePath = if (isOnline) {
-            UrlUtils.getUrl(item).toString()
+            UrlUtils.getUrl(item)
         } else {
             if (item.resourceLocalAddress?.contains("ole/audio") == true ||
                 item.resourceLocalAddress?.contains("ole/video") == true) {
@@ -42,6 +40,7 @@ object ResourceOpener {
                 resourcePath(item)
             }
         }
+
         val intent = Intent(activity, ResourceViewerActivity::class.java).apply {
             putExtra("TOUCHED_FILE", filePath)
             putExtra("RESOURCE_TITLE", item.title)
@@ -52,60 +51,6 @@ object ResourceOpener {
         activity.startActivity(intent)
     }
 
-    fun openIntent(activity: Activity, items: RealmMyLibrary, typeClass: Class<*>, type: String = "offline") {
-        openResource(activity, items, type == "online")
-    }
-
-    fun openPdf(activity: Activity, item: RealmMyLibrary) {
-        openResource(activity, item, false, ResourceViewerFragment.ResourceType.PDF)
-    }
-
-    private fun checkMoreFileExtensions(activity: Activity, extension: String?, items: RealmMyLibrary) {
-        when (extension) {
-            "txt", "md", "csv" -> openResource(activity, items, false)
-            else -> Toast.makeText(
-                activity,
-                activity.getString(R.string.this_file_type_is_currently_unsupported),
-                Toast.LENGTH_LONG
-            ).show()
-        }
-    }
-
-    fun checkFileExtension(activity: Activity, items: RealmMyLibrary, type: String = "offline") {
-        val filenameArray = items.resourceLocalAddress?.split(".")?.toTypedArray()
-        val extension = filenameArray?.get(filenameArray.size - 1)
-        val mimetype = Utilities.getMimeType(items.resourceLocalAddress)
-        val isOnline = type == "online"
-
-        if (mimetype != null) {
-            when {
-                mimetype.contains("image") || mimetype.contains("pdf") || mimetype.contains("audio") ->
-                    openResource(activity, items, isOnline)
-                else -> checkMoreFileExtensions(activity, extension, items)
-            }
-        }
-    }
-
-    fun playVideo(activity: Activity, videoType: String, items: RealmMyLibrary) {
-        val isOnline = videoType == "online"
-        val filePath = if (isOnline) {
-            UrlUtils.getUrl(items).toString()
-        } else {
-            if (items.resourceRemoteAddress == null && items.resourceLocalAddress != null) {
-                items.resourceLocalAddress
-            } else {
-                Uri.fromFile(FileUtils.getSDPathFromUrl(activity, items.resourceRemoteAddress)).toString()
-            }
-        }
-        val intent = Intent(activity, ResourceViewerActivity::class.java).apply {
-            putExtra("TOUCHED_FILE", filePath)
-            putExtra("RESOURCE_TITLE", items.title)
-            putExtra("resourceId", items.id)
-            putExtra("isOnline", isOnline)
-            putExtra("resourceType", ResourceViewerFragment.ResourceType.VIDEO.name)
-        }
-        activity.startActivity(intent)
-    }
 
     fun getResourceTypeIcon(localAddress: String?): Int {
         val mimeType = Utilities.getMimeType(localAddress)
