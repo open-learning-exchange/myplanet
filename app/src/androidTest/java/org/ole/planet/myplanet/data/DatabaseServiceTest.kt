@@ -44,39 +44,31 @@ class DatabaseServiceTest {
 
     @Test
     fun testWithRealmAsync_successPath_closesRealm() = runBlocking {
-        var capturedRealm: Realm? = null
-        val result = databaseService.withRealmAsync { realm ->
-            capturedRealm = realm
+                val result = databaseService.withRealmAsync { realm ->
             assertFalse(realm.isClosed)
             "success"
         }
         assertEquals("success", result)
-        assertNotNull(capturedRealm)
-        assertTrue(capturedRealm!!.isClosed)
+        assertTrue(Realm.getGlobalInstanceCount(realmConfiguration) == 0)
     }
 
     @Test
     fun testWithRealmAsync_exceptionPath_closesRealm() = runBlocking {
-        var capturedRealm: Realm? = null
-        val exception = runCatching {
+                val exception = runCatching {
             databaseService.withRealmAsync { realm ->
-                capturedRealm = realm
-                assertFalse(realm.isClosed)
+                    assertFalse(realm.isClosed)
                 throw RuntimeException("Test exception")
             }
         }.exceptionOrNull()
 
         assertNotNull(exception)
         assertEquals("Test exception", exception?.message)
-        assertNotNull(capturedRealm)
-        assertTrue(capturedRealm!!.isClosed)
+        assertTrue(Realm.getGlobalInstanceCount(realmConfiguration) == 0)
     }
 
     @Test
     fun testExecuteTransactionAsync_commitsData() = runBlocking {
-        var capturedRealm: Realm? = null
-        databaseService.executeTransactionAsync { realm ->
-            capturedRealm = realm
+                databaseService.executeTransactionAsync { realm ->
             val meetup = realm.createObject(RealmMeetup::class.java, "test-id")
             meetup.meetupId = "test-id"
             meetup.title = "Test Meetup"
@@ -87,25 +79,22 @@ class DatabaseServiceTest {
             assertNotNull(meetup)
             assertEquals("Test Meetup", meetup?.title)
             assertNotNull(capturedRealm)
-            assertTrue(capturedRealm!!.isClosed)
+            assertTrue(Realm.getGlobalInstanceCount(realmConfiguration) == 0)
         }
     }
 
     @Test
     fun testExecuteTransactionAsync_exceptionPath_closesRealm() = runBlocking {
-        var capturedRealm: Realm? = null
-        val exception = runCatching {
+                val exception = runCatching {
             databaseService.executeTransactionAsync { realm ->
-                capturedRealm = realm
-                assertFalse(realm.isClosed)
+                    assertFalse(realm.isClosed)
                 throw RuntimeException("Test exception in transaction")
             }
         }.exceptionOrNull()
 
         assertNotNull(exception)
         assertEquals("Test exception in transaction", exception?.message)
-        assertNotNull(capturedRealm)
-        assertTrue(capturedRealm!!.isClosed)
+        assertTrue(Realm.getGlobalInstanceCount(realmConfiguration) == 0)
     }
 
     @Test

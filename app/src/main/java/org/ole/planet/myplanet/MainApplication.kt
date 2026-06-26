@@ -233,6 +233,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        io.realm.Realm.init(this)
         setupCriticalProperties()
         LocaleUtils.preload(this)
         warmUpMainThreadRealm()
