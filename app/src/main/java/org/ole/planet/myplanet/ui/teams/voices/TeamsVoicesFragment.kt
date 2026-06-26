@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.VoicesRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -39,8 +38,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    @Inject
-    lateinit var userSessionManager: UserSessionManager
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
 
@@ -105,7 +102,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         val isPublicTeam = team?.isPublic == true
         val canPost = !isGuest && (isMember || isPublicTeam)
         binding.addMessage.isVisible = canPost
-        (binding.rvDiscussion.adapter as? VoicesAdapter)?.setNonTeamMember(!isMember)
+        (binding.rvDiscussion.adapter as? VoicesAdapter)?.let { adapter ->
+            adapter.setCurrentUser(user)
+            adapter.setNonTeamMember(!isMember)
+        }
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -197,7 +197,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     parentNews = null,
                     teamName = effectiveTeamName,
                     teamId = teamId,
-                    userSessionManager = userSessionManager,
                     isTeamLeaderFn = { onResult ->
                         val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
                             val result = kotlinx.coroutines.withTimeoutOrNull(2000) {
@@ -259,6 +258,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
+                adapter.setCurrentUser(user)
                 realmNewsList?.let {
                     adapter.submitList(it.filterNotNull())
                     showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")

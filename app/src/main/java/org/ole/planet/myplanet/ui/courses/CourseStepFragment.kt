@@ -101,7 +101,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        return coursesRepository.getCourseStepData(stepId!!, user?.id)
+        return coursesRepository.getCourseStepData(stepId ?: "", user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -184,7 +184,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter { library ->
+        inlineResourceAdapter = InlineResourceAdapter(viewLifecycleOwner.lifecycleScope, dispatcherProvider) { library ->
             openResource(library)
         }
         fragmentCourseStepBinding.rvInlineResources.apply {
@@ -292,7 +292,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 b.putInt("stepNum", stepNumber)
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
-                capturePhoto(dispatcherProvider.default, this)
+                capturePhoto(viewLifecycleOwner.lifecycleScope, this, dispatcherProvider)
             }
         }
 

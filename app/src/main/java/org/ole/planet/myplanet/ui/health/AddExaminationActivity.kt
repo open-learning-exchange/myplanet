@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
@@ -101,12 +100,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
         lifecycleScope.launch {
-            if (userId != null) {
-                val (u, p) = healthRepository.getHealthEntry(userId!!)
+            val uid = userId
+            if (uid != null) {
+                val (u, p) = healthRepository.getHealthEntry(uid)
                 user = u
                 pojo = p
 
-                val updatedUser = userRepository.ensureUserSecurityKeys(userId!!)
+                val updatedUser = userRepository.ensureUserSecurityKeys(uid)
                 if (updatedUser != null) {
                     user = updatedUser
                 }

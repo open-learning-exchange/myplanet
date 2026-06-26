@@ -19,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -66,6 +67,7 @@ class RealmUserTest {
         val mockConfigurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
         val mockAppScope = CoroutineScope(Dispatchers.Unconfined)
         val mockDispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
+        val mockActivitiesRepositoryLazy = mockk<Lazy<ActivitiesRepository>>(relaxed = true)
 
         userRepository = UserRepositoryImpl(
             databaseService,
@@ -79,7 +81,8 @@ class RealmUserTest {
             mockContext,
             mockConfigurationsRepository,
             mockAppScope,
-            mockDispatcherProvider
+            mockDispatcherProvider,
+            mockActivitiesRepositoryLazy
         )
     }
 

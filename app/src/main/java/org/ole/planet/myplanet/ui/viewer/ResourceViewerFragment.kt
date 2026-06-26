@@ -18,6 +18,7 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
@@ -26,6 +27,8 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
@@ -54,11 +57,7 @@ import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.repository.PersonalsRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AudioRecorder
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.ui.resources.AddResourceViewModel
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -66,6 +65,7 @@ import org.ole.planet.myplanet.utils.IntentUtils
 import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TTSManager
+import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -87,20 +87,20 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
+    private var videoLoadingOverlay: View? = null
+    private var videoLoadingText: TextView? = null
+    private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
     private lateinit var library: RealmMyLibrary
     private var pdfText: String = ""
     private var isExtractingText = false
+    private var externalFilesDir: File? = null
 
-    @Inject lateinit var personalsRepository: PersonalsRepository
-    @Inject lateinit var resourcesRepository: ResourcesRepository
-    @Inject lateinit var userSessionManager: UserSessionManager
+    private val viewModel: ResourceViewerViewModel by viewModels()
+
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
-    @Inject lateinit var authSessionUpdaterFactory: AuthSessionUpdater.Factory
     private var authSessionUpdater: AuthSessionUpdater? = null
-
-    private val addResourceViewModel: AddResourceViewModel by viewModels()
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -115,7 +115,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             if (::library.isInitialized) {
                 lifecycleScope.launch {
                     val id = library.id ?: return@launch
-                    resourcesRepository.updateLibraryItem(id) { it.translationAudioPath = outputFile }
+                    viewModel.updateLibraryItemTranslationAudioPath(id, outputFile)
                 }
             }
             binding.fabRecord.setImageResource(R.drawable.ic_mic)
@@ -163,15 +163,18 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
+            externalFilesDir = withContext(dispatcherProvider.io) {
+                requireContext().getExternalFilesDir(null)
+            }
             resourceId?.let {
-                library = resourcesRepository.getLibraryItemById(it) ?: return@launch
+                library = viewModel.getLibraryItemById(it) ?: return@launch
             }
             setupViewer()
         }
     }
 
-    private fun setupViewer() {
+    private suspend fun setupViewer() {
         when (type) {
             ResourceType.VIDEO -> setupVideoViewer()
             ResourceType.AUDIO -> setupAudioViewer()
@@ -182,33 +185,95 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
-    private fun setupVideoViewer() {
-        binding.stubVideo.visibility = View.VISIBLE
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
-        
-        if (isOnline) {
-            authSessionUpdater = authSessionUpdaterFactory.create(this)
-        } else {
-            prepareVideoPlayer(filePath)
+    private fun showVideoLoading(statusText: String) {
+        videoLoadingOverlay?.visibility = View.VISIBLE
+        videoLoadingText?.text = statusText
+    }
+
+    private fun hideVideoLoading() {
+        videoLoadingOverlay?.visibility = View.GONE
+    }
+
+    private fun navigateBackWithError(message: String) {
+        view?.post {
+            if (!isAdded) return@post
+            hideVideoLoading()
+            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.unable_to_play_video))
+                .setMessage(message)
+                .setPositiveButton(getString(R.string.go_back)) { _, _ -> requireActivity().finish() }
+                .setCancelable(false)
+                .show()
         }
-        
+    }
+
+    private suspend fun startOnlineStreaming() {
+        if (!::library.isInitialized) {
+            navigateBackWithError(getString(R.string.video_unavailable))
+            return
+        }
+        showVideoLoading(getString(R.string.video_loading_checking_server))
+        viewModel.ensureServerUrlUpdated()
+        filePath = UrlUtils.getUrl(library)
+        showVideoLoading(getString(R.string.video_loading_connecting))
+        authSessionUpdater = viewModel.getAuthSessionUpdater(this)
+    }
+
+    private suspend fun setupVideoViewer() {
+        binding.stubVideo.visibility = View.VISIBLE
+        videoLoadingOverlay = binding.root.findViewById(R.id.video_loading_overlay)
+        videoLoadingText = binding.root.findViewById(R.id.video_loading_text)
+
+        if (isOnline) {
+            showVideoLoading(getString(R.string.video_loading_checking_server))
+            viewModel.ensureServerUrlUpdated()
+            if (::library.isInitialized) {
+                filePath = UrlUtils.getUrl(library)
+            }
+            showVideoLoading(getString(R.string.video_loading_connecting))
+            authSessionUpdater = viewModel.getAuthSessionUpdater(this)
+        } else {
+            val resolvedPath = filePath?.let { resolveVideoPath(it) }
+            val localFile = resolvedPath?.let { File(it) }
+
+            when {
+                localFile != null && localFile.exists() -> {
+                    showVideoLoading(getString(R.string.video_loading_local))
+                    prepareVideoPlayer(resolvedPath)
+                }
+                else -> {
+                    startOnlineStreaming()
+                }
+            }
+        }
+
         val filter = IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-        requireContext().registerReceiver(audioBecomingNoisyReceiver, filter)
+        registerReceiver(requireContext(), audioBecomingNoisyReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        noisyReceiverRegistered = true
+    }
+
+    private fun resolveVideoPath(relativePath: String): String {
+        if (isFullPath) return relativePath
+        return File(requireContext().getExternalFilesDir(null), "ole/$relativePath").absolutePath
     }
 
     @OptIn(UnstableApi::class)
-    private fun prepareVideoPlayer(uriString: String?) {
-        val uri = uriString?.toUri() ?: return
+    private fun prepareVideoPlayer(resolvedPath: String) {
+        val uri = File(resolvedPath).toUri()
         val dataSpec = DataSpec(uri)
         val fileDataSource = FileDataSource()
         try {
             fileDataSource.open(dataSpec)
         } catch (e: FileDataSource.FileDataSourceException) {
-            e.printStackTrace()
+            navigateBackWithError(getString(R.string.video_playback_error))
             return
         }
         val factory = DataSource.Factory { fileDataSource }
-        val fileUri = fileDataSource.uri ?: return
+        val fileUri = fileDataSource.uri
+        if (fileUri == null) {
+            navigateBackWithError(getString(R.string.video_playback_error))
+            return
+        }
 
         val trackSelector = DefaultTrackSelector(requireContext())
         exoPlayer = ExoPlayer.Builder(requireContext())
@@ -216,6 +281,19 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setLoadControl(DefaultLoadControl())
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
+
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                navigateBackWithError(getString(R.string.video_playback_error))
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
+                    Player.STATE_READY -> hideVideoLoading()
+                    else -> {}
+                }
+            }
+        })
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
@@ -246,6 +324,19 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
 
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                navigateBackWithError(getString(R.string.video_playback_error))
+            }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                when (playbackState) {
+                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
+                    Player.STATE_READY -> hideVideoLoading()
+                    else -> {}
+                }
+            }
+        })
+
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
         exoPlayer?.apply {
@@ -259,7 +350,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         binding.stubAudio.visibility = View.VISIBLE
         val trackTitle = binding.root.findViewById<TextView>(R.id.trackTitle)
         val artistName = binding.root.findViewById<TextView>(R.id.artistName)
-        val albumArt = binding.root.findViewById<ImageView>(R.id.albumArt)
         val backgroundImage = binding.root.findViewById<ImageView>(R.id.backgroundImage)
         val playerView = binding.root.findViewById<PlayerView>(R.id.audio_player_view)
 
@@ -297,7 +387,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             val matcher = uuidPattern.matcher(it)
             if (matcher.find()) it.substring(matcher.end()) else it
         }
-        return File(requireContext().getExternalFilesDir(null), "ole/$processedPath").absolutePath
+        return File(externalFilesDir, "ole/$processedPath").absolutePath
     }
 
     private fun setupPdfViewer() {
@@ -312,7 +402,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private fun renderPdf() {
-        val file = File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+        val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
             try {
                 val fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
@@ -340,7 +430,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     private fun extractPdfText() {
-        val file = File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+        val file = File(externalFilesDir, "ole/$filePath")
         if (!file.exists()) return
         isExtractingText = true
         lifecycleScope.launch(dispatcherProvider.io) {
@@ -374,7 +464,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         imageFileName.text = title
 
         val imageFile = if (isFullPath) filePath?.let { File(it) }
-                        else File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+                        else File(externalFilesDir, "ole/$filePath")
         Glide.with(this)
             .load(imageFile)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -388,7 +478,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val textContent = binding.root.findViewById<TextView>(R.id.textContent)
         textFileTitle.text = title
 
-        val file = File(requireContext().getExternalFilesDir(null), "ole/$filePath")
+        val file = File(externalFilesDir, "ole/$filePath")
         if (file.exists()) {
             val text = file.readText()
             if (type == ResourceType.MARKDOWN) {
@@ -400,18 +490,29 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun setAuthSession(responseHeader: Map<String, List<String>>) {
-        val headerAuth = responseHeader["Set-Cookie"]?.get(0)?.split(";") ?: return
+        val cookieHeader = responseHeader["Set-Cookie"]?.get(0)
+        val headerAuth = cookieHeader?.split(";") ?: run {
+            return
+        }
         auth = headerAuth[0]
-        lifecycleScope.launch {
-            val url = filePath ?: return@launch
+        viewLifecycleOwner.lifecycleScope.launch {
+            val url = filePath ?: run {
+                return@launch
+            }
             streamVideoFromUrl(url, auth)
-            if (isOnline && !FileUtils.checkFileExist(requireContext(), url)) {
-                DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
+            if (isOnline) {
+                withContext(dispatcherProvider.io) {
+                    if (!FileUtils.checkFileExist(requireContext(), url)) {
+                        DownloadUtils.openDownloadService(requireContext(), arrayListOf(url), false)
+                    }
+                }
             }
         }
     }
 
-    override fun onError(s: String) { Utilities.toast(requireContext(), "Auth error: $s") }
+    override fun onError(s: String) {
+        navigateBackWithError(getString(R.string.video_unavailable))
+    }
 
     override fun onPause() {
         super.onPause()
@@ -423,9 +524,10 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
-        try {
+        if (noisyReceiverRegistered) {
             requireContext().unregisterReceiver(audioBecomingNoisyReceiver)
-        } catch (e: Exception) {}
+            noisyReceiverRegistered = false
+        }
         super.onDestroyView()
         _binding = null
     }

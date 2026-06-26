@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -61,15 +60,11 @@ class UserRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmUser::class.java, "id", userId)
     }
 
     override suspend fun getUsersByIds(userIds: List<String>): List<RealmUser> {
@@ -142,38 +137,34 @@ class UserRepositoryImpl @Inject constructor(
         return queryList(RealmUser::class.java)
     }
 
-    override suspend fun getUsersSortedBy(fieldName: String, sortOrder: io.realm.Sort): List<RealmUser> {
+    override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<RealmUser> {
         return queryList(RealmUser::class.java) {
+            val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
             sort(fieldName, sortOrder)
         }
     }
 
     override suspend fun getPendingSyncUsers(limit: Int): List<RealmUser> {
-        return withRealm { realm ->
-            val results = realm.where(RealmUser::class.java)
-                .isEmpty("_id").or().equalTo("isUpdated", true)
-                .findAll()
-            realm.copyFromRealm(results.take(limit))
-        }
+        return queryList(RealmUser::class.java) {
+            isEmpty("_id").or().equalTo("isUpdated", true)
+        }.take(limit)
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, sortOrder: io.realm.Sort): List<RealmUser> {
-        return withRealm { realm ->
-            val results = realm.where(RealmUser::class.java)
-                .contains("firstName", query, io.realm.Case.INSENSITIVE).or()
-                .contains("lastName", query, io.realm.Case.INSENSITIVE).or()
-                .contains("name", query, io.realm.Case.INSENSITIVE)
-                .sort(sortField, sortOrder).findAll()
-            realm.copyFromRealm(results)
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<RealmUser> {
+        val sortOrder = if (descending) io.realm.Sort.DESCENDING else io.realm.Sort.ASCENDING
+        return queryList(RealmUser::class.java) {
+            contains("firstName", query, io.realm.Case.INSENSITIVE).or()
+            contains("lastName", query, io.realm.Case.INSENSITIVE).or()
+            contains("name", query, io.realm.Case.INSENSITIVE)
+            sort(sortField, sortOrder)
         }
     }
 
     override suspend fun isUserExists(name: String?): Boolean {
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("name", name)
-                .not().beginsWith("_id", "guest").count() > 0
-        }
+        return count(RealmUser::class.java) {
+            equalTo("name", name)
+            not().beginsWith("_id", "guest")
+        } > 0
     }
 
     override fun parseLeadersJson(jsonString: String): List<RealmUser> {
@@ -441,14 +432,13 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        if (userId == null) {
+        val id = userId
+        if (id == null) {
             android.util.Log.e("UserRepositoryImpl", "Failed to save user: userId is null after populateUsersTable")
             return null
         }
 
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmUser::class.java, "id", id)
     }
 
     override suspend fun fetchUserSecurityData(name: String) {
@@ -482,10 +472,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        return withRealm { realm ->
-            val user = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            if (user != null) realm.copyFromRealm(user) else null
-        }
+        return findByField(RealmUser::class.java, "id", userId)
     }
 
     override suspend fun updateSecurityData(
@@ -580,14 +567,9 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("id", userId)
-                .or()
-                .equalTo("_id", userId)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return queryList(RealmUser::class.java) {
+            equalTo("id", userId).or().equalTo("_id", userId)
+        }.firstOrNull()
     }
 
     override suspend fun getUserProfile(): RealmUser? {
@@ -861,8 +843,7 @@ class UserRepositoryImpl @Inject constructor(
                 val mutableObj = mutableMapOf<String, Any>().apply { putAll(objMap) }
                 latestRev?.let { rev -> mutableObj["_rev"] = rev as Any }
 
-                val gson = com.google.gson.Gson()
-                val jsonElement = gson.toJsonTree(mutableObj)
+                val jsonElement = JsonUtils.gson.toJsonTree(mutableObj)
                 val jsonObject = jsonElement.asJsonObject
 
                 val updateResponse = apiInterface.putDoc(header, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", jsonObject)
@@ -921,8 +902,8 @@ class UserRepositoryImpl @Inject constructor(
         val userMap = if (userIds.isEmpty()) {
             emptyMap()
         } else {
-            val users = realm.where(RealmUser::class.java).`in`("id", userIds.toTypedArray()).findAll()
-            realm.copyFromRealm(users).filter { it.id != null }.associateBy { it.id!! }
+            val users = realm.where(RealmUser::class.java).isNotNull("id").`in`("id", userIds.toTypedArray()).findAll()
+            realm.copyFromRealm(users).associateBy { it.id ?: "" }
         }
         HealthRecord(mhCopy, mm, list, userMap)
     }
@@ -1032,12 +1013,10 @@ class UserRepositoryImpl @Inject constructor(
             } -> return context.getString(R.string.only_letters_numbers_and_are_allowed)
         }
 
-        val isTaken = withRealm { realm ->
-            realm.where(RealmUser::class.java)
-                .equalTo("name", username)
-                .not().beginsWith("_id", "guest")
-                .count() > 0L
-        }
+        val isTaken = count(RealmUser::class.java) {
+            equalTo("name", username)
+            not().beginsWith("_id", "guest")
+        } > 0L
 
         return if (isTaken) context.getString(R.string.username_taken) else null
     }
@@ -1069,9 +1048,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser? {
         try {
-            val user = databaseService.withRealmAsync { realm ->
-                realm.where(RealmUser::class.java).equalTo("name", username).findFirst()?.let { realm.copyFromRealm(it) }
-            }
+            val user = if (username != null) findByField(RealmUser::class.java, "name", username) else null
             user?.let {
                 if (it._id?.isEmpty() == true) {
                     if (username == it.name && password == it.password) {
@@ -1092,16 +1069,12 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun hasAtLeastOneUser(): Boolean {
-        return withRealm { realm -> realm.where(RealmUser::class.java).findFirst() != null }
+        return count(RealmUser::class.java) > 0
     }
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
         if (userId.isNullOrEmpty()) return false
-        val actions = queryList(RealmUserChallengeActions::class.java) {
-            equalTo("userId", userId)
-            equalTo("actionType", "sync")
-        }
-        return actions.isNotEmpty()
+        return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
     }
 
     override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
@@ -1115,12 +1088,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        return withRealm { realm ->
-            val achievement = realm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-            achievement?.let { realm.copyFromRealm(it) }
-        }
+        return findByField(RealmAchievement::class.java, "_id", achievementId)
     }
 
     override suspend fun updateAchievement(
@@ -1273,7 +1241,7 @@ class UserRepositoryImpl @Inject constructor(
             achievement?.purpose = org.ole.planet.myplanet.utils.JsonUtils.getString("purpose", act)
             achievement?.goals = org.ole.planet.myplanet.utils.JsonUtils.getString("goals", act)
             achievement?.achievementsHeader = org.ole.planet.myplanet.utils.JsonUtils.getString("achievementsHeader", act)
-            achievement?.sendToNation = act?.get("sendToNation")?.asString ?: "false"
+            achievement?.sendToNation = act.get("sendToNation")?.asString ?: "false"
             achievement?.dateSortOrder = org.ole.planet.myplanet.utils.JsonUtils.getString("dateSortOrder", act)
             achievement?.createdOn = org.ole.planet.myplanet.utils.JsonUtils.getString("createdOn", act)
             achievement?.username = org.ole.planet.myplanet.utils.JsonUtils.getString("username", act)

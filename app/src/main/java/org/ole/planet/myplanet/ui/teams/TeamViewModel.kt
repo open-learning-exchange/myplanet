@@ -26,6 +26,7 @@ sealed class TeamActionResult {
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
@@ -35,7 +36,8 @@ class TeamViewModel @Inject constructor(
     val taskList: StateFlow<List<RealmTeamTask>> = _taskList
 
     fun loadTasks(teamId: String) {
-        viewModelScope.launch {
+        loadTaskJob?.cancel()
+        loadTaskJob = viewModelScope.launch {
             teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
                 _taskList.value = tasks
             }
@@ -48,6 +50,7 @@ class TeamViewModel @Inject constructor(
     private var currentFromDashboard: Boolean = false
     private var currentType: String? = null
     private var loadJob: kotlinx.coroutines.Job? = null
+    private var loadTaskJob: kotlinx.coroutines.Job? = null
 
 
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
@@ -108,20 +111,16 @@ class TeamViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-                teamsRepository.syncTeamActivities()
-            }
+            teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+            teamsSyncRepository.syncTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                teamsRepository.leaveTeam(teamId, userId)
-                teamsRepository.syncTeamActivities()
-            }
+            teamsRepository.leaveTeam(teamId, userId)
+            teamsSyncRepository.syncTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }

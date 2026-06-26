@@ -11,9 +11,29 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 
-class ReferencesAdapter(list: List<String>) : ListAdapter<String, ReferencesViewHolder>(DIFF_CALLBACK) {
+class ReferencesAdapter(list: List<String>) : ListAdapter<ReferenceRow, ReferencesViewHolder>(DIFF_CALLBACK) {
     init {
-        submitList(list)
+        submitJsonList(list)
+    }
+
+    fun submitJsonList(list: List<String>) {
+        val rows = list.map { jsonString ->
+            var obj: JsonObject? = null
+            try {
+                obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
+            } catch (e: Exception) {
+            }
+            if (obj == null) {
+                obj = JsonObject()
+            }
+            ReferenceRow(
+                name = getString("name", obj).ifBlank { "—" },
+                relationship = getString("relationship", obj).ifBlank { "—" },
+                phone = getString("phone", obj).ifBlank { "—" },
+                email = getString("email", obj).ifBlank { "—" }
+            )
+        }
+        submitList(rows)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReferencesViewHolder {
@@ -22,21 +42,26 @@ class ReferencesAdapter(list: List<String>) : ListAdapter<String, ReferencesView
     }
 
     override fun onBindViewHolder(holder: ReferencesViewHolder, position: Int) {
-        val jsonString = getItem(position)
-        val obj = JsonUtils.gson.fromJson(jsonString, JsonObject::class.java)
-
-        holder.binding.tvRefName.text = getString("name", obj).ifBlank { "—" }
-        holder.binding.tvRefRelationship.text = getString("relationship", obj).ifBlank { "—" }
-        holder.binding.tvRefPhone.text = getString("phone", obj).ifBlank { "—" }
-        holder.binding.tvRefEmail.text = getString("email", obj).ifBlank { "—" }
+        val row = getItem(position)
+        holder.binding.tvRefName.text = row.name
+        holder.binding.tvRefRelationship.text = row.relationship
+        holder.binding.tvRefPhone.text = row.phone
+        holder.binding.tvRefEmail.text = row.email
     }
 
     class ReferencesViewHolder(val binding: RowOtherInfoBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<String>(
+        val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             { oldItem, newItem -> oldItem == newItem },
             { oldItem, newItem -> oldItem == newItem }
         )
     }
 }
+
+data class ReferenceRow(
+    val name: String,
+    val relationship: String,
+    val phone: String,
+    val email: String
+)

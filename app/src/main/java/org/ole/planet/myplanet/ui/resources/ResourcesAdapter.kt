@@ -21,20 +21,16 @@ import org.ole.planet.myplanet.databinding.RowLibraryBinding
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.Utilities.getCloudConfig
 
 class ResourcesAdapter(
     private val context: Context,
     private val isGuest: Boolean,
     private var openedResourceIds: Set<String>
-) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(
-    org.ole.planet.myplanet.utils.DiffUtils.itemCallback<ResourceListModel>(
-        { oldItem, newItem -> oldItem.item.id == newItem.item.id },
-        { oldItem, newItem -> oldItem == newItem }
-    )
-) {
+) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
 
-    private val selectedItems: MutableList<ResourceListModel> = ArrayList()
+    private val selectedItemIds = mutableSetOf<String>()
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -43,20 +39,47 @@ class ResourcesAdapter(
     private var isAscending = true
     private var isTitleAscending = true
 
+    init {
+        if (context is OnHomeItemClickListener) {
+            homeItemClickListener = context
+        }
+    }
+
     companion object {
         private const val SELECTION_PAYLOAD = "SELECTION_PAYLOAD"
         private const val RATING_PAYLOAD = "RATING_PAYLOAD"
         private const val OPENED_RESOURCE_PAYLOAD = "OPENED_RESOURCE_PAYLOAD"
         private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
         private const val OFFLINE_STATUS_PAYLOAD = "OFFLINE_STATUS_PAYLOAD"
+
+        private val ITEM_CALLBACK = DiffUtils.itemCallback<ResourceListModel>(
+            areItemsTheSame = { oldItem, newItem ->
+                oldItem.item.id == newItem.item.id
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem == newItem
+            },
+            getChangePayload = { oldItem, newItem ->
+                val payloads = mutableListOf<String>()
+                if (oldItem.isOpened != newItem.isOpened) {
+                    payloads.add(OPENED_RESOURCE_PAYLOAD)
+                }
+                if (oldItem.item.isOffline != newItem.item.isOffline || oldItem.isLocallyOffline != newItem.isLocallyOffline) {
+                    payloads.add(OFFLINE_STATUS_PAYLOAD)
+                }
+                payloads.ifEmpty { null }
+            }
+        )
     }
 
     private val locallyOfflineIds = mutableSetOf<String>()
 
     fun markItemAsOffline(id: String) {
         if (locallyOfflineIds.add(id)) {
-            val index = currentList.indexOfFirst { it.item.id == id }
-            if (index >= 0) notifyItemChanged(index, OFFLINE_STATUS_PAYLOAD)
+            val newList = currentList.map {
+                if (it.item.id == id) it.copy(isLocallyOffline = true) else it
+            }
+            submitList(newList)
         }
     }
 
@@ -73,7 +96,13 @@ class ResourcesAdapter(
     }
 
     fun setLibraryList(libraryList: List<ResourceListModel?>, onComplete: (() -> Unit)? = null) {
-        submitList(libraryList.filterNotNull(), onComplete)
+        val updatedList = libraryList.filterNotNull().map {
+            it.copy(
+                isOpened = openedResourceIds.contains(it.item.id),
+                isLocallyOffline = locallyOfflineIds.contains(it.item.id)
+            )
+        }
+        submitList(updatedList, onComplete)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -88,7 +117,7 @@ class ResourcesAdapter(
             holder.rowLibraryBinding.title.text = library.title
             holder.rowLibraryBinding.description.text = library.description
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.rating_count_format, library.timesRated)
-            holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
+            holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
             holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(library.averageRating)) "0.0" else String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDoubleOrNull() ?: 0.0)
             holder.rowLibraryBinding.tvDate.text = org.ole.planet.myplanet.utils.TimeUtils.formatDate(library.createdDate)
 
@@ -96,8 +125,8 @@ class ResourcesAdapter(
             holder.itemView.setOnClickListener {
                 openLibrary(model)
             }
-            val isResourceOpened = openedResourceIds.contains(library.id)
-            val isOffline = library.isOffline || locallyOfflineIds.contains(library.id)
+            val isResourceOpened = model.isOpened
+            val isOffline = library.isOffline || model.isLocallyOffline
             holder.rowLibraryBinding.ivDownloaded.visibility =
                 if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
@@ -113,14 +142,17 @@ class ResourcesAdapter(
                     holder.rowLibraryBinding.checkbox.contentDescription =
                         context.getString(R.string.select_res_course, library.title ?: "")
                     val isChecked = (view as CheckBox).isChecked
-                    if (isChecked) {
-                        if (!selectedItems.contains(model)) {
-                            selectedItems.add(model)
+                    model.item.id?.let { itemId ->
+                        if (isChecked) {
+                            selectedItemIds.add(itemId)
+                        } else {
+                            selectedItemIds.remove(itemId)
                         }
-                    } else {
-                        selectedItems.remove(model)
                     }
-                    if (listener != null) listener?.onSelectedListChange(selectedItems.map { it.item })
+                    if (listener != null) {
+                        val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
+                        listener?.onSelectedListChange(selectedResources)
+                    }
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -129,21 +161,31 @@ class ResourcesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        return currentList.isNotEmpty() && selectedItems.size == currentList.size
+        return currentList.isNotEmpty() && selectedItemIds.size == currentList.size
     }
 
     fun selectAllItems(selectAll: Boolean) {
         if (selectAll) {
-            selectedItems.clear()
-            selectedItems.addAll(currentList)
+            currentList.forEachIndexed { index, model ->
+                model.item.id?.let { itemId ->
+                    if (selectedItemIds.add(itemId)) {
+                        notifyItemChanged(index, SELECTION_PAYLOAD)
+                    }
+                }
+            }
         } else {
-            selectedItems.clear()
+            currentList.forEachIndexed { index, model ->
+                model.item.id?.let { itemId ->
+                    if (selectedItemIds.remove(itemId)) {
+                        notifyItemChanged(index, SELECTION_PAYLOAD)
+                    }
+                }
+            }
         }
 
-        notifyItemRangeChanged(0, currentList.size, SELECTION_PAYLOAD)
-
         if (listener != null) {
-            listener?.onSelectedListChange(selectedItems.map { it.item })
+            val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
+            listener?.onSelectedListChange(selectedResources)
         }
     }
 
@@ -160,22 +202,25 @@ class ResourcesAdapter(
             val model = getItem(position) ?: return
             val library = model.item
             var handled = false
-            if (payloads.contains(RATING_PAYLOAD)) {
+
+            val flatPayloads = payloads.flatMap { if (it is List<*>) it else listOf(it) }
+
+            if (flatPayloads.contains(RATING_PAYLOAD)) {
                 bindRating(holder, model)
                 handled = true
             }
-            if (payloads.contains(SELECTION_PAYLOAD)) {
-                holder.rowLibraryBinding.checkbox.isChecked = selectedItems.contains(model)
+            if (flatPayloads.contains(SELECTION_PAYLOAD)) {
+                holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
                 handled = true
             }
-            if (payloads.contains(OPENED_RESOURCE_PAYLOAD) || payloads.contains(OFFLINE_STATUS_PAYLOAD)) {
-                val isResourceOpened = openedResourceIds.contains(library.id)
-                val isOffline = library.isOffline || locallyOfflineIds.contains(library.id)
+            if (flatPayloads.contains(OPENED_RESOURCE_PAYLOAD) || flatPayloads.contains(OFFLINE_STATUS_PAYLOAD)) {
+                val isResourceOpened = model.isOpened
+                val isOffline = library.isOffline || model.isLocallyOffline
                 holder.rowLibraryBinding.ivDownloaded.visibility =
                     if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
                 handled = true
             }
-            if (payloads.contains(TAGS_PAYLOAD)) {
+            if (flatPayloads.contains(TAGS_PAYLOAD)) {
                 displayTagCloud(holder, position)
                 handled = true
             }
@@ -188,15 +233,9 @@ class ResourcesAdapter(
     }
 
     fun setOpenedResourceIds(openedResourceIds: Set<String>) {
-        val oldOpenedResourceIds = this.openedResourceIds
         this.openedResourceIds = openedResourceIds
-        currentList.forEachIndexed { index, model ->
-            val wasOpened = oldOpenedResourceIds.contains(model.item.id)
-            val isOpened = openedResourceIds.contains(model.item.id)
-            if (wasOpened != isOpened) {
-                notifyItemChanged(index, OPENED_RESOURCE_PAYLOAD)
-            }
-        }
+        val newList = currentList.map { it.copy(isOpened = openedResourceIds.contains(it.item.id)) }
+        submitList(newList)
     }
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {

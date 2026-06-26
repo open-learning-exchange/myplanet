@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
@@ -72,20 +71,21 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val spm = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
+        val dispatcherProvider = entryPoint.dispatcherProvider()
+
+        MainApplication.applicationScope.launch(dispatcherProvider.io) {
+            val spm = entryPoint.sharedPrefManager()
             MainApplication.createLog("sync summary", summary)
             val updateUrl = spm.getServerUrl()
-            val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
             val serverUrlMapper = entryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable =
-                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+            val alternativeUrl = mapping.alternativeUrl
+            val alternativeAvailable = alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
 
-            if (!primaryAvailable && alternativeAvailable) {
-                val alternativeUrl = mapping.alternativeUrl!!
+            if (!primaryAvailable && alternativeAvailable && alternativeUrl != null) {
                 val uri = updateUrl.toUri()
                 val prefs = spm.rawPreferences
                 val editor = prefs.edit()
@@ -176,10 +176,19 @@ object SyncTimeLogger {
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
     }
 
-    private fun extractProcessName(endpoint: String): String {
-        // Extract database/collection name from endpoint
-        val parts = endpoint.split("/")
-        return parts.getOrNull(parts.size - 2) ?: "unknown"
+    internal fun extractProcessName(endpoint: String): String {
+        val segments = endpoint.split("/")
+
+        val lastValidSegment = segments.lastOrNull {
+            it.isNotEmpty() && !it.startsWith("?")
+        } ?: return "Unknown"
+
+        val withoutQuery = lastValidSegment.substringBefore("?")
+        if (withoutQuery.isEmpty()) return "Unknown"
+
+        return withoutQuery.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+        }
     }
 
     private fun shortenEndpoint(endpoint: String): String {

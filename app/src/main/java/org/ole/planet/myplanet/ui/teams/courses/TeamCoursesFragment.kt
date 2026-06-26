@@ -45,7 +45,9 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
             val currentUserId = sharedPrefManager.getUserId().ifEmpty { "--" }
             val canRemove = currentUserId.equals(teamCreator, ignoreCase = true)
 
-            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), canRemove)
+            adapterTeamCourse = TeamCoursesAdapter(requireActivity(), canRemove) { course ->
+                removeCourseFromTeam(course)
+            }
             binding.rvCourse.layoutManager = LinearLayoutManager(activity)
             binding.rvCourse.adapter = adapterTeamCourse
             adapterTeamCourse?.submitList(courses)
@@ -73,6 +75,24 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
 
     override fun onAddDocument() {
         showAddCourseDialog()
+    }
+
+    private fun removeCourseFromTeam(course: RealmMyCourse) {
+        val courseId = course.courseId ?: return
+        viewLifecycleOwner.lifecycleScope.launch {
+            teamsRepository.removeCourseFromTeam(teamId, courseId)
+                .onSuccess {
+                    if (isAdded) {
+                        Utilities.toast(requireActivity(), getString(R.string.removed_from_teamcourse))
+                        updateCoursesList()
+                    }
+                }
+                .onFailure { e ->
+                    if (isAdded) {
+                        Utilities.toast(requireActivity(), getString(R.string.error, e.message))
+                    }
+                }
+        }
     }
 
     private fun showAddCourseDialog() {

@@ -55,7 +55,8 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDateSetListener {
-    private lateinit var fragmentEditAchievementBinding: FragmentEditAchievementBinding
+    private var _binding: FragmentEditAchievementBinding? = null
+    private val binding get() = _binding!!
     private lateinit var editAttachmentBinding: EditAttachementBinding
     private lateinit var editOtherInfoBinding: EditOtherInfoBinding
     private lateinit var alertReferenceBinding: AlertReferenceBinding
@@ -84,8 +85,10 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     selectedCvUri = uri
                     pendingCvFilename = filename
                     deleteCv = false
-                    fragmentEditAchievementBinding.tvCvFilename.text = filename
-                    fragmentEditAchievementBinding.llCurrentCv.visibility = View.GONE
+                    _binding?.let {
+                        it.tvCvFilename.text = filename
+                        it.llCurrentCv.visibility = View.GONE
+                    }
                 } else {
                     Utilities.toast(activity, getString(R.string.select_pdf_only))
                 }
@@ -94,48 +97,48 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        fragmentEditAchievementBinding = FragmentEditAchievementBinding.inflate(inflater, container, false)
-        lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
-            achievementArray = JsonArray()
-            initializeData()
-        }
-        return fragmentEditAchievementBinding.root
+        _binding = FragmentEditAchievementBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setListeners()
+        viewLifecycleOwner.lifecycleScope.launch {
+            user = profileDbHandler.getUserModel()
+            achievementArray = JsonArray()
+            initializeData()
+        }
     }
 
     private fun setListeners() {
-        fragmentEditAchievementBinding.btnUpdate.setOnClickListener {
-            val firstName = fragmentEditAchievementBinding.etFname.text.toString().trim()
-            val lastName = fragmentEditAchievementBinding.etLname.text.toString().trim()
-            val birthDate = fragmentEditAchievementBinding.txtDob.text.toString().trim()
+        binding.btnUpdate.setOnClickListener {
+            val firstName = binding.etFname.text.toString().trim()
+            val lastName = binding.etLname.text.toString().trim()
+            val birthDate = binding.txtDob.text.toString().trim()
 
             val missingFields = mutableListOf<String>()
 
             // Validation FIRST
             if (firstName.isEmpty()) {
-                fragmentEditAchievementBinding.etFname.error = "First name is required"
+                binding.etFname.error = "First name is required"
                 missingFields.add("First Name")
             } else {
-                fragmentEditAchievementBinding.etFname.error = null
+                binding.etFname.error = null
             }
 
             if (lastName.isEmpty()) {
-                fragmentEditAchievementBinding.etLname.error = "Last name is required"
+                binding.etLname.error = "Last name is required"
                 missingFields.add("Last Name")
             } else {
-                fragmentEditAchievementBinding.etLname.error = null
+                binding.etLname.error = null
             }
 
             if (birthDate.isEmpty() || birthDate == getString(R.string.birth_date)) {
-                fragmentEditAchievementBinding.txtDob.error = "Birth date is required"
+                binding.txtDob.error = "Birth date is required"
                 missingFields.add("Birth Date")
             } else {
-                fragmentEditAchievementBinding.txtDob.error = null
+                binding.txtDob.error = null
             }
 
             // STOP here if there are missing fields
@@ -147,12 +150,14 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
             // ONLY continue saving if no missing fields
             val achievementId = user?.id + "@" + user?.planetCode
-            val header = fragmentEditAchievementBinding.etAchievement.text.toString().trim()
-            val goals = fragmentEditAchievementBinding.etGoals.text.toString().trim()
-            val purpose = fragmentEditAchievementBinding.etPurpose.text.toString().trim()
-            val sendToNation = fragmentEditAchievementBinding.cbSendToNation.isChecked.toString()
+            val header = binding.etAchievement.text.toString().trim()
+            val goals = binding.etGoals.text.toString().trim()
+            val purpose = binding.etPurpose.text.toString().trim()
+            val sendToNation = binding.cbSendToNation.isChecked.toString()
+            val middleName = binding.etMname.text.toString().trim()
+            val birthPlace = binding.etBirthplace.text.toString().trim()
 
-            fragmentEditAchievementBinding.btnUpdate.isEnabled = false
+            binding.btnUpdate.isEnabled = false
             Utilities.toast(activity, getString(R.string.saving))
 
             lifecycleScope.launch {
@@ -171,8 +176,6 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                     resumeFileName = cvFilename
                 )
 
-                val middleName = fragmentEditAchievementBinding.etMname.text.toString().trim()
-                val birthPlace = fragmentEditAchievementBinding.etBirthplace.text.toString().trim()
                 val userPayload = JsonObject().apply {
                     addProperty("firstName", firstName)
                     addProperty("lastName", lastName)
@@ -183,36 +186,38 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
                 userRepository.updateProfileFields(user?.id, userPayload)
 
                 Utilities.toast(activity, getString(R.string.achievement_saved))
-                fragmentEditAchievementBinding.btnUpdate.isEnabled = true
-                FragmentNavigator.popBackStack(parentFragmentManager)
+                _binding?.btnUpdate?.isEnabled = true
+                if (isAdded) {
+                    FragmentNavigator.popBackStack(parentFragmentManager)
+                }
             }
         }
-        fragmentEditAchievementBinding.btnCancel.setOnClickListener {
+        binding.btnCancel.setOnClickListener {
             FragmentNavigator.popBackStack(parentFragmentManager)
         }
-        fragmentEditAchievementBinding.btnAchievement.setOnClickListener {
+        binding.btnAchievement.setOnClickListener {
             showAddAchievementAlert(null)
         }
-        fragmentEditAchievementBinding.btnOther.setOnClickListener {
+        binding.btnOther.setOnClickListener {
             showReferenceDialog(null)
         }
-        fragmentEditAchievementBinding.txtDob.setOnClickListener {
+        binding.txtDob.setOnClickListener {
             val now = Calendar.getInstance()
             val dpd = DatePickerDialog(requireActivity(), this, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
             dpd.datePicker.maxDate = Calendar.getInstance().timeInMillis
             dpd.show()
         }
-        fragmentEditAchievementBinding.btnChooseCv.setOnClickListener {
+        binding.btnChooseCv.setOnClickListener {
             pickCvLauncher.launch("application/pdf")
         }
-        fragmentEditAchievementBinding.btnDeleteCv.setOnClickListener {
+        binding.btnDeleteCv.setOnClickListener {
             deleteCv = true
             pendingCvFilename = null
             selectedCvUri = null
-            fragmentEditAchievementBinding.llCurrentCv.visibility = View.GONE
-            fragmentEditAchievementBinding.tvCvFilename.text = getString(R.string.no_file_chosen)
+            binding.llCurrentCv.visibility = View.GONE
+            binding.tvCvFilename.text = getString(R.string.no_file_chosen)
         }
-        fragmentEditAchievementBinding.btnViewCvEdit.setOnClickListener {
+        binding.btnViewCvEdit.setOnClickListener {
             val filename = pendingCvFilename ?: achievement?.resumeFileName ?: return@setOnClickListener
             val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$filename")
             if (cvFile.exists()) {
@@ -239,7 +244,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     private fun showAchievementAndInfo() {
         val config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.single)
-        fragmentEditAchievementBinding.llAttachment.removeAllViews()
+        binding.llAttachment.removeAllViews()
         for (e in achievementArray ?: return) {
             editAttachmentBinding = EditAttachementBinding.inflate(LayoutInflater.from(activity))
             editAttachmentBinding.tvTitle.text = e.asJsonObject["title"].asString
@@ -256,12 +261,12 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
             editAttachmentBinding.edit.setOnClickListener { showAddAchievementAlert(e.asJsonObject) }
             val editAttachmentView: View = editAttachmentBinding.root
-            fragmentEditAchievementBinding.llAttachment.addView(editAttachmentView)
+            binding.llAttachment.addView(editAttachmentView)
         }
     }
 
     private fun showReference() {
-        fragmentEditAchievementBinding.llOtherInfo.removeAllViews()
+        binding.llOtherInfo.removeAllViews()
         for (e in referenceArray ?: return) {
             editOtherInfoBinding = EditOtherInfoBinding.inflate(LayoutInflater.from(activity))
             editOtherInfoBinding.tvTitle.text = e.asJsonObject["name"].asString
@@ -271,7 +276,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             }
             editOtherInfoBinding.edit.setOnClickListener { showReferenceDialog(e.asJsonObject) }
             val editOtherInfoView: View = editOtherInfoBinding.root
-            fragmentEditAchievementBinding.llOtherInfo.addView(editOtherInfoView)
+            binding.llOtherInfo.addView(editOtherInfoView)
         }
     }
 
@@ -407,37 +412,35 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
 
     override fun onDateSet(datePicker: DatePicker, i: Int, i1: Int, i2: Int) {
         val iso = String.format(Locale.US, "%04d-%02d-%02d", i, i1 + 1, i2)
-        fragmentEditAchievementBinding.txtDob.text = iso
+        binding.txtDob.text = iso
         selectedDobIso = iso
     }
 
     private fun initializeData() {
         val achievementId = user?.id + "@" + user?.planetCode
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             achievement = userRepository.initializeAchievement(achievementId)
-            if (isAdded) {
-                populateAchievementData()
-            }
+            populateAchievementData()
         }
     }
 
     private fun populateAchievementData() {
         achievementArray = achievement?.achievementsArray ?: achievementArray
         referenceArray = achievement?.getReferencesArray() ?: referenceArray
-        fragmentEditAchievementBinding.etAchievement.setText(achievement?.achievementsHeader)
-        fragmentEditAchievementBinding.etPurpose.setText(achievement?.purpose)
-        fragmentEditAchievementBinding.etGoals.setText(achievement?.goals)
-        fragmentEditAchievementBinding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
-        fragmentEditAchievementBinding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+        binding.etAchievement.setText(achievement?.achievementsHeader)
+        binding.etPurpose.setText(achievement?.purpose)
+        binding.etGoals.setText(achievement?.goals)
+        binding.cbSendToNation.isChecked = achievement?.sendToNation.toBoolean()
+        binding.txtDob.text = if (TextUtils.isEmpty(user?.dob)) getString(R.string.birth_date) else getFormattedDate(user?.dob, "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
         resourceArray = JsonArray()
-        fragmentEditAchievementBinding.etFname.setText(user?.firstName)
-        fragmentEditAchievementBinding.etMname.setText(user?.middleName)
-        fragmentEditAchievementBinding.etLname.setText(user?.lastName)
-        fragmentEditAchievementBinding.etBirthplace.setText(user?.birthPlace)
+        binding.etFname.setText(user?.firstName)
+        binding.etMname.setText(user?.middleName)
+        binding.etLname.setText(user?.lastName)
+        binding.etBirthplace.setText(user?.birthPlace)
         val existingCv = achievement?.resumeFileName ?: ""
         if (existingCv.isNotEmpty()) {
-            fragmentEditAchievementBinding.llCurrentCv.visibility = View.VISIBLE
-            fragmentEditAchievementBinding.tvCurrentCv.text = getString(R.string.current_cv, existingCv)
+            binding.llCurrentCv.visibility = View.VISIBLE
+            binding.tvCurrentCv.text = getString(R.string.current_cv, existingCv)
         }
         if (achievementArray != null) {
             showAchievementAndInfo()
@@ -484,6 +487,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     override fun onDestroyView() {
         referenceDialog?.dismiss()
         referenceDialog = null
+        _binding = null
         super.onDestroyView()
     }
 

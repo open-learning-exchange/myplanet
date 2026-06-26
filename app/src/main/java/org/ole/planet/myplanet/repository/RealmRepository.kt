@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.OrderedRealmCollectionChangeListener
 import io.realm.Realm
-import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -37,6 +37,10 @@ open class RealmRepository(
             realm.queryList(clazz, builder)
         }
 
+    protected suspend fun <T : RealmObject> queryList(clazz: Class<T>, maxDepth: Int, builder: RealmQuery<T>.() -> Unit = {}): List<T> = withRealm(false) { realm ->
+        realm.queryList(clazz, maxDepth, builder)
+    }
+
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -58,7 +62,7 @@ open class RealmRepository(
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
-        var listener: RealmChangeListener<RealmResults<T>>? = null
+        var listener: OrderedRealmCollectionChangeListener<RealmResults<T>>? = null
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
@@ -103,8 +107,10 @@ open class RealmRepository(
             emitResults(initialResults, "Error sending initial results")
 
             results = initialResults
-            listener = RealmChangeListener<RealmResults<T>> { changedResults ->
-                emitResults(changedResults, "Error sending changed results")
+            listener = OrderedRealmCollectionChangeListener<RealmResults<T>> { changedResults, changeSet ->
+                if (changeSet == null || changeSet.insertions.isNotEmpty() || changeSet.deletions.isNotEmpty() || changeSet.changes.isNotEmpty()) {
+                    emitResults(changedResults, "Error sending changed results")
+                }
             }
             results.addChangeListener(listener)
 
@@ -118,7 +124,11 @@ open class RealmRepository(
     }.flowOn(realmDispatcher)
         .conflate()
         .map { frozenResults ->
-            frozenResults.realm.copyFromRealm(frozenResults)
+            if (frozenResults.isEmpty()) {
+                emptyList()
+            } else {
+                frozenResults.realm.copyFromRealm(frozenResults)
+            }
         }
         .flowOn(databaseService.ioDispatcher)
 

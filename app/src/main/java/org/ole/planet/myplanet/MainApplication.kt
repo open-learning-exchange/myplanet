@@ -1,18 +1,20 @@
 package org.ole.planet.myplanet
 
-import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.net.TrafficStats
-import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration as WorkManagerConfiguration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -30,9 +32,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -60,9 +60,6 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.ProcessLifecycleOwner
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
@@ -71,6 +68,9 @@ import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 class MainApplication : Application(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var realmDispatcherProvider: org.ole.planet.myplanet.di.RealmDispatcherProvider
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -101,7 +101,12 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
+        private lateinit var instance: MainApplication
+
+        @VisibleForTesting
+        var testContext: Context? = null
+
+        val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
@@ -119,7 +124,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             return "0"
         }
         lateinit var applicationScope: CoroutineScope
-        val apiClientInitialized = CompletableDeferred<Unit>()
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
@@ -226,7 +230,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        context = this
+        instance = this
         setupCriticalProperties()
         LocaleUtils.preload(this)
         warmUpMainThreadRealm()
@@ -237,7 +241,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     }
 
     private fun performDeferredInitialization() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
             MarkdownUtils.warmUp(this@MainApplication)
@@ -246,7 +250,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         applicationScope.launch {
             initApp()
             loadAndApplyTheme()
-            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -274,16 +277,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
     }
 
-    private suspend fun ensureApiClientInitialized() {
-        withContext(dispatcherProvider.io) {
-            EntryPointAccessors.fromApplication(
-                this@MainApplication,
-                NetworkDependenciesEntryPoint::class.java
-            ).apiClient()
-            apiClientInitialized.complete(Unit)
-        }
-    }
-    
     private suspend fun initializeDatabaseConnection() {
         databaseService.withRealmAsync { }
     }
@@ -476,6 +469,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
+        realmDispatcherProvider.shutdown()
         super.onTerminate()
         stopListenNetworkState()
     }

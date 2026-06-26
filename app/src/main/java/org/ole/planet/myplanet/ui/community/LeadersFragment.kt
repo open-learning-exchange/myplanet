@@ -22,8 +22,9 @@ class LeadersFragment : Fragment() {
     lateinit var userRepository: UserRepository
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-        binding = FragmentMembersBinding.inflate(inflater, container, false)
-        return binding!!.root
+        val b = FragmentMembersBinding.inflate(inflater, container, false)
+        binding = b
+        return b.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {

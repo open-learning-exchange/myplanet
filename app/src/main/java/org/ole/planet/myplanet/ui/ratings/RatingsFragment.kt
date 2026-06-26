@@ -82,7 +82,7 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun observeViewModel() {
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.ratingState.collect { state ->
                     when (state) {
@@ -101,7 +101,7 @@ class RatingsFragment : DialogFragment() {
             }
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.userState.collect { user ->
                     isUserReady = user != null
@@ -111,14 +111,20 @@ class RatingsFragment : DialogFragment() {
             }
         }
 
-        lifecycleScope.launch {
+        viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.submitState.collect { state ->
                     currentSubmitState = state
                     when (state) {
                         is RatingsViewModel.SubmitState.Success -> {
                             Utilities.toast(activity, "Thank you, your rating is submitted.")
-                            ratingListener?.onRatingChanged()
+                            val t = type
+                            val i = id
+                            if (t != null && i != null) {
+                                ratingListener?.onRatingChanged(t, i)
+                            } else {
+                                ratingListener?.onRatingChanged()
+                            }
                             dismiss()
                         }
                         is RatingsViewModel.SubmitState.Error -> {

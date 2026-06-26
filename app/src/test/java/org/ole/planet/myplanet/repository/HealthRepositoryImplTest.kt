@@ -7,11 +7,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
-import io.mockk.slot
 import io.mockk.verify
-import io.mockk.coVerify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -24,19 +23,18 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.applyEqualTo
+import org.ole.planet.myplanet.data.findCopyByField
+import org.ole.planet.myplanet.data.queryList
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.data.applyEqualTo
-import org.ole.planet.myplanet.data.findCopyByField
-import org.ole.planet.myplanet.data.queryList
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
@@ -45,6 +43,7 @@ class HealthRepositoryImplTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
+    private val mockApiInterface: ApiInterface = mockk(relaxed = true)
     private val realm: Realm = mockk(relaxed = true)
     private val healthQuery: RealmQuery<RealmHealthExamination> = mockk(relaxed = true)
     private val userQuery: RealmQuery<RealmUser> = mockk(relaxed = true)
@@ -89,6 +88,7 @@ class HealthRepositoryImplTest {
         mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
 
         repository = HealthRepositoryImpl(
+            mockApiInterface,
             databaseService,
             UnconfinedTestDispatcher(),
             dispatcherProvider
@@ -306,12 +306,15 @@ class HealthRepositoryImplTest {
         every { JsonUtils.getJsonObject("doc", item2) } returns doc2
         every { JsonUtils.getString("_id", doc2) } returns "_design/doc"
 
-        every { RealmHealthExamination.insert(realm, doc1) } returns Unit
+        val detachedExamination = mockk<RealmHealthExamination>()
+        every { RealmHealthExamination.fromJson(doc1) } returns detachedExamination
+        every { realm.insertOrUpdate(any<List<RealmHealthExamination>>()) } returns Unit
 
         repository.bulkInsertFromSync(realm, jsonArray)
         advanceUntilIdle()
 
-        verify(exactly = 1) { RealmHealthExamination.insert(realm, doc1) }
-        verify(exactly = 0) { RealmHealthExamination.insert(realm, doc2) }
+        verify(exactly = 1) { RealmHealthExamination.fromJson(doc1) }
+        verify(exactly = 0) { RealmHealthExamination.fromJson(doc2) }
+        verify(exactly = 1) { realm.insertOrUpdate(listOf(detachedExamination)) }
     }
 }

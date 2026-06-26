@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.notifications
 
-import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings.ACTION_INTERNAL_STORAGE_SETTINGS
@@ -50,16 +49,16 @@ class NotificationsFragment : Fragment() {
         _binding = FragmentNotificationsBinding.inflate(inflater, container, false)
         userId = arguments?.getString("userId") ?: ""
         isAdmin = arguments?.getBoolean("isAdmin", false) ?: false
+
         adapter = NotificationsAdapter(
-            onMarkAsReadClick = { notificationId ->
-                markAsReadById(notificationId)
-            },
-            onNotificationClick = { notification ->
-                handleNotificationClick(notification)
-            }
+            onMarkAsReadClick = { notificationId -> viewModel.markAsRead(notificationId) },
+            onNotificationClick = { notification -> handleNotificationClick(notification) },
+            onToggleSelection = { notificationId -> viewModel.toggleSelection(notificationId) },
+            onToggleGroupExpansion = { type -> viewModel.toggleGroupExpansion(type) }
         )
         binding.rvNotifications.adapter = adapter
         binding.rvNotifications.layoutManager = LinearLayoutManager(requireContext())
+
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
         val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
@@ -75,16 +74,22 @@ class NotificationsFragment : Fragment() {
                 currentFilter = parent.getItemAtPosition(position).toString().lowercase()
                 viewModel.loadNotifications(userId, currentFilter, isAdmin)
             }
-
             override fun onNothingSelected(parent: AdapterView<*>) {}
         }
+
+        binding.btnMarkAllAsRead.setOnClickListener { viewModel.markAllAsRead(userId) }
+        binding.btnBulkMarkAsRead.setOnClickListener { viewModel.markSelectedAsRead() }
+        binding.btnBulkDelete.setOnClickListener { viewModel.deleteSelected() }
+        binding.btnCancelSelection.setOnClickListener { viewModel.clearSelection() }
+
         viewModel.loadNotifications(userId, "all", isAdmin)
+
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.notifications.collect { notifications ->
-                        adapter.submitList(notifications)
-                        val isEmpty = notifications.isEmpty()
+                    viewModel.groupedItems.collect { items ->
+                        adapter.submitList(items)
+                        val isEmpty = items.isEmpty()
                         binding.emptyData.visibility = if (isEmpty) View.VISIBLE else View.GONE
                         binding.emptyData.text = when (currentFilter) {
                             "unread" -> getString(R.string.no_unread_notifications)
@@ -101,10 +106,18 @@ class NotificationsFragment : Fragment() {
                         binding.btnMarkAllAsRead.visibility = if (showButton) View.VISIBLE else View.GONE
                     }
                 }
+                launch {
+                    viewModel.isSelectionMode.collect { inSelectionMode ->
+                        binding.ltBulkActionBar.visibility = if (inSelectionMode) View.VISIBLE else View.GONE
+                        binding.ltTopBar.visibility = if (inSelectionMode) View.GONE else View.VISIBLE
+                    }
+                }
+                launch {
+                    viewModel.selectedCount.collect { count ->
+                        binding.tvSelectedCount.text = getString(R.string.selected_count, count)
+                    }
+                }
             }
-        }
-        binding.btnMarkAllAsRead.setOnClickListener {
-            markAllAsRead()
         }
         return binding.root
     }
@@ -169,17 +182,9 @@ class NotificationsFragment : Fragment() {
             }
 
             if (!notification.isRead) {
-                markAsReadById(notification.id)
+                viewModel.markAsRead(notification.id)
             }
         }
-    }
-
-    private fun markAsReadById(notificationId: String) {
-        viewModel.markAsRead(notificationId)
-    }
-
-    private fun markAllAsRead() {
-        viewModel.markAllAsRead(userId)
     }
 
     fun refreshNotificationsList() {

@@ -4,33 +4,31 @@ import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.mockk.verify
-import io.mockk.coVerify
-import io.mockk.unmockkAll
 import io.mockk.spyk
+import io.mockk.unmockkAll
+import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.services.SharedPrefManager
-import kotlinx.coroutines.flow.first
-import java.util.UUID
 
 @ExperimentalCoroutinesApi
 class SubmissionsRepositoryImplTest {
@@ -40,6 +38,7 @@ class SubmissionsRepositoryImplTest {
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var exporter: SubmissionsRepositoryExporter
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private lateinit var repository: SubmissionsRepositoryImpl
@@ -53,6 +52,7 @@ class SubmissionsRepositoryImplTest {
         surveysRepositoryProvider = mockk(relaxed = true)
         context = mockk(relaxed = true)
         sharedPrefManager = mockk(relaxed = true)
+        exporter = mockk(relaxed = true)
 
         every { databaseService.ioDispatcher } returns testDispatcher
 
@@ -68,7 +68,8 @@ class SubmissionsRepositoryImplTest {
             teamsRepositoryProvider,
             surveysRepositoryProvider,
             context,
-            sharedPrefManager
+            sharedPrefManager,
+            exporter
         ), recordPrivateCalls = true)
     }
 
@@ -156,6 +157,32 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
+        val exam = mockk<RealmStepExam>(relaxed = true)
+
+        every { realm.where(RealmStepExam::class.java) } returns query
+        every { query.equalTo("id", examId) } returns query
+        every { query.findFirst() } returns exam
+        every { exam.courseId } returns "courseId"
+
+        coEvery { repository["withRealm"](any<Boolean>(), any<Function1<Realm, Any>>()) } answers {
+            val action = arg<Function1<Realm, Any>>(1)
+            action.invoke(realm)
+        }
+
+        coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { repository.getOrCreateSubmission("user1", "examId@courseId") }
+        coVerify(exactly = 1) { repository.getOrCreateSubmission("user2", "examId@courseId") }
+    }
+
+    @Test
     fun `saveSubmission performs transaction`() = runTest {
         val sub = mockk<RealmSubmission>(relaxed = true)
 
@@ -186,26 +213,29 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        // Since insertSubmission is called on `this`, spyk can track it
-        every { repository.insertSubmission(any(), any()) } answers { }
+        // Since insertSubmissionInternal is called on `this`, spyk can track it
+        every { repository["insertSubmissionInternal"](any<Realm>(), any<JsonObject>()) } answers { }
 
         repository.bulkInsertFromSync(realm, jsonArray)
-        verify(exactly = 1) { repository.insertSubmission(realm, any()) }
+        verify(exactly = 1) { repository["insertSubmissionInternal"](realm, any<JsonObject>()) }
     }
 
     @Test
-    fun `insertSubmission skips if _attachments present`() {
-        val realm = mockk<Realm>(relaxed = true)
+    fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
-        repository.insertSubmission(realm, submission)
-        verify(exactly = 0) { realm.beginTransaction() }
+        repository.insertSubmission(submission)
+        coVerify(exactly = 0) { databaseService.executeTransactionAsync(any()) }
     }
 
     @Test
-    fun `insertSubmission performs happy path creation`() {
+    fun `insertSubmission performs happy path creation`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
+        val transactionSlot = slot<Function1<Realm, Unit>>()
+        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
+            transactionSlot.captured.invoke(realm)
+        }
+
         val query = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
-        every { realm.isInTransaction } returns false
         every { realm.where(RealmSubmission::class.java) } returns query
         every { query.equalTo(any<String>(), any<String>()) } returns query
         every { query.findFirst() } returns null
@@ -222,11 +252,9 @@ class SubmissionsRepositoryImplTest {
         every { repository["updateUserId"](any<RealmSubmission>(), any<JsonObject>()) } answers { }
         every { repository["updateAnswers"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>(), any<Boolean>()) } answers { }
 
-        repository.insertSubmission(realm, submission)
+        repository.insertSubmission(submission)
 
-        verify(exactly = 1) { realm.beginTransaction() }
         verify(exactly = 1) { realm.createObject(RealmSubmission::class.java, "test_id") }
-        verify(exactly = 1) { realm.commitTransaction() }
     }
 
     @Test

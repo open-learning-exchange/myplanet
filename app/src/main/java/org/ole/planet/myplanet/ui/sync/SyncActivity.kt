@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
@@ -25,7 +24,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -115,9 +113,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var isSync = false
     var forceSync = false
     var syncFailed = false
-    val defaultPref: SharedPreferences by lazy {
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-    }
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -549,7 +544,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     downloadAdditionalResources()
 
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                    val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
                         withContext(dispatcherProvider.io) {
                             resourceDownloadCoordinator.startBackgroundDownload(
@@ -675,8 +670,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun settingDialog() {
-        serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-        val binding = serverDialogBinding!!
+        val binding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        serverDialogBinding = binding
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
@@ -759,7 +754,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        runOnUiThread {
+        lifecycleScope.launch {
             val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
             if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
@@ -784,7 +779,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        runOnUiThread {
+        lifecycleScope.launch {
             Utilities.toast(this@SyncActivity, msg)
             if (msg.startsWith("Config")) {
                 settingDialog()
@@ -806,6 +801,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private fun continueSyncProcess() {
         try {
             lifecycleScope.launch {
+                processedUrl = UrlUtils.getUrl()
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {
