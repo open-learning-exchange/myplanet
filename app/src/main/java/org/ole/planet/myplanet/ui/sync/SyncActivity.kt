@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
-import android.content.SharedPreferences
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
@@ -25,7 +24,6 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
@@ -75,7 +73,6 @@ import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -99,6 +96,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private var syncTimeInterval = intArrayOf(60 * 60, 3 * 60 * 60)
     lateinit var syncIcon: ImageView
     lateinit var syncIconDrawable: AnimationDrawable
+    protected var dotSync: View? = null
+    protected var txtSyncState: TextView? = null
     @Inject
     lateinit var profileDbHandler: UserSessionManager
     lateinit var spnCloud: Spinner
@@ -114,9 +113,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     var isSync = false
     var forceSync = false
     var syncFailed = false
-    val defaultPref: SharedPreferences by lazy {
-        PreferenceManager.getDefaultSharedPreferences(applicationContext)
-    }
     var currentDialog: MaterialDialog? = null
     var serverConfigAction = ""
     var serverCheck = true
@@ -190,7 +186,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
             }
         }
-        settings = prefData.rawPreferences
         requestAllPermissions()
         processedUrl = UrlUtils.getUrl()
     }
@@ -391,18 +386,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         (applicationContext as? org.ole.planet.myplanet.MainApplication)?.applyAutoSyncSettings()
     }
 
-    suspend fun authenticateUser(settings: SharedPreferences?, username: String?, password: String?, isManagerMode: Boolean): Boolean {
+    suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): Boolean {
         return try {
-            if (settings != null) {
-                this.settings = settings
-            }
             if (!userRepository.hasAtLeastOneUser()) {
                 alertDialogOkay(getString(R.string.server_not_configured_properly_connect_this_device_with_planet_server))
                 false
             } else {
                 val user = userRepository.authenticateUser(username, password, isManagerMode)
                 if (user != null) {
-                    profileDbHandler.saveUserInfoPref(this.settings, password, user)
+                    profileDbHandler.saveUserInfoPref(password, user)
                     true
                 } else {
                     false
@@ -465,6 +457,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             customProgressDialog.setText(getString(R.string.syncing_data_please_wait))
             customProgressDialog.show()
             isProgressDialogShowing = true
+            txtSyncState?.text = getString(R.string.sync_chip_syncing)
+            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF59E0B.toInt())
         }
     }
 
@@ -479,6 +473,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 syncIconDrawable.selectDrawable(0)
                 syncIcon.invalidateDrawable(syncIconDrawable)
             }
+            txtSyncState?.text = getString(R.string.sync_chip_offline)
+            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
             showAlert(this@SyncActivity, getString(R.string.sync_failed), msg)
             showWifiSettingDialog(this@SyncActivity)
         }
@@ -548,7 +544,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                     downloadAdditionalResources()
 
-                    val betaAutoDownload = defaultPref.getBoolean("beta_auto_download", false)
+                    val betaAutoDownload = prefData.getBetaAutoDownload()
                     if (betaAutoDownload) {
                         withContext(dispatcherProvider.io) {
                             resourceDownloadCoordinator.startBackgroundDownload(
@@ -592,6 +588,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         if (::lblLastSyncDate.isInitialized) {
             if (prefData.getLastSync() <= 0) {
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
+                txtSyncState?.text = getString(R.string.sync_chip_offline)
+                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
@@ -601,6 +599,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 }
 
                 lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
+                txtSyncState?.text = getString(R.string.sync_chip_synced)
+                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF22C55E.toInt())
             }
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
@@ -670,8 +670,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     fun settingDialog() {
-        serverDialogBinding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
-        val binding = serverDialogBinding!!
+        val binding = DialogServerUrlBinding.inflate(LayoutInflater.from(this))
+        serverDialogBinding = binding
         initServerDialog(binding)
 
         val contextWrapper = ContextThemeWrapper(this, R.style.AlertDialogTheme)
@@ -754,7 +754,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onUpdateAvailable(info: MyPlanet?, cancelable: Boolean) {
-        runOnUiThread {
+        lifecycleScope.launch {
             val builder = getUpdateDialog(this@SyncActivity, info, customProgressDialog, lifecycleScope, configurationsRepository)
             if (cancelable || getCustomDeviceName(this@SyncActivity).endsWith("###")) {
                 builder.setNegativeButton(R.string.update_later) { _: DialogInterface?, _: Int ->
@@ -770,8 +770,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    override fun onCheckingVersion() {}
-
     fun registerReceiver() {
         collectWhenStarted(broadcastService.events) { intent ->
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -781,7 +779,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     override fun onError(msg: String, blockSync: Boolean) {
-        runOnUiThread {
+        lifecycleScope.launch {
             Utilities.toast(this@SyncActivity, msg)
             if (msg.startsWith("Config")) {
                 settingDialog()
@@ -803,6 +801,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private fun continueSyncProcess() {
         try {
             lifecycleScope.launch {
+                processedUrl = UrlUtils.getUrl()
                 if (isSync) {
                     isServerReachable(processedUrl, "sync")
                 } else if (forceSync) {

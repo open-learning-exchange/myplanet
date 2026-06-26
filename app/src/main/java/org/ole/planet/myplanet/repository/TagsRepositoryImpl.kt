@@ -47,14 +47,6 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
-    override suspend fun getLinkedCourseIds(db: String, tagIds: Array<String>): Set<String> {
-        val links = queryList(RealmTag::class.java) {
-            equalTo("db", db)
-            `in`("tagId", tagIds)
-        }
-        return links.mapNotNull { it.linkId }.toSet()
-    }
-
     override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
         return getLinkedTagsBulk("courses", courseIds)
     }
@@ -125,29 +117,54 @@ class TagsRepositoryImpl @Inject constructor(
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
         val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+        val ids = ArrayList<String>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
+                ids.add(id)
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertIntoRealm(realm, jsonDoc)
+
+        val tagCache = mutableMapOf<String, RealmTag>()
+        // Fetch existing tags upfront to avoid N+1 queries
+        if (ids.isNotEmpty()) {
+            val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
+            for (tag in existingTags) {
+                tag._id?.let { tagCache[it] = tag }
+            }
+        }
+
+        for (jsonDoc in documentList) {
+            insertIntoRealm(realm, jsonDoc, tagCache)
         }
     }
 
-    override suspend fun insert(act: com.google.gson.JsonObject) {
+    override suspend fun insert(documentList: List<com.google.gson.JsonObject>) {
+        if (documentList.isEmpty()) return
         executeTransaction { realm ->
-            insertIntoRealm(realm, act)
+            val ids = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }
+            val tagCache = mutableMapOf<String, RealmTag>()
+            if (ids.isNotEmpty()) {
+                val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
+                for (tag in existingTags) {
+                    tag._id?.let { tagCache[it] = tag }
+                }
+            }
+            for (act in documentList) {
+                insertIntoRealm(realm, act, tagCache)
+            }
         }
     }
 
-    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject) {
-        var tag = mRealm.where(RealmTag::class.java).equalTo("_id", org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)).findFirst()
+    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject, cache: MutableMap<String, RealmTag>) {
+        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+        var tag = cache[id]
         if (tag == null) {
-            tag = mRealm.createObject(RealmTag::class.java, org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act))
+            tag = mRealm.createObject(RealmTag::class.java, id)
+            cache[id] = tag
         }
         if (tag != null) {
             tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)

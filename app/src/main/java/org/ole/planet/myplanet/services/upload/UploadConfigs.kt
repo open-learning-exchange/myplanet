@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.services.upload
 
 import dagger.Lazy
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -8,6 +9,8 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -17,8 +20,8 @@ import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 
 @Singleton
@@ -26,7 +29,7 @@ class UploadConfigs @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsRepository: Lazy<TeamsRepository>,
+    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository
@@ -70,28 +73,9 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmTeamLog::class,
         endpoint = "team_activities",
         queryBuilder = { query -> query.isNull("_rev") },
-        serializer = UploadSerializer.WithContext { log, context -> serializeTeamActivities(log, context) },
+        serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
         idExtractor = { it.id }
     )
-
-    private fun serializeTeamActivities(log: RealmTeamLog, context: android.content.Context): com.google.gson.JsonObject {
-        val ob = com.google.gson.JsonObject()
-        ob.addProperty("user", log.user)
-        ob.addProperty("type", log.type)
-        ob.addProperty("createdOn", log.createdOn)
-        ob.addProperty("parentCode", log.parentCode)
-        ob.addProperty("teamType", log.teamType)
-        ob.addProperty("time", log.time)
-        ob.addProperty("teamId", log.teamId)
-        ob.addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
-        ob.addProperty("deviceName", org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
-        ob.addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(context))
-        if (!android.text.TextUtils.isEmpty(log._rev)) {
-            ob.addProperty("_rev", log._rev)
-            ob.addProperty("_id", log._id)
-        }
-        return ob
-    }
 
     val SearchActivity = UploadConfig(
         modelClass = RealmSearchActivity::class,
@@ -135,7 +119,13 @@ class UploadConfigs @Inject constructor(
         modelClass = RealmMeetup::class,
         endpoint = "meetups",
         queryBuilder = { query ->
-            query.isNull("meetupId").or().isEmpty("meetupId")
+            query.beginGroup()
+                .isNull("meetupId").or().isEmpty("meetupId")
+                .endGroup()
+                .or()
+                .beginGroup()
+                .equalTo("updated", true)
+                .endGroup()
         },
         serializer = UploadSerializer.Simple(RealmMeetup::serialize),
         idExtractor = { it.id },
@@ -143,6 +133,7 @@ class UploadConfigs @Inject constructor(
         additionalUpdates = { _, meetup, uploadedItem ->
             meetup.meetupId = uploadedItem.remoteId
             meetup.meetupIdRev = uploadedItem.remoteRev
+            meetup.updated = false
         }
     )
 
@@ -232,6 +223,37 @@ class UploadConfigs @Inject constructor(
             submission.isUpdated = false
         }
     )
+
+    fun getResourcesConfig(user: RealmUser?): UploadConfig<RealmMyLibrary> {
+        return UploadConfig(
+            modelClass = RealmMyLibrary::class,
+            endpoint = "resources",
+            queryBuilder = { query -> query.isNull("_rev") },
+            serializer = UploadSerializer.Simple { library ->
+                RealmMyLibrary.serialize(library, user)
+            },
+            idExtractor = { it.id },
+            additionalUpdates = { realm, library, uploadedItem ->
+                val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
+                    ?: sharedPrefManager.getPlanetCode()
+
+                if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
+                    val teamResource = realm.createObject(
+                        RealmMyTeam::class.java,
+                        UUID.randomUUID().toString()
+                    )
+                    teamResource.teamId = library.privateFor
+                    teamResource.title = library.title
+                    teamResource.resourceId = uploadedItem.remoteId
+                    teamResource.docType = "resourceLink"
+                    teamResource.updated = true
+                    teamResource.teamType = "local"
+                    teamResource.teamPlanetCode = planetCode
+                    teamResource.sourcePlanet = planetCode
+                }
+            }
+        )
+    }
 
     val Rating = UploadConfig(
         modelClass = RealmRating::class,

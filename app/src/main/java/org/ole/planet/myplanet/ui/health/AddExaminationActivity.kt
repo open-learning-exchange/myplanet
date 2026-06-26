@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.MenuItem
 import android.view.View
 import android.widget.CheckBox
@@ -13,6 +11,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -65,7 +64,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
     private var examination: RealmHealthExamination? = null
-    private var textWatcher: TextWatcher? = null
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
@@ -102,12 +100,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         }
 
         lifecycleScope.launch {
-            if (userId != null) {
-                val (u, p) = healthRepository.getHealthEntry(userId!!)
+            val uid = userId
+            if (uid != null) {
+                val (u, p) = healthRepository.getHealthEntry(uid)
                 user = u
                 pojo = p
 
-                val updatedUser = userRepository.ensureUserSecurityKeys(userId!!)
+                val updatedUser = userRepository.ensureUserSecurityKeys(uid)
                 if (updatedUser != null) {
                     user = updatedUser
                 }
@@ -178,39 +177,34 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     private fun validateFields() {
         allowSubmission = true
-        textWatcher = object : TextWatcher {
-            override fun afterTextChanged(s: Editable) {}
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                if (!"${binding.etBloodpressure.text}".contains("/")) {
-                    binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic)
+        binding.etBloodpressure.doOnTextChanged { _, _, _, _ ->
+            if (!"${binding.etBloodpressure.text}".contains("/")) {
+                binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_numeric_systolic_diastolic)
+                allowSubmission = false
+            } else {
+                val sysDia = "${binding.etBloodpressure.text}"
+                    .trim { it <= ' ' }
+                    .split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+                if (sysDia.size > 2 || sysDia.isEmpty()) {
+                    binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_systolic_diastolic)
                     allowSubmission = false
                 } else {
-                    val sysDia = "${binding.etBloodpressure.text}"
-                        .trim { it <= ' ' }
-                        .split("/".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-                    if (sysDia.size > 2 || sysDia.isEmpty()) {
-                        binding.etBloodpressure.error = getString(R.string.blood_pressure_should_be_systolic_diastolic)
-                        allowSubmission = false
-                    } else {
-                        try {
-                            val sys = sysDia[0].toInt()
-                            val dis = sysDia[1].toInt()
-                            if (sys < 60 || dis < 40 || sys > 300 || dis > 200) {
-                                binding.etBloodpressure.error = getString(R.string.bp_must_be_between_60_40_and_300_200)
-                                allowSubmission = false
-                            } else {
-                                allowSubmission = true
-                            }
-                        } catch (e: Exception) {
-                            binding.etBloodpressure.error = getString(R.string.systolic_and_diastolic_must_be_numbers)
+                    try {
+                        val sys = sysDia[0].toInt()
+                        val dis = sysDia[1].toInt()
+                        if (sys < 60 || dis < 40 || sys > 300 || dis > 200) {
+                            binding.etBloodpressure.error = getString(R.string.bp_must_be_between_60_40_and_300_200)
                             allowSubmission = false
+                        } else {
+                            allowSubmission = true
                         }
+                    } catch (e: Exception) {
+                        binding.etBloodpressure.error = getString(R.string.systolic_and_diastolic_must_be_numbers)
+                        allowSubmission = false
                     }
                 }
             }
         }
-        binding.etBloodpressure.addTextChangedListener(textWatcher)
     }
 
     private fun showOtherDiagnosis() {
@@ -445,8 +439,13 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     }
 
     override fun onDestroy() {
-        binding.etBloodpressure.removeTextChangedListener(textWatcher)
-        textWatcher = null
+        user = null
+        currentUser = null
+        pojo = null
+        health = null
+        examination = null
+        customDiag = null
+        mapConditions = null
         super.onDestroy()
     }
 }

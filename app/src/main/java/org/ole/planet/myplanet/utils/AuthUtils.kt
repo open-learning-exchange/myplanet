@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.utils
 
 import android.widget.Toast
 import kotlin.coroutines.resume
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -19,15 +18,14 @@ object AuthUtils {
         return userRepository.validateUsername(username)
     }
 
-    suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?) {
+    suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?, ioDispatcher: kotlinx.coroutines.CoroutineDispatcher) {
         if (activity.forceSyncTrigger()) return
 
-        val settings = activity.settings
-        withContext(Dispatchers.IO) {
-            SecurePrefs.saveCredentials(activity, settings, name, password)
+        withContext(ioDispatcher) {
+            SecurePrefs.saveCredentials(activity, activity.prefData.rawPreferences, name, password)
         }
 
-        val isLoggedIn = activity.authenticateUser(settings, name, password, false)
+        val isLoggedIn = activity.authenticateUser(name, password, false)
         if (isLoggedIn) {
             Toast.makeText(activity, activity.getString(R.string.welcome, name), Toast.LENGTH_SHORT).show()
             activity.onLogin()
@@ -62,7 +60,7 @@ object AuthUtils {
         }
 
         if (syncResult) {
-            val log = activity.authenticateUser(activity.settings, name, password, true)
+            val log = activity.authenticateUser(name, password, true)
             if (log) {
                 Toast.makeText(activity.applicationContext, activity.getString(R.string.thank_you), Toast.LENGTH_SHORT).show()
                 activity.onLogin()

@@ -9,10 +9,7 @@ import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.gson.JsonArray
-import java.text.Normalizer
 import java.util.Date
-import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
@@ -26,12 +23,13 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
+import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
-    private var chatHistory: List<RealmChatHistory>,
+    chatHistoryList: List<RealmChatHistory>,
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
@@ -58,17 +56,16 @@ class ChatHistoryAdapter(
     private lateinit var expandableListAdapter: ChatShareTargetAdapter
     private lateinit var expandableTitleList: List<String>
     private lateinit var expandableDetailList: HashMap<String, List<String>>
+    private var cachedSharedViewInIds: Map<String, Set<String>> = emptyMap()
 
     init {
-        chatHistory = chatHistory.sortedByDescending { chat ->
-            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
-        }
-        submitList(chatHistory)
+        submitList(chatHistoryList)
     }
 
     fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
         currentUser = user
         newsList = sharedNews
+        cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
     }
 
     fun updateShareTargets(newTargets: ChatShareTargets) {
@@ -78,94 +75,12 @@ class ChatHistoryAdapter(
     fun notifyChatShared(chatId: String?) {
         val position = currentList.indexOfFirst { it._id == chatId }
         if (position != -1) {
-            notifyItemChanged(position)
+            notifyItemChanged(position, PAYLOAD_CHAT_SHARED)
         }
     }
 
     fun setChatHistoryItemClickListener(listener: OnChatHistoryItemClickListener) {
         chatHistoryItemClickListener = listener
-    }
-
-    fun filter(query: String) {
-        val filteredChatHistory = chatHistory.filter { chat ->
-            if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.contains(query, ignoreCase = true) == true
-            } else {
-                chat.title?.contains(query, ignoreCase = true) == true
-            }
-        }
-        submitList(filteredChatHistory)
-    }
-
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
-
-    fun search(s: String, isFullSearch: Boolean, isQuestion: Boolean) {
-        val results = if (isFullSearch) {
-            fullConvoSearch(s, isQuestion)
-        } else {
-            searchByTitle(s)
-        }
-        submitList(results)
-    }
-
-    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
-        var conversation: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
-        val inTitleStartQuery = mutableListOf<RealmChatHistory>()
-        val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
-
-        for (chat in chatHistory) {
-            val conversations = chat.conversations
-            if (!conversations.isNullOrEmpty()) {
-                for (i in 0 until conversations.size) {
-                    conversation = if (isQuestion) {
-                        conversations[i]?.query?.let { normalizeText(it) }
-                    } else {
-                        conversations[i]?.response?.let { normalizeText(it) }
-                    }
-                    if (conversation == null) continue
-                    if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if (i == 0) inTitleStartQuery.add(chat) else startsWithQuery.add(chat)
-                        break
-                    } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
-                        if (i == 0) inTitleContainsQuery.add(chat) else containsQuery.add(chat)
-                        break
-                    }
-                }
-            }
-        }
-        return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
-    }
-
-    private fun searchByTitle(s: String): List<RealmChatHistory> {
-        var title: String?
-        val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
-
-        for (chat in chatHistory) {
-            title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
-            } else {
-                chat.title?.let { normalizeText(it) }
-            }
-            if (title == null) continue
-            if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(chat)
-            } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(chat)
-            }
-        }
-        return startsWithQuery + containsQuery
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderChat {
@@ -174,10 +89,15 @@ class ChatHistoryAdapter(
     }
 
     fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
-        chatHistory = newChatHistory.sortedByDescending { chat ->
-            maxOf(chat.createdDate?.toLongOrNull() ?: 0L, chat.updatedDate?.toLongOrNull() ?: 0L)
+        submitList(newChatHistory)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolderChat, position: Int, payloads: MutableList<Any>) {
+        if (payloads.contains(PAYLOAD_CHAT_SHARED)) {
+            bindShareChat(holder, getItem(position))
+            return
         }
-        submitList(chatHistory)
+        super.onBindViewHolder(holder, position, payloads)
     }
 
     override fun onBindViewHolder(holder: ViewHolderChat, position: Int) {
@@ -202,6 +122,10 @@ class ChatHistoryAdapter(
             )
         }
 
+        bindShareChat(holder, item)
+    }
+
+    private fun bindShareChat(holder: ViewHolderChat, item: RealmChatHistory) {
         holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
 
         holder.rowChatHistoryBinding.shareChat.setOnClickListener {
@@ -245,21 +169,10 @@ class ChatHistoryAdapter(
         }
     }
 
-    private fun getSharedViewInIds(chatId: String?): Set<String> {
+    @androidx.annotation.VisibleForTesting(otherwise = androidx.annotation.VisibleForTesting.PRIVATE)
+    internal fun getSharedViewInIds(chatId: String?): Set<String> {
         if (chatId == null) return emptySet()
-        return newsList
-            .filter { it.newsId == chatId }
-            .flatMap { news ->
-                try {
-                    val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                    array.mapNotNull { elem ->
-                        if (elem.isJsonObject) elem.asJsonObject.get("_id")?.asString else null
-                    }
-                } catch (_: Exception) {
-                    emptyList()
-                }
-            }
-            .toSet()
+        return cachedSharedViewInIds[chatId] ?: emptySet()
     }
 
     private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory, sharedIds: Set<String> = emptySet()) {
@@ -348,6 +261,6 @@ class ChatHistoryAdapter(
     class ViewHolderChat(val rowChatHistoryBinding: RowChatHistoryBinding) : RecyclerView.ViewHolder(rowChatHistoryBinding.root)
 
     companion object {
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
+        const val PAYLOAD_CHAT_SHARED = "PAYLOAD_CHAT_SHARED"
     }
 }

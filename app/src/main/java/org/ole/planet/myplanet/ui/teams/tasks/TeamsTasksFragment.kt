@@ -102,8 +102,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             deadline?.time = Date(t.deadline)
 
             if (!t.assignee.isNullOrBlank()) {
+                val assignee = t.assignee.orEmpty()
                 viewLifecycleOwner.lifecycleScope.launch {
-                    val assigneeUser = teamsRepository.getAssignee(t.assignee!!)
+                    val assigneeUser = teamsRepository.getAssignee(assignee)
                     if (assigneeUser != null) {
                         selectedAssignee = assigneeUser
                         updateAssigneeUI(alertTaskBinding, assigneeUser)
@@ -151,22 +152,28 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         val alertDialog = builder.create()
         alertDialog.show()
-
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
             val task = alertTaskBinding.etTask.text.toString()
             val desc = alertTaskBinding.etDescription.text.toString()
+            var isValid = true
             if (task.isEmpty()) {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
-            } else if (deadline == null) {
+                isValid = false
+            }
+            if (deadline == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
-            } else {
+                isValid = false  }
+            if (desc.isEmpty()) {
+                Utilities.toast(activity, getString(R.string.desc_is_required))
+                isValid = false
+            }
+            if (isValid) {
                 createOrUpdateTask(task, desc, t, selectedAssignee?.id)
                 alertDialog.dismiss()
             }
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
-
     private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
         var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
 
@@ -213,7 +220,13 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             if (teamTask == null) {
                 teamsRepository.createTask(task, desc, deadlineMillis, teamId, assigneeId)
             } else {
-                teamsRepository.updateTask(teamTask.id!!, task, desc, deadlineMillis, assigneeId)
+                teamsRepository.updateTask(teamTask.id ?: return@launch, task, desc, deadlineMillis, assigneeId)
+            }
+
+            val shouldStayOnMyTasks = currentTab == R.id.btn_my && assigneeId == user?.id
+            if (!shouldStayOnMyTasks) {
+                currentTab = R.id.btn_all
+                binding.taskToggle.check(R.id.btn_all)
             }
 
             Utilities.toast(
@@ -292,6 +305,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 else -> allTasks()
             }
             adapterTask.submitList(taskList)
+            binding.rvTask.scrollToPosition(0)
+
             showNoData(binding.tvNodata, taskList.size, "tasks")
         }
     }

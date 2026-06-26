@@ -5,7 +5,12 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmUser
+
+data class LibraryWithMetadata(
+    val library: RealmMyLibrary,
+    val rating: JsonObject?,
+    val tags: List<RealmTag>
+)
 
 data class ResourceUploadData(
     val libraryId: String?,
@@ -24,10 +29,28 @@ data class UploadedResourceInfo(
     val title: String?
 )
 
+data class LocalResourceRequest(
+    val title: String?,
+    val addedBy: String?,
+    val author: String?,
+    val year: String?,
+    val description: String?,
+    val publisher: String?,
+    val linkToLicense: String?,
+    val openWith: String?,
+    val language: String?,
+    val mediaType: String?,
+    val resourceType: String?,
+    val subjects: io.realm.RealmList<String>?,
+    val levels: io.realm.RealmList<String>?,
+    val resourceFor: io.realm.RealmList<String>?,
+    val resourceUrl: String?,
+    val userId: String?,
+    val isPrivateTeamResource: Boolean,
+    val teamId: String?
+)
+
 interface ResourcesRepository {
-    suspend fun getUnuploadedResources(user: RealmUser?): List<ResourceUploadData>
-    suspend fun markResourceUploaded(libraryId: String, id: String, rev: String)
-    suspend fun markResourcesUploaded(uploadedInfos: List<UploadedResourceInfo>, planetCode: String?)
     suspend fun getAllLibraries(): List<RealmMyLibrary>
     suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
@@ -46,7 +69,7 @@ interface ResourcesRepository {
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
     suspend fun saveLibraryItem(item: RealmMyLibrary)
-    suspend fun saveLocalResource(resource: RealmMyLibrary, userId: String?, isPrivateTeamResource: Boolean, teamId: String?): Result<Unit>
+    suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
@@ -69,7 +92,6 @@ interface ResourcesRepository {
     suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>
     suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit>
     suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit>
-    suspend fun getOpenedResourceIds(userId: String): Set<String>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
     suspend fun getDownloadSuggestionList(userId: String? = null): List<RealmMyLibrary>
     suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
@@ -84,6 +106,12 @@ interface ResourcesRepository {
     suspend fun getResourceTags(resourceId: String): List<RealmTag>
     suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
     suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
+    suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
+    suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary>
+    suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary>
+    suspend fun getPublicLibraryItems(): List<RealmMyLibrary>
+    suspend fun getResourceTitlesMap(): Map<String, String>
+    suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
 }
 
 sealed class ResourceUrlsResponse {

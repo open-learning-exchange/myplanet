@@ -39,7 +39,8 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.references.ReferencesAdapter
-import org.ole.planet.myplanet.ui.viewer.PDFReaderActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -327,8 +328,9 @@ class AchievementFragment : BaseContainerFragment() {
         }
         binding.cvCard.visibility = View.VISIBLE
         binding.btnViewCv.setOnClickListener {
-            val intent = Intent(requireContext(), PDFReaderActivity::class.java)
+            val intent = Intent(requireContext(), ResourceViewerActivity::class.java)
             intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
             startActivity(intent)
         }
     }
@@ -342,7 +344,7 @@ class AchievementFragment : BaseContainerFragment() {
         if (binding.rvOtherInfo.adapter == null) {
             binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
         } else {
-            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitList(data.references)
+            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitJsonList(data.references)
         }
     }
 

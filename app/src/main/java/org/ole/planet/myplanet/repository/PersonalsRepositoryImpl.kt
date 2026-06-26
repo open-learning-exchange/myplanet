@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -7,12 +9,17 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class PersonalsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val apiInterface: ApiInterface,
+    @ApplicationContext private val context: Context
 ) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
@@ -75,5 +82,25 @@ class PersonalsRepositoryImpl @Inject constructor(
             personal._id = newId
             personal._rev = rev
         }
+    }
+
+    override suspend fun uploadPersonalDocument(personal: RealmMyPersonal): Pair<String, String>? {
+        val response = apiInterface.postDoc(
+            UrlUtils.header, "application/json",
+            "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
+        )
+
+        val `object` = response.body()
+        if (`object` != null) {
+            val rev = getString("rev", `object`)
+            val id = getString("id", `object`)
+
+            personal.id?.let { personalId ->
+                updatePersonalAfterSync(personalId, id, rev)
+            }
+
+            return Pair(id, rev)
+        }
+        return null
     }
 }

@@ -261,8 +261,12 @@ object DialogUtils {
         }
 
         fun setProgress(value: Int) {
-            setIndeterminate()
-            progressBar.progress = value
+            if (value < 0) {
+                progressBar.isIndeterminate = true
+            } else {
+                progressBar.isIndeterminate = false
+                progressBar.progress = value
+            }
         }
 
         fun setText(text: String) {

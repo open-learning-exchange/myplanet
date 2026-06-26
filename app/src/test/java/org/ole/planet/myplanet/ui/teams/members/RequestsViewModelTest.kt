@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 class RequestsViewModelTest {
 
     private lateinit var teamsRepository: TeamsRepository
+    private lateinit var teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var testDispatcherProvider: TestDispatcherProvider
     private lateinit var viewModel: RequestsViewModel
@@ -32,9 +33,10 @@ class RequestsViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         teamsRepository = mockk()
+        teamsSyncRepository = mockk()
         userSessionManager = mockk()
         testDispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = RequestsViewModel(teamsRepository, userSessionManager, testDispatcherProvider)
+        viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager, testDispatcherProvider)
     }
 
     @After
@@ -85,7 +87,7 @@ class RequestsViewModelTest {
         assertEquals(2, viewModel.uiState.value.members.size)
 
         coEvery { teamsRepository.respondToMemberRequest(teamId, user1.id!!, true) } returns Result.success(Unit)
-        coEvery { teamsRepository.syncTeamActivities() } returns Unit
+        coEvery { teamsSyncRepository.syncTeamActivities() } returns Unit
 
         // Setup fetchMembers for the success path
         val newMembers = listOf(user2)

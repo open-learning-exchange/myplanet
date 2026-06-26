@@ -41,7 +41,7 @@ class RealmUserEncodeImageTest {
         } catch (e: Exception) {
             // UninitializedPropertyAccessException if context was never set
         }
-        MainApplication.context = mockContext
+        MainApplication.testContext = mockContext
         every { mockContext.contentResolver } returns mockContentResolver
 
         mockkStatic(Base64::class)
@@ -55,9 +55,7 @@ class RealmUserEncodeImageTest {
     @After
     fun tearDown() {
         try {
-            if (originalContext != null) {
-                MainApplication.context = originalContext!!
-            }
+            MainApplication.testContext = originalContext
         } finally {
             originalContext = null
             unmockkAll()

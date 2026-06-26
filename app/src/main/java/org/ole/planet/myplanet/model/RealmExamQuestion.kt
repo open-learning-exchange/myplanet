@@ -22,6 +22,7 @@ open class RealmExamQuestion : RealmObject() {
     var marks: String? = null
     var choices: String? = null
     var hasOtherOption: Boolean = false
+    var scaleMax: Int = 9
     private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
         for (i in 0 until array.size()) {
             question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
@@ -46,7 +47,8 @@ open class RealmExamQuestion : RealmObject() {
         fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
             if (questions.size() == 0) return
 
-            val questionIds = mutableListOf<String>()
+            val questionsToInsert = mutableListOf<RealmExamQuestion>()
+
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
                 val questionId = if (question.has("id")) {
@@ -54,30 +56,9 @@ open class RealmExamQuestion : RealmObject() {
                 } else {
                     "$examId-${i}"
                 }
-                questionIds.add(questionId)
-            }
 
-            val existingQuestionsList = if (questionIds.isNotEmpty()) {
-                mRealm.where(RealmExamQuestion::class.java)
-                    .`in`("id", questionIds.toTypedArray())
-                    .findAll()
-            } else {
-                emptyList()
-            }
-            val existingQuestionsMap = existingQuestionsList.associateBy { it.id }.toMutableMap()
-
-            for (i in 0 until questions.size()) {
-                val question = questions[i].asJsonObject
-                val questionId = questionIds[i]
-
-                var myQuestion = existingQuestionsMap[questionId]
-
-                if (myQuestion == null) {
-                    myQuestion = mRealm.createObject(RealmExamQuestion::class.java, questionId)
-                    existingQuestionsMap[questionId] = myQuestion
-                }
-
-                myQuestion.apply {
+                val myQuestion = RealmExamQuestion().apply {
+                    this.id = questionId
                     this.examId = examId
                     body = JsonUtils.getString("body", question)
                     type = JsonUtils.getString("type", question)
@@ -90,12 +71,15 @@ open class RealmExamQuestion : RealmObject() {
                     }
 
                     hasOtherOption = JsonUtils.getBoolean("hasOtherOption", question)
+                    scaleMax = JsonUtils.getInt("scaleMax", question).let { if (it <= 0) 9 else it }
                     val isMultipleChoice = type?.startsWith("select") == true && question.has("choices")
                     if (isMultipleChoice) {
                         insertCorrectChoice(question["choices"].asJsonArray, question, this)
                     }
                 }
+                questionsToInsert.add(myQuestion)
             }
+            mRealm.insertOrUpdate(questionsToInsert)
         }
 
         private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: RealmExamQuestion?) {

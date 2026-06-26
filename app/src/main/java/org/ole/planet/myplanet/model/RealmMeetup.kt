@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.model
 
-import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Case
@@ -35,36 +34,82 @@ open class RealmMeetup : RealmObject() {
     var recurringNumber: Int = 10
     var sync: String? = null
     var sourcePlanet: String? = null
+    var updated: Boolean = false
 
     companion object {
+        private fun mapFromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: RealmMeetup?): RealmMeetup {
+            val meetup = RealmMeetup()
+            meetup.id = JsonUtils.getString("_id", meetupDoc)
+            meetup.meetupId = JsonUtils.getString("_id", meetupDoc)
+            meetup.userId = userId
+            meetup.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
+            meetup.title = JsonUtils.getString("title", meetupDoc)
+            meetup.description = JsonUtils.getString("description", meetupDoc)
+            meetup.startDate = JsonUtils.getLong("startDate", meetupDoc)
+            meetup.endDate = JsonUtils.getLong("endDate", meetupDoc)
+            meetup.recurring = JsonUtils.getString("recurring", meetupDoc)
+            meetup.startTime = JsonUtils.getString("startTime", meetupDoc)
+            meetup.endTime = JsonUtils.getString("endTime", meetupDoc)
+            meetup.category = JsonUtils.getString("category", meetupDoc)
+            meetup.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
+            meetup.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
+            meetup.creator = JsonUtils.getString("createdBy", meetupDoc)
+            meetup.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
+            meetup.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
+            meetup.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
+
+            if (existingMeetup != null) {
+                meetup.createdDate = existingMeetup.createdDate
+                meetup.recurringNumber = existingMeetup.recurringNumber
+                meetup.sync = existingMeetup.sync
+                meetup.sourcePlanet = existingMeetup.sourcePlanet
+                meetup.updated = existingMeetup.updated
+            }
+
+            return meetup
+        }
+
         @JvmStatic
         fun insert(mRealm: Realm, meetupDoc: JsonObject) {
             insert("", meetupDoc, mRealm)
         }
 
         fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
-            var myMeetupsDB = mRealm.where(RealmMeetup::class.java)
-                .equalTo("meetupId", JsonUtils.getString("_id", meetupDoc)).findFirst()
-            if (myMeetupsDB == null) {
-                myMeetupsDB = mRealm.createObject(RealmMeetup::class.java, JsonUtils.getString("_id", meetupDoc))
+            val meetupId = JsonUtils.getString("_id", meetupDoc)
+            val myMeetupsDB = mRealm.where(RealmMeetup::class.java)
+                .equalTo("meetupId", meetupId).findFirst()
+
+            if (myMeetupsDB?.updated == true) return
+
+            val meetup = mapFromJson(meetupDoc, userId, myMeetupsDB)
+            mRealm.insertOrUpdate(meetup)
+        }
+
+        @JvmStatic
+        fun insertList(mRealm: Realm, userId: String?, documents: List<JsonObject>) {
+            if (documents.isEmpty()) return
+
+            val ids = documents.map { JsonUtils.getString("_id", it) }.toTypedArray()
+
+            val existingMeetups = mRealm.where(RealmMeetup::class.java)
+                .`in`("meetupId", ids)
+                .findAll()
+                .associateByTo(HashMap()) { it.meetupId }
+
+            val meetupsToInsert = mutableListOf<RealmMeetup>()
+
+            for (meetupDoc in documents) {
+                val id = JsonUtils.getString("_id", meetupDoc)
+                val myMeetupsDB = existingMeetups[id]
+
+                if (myMeetupsDB?.updated == true) continue
+
+                meetupsToInsert.add(mapFromJson(meetupDoc, userId, myMeetupsDB))
             }
-            myMeetupsDB?.meetupId = JsonUtils.getString("_id", meetupDoc)
-            myMeetupsDB?.userId = userId
-            myMeetupsDB?.meetupIdRev = JsonUtils.getString("_rev", meetupDoc)
-            myMeetupsDB?.title = JsonUtils.getString("title", meetupDoc)
-            myMeetupsDB?.description = JsonUtils.getString("description", meetupDoc)
-            myMeetupsDB?.startDate = JsonUtils.getLong("startDate", meetupDoc)
-            myMeetupsDB?.endDate = JsonUtils.getLong("endDate", meetupDoc)
-            myMeetupsDB?.recurring = JsonUtils.getString("recurring", meetupDoc)
-            myMeetupsDB?.startTime = JsonUtils.getString("startTime", meetupDoc)
-            myMeetupsDB?.endTime = JsonUtils.getString("endTime", meetupDoc)
-            myMeetupsDB?.category = JsonUtils.getString("category", meetupDoc)
-            myMeetupsDB?.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
-            myMeetupsDB?.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
-            myMeetupsDB?.creator = JsonUtils.getString("createdBy", meetupDoc)
-            myMeetupsDB?.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
-            myMeetupsDB?.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
-            myMeetupsDB?.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
+
+            if (meetupsToInsert.isNotEmpty()) {
+                mRealm.insertOrUpdate(meetupsToInsert)
+            }
         }
 
         @JvmStatic
@@ -109,7 +154,7 @@ open class RealmMeetup : RealmObject() {
         }
 
         private fun checkNull(s: String?): String {
-            return if (TextUtils.isEmpty(s)) "" else s!!
+            return s.orEmpty()
         }
 
         @JvmStatic

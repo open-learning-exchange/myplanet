@@ -46,6 +46,7 @@ class TransactionSyncManagerTest {
     private val userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
     private val teamsRepository: Lazy<TeamsRepository> = mockk()
+    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
     private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository = mockk()
     private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository = mockk()
@@ -79,6 +80,7 @@ class TransactionSyncManagerTest {
             userSyncRepository,
             activitiesRepository,
 			teamsRepository,
+            teamsSyncRepository,
 			notificationsRepository,
             tagsRepository,
             ratingsRepository,
@@ -102,6 +104,7 @@ class TransactionSyncManagerTest {
     fun authenticate_success_returnsTrue() = testScope.runTest {
         val mockResponse = mockk<Response<DocumentResponse>>()
         every { mockResponse.code() } returns 200
+        every { mockResponse.body() } returns mockk<DocumentResponse>()
         coEvery { apiInterface.getDocuments(any(), any()) } returns mockResponse
 
         val result = transactionSyncManager.authenticate()

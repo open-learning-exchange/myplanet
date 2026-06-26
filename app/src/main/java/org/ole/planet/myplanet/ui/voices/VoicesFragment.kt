@@ -6,8 +6,6 @@ import android.os.Trace
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
@@ -23,7 +21,6 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
@@ -54,13 +51,15 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
+    @Inject
+    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     private var filteredNewsList: List<RealmNews?> = listOf()
     private var searchFilteredList: List<RealmNews?> = listOf()
     private var labelFilteredList: List<RealmNews?> = listOf()
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
-    private var labelAdapter: ArrayAdapter<String>? = null
+    private var labelAdapter: VoicesLabelAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -96,6 +95,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             if (user?.id?.startsWith("guest") == true) {
@@ -105,8 +105,8 @@ class VoicesFragment : BaseVoicesFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
                     val filtered = news.map { it as RealmNews? }
-                    val labels = collectAllLabels(filtered)
-                    val labelFiltered = applyLabelFilter(filtered)
+                    val labels = voicesViewModel.collectLabels(filtered)
+                    val labelFiltered = voicesViewModel.filterByLabel(filtered, selectedLabel)
                     val searchFiltered =
                         applySearchFilter(labelFiltered, etSearch.text.toString().trim())
                     if (_binding != null) {
@@ -146,7 +146,7 @@ class VoicesFragment : BaseVoicesFragment() {
                     if (n != null) {
                         n.sortDate = n.calculateSortDate()
                         filteredNewsList = listOf(n) + filteredNewsList
-                        labelFilteredList = applyLabelFilter(filteredNewsList)
+                        labelFilteredList = voicesViewModel.filterByLabel(filteredNewsList, selectedLabel)
                         searchFilteredList = applySearchFilter(labelFilteredList)
                         setData(searchFilteredList)
                     }
@@ -189,7 +189,7 @@ class VoicesFragment : BaseVoicesFragment() {
         } else {
             (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list?.filterNotNull())
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
+        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
     }
 
     private fun downloadResourcesForNews(list: List<RealmNews?>) {
@@ -224,14 +224,19 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     private fun setupVoicesAdapter(sortedList: List<RealmNews>) {
-        val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+        val labelManager = VoicesLabelManager(
+            context = requireActivity(),
+            scope = viewLifecycleOwner.lifecycleScope,
+            dispatcherProvider = dispatcherProvider,
+            addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+            removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+        )
         adapterNews = VoicesAdapter(
             context = requireActivity(),
             currentUser = user,
             parentNews = null,
             teamName = "",
             teamId = null,
-            userSessionManager = userSessionManager,
             isTeamLeaderFn = { onResult -> onResult(false) },
             getUserFn = { userId, onResult ->
                 viewLifecycleOwner.lifecycleScope.launch {
@@ -350,52 +355,45 @@ class VoicesFragment : BaseVoicesFragment() {
     
     private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
         val query = queryParam ?: etSearch.text.toString().trim()
-        
-        if (query.isEmpty()) {
-            return list
+        if (query.isEmpty()) return list
+        return list.filter { news ->
+            news?.message?.contains(query, ignoreCase = true) == true ||
+            news?.userName?.contains(query, ignoreCase = true) == true ||
+            news?.newsTitle?.contains(query, ignoreCase = true) == true
         }
-        
-        val filtered = list.filter { news ->
-            val message = news?.message?.trim() ?: ""
-            val matches = message.contains(query, ignoreCase = true)
-            matches
-        }
-        return filtered
     }
     
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
-        updateLabelSpinner(precomputedLabels)
-
-        binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedLabel = labelAdapter?.getItem(position) ?: "All"
-                labelFilteredList = applyLabelFilter(filteredNewsList)
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
-                scrollToTop()
-            }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
-        }
-    }
-    
-    private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
+        if (labelAdapter == null) {
+            labelAdapter = VoicesLabelAdapter(
+                onItemClick = { label ->
+                    selectedLabel = label
+                    val currentItems = labelAdapter?.currentList ?: return@VoicesLabelAdapter
+                    labelAdapter?.submitList(currentItems.map { it.copy(isSelected = it.label == label) })
+                    labelFilteredList = applyLabelFilter(filteredNewsList)
+                    searchFilteredList = applySearchFilter(labelFilteredList)
+                    setData(searchFilteredList)
+                    scrollToTop()
+                }
+            )
+            binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+            binding.filterByLabel.adapter = labelAdapter
+        }
+        updateLabelSpinner(precomputedLabels)
+    }
+
+    private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
-        val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
-        val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
-        labelAdapter = adapter
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.filterByLabel.adapter = adapter
+        val items = labels.map { VoicesLabelItem(it, it == selectedLabel) }
+        labelAdapter?.submitList(items)
 
         val position = labels.indexOf(selectedLabel)
         if (position >= 0) {
-            binding.filterByLabel.setSelection(position)
-        } else {
-            selectedLabel = "All"
-            binding.filterByLabel.setSelection(0)
+            _binding?.filterByLabel?.scrollToPosition(position)
         }
     }
-    
+
     private fun collectAllLabels(list: List<RealmNews?>): List<String> {
         labelDisplayToValue.clear()
 
@@ -437,12 +435,12 @@ class VoicesFragment : BaseVoicesFragment() {
 
         return allLabels.sorted()
     }
-    
+
     private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
         if (selectedLabel == "All") {
             return list
         }
-        
+
         return list.filter { news ->
             when {
                 selectedLabel == "Shared Chat" -> {
@@ -458,7 +456,7 @@ class VoicesFragment : BaseVoicesFragment() {
             }
         }
     }
-    
+
     private fun extractSharedTeamName(news: RealmNews?): String {
         if (!news?.viewIn.isNullOrEmpty()) {
             try {
@@ -477,7 +475,6 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     override fun onDestroyView() {
-        binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
         labelAdapter = null
         _binding = null

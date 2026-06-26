@@ -14,6 +14,7 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
@@ -24,6 +25,7 @@ import fisk.chipcloud.ChipDeletedListener
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -44,7 +46,6 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -76,9 +77,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     @Inject
     lateinit var prefManager: SharedPrefManager
-
-    @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
 
     private val viewModel: ResourcesViewModel by viewModels()
     
@@ -113,7 +111,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
@@ -171,15 +169,37 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 }
             }
         }
-
+        collectWhenStarted(viewModel.downloadComplete) { completed ->
+            if (completed) {
+                refreshResourcesData()
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (intent.action == org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS) {
+                        val download = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra("download", org.ole.planet.myplanet.model.Download::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra("download")
+                        }
+                        if (download?.completeAll == true) {
+                            viewModel.notifyDownloadComplete()
+                        }
+                    }
+                }
+            }
+        }
         lifecycleScope.launch {
             userModel = profileDbHandler.getUserModel()
             setupGuestUserRestrictions()
 
             val userId = userModel?.id
             if (userId != null) {
+                viewModel.observeOpenedResourceIds(userId)
                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    resourcesRepository.observeOpenedResourceIds(userId).collect { openedResourceIds ->
+                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
                         if (::adapterLibrary.isInitialized) {
                             adapterLibrary.setOpenedResourceIds(openedResourceIds)
                         }
@@ -242,9 +262,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             AlertDialog.Builder(this.context, R.style.AlertDialogTheme)
                 .setMessage(R.string.confirm_removal)
                 .setPositiveButton(R.string.yes) { _, _ ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        deleteSelected(true)
-                    }
+                    deleteSelected(true)
                 }
                 .setNegativeButton(R.string.no, null).show()
         }
@@ -283,7 +301,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
 
         checkList(filteredList.size)
-        showNoData(tvMessage, adapterLibrary.itemCount, "resources")
+        showNoData(tvMessage, filteredList.size, "resources")
     }
 
     private fun setupCollectionsButton() {
@@ -310,6 +328,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupAddResourceButtonListener() {
+        binding.addResource.visibility = if (isMyCourseLib) View.VISIBLE else View.GONE
         binding.addResource.setOnClickListener {
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
@@ -453,6 +472,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             }
             onTagClicked(rTag)
         }
+    }
+
+    override fun onSingleResourceDownloaded(url: String) {
+        if (!::adapterLibrary.isInitialized) return
+        val localAddress = url.substringAfterLast('/')
+        val id = allResourceModels.find { it.item.resourceLocalAddress == localAddress }?.item?.id ?: return
+        adapterLibrary.markItemAsOffline(id)
+        refreshResourcesData()
     }
 
     override fun onResourceClicked(item: ResourceItem) {
@@ -697,7 +724,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun deleteSelected(deleteProgress: Boolean) {
+    override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id
         val itemsToDelete = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
@@ -724,7 +751,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch {
-                resourcesRepository.addResourcesToUserLibrary(itemsToAdd, userId)
+                viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
                     .onSuccess {
                         _binding ?: return@onSuccess
                         Utilities.toast(activity, getString(R.string.added_to_my_library))

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmObject
 import kotlinx.coroutines.launch
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
+    @javax.inject.Inject lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
@@ -37,7 +39,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder>
+    abstract suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -192,8 +194,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open suspend fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEachIndexed { _, item ->
+    open fun deleteSelected(deleteProgress: Boolean) {
+        val snapshot = selectedItems?.toList() ?: return
+        for (item in snapshot) {
             val `object` = item as RealmObject
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)
@@ -205,9 +208,11 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
-    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            coursesRepository.deleteCourseProgress(`object`.courseId)
+            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                coursesRepository.deleteCourseProgress(`object`.courseId)
+            }
         }
     }
 

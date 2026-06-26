@@ -7,7 +7,7 @@ import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 
 interface ProgressRepository {
-    suspend fun getCourseProgress(userId: String?): HashMap<String?, JsonObject>
+    suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject>
     suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun fetchCourseData(userId: String?): JsonArray
     suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress>
@@ -22,4 +22,5 @@ interface ProgressRepository {
     )
     suspend fun hasUserCompletedSync(userId: String): Boolean
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun findProgressForCourse(courseData: JsonArray, courseId: String): JsonObject?
 }

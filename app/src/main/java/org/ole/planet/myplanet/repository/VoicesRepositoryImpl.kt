@@ -56,18 +56,16 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {
-        databaseService.executeTransactionAsync { realm ->
+        executeTransaction { realm ->
             val ids = updates.mapNotNull { it.id }
             val managedNewsMap = mutableMapOf<String, RealmNews>()
 
             if (ids.isNotEmpty()) {
-                ids.chunked(999).forEach { chunk ->
-                    val results = realm.where(RealmNews::class.java)
-                        .`in`("id", chunk.toTypedArray())
-                        .findAll()
-                    results.forEach { n ->
-                        n.id?.let { id -> managedNewsMap[id] = n }
-                    }
+                val results = realm.where(RealmNews::class.java)
+                    .`in`("id", ids.toTypedArray())
+                    .findAll()
+                results.forEach { n ->
+                    n.id?.let { id -> managedNewsMap[id] = n }
                 }
             }
 
@@ -141,7 +139,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         val realmVideoList = videoList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         return try {
-            databaseService.executeTransactionAsync { realm ->
+            executeTransaction { realm ->
                 RealmNews.createNews(newsData, realm, user, realmImageList, realmVideoList)
             }
             true
@@ -153,31 +151,17 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
         return withRealm { realm ->
-            val allNews = realm.where(RealmNews::class.java)
+            val query = realm.where(RealmNews::class.java)
                 .isEmpty("replyTo")
+                .beginGroup()
+                .equalTo("viewableBy", "teams", Case.INSENSITIVE)
+                .equalTo("viewableId", teamId, Case.INSENSITIVE)
+                .or()
+                .contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
+                .endGroup()
                 .sort("time", Sort.DESCENDING)
-                .findAll()
 
-            val filteredList = mutableListOf<RealmNews>()
-            for (news in allNews) {
-                if (!news.viewableBy.isNullOrEmpty() && news.viewableBy.equals("teams", ignoreCase = true) && news.viewableId.equals(teamId, ignoreCase = true)) {
-                    filteredList.add(realm.copyFromRealm(news))
-                } else if (!news.viewIn.isNullOrEmpty()) {
-                    try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                        for (e in ar) {
-                            val ob = e.asJsonObject
-                            if (ob["_id"].asString.equals(teamId, ignoreCase = true)) {
-                                filteredList.add(realm.copyFromRealm(news))
-                                break
-                            }
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-            }
-            filteredList
+            realm.copyFromRealm(query.findAll())
         }
     }
 
@@ -195,8 +179,7 @@ class VoicesRepositoryImpl @Inject constructor(
             val array = gson.fromJson(viewIn, JsonArray::class.java)
             array?.any { element ->
                 element != null && element.isJsonObject &&
-                    element.asJsonObject.has("_id") &&
-                    element.asJsonObject.get("_id").asString.equals(userIdentifier, ignoreCase = true)
+                    JsonUtils.getString("_id", element.asJsonObject).equals(userIdentifier, ignoreCase = true)
             } == true
         } catch (throwable: Throwable) {
             false
@@ -226,35 +209,19 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
         return queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
+            beginGroup()
+            equalTo("viewableBy", "teams", Case.INSENSITIVE)
+            equalTo("viewableId", teamId, Case.INSENSITIVE)
+            or()
+            contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
+            endGroup()
             sort("time", Sort.DESCENDING)
-        }.map { discussions ->
-            discussions.filter { news ->
-                val viewableByTeams = !news.viewableBy.isNullOrEmpty() &&
-                        news.viewableBy.equals("teams", ignoreCase = true) &&
-                        news.viewableId.equals(teamId, ignoreCase = true)
-
-                val viewInTeam = if (!news.viewIn.isNullOrEmpty()) {
-                    try {
-                        val ar = gson.fromJson(news.viewIn, JsonArray::class.java)
-                        ar.any { e ->
-                            val ob = e.asJsonObject
-                            ob["_id"].asString.equals(teamId, ignoreCase = true)
-                        }
-                    } catch (e: Exception) {
-                        false
-                    }
-                } else {
-                    false
-                }
-
-                viewableByTeams || viewInTeam
-            }
         }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
         return try {
-            databaseService.executeTransactionAsync { realm ->
+            executeTransaction { realm ->
                 val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
                 if (news != null) {
                     val array = gson.fromJson(news.viewIn, JsonArray::class.java)
@@ -285,47 +252,43 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        withRealm { realm ->
-            realm.executeTransaction {
-                var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
-                    .equalTo("type", "chat")
-                    .equalTo("parentId", teamId)
-                    .findFirst()
+        executeTransaction { it ->
+            var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
+                .equalTo("type", "chat")
+                .equalTo("parentId", teamId)
+                .findFirst()
 
-                if (notification == null) {
-                    notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                    notification.parentId = teamId
-                    notification.type = "chat"
-                }
-                notification.lastCount = count
+            if (notification == null) {
+                notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                notification.parentId = teamId
+                notification.type = "chat"
             }
+            notification.lastCount = count
         }
     }
 
     override suspend fun deletePost(newsId: String, teamName: String) {
-        withRealm { realm ->
-            realm.executeTransaction { transactionRealm ->
-                val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-                if (news != null) {
-                    val ar = try {
-                        gson.fromJson(news.viewIn, JsonArray::class.java)
-                    } catch (e: Exception) {
-                        null
-                    }
+        executeTransaction { transactionRealm ->
+            val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            if (news != null) {
+                val ar = try {
+                    gson.fromJson(news.viewIn, JsonArray::class.java)
+                } catch (e: Exception) {
+                    null
+                }
 
-                    if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
-                        news.id?.let { id -> deleteRepliesOf(id, transactionRealm) }
-                        news.deleteFromRealm()
-                    } else {
-                        val filtered = JsonArray().apply {
-                            ar.forEach { elem ->
-                                if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
-                                    add(elem)
-                                }
+                if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
+                    news.id?.let { id -> deleteRepliesOf(id, transactionRealm) }
+                    news.deleteFromRealm()
+                } else {
+                    val filtered = JsonArray().apply {
+                        ar.forEach { elem ->
+                            if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
+                                add(elem)
                             }
                         }
-                        news.viewIn = gson.toJson(filtered)
                     }
+                    news.viewIn = gson.toJson(filtered)
                 }
             }
         }
@@ -347,16 +310,6 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getReplies(newsId: String?): List<RealmNews> {
-        return withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .sort("time", Sort.DESCENDING)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun getReplyCount(newsId: String?): Int {
         return withRealm { realm ->
             realm.where(RealmNews::class.java)
@@ -367,11 +320,9 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteNews(newsId: String) {
-        withRealm { realm ->
-            realm.executeTransaction {
-                deleteRepliesOf(newsId, it)
-                it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
-            }
+        executeTransaction {
+            deleteRepliesOf(newsId, it)
+            it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
         }
     }
 
@@ -385,20 +336,16 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addLabel(newsId: String, label: String) {
-        withRealm { realm ->
-            realm.executeTransaction {
-                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-                news?.labels?.add(label)
-            }
+        executeTransaction {
+            val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            news?.labels?.add(label)
         }
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
-        withRealm { realm ->
-            realm.executeTransaction {
-                val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-                news?.labels?.remove(label)
-            }
+        executeTransaction {
+            val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
+            news?.labels?.remove(label)
         }
     }
 
@@ -491,12 +438,12 @@ class VoicesRepositoryImpl @Inject constructor(
         return false
     }
 
-    private val dateFormat = object : ThreadLocal<java.text.SimpleDateFormat>() {
-        override fun initialValue() = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault())
-    }
+    private val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     private fun getDateFromTimestamp(timestamp: Long): String {
-        return dateFormat.get()!!.format(java.util.Date(timestamp))
+        return java.time.Instant.ofEpochMilli(timestamp)
+            .atZone(java.time.ZoneId.systemDefault())
+            .format(dateFormatter)
     }
 
     override suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews> {
@@ -636,24 +583,8 @@ class VoicesRepositoryImpl @Inject constructor(
         sharedPrefManager.setConcatenatedLinks(jsonConcatenatedLinks)
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            insertNewsToRealm(realm, jsonDoc)
-        }
-        saveConcatenatedLinksToPrefs()
-    }
-
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        val imageList = queryList(RealmMyLibrary::class.java) {
+        val imageList = queryList(RealmMyLibrary::class.java, maxDepth = 0) {
             equalTo("isPrivate", true)
                 .greaterThan("createdDate", timestamp)
                 .equalTo("mediaType", "image")

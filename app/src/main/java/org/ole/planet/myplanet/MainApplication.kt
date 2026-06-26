@@ -1,18 +1,20 @@
 package org.ole.planet.myplanet
 
-import android.app.Activity
 import android.app.Application
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.net.TrafficStats
-import android.os.Bundle
 import android.os.StrictMode
 import android.os.StrictMode.VmPolicy
 import android.provider.Settings
+import androidx.annotation.VisibleForTesting
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.hilt.work.HiltWorkerFactory
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import androidx.work.Configuration as WorkManagerConfiguration
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -21,6 +23,7 @@ import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import dagger.hilt.android.EntryPointAccessors
 import dagger.hilt.android.HiltAndroidApp
+import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
@@ -29,9 +32,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -64,9 +65,12 @@ import org.ole.planet.myplanet.utils.ThemeMode
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
-class MainApplication : Application(), Application.ActivityLifecycleCallbacks, WorkManagerConfiguration.Provider {
+class MainApplication : Application(), WorkManagerConfiguration.Provider {
     @Inject
     lateinit var workerFactory: HiltWorkerFactory
+
+    @Inject
+    lateinit var realmDispatcherProvider: org.ole.planet.myplanet.di.RealmDispatcherProvider
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -97,12 +101,20 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
-        lateinit var context: Context
+        private lateinit var instance: MainApplication
+
+        @VisibleForTesting
+        var testContext: Context? = null
+
+        val context: Context get() = testContext ?: instance.applicationContext
         var syncFailedCount = 0
         var isCollectionSwitchOn = false
         var showDownload = false
         val isSyncRunning = AtomicBoolean(false)
-        var listener: OnTeamPageListener? = null
+        private var _listener: WeakReference<OnTeamPageListener>? = null
+        var listener: OnTeamPageListener?
+            get() = _listener?.get()
+            set(value) { _listener = value?.let { WeakReference(it) } }
         val androidId: String get() {
             try {
                 return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
@@ -112,7 +124,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
             return "0"
         }
         lateinit var applicationScope: CoroutineScope
-        val apiClientInitialized = CompletableDeferred<Unit>()
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
@@ -214,14 +225,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private var mainThreadRealm: io.realm.Realm? = null
-    private var activityReferences = 0
-    private var isActivityChangingConfigurations = false
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
     override fun onCreate() {
         super.onCreate()
-        context = this
+        instance = this
         setupCriticalProperties()
         LocaleUtils.preload(this)
         warmUpMainThreadRealm()
@@ -232,7 +241,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun performDeferredInitialization() {
-        applicationScope.launch(Dispatchers.IO) {
+        applicationScope.launch(dispatcherProvider.io) {
             FileUtils.warmUp(this@MainApplication)
             SecurePrefs.warmUp(this@MainApplication)
             MarkdownUtils.warmUp(this@MainApplication)
@@ -241,7 +250,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         applicationScope.launch {
             initApp()
             loadAndApplyTheme()
-            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -269,16 +277,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
     }
 
-    private suspend fun ensureApiClientInitialized() {
-        withContext(dispatcherProvider.io) {
-            EntryPointAccessors.fromApplication(
-                this@MainApplication,
-                NetworkDependenciesEntryPoint::class.java
-            ).apiClient()
-            apiClientInitialized.complete(Unit)
-        }
-    }
-    
     private suspend fun initializeDatabaseConnection() {
         databaseService.withRealmAsync { }
     }
@@ -352,7 +350,11 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun setupLifecycleCallbacks() {
-        registerActivityLifecycleCallbacks(this)
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                onAppForegrounded()
+            }
+        })
         onAppStarted()
     }
 
@@ -412,7 +414,12 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
     }
 
     private fun scheduleTaskNotificationWork() {
-        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS).build()
+        val constraints = Constraints.Builder()
+            .setRequiresBatteryNotLow(true)
+            .build()
+        val taskNotificationWork: PeriodicWorkRequest = PeriodicWorkRequest.Builder(TaskNotificationWorker::class.java, 900, TimeUnit.SECONDS)
+            .setConstraints(constraints)
+            .build()
         val workManager = WorkManager.getInstance(this)
         workManager.enqueueUniquePeriodicWork(TASK_NOTIFICATION_WORK_TAG, ExistingPeriodicWorkPolicy.UPDATE, taskNotificationWork)
     }
@@ -440,31 +447,6 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         return ThemeManager.getCurrentThemeMode(context)
     }
 
-    override fun onActivityCreated(activity: Activity, bundle: Bundle?) {}
-
-    override fun onActivityStarted(activity: Activity) {
-        if (++activityReferences == 1 && !isActivityChangingConfigurations) {
-            onAppForegrounded()
-        }
-    }
-
-    override fun onActivityResumed(activity: Activity) {
-        if (isFirstLaunch) {
-            isFirstLaunch = false
-        }
-    }
-
-    override fun onActivityPaused(activity: Activity) {}
-
-    override fun onActivityStopped(activity: Activity) {
-        isActivityChangingConfigurations = activity.isChangingConfigurations
-        --activityReferences
-    }
-
-    override fun onActivitySaveInstanceState(activity: Activity, bundle: Bundle) {}
-
-    override fun onActivityDestroyed(activity: Activity) {}
-
     private fun onAppForegrounded() {
         if (isFirstLaunch) {
             isFirstLaunch = false
@@ -487,6 +469,7 @@ class MainApplication : Application(), Application.ActivityLifecycleCallbacks, W
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
+        realmDispatcherProvider.shutdown()
         super.onTerminate()
         stopListenNetworkState()
     }

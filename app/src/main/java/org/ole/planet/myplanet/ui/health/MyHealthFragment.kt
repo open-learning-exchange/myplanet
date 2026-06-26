@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.health
 import android.app.DatePickerDialog
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.view.LayoutInflater
@@ -16,6 +15,7 @@ import android.widget.EditText
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.AppCompatSpinner
 import androidx.core.content.ContextCompat
+import androidx.core.widget.doAfterTextChanged
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -23,7 +23,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Sort
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
@@ -266,7 +265,7 @@ class MyHealthFragment : Fragment() {
 
     private fun selectPatient() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val users = userRepository.getUsersSortedBy("joinDate", Sort.DESCENDING)
+            val users = userRepository.getUsersSortedBy("joinDate", true)
             userModelList = users
             adapter = HealthUsersAdapter { selected ->
                 userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
@@ -299,10 +298,10 @@ class MyHealthFragment : Fragment() {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, p2: Int, p3: Long) {
                 viewLifecycleOwner.lifecycleScope.launch {
                     val (sortBy, sort) = when (p2) {
-                        0 -> "joinDate" to Sort.DESCENDING
-                        1 -> "joinDate" to Sort.ASCENDING
-                        2 -> "name" to Sort.ASCENDING
-                        else -> "name" to Sort.DESCENDING
+                        0 -> "joinDate" to true
+                        1 -> "joinDate" to false
+                        2 -> "name" to false
+                        else -> "name" to true
                     }
                     val sortedList = userRepository.getUsersSortedBy(sortBy, sort)
                     if (isAdded) {
@@ -315,44 +314,44 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setTextWatcher(etSearch: EditText, btnAddMember: Button, rv: RecyclerView) {
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun afterTextChanged(editable: Editable) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    val loadingJob = launch(dispatcherProvider.main) {
-                        delay(100)
-                        alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
-                        rv.visibility = View.GONE
-                    }
+        textWatcher = etSearch.doAfterTextChanged { editable ->
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                delay(300)
+                val loadingJob = launch(dispatcherProvider.main) {
+                    delay(100)
+                    alertHealthListBinding?.searchProgress?.visibility = View.VISIBLE
+                    rv.visibility = View.GONE
+                }
 
-                    val userModelList = userRepository.searchUsers(editable.toString(), "joinDate", Sort.DESCENDING)
+                val userModelList = userRepository.searchUsers(editable?.toString() ?: "", "joinDate", true)
 
-                    loadingJob.cancel()
-                    if (isAdded) {
-                        alertHealthListBinding?.searchProgress?.visibility = View.GONE
-                        rv.visibility = View.VISIBLE
-                        val searchAdapter = HealthUsersAdapter { selected ->
-                            userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                            getHealthRecords(userId)
-                            dialog?.dismiss()
-                        }
-                        searchAdapter.submitList(userModelList)
-                        rv.adapter = searchAdapter
-                        btnAddMember.visibility =
-                            if (userModelList.isEmpty()) View.VISIBLE else View.GONE
+                loadingJob.cancel()
+                if (isAdded) {
+                    alertHealthListBinding?.searchProgress?.visibility = View.GONE
+                    rv.visibility = View.VISIBLE
+                    val searchAdapter = HealthUsersAdapter { selected ->
+                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
+                        getHealthRecords(userId)
+                        dialog?.dismiss()
                     }
+                    searchAdapter.submitList(userModelList)
+                    rv.adapter = searchAdapter
+                    btnAddMember.visibility =
+                        if (userModelList.isEmpty()) View.VISIBLE else View.GONE
                 }
             }
         }
-        etSearch.addTextChangedListener(textWatcher)
     }
 
     override fun onResume() {
         super.onResume()
-        showRecords()
+        val uid = userId
+        if (!uid.isNullOrEmpty()) {
+            getHealthRecords(uid)
+        } else {
+            showRecords()
+        }
     }
 
     private fun showRecords() {
@@ -360,7 +359,8 @@ class MyHealthFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             val currentUser = userModel
-            if (currentUser == null || userId.isNullOrEmpty()) {
+            val uid = userId
+            if (currentUser == null || uid.isNullOrEmpty()) {
                 binding.layoutUserDetail.visibility = View.GONE
                 binding.tvMessage.visibility = View.VISIBLE
                 binding.tvMessage.text = getString(R.string.health_record_not_available)
@@ -382,7 +382,7 @@ class MyHealthFragment : Fragment() {
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
             binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
 
-            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(userId!!, currentUser)
+            val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(uid, currentUser)
 
             if (healthRecord != null) {
                 val (mh, mm, list, userMap) = healthRecord

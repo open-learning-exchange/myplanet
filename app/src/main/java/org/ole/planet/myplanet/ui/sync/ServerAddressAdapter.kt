@@ -7,7 +7,6 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
-import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -15,7 +14,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class ServerAddressAdapter(
     private val onItemClick: (ServerAddress) -> Unit,
     private val onClearDataDialog: (ServerAddress, Int) -> Unit,
-    private val urlWithoutProtocol: String?,
+    private val isServerAlreadyConfigured: Boolean, // ← simple flag instead of URL
 ) : ListAdapter<ServerAddress, ServerAddressAdapter.ViewHolder>(
     DiffUtils.itemCallback(
         areItemsTheSame = { old, new -> old.url == new.url },
@@ -30,10 +29,10 @@ class ServerAddressAdapter(
         lastSelectedPosition = previous
         selectedPosition = position
         if (previous in currentList.indices) {
-            notifyItemChanged(previous)
+            notifyItemChanged(previous, SELECTION_PAYLOAD)
         }
         if (position in currentList.indices) {
-            notifyItemChanged(position)
+            notifyItemChanged(position, SELECTION_PAYLOAD)
         }
     }
 
@@ -41,10 +40,10 @@ class ServerAddressAdapter(
         val current = selectedPosition
         selectedPosition = lastSelectedPosition
         if (current in currentList.indices) {
-            notifyItemChanged(current)
+            notifyItemChanged(current, SELECTION_PAYLOAD)
         }
         if (selectedPosition in currentList.indices) {
-            notifyItemChanged(selectedPosition)
+            notifyItemChanged(selectedPosition, SELECTION_PAYLOAD)
         }
     }
 
@@ -52,7 +51,7 @@ class ServerAddressAdapter(
         val current = selectedPosition
         selectedPosition = -1
         if (current in currentList.indices) {
-            notifyItemChanged(current)
+            notifyItemChanged(current, SELECTION_PAYLOAD)
         }
     }
 
@@ -62,15 +61,27 @@ class ServerAddressAdapter(
         return ViewHolder(view)
     }
 
+    override fun onBindViewHolder(
+        holder: ViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
+        if (payloads.contains(SELECTION_PAYLOAD)) {
+            holder.updateSelectionState(position == selectedPosition)
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
+        }
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val serverAddress = getItem(position)
-        holder.bind(serverAddress, position == selectedPosition)
+        holder.bind(serverAddress, position == selectedPosition) // ← only selectedPosition matters
         holder.itemView.setOnClickListener {
-            if (!urlWithoutProtocol.isNullOrEmpty() &&
-                serverAddress.url.replace(URL_PROTOCOL_REGEX, "") != urlWithoutProtocol
-            ) {
+            if (isServerAlreadyConfigured && position != selectedPosition) {
+                // user is clicking a DIFFERENT server than currently selected → warn them
                 onClearDataDialog(serverAddress, position)
             } else {
+                // either no server configured yet, or clicking the already selected one
                 onItemClick(serverAddress)
                 setSelectedPosition(position)
             }
@@ -79,14 +90,17 @@ class ServerAddressAdapter(
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val button: MaterialButton = itemView.findViewById(R.id.btn_server_address)
-
         fun bind(serverAddress: ServerAddress, isSelected: Boolean) {
             button.text = serverAddress.name
             button.contentDescription =
-                context.getString(
+                itemView.context.getString(
                     R.string.server_address_content_description,
                     serverAddress.name,
                 )
+            updateSelectionState(isSelected)
+        }
+
+        fun updateSelectionState(isSelected: Boolean) {
             button.isSelected = isSelected
             if (isSelected) {
                 button.setBackgroundColor(
@@ -99,7 +113,8 @@ class ServerAddressAdapter(
             }
         }
     }
+
     companion object {
-        private val URL_PROTOCOL_REGEX = Regex("^https?://")
+        private const val SELECTION_PAYLOAD = "selection_payload"
     }
 }

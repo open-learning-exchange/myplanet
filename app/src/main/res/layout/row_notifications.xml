@@ -5,6 +5,13 @@
     android:orientation="horizontal"
     android:padding="@dimen/padding_small">
 
+    <ImageView
+        android:id="@+id/iv_type_icon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center_vertical"
+        android:layout_margin="@dimen/_4dp"
+        android:tint="@color/hint_color" />
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -28,10 +35,19 @@
             android:layout_gravity="center_vertical"
             android:paddingStart="@dimen/padding_normal"
             android:paddingEnd="@dimen/padding_normal"
-            android:textColor="@color/daynight_textColor"
+            android:textColor="@color/hint_color"
             android:textSize="@dimen/text_size_small" />
     </LinearLayout>
 
+    <CheckBox
+        android:id="@+id/cb_select"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_margin="@dimen/_4dp"
+        android:clickable="false"
+        android:focusable="false"
+        android:visibility="gone" />
     <Button
         android:id="@+id/btn_mark_as_read"
         android:layout_width="wrap_content"

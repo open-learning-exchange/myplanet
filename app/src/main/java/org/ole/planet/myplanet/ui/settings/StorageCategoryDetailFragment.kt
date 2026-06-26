@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
-import androidx.core.os.bundleOf
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageCategoryDetailBinding
 import org.ole.planet.myplanet.databinding.ItemDownloadedResourceBinding
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -43,15 +43,15 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private var extensions: Set<String> = emptySet()
     private var allKnownExtensions: Set<String> = emptySet()
 
-    private data class ResourceItem(
+    data class ResourceItem(
         val resourceId: String,
         val title: String,
         val files: List<File>,
         val totalSizeBytes: Long,
-        var isChecked: Boolean = false
+        val isChecked: Boolean = false
     )
 
-    private val items = mutableListOf<ResourceItem>()
+    private var items: List<ResourceItem> = emptyList()
     private lateinit var adapter: ResourceAdapter
 
     companion object {
@@ -65,11 +65,11 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             extensions: List<String>,
             allKnownExtensions: List<String>
         ) = StorageCategoryDetailFragment().apply {
-            arguments = bundleOf(
-                ARG_LABEL to label,
-                ARG_EXTENSIONS to ArrayList(extensions),
-                ARG_ALL_KNOWN to ArrayList(allKnownExtensions)
-            )
+            arguments = Bundle().apply {
+                putString(ARG_LABEL, label)
+                putStringArrayList(ARG_EXTENSIONS, ArrayList(extensions))
+                putStringArrayList(ARG_ALL_KNOWN, ArrayList(allKnownExtensions))
+            }
         }
     }
 
@@ -106,14 +106,20 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         binding.categoryTitle.text = categoryLabel
         binding.closeButton.setOnClickListener { dismiss() }
 
-        adapter = ResourceAdapter()
+        adapter = ResourceAdapter { clickedItem ->
+            items = items.map {
+                if (it.resourceId == clickedItem.resourceId) it.copy(isChecked = !it.isChecked) else it
+            }
+            adapter.submitList(items)
+            updateSelectionState()
+        }
         binding.resourceList.layoutManager = LinearLayoutManager(requireContext())
         binding.resourceList.adapter = adapter
 
         binding.selectAllRow.setOnClickListener {
             val allChecked = items.all { it.isChecked }
-            items.forEach { it.isChecked = !allChecked }
-            adapter.notifyDataSetChanged()
+            items = items.map { it.copy(isChecked = !allChecked) }
+            adapter.submitList(items)
             updateSelectionState()
         }
 
@@ -150,9 +156,8 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 return@launch
             }
 
-            items.clear()
-            items.addAll(loaded)
-            adapter.notifyDataSetChanged()
+            items = loaded
+            adapter.submitList(items)
 
             binding.resourceList.visibility = View.VISIBLE
             binding.actionButtons.visibility = View.VISIBLE
@@ -166,9 +171,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
 
         // Build a map of resourceId → title from Realm (one query)
-        val titleMap = resourcesRepository.getAllLibraries()
-            .filter { it.resourceId != null }
-            .associate { it.resourceId!! to (it.title ?: getString(R.string.storage_unknown_resource)) }
+        val titleMap = resourcesRepository.getResourceTitlesMap()
 
         // Group files by resourceId directory
         val grouped = mutableMapOf<String, MutableList<File>>()
@@ -187,12 +190,13 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
         return grouped.map { (resourceId, files) ->
             val totalSize = files.sumOf { it.length() }
-            val title = titleMap[resourceId] ?: getString(R.string.storage_unknown_resource)
+            val title = titleMap[resourceId]?.takeIf { it.isNotBlank() } ?: getString(R.string.storage_unknown_resource)
             ResourceItem(resourceId, title, files, totalSize)
         }.sortedBy { it.title }
     }
 
     private fun updateSelectionState() {
+        if (_binding == null) return
         val checkedCount = items.count { it.isChecked }
         val allChecked = checkedCount == items.size && items.isNotEmpty()
 
@@ -217,6 +221,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     }
 
     private fun deleteItems(toDelete: List<ResourceItem>) {
+        if (_binding == null) return
         binding.deleteSelectedButton.isEnabled = false
         binding.deleteAllButton.isEnabled = false
 
@@ -235,20 +240,18 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
                 // Sync Realm: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
-                val allResources = resourcesRepository.getAllLibraries()
-                allResources.filter { it.resourceOffline && it.resourceId in deletedIds }.forEach { resource ->
-                    val id = resource._id ?: return@forEach
-                    resourcesRepository.updateLibraryItem(id) { it.resourceOffline = false }
-                }
+                resourcesRepository.markResourcesAsNotOffline(deletedIds)
             }
 
             // Notify parent to refresh, then dismiss
-            parentFragmentManager.setFragmentResult(RESULT_KEY, bundleOf())
+            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
             dismiss()
         }
     }
 
-    inner class ResourceAdapter : RecyclerView.Adapter<ResourceAdapter.ViewHolder>() {
+    inner class ResourceAdapter(
+        private val onItemClicked: (ResourceItem) -> Unit
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(DiffUtils.itemCallback(areItemsTheSame = { o, n -> o.resourceId == n.resourceId }, areContentsTheSame = { o, n -> o == n }, getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null })) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
@@ -261,19 +264,30 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
 
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-            val item = items[position]
+            val item = getItem(position)
             holder.binding.resourceTitle.text = item.title
             holder.binding.resourceSize.text = FileUtils.formatSize(requireContext(), item.totalSizeBytes)
             holder.binding.checkBox.isChecked = item.isChecked
             holder.binding.root.setOnClickListener {
-                item.isChecked = !item.isChecked
-                holder.binding.checkBox.isChecked = item.isChecked
-                updateSelectionState()
+                onItemClicked(item)
+            }
+            holder.binding.checkBox.setOnClickListener {
+                onItemClicked(item)
             }
         }
 
-        override fun getItemCount() = items.size
+        override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+            if (payloads.isNotEmpty()) {
+                val item = getItem(position)
+                holder.binding.checkBox.isChecked = item.isChecked
+                holder.binding.root.setOnClickListener { onItemClicked(item) }
+                holder.binding.checkBox.setOnClickListener { onItemClicked(item) }
+            } else {
+                super.onBindViewHolder(holder, position, payloads)
+            }
+        }
     }
+
 
     override fun onDestroyView() {
         super.onDestroyView()

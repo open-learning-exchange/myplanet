@@ -12,7 +12,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -32,8 +33,11 @@ import org.ole.planet.myplanet.utils.VersionUtils
 @AndroidEntryPoint
 class BecomeMemberActivity : BaseActivity() {
 
-    @javax.inject.Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    override lateinit var sharedPrefManager: SharedPrefManager
+
+    @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
 
     private lateinit var activityBecomeMemberBinding: ActivityBecomeMemberBinding
     var dob: String = ""
@@ -151,7 +155,7 @@ class BecomeMemberActivity : BaseActivity() {
 
         lifecycleScope.launch {
             val result = userRepository.createMember(obj)
-            withContext(Dispatchers.Main) {
+            withContext(dispatcherProvider.main) {
                 if (result.first) {
                     val userName = obj["name"].asString
                     val securityCallback = object : OnSecurityDataListener {
@@ -210,7 +214,7 @@ class BecomeMemberActivity : BaseActivity() {
             val info = collectMemberInfo()
             lifecycleScope.launch {
                 val error = userRepository.validateUsername(info.username)
-                withContext(Dispatchers.Main) {
+                withContext(dispatcherProvider.main) {
                     if (error != null) {
                         activityBecomeMemberBinding.etUsername.error = error
                     } else if (validateMemberInfo(info)) {
@@ -261,7 +265,7 @@ class BecomeMemberActivity : BaseActivity() {
                 val input = s?.toString() ?: ""
                 lifecycleScope.launch {
                     val error = userRepository.validateUsername(input)
-                    withContext(Dispatchers.Main) {
+                    withContext(dispatcherProvider.main) {
                         if (error != null) {
                             activityBecomeMemberBinding.etUsername.error = error
                         } else {

@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.ResourceItem
@@ -18,17 +21,40 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
     private val syncManager: SyncManager,
     private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _syncState = MutableStateFlow<SyncState>(SyncState.Idle)
     val syncState: StateFlow<SyncState> = _syncState.asStateFlow()
+    private val _downloadComplete = MutableStateFlow(false)
+    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+
+    private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
+    val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
+
+    private var observeOpenedResourcesJob: Job? = null
+
+    fun notifyDownloadComplete() {
+        _downloadComplete.value = true
+        _downloadComplete.value = false
+    }
+
+    fun observeOpenedResourceIds(userId: String) {
+        observeOpenedResourcesJob?.cancel()
+        observeOpenedResourcesJob = viewModelScope.launch {
+            resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                _openedResourceIds.value = ids
+            }
+        }
+    }
 
     fun startResourcesSync() {
         val isFastSync = sharedPrefManager.getFastSync()
@@ -41,8 +67,10 @@ class ResourcesViewModel @Inject constructor(
         val mapping = serverUrlMapper.processUrl(sharedPrefManager.getServerUrl())
 
         viewModelScope.launch {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                isServerReachable(url)
+            withContext(dispatcherProvider.io) {
+                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
+                    isServerReachable(url)
+                }
             }
             startSyncManager()
         }
@@ -69,22 +97,15 @@ class ResourcesViewModel @Inject constructor(
         _syncState.value = SyncState.Idle
     }
 
+    suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
+        return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+    }
+
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
-        val allLibraryItems = if (isMyCourseLib) {
-            resourcesRepository.getMyLibrary(modelId)
-        } else {
-            resourcesRepository.getAllLibraryItems().filter {
-                !it.isPrivate && it.userId?.contains(modelId) == false
-            }
-        }
-
-        val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
-
-        val map = HashMap(resourcesRepository.getResourceRatingsBulk(allResourceIds, modelId))
-        val tagsMap = resourcesRepository.getResourceTagsBulk(allResourceIds)
-
-        return allLibraryItems.map { library ->
-            val resourceId = library.resourceId ?: library.id
+        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
+        return enrichedLibraries
+            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
+            .map { (library, rating, libraryTags) ->
             val item = ResourceItem(
                 id = library.id,
                 title = library.title,
@@ -96,10 +117,10 @@ class ResourcesViewModel @Inject constructor(
                 isOffline = library.isResourceOffline(),
                 _rev = library._rev,
                 uploadDate = library.uploadDate,
-                filename = library.filename
+                filename = library.filename,
+                resourceLocalAddress = library.resourceLocalAddress
             )
-            val rating = resourceId?.let { map[it] }
-            val tags = resourceId?.let { tagsMap[it]?.map { tag -> TagItem(tag.id, tag.name) } } ?: emptyList()
+            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
             ResourceListModel(library, item, rating, tags)
         }
     }
