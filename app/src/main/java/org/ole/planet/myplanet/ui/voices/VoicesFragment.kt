@@ -17,6 +17,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -103,11 +104,15 @@ class VoicesFragment : BaseVoicesFragment() {
                     }
                 }
                 launch {
-                    voicesViewModel.labels.collectLatest { labels ->
-                        if (_binding != null) {
-                            updateLabelSpinner(labels)
+                    combine(
+                        voicesViewModel.labels,
+                        voicesViewModel.selectedLabel
+                    ) { labels, selected -> labels to selected }
+                        .collectLatest { (labels, selected) ->
+                            if (_binding != null) {
+                                updateLabelSpinner(labels, selected)
+                            }
                         }
-                    }
                 }
                 launch {
                     voicesViewModel.createNewsSuccess.collectLatest { n ->
@@ -337,10 +342,8 @@ class VoicesFragment : BaseVoicesFragment() {
         val binding = _binding ?: return
         if (labelAdapter == null) {
             labelAdapter = VoicesLabelAdapter(
-                selectedLabel = voicesViewModel.selectedLabel.value,
                 onItemClick = { label ->
                     voicesViewModel.updateSelectedLabel(label)
-                    labelAdapter?.setSelectedLabel(label)
                     scrollToTop()
                 }
             )
@@ -349,10 +352,10 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun updateLabelSpinner(labels: List<String>) {
-        labelAdapter?.submitList(labels)
+    private fun updateLabelSpinner(labels: List<String>, selectedLabel: String) {
+        labelAdapter?.submitList(labels.map { VoicesLabelItem(it, it == selectedLabel) })
 
-        val position = labels.indexOf(voicesViewModel.selectedLabel.value)
+        val position = labels.indexOf(selectedLabel)
         if (position >= 0) {
             _binding?.filterByLabel?.scrollToPosition(position)
         }

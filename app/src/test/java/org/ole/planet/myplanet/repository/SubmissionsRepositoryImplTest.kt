@@ -157,6 +157,32 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
+        val examId = "examId"
+        val userIds = listOf("user1", "user2")
+        val realm = mockk<Realm>(relaxed = true)
+        val query = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
+        val exam = mockk<RealmStepExam>(relaxed = true)
+
+        every { realm.where(RealmStepExam::class.java) } returns query
+        every { query.equalTo("id", examId) } returns query
+        every { query.findFirst() } returns exam
+        every { exam.courseId } returns "courseId"
+
+        coEvery { repository["withRealm"](any<Boolean>(), any<Function1<Realm, Any>>()) } answers {
+            val action = arg<Function1<Realm, Any>>(1)
+            action.invoke(realm)
+        }
+
+        coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
+
+        repository.createBulkSurveySubmissions(examId, userIds)
+
+        coVerify(exactly = 1) { repository.getOrCreateSubmission("user1", "examId@courseId") }
+        coVerify(exactly = 1) { repository.getOrCreateSubmission("user2", "examId@courseId") }
+    }
+
+    @Test
     fun `saveSubmission performs transaction`() = runTest {
         val sub = mockk<RealmSubmission>(relaxed = true)
 

@@ -12,6 +12,7 @@ import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
 import android.text.format.Formatter
+import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import java.io.File
@@ -19,6 +20,7 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
 import java.util.UUID
 import kotlin.math.roundToLong
 
@@ -168,6 +170,36 @@ object FileUtils {
         } finally {
             cursor?.close()
         }
+    }
+
+    @JvmStatic
+    fun getMimeType(fileName: String?): String? {
+        if (fileName.isNullOrBlank()) return null
+        val ext = MimeTypeMap.getFileExtensionFromUrl(fileName)?.lowercase(Locale.getDefault())
+        return if (!ext.isNullOrBlank()) {
+            MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+        } else {
+            null
+        }
+    }
+
+    @JvmStatic
+    fun getDisplayName(context: Context, uri: Uri): String {
+        var name: String? = null
+        if (uri.scheme == "content") {
+            context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    if (idx >= 0) name = cursor.getString(idx)
+                }
+            }
+        }
+        return name ?: uri.lastPathSegment ?: "image_${System.currentTimeMillis()}.jpg"
+    }
+
+    @JvmStatic
+    fun readBytesFromUri(context: Context, uri: Uri): ByteArray? {
+        return context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
     }
 
     @JvmStatic

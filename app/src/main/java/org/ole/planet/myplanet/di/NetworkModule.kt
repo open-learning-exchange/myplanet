@@ -15,7 +15,6 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
 import okhttp3.OkHttpClient
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
 import org.ole.planet.myplanet.services.BroadcastService
@@ -42,6 +41,9 @@ annotation class StandardRetrofit
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
+    private const val CONNECT_TIMEOUT_SECONDS = 10L
+    private const val READ_TIMEOUT_SECONDS = 60L
+    private const val WRITE_TIMEOUT_SECONDS = 120L
 
     @Provides
     @Singleton
@@ -70,7 +72,12 @@ object NetworkModule {
     @Singleton
     @StandardHttpClient
     fun provideStandardOkHttpClient(broadcastService: BroadcastService): OkHttpClient {
-        return buildOkHttpClient(10, 10, 10, RetryInterceptor(broadcastService))
+        return buildOkHttpClient(
+            CONNECT_TIMEOUT_SECONDS,
+            READ_TIMEOUT_SECONDS,
+            WRITE_TIMEOUT_SECONDS,
+            RetryInterceptor(broadcastService)
+        )
     }
 
     @Provides
@@ -91,14 +98,5 @@ object NetworkModule {
     @Singleton
     fun provideApiInterface(@StandardRetrofit retrofit: Retrofit): ApiInterface {
         return retrofit.create(ApiInterface::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideApiClient(
-        @StandardRetrofit retrofit: Retrofit,
-    ): ApiClient {
-        ApiClient.client = retrofit
-        return ApiClient
     }
 }

@@ -11,10 +11,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -75,9 +74,6 @@ class ImprovedSyncManager @Inject constructor(
     ) {
         this.listener = listener
         if (isSyncing.compareAndSet(false, true)) {
-            if (!syncScope.isActive) {
-                syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
-            }
             isCanceled.set(false)
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
@@ -192,7 +188,7 @@ class ImprovedSyncManager @Inject constructor(
 
     fun cancel() {
         isCanceled.set(true)
-        syncScope.cancel()
+        syncScope.coroutineContext.cancelChildren()
     }
 
     private fun SyncMode.describe(): String {

@@ -283,6 +283,9 @@ class TransactionSyncManager @Inject constructor(
                 if (table == "achievements") {
                     downloadCvAttachmentsFromBatch(arr)
                 }
+                if (table == "teams") {
+                    downloadTeamAttachmentsFromBatch(arr)
+                }
                 totalDocs += arr.size()
                 skip += arr.size()
                 val batchDuration = System.currentTimeMillis() - batchStartTime
@@ -327,6 +330,37 @@ class TransactionSyncManager @Inject constructor(
                 }
             }
         }
+    }
+
+    private suspend fun downloadTeamAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
+        for (j in arr) {
+            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val docId = getString("_id", jsonDoc)
+            if (docId.startsWith("_design")) continue
+            val attachmentName = org.ole.planet.myplanet.model.RealmMyTeam
+                .getFirstAttachmentName(jsonDoc) ?: continue
+            val destFile = org.ole.planet.myplanet.model.RealmMyTeam
+                .getAttachmentFile(context, docId, attachmentName) ?: continue
+            if (!destFile.exists()) {
+                downloadTeamAttachment(docId, attachmentName, destFile)
+            }
+        }
+    }
+
+    private suspend fun downloadTeamAttachment(docId: String, attachmentName: String, destFile: java.io.File) {
+        try {
+            val encodedName = android.net.Uri.encode(attachmentName)
+            val url = "${UrlUtils.getUrl()}/teams/$docId/$encodedName"
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    destFile.parentFile?.mkdirs()
+                    destFile.outputStream().use { out ->
+                        body.byteStream().use { it.copyTo(out) }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     private suspend fun downloadCvAttachment(docId: String, destFile: java.io.File) {

@@ -78,7 +78,8 @@ class TeamsRepositoryImpl @Inject constructor(
                 TeamUploadData(
                     teamId = team._id,
                     serialized = RealmMyTeam.serialize(team, realm),
-                    isDeletePending = team.isDeletePending
+                    isDeletePending = team.isDeletePending,
+                    imageName = team.imageName
                 )
             }
         }
@@ -444,6 +445,45 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
 
+
+    override suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo? {
+        val team = findByField(RealmMyTeam::class.java, "_id", teamId) ?: return null
+        return TeamLabelInfo(
+            teamId = team._id ?: "",
+            name = team.name ?: "",
+            type = team.type ?: ""
+        )
+    }
+
+    override suspend fun getJoinRequestInfo(requestId: String?): JoinRequestInfo? {
+        if (requestId.isNullOrEmpty()) return null
+        val req = findByField(RealmMyTeam::class.java, "_id", requestId) ?: return null
+        return JoinRequestInfo(
+            id = req._id ?: "",
+            teamId = req.teamId ?: "",
+            userId = req.userId ?: ""
+        )
+    }
+
+    override suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo> {
+        if (requestIds.isEmpty()) return emptyList()
+        val requests = queryList(RealmMyTeam::class.java) {
+            beginGroup()
+            requestIds.forEachIndexed { index, id ->
+                if (index > 0) or()
+                equalTo("_id", id)
+            }
+            endGroup()
+        }
+        return requests.map {
+            JoinRequestInfo(
+                id = it._id ?: "",
+                teamId = it.teamId ?: "",
+                userId = it.userId ?: ""
+            )
+        }
+    }
+
     override suspend fun getJoinRequestById(id: String?): RealmMyTeam? {
         if (id.isNullOrEmpty()) return null
         return findByField(RealmMyTeam::class.java, "_id", id)
@@ -581,7 +621,8 @@ class TeamsRepositoryImpl @Inject constructor(
                     description = team.description,
                     type = team.type,
                     amount = team.amount,
-                    balance = balance
+                    balance = balance,
+                    imageName = team.imageName
                 )
             )
         }
@@ -596,13 +637,16 @@ class TeamsRepositoryImpl @Inject constructor(
         date: Long,
         parentCode: String?,
         planetCode: String?,
+        imageName: String?,
+        imageData: ByteArray?,
     ): Result<Unit> {
         if (teamId.isBlank()) {
             return Result.failure(IllegalArgumentException("teamId cannot be blank"))
         }
         return runCatching {
+            val transactionId = UUID.randomUUID().toString()
             val transaction = RealmMyTeam().apply {
-                _id = UUID.randomUUID().toString()
+                _id = transactionId
                 status = "active"
                 this.date = date
                 this.type = type
@@ -616,6 +660,9 @@ class TeamsRepositoryImpl @Inject constructor(
                 updated = true
             }
             save(transaction)
+            if (imageName != null && imageData != null) {
+                attachTeamImage(transactionId, imageName, imageData)
+            }
         }
     }
 
@@ -627,6 +674,19 @@ class TeamsRepositoryImpl @Inject constructor(
                 .findFirst()
                 ?: realm.createObject(RealmMyTeam::class.java, reportId)
             RealmMyTeam.populateTeamFields(report, reportEntry)
+        }
+    }
+
+    override suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
+        if (teamId.isBlank()) return
+        val destFile = RealmMyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        withContext(dispatcherProvider.io) {
+            destFile.parentFile?.mkdirs()
+            destFile.writeBytes(imageData)
+        }
+        update(RealmMyTeam::class.java, "_id", teamId) { team ->
+            team.imageName = imageName
+            team.updated = true
         }
     }
 
@@ -1197,26 +1257,12 @@ class TeamsRepositoryImpl @Inject constructor(
         }.mapNotNull { it.resourceId }
     }
 
-    override suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam> {
-        val teamIds = queryList(RealmMyTeam::class.java) {
-            equalTo("userId", userId)
-            equalTo("docType", "membership")
-        }.mapNotNull { it.teamId }
-
-        if (teamIds.isEmpty()) return emptyList()
-
-        return queryList(RealmMyTeam::class.java) {
-            `in`("_id", teamIds.toTypedArray())
-            notEqualTo("status", "archived")
-        }
-    }
-
     override suspend fun getTeamType(teamId: String): String? {
         if (teamId.isBlank()) return null
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.type
     }
 
-    override suspend fun getJoinedMembersAndSave(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
+    override suspend fun refreshJoinedMembersForLogin(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
         val teamMembers = getJoinedMembers(teamId)
         val userList = teamMembers.map {
             User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
@@ -1504,17 +1550,15 @@ class TeamsRepositoryImpl @Inject constructor(
                     existingLogs[id] = tag
                     newLogs.add(tag)
                 }
-                if (tag != null) {
-                    tag._rev = JsonUtils.getString("_rev", json)
-                    tag._id = JsonUtils.getString("_id", json)
-                    tag.type = JsonUtils.getString("type", json)
-                    tag.user = JsonUtils.getString("user", json)
-                    tag.createdOn = JsonUtils.getString("createdOn", json)
-                    tag.parentCode = JsonUtils.getString("parentCode", json)
-                    tag.time = JsonUtils.getLong("time", json)
-                    tag.teamId = JsonUtils.getString("teamId", json)
-                    tag.teamType = JsonUtils.getString("teamType", json)
-                }
+                tag._rev = JsonUtils.getString("_rev", json)
+                tag._id = JsonUtils.getString("_id", json)
+                tag.type = JsonUtils.getString("type", json)
+                tag.user = JsonUtils.getString("user", json)
+                tag.createdOn = JsonUtils.getString("createdOn", json)
+                tag.parentCode = JsonUtils.getString("parentCode", json)
+                tag.time = JsonUtils.getLong("time", json)
+                tag.teamId = JsonUtils.getString("teamId", json)
+                tag.teamType = JsonUtils.getString("teamType", json)
             }
             if (newLogs.isNotEmpty()) {
                 realm.insert(newLogs)
@@ -1715,17 +1759,15 @@ class TeamsRepositoryImpl @Inject constructor(
                 existingLogs[id] = tag
                 newLogs.add(tag)
             }
-            if (tag != null) {
-                tag._rev = JsonUtils.getString("_rev", json)
-                tag._id = JsonUtils.getString("_id", json)
-                tag.type = JsonUtils.getString("type", json)
-                tag.user = JsonUtils.getString("user", json)
-                tag.createdOn = JsonUtils.getString("createdOn", json)
-                tag.parentCode = JsonUtils.getString("parentCode", json)
-                tag.time = JsonUtils.getLong("time", json)
-                tag.teamId = JsonUtils.getString("teamId", json)
-                tag.teamType = JsonUtils.getString("teamType", json)
-            }
+            tag._rev = JsonUtils.getString("_rev", json)
+            tag._id = JsonUtils.getString("_id", json)
+            tag.type = JsonUtils.getString("type", json)
+            tag.user = JsonUtils.getString("user", json)
+            tag.createdOn = JsonUtils.getString("createdOn", json)
+            tag.parentCode = JsonUtils.getString("parentCode", json)
+            tag.time = JsonUtils.getLong("time", json)
+            tag.teamId = JsonUtils.getString("teamId", json)
+            tag.teamType = JsonUtils.getString("teamType", json)
         }
         if (newLogs.isNotEmpty()) {
             realm.insert(newLogs)
