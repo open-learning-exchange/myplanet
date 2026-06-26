@@ -59,7 +59,6 @@ class VoicesFragment : BaseVoicesFragment() {
     private lateinit var etSearch: EditText
     private var selectedLabel: String = "All"
     private val labelDisplayToValue = mutableMapOf<String, String>()
-    private var labelAdapter: VoicesLabelAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -353,35 +352,37 @@ class VoicesFragment : BaseVoicesFragment() {
             news?.newsTitle?.contains(query, ignoreCase = true) == true
         }
     }
-    
+
     private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
         val binding = _binding ?: return
-        if (labelAdapter == null) {
-            labelAdapter = VoicesLabelAdapter(
-                onItemClick = { label ->
-                    selectedLabel = label
-                    val currentItems = labelAdapter?.currentList ?: return@VoicesLabelAdapter
-                    labelAdapter?.submitList(currentItems.map { it.copy(isSelected = it.label == label) })
-                    labelFilteredList = applyLabelFilter(filteredNewsList)
-                    searchFilteredList = applySearchFilter(labelFilteredList)
-                    setData(searchFilteredList)
-                    scrollToTop()
-                }
-            )
-            binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
-            binding.filterByLabel.adapter = labelAdapter
-        }
         updateLabelSpinner(precomputedLabels)
     }
 
     private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
+        val binding = _binding ?: return
         val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
-        val items = labels.map { VoicesLabelItem(it, it == selectedLabel) }
-        labelAdapter?.submitList(items)
-
-        val position = labels.indexOf(selectedLabel)
-        if (position >= 0) {
-            _binding?.filterByLabel?.scrollToPosition(position)
+        val adapter = object : android.widget.ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, labels) {
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                (view as? android.widget.TextView)?.setTextColor(
+                    androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+                )
+                return view
+            }
+        }
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.filterByLabel.adapter = adapter
+        val position = labels.indexOf(selectedLabel).coerceAtLeast(0)
+        binding.filterByLabel.setSelection(position)
+        binding.filterByLabel.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, pos: Int, id: Long) {
+                selectedLabel = labels[pos]
+                labelFilteredList = applyLabelFilter(filteredNewsList)
+                searchFilteredList = applySearchFilter(labelFilteredList)
+                setData(searchFilteredList)
+                scrollToTop()
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
         }
     }
 
@@ -467,7 +468,6 @@ class VoicesFragment : BaseVoicesFragment() {
 
     override fun onDestroyView() {
         adapterNews?.unregisterAdapterDataObserver(observer)
-        labelAdapter = null
         _binding = null
         super.onDestroyView()
     }
