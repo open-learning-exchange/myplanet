@@ -142,58 +142,6 @@ class CoursesAdapter(
         submitList(updated)
     }
 
-    private fun dispatchPayloadByCourseId(courseId: String?, payload: Any) {
-        val index = courseIdToPosition[courseId]
-        if (index != null && index != -1) {
-            notifyItemChanged(index, payload)
-        }
-    }
-
-    fun updateData(
-        newCourseList: List<Course>,
-        newMap: HashMap<String?, JsonObject>,
-        newProgressMap: HashMap<String?, JsonObject>?
-    ) {
-        val updatedCourseIds = mutableSetOf<String?>()
-
-        newMap.forEach { (courseId, newRating) ->
-            if (this.map[courseId] != newRating) {
-                updatedCourseIds.add(courseId)
-            }
-        }
-        this.map.keys.filterNot { newMap.containsKey(it) }.forEach { removedKey ->
-            updatedCourseIds.add(removedKey)
-        }
-
-        newProgressMap?.forEach { (courseId, newProgress) ->
-            if (this.progressMap?.get(courseId) != newProgress) {
-                updatedCourseIds.add(courseId)
-            }
-        }
-        this.progressMap?.keys?.filterNot { newProgressMap?.containsKey(it) == true }?.forEach { removedKey ->
-            updatedCourseIds.add(removedKey)
-        }
-
-        this.map.clear()
-        this.map.putAll(newMap)
-        this.progressMap = newProgressMap
-
-        submitList(newCourseList) {
-            val bundle = Bundle()
-            bundle.putBoolean(RATING_PAYLOAD, true)
-            bundle.putBoolean(PROGRESS_PAYLOAD, true)
-            updatedCourseIds.forEach { courseId ->
-                if (courseId.isNullOrEmpty()) {
-                    return@forEach
-                }
-                val index = courseIdToPosition[courseId]
-                if (index != null && index != -1) {
-                    notifyItemChanged(index, bundle)
-                }
-            }
-        }
-    }
-
     private fun sortCourseListByTitle(list: List<Course>): List<Course> {
         return list.sortedWith { course1, course2 ->
             if (isTitleAscending) {
@@ -236,7 +184,17 @@ class CoursesAdapter(
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
+        val oldMap = this.progressMap
+        if (oldMap == progressMap) return
         this.progressMap = progressMap
+        for (index in currentList.indices) {
+            val courseId = currentList[index].courseId
+            if (oldMap?.get(courseId) != progressMap?.get(courseId)) {
+                val bundle = Bundle()
+                bundle.putBoolean(PROGRESS_PAYLOAD, true)
+                notifyItemChanged(index, bundle)
+            }
+        }
     }
 
     fun setRatingMap(ratingMap: HashMap<String?, JsonObject>) {
@@ -383,7 +341,7 @@ class CoursesAdapter(
             displayTagCloud(position)
 
             if (!isGuest) setupRatingBar(course)
-            setupCheckbox(course, position, isGuest)
+            setupCheckbox(course, isGuest)
 
             updateRatingViews(position)
             updateProgressViews(position)
@@ -477,7 +435,7 @@ class CoursesAdapter(
             }
         }
 
-        private fun setupCheckbox(course: Course, position: Int, isGuest: Boolean) {
+        private fun setupCheckbox(course: Course, isGuest: Boolean) {
             if (!isGuest) {
                 val showCheckbox = isMyCourseLib || !course.isMyCourse
                 if (showCheckbox) {
