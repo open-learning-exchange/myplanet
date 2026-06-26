@@ -27,6 +27,7 @@ class RetryRepositoryImplTest {
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: RetryRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
+    private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
     @org.junit.After
     fun tearDown() {
@@ -36,7 +37,7 @@ class RetryRepositoryImplTest {
     @Before
     fun setUp() {
         databaseService = mockk(relaxed = true)
-        repository = RetryRepositoryImpl(databaseService, testDispatcher, TestTimeProvider())
+        repository = RetryRepositoryImpl(databaseService, testDispatcher, timeProvider)
     }
 
     @Test
