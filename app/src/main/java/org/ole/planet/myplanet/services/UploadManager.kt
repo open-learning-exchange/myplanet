@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import java.util.Date
 
 private inline fun <T> Iterable<T>.processInBatches(action: (List<T>) -> Unit) {
     chunked(BATCH_SIZE).forEach(action)
@@ -132,6 +133,24 @@ class UploadManager @Inject constructor(
         `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
         `object`.add("privateFor", object1)
         `object`.addProperty("mediaType", "image")
+        return `object`
+    }
+
+    private fun createVideo(user: RealmUser?, vidObject: JsonObject?): JsonObject {
+        val `object` = JsonObject()
+        `object`.addProperty("title", getString("fileName", vidObject))
+        `object`.addProperty("createdDate", Date().time)
+        `object`.addProperty("filename", getString("fileName", vidObject))
+        `object`.addProperty("private", true)
+        user?._id?.let { `object`.addProperty("addedBy", it) }
+        user?.parentCode?.let { `object`.addProperty("resideOn", it) }
+        user?.planetCode?.let { `object`.addProperty("sourcePlanet", it) }
+        val object1 = JsonObject()
+        `object`.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+        `object`.addProperty("deviceName", NetworkUtils.getDeviceName())
+        `object`.addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+        `object`.add("privateFor", object1)
+        `object`.addProperty("mediaType", "video")
         return `object`
     }
 
@@ -369,7 +388,8 @@ class UploadManager @Inject constructor(
                     try {
                         // Upload images first and collect metadata
                         val imagesArray = com.google.gson.JsonArray()
-                        var messageWithImages = news.message ?: ""
+                        val videosArray = com.google.gson.JsonArray()
+                        var messageWithMedia = news.message ?: ""
 
                         news.imageUrls.forEach { imageUrl ->
                             val imgObject = gson.fromJson(imageUrl, JsonObject::class.java)
@@ -406,12 +426,55 @@ class UploadManager @Inject constructor(
                             resourceObject.addProperty("markdown", markdown)
                             imagesArray.add(resourceObject)
 
-                            messageWithImages += "\n$markdown"
+                            // Append markdown to message
+                            messageWithMedia += "\n$markdown"
+                        }
+
+                        // Upload videos and collect metadata
+                        news.videoUrls.forEach { videoUrl ->
+                            val vidObject = gson.fromJson(videoUrl, JsonObject::class.java)
+
+                            // Create video resource document
+                            val videoDoc = createVideo(user, vidObject)
+                            val videoResponse = apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/resources",
+                                videoDoc
+                            ).body()
+
+                            val resourceId = getString("id", videoResponse)
+                            val resourceRev = getString("rev", videoResponse)
+
+                            // Upload video file as attachment
+                            val videoFile = File(getString("videoUrl", vidObject))
+                            val fileName = FileUtils.getFileNameFromUrl(getString("videoUrl", vidObject))
+                            val mimeType = videoFile.toURI().toURL().openConnection().contentType ?: "video/mp4"
+                            val fileBody = FileUtils.fullyReadFileToBytes(videoFile)
+                                .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+
+                            apiInterface.uploadResource(
+                                getHeaderMap(mimeType, resourceRev),
+                                "${UrlUtils.getUrl()}/resources/$resourceId/$fileName",
+                                fileBody
+                            )
+
+                            // Build video metadata and markdown
+                            val resourceObject = JsonObject()
+                            resourceObject.addProperty("resourceId", resourceId)
+                            resourceObject.addProperty("filename", fileName)
+                            val markdown = "![](resources/$resourceId/$fileName)"
+                            resourceObject.addProperty("markdown", markdown)
+                            videosArray.add(resourceObject)
+
+                            // Append markdown to message
+                            messageWithMedia += "\n$markdown"
                         }
 
                         val newsJson = news.newsJson
-                        newsJson.addProperty("message", messageWithImages)
+                        newsJson.addProperty("message", messageWithMedia)
                         newsJson.add("images", imagesArray)
+                        newsJson.add("videos", videosArray)
 
                         // Upload news document (POST or PUT)
                         val newsResponse = if (TextUtils.isEmpty(news._id)) {
@@ -437,7 +500,8 @@ class UploadManager @Inject constructor(
                                 id = news.id,
                                 _id = getString("id", body),
                                 _rev = getString("rev", body),
-                                imagesArray = imagesArray
+                                imagesArray = imagesArray,
+                                videosArray = videosArray
                             ))
                         }
                     } catch (e: Exception) {

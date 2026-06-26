@@ -64,6 +64,7 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
+        llVideo = binding.llVideos
         setupUI(binding.voicesFragmentParentLayout, requireActivity())
         etSearch = binding.root.findViewById(R.id.et_search)
         binding.btnNewVoice.setOnClickListener {
@@ -137,9 +138,11 @@ class VoicesFragment : BaseVoicesFragment() {
             binding.btnSubmit.isEnabled = false
             viewLifecycleOwner.lifecycleScope.launch {
                 try {
-                    val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
+                    val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList, videoList) }
                     imageList.clear()
+                    videoList.clear()
                     llImage?.removeAllViews()
+                    llVideo?.removeAllViews()
                     if (n != null) {
                         n.sortDate = n.calculateSortDate()
                         filteredNewsList = listOf(n) + filteredNewsList
@@ -154,10 +157,11 @@ class VoicesFragment : BaseVoicesFragment() {
             }
         }
 
-        binding.addNewsImage.setOnClickListener {
+        binding.addNewsMedia.setOnClickListener {
             llImage = binding.llImages
+            llVideo = binding.llVideos
             val openFolderIntent = FileUtils.openOleFolder(requireContext())
-            openFolderLauncher.launch(openFolderIntent)
+            openMediaLauncher.launch(openFolderIntent)
         }
     }
 
@@ -303,6 +307,11 @@ class VoicesFragment : BaseVoicesFragment() {
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
+    }
+
+    override fun clearVideos() {
+        videoList.clear()
+        llVideo?.removeAllViews()
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

@@ -37,6 +37,8 @@ open class RealmNews : RealmObject() {
     var parentCode: String? = null
     var imageUrls: RealmList<String>? = null
     var images: String? = null
+    var videoUrls: RealmList<String>? = null
+    var videos: String? = null
     var labels: RealmList<String>? = null
     var viewIn: String? = null
     var newsId: String? = null
@@ -69,6 +71,9 @@ open class RealmNews : RealmObject() {
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
 
+    val videosArray: JsonArray
+        get() = if (videos == null) JsonArray() else JsonUtils.gson.fromJson(videos, JsonArray::class.java)
+
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
@@ -94,6 +99,9 @@ open class RealmNews : RealmObject() {
         get() {
             var ms = message
             for (ob in imagesArray) {
+                ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
+            }
+            for (ob in videosArray) {
                 ms = ms?.replace(JsonUtils.getString("markdown", ob.asJsonObject), "")
             }
             return ms
@@ -132,7 +140,7 @@ open class RealmNews : RealmObject() {
 
     companion object {
         @JvmStatic
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUser?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
+        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUser?, imageUrls: RealmList<String>?, videoUrls: RealmList<String>? = null, isReply: Boolean = false): RealmNews {
             val shouldManageTransaction = !mRealm.isInTransaction
             if (shouldManageTransaction) {
                 mRealm.beginTransaction()
@@ -169,6 +177,11 @@ open class RealmNews : RealmObject() {
                 news.imageUrls = RealmList()
             }
             imageUrls?.forEach { news.imageUrls?.add(it) }
+
+            if (news.videoUrls == null) {
+                news.videoUrls = RealmList()
+            }
+            videoUrls?.forEach { news.videoUrls?.add(it) }
 
             if (map.containsKey("news")) {
                 val newsObj = map["news"]

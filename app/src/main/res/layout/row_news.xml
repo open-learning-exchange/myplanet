@@ -120,6 +120,43 @@
                     android:layout_gravity="center"
                     android:padding="@dimen/padding_small"
                     android:visibility="gone" />
+
+                <com.google.android.flexbox.FlexboxLayout
+                    android:id="@+id/ll_news_videos"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:padding="@dimen/padding_small"
+                    android:visibility="gone"
+                    app:flexWrap="wrap"
+                    app:alignItems="flex_start"
+                    app:alignContent="flex_start"
+                    app:justifyContent="flex_start" />
+
+                <FrameLayout
+                    android:id="@+id/fl_single_video"
+                    android:layout_width="120dp"
+                    android:layout_height="120dp"
+                    android:layout_gravity="center"
+                    android:padding="@dimen/padding_small"
+                    android:visibility="gone">
+
+                    <ImageView
+                        android:id="@+id/img_video_thumb"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop" />
+
+                    <ImageView
+                        android:id="@+id/img_play_icon"
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_play"
+                        android:background="@drawable/circle_background"
+                        android:padding="12dp"
+                        app:tint="@android:color/white" />
+                </FrameLayout>
+
                 <TextView
                     android:id="@+id/tv_message"
                     android:layout_width="match_parent"

@@ -21,6 +21,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import io.realm.RealmList
 import java.io.File
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -192,6 +193,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
         openFolderLauncher.launch(Intent.createChooser(intent, "Select Image"))
     }
 
+    override fun addVideo(llVideo: ViewGroup?) {
+        // Video selection not supported in replies for now
+    }
+
     override fun onNewsItemClick(news: RealmNews?) {}
 
     override fun onMemberSelected(userModel: RealmUser?) {
@@ -213,6 +218,10 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
 
     override fun getCurrentImageList(): List<String> {
         return imageList
+    }
+
+    override fun getCurrentVideoList(): RealmList<String>? {
+        return null // Video selection not supported in replies for now
     }
 
     private fun handleImageSelection(url: Uri?) {
