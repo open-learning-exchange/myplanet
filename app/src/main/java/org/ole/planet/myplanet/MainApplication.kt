@@ -62,6 +62,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils.startListenNetworkState
 import org.ole.planet.myplanet.utils.NetworkUtils.stopListenNetworkState
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.ThemeMode
+import org.ole.planet.myplanet.utils.UrlUtils.init
 import org.ole.planet.myplanet.utils.VersionUtils.getVersionName
 
 @HiltAndroidApp
@@ -231,6 +232,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     override fun onCreate() {
         super.onCreate()
         instance = this
+        init(sharedPrefManager)
         setupCriticalProperties()
         LocaleUtils.preload(this)
         warmUpMainThreadRealm()
