@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.repository.EventsRepository
+import org.ole.planet.myplanet.utils.TimeProvider
 
 data class MeetupCreationParams(
     val title: String,
@@ -35,7 +36,8 @@ data class MeetupCreationParams(
 @HiltViewModel
 class TeamCalendarViewModel @Inject constructor(
     private val eventsRepository: EventsRepository,
-    private val gson: Gson
+    private val gson: Gson,
+    private val timeProvider: TimeProvider
 ) : ViewModel() {
 
     private val _meetups = MutableStateFlow<List<RealmMeetup>>(emptyList())
@@ -64,7 +66,7 @@ class TeamCalendarViewModel @Inject constructor(
                 endDate = params.endMillis
                 startTime = params.startTime
                 endTime = params.endTime
-                createdDate = System.currentTimeMillis()
+                createdDate = timeProvider.now()
                 sourcePlanet = params.teamPlanetCode
                 val jo = JsonObject()
                 jo.addProperty("type", "local")

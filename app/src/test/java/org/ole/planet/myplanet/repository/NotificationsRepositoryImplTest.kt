@@ -20,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
@@ -35,7 +36,9 @@ class NotificationsRepositoryImplTest {
         databaseService = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
-        repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository)
+        repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository,
+            TestTimeProvider()
+        )
     }
 
     @Test

@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -21,7 +22,8 @@ class UserSessionManager @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) {
     private val fullName: String
 
@@ -49,7 +51,7 @@ class UserSessionManager @Inject constructor(
             putString("lastName", user?.lastName)
             putString("middleName", user?.middleName)
             user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
-            putLong("lastLogin", System.currentTimeMillis())
+            putLong("lastLogin", timeProvider.now())
             apply()
         }
     }

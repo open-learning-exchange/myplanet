@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -47,7 +48,8 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val timeProvider: TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher), ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
@@ -97,7 +99,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             callback.onCheckingVersion()
 
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
 
             if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
@@ -123,7 +125,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 }
 
                 sharedPrefManager.rawPreferences.edit {
-                    putLong("last_version_check_timestamp", System.currentTimeMillis())
+                    putLong("last_version_check_timestamp", timeProvider.now())
                 }
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
                 sharedPrefManager.setVersionDetail(JsonUtils.gson.toJson(planetInfo))
@@ -161,7 +163,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override suspend fun checkServerAvailability(): Boolean {
         val updateUrl = sharedPrefManager.getServerUrl()
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < 30000) {
+            if (timeProvider.now() - timestamp < 30000) {
                 return available
             }
         }
@@ -193,7 +195,7 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
         }
 
-        serverAvailabilityCache[updateUrl] = Pair(result, System.currentTimeMillis())
+        serverAvailabilityCache[updateUrl] = Pair(result, timeProvider.now())
         return result
     }
 

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.sync
 
 import android.app.ActivityManager
 import android.content.Context
+import android.os.SystemClock
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
@@ -37,7 +38,7 @@ class AdaptiveBatchProcessor(private val context: Context) {
     }
     
     private fun getSystemCapabilities(): SystemCapabilities {
-        val now = System.currentTimeMillis()
+        val now = SystemClock.elapsedRealtime()
         val cached = cachedCapabilities
         if (cached != null && (now - lastCapabilityCheck) < cacheValidityMs) {
             return cached
