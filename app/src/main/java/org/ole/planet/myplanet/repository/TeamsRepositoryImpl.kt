@@ -182,6 +182,23 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getMyTeamsByUserId(userId: String): List<RealmMyTeam> {
+        val teamIds = withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("userId", userId)
+                .equalTo("docType", "membership")
+                .equalTo("isDeletePending", false)
+                .findAll()
+                .mapNotNull { it.teamId }
+                .toTypedArray()
+        }
+        if (teamIds.isEmpty()) return emptyList()
+        return queryList(RealmMyTeam::class.java) {
+            `in`("_id", teamIds)
+            notEqualTo("status", "archived")
+        }
+    }
+
     private suspend fun getMemberTeamIds(userId: String): Set<String> {
         return queryList(RealmMyTeam::class.java) {
             equalTo("userId", userId)
