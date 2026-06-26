@@ -95,6 +95,9 @@ class VoicesAdapter(
         const val PAYLOAD_TEAM_LEADER_CHANGED = "PAYLOAD_TEAM_LEADER_CHANGED"
         const val PAYLOAD_CURRENT_USER_CHANGED = "PAYLOAD_CURRENT_USER_CHANGED"
         const val PAYLOAD_NON_TEAM_MEMBER_CHANGED = "PAYLOAD_NON_TEAM_MEMBER_CHANGED"
+        const val PAYLOAD_REPLY_COUNT = "PAYLOAD_REPLY_COUNT"
+        const val PAYLOAD_USER_FETCHED = "PAYLOAD_USER_FETCHED"
+        const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
     }
 
     private var originalList: List<RealmNews> = emptyList()
@@ -191,7 +194,9 @@ class VoicesAdapter(
     }
 
 
-override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+    @SuppressLint("SetTextI18n")
+    @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
         if (payloads.isEmpty()) {
             super.onBindViewHolder(holder, position, payloads)
             return
@@ -227,6 +232,16 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
                         val canManageLabels = canAddLabel(news)
                         labelManager.setupAddLabelMenu(holder.binding, news, canManageLabels)
                         labelManager.showChips(holder.binding, news, canManageLabels)
+                    }
+                    PAYLOAD_REPLY_COUNT -> updateReplyCount(holder, news, position)
+                    PAYLOAD_USER_FETCHED -> {
+                        val userModel = configureUser(holder, news)
+                        val currentLeader = getCurrentLeader(userModel, news)
+                        setMemberClickListeners(holder, userModel, currentLeader)
+                    }
+                    PAYLOAD_EDIT_ACTION -> {
+                        configureEditDeleteButtons(holder, news)
+                        showReplyButton(holder, news, position)
                     }
                 }
             }
@@ -272,7 +287,7 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
             replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
-            notifyItemChanged(0)
+            notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
         }
         listener?.onDataChanged()
     }
@@ -282,7 +297,7 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
         replyCountCache.remove(newsId)
         val index = currentList.indexOfFirst { it.id == newsId }
         if (index >= 0) {
-            safeNotifyItemChanged(index)
+            safeNotifyItemChanged(index, PAYLOAD_REPLY_COUNT)
         }
     }
 
@@ -339,7 +354,7 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
                     fetchingUserIds.remove(userId)
                     currentList.forEachIndexed { index, item ->
                         if (item.userId == userId) {
-                            safeNotifyItemChanged(index)
+                            safeNotifyItemChanged(index, PAYLOAD_USER_FETCHED)
                         }
                     }
                 }
@@ -401,7 +416,7 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
                         voicesRepository,
                         { h, updatedNews, pos ->
                             showReplyButton(h, updatedNews, pos)
-                            safeNotifyItemChanged(pos)
+                            safeNotifyItemChanged(pos, PAYLOAD_EDIT_ACTION)
                         },
                         onEditAction
                     )
@@ -683,15 +698,15 @@ override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, pa
     // Notifying the adapter while the RecyclerView is laying out/scrolling throws
     // IllegalStateException. Async callbacks (user fetch, edit, etc.) can resolve
     // synchronously during onBindViewHolder, so defer the notify to the RV handler.
-    private fun safeNotifyItemChanged(position: Int) {
+    private fun safeNotifyItemChanged(position: Int, payload: Any) {
         if (position < 0) return
         val rv = recyclerView
         if (rv != null && (rv.isComputingLayout || rv.scrollState != RecyclerView.SCROLL_STATE_IDLE)) {
             rv.post {
-                if (position < itemCount) notifyItemChanged(position)
+                if (position < itemCount) notifyItemChanged(position, payload)
             }
         } else {
-            notifyItemChanged(position)
+            notifyItemChanged(position, payload)
         }
     }
 

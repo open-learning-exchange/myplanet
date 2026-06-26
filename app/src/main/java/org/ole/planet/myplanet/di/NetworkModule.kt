@@ -15,7 +15,6 @@ import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
 import okhttp3.OkHttpClient
-import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
 import org.ole.planet.myplanet.services.BroadcastService
@@ -99,14 +98,5 @@ object NetworkModule {
     @Singleton
     fun provideApiInterface(@StandardRetrofit retrofit: Retrofit): ApiInterface {
         return retrofit.create(ApiInterface::class.java)
-    }
-
-    @Provides
-    @Singleton
-    fun provideApiClient(
-        @StandardRetrofit retrofit: Retrofit,
-    ): ApiClient {
-        ApiClient.client = retrofit
-        return ApiClient
     }
 }

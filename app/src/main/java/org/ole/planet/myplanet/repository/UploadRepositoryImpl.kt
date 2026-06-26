@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
-import java.util.concurrent.ConcurrentHashMap
 import io.realm.RealmObject
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher

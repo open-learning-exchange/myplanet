@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
@@ -125,7 +124,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             return "0"
         }
         lateinit var applicationScope: CoroutineScope
-        val apiClientInitialized = CompletableDeferred<Unit>()
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
@@ -252,7 +250,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         applicationScope.launch {
             initApp()
             loadAndApplyTheme()
-            ensureApiClientInitialized()
             initializeDatabaseConnection()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
@@ -280,16 +277,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
     }
 
-    private suspend fun ensureApiClientInitialized() {
-        withContext(dispatcherProvider.io) {
-            EntryPointAccessors.fromApplication(
-                this@MainApplication,
-                NetworkDependenciesEntryPoint::class.java
-            ).apiClient()
-            apiClientInitialized.complete(Unit)
-        }
-    }
-    
     private suspend fun initializeDatabaseConnection() {
         databaseService.withRealmAsync { }
     }

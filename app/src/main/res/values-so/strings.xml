@@ -1041,6 +1041,9 @@
     <string name="profit_loss">Faa\'iido/Qasaaro</string>
     <string name="ending_balance">Hadhsiga dhammaadka</string>
     <string name="reports_summary">Dulmar Warbixino</string>
+    <string name="report_image">Sawirka warbixinta</string>
+    <string name="finance_image">Sawirka macaamilka</string>
+    <string name="change_image">Beddel sawirka</string>
     <string name="summary">Dulmar</string>
     <string name="other_income">Dakhliga kale</string>
     <string name="add_reports">Ku dar warbixino</string>
