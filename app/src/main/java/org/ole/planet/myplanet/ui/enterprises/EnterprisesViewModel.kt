@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.TimeProvider
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -23,7 +24,8 @@ sealed class ReportEvent {
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository
+    private val teamsRepository: TeamsRepository,
+    private val timeProvider: TimeProvider
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
@@ -49,7 +51,7 @@ class EnterprisesViewModel @Inject constructor(
                 val reportId = UUID.randomUUID().toString()
                 val doc = JsonObject().apply {
                     addProperty("_id", reportId)
-                    addProperty("createdDate", System.currentTimeMillis())
+                    addProperty("createdDate", timeProvider.now())
                     addProperty("description", description)
                     addProperty("beginningBalance", beginningBalance)
                     addProperty("sales", sales)
@@ -58,7 +60,7 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("otherExpenses", otherExpenses)
                     addProperty("startDate", startDate)
                     addProperty("endDate", endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
+                    addProperty("updatedDate", timeProvider.now())
                     addProperty("teamId", teamId)
                     addProperty("teamType", teamType)
                     addProperty("teamPlanetCode", teamPlanetCode)
@@ -100,7 +102,7 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("otherExpenses", otherExpenses)
                     addProperty("startDate", startDate)
                     addProperty("endDate", endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
+                    addProperty("updatedDate", timeProvider.now())
                     addProperty("updated", true)
                 }
                 teamsRepository.updateReport(reportId, doc)

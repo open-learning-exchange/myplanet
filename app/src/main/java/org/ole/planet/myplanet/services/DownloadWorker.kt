@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services
 
 import android.app.NotificationManager
 import android.content.Context
+import android.os.SystemClock
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.hilt.work.HiltWorker
@@ -115,7 +116,7 @@ class DownloadWorker @AssistedInject constructor(
                     sink.write(buffer, read)
                     totalBytes += read
 
-                    val now = System.currentTimeMillis()
+                    val now = SystemClock.elapsedRealtime()
                     if (now - lastUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
                         val progress = if (fileSize > 0) {
                             (totalBytes * 100 / fileSize).toInt()

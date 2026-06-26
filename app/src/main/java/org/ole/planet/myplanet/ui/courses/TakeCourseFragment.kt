@@ -426,7 +426,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     }
 
     private fun setNavigationButtons(){
-        if(position >= steps.size - 1){
+        if(position >= steps.size){
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {
