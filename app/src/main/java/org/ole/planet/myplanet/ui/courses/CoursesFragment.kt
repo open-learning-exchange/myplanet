@@ -11,12 +11,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -31,7 +29,6 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.resources.CollectionsFragment
@@ -51,13 +48,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private lateinit var selectionController: CourseSelectionController
     var userModel: RealmUser? = null
     private lateinit var confirmation: AlertDialog
-    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var selectionJob: Job? = null
     private var pendingScrollState: android.os.Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
-
-    @Inject
-    lateinit var prefManager: SharedPrefManager
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -175,45 +168,8 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 }
             }
 
-        collectLatestWhenStarted(viewModel.syncStatus) { status ->
-            when (status) {
-                    is SyncStatus.Idle -> {}
-                    is SyncStatus.Syncing -> {
-                        if (isAdded && !requireActivity().isFinishing) {
-                            if (customProgressDialog == null) {
-                                customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            }
-                            customProgressDialog?.setText(getString(R.string.syncing_courses_data))
-                            customProgressDialog?.show()
-                        }
-                    }
-                    is SyncStatus.Success -> {
-                        if (isAdded) {
-                            customProgressDialog?.setText(getString(R.string.loading_courses))
-                            delay(3000)
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            loadDataAsync()
-                            prefManager.setSynced(SharedPrefManager.SyncKey.COURSES, true)
-                            viewModel.resetSyncStatus()
-                        }
-                    }
-                    is SyncStatus.Failed -> {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            Snackbar.make(requireView(), "Sync failed: ${status.message ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                                .setAction("Retry") { viewModel.startCoursesSync() }
-                                .show()
-                            viewModel.resetSyncStatus()
-                        }
-                    }
-                }
-            }
-
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
-        viewModel.startCoursesSync()
     }
 
     private fun initializeView() {
@@ -446,12 +402,6 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
             selectionController.clearAll(adapterCourses)
         }
-    }
-
-    override fun onDestroy() {
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
-        super.onDestroy()
     }
 
     override fun getWatchedTables(): List<String> = listOf("courses")

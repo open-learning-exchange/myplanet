@@ -691,7 +691,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         binding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }
-        setupFastSyncOption(binding)
 
         showAdditionalServers = false
         if (serverListAddresses.isNotEmpty() && prefData.getServerUrl().isNotEmpty()) {

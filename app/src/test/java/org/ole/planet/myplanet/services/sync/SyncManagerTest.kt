@@ -96,12 +96,11 @@ class SyncManagerTest {
     @Test
     fun `start with useImprovedSync=true and type=sync uses improved sync manager`() = runTest {
         every { sharedPrefManager.getUseImprovedSync() } returns true
-        every { sharedPrefManager.getFastSync() } returns true
 
         syncManager.start(listener, "sync", listOf("exams"))
 
         verify { listener.onSyncStarted() }
-        verify { improvedSyncManager.start(any(), SyncMode.Fast, listOf("exams")) }
+        verify { improvedSyncManager.start(any(), SyncMode.Standard, listOf("exams")) }
     }
 
     @Test
@@ -121,7 +120,6 @@ class SyncManagerTest {
     fun `cancelBackgroundSync clears background sync and listener`() = runTest {
         // Prevent immediate execution of background sync logic so we can cancel it
         every { sharedPrefManager.getUseImprovedSync() } returns true
-        every { sharedPrefManager.getFastSync() } returns true
 
         syncManager.start(listener, "sync", listOf())
         syncManager.cancelBackgroundSync()

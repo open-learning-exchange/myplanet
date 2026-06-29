@@ -65,8 +65,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         super.onCreate(savedInstanceState)
         isTeam = arguments?.getBoolean("isTeam", false) == true
         teamId = arguments?.getString("teamId", null)
-        
-        viewModel.startExamSync()
     }
 
     override fun onAdoptSurvey(surveyId: String) {

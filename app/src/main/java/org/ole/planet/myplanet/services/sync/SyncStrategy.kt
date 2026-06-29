@@ -32,6 +32,5 @@ interface SyncStrategy {
 
 sealed class SyncMode {
     object Standard : SyncMode()
-    object Fast : SyncMode()
     object Optimized : SyncMode()
 }
