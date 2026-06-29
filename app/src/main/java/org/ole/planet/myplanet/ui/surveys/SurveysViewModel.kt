@@ -10,29 +10,18 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
 @HiltViewModel
 class SurveysViewModel @Inject constructor(
     private val surveysRepository: SurveysRepository,
-    private val syncManager: SyncManager,
-    private val userSessionManager: UserSessionManager,
-    private val sharedPrefManager: SharedPrefManager,
-    private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     enum class SortOption {
@@ -166,48 +155,6 @@ class SurveysViewModel @Inject constructor(
     private fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(DIACRITICS_REGEX, "")
-    }
-
-    fun startExamSync() {
-        val isFastSync = sharedPrefManager.getFastSync()
-        val isExamsSynced = sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS)
-
-        if (isFastSync && !isExamsSynced) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                    MainApplication.isServerReachable(url)
-                }
-            }
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _isLoading.value = true
-            }
-
-            override fun onSyncComplete() {
-                sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true)
-                _isLoading.value = false
-                loadSurveys(isTeam, teamId, _isTeamShareAllowed.value)
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                _isLoading.value = false
-                _errorMessage.value = "Sync failed: $msg"
-            }
-        }, "full", listOf("exams"))
     }
 
     fun adoptSurvey(surveyId: String) {

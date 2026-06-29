@@ -249,13 +249,6 @@ fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
     }
 }
 
-fun SyncActivity.setupFastSyncOption(binding: DialogServerUrlBinding) {
-    binding.fastSync.isChecked = prefData.getFastSync()
-    binding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, checked: Boolean ->
-        prefData.setFastSync(checked)
-    }
-}
-
 fun SyncActivity.handleManualConfiguration(
     binding: DialogServerUrlBinding,
     configurationId: String?,

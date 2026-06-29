@@ -21,11 +21,9 @@ import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -80,7 +78,6 @@ class SyncManager @Inject constructor(
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
-    private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
 
@@ -103,7 +100,7 @@ class SyncManager @Inject constructor(
                 } else if (!useImproved) {
                     createLog("sync_manager_route", "legacy")
                 }
-                authenticateAndSync(type, syncTables)
+                authenticateAndSync()
             }
         }
     }
@@ -132,11 +129,7 @@ class SyncManager @Inject constructor(
         syncScope.launch {
             try {
                 val manager = improvedSyncManager.get()
-                val syncMode = if (sharedPrefManager.getFastSync()) {
-                    SyncMode.Fast
-                } else {
-                    SyncMode.Standard
-                }
+                val syncMode = SyncMode.Standard
                 createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
                 val wrappedListener = object : OnSyncListener {
                     override fun onSyncStarted() {
@@ -165,9 +158,6 @@ class SyncManager @Inject constructor(
     }
 
     private fun destroy() {
-        if (betaSync) {
-            syncScope.cancel()
-        }
         improvedSyncManager.get().cancel()
         cancelBackgroundSync()
         cancel(context, 111)
@@ -178,23 +168,14 @@ class SyncManager @Inject constructor(
         _syncStatus.value = SyncStatus.Success("Sync completed")
     }
 
-    private fun authenticateAndSync(type: String, syncTables: List<String>?) {
+    private fun authenticateAndSync() {
         backgroundSync = syncScope.launch(dispatcherProvider.io) {
             if (transactionSyncManager.authenticate()) {
-                startSync(type, syncTables)
+                startFullSync()
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
             }
-        }
-    }
-
-    private suspend fun startSync(type: String, syncTables: List<String>?) {
-        val isFastSync = sharedPrefManager.getFastSync()
-        if (!isFastSync || type == "upload") {
-            startFullSync()
-        } else {
-            startFastSync(syncTables)
         }
     }
 
@@ -282,209 +263,6 @@ class SyncManager @Inject constructor(
             Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
             Log.d("SyncPerf", "Error: ${err.message}")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            err.printStackTrace()
-            handleException(err.message)
-        } finally {
-            destroy()
-        }
-    }
-
-    private suspend fun startFastSync(syncTables: List<String>? = null) {
-        try {
-            val logger = SyncTimeLogger
-            logger.startLogging()
-
-            initializeSync()
-            coroutineScope {
-                val syncJobs = mutableListOf<Deferred<Unit>>()
-                if (syncTables?.contains("tablet_users") != false) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tablet_users_sync")
-                            transactionSyncManager.syncDb("tablet_users")
-                            logger.endProcess("tablet_users_sync")
-                        })
-
-                    syncJobs.add(async {
-                        logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb("login_activities", useCheckpoint = true)
-                        logger.endProcess("login_activities_sync")
-                    })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tags_sync")
-                            transactionSyncManager.syncDb("tags")
-                            logger.endProcess("tags_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("teams_sync")
-                            transactionSyncManager.syncDb("teams")
-                            logger.endProcess("teams_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("news_sync")
-                            transactionSyncManager.syncDb("news")
-                            logger.endProcess("news_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("notifications_sync")
-                            transactionSyncManager.syncDb("notifications")
-                            logger.endProcess("notifications_sync")
-                        })
-                }
-
-                if (syncTables?.contains("resources") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("library_sync")
-                            myLibraryTransactionSync()
-                            logger.endProcess("library_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("resource_sync")
-                            resourceTransactionSync()
-                            logger.endProcess("resource_sync")
-                        })
-                }
-
-                if (syncTables?.contains("courses") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("library_sync")
-                            myLibraryTransactionSync()
-                            logger.endProcess("library_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("courses_sync")
-                            transactionSyncManager.syncDb("courses")
-                            logger.endProcess("courses_sync")
-                        })
-
-                    syncJobs.add(async {
-                        logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb("courses_progress", useCheckpoint = true)
-                        logger.endProcess("courses_progress_sync")
-                    })
-
-                    syncJobs.add(async {
-                        logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb("ratings", useCheckpoint = true)
-                        logger.endProcess("ratings_sync")
-                    })
-                }
-
-                if (syncTables?.contains("tasks") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tasks_sync")
-                            transactionSyncManager.syncDb("tasks")
-                            logger.endProcess("tasks_sync")
-                        })
-                }
-
-                if (syncTables?.contains("meetups") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("meetups_sync")
-                            transactionSyncManager.syncDb("meetups")
-                            logger.endProcess("meetups_sync")
-                        })
-                }
-
-                if (syncTables?.contains("team_activities") == true) {
-                    syncJobs.add(async {
-                        logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb("team_activities", useCheckpoint = true)
-                        logger.endProcess("team_activities_sync")
-                    })
-                }
-
-                if (syncTables?.contains("chat_history") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("chat_history_sync")
-                            transactionSyncManager.syncDb("chat_history")
-                            logger.endProcess("chat_history_sync")
-                        })
-                }
-
-                if (syncTables?.contains("feedback") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("feedback_sync")
-                            transactionSyncManager.syncDb("feedback")
-                            logger.endProcess("feedback_sync")
-                        })
-                }
-
-                if (syncTables?.contains("achievements") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("achievements_sync")
-                            transactionSyncManager.syncDb("achievements")
-                            logger.endProcess("achievements_sync")
-                        })
-                }
-
-                if (syncTables?.contains("health") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("health_sync")
-                            transactionSyncManager.syncDb("health")
-                            logger.endProcess("health_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("certifications_sync")
-                            transactionSyncManager.syncDb("certifications")
-                            logger.endProcess("certifications_sync")
-                        })
-                }
-
-                if (syncTables?.contains("courses") == true || syncTables?.contains("exams") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("exams_sync")
-                            transactionSyncManager.syncDb("exams")
-                            logger.endProcess("exams_sync")
-                        })
-
-                    syncJobs.add(async {
-                        logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb("submissions", useCheckpoint = true)
-                        logger.endProcess("submissions_sync")
-                    })
-                }
-
-                syncJobs.awaitAll()
-            }
-
-            logger.startProcess("admin_sync")
-            loginSyncManager.syncAdmin()
-            logger.endProcess("admin_sync")
-
-            logger.startProcess("notification_reads_upload")
-            transactionSyncManager.syncNotificationReads()
-            logger.endProcess("notification_reads_upload")
-
-            logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
-            logger.endProcess("on_synced")
-
-            logger.stopLogging()
-        } catch (err: Exception) {
             err.printStackTrace()
             handleException(err.message)
         } finally {

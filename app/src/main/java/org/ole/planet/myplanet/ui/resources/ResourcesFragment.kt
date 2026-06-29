@@ -16,7 +16,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
@@ -44,7 +43,6 @@ import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
-import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
@@ -69,7 +67,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var userModel: RealmUser ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
-    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
     private var allResourceModels: List<org.ole.planet.myplanet.model.ResourceListModel> = emptyList()
@@ -84,7 +81,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        viewModel.startResourcesSync()
     }
 
     override fun getLayout(): Int {
@@ -144,35 +140,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         initArrays()
         hideButton()
 
-        collectWhenStarted(viewModel.syncState) { state ->
-            when (state) {
-                is org.ole.planet.myplanet.model.SyncState.Syncing -> {
-                    if (!requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_resources))
-                        customProgressDialog?.show()
-                    }
-                }
-                is org.ole.planet.myplanet.model.SyncState.Success -> {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
-                    refreshResourcesData()
-                    viewModel.resetSyncState()
-                }
-                is org.ole.planet.myplanet.model.SyncState.Failed -> {
-                    customProgressDialog?.dismiss()
-                    customProgressDialog = null
-                    Snackbar.make(requireView(), "Sync failed: ${state.message ?: "Unknown error"}", Snackbar.LENGTH_LONG
-                    ).setAction("Retry") {
-                        viewModel.startResourcesSync()
-                    }.show()
-                    viewModel.resetSyncState()
-                }
-                is org.ole.planet.myplanet.model.SyncState.Idle -> {
-                    // Do nothing
-                }
-            }
-        }
         collectWhenStarted(viewModel.downloadComplete) { completed ->
             if (completed) {
                 refreshResourcesData()
@@ -596,11 +563,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
         confirmation = null
 
-        if (customProgressDialog?.isShowing() == true) {
-            customProgressDialog?.dismiss()
-        }
-        customProgressDialog = null
-
         _binding = null
         super.onDestroyView()
     }
@@ -636,11 +598,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun onDestroy() {
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
-        super.onDestroy()
-    }
 
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
