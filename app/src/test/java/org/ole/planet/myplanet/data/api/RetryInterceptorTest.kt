@@ -5,6 +5,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import java.io.IOException
+import java.net.SocketTimeoutException
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
@@ -22,7 +23,6 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE, sdk = [33], application = Application::class)
 class RetryInterceptorTest {
-
     private lateinit var broadcastService: BroadcastService
     private lateinit var retryInterceptor: RetryInterceptor
 
@@ -84,6 +84,42 @@ class RetryInterceptorTest {
         val chain = mockk<Interceptor.Chain>()
         every { chain.request() } returns request
         every { chain.proceed(request) } returnsMany listOf(errorResponse, successResponse)
+
+        val result = retryInterceptor.intercept(chain)
+
+        assertEquals(200, result.code)
+        verify(exactly = 2) { chain.proceed(request) }
+        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
+    }
+
+    @Test
+    fun testRetriesUpToMaxRetriesOnIOException() {
+        val request = Request.Builder().url("http://example.com").build()
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } throws SocketTimeoutException("timeout")
+
+        try {
+            retryInterceptor.intercept(chain)
+            fail("Expected IOException after retries are exhausted")
+        } catch (e: IOException) {
+            assertTrue(e is SocketTimeoutException)
+        }
+
+        // 1 initial + 3 retries = 4
+        verify(exactly = 4) { chain.proceed(request) }
+        verify(exactly = 3) { broadcastService.trySendBroadcast(any()) }
+    }
+
+    @Test
+    fun testSuccessAfterIOException() {
+        val request = Request.Builder().url("http://example.com").build()
+        val successResponse = createResponse(request, 200)
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } throws SocketTimeoutException("timeout") andThen successResponse
 
         val result = retryInterceptor.intercept(chain)
 
