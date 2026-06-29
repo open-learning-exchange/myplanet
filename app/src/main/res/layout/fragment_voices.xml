@@ -34,10 +34,11 @@
                     android:text="@string/filter_by_label"
                     android:textColor="@color/daynight_textColor"
                     android:textSize="14sp" />
-                <Spinner
+                <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/filterByLabel"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_gravity="center"
                     android:padding="@dimen/padding_large" />
             </LinearLayout>
 
