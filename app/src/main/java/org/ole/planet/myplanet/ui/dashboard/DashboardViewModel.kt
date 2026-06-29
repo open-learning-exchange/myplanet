@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.dashboard
 import android.app.Application
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
@@ -22,7 +23,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
+import kotlin.time.Duration.Companion.milliseconds
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -114,16 +115,8 @@ class DashboardViewModel @Inject constructor(
         notificationsRepository.updateResourceNotification(userId, resourceCount)
     }
 
-    suspend fun getSurveySubmissionCount(userId: String?): Int {
-        return surveysRepository.getSurveySubmissionCount(userId)
-    }
-
     suspend fun getUnreadNotificationsSize(userId: String?, isAdmin: Boolean = false): Int {
         return notificationsRepository.getUnreadCount(userId, isAdmin)
-    }
-
-    suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        return notificationsRepository.getTeamNotificationInfo(teamId, userId)
     }
 
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo> {
@@ -180,10 +173,6 @@ class DashboardViewModel @Inject constructor(
 
     suspend fun getTeamType(teamId: String): String? {
         return teamsRepository.getTeamType(teamId)
-    }
-
-    suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
-        return activitiesRepository.getOfflineActivities(userName, type)
     }
 
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
@@ -249,7 +238,7 @@ class DashboardViewModel @Inject constructor(
                     lastException = e
                     e.printStackTrace()
                     if (attempt < maxRetries - 1) {
-                        kotlinx.coroutines.delay(300)
+                        kotlinx.coroutines.delay(300.milliseconds)
                     }
                 }
             }
@@ -271,7 +260,7 @@ class DashboardViewModel @Inject constructor(
 
     fun refreshNotificationsBadge(userId: String) {
         viewModelScope.launch {
-            kotlinx.coroutines.delay(100)
+            kotlinx.coroutines.delay(100.milliseconds)
             try {
                 val unreadCount = withContext(dispatcherProvider.io) {
                     notificationsRepository.refresh()
@@ -345,7 +334,7 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
-    private fun getCourseStatusString(progress: com.google.gson.JsonObject?, courseName: String?): String {
+    private fun getCourseStatusString(progress: JsonObject?, courseName: String?): String {
         return if (progress != null) {
             val max = JsonUtils.getInt("max", progress)
             val current = JsonUtils.getInt("current", progress)

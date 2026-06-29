@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
+import android.os.SystemClock
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -579,7 +580,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun onRealmDataChange() {
         if (notificationsShownThisSession) {
-            val currentTime = System.currentTimeMillis()
+            val currentTime = SystemClock.elapsedRealtime()
             if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
                 lastNotificationCheckTime = currentTime
                 lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true) }

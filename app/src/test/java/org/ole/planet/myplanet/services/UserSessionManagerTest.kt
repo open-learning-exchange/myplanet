@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserSessionManagerTest {
@@ -50,7 +51,8 @@ class UserSessionManagerTest {
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
-            dispatcherProvider = dispatcherProvider
+            dispatcherProvider = dispatcherProvider,
+            timeProvider = TestTimeProvider()
         )
     }
 
@@ -74,7 +76,8 @@ class UserSessionManagerTest {
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
-            dispatcherProvider = dispatcherProvider
+            dispatcherProvider = dispatcherProvider,
+            timeProvider = TestTimeProvider()
         )
     }
 

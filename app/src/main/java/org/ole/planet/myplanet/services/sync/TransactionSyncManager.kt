@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.SystemClock
 import android.util.Base64
 import com.google.gson.JsonObject
 import dagger.Lazy
@@ -149,7 +150,7 @@ class TransactionSyncManager @Inject constructor(
     }
 
     suspend fun syncDb(table: String, useCheckpoint: Boolean = false): Int = withContext(dispatcherProvider.io) {
-        val syncStartTime = System.currentTimeMillis()
+        val syncStartTime = SystemClock.elapsedRealtime()
         val checkpointKey = "heavy_sync_skip_$table"
         android.util.Log.d("SyncPerf", "  ▶ Starting $table sync")
         try {
@@ -175,15 +176,15 @@ class TransactionSyncManager @Inject constructor(
                 if (useCheckpoint) {
                     sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
                 }
-                val batchStartTime = System.currentTimeMillis()
-                val batchApiStartTime = System.currentTimeMillis()
+                val batchStartTime = SystemClock.elapsedRealtime()
+                val batchApiStartTime = SystemClock.elapsedRealtime()
                 val response = apiInterface.findDocs(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",
                     JsonObject() // Empty body for GET-style query
                 )
-                val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
+                val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
                 if (response.body() == null || !response.isSuccessful) {
                     android.util.Log.d("SyncPerf", "  ✗ Failed $table batch $batchNumber: HTTP ${response.code()}")
                     break
@@ -200,7 +201,7 @@ class TransactionSyncManager @Inject constructor(
                     arr.size()
                 )
                 if (table == "news") {
-                    val insertStartTime = System.currentTimeMillis()
+                    val insertStartTime = SystemClock.elapsedRealtime()
                     val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
@@ -211,7 +212,7 @@ class TransactionSyncManager @Inject constructor(
                         }
                     }
                     voicesRepository.insertNewsList(docs)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
                         table,
@@ -219,7 +220,7 @@ class TransactionSyncManager @Inject constructor(
                         arr.size()
                     )
                 } else if (table == "feedback") {
-                    val insertStartTime = System.currentTimeMillis()
+                    val insertStartTime = SystemClock.elapsedRealtime()
                     val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
@@ -230,7 +231,7 @@ class TransactionSyncManager @Inject constructor(
                         }
                     }
                     feedbackRepository.insertFeedbackList(docs)
-                    val insertDuration = System.currentTimeMillis() - insertStartTime
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
                         table,
@@ -240,7 +241,7 @@ class TransactionSyncManager @Inject constructor(
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
-                        val insertStartTime = System.currentTimeMillis()
+                        val insertStartTime = SystemClock.elapsedRealtime()
                         when (table) {
                             "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
@@ -264,7 +265,7 @@ class TransactionSyncManager @Inject constructor(
                             "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
                             else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
                         }
-                        val insertDuration = System.currentTimeMillis() - insertStartTime
+                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
                         if (table == "courses") {
                             android.util.Log.d(
                                 "SyncPerf",
@@ -288,7 +289,7 @@ class TransactionSyncManager @Inject constructor(
                 }
                 totalDocs += arr.size()
                 skip += arr.size()
-                val batchDuration = System.currentTimeMillis() - batchStartTime
+                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 android.util.Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
                 if (table in listOf("ratings", "submissions")) {
@@ -303,12 +304,12 @@ class TransactionSyncManager @Inject constructor(
             if (useCheckpoint && syncCompletedFully) {
                 sharedPrefManager.rawPreferences.edit().remove(checkpointKey).commit()
             }
-            val totalDuration = System.currentTimeMillis() - syncStartTime
+            val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
         } catch (e: Exception) {
             e.printStackTrace()
-            val failDuration = System.currentTimeMillis() - syncStartTime
+            val failDuration = SystemClock.elapsedRealtime() - syncStartTime
             android.util.Log.d("SyncPerf", "  ✗ Failed $table sync after ${failDuration}ms: ${e.message}")
             0
         }

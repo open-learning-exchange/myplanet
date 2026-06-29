@@ -18,6 +18,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 class SharedPrefManagerTest {
 
@@ -42,7 +43,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext, org.ole.planet.myplanet.di.NetworkModule.provideGson())
+        sharedPrefManager = SharedPrefManager(mockContext, org.ole.planet.myplanet.di.NetworkModule.provideGson(), TestTimeProvider())
     }
 
     @Test

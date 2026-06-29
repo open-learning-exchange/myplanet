@@ -12,6 +12,7 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
+import org.ole.planet.myplanet.utils.TimeProvider
 
 data class CachedMyLifeItem(
     var imageId: String?,
@@ -23,7 +24,8 @@ data class CachedMyLifeItem(
 @Singleton
 class SharedPrefManager @Inject constructor(
     @ApplicationContext private val context: Context,
-    private val gson: Gson
+    private val gson: Gson,
+    private val timeProvider: TimeProvider
 ) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -150,7 +152,7 @@ class SharedPrefManager @Inject constructor(
         pref.edit {
             putBoolean(key.key, synced)
             if (synced) {
-                putLong("${key.key}_time", System.currentTimeMillis())
+                putLong("${key.key}_time", timeProvider.now())
             }
         }
     }
