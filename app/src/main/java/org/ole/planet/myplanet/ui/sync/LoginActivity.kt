@@ -372,11 +372,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                val success = withContext(dispatcherProvider.io) {
+                withContext(dispatcherProvider.io) {
                     communityRepository.syncCommunityDocs()
                 }
-                val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
-                toast(this@LoginActivity, message)
             }
         }
         usernameWatcher = object : TextWatcher {
