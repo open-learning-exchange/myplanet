@@ -164,7 +164,7 @@ class ImprovedSyncManager @Inject constructor(
     private fun getStrategy(syncMode: SyncMode): SyncStrategy {
         return when (syncMode) {
             SyncMode.Standard -> standardStrategy
-            SyncMode.Fast, SyncMode.Optimized -> standardStrategy
+            SyncMode.Optimized -> standardStrategy
         }
     }
 
@@ -194,7 +194,6 @@ class ImprovedSyncManager @Inject constructor(
     private fun SyncMode.describe(): String {
         return when (this) {
             SyncMode.Standard -> "Standard"
-            SyncMode.Fast -> "Fast"
             SyncMode.Optimized -> "Optimized"
         }
     }

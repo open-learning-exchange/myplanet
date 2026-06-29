@@ -20,12 +20,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation
@@ -36,10 +34,7 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
@@ -53,18 +48,13 @@ class ChatHistoryFragment : Fragment() {
     var user: RealmUser? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
-    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     private var searchBarWatcher: TextWatcher? = null
     private var searchJob: Job? = null
     
-    @Inject
-    lateinit var syncManager: SyncManager
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
@@ -76,7 +66,6 @@ class ChatHistoryFragment : Fragment() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startChatHistorySync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -178,72 +167,6 @@ class ChatHistoryFragment : Fragment() {
     override fun onResume() {
         super.onResume()
         refreshChatHistory()
-    }
-
-    private fun startChatHistorySync() {
-        val isFastSync = sharedPrefManager.getFastSync()
-        if (isFastSync && !sharedPrefManager.isSynced(SharedPrefManager.SyncKey.CHAT_HISTORY)) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                if (view != null && isAdded) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        if (isAdded && !requireActivity().isFinishing) {
-                            customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                            customProgressDialog?.setText(getString(R.string.syncing_chat_history))
-                            customProgressDialog?.show()
-                        }
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                if (view != null && isAdded) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
-
-                            refreshChatHistory()
-                        }
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                if (view != null && isAdded) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        if (isAdded) {
-                            customProgressDialog?.dismiss()
-                            customProgressDialog = null
-                            refreshChatHistory()
-
-                            Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                                .setAction("Retry") { startChatHistorySync() }.show()
-                        }
-                    }
-                }
-            } }, "full", listOf("chat_history"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-            isServerReachable(url)
-        }
     }
 
     fun refreshChatHistory() {
@@ -366,11 +289,6 @@ class ChatHistoryFragment : Fragment() {
         super.onDestroyView()
     }
 
-    override fun onDestroy() {
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
-        super.onDestroy()
-    }
 }
 
 class ChatHistoryOnBackPressedCallback(private val slidingPaneLayout: SlidingPaneLayout) :

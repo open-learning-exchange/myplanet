@@ -243,15 +243,6 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
-            val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = sharedPrefManager.getFastSync()
-            fastSync?.isChecked = isFastSync
-            fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as Boolean
-                sharedPrefManager.setFastSync(isChecked)
-                true
-            }
-
             clearDataButtonInit()
             initRetryQueueDebug()
             initStorageBreakdown()

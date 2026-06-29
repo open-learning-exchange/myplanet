@@ -18,7 +18,6 @@ import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utils.TestTimeProvider
 
 class SharedPrefManagerTest {
 
@@ -43,7 +42,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext, org.ole.planet.myplanet.di.NetworkModule.provideGson(), TestTimeProvider())
+        sharedPrefManager = SharedPrefManager(mockContext, org.ole.planet.myplanet.di.NetworkModule.provideGson())
     }
 
     @Test
@@ -111,28 +110,6 @@ class SharedPrefManagerTest {
         sharedPrefManager.setPendingLanguageChange(null)
         verify { mockEditor.remove("pendingLanguageChange") }
         verify { mockEditor.apply() }
-    }
-
-    @Test
-    fun testSetSynced() {
-        // Test false synced
-        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, false)
-        verify { mockEditor.putBoolean("chat_history_synced", false) }
-        verify(exactly = 0) { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
-        verify { mockEditor.apply() }
-
-        // Test true synced
-        sharedPrefManager.setSynced(SharedPrefManager.SyncKey.CHAT_HISTORY, true)
-        verify { mockEditor.putBoolean("chat_history_synced", true) }
-        verify { mockEditor.putLong(eq("chat_history_synced_time"), any()) }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
-    fun testGetSyncTime() {
-        val testTime = 1634567890L
-        every { mockSharedPreferences.getLong("chat_history_synced_time", 0L) } returns testTime
-        assertEquals(testTime, sharedPrefManager.getSyncTime(SharedPrefManager.SyncKey.CHAT_HISTORY))
     }
 
     @Test
