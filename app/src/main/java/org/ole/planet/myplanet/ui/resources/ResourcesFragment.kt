@@ -93,6 +93,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return view
     }
 
+    override fun onRatingChanged(type: String, id: String) {
+        refreshResourcesData()
+    }
+
     private fun refreshResourcesData() {
         if (!isAdded || requireActivity().isFinishing) return
         val binding = _binding ?: return
