@@ -238,6 +238,16 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "chat_history") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
@@ -245,7 +255,6 @@ class TransactionSyncManager @Inject constructor(
                         when (table) {
                             "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
                             "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
