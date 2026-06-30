@@ -28,9 +28,7 @@ import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
@@ -49,8 +47,6 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var healthRepository: HealthRepository
-    @Inject
-    lateinit var userRepository: UserRepository
 
     private val viewModel: AddExaminationViewModel by viewModels()
     private lateinit var binding: ActivityAddExaminationBinding
@@ -99,38 +95,21 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             saveData()
         }
 
+        viewModel.loadData(userId, intent.getStringExtra("id"))
+
         lifecycleScope.launch {
-            val uid = userId
-            if (uid != null) {
-                val (u, p) = healthRepository.getHealthEntry(uid)
-                user = u
-                pojo = p
+            viewModel.state.collect { state ->
+                if (!state.isLoading) {
+                    user = state.user
+                    pojo = state.pojo
+                    health = state.health
+                    examination = state.examination
 
-                val updatedUser = userRepository.ensureUserSecurityKeys(uid)
-                if (updatedUser != null) {
-                    user = updatedUser
+                    initExamination()
+                    validateFields()
+                    btnSave.isEnabled = true
                 }
             }
-
-            if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-                try {
-                    health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            if (health == null) {
-                health = healthRepository.initHealth()
-            }
-            if (intent.hasExtra("id")) {
-                val id = intent.getStringExtra("id")
-                if (id != null) {
-                    examination = healthRepository.getExaminationById(id)
-                }
-            }
-            initExamination()
-            validateFields()
-            btnSave.isEnabled = true
         }
 
         lifecycleScope.launch {
