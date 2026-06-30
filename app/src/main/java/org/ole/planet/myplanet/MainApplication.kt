@@ -356,6 +356,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             override fun onStart(owner: LifecycleOwner) {
                 onAppForegrounded()
             }
+
+            override fun onStop(owner: LifecycleOwner) {
+                realmDispatcherProvider.shutdown()
+            }
         })
         onAppStarted()
     }
@@ -471,7 +475,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
-        realmDispatcherProvider.shutdown()
         super.onTerminate()
         stopListenNetworkState()
     }
