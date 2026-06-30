@@ -121,8 +121,7 @@ open class RealmRepository(
             safeCloseRealm()
             throw e
         }
-    }.flowOn(realmDispatcher)
-        .conflate()
+    }.conflate()
         .map { frozenResults ->
             if (frozenResults.isEmpty()) {
                 emptyList()
@@ -130,7 +129,7 @@ open class RealmRepository(
                 frozenResults.realm.copyFromRealm(frozenResults)
             }
         }
-        .flowOn(databaseService.ioDispatcher)
+        .flowOn(realmDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
