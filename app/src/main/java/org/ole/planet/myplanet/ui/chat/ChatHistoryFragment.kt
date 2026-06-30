@@ -36,6 +36,11 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import org.ole.planet.myplanet.utils.textChanges
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -52,8 +57,6 @@ class ChatHistoryFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
-    private var searchBarWatcher: TextWatcher? = null
-    private var searchJob: Job? = null
     
     @Inject
     lateinit var chatRepository: ChatRepository
@@ -107,20 +110,11 @@ class ChatHistoryFragment : Fragment() {
 
         refreshChatHistory()
 
-        searchBarWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    sharedViewModel.searchChats(s.toString(), isFullSearch, isQuestion)
-                }
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        }
-        binding.searchBar.addTextChangedListener(searchBarWatcher)
+        binding.searchBar.textChanges()
+            .debounce(300)
+            .distinctUntilChanged()
+            .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
 
         binding.fullSearch.setOnCheckedChangeListener { _, isChecked ->
             val density = Resources.getSystem().displayMetrics.density
@@ -280,8 +274,6 @@ class ChatHistoryFragment : Fragment() {
         if (::onRealtimeSyncListener.isInitialized) {
             syncManagerInstance.removeListener(onRealtimeSyncListener)
         }
-        searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
-        searchBarWatcher = null
         sharedNewsMessages = emptyList()
         shareTargets = ChatShareTargets(null, emptyList(), emptyList())
         user = null
