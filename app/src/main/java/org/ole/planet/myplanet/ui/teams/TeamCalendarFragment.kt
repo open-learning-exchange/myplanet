@@ -58,6 +58,9 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private var meetupDialog: AlertDialog? = null
     private var meetupAdapter: EventsAdapter? = null
     private val viewModel: TeamCalendarViewModel by viewModels()
+    private var cachedCardHeight: Int? = null
+    private var dateFormat: SimpleDateFormat? = null
+    private var lastLocale: Locale? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentEnterpriseCalendarBinding.inflate(inflater, container, false)
@@ -398,21 +401,35 @@ class TeamCalendarFragment : BaseTeamFragment() {
         llImage?.removeAllViews()
     }
 
+    private fun getDateFormat(): SimpleDateFormat {
+        val currentLocale = Locale.getDefault()
+        val cached = dateFormat
+        if (cached != null && lastLocale == currentLocale) {
+            return cached
+        }
+        return SimpleDateFormat("EEE, MMM d, yyyy", currentLocale).also {
+            dateFormat = it
+            lastLocale = currentLocale
+        }
+    }
+
     private fun getCardViewHeight(context: Context): Int {
-        val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
-        view.measure(
-            View.MeasureSpec.makeMeasureSpec(Resources.getSystem().displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
-            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-        )
-        return view.measuredHeight
+        return cachedCardHeight ?: run {
+            val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
+            view.measure(
+                View.MeasureSpec.makeMeasureSpec(Resources.getSystem().displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
+                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+            )
+            view.measuredHeight.also { cachedCardHeight = it }
+        }
     }
 
     private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
-        val dateFormat = SimpleDateFormat("EEE, MMM d, yyyy", Locale.getDefault())
-        dialogTitle.text = dateFormat.format(clickedCalendar.time)
+        val formatter = getDateFormat()
+        dialogTitle.text = formatter.format(clickedCalendar.time)
         val extraHeight = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, 12f, resources.displayMetrics
         ).toInt()
