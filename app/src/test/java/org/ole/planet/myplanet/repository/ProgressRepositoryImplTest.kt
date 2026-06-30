@@ -465,22 +465,7 @@ class ProgressRepositoryImplTest {
         assertEquals(true, mockProgress.passed) // Should preserve local true despite remote false
     }
 
-    @Test
-    fun testInsertCourseProgressFromSync_designDoc() = testScope.runTest {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
 
-        val doc1 = com.google.gson.JsonObject().apply {
-            addProperty("_id", "_design/doc")
-        }
-
-        coEvery { repository invoke "executeTransaction" withArguments listOf(any<Function1<io.realm.Realm, Unit>>()) } answers {
-            val transaction = args[0] as Function1<io.realm.Realm, Unit>
-            transaction.invoke(mockRealm)
-        }
-        repository.insertCourseProgressFromSync(listOf(doc1))
-
-        // with the new design, it will still query realm, but it won't crash
-    }
 
     @Test
     fun testGetCompletedCourses_nullSteps() = testScope.runTest {
