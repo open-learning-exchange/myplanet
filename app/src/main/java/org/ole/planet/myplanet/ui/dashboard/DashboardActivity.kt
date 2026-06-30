@@ -29,9 +29,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -201,66 +199,50 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun collectUiState() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    dashboardViewModel.uiState.collect { state ->
-                        updateNotificationBadge(state.unreadNotifications) {
-                            openNotificationsList(user?.id ?: "")
-                        }
-                        if (state.newNotifications.isNotEmpty()) {
-                            state.newNotifications.forEach { notificationManager?.showNotification(it) }
-                            dashboardViewModel.clearNewNotifications()
-                        }
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.uiState) { state ->
+            updateNotificationBadge(state.unreadNotifications) {
+                openNotificationsList(user?.id ?: "")
+            }
+            if (state.newNotifications.isNotEmpty()) {
+                state.newNotifications.forEach { notificationManager?.showNotification(it) }
+                dashboardViewModel.clearNewNotifications()
+            }
+        }
 
-                launch {
-                    dashboardViewModel.surveyNavigationEvent.collect { surveyId ->
-                        SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.surveyNavigationEvent) { surveyId ->
+            SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
+        }
 
-                launch {
-                    dashboardViewModel.taskNavigationEvent.collect { teamData ->
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamData.first,
-                            teamName = teamData.second,
-                            teamType = teamData.third,
-                            isMyTeam = true,
-                            navigateToPage = TasksPage
-                        )
-                        openCallFragment(f)
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.taskNavigationEvent) { teamData ->
+            val f = TeamDetailFragment.newInstance(
+                teamId = teamData.first,
+                teamName = teamData.second,
+                teamType = teamData.third,
+                isMyTeam = true,
+                navigateToPage = TasksPage
+            )
+            openCallFragment(f)
+        }
 
-                launch {
-                    dashboardViewModel.joinRequestNavigationEvent.collect { teamId ->
-                        if (teamId.isNotEmpty()) {
-                            val f = TeamDetailFragment()
-                            val b = Bundle()
-                            b.putString("id", teamId)
-                            b.putBoolean("isMyTeam", true)
-                            b.putString("navigateToPage", JoinRequestsPage.id)
-                            f.arguments = b
-                            openCallFragment(f)
-                        }
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.joinRequestNavigationEvent) { teamId ->
+            if (teamId.isNotEmpty()) {
+                val f = TeamDetailFragment()
+                val b = Bundle()
+                b.putString("id", teamId)
+                b.putBoolean("isMyTeam", true)
+                b.putString("navigateToPage", JoinRequestsPage.id)
+                f.arguments = b
+                openCallFragment(f)
+            }
+        }
 
-                launch {
-                    dashboardViewModel.challengeDialogEvent.collect { data ->
-                        challengeManager.showChallengeDialog(data)
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.challengeDialogEvent) { data ->
+            challengeManager.showChallengeDialog(data)
+        }
 
-                launch {
-                    syncManager.syncStatus.collect { status ->
-                        if (status is SyncManager.SyncStatus.Success) {
-                            updateLastSyncStatus()
-                        }
-                    }
-                }
+        collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status is SyncManager.SyncStatus.Success) {
+                updateLastSyncStatus()
             }
         }
     }
