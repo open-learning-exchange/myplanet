@@ -706,6 +706,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 throw e
             }
         }
+        RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
     override fun bulkInsertCertificationsFromSync(realm: Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
