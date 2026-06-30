@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
@@ -291,8 +292,10 @@ class SettingsActivity : AppCompatActivity() {
 
                             workManager.enqueue(freeSpaceWork)
 
-                            workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
-                                .observe(viewLifecycleOwner) { workInfo ->
+                            val liveData = workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
+                            liveData.observe(viewLifecycleOwner, object : Observer<WorkInfo?> {
+                                override fun onChanged(value: WorkInfo?) {
+                                    val workInfo = value
                                     if (workInfo != null) {
                                         when (workInfo.state) {
                                             WorkInfo.State.RUNNING -> {
@@ -320,8 +323,12 @@ class SettingsActivity : AppCompatActivity() {
                                                 // ENQUEUED or BLOCKED
                                             }
                                         }
+                                        if (workInfo.state.isFinished) {
+                                            liveData.removeObserver(this)
+                                        }
                                     }
                                 }
+                            })
 
                             dialog.setNegativeButton("Cancel") {
                                 workManager.cancelWorkById(freeSpaceWork.id)
