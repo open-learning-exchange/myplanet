@@ -105,8 +105,8 @@ class TransactionSyncManager @Inject constructor(
                 val r = ob.rows?.firstOrNull()
                 r?.id?.let { id ->
                     val jsonDoc = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/$table/$id").body()
-                    val key = getString("key", jsonDoc)
-                    val iv = getString("iv", jsonDoc)
+                    val key = org.ole.planet.myplanet.utils.JsonUtils.getString("key", jsonDoc)
+                    val iv = org.ole.planet.myplanet.utils.JsonUtils.getString("iv", jsonDoc)
 
                     if (key.isNotEmpty() || iv.isNotEmpty()) {
                         userModel.id?.let {
@@ -205,8 +205,8 @@ class TransactionSyncManager @Inject constructor(
                     val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
+                        jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+                        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
                         if (!id.startsWith("_design")) {
                             docs.add(jsonDoc)
                         }
@@ -224,13 +224,32 @@ class TransactionSyncManager @Inject constructor(
                     val docs = ArrayList<JsonObject>(arr.size())
                     for (j in arr) {
                         var jsonDoc = j.asJsonObject
-                        jsonDoc = getJsonObject("doc", jsonDoc)
-                        val id = getString("_id", jsonDoc)
+                        jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+                        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
                         if (!id.startsWith("_design")) {
                             docs.add(jsonDoc)
                         }
                     }
                     feedbackRepository.insertFeedbackList(docs)
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "ratings") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
+                        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    ratingsRepository.insertRatingsFromSync(docs)
                     val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
                     org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
                         "insert_batch",
@@ -249,7 +268,7 @@ class TransactionSyncManager @Inject constructor(
                             "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
-                            "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
+
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
                             "courses" -> {
                                 coursesRepository.bulkInsertFromSync(mRealm, arr)
@@ -317,10 +336,10 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun downloadCvAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
         for (j in arr) {
-            val jsonDoc = getJsonObject("doc", j.asJsonObject)
-            val docId = getString("_id", jsonDoc)
+            val jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", j.asJsonObject)
+            val docId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
-            val resumeFileName = getString("resumeFileName", jsonDoc)
+            val resumeFileName = org.ole.planet.myplanet.utils.JsonUtils.getString("resumeFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
                 val destFile = java.io.File(
@@ -335,8 +354,8 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun downloadTeamAttachmentsFromBatch(arr: com.google.gson.JsonArray) {
         for (j in arr) {
-            val jsonDoc = getJsonObject("doc", j.asJsonObject)
-            val docId = getString("_id", jsonDoc)
+            val jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", j.asJsonObject)
+            val docId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
             val attachmentName = org.ole.planet.myplanet.model.RealmMyTeam
                 .getFirstAttachmentName(jsonDoc) ?: continue

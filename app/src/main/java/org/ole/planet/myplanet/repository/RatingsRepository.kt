@@ -15,7 +15,7 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    suspend fun insertRatingsFromSync(docs: List<com.google.gson.JsonObject>)
 }
 
 data class RatingEntry(
