@@ -108,6 +108,7 @@ object ServiceModule {
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
+        @RealmDispatcher realmDispatcher: kotlinx.coroutines.CoroutineDispatcher,
         @ApplicationContext context: Context,
         voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
         chatRepository: org.ole.planet.myplanet.repository.ChatRepository,
@@ -130,6 +131,6 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, databaseService, realmDispatcher, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
     }
 }
