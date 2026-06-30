@@ -51,6 +51,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private var selectionJob: Job? = null
     private var pendingScrollState: android.os.Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
+    private var cachedCourseIds: Set<String>? = null
 
     @Inject
     lateinit var userSessionManager: UserSessionManager
@@ -147,7 +148,11 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
                 if (isMyCourseLib) {
                     val courseIds = state.courses.mapNotNull { it.courseId }
-                    resources = coursesRepository.getCourseOfflineResources(courseIds)
+                    val currentCourseIdSet = courseIds.toSet()
+                    if (cachedCourseIds != currentCourseIdSet) {
+                        cachedCourseIds = currentCourseIdSet
+                        resources = coursesRepository.getCourseOfflineResources(courseIds)
+                    }
                     courseLib = "courses"
                 }
 
