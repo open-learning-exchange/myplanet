@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +11,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.ArrayList
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -22,8 +24,10 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
+@OptIn(FlowPreview::class)
 class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentCollectionsBinding? = null
     private val binding get() = _binding!!
@@ -36,7 +40,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private var dbType: String? = null
     private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
-    private var textWatcher: TextWatcher? = null
     private var currentTagDataList = mutableListOf<TagData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,14 +65,12 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             listener?.onOkClicked(selectedItemsList)
             dismiss()
         }
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
+        binding.etFilter.textChanges()
+            .debounce(300)
+            .onEach { charSequence ->
                 charSequence?.let { filterTags(it.toString()) }
             }
-            override fun afterTextChanged(editable: Editable?) {}
-        }
-        binding.etFilter.addTextChangedListener(textWatcher)
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     private fun filterTags(charSequence: String) {
@@ -151,8 +152,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding?.etFilter?.removeTextChangedListener(textWatcher)
-        textWatcher = null
         _binding = null
     }
 
