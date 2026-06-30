@@ -12,6 +12,15 @@ import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 
+data class VoicePostingPolicy(
+    val teamId: String,
+    val isPublic: Boolean
+) {
+    fun canPost(isGuest: Boolean, isMember: Boolean): Boolean {
+        return !isGuest && (isMember || isPublic)
+    }
+}
+
 data class JoinedMemberData(
     val user: RealmUser,
     val visitCount: Long,
@@ -148,4 +157,6 @@ interface TeamsRepository {
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
+
+    suspend fun getVoicePostingPolicy(teamId: String): VoicePostingPolicy?
 }

@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
@@ -88,19 +89,20 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         if (shouldQueryTeamFromRealm()) {
             viewLifecycleOwner.lifecycleScope.launch {
                 team = teamsRepository.getTeamByIdOrTeamId(teamId)
-                updateCanPostMessage(team, isMemberFlow.value)
+                val policy = teamsRepository.getVoicePostingPolicy(teamId)
+                updateCanPostMessage(policy, isMemberFlow.value)
             }
         } else {
-            updateCanPostMessage(team, isMemberFlow.value)
+            val policy = team?.let { VoicePostingPolicy(teamId = it._id ?: it.teamId ?: "", isPublic = it.isPublic) }
+            updateCanPostMessage(policy, isMemberFlow.value)
         }
         binding.addMessage.isVisible = false
         return binding.root
     }
 
-    private fun updateCanPostMessage(team: RealmMyTeam?, isMember: Boolean) {
+    private fun updateCanPostMessage(policy: VoicePostingPolicy?, isMember: Boolean) {
         val isGuest = user?.id?.startsWith("guest") == true
-        val isPublicTeam = team?.isPublic == true
-        val canPost = !isGuest && (isMember || isPublicTeam)
+        val canPost = policy?.canPost(isGuest, isMember) ?: false
         binding.addMessage.isVisible = canPost
         (binding.rvDiscussion.adapter as? VoicesAdapter)?.let { adapter ->
             adapter.setCurrentUser(user)
@@ -143,9 +145,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 }
                 launch {
                     combine(isMemberFlow, teamFlow) { isMember, teamData ->
-                        Pair(isMember, teamData)
-                    }.collectLatest { (isMember, teamData) ->
-                        updateCanPostMessage(teamData, isMember)
+                        val policy = teamData?.let { VoicePostingPolicy(teamId = it._id ?: it.teamId ?: "", isPublic = it.isPublic) }
+                        Pair(isMember, policy)
+                    }.collectLatest { (isMember, policy) ->
+                        updateCanPostMessage(policy, isMember)
                     }
                 }
             }
