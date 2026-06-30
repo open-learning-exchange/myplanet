@@ -127,46 +127,48 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
 
         libraryJob?.cancel()
-        libraryJob = viewModelScope.launch(dispatcherProvider.main) {
-            val myLibrary = withContext(dispatcherProvider.io) {
-                resourcesRepository.getMyLibrary(userId)
+        libraryJob = viewModelScope.launch(dispatcherProvider.io) {
+            val myLibrary = resourcesRepository.getMyLibrary(userId)
+            withContext(dispatcherProvider.main) {
+                _uiState.update { it.copy(library = myLibrary) }
             }
-            _uiState.update { it.copy(library = myLibrary) }
         }
 
         coursesJob?.cancel()
-        coursesJob = viewModelScope.launch(dispatcherProvider.main) {
+        coursesJob = viewModelScope.launch(dispatcherProvider.io) {
             coursesRepository.getMyCoursesFlow(userId)
-                .flowOn(dispatcherProvider.io)
                 .collect { courses ->
-                    _uiState.update { it.copy(courses = courses) }
+                    withContext(dispatcherProvider.main) {
+                        _uiState.update { it.copy(courses = courses) }
+                    }
                 }
         }
 
         teamsJob?.cancel()
-        teamsJob = viewModelScope.launch(dispatcherProvider.main) {
+        teamsJob = viewModelScope.launch(dispatcherProvider.io) {
             teamsRepository.getMyTeamsFlow(userId)
-                .flowOn(dispatcherProvider.io)
                 .collect { teams ->
-                    _uiState.update { it.copy(teams = teams) }
+                    withContext(dispatcherProvider.main) {
+                        _uiState.update { it.copy(teams = teams) }
+                    }
                 }
         }
 
         profileJob?.cancel()
-        profileJob = viewModelScope.launch(dispatcherProvider.main) {
-            val (userName, fullName) = withContext(dispatcherProvider.io) {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-                Pair(userName, fullName)
+        profileJob = viewModelScope.launch(dispatcherProvider.io) {
+            val user = userRepository.getUserById(userId)
+            val userName = user?.name
+            val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+
+            withContext(dispatcherProvider.main) {
+                _uiState.update { it.copy(fullName = fullName) }
             }
-            _uiState.update { it.copy(fullName = fullName) }
 
             if (userName != null) {
-                val count = withContext(dispatcherProvider.io) {
-                    activitiesRepository.getOfflineLoginCount(userName)
+                val count = activitiesRepository.getOfflineLoginCount(userName)
+                withContext(dispatcherProvider.main) {
+                    _uiState.update { it.copy(offlineLogins = count) }
                 }
-                _uiState.update { it.copy(offlineLogins = count) }
             }
         }
     }
