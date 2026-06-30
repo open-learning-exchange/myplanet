@@ -67,13 +67,21 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideSyncManager(
-        @ApplicationContext context: Context, sharedPrefManager: SharedPrefManager,
-        apiInterface: ApiInterface, improvedSyncManager: Lazy<ImprovedSyncManager>,
-        transactionSyncManager: TransactionSyncManager, resourcesRepository: ResourcesRepository,
-        loginSyncManager: LoginSyncManager, @ApplicationScope scope: CoroutineScope,
-        activitiesRepository: ActivitiesRepository, dispatcherProvider: DispatcherProvider,
-        timeProvider: TimeProvider, teamsRepository: TeamsRepository, teamsSyncRepository: TeamsSyncRepository,
-        coursesRepository: CoursesRepository, eventsRepository: EventsRepository
+        @ApplicationContext context: Context,
+        sharedPrefManager: SharedPrefManager,
+        apiInterface: ApiInterface,
+        improvedSyncManager: Lazy<ImprovedSyncManager>,
+        transactionSyncManager: TransactionSyncManager,
+        resourcesRepository: ResourcesRepository,
+        loginSyncManager: LoginSyncManager,
+        @ApplicationScope scope: CoroutineScope,
+        activitiesRepository: ActivitiesRepository,
+        dispatcherProvider: DispatcherProvider,
+        timeProvider: TimeProvider,
+        teamsRepository: TeamsRepository,
+        teamsSyncRepository: TeamsSyncRepository,
+        coursesRepository: CoursesRepository,
+        eventsRepository: EventsRepository
     ): SyncManager {
         return SyncManager(context, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
     }
@@ -81,15 +89,26 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideUploadManager(
-        @ApplicationContext context: Context, submissionsRepository: SubmissionsRepository,
-        sharedPrefManager: SharedPrefManager, gson: Gson, uploadCoordinator: UploadCoordinator,
-        personalsRepository: PersonalsRepository, userRepository: UserRepository,
-        chatRepository: ChatRepository, voicesRepository: VoicesRepository,
-        uploadConfigs: UploadConfigs, resourcesRepository: ResourcesRepository,
-        teamsRepository: Lazy<TeamsRepository>, teamsSyncRepository: Lazy<TeamsSyncRepository>,
-        activitiesRepository: ActivitiesRepository, apiInterface: ApiInterface,
-        @ApplicationScope scope: CoroutineScope, dispatcherProvider: DispatcherProvider,
-        photoUploader: PhotoUploader, achievementUploader: AchievementUploader, timeProvider: TimeProvider
+        @ApplicationContext context: Context,
+        submissionsRepository: SubmissionsRepository,
+        sharedPrefManager: SharedPrefManager,
+        gson: Gson,
+        uploadCoordinator: UploadCoordinator,
+        personalsRepository: PersonalsRepository,
+        userRepository: UserRepository,
+        chatRepository: ChatRepository,
+        voicesRepository: VoicesRepository,
+        uploadConfigs: UploadConfigs,
+        resourcesRepository: ResourcesRepository,
+        teamsRepository: Lazy<TeamsRepository>,
+        teamsSyncRepository: Lazy<TeamsSyncRepository>,
+        activitiesRepository: ActivitiesRepository,
+        apiInterface: ApiInterface,
+        @ApplicationScope scope: CoroutineScope,
+        dispatcherProvider: DispatcherProvider,
+        photoUploader: PhotoUploader,
+        achievementUploader: AchievementUploader,
+        timeProvider: TimeProvider
     ): UploadManager {
         return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
     }
@@ -97,10 +116,15 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideUploadToShelfService(
-        @ApplicationContext context: Context, @AppPreferences preferences: SharedPreferences,
-        sharedPrefManager: SharedPrefManager, userRepository: UserRepository,
-        userSyncRepository: UserSyncRepository, healthRepository: HealthRepository,
-        @ApplicationScope appScope: CoroutineScope, dispatcherProvider: DispatcherProvider, apiInterface: ApiInterface
+        @ApplicationContext context: Context,
+        @AppPreferences preferences: SharedPreferences,
+        sharedPrefManager: SharedPrefManager,
+        userRepository: UserRepository,
+        userSyncRepository: UserSyncRepository,
+        healthRepository: HealthRepository,
+        @ApplicationScope appScope: CoroutineScope,
+        dispatcherProvider: DispatcherProvider,
+        apiInterface: ApiInterface
     ): UploadToShelfService {
         return UploadToShelfService(context, preferences, sharedPrefManager, userRepository, userSyncRepository, healthRepository, appScope, dispatcherProvider, apiInterface)
     }
@@ -108,14 +132,28 @@ object ServiceModule {
     @Provides
     @Singleton
     fun provideTransactionSyncManager(
-        apiInterface: ApiInterface, databaseService: DatabaseService, @ApplicationContext context: Context,
-        voicesRepository: VoicesRepository, chatRepository: ChatRepository, feedbackRepository: FeedbackRepository,
-        sharedPrefManager: SharedPrefManager, userRepository: UserRepository, userSyncRepository: UserSyncRepository,
-        activitiesRepository: ActivitiesRepository, teamsRepository: Lazy<TeamsRepository>,
-        teamsSyncRepository: Lazy<TeamsSyncRepository>, notificationsRepository: NotificationsRepository,
-        tagsRepository: TagsRepository, ratingsRepository: RatingsRepository, submissionsRepository: SubmissionsRepository,
-        coursesRepository: CoursesRepository, communityRepository: CommunityRepository, healthRepository: HealthRepository,
-        progressRepository: ProgressRepository, surveysRepository: SurveysRepository, @ApplicationScope scope: CoroutineScope,
+        apiInterface: ApiInterface,
+        databaseService: DatabaseService,
+        @ApplicationContext context: Context,
+        voicesRepository: VoicesRepository,
+        chatRepository: ChatRepository,
+        feedbackRepository: FeedbackRepository,
+        sharedPrefManager: SharedPrefManager,
+        userRepository: UserRepository,
+        userSyncRepository: UserSyncRepository,
+        activitiesRepository: ActivitiesRepository,
+        teamsRepository: Lazy<TeamsRepository>,
+        teamsSyncRepository: Lazy<TeamsSyncRepository>,
+        notificationsRepository: NotificationsRepository,
+        tagsRepository: TagsRepository,
+        ratingsRepository: RatingsRepository,
+        submissionsRepository: SubmissionsRepository,
+        coursesRepository: CoursesRepository,
+        communityRepository: CommunityRepository,
+        healthRepository: HealthRepository,
+        progressRepository: ProgressRepository,
+        surveysRepository: SurveysRepository,
+        @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider
     ): TransactionSyncManager {
         return TransactionSyncManager(apiInterface, databaseService, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
