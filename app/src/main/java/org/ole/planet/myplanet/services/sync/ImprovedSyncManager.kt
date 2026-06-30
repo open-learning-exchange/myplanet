@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelChildren
@@ -18,6 +17,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.di.AppPreferences
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -33,14 +33,14 @@ class ImprovedSyncManager @Inject constructor(
     private val loginSyncManager: LoginSyncManager,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider
-) {
+,
+    @ApplicationScope private val syncScope: CoroutineScope) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
 
     private var isSyncing = AtomicBoolean(false)
     private var isCanceled = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
-    private var syncScope = CoroutineScope(dispatcherProvider.io + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(

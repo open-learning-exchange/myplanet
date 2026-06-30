@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Before
+import kotlinx.coroutines.test.TestScope
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSyncListener
@@ -73,7 +74,8 @@ class ImprovedSyncManagerTest {
             standardStrategy,
             loginSyncManager,
             activitiesRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            TestScope(testDispatcher)
         )
     }
 
