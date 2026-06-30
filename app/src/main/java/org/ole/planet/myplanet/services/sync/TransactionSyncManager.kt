@@ -252,7 +252,7 @@ class TransactionSyncManager @Inject constructor(
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
                             "courses" -> {
-                                coursesRepository.bulkInsertFromSync(mRealm, arr)
+                                kotlinx.coroutines.runBlocking { coursesRepository.insertCoursesFromSync((0 until arr.size()).map { org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", arr.get(it).asJsonObject) }.filter { !org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it).startsWith("_design") }) }
                                 org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
                             }
                             "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)

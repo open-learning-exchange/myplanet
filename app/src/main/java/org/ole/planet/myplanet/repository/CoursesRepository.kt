@@ -63,7 +63,7 @@ interface CoursesRepository {
     suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    suspend fun insertCoursesFromSync(docs: List<JsonObject>)
     fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
 }

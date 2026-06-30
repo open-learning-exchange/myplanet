@@ -679,31 +679,10 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            val startedTransaction = !realm.isInTransaction
-            if (startedTransaction) {
-                realm.beginTransaction()
-            }
-            try {
+    override suspend fun insertCoursesFromSync(docs: List<JsonObject>) {
+        executeTransaction { realm ->
+            docs.forEach { jsonDoc ->
                 insertMyCourse("", jsonDoc, realm, sharedPrefManager)
-                if (startedTransaction) {
-                    realm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && realm.isInTransaction) {
-                    realm.cancelTransaction()
-                }
-                throw e
             }
         }
     }
