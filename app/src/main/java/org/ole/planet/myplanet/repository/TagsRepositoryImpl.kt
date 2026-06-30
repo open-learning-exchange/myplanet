@@ -19,6 +19,27 @@ class TagsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getTagsWithChildren(dbType: String?): Map<RealmTag, List<RealmTag>> {
+        val parentTags = getTags(dbType)
+        val allTags = queryList(RealmTag::class.java)
+        val childMap = mutableMapOf<String, MutableList<RealmTag>>()
+        val seenParents = HashSet<String>()
+
+        allTags.forEach { t ->
+            seenParents.clear()
+            t.attachedTo?.forEach { parentId ->
+                if (seenParents.add(parentId)) {
+                    val list = childMap.getOrPut(parentId) { mutableListOf() }
+                    list.add(t)
+                }
+            }
+        }
+
+        return parentTags.associateWith { parent ->
+            childMap[parent.id] ?: emptyList()
+        }
+    }
+
     override suspend fun buildChildMap(): HashMap<String, List<RealmTag>> {
         val allTags = queryList(RealmTag::class.java)
         val childMap = HashMap<String, List<RealmTag>>()

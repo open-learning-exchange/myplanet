@@ -78,6 +78,46 @@ class TagsRepositoryImplTest {
     }
 
     @Test
+    fun `getTagsWithChildren correctly maps children to parent tags`() = runTest {
+        val parentTag1 = RealmTag().apply {
+            id = "parent1"
+            name = "Parent 1"
+        }
+        val parentTag2 = RealmTag().apply {
+            id = "parent2"
+            name = "Parent 2"
+        }
+        val child1 = RealmTag().apply {
+            name = "Child1"
+            attachedTo = RealmList("parent1")
+        }
+        val child2 = RealmTag().apply {
+            name = "Child2"
+            attachedTo = RealmList("parent1", "parent2")
+        }
+        val unattachedChild = RealmTag().apply {
+            name = "UnattachedChild"
+        }
+
+        mockQueryResults(listOf(parentTag1, parentTag2), listOf(parentTag1, parentTag2, child1, child2, unattachedChild))
+
+        val result = repository.getTagsWithChildren("resources")
+
+        assertEquals(2, result.size)
+        assertTrue(result.containsKey(parentTag1))
+        assertTrue(result.containsKey(parentTag2))
+
+        val childrenOfParent1 = result[parentTag1]
+        assertEquals(2, childrenOfParent1?.size)
+        assertTrue(childrenOfParent1!!.contains(child1))
+        assertTrue(childrenOfParent1.contains(child2))
+
+        val childrenOfParent2 = result[parentTag2]
+        assertEquals(1, childrenOfParent2?.size)
+        assertTrue(childrenOfParent2!!.contains(child2))
+    }
+
+    @Test
     fun `buildChildMap correctly groups tags by their attachedTo parents`() = runTest {
         val parent1 = "parent1"
         val parent2 = "parent2"
