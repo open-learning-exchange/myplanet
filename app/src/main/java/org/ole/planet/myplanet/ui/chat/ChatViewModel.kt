@@ -87,16 +87,23 @@ class ChatViewModel @Inject constructor(
         communityName: String?
     ) {
         viewModelScope.launch {
-            val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
-            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-            val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
+            var currentUser: RealmUser? = null
+            var newsMessages: List<org.ole.planet.myplanet.model.RealmNews> = emptyList()
+            var chatHistory: List<RealmChatHistory> = emptyList()
+            var targets: ChatShareTargets? = null
+
+            withContext(dispatcherProvider.io) {
+                currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
+                newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
+                chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+                targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
+            }
 
             withContext(dispatcherProvider.default) {
                 allChats = sortChats(chatHistory)
                 precomputedChats = buildPrecomputedChats(allChats)
             }
-            val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
+            val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets ?: ChatShareTargets(null, emptyList(), emptyList()))
             _screenData.value = data
             _filteredChats.value = allChats
         }
