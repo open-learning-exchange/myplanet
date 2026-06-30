@@ -238,6 +238,25 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "login_activities") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    activitiesRepository.insertLoginActivitiesFromSync(docs)
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
@@ -247,7 +266,6 @@ class TransactionSyncManager @Inject constructor(
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                             "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
                             "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
-                            "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
