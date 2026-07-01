@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -16,8 +14,9 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -31,6 +30,7 @@ import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptListener, RealtimeSyncMixin {
@@ -42,8 +42,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     private var teamId: String? = null
     private val surveyInfoMap = mutableMapOf<String, SurveyInfo>()
     private val bindingDataMap = mutableMapOf<String, SurveyFormState>()
-    private var textWatcher: TextWatcher? = null
-    private var searchJob: Job? = null
     private val viewModel: SurveysViewModel by viewModels()
 
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
@@ -94,19 +92,10 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
         realtimeSyncHelper.setupRealtimeSync()
         initializeViews()
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    viewModel.search(s.toString())
-                }
-            }
-
-            override fun afterTextChanged(s: Editable) {}
-        }
-        binding.layoutSearch.etSearch.addTextChangedListener(textWatcher)
+        binding.layoutSearch.etSearch.textChanges()
+            .debounce(300)
+            .onEach { text -> viewModel.search(text?.toString() ?: "") }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
         viewLifecycleOwner.lifecycleScope.launch {
             recyclerView.adapter = getAdapter()
         }
@@ -260,8 +249,6 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
     }
 
     override fun onDestroyView() {
-        _binding?.layoutSearch?.etSearch?.removeTextChangedListener(textWatcher)
-        textWatcher = null
         super.onDestroyView()
         _binding = null
     }

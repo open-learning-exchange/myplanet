@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utils.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
@@ -133,20 +134,16 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             btnSave.isEnabled = true
         }
 
-        lifecycleScope.launch {
-            viewModel.isSaving.collect { isSaving ->
-                btnSave.isEnabled = !isSaving
-            }
+        collectWhenStarted(viewModel.isSaving) { isSaving ->
+            btnSave.isEnabled = !isSaving
         }
 
-        lifecycleScope.launch {
-            viewModel.saveResult.collect { success ->
-                if (success) {
-                    Utilities.toast(this@AddExaminationActivity, getString(R.string.added_successfully))
-                    closeActivity()
-                } else {
-                    Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
-                }
+        collectWhenStarted(viewModel.saveResult) { success ->
+            if (success) {
+                Utilities.toast(this@AddExaminationActivity, getString(R.string.added_successfully))
+                closeActivity()
+            } else {
+                Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
             }
         }
     }

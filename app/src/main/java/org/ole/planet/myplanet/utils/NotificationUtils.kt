@@ -254,26 +254,35 @@ object NotificationUtils {
             createNotificationChannels()
         }
 
+        private data class ChannelConfig(
+            val id: String,
+            val name: String,
+            val desc: String,
+            val importance: Int,
+            val vibrate: Boolean,
+            val badge: Boolean = false
+        )
+
         private fun createNotificationChannels() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
                 listOfNotNull(
-                    createChannel(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true),
-                    createChannel(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true),
-                    createChannel(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true),
-                    createChannel(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false),
-                    createChannel(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true)
+                    createChannel(ChannelConfig(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true)),
+                    createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true)),
+                    createChannel(ChannelConfig(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true)),
+                    createChannel(ChannelConfig(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false)),
+                    createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true))
                 ).forEach { systemNotificationManager.createNotificationChannel(it) }
             }
         }
 
-        private fun createChannel(id: String, name: String, desc: String, importance: Int, vibrate: Boolean, badge: Boolean = false): NotificationChannel? {
+        private fun createChannel(config: ChannelConfig): NotificationChannel? {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
-            return NotificationChannel(id, name, importance).apply {
-                description = desc
+            return NotificationChannel(config.id, config.name, config.importance).apply {
+                description = config.desc
                 enableLights(true)
-                enableVibration(vibrate)
-                if (badge) setShowBadge(true)
+                enableVibration(config.vibrate)
+                if (config.badge) setShowBadge(true)
             }
         }
 

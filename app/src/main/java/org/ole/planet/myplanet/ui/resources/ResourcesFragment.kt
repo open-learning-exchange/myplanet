@@ -74,6 +74,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private var isFirstResume = true
     private var allResourceModels: List<org.ole.planet.myplanet.model.ResourceListModel> = emptyList()
 
+    private var lastSearchQuery: String? = null
+    private var lastSearchTags: List<String>? = null
+    private var lastSubjects: Set<String>? = null
+    private var lastLevels: Set<String>? = null
+    private var lastLanguages: Set<String>? = null
+    private var lastMediums: Set<String>? = null
     @Inject
     lateinit var prefManager: SharedPrefManager
 
@@ -106,6 +112,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
+                lastSearchQuery = null
                 applyFiltersAndUpdateUI(scrollToTop = false)
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -257,6 +264,25 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val searchQuery = etSearch.text?.toString()?.trim().orEmpty()
 
         val currentSearchTags = if (::searchTags.isInitialized) searchTags else emptyList()
+        val searchTagIds = currentSearchTags.mapNotNull { it.id }.sorted()
+
+        if (searchQuery == lastSearchQuery &&
+            searchTagIds == lastSearchTags &&
+            subjects == lastSubjects &&
+            levels == lastLevels &&
+            languages == lastLanguages &&
+            mediums == lastMediums
+        ) {
+            return
+        }
+
+        lastSearchQuery = searchQuery
+        lastSearchTags = searchTagIds
+        lastSubjects = HashSet(subjects)
+        lastLevels = HashSet(levels)
+        lastLanguages = HashSet(languages)
+        lastMediums = HashSet(mediums)
+
         val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, searchQuery, currentSearchTags))
 
         if (scrollToTop) {

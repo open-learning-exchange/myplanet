@@ -93,11 +93,13 @@ class RatingsRepositoryImpl @Inject constructor(
         val resolvedUserId = resolvedUser.id?.takeIf { it.isNotBlank() } ?: resolvedUser._id
         require(!resolvedUserId.isNullOrBlank()) { "Resolved user is missing an identifier" }
 
-        val existingRating = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("userId", resolvedUserId)
-            equalTo("item", itemId)
-        }.firstOrNull()
+        val existingRating = withRealm { realm ->
+            realm.where(RealmRating::class.java)
+                .equalTo("type", type)
+                .equalTo("userId", resolvedUserId)
+                .equalTo("item", itemId)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
         if (existingRating == null || existingRating.id.isNullOrBlank()) {
             val newRating = RealmRating().apply {
