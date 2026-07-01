@@ -232,7 +232,6 @@ class ResourcesRepositoryImplTest {
 
         // Verify the correct predicates were applied to the query
         verify { mockQuery.equalTo("isPrivate", false) }
-        verify { mockQuery.isNotNull("userId") }
         verify { mockQuery.not() }
         verify { mockQuery.equalTo("userId", "model123") }
     }
