@@ -74,6 +74,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     private fun filterTags(charSequence: String) {
+        if (!::list.isInitialized || !::adapter.isInitialized) return
         val filteredParentList = if (charSequence.isEmpty()) {
             list
         } else {
