@@ -320,10 +320,12 @@ class NotificationsRepositoryImpl @Inject constructor(
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
 
-        val notification = queryList(RealmTeamNotification::class.java) {
-            equalTo("parentId", teamId)
-            equalTo("type", "chat")
-        }.firstOrNull()
+        val notification = withRealm { realm ->
+            realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", teamId)
+                .equalTo("type", "chat")
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
         val chatCount = count(RealmNews::class.java) {
             equalTo("viewableBy", "teams")

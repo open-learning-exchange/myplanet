@@ -13,8 +13,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 
 object Utilities {
@@ -43,7 +41,7 @@ object Utilities {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
+            android.os.Handler(Looper.getMainLooper()).post {
                 showToastIfValid(context, message, duration)
             }
         }

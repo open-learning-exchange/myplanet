@@ -15,8 +15,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -46,7 +46,8 @@ class ActivitiesFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             val userName = userSessionManager.getUserModel()?.name ?: return@launch
-            activitiesRepository.getOfflineLogins(userName).collectLatest { logins ->
+            val loginsFlow = activitiesRepository.getOfflineLogins(userName)
+            collectLatestWhenStarted(loginsFlow) { logins ->
                 val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
                 renderChart(monthlyCounts, daynightTextColor)
             }

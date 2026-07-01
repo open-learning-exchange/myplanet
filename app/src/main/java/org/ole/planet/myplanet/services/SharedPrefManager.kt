@@ -60,7 +60,6 @@ class SharedPrefManager @Inject constructor(
         private const val USER_NAME = "name"
         private const val COMMUNITY_LEADERS = "communityLeaders"
         private const val AUTO_SYNC = "autoSync"
-        private const val USE_IMPROVED_SYNC = "useImprovedSync"
         private const val AUTO_SYNC_INTERVAL = "autoSyncInterval"
         private const val AUTO_SYNC_POSITION = "autoSyncPosition"
         private const val FIRST_RUN = "firstRun"
@@ -210,9 +209,6 @@ class SharedPrefManager @Inject constructor(
 
     fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, true)
     fun setAutoSync(value: Boolean) = pref.edit { putBoolean(AUTO_SYNC, value) }
-
-    fun getUseImprovedSync(): Boolean = pref.getBoolean(USE_IMPROVED_SYNC, false)
-    fun setUseImprovedSync(value: Boolean) = pref.edit { putBoolean(USE_IMPROVED_SYNC, value) }
 
     fun getAutoSyncInterval(): Int = pref.getInt(AUTO_SYNC_INTERVAL, 60 * 60)
     fun setAutoSyncInterval(interval: Int) = pref.edit { putInt(AUTO_SYNC_INTERVAL, interval) }
