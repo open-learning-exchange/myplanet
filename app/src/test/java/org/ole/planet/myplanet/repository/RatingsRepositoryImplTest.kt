@@ -242,12 +242,10 @@ class RatingsRepositoryImplTest {
         every { mockRealm.where(RealmRating::class.java) } answers {
             callCount++
             when (callCount) {
-                1 -> { // queryList in submitRating
+                1 -> { // findFirst in submitRating
                     val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
-                    val results = mockk<RealmResults<RealmRating>>(relaxed = true)
                     every { query.equalTo(any<String>(), any<String>()) } returns query
-                    every { query.findAll() } returns results
-                    every { mockRealm.copyFromRealm(results) } returns emptyList()
+                    every { query.findFirst() } returns null
                     query
                 }
                 else -> { // getRatingSummary
@@ -297,12 +295,11 @@ class RatingsRepositoryImplTest {
         every { mockRealm.where(RealmRating::class.java) } answers {
             callCount++
             when (callCount) {
-                1 -> { // queryList in submitRating
+                1 -> { // findFirst in submitRating
                     val query = mockk<RealmQuery<RealmRating>>(relaxed = true)
-                    val results = mockk<RealmResults<RealmRating>>(relaxed = true)
                     every { query.equalTo(any<String>(), any<String>()) } returns query
-                    every { query.findAll() } returns results
-                    every { mockRealm.copyFromRealm(results) } returns listOf(existingRating)
+                    every { query.findFirst() } returns existingRating
+                    every { mockRealm.copyFromRealm(existingRating) } returns existingRating
                     query
                 }
                 2 -> { // update in submitRating

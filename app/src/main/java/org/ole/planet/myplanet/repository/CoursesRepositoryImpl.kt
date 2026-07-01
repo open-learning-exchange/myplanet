@@ -706,6 +706,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 throw e
             }
         }
+        RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
     override fun bulkInsertCertificationsFromSync(realm: Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
@@ -796,8 +797,8 @@ class CoursesRepositoryImpl @Inject constructor(
                 RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
             }
             insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
-            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, examCache)
-            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate, examCache)
+            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB, examCache)
+            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB, examCache)
             step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
             step.courseId = myMyCoursesDB?.courseId
             courseStepsList.add(step)
@@ -806,20 +807,20 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
     }
 
-    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, examCache: HashMap<String, RealmStepExam>? = null) {
+    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, course: RealmMyCourse?, examCache: HashMap<String, RealmStepExam>? = null) {
         if (stepContainer.has("exam")) {
             val obj = stepContainer.getAsJsonObject("exam")
             obj.addProperty("stepNumber", i)
-            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
+            insertCourseStepsExams(course?.courseId, stepId, obj, "", mRealm, examCache)
         }
     }
 
-    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?, examCache: HashMap<String, RealmStepExam>? = null) {
+    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, course: RealmMyCourse?, examCache: HashMap<String, RealmStepExam>? = null) {
         if (stepContainer.has("survey")) {
             val obj = stepContainer.getAsJsonObject("survey")
             obj.addProperty("stepNumber", i)
-            obj.addProperty("createdDate", createdDate)
-            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
+            obj.addProperty("createdDate", course?.createdDate)
+            insertCourseStepsExams(course?.courseId, stepId, obj, "", mRealm, examCache)
         }
     }
 
