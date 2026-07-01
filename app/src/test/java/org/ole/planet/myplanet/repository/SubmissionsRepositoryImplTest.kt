@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @ExperimentalCoroutinesApi
@@ -305,7 +306,9 @@ class SubmissionsRepositoryImplTest {
             // Empty to skip lambda execution to prevent Realm type issues when testing createObject
         }
 
-        val result = repository.createExamSubmission("user", "dob", "gender", exam, "type", "team")
+        val result = repository.createExamSubmission(
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team")
+        )
         // Function executeTransaction wrapper does not execute anything, so result can be null.
         // We verify the interaction.
         coVerify { databaseService.executeTransactionAsync(any()) }

@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -459,9 +460,9 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
-    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam, type: String?, teamId: String?): RealmSubmission? {
-        val team = if (!teamId.isNullOrEmpty()) {
-            teamsRepositoryProvider.get().getTeamById(teamId)
+    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): RealmSubmission? {
+        val team = if (!request.teamId.isNullOrEmpty()) {
+            teamsRepositoryProvider.get().getTeamById(request.teamId)
         } else {
             null
         }
@@ -471,10 +472,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                 val managedSub = createSubmissionInternal(null, r)
 
                 val parentId = when {
-                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
-                        "${exam.id}@${exam.courseId}"
+                    !request.exam.id.isNullOrEmpty() -> if (!request.exam.courseId.isNullOrEmpty()) {
+                        "${request.exam.id}@${request.exam.courseId}"
                     } else {
-                        exam.id
+                        request.exam.id
                     }
                     else -> managedSub.parentId
                 }
@@ -482,22 +483,22 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
                 try {
                     val parentJsonString = JsonObject().apply {
-                        addProperty("_id", exam.id ?: "")
-                        addProperty("name", exam.name ?: "")
-                        addProperty("courseId", exam.courseId ?: "")
-                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
-                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
-                        addProperty("noOfQuestions", exam.noOfQuestions)
-                        addProperty("isFromNation", exam.isFromNation)
+                        addProperty("_id", request.exam.id ?: "")
+                        addProperty("name", request.exam.name ?: "")
+                        addProperty("courseId", request.exam.courseId ?: "")
+                        addProperty("sourcePlanet", request.exam.sourcePlanet ?: "")
+                        addProperty("teamShareAllowed", request.exam.isTeamShareAllowed)
+                        addProperty("noOfQuestions", request.exam.noOfQuestions)
+                        addProperty("isFromNation", request.exam.isFromNation)
                     }.toString()
                     managedSub.parent = parentJsonString
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
 
-                managedSub.userId = userId
+                managedSub.userId = request.userId
                 managedSub.status = "pending"
-                managedSub.type = type
+                managedSub.type = request.type
                 managedSub.startTime = Date().time
                 managedSub.lastUpdateTime = Date().time
                 if (managedSub.answers == null) {
@@ -512,15 +513,15 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                     managedSub.teamObject = teamRef
 
                     val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
-                    membershipDoc.teamId = teamId
+                    membershipDoc.teamId = request.teamId
                     managedSub.membershipDoc = membershipDoc
 
                     try {
                         val userJson = JsonObject()
-                        userJson.addProperty("age", userDob ?: "")
-                        userJson.addProperty("gender", userGender ?: "")
+                        userJson.addProperty("age", request.userDob ?: "")
+                        userJson.addProperty("gender", request.userGender ?: "")
                         val membershipJson = JsonObject()
-                        membershipJson.addProperty("teamId", teamId)
+                        membershipJson.addProperty("teamId", request.teamId)
                         userJson.add("membershipDoc", membershipJson)
                         managedSub.user = userJson.toString()
                     } catch (e: Exception) {

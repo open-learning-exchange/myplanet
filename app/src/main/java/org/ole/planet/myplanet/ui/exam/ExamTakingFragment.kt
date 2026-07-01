@@ -22,6 +22,7 @@ import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.coroutines.resume
@@ -127,7 +128,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                         val currentExam = exam
                         if (currentExam != null) {
                             val newSub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                CreateExamSubmissionRequest(user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null)
                             )
                             withContext(dispatcherProvider.main) {
                                 sub = newSub
@@ -141,7 +142,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     if (currentExam != null) {
                         if (sub == null || isTeam) {
                             sub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                CreateExamSubmissionRequest(user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null)
                             )
                         } else {
                             val resume = askResumeOrRestart()
@@ -155,7 +156,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 answerCache.clear()
                                 currentIndex = 0
                                 sub = submissionsRepository.createExamSubmission(
-                                    user?.id, user?.dob, user?.gender, currentExam, type, null
+                                    CreateExamSubmissionRequest(user?.id, user?.dob, user?.gender, currentExam, type, null)
                                 )
                             }
                         }
