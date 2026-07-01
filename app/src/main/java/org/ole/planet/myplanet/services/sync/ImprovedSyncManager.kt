@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancelChildren
@@ -34,13 +35,15 @@ class ImprovedSyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider
 ,
-    @ApplicationScope private val syncScope: CoroutineScope) {
+    @ApplicationScope private val applicationScope: CoroutineScope
+) {
 
     private val batchProcessor = AdaptiveBatchProcessor(context)
 
     private var isSyncing = AtomicBoolean(false)
     private var isCanceled = AtomicBoolean(false)
     private var listener: OnSyncListener? = null
+    private val syncScope = CoroutineScope(applicationScope.coroutineContext + SupervisorJob())
 
     // Table sync order for dependencies
     private val syncOrder = listOf(
