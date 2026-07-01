@@ -31,6 +31,7 @@ class ResourcesAdapter(
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
 
     private val selectedItemIds = mutableSetOf<String>()
+    private val selectedItemsMap = LinkedHashMap<String, org.ole.planet.myplanet.model.ResourceItem>()
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -145,14 +146,13 @@ class ResourcesAdapter(
                     model.item.id?.let { itemId ->
                         if (isChecked) {
                             selectedItemIds.add(itemId)
+                            selectedItemsMap[itemId] = model.item
                         } else {
                             selectedItemIds.remove(itemId)
+                            selectedItemsMap.remove(itemId)
                         }
                     }
-                    if (listener != null) {
-                        val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
-                        listener?.onSelectedListChange(selectedResources)
-                    }
+                    listener?.onSelectedListChange(selectedItemsMap.values.toList())
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -169,6 +169,7 @@ class ResourcesAdapter(
             currentList.forEachIndexed { index, model ->
                 model.item.id?.let { itemId ->
                     if (selectedItemIds.add(itemId)) {
+                        selectedItemsMap[itemId] = model.item
                         notifyItemChanged(index, SELECTION_PAYLOAD)
                     }
                 }
@@ -177,16 +178,14 @@ class ResourcesAdapter(
             currentList.forEachIndexed { index, model ->
                 model.item.id?.let { itemId ->
                     if (selectedItemIds.remove(itemId)) {
+                        selectedItemsMap.remove(itemId)
                         notifyItemChanged(index, SELECTION_PAYLOAD)
                     }
                 }
             }
         }
 
-        if (listener != null) {
-            val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
-            listener?.onSelectedListChange(selectedResources)
-        }
+        listener?.onSelectedListChange(selectedItemsMap.values.toList())
     }
 
     private fun openLibrary(model: ResourceListModel) {
