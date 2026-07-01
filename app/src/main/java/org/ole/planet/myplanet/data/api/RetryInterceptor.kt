@@ -19,12 +19,30 @@ class RetryInterceptor @Inject constructor(
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-        var response = chain.proceed(request)
         var tryCount = 0
+        var response: Response? = null
+        var lastError: IOException? = null
 
-        while (response.code in 500..599 && tryCount < maxRetries) {
+        while (true) {
+            response?.close()
+            response = null
+
+            try {
+                response = chain.proceed(request)
+                lastError = null
+                // Success (any non-5xx) is returned immediately.
+                if (response.code !in 500..599) {
+                    return response
+                }
+            } catch (e: IOException) {
+                // Network failures (e.g. SocketTimeoutException) are retried like 5xx.
+                lastError = e
+            }
+
+            if (tryCount >= maxRetries) {
+                break
+            }
             tryCount++
-            response.close()
 
             val delay = (initialDelay * factor.pow(tryCount - 1)).toLong()
 
@@ -42,10 +60,9 @@ class RetryInterceptor @Inject constructor(
                 Thread.currentThread().interrupt()
                 throw IOException("Interrupted during retry delay", e)
             }
-
-            response = chain.proceed(request)
         }
 
-        return response
+        // Retries exhausted: return the last 5xx response, or rethrow the last network error.
+        return response ?: throw (lastError ?: IOException("Request failed without a response"))
     }
 }

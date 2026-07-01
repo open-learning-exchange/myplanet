@@ -32,6 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
+    private var lastKnownRating: com.google.gson.JsonObject? = null
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUser? = null
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
@@ -274,23 +275,24 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    private var lastKnownRating: com.google.gson.JsonObject? = null
+    override fun onRatingChanged(type: String, id: String) {
+        onRatingChanged()
+    }
+
     override fun onRatingChanged() {
         lastKnownRating?.let { setRatings(it) }
-
-        viewLifecycleOwner.lifecycleScope.launch {
+        lifecycleScope.launch {
             if (!isAdded) return@launch
             try {
-                withTimeout(2000) {
-                    val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
-                    lastKnownRating = rating
-                    setRatings(rating)
-                }
+                val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
+                lastKnownRating = rating
+                setRatings(rating)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
+
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()

@@ -8,9 +8,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -21,9 +18,6 @@ class CoursesViewModelTest {
 
     private val coursesRepository = mockk<CoursesRepository>(relaxed = true)
     private val dispatcherProvider = mockk<DispatcherProvider>()
-    private val syncManager = mockk<SyncManager>(relaxed = true)
-    private val serverUrlMapper = mockk<ServerUrlMapper>(relaxed = true)
-    private val prefManager = mockk<SharedPrefManager>(relaxed = true)
 
     private lateinit var viewModel: CoursesViewModel
 
@@ -33,10 +27,7 @@ class CoursesViewModelTest {
         io.mockk.every { dispatcherProvider.main } returns Dispatchers.Unconfined
         viewModel = CoursesViewModel(
             coursesRepository,
-            dispatcherProvider,
-            syncManager,
-            serverUrlMapper,
-            prefManager
+            dispatcherProvider
         )
     }
 
