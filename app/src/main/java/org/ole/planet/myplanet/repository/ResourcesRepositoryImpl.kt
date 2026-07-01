@@ -427,7 +427,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
+        val user = findByField(RealmUser::class.java, "id", userId)
         val userName = user?.name ?: return flowOf(emptySet())
 
         return queryListFlow(RealmResourceActivity::class.java) {
@@ -631,8 +631,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else {
-            getAllLibraryItems().filter {
-                it.userId?.contains(modelId) == false
+            queryList(RealmMyLibrary::class.java, ensureLatest = true) {
+                equalTo("isPrivate", false)
+                if (modelId != null) {
+                    not().equalTo("userId", modelId)
+                }
             }
         }
 
