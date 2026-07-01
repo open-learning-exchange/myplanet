@@ -51,8 +51,8 @@ class RealmUserTest {
 
         val testDispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = Dispatchers.Unconfined
-            override val io: CoroutineDispatcher = Dispatchers.Unconfined
-            override val default: CoroutineDispatcher = Dispatchers.Unconfined
+            override val io: CoroutineDispatcher = Dispatchers.IO
+            override val default: CoroutineDispatcher = Dispatchers.Default
             override val unconfined: CoroutineDispatcher = Dispatchers.Unconfined
         }
         databaseService = DatabaseService(testDispatcherProvider, realmConfiguration)
