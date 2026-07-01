@@ -13,7 +13,6 @@ import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
@@ -33,7 +32,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -61,7 +59,6 @@ class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
     private val apiInterface: ApiInterface,
-    private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
@@ -88,20 +85,7 @@ class SyncManager @Inject constructor(
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
             _syncStatus.value = SyncStatus.Syncing()
-
-            // Use improved sync manager if beta sync is enabled
-            val useImproved = sharedPrefManager.getUseImprovedSync()
-            val isSyncRequest = type.equals("sync", ignoreCase = true)
-            if (useImproved && isSyncRequest) {
-                initializeAndStartImprovedSync(listener, syncTables)
-            } else {
-                if (useImproved && !isSyncRequest) {
-                    createLog("sync_manager_route", "legacy|reason=$type")
-                } else if (!useImproved) {
-                    createLog("sync_manager_route", "legacy")
-                }
-                authenticateAndSync()
-            }
+            authenticateAndSync()
         }
     }
 
@@ -125,40 +109,7 @@ class SyncManager @Inject constructor(
 
     fun isMainSyncActive(): Boolean = isSyncing.get()
 
-    private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
-        syncScope.launch {
-            try {
-                val manager = improvedSyncManager.get()
-                val syncMode = SyncMode.Standard
-                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                val wrappedListener = object : OnSyncListener {
-                    override fun onSyncStarted() {
-                        listener?.onSyncStarted()
-                    }
-                    override fun onSyncComplete() {
-                        isSyncing.set(false)
-                        listener?.onSyncComplete()
-                        this@SyncManager.listener = null
-                        _syncStatus.value = SyncStatus.Success("Sync completed")
-                    }
-                    override fun onSyncFailed(msg: String?) {
-                        isSyncing.set(false)
-                        listener?.onSyncFailed(msg)
-                        this@SyncManager.listener = null
-                        _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
-                    }
-                }
-                manager.start(wrappedListener, syncMode, syncTables)
-            } catch (e: Exception) {
-                isSyncing.set(false)
-                listener?.onSyncFailed(e.message)
-                _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
-            }
-        }
-    }
-
     private fun destroy() {
-        improvedSyncManager.get().cancel()
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
