@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.pdf.PdfRenderer
 import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
+import android.util.LruCache
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -55,7 +56,14 @@ class InlineResourceAdapter(
 ) {
 
     private var externalFilesDir: java.io.File? = null
-    private val previewCache = mutableMapOf<String, Any>()
+    private val textCache = mutableMapOf<String, String>()
+    private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+    private val cacheSize = maxMemory / 8
+    private val bitmapCache = object : LruCache<String, android.graphics.Bitmap>(cacheSize) {
+        override fun sizeOf(key: String, bitmap: android.graphics.Bitmap): Int {
+            return bitmap.byteCount / 1024
+        }
+    }
 
     class ViewHolder(val binding: ItemInlineResourceBinding, private val parentScope: CoroutineScope, private val dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
@@ -75,7 +83,8 @@ class InlineResourceAdapter(
 
     override fun onCurrentListChanged(previousList: MutableList<RealmMyLibrary>, currentList: MutableList<RealmMyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
-        previewCache.clear()
+        textCache.clear()
+        bitmapCache.evictAll()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -88,7 +97,8 @@ class InlineResourceAdapter(
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
-        previewCache.clear()
+        textCache.clear()
+        bitmapCache.evictAll()
         for (i in 0 until recyclerView.childCount) {
             val child = recyclerView.getChildAt(i)
             val holder = recyclerView.getChildViewHolder(child) as? ViewHolder
@@ -211,7 +221,7 @@ class InlineResourceAdapter(
         if (!file.exists()) return
         holder.launchPreview {
             val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedBitmap = previewCache[cacheKey] as? android.graphics.Bitmap
+            val cachedBitmap = bitmapCache.get(cacheKey)
             val bitmap = if (cachedBitmap != null) {
                 cachedBitmap
             } else {
@@ -230,7 +240,7 @@ class InlineResourceAdapter(
                     } catch (e: Exception) {
                         null
                     }
-                }?.also { previewCache[cacheKey] = it }
+                }?.also { bitmapCache.put(cacheKey, it) }
             }
             if (bitmap != null) {
                 holder.binding.ivResourcePreview.visibility = View.VISIBLE
@@ -246,7 +256,7 @@ class InlineResourceAdapter(
         if (!file.exists()) return
         holder.launchPreview {
             val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedDuration = previewCache[cacheKey] as? String
+            val cachedDuration = textCache[cacheKey]
             val durationText = if (cachedDuration != null) {
                 cachedDuration
             } else {
@@ -262,7 +272,7 @@ class InlineResourceAdapter(
                     } finally {
                         retriever.release()
                     }
-                }.also { previewCache[cacheKey] = it }
+                }.also { textCache[cacheKey] = it }
             }
             holder.binding.tvAudioDuration.text = durationText
         }
@@ -272,7 +282,7 @@ class InlineResourceAdapter(
         if (!file.exists()) return
         holder.launchPreview {
             val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedPreview = previewCache[cacheKey] as? String
+            val cachedPreview = textCache[cacheKey]
             val preview = if (cachedPreview != null) {
                 cachedPreview
             } else {
@@ -293,7 +303,7 @@ class InlineResourceAdapter(
                     } catch (e: Exception) {
                         null
                     }
-                }?.also { previewCache[cacheKey] = it }
+                }?.also { textCache[cacheKey] = it }
             }
             if (!preview.isNullOrEmpty()) {
                 holder.binding.tvTextPreview.visibility = View.VISIBLE
@@ -306,7 +316,7 @@ class InlineResourceAdapter(
         if (!file.exists()) return
         holder.launchPreview {
             val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedText = previewCache[cacheKey] as? String
+            val cachedText = textCache[cacheKey]
             val text = if (cachedText != null) {
                 cachedText
             } else {
@@ -316,7 +326,7 @@ class InlineResourceAdapter(
                     } catch (e: Exception) {
                         null
                     }
-                }?.also { previewCache[cacheKey] = it }
+                }?.also { textCache[cacheKey] = it }
             }
             if (!text.isNullOrEmpty()) {
                 holder.binding.tvTextPreview.visibility = View.VISIBLE
