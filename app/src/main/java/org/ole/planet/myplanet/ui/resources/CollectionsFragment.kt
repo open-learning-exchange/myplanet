@@ -69,6 +69,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
                 .debounce(300L)
                 .distinctUntilChanged()
         ) { charSequence ->
+            if (!::adapter.isInitialized || !::list.isInitialized) return@collectWhenStarted
             charSequence?.let { filterTags(it.toString()) }
         }
     }
