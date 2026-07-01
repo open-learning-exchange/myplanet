@@ -8,6 +8,8 @@ import android.text.Editable
 import org.ole.planet.myplanet.utils.textChanges
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.launchIn
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -240,14 +242,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupSearchTextListener() {
-        collectWhenStarted(
-            etSearch.textChanges()
-                .debounce(300L)
-                .distinctUntilChanged()
-        ) {
-            if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@collectWhenStarted
-            applyFiltersAndUpdateUI()
-        }
+        etSearch.textChanges()
+            .debounce(300L)
+            .distinctUntilChanged()
+            .onEach {
+                if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@onEach
+                applyFiltersAndUpdateUI()
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     private suspend fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {

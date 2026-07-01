@@ -5,7 +5,8 @@ import android.text.Editable
 import org.ole.planet.myplanet.utils.textChanges
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
-import org.ole.planet.myplanet.utils.collectWhenStarted
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.launchIn
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -64,14 +65,14 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             listener?.onOkClicked(selectedItemsList)
             dismiss()
         }
-        collectWhenStarted(
-            binding.etFilter.textChanges()
-                .debounce(300L)
-                .distinctUntilChanged()
-        ) { charSequence ->
-            if (!::adapter.isInitialized || !::list.isInitialized) return@collectWhenStarted
-            charSequence?.let { filterTags(it.toString()) }
-        }
+        binding.etFilter.textChanges()
+            .debounce(300L)
+            .distinctUntilChanged()
+            .onEach { charSequence ->
+                if (!::adapter.isInitialized || !::list.isInitialized) return@onEach
+                charSequence?.let { filterTags(it.toString()) }
+            }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     private fun filterTags(charSequence: String) {
