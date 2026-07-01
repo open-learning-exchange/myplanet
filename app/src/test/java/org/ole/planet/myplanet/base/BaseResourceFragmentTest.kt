@@ -186,11 +186,11 @@ class BaseResourceFragmentTest {
 
         every { fragment.getString(R.string.device_not_connected_to_planet) } returns "Device not connected to planet."
 
-        every { Utilities.toast(any(), any()) } just Runs
+        every { Utilities.toast(any(), any(), any(), any()) } just Runs
 
         fragment.showNotConnectedToast()
 
-        verify { Utilities.toast(mockActivity, "Device not connected to planet.") }
+        verify { Utilities.toast(mockActivity, "Device not connected to planet.", any(), any()) }
 
         // Assert the isFinishing/isDestroyed path
         verify(atLeast = 1) { mockActivity.isFinishing }
@@ -203,6 +203,6 @@ class BaseResourceFragmentTest {
 
         fragment.showNotConnectedToast()
 
-        verify(exactly = 0) { Utilities.toast(any(), any()) }
+        verify(exactly = 0) { Utilities.toast(any(), any(), any(), any()) }
     }
 }

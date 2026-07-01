@@ -45,7 +45,7 @@ class DownloadUtilsTest {
         every { activityManager.getRunningServices(any()) } returns mutableListOf()
 
         mockkStatic(Utilities::class)
-        every { Utilities.toast(any(), any()) } returns Unit
+        every { Utilities.toast(any(), any(), any(), any()) } returns Unit
 
         mockkObject(DownloadService.Companion)
 
@@ -82,7 +82,7 @@ class DownloadUtilsTest {
         DownloadUtils.openDownloadService(context, urls, fromSync)
 
         verify(exactly = 1) { DownloadService.startService(context, DownloadService.PENDING_DOWNLOADS_KEY, fromSync) }
-        verify(exactly = 1) { Utilities.toast(any(), any()) }
+        verify(exactly = 1) { Utilities.toast(any(), any(), any(), any()) }
         verify(exactly = 1) { DownloadUtils["startDownloadWork"](context, DownloadService.PENDING_DOWNLOADS_KEY, fromSync) }
     }
 
@@ -97,7 +97,7 @@ class DownloadUtilsTest {
         DownloadUtils.openDownloadService(context, urls, fromSync)
 
         verify(exactly = 1) { DownloadService.startService(context, DownloadService.PENDING_DOWNLOADS_KEY, fromSync) }
-        verify(exactly = 0) { Utilities.toast(any(), any()) }
+        verify(exactly = 0) { Utilities.toast(any(), any(), any(), any()) }
         verify(exactly = 1) { DownloadUtils["startDownloadWork"](context, DownloadService.PENDING_DOWNLOADS_KEY, fromSync) }
     }
 
@@ -111,7 +111,7 @@ class DownloadUtilsTest {
         DownloadUtils.openDownloadService(context, urls, fromSync)
 
         verify(exactly = 0) { DownloadService.startService(any(), any(), any()) }
-        verify(exactly = 1) { Utilities.toast(any(), any()) }
+        verify(exactly = 1) { Utilities.toast(any(), any(), any(), any()) }
         verify(exactly = 1) { DownloadUtils["startDownloadWork"](context, DownloadService.PENDING_DOWNLOADS_KEY, fromSync) }
     }
 
@@ -125,7 +125,7 @@ class DownloadUtilsTest {
         DownloadUtils.openDownloadService(context, urls, fromSync)
 
         verify(exactly = 0) { DownloadService.startService(any(), any(), any()) }
-        verify(exactly = 0) { Utilities.toast(any(), any()) }
+        verify(exactly = 0) { Utilities.toast(any(), any(), any(), any()) }
         verify(exactly = 1) { DownloadUtils["startDownloadWork"](context, DownloadService.PENDING_DOWNLOADS_KEY, fromSync) }
     }
 

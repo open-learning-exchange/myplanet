@@ -13,6 +13,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
@@ -38,12 +40,12 @@ object Utilities {
     }
 
     @JvmStatic
-    fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
+    fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG, mainDispatcher: CoroutineDispatcher = Dispatchers.Main) {
         context ?: return
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
+            CoroutineScope(mainDispatcher).launch {
                 showToastIfValid(context, message, duration)
             }
         }
