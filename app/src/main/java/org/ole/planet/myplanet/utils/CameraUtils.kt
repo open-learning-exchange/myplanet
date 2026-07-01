@@ -15,6 +15,8 @@ import android.hardware.camera2.params.OutputConfiguration
 import android.hardware.camera2.params.SessionConfiguration
 import android.media.ImageReader
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.Surface
 import androidx.core.content.ContextCompat
@@ -35,6 +37,7 @@ object CameraUtils {
     private var captureSession: CameraCaptureSession? = null
     private var imageReader: ImageReader? = null
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
+    private val mainHandler = Handler(Looper.getMainLooper())
 
     @JvmStatic
     fun release() {
@@ -59,7 +62,7 @@ object CameraUtils {
                     savePicture(bytes, callback, dispatcherProvider)
                 }
             }
-        }, null)
+        }, mainHandler)
 
         try {
             val captureBuilder = cameraDevice?.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE)
@@ -158,7 +161,7 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, null)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
                         }
@@ -181,7 +184,7 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, null)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
                         }
@@ -192,7 +195,7 @@ object CameraUtils {
                         closeCamera()
                     }
                 },
-                    null
+                    mainHandler
                 )
             }
         } catch (e: CameraAccessException) {
