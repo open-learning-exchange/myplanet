@@ -14,18 +14,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
 
     private lateinit var viewModel: ResourcesViewModel
-    private val syncManager = mockk<SyncManager>(relaxed = true)
-    private val sharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
-    private val serverUrlMapper = mockk<ServerUrlMapper>(relaxed = true)
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
 
@@ -33,11 +26,7 @@ class ResourcesViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         viewModel = ResourcesViewModel(
-            syncManager,
-            sharedPrefManager,
-            serverUrlMapper,
-            resourcesRepository,
-            TestDispatcherProvider(testDispatcher)
+            resourcesRepository
         )
     }
 

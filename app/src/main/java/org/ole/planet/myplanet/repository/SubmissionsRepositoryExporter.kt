@@ -17,11 +17,13 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 internal class SubmissionsRepositoryExporter @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val timeProvider: TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher) {
 
     companion object {
@@ -99,7 +101,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 document.finishPage(page)
 
-                val fileName = "submission_${submission.id}_${System.currentTimeMillis()}.pdf"
+                val fileName = "submission_${submission.id}_${timeProvider.now()}.pdf"
                 val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
                 if (!directory.exists()) {
                     directory.mkdirs()
@@ -210,7 +212,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
 
                 document.finishPage(page)
 
-                val fileName = "submissions_report_${System.currentTimeMillis()}.pdf"
+                val fileName = "submissions_report_${timeProvider.now()}.pdf"
                 val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
                 if (!directory.exists()) {
                     directory.mkdirs()

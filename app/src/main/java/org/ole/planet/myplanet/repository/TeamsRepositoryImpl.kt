@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -59,6 +60,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>,
+    private val timeProvider: TimeProvider,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -696,7 +698,7 @@ class TeamsRepositoryImpl @Inject constructor(
             RealmMyTeam.populateReportFields(payload, report)
             report.updated = true
             if (report.updatedDate == 0L) {
-                report.updatedDate = System.currentTimeMillis()
+                report.updatedDate = timeProvider.now()
             }
         }
     }

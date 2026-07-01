@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -58,7 +59,8 @@ class ConfigurationsRepositoryImplTest {
             databaseService,
             serverUrlMapper,
             dispatcherProvider,
-            testDispatcher
+            testDispatcher,
+            TestTimeProvider()
         )
     }
 

@@ -211,7 +211,6 @@ class SettingsActivity : AppCompatActivity() {
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            setImprovedSyncToggleOn()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -240,15 +239,6 @@ class SettingsActivity : AppCompatActivity() {
                 } else {
                     defaultPref.edit { putBoolean("beta_auto_download", false) }
                 }
-                true
-            }
-
-            val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = sharedPrefManager.getFastSync()
-            fastSync?.isChecked = isFastSync
-            fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as Boolean
-                sharedPrefManager.setFastSync(isChecked)
                 true
             }
 
@@ -370,18 +360,6 @@ class SettingsActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
-            }
-        }
-
-        private fun setImprovedSyncToggleOn() {
-            val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
-            improvedSyncPreference?.isChecked = sharedPrefManager.getUseImprovedSync()
-            improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
-                sharedPrefManager.setUseImprovedSync(isChecked)
-                val state = if (isChecked) "enabled" else "disabled"
-                createLog("improved_sync_toggle", state)
-                true
             }
         }
 

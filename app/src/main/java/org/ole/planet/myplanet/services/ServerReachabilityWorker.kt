@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 @HiltWorker
@@ -37,7 +38,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
     private val uploadManager: UploadManager,
     private val submissionsRepository: SubmissionsRepository,
     private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -72,7 +74,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
             if (isReachable && isNetworkReconnection) {
                 val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
-                val currentTime = System.currentTimeMillis()
+                val currentTime = timeProvider.now()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                     showServerNotification()
@@ -106,7 +108,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
                     if (isNetworkReconnection) {
                         val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
-                        val currentTime = System.currentTimeMillis()
+                        val currentTime = timeProvider.now()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                             showServerNotification()

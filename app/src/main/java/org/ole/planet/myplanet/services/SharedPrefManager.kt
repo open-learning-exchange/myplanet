@@ -60,8 +60,6 @@ class SharedPrefManager @Inject constructor(
         private const val USER_NAME = "name"
         private const val COMMUNITY_LEADERS = "communityLeaders"
         private const val AUTO_SYNC = "autoSync"
-        private const val FAST_SYNC = "fastSync"
-        private const val USE_IMPROVED_SYNC = "useImprovedSync"
         private const val AUTO_SYNC_INTERVAL = "autoSyncInterval"
         private const val AUTO_SYNC_POSITION = "autoSyncPosition"
         private const val FIRST_RUN = "firstRun"
@@ -75,17 +73,6 @@ class SharedPrefManager @Inject constructor(
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
         private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
-    }
-
-    enum class SyncKey(val key: String) {
-        CHAT_HISTORY("chat_history_synced"),
-        TEAMS("teams_synced"),
-        FEEDBACK("feedback_synced"),
-        ACHIEVEMENTS("achievements_synced"),
-        HEALTH("health_synced"),
-        COURSES("courses_synced"),
-        RESOURCES("resources_synced"),
-        EXAMS("exams_synced")
     }
 
     fun getSavedUsers(): List<User> {
@@ -140,23 +127,6 @@ class SharedPrefManager @Inject constructor(
 
     fun setTeamName(teamName: String?) {
         pref.edit { putString(TEAM_NAME, teamName) }
-    }
-
-    fun isSynced(key: SyncKey): Boolean {
-        return pref.getBoolean(key.key, false)
-    }
-
-    fun setSynced(key: SyncKey, synced: Boolean) {
-        pref.edit {
-            putBoolean(key.key, synced)
-            if (synced) {
-                putLong("${key.key}_time", System.currentTimeMillis())
-            }
-        }
-    }
-
-    fun getSyncTime(key: SyncKey): Long {
-        return pref.getLong("${key.key}_time", 0L)
     }
 
     fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
@@ -239,12 +209,6 @@ class SharedPrefManager @Inject constructor(
 
     fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, true)
     fun setAutoSync(value: Boolean) = pref.edit { putBoolean(AUTO_SYNC, value) }
-
-    fun getFastSync(): Boolean = pref.getBoolean(FAST_SYNC, false)
-    fun setFastSync(value: Boolean) = pref.edit { putBoolean(FAST_SYNC, value) }
-
-    fun getUseImprovedSync(): Boolean = pref.getBoolean(USE_IMPROVED_SYNC, false)
-    fun setUseImprovedSync(value: Boolean) = pref.edit { putBoolean(USE_IMPROVED_SYNC, value) }
 
     fun getAutoSyncInterval(): Int = pref.getInt(AUTO_SYNC_INTERVAL, 60 * 60)
     fun setAutoSyncInterval(interval: Int) = pref.edit { putInt(AUTO_SYNC_INTERVAL, interval) }

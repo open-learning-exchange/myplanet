@@ -14,12 +14,14 @@ import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userRepository: Lazy<UserRepository>,
-    private val teamsRepository: Lazy<TeamsRepository>
+    private val teamsRepository: Lazy<TeamsRepository>,
+    private val timeProvider: TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
@@ -314,7 +316,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo {
-        val current = System.currentTimeMillis()
+        val current = timeProvider.now()
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
 
@@ -382,7 +384,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         // 3. Fetch all relevant tasks once
-        val current = System.currentTimeMillis()
+        val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
         val tasks = queryList(RealmTeamTask::class.java) {
             equalTo("assignee", userId)

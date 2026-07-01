@@ -1,20 +1,22 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Base64
+import android.util.Log
 import androidx.core.net.toUri
-import dagger.hilt.android.EntryPointAccessors
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
+    @Volatile
     private var spmInstance: SharedPrefManager? = null
 
+    fun init(sharedPrefManager: SharedPrefManager) {
+        spmInstance = sharedPrefManager
+    }
+
     private fun spm(): SharedPrefManager {
-        return spmInstance ?: synchronized(this) {
-            spmInstance ?: EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager().also { spmInstance = it }
-        }
+        return spmInstance
+            ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
     @androidx.annotation.VisibleForTesting
@@ -44,7 +46,7 @@ object UrlUtils {
                     hostIp = uri.host ?: hostIp
                     scheme = uri.scheme ?: scheme
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w("UrlUtils", "Failed to parse alternative URL '$alternativeUrl', falling back to host", e)
                 }
             }
 

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -24,19 +25,26 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamReference
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)
 class SurveysRepositoryImplTest {
-
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: SurveysRepositoryImpl
     private lateinit var mockRealm: Realm
@@ -46,6 +54,7 @@ class SurveysRepositoryImplTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
+    private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
     @Before
     fun setup() {
@@ -102,7 +111,8 @@ class SurveysRepositoryImplTest {
             UnconfinedTestDispatcher(),
             userSessionManager,
             sharedPrefManager,
-            dispatcherProvider
+            dispatcherProvider,
+            timeProvider
         )
     }
 
@@ -276,6 +286,8 @@ class SurveysRepositoryImplTest {
 
         every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns newSurvey
         every { mockRealm.createObject(RealmSubmission::class.java, any<String>()) } returns newSubmission
+        every { mockRealm.createObject(RealmTeamReference::class.java) } returns RealmTeamReference()
+        every { mockRealm.createObject(RealmMembershipDoc::class.java) } returns RealmMembershipDoc()
 
         repository.adoptSurvey("exam1", "user1", "team1", true)
 
@@ -390,7 +402,7 @@ class SurveysRepositoryImplTest {
 
     @Test
     fun `dueRemindersFlow emits valid reminders and removes them`() = runTest {
-        val currentTime = System.currentTimeMillis()
+        val currentTime = timeProvider.now()
         val pastTime = currentTime - 1000
 
         // Mock SharedPreferences

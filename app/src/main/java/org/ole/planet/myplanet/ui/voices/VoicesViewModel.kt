@@ -4,6 +4,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -24,6 +33,69 @@ class VoicesViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
+
+    private val _searchQuery = MutableStateFlow("")
+
+    private val _selectedLabel = MutableStateFlow("All")
+    val selectedLabel: StateFlow<String> = _selectedLabel.asStateFlow()
+
+    private val _baseNewsList = MutableStateFlow<List<RealmNews?>>(emptyList())
+
+    private val _labels = MutableStateFlow<List<String>>(emptyList())
+    val labels: StateFlow<List<String>> = _labels.asStateFlow()
+
+    private val _createNewsSuccess = Channel<RealmNews?>(Channel.BUFFERED)
+    val createNewsSuccess: Flow<RealmNews?> = _createNewsSuccess.receiveAsFlow()
+
+    private var observeJob: kotlinx.coroutines.Job? = null
+
+    val filteredNews: StateFlow<List<RealmNews?>> = combine(
+        _baseNewsList,
+        _searchQuery,
+        _selectedLabel
+    ) { news, query, label ->
+        val labelFiltered = filterByLabel(news, label)
+        applySearchFilter(labelFiltered, query)
+    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    fun observeCommunityNews(userIdentifier: String) {
+        observeJob?.cancel()
+        observeJob = viewModelScope.launch(dispatcherProvider.io) {
+            voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
+                val filtered = newsList.map { it as RealmNews? }
+                _baseNewsList.value = filtered
+                _labels.value = collectLabels(filtered)
+            }
+        }
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun updateSelectedLabel(label: String) {
+        _selectedLabel.value = label
+    }
+
+    fun createNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>) {
+        viewModelScope.launch(dispatcherProvider.io) {
+            try {
+                val news = voicesRepository.createNews(map, user, imageList)
+                _createNewsSuccess.send(news)
+            } catch (e: Exception) {
+                _createNewsSuccess.send(null)
+            }
+        }
+    }
+
+    private fun applySearchFilter(list: List<RealmNews?>, query: String): List<RealmNews?> {
+        if (query.isEmpty()) return list
+        return list.filter { news ->
+            news?.message?.contains(query, ignoreCase = true) == true ||
+            news?.userName?.contains(query, ignoreCase = true) == true ||
+            news?.newsTitle?.contains(query, ignoreCase = true) == true
+        }
+    }
 
     fun deletePost(newsId: String, teamName: String, onComplete: () -> Unit) {
         viewModelScope.launch {

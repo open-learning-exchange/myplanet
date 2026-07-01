@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
@@ -30,6 +31,8 @@ abstract class BasePermissionActivity : AppCompatActivity() {
     open lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
     @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    open lateinit var timeProvider: TimeProvider
 
     fun checkPermission(strPermission: String?): Boolean {
         val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
@@ -438,7 +441,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun checkNotificationPermissionStatus() {
         lifecycleScope.launch {
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val lastCheck = withContext(dispatcherProvider.io) {
                 sharedPrefManager.getRawLong("last_notification_check", 0)
             }

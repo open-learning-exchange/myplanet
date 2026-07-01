@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
@@ -36,7 +37,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val teamsRepository: Lazy<TeamsRepository>,
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val timeProvider: TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineActivities(userName: String, type: String): List<RealmOfflineActivity> {
         return queryList(RealmOfflineActivity::class.java) {
@@ -248,7 +250,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
             action.userId = userId
             action.actionType = "sync"
             action.resourceId = null
-            action.time = System.currentTimeMillis()
+            action.time = timeProvider.now()
         }
     }
 

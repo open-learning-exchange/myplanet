@@ -19,18 +19,15 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @Suppress("UNCHECKED_CAST")
 class RetryRepositoryImplTest {
-
-
-
-
-
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: RetryRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
+    private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
     @org.junit.After
     fun tearDown() {
@@ -40,7 +37,7 @@ class RetryRepositoryImplTest {
     @Before
     fun setUp() {
         databaseService = mockk(relaxed = true)
-        repository = RetryRepositoryImpl(databaseService, testDispatcher)
+        repository = RetryRepositoryImpl(databaseService, testDispatcher, timeProvider)
     }
 
     @Test
