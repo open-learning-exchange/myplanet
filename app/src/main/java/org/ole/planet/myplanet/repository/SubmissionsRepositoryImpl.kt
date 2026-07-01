@@ -886,7 +886,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return PayloadData(user, exam, questions)
     }
 
-    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
+    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = withRealmAsync { mRealm ->
         val `object` = JsonObject()
         val payloadData = getPayloadData(mRealm, submission)
         val user = payloadData.user
@@ -934,7 +934,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = databaseService.withRealmAsync { mRealm ->
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = withRealmAsync { mRealm ->
         val jsonObject = JsonObject()
 
         try {
