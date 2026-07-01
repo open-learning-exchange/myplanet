@@ -126,32 +126,6 @@ class TagsRepositoryImplTest {
     }
 
     @Test
-    fun `buildChildMap correctly groups tags by their attachedTo parents`() = runTest {
-        val parent1 = "parent1"
-        val parent2 = "parent2"
-        val child1 = RealmTag().apply {
-            name = "Child1"
-            attachedTo = RealmList(parent1)
-        }
-        val child2 = RealmTag().apply {
-            name = "Child2"
-            attachedTo = RealmList(parent1, parent2)
-        }
-
-        mockQueryResults(listOf(child1, child2))
-
-        val result = repository.buildChildMap()
-
-        assertEquals(2, result.size)
-        assertTrue(result[parent1]!!.contains(child1))
-        assertTrue(result[parent1]!!.contains(child2))
-        assertEquals(2, result[parent1]!!.size)
-
-        assertTrue(result[parent2]!!.contains(child2))
-        assertEquals(1, result[parent2]!!.size)
-    }
-
-    @Test
     fun `getTagsForResource resolves linked tags through tagId lookup`() = runTest {
         val resourceId = "res1"
         val tagId = "tag1"
