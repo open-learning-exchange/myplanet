@@ -633,7 +633,10 @@ class ResourcesRepositoryImpl @Inject constructor(
         } else {
             queryList(RealmMyLibrary::class.java, ensureLatest = true) {
                 equalTo("isPrivate", false)
-                not().contains("userId", modelId ?: "")
+                isNotNull("userId")
+                if (modelId != null) {
+                    not().equalTo("userId", modelId)
+                }
             }
         }
 
