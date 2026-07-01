@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< fix-freespaceworker-observer-11489696157355446885
         versionCode = 5909
         versionName = "0.59.9"
+=======
+        versionCode = 5908
+        versionName = "0.59.8"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
