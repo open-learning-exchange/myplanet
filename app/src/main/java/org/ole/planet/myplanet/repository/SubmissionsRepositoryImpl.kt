@@ -260,16 +260,16 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        var submission = queryList(RealmSubmission::class.java) {
+        var submission = findFirstCopy(RealmSubmission::class.java) {
             equalTo("id", submissionId)
                 .or()
                 .equalTo("_id", submissionId)
-        }.firstOrNull()
+        }
 
         if (submission == null) {
-            submission = queryList(RealmSubmission::class.java) {
+            submission = findFirstCopy(RealmSubmission::class.java) {
                 contains("parentId", submissionId)
-            }.firstOrNull()
+            }
         }
 
         if (submission == null) {
@@ -459,7 +459,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
-    override suspend fun createExamSubmission(userId: String?, userDob: String?, userGender: String?, exam: RealmStepExam, type: String?, teamId: String?): RealmSubmission? {
+    override suspend fun createExamSubmission(request: org.ole.planet.myplanet.model.CreateExamSubmissionRequest): RealmSubmission? {
+        val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
         } else {
@@ -886,7 +887,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return PayloadData(user, exam, questions)
     }
 
-    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = databaseService.withRealmAsync { mRealm ->
+    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = withRealmAsync { mRealm ->
         val `object` = JsonObject()
         val payloadData = getPayloadData(mRealm, submission)
         val user = payloadData.user
@@ -934,7 +935,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = databaseService.withRealmAsync { mRealm ->
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = withRealmAsync { mRealm ->
         val jsonObject = JsonObject()
 
         try {
