@@ -276,10 +276,4 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         super.onDestroyView()
     }
 
-    private fun shouldQueryTeamFromRealm(): Boolean {
-        val hasDirectData = requireArguments().containsKey("teamName") &&
-                requireArguments().containsKey("teamType") &&
-                requireArguments().containsKey("teamId")
-        return !hasDirectData
-    }
 }

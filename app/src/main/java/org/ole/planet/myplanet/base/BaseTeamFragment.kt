@@ -81,7 +81,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun shouldQueryTeamFromRealm(): Boolean {
+    protected open fun shouldQueryTeamFromRealm(): Boolean {
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")
