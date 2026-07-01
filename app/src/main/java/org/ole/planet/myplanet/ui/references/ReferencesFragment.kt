@@ -45,33 +45,6 @@ class ReferencesFragment : Fragment() {
         (binding.rvReferences.adapter as ReferenceAdapter).submitList(list)
     }
 
-    inner class ReferenceAdapter : ListAdapter<Reference, ViewHolderReference>(
-        DiffUtils.itemCallback<Reference>(
-            { oldItem, newItem -> oldItem.title == newItem.title },
-            { oldItem, newItem -> oldItem == newItem }
-        )
-    ) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
-            val rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return ViewHolderReference(rowReferenceBinding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolderReference, position: Int) {
-            val reference = getItem(position)
-            holder.rowReferenceBinding.title.text = reference.title
-            holder.rowReferenceBinding.icon.setImageResource(reference.icon)
-            holder.rowReferenceBinding.root.setOnClickListener {
-                if (holder.bindingAdapterPosition == 0)
-                    startActivity(Intent(activity, OfflineMapsActivity::class.java))
-                else {
-                    startActivity(Intent(activity, DictionaryActivity::class.java))
-                }
-            }
-        }
-    }
-
-    class ViewHolderReference(val rowReferenceBinding: RowReferenceBinding) : RecyclerView.ViewHolder(rowReferenceBinding.root)
-
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()
