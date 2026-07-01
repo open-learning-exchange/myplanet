@@ -396,12 +396,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 ?: results.firstOrNull { it.teamId == teamId }
                 ?: results.firstOrNull()
 
-            exactMatch?.let {
-                VoicePostingPolicy(
-                    teamId = it._id ?: it.teamId ?: "",
-                    isPublic = it.isPublic
-                )
-            }
+            exactMatch?.toVoicePostingPolicy()
         }
     }
 

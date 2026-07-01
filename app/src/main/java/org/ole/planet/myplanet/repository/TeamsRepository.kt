@@ -21,6 +21,13 @@ data class VoicePostingPolicy(
     }
 }
 
+fun RealmMyTeam.toVoicePostingPolicy(): VoicePostingPolicy {
+    return VoicePostingPolicy(
+        teamId = this._id ?: this.teamId ?: "",
+        isPublic = this.isPublic
+    )
+}
+
 data class JoinedMemberData(
     val user: RealmUser,
     val visitCount: Long,
