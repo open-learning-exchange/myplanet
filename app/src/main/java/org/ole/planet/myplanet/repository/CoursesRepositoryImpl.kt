@@ -164,6 +164,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     val validCourseIds = courseIds.filter { it.isNotBlank() }
                     if (validCourseIds.isEmpty()) return@executeTransaction
 
+                    val allFoundCourseIds = mutableListOf<String>()
                     val chunkSize = 1000
                     validCourseIds.chunked(chunkSize).forEach { chunk ->
                         val courses = realm.where(RealmMyCourse::class.java)
@@ -175,16 +176,19 @@ class CoursesRepositoryImpl @Inject constructor(
                                 course.setUserId(userId)
                             }
 
-                            val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
-                            if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
-                                realm.where(RealmRemovedLog::class.java)
-                                    .equalTo("type", "courses")
-                                    .equalTo("userId", userId)
-                                    .`in`("docId", foundCourseIds)
-                                    .findAll()
-                                    .deleteAllFromRealm()
-                            }
+                            allFoundCourseIds.addAll(courses.mapNotNull { it.courseId })
                             courseFound = true
+                        }
+                    }
+
+                    if (!userId.isNullOrBlank() && allFoundCourseIds.isNotEmpty()) {
+                        allFoundCourseIds.chunked(chunkSize).forEach { chunk ->
+                            realm.where(RealmRemovedLog::class.java)
+                                .equalTo("type", "courses")
+                                .equalTo("userId", userId)
+                                .`in`("docId", chunk.toTypedArray())
+                                .findAll()
+                                .deleteAllFromRealm()
                         }
                     }
                 }
