@@ -41,6 +41,14 @@ open class RealmRepository(
         realm.queryList(clazz, maxDepth, builder)
     }
 
+    protected suspend fun <T : RealmObject> findFirstCopy(
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit = {},
+    ): T? = withRealm { realm ->
+        realm.where(clazz).apply(builder).findFirst()?.let { realm.copyFromRealm(it) }
+    }
+
+
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},

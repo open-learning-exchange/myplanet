@@ -127,7 +127,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                         val currentExam = exam
                         if (currentExam != null) {
                             val newSub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
                             )
                             withContext(dispatcherProvider.main) {
                                 sub = newSub
@@ -141,7 +143,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     if (currentExam != null) {
                         if (sub == null || isTeam) {
                             sub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
                             )
                         } else {
                             val resume = askResumeOrRestart()
@@ -155,7 +159,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 answerCache.clear()
                                 currentIndex = 0
                                 sub = submissionsRepository.createExamSubmission(
-                                    user?.id, user?.dob, user?.gender, currentExam, type, null
+                                    org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                        user?.id, user?.dob, user?.gender, currentExam, type, null
+                                    )
                                 )
                             }
                         }
