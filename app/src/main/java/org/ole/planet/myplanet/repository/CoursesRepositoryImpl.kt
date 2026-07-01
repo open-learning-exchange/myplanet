@@ -796,31 +796,26 @@ class CoursesRepositoryImpl @Inject constructor(
                 RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
             }
             insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
-            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, examCache)
-            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate, examCache)
+
+            if (stepJson.has("exam")) {
+                val obj = stepJson.getAsJsonObject("exam")
+                obj.addProperty("stepNumber", i + 1)
+                insertCourseStepsExams(myMyCoursesDB?.courseId, stepId, obj, "", realmTx, examCache)
+            }
+
+            if (stepJson.has("survey")) {
+                val obj = stepJson.getAsJsonObject("survey")
+                obj.addProperty("stepNumber", i + 1)
+                obj.addProperty("createdDate", myMyCoursesDB?.createdDate)
+                insertCourseStepsExams(myMyCoursesDB?.courseId, stepId, obj, "", realmTx, examCache)
+            }
+
             step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
             step.courseId = myMyCoursesDB?.courseId
             courseStepsList.add(step)
         }
         myMyCoursesDB?.courseSteps = RealmList()
         myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
-    }
-
-    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, examCache: HashMap<String, RealmStepExam>? = null) {
-        if (stepContainer.has("exam")) {
-            val obj = stepContainer.getAsJsonObject("exam")
-            obj.addProperty("stepNumber", i)
-            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
-        }
-    }
-
-    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?, examCache: HashMap<String, RealmStepExam>? = null) {
-        if (stepContainer.has("survey")) {
-            val obj = stepContainer.getAsJsonObject("survey")
-            obj.addProperty("stepNumber", i)
-            obj.addProperty("createdDate", createdDate)
-            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
-        }
     }
 
     private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
