@@ -46,10 +46,6 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         }
     }
 
-    fun <T> withRealm(operation: (Realm) -> T): T {
-        return withRealmInstance(operation)
-    }
-
     suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return withContext(ioDispatcher) {
             withRealmInstance(operation)
