@@ -12,10 +12,13 @@ import org.ole.planet.myplanet.utils.Constants
 class RetryInterceptor @Inject constructor(
     private val broadcastService: BroadcastService
 ) : Interceptor {
-
     private val maxRetries = 3
     var initialDelay = 1000L
     private val factor = 2.0
+
+    companion object {
+        private const val MAX_BACKOFF_SLICE_MS = 250L
+    }
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
@@ -54,15 +57,29 @@ class RetryInterceptor @Inject constructor(
 
             broadcastService.trySendBroadcast(intent)
 
-            try {
-                Thread.sleep(delay)
-            } catch (e: InterruptedException) {
-                Thread.currentThread().interrupt()
-                throw IOException("Interrupted during retry delay", e)
-            }
+            backoff(chain, delay)
         }
 
         // Retries exhausted: return the last 5xx response, or rethrow the last network error.
         return response ?: throw (lastError ?: IOException("Request failed without a response"))
+    }
+
+    private fun backoff(chain: Interceptor.Chain, delayMillis: Long) {
+        val deadline = System.currentTimeMillis() + delayMillis
+        try {
+            while (true) {
+                if (chain.call().isCanceled()) {
+                    throw IOException("Call cancelled during retry delay")
+                }
+                val remaining = deadline - System.currentTimeMillis()
+                if (remaining <= 0) {
+                    return
+                }
+                Thread.sleep(minOf(remaining, MAX_BACKOFF_SLICE_MS))
+            }
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IOException("Interrupted during retry delay", e)
+        }
     }
 }
