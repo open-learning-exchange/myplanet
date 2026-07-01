@@ -103,15 +103,6 @@ class ResourcesAdapter(
                 isLocallyOffline = locallyOfflineIds.contains(it.item.id)
             )
         }
-
-        val newIds = updatedList.mapNotNull { it.item.id }.toSet()
-        val idsToRemove = selectedItemIds.filter { !newIds.contains(it) }
-        if (idsToRemove.isNotEmpty()) {
-            selectedItemIds.removeAll(idsToRemove.toSet())
-            idsToRemove.forEach { selectedItemsMap.remove(it) }
-            listener?.onSelectedListChange(selectedItemsMap.values.toList())
-        }
-
         submitList(updatedList, onComplete)
     }
 
