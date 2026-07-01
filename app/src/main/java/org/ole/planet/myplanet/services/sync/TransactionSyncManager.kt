@@ -31,13 +31,17 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.repository.RealmRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val chatRepository: ChatRepository,
@@ -59,7 +63,7 @@ class TransactionSyncManager @Inject constructor(
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-) {
+) : RealmRepository(databaseService, realmDispatcher) {
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
@@ -259,7 +263,7 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
-                    databaseService.executeTransactionAsync { mRealm: Realm ->
+                    executeTransaction { mRealm: Realm ->
                         val insertStartTime = SystemClock.elapsedRealtime()
                         when (table) {
                             "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
