@@ -260,16 +260,16 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        var submission = queryList(RealmSubmission::class.java) {
+        var submission = findFirstCopy(RealmSubmission::class.java) {
             equalTo("id", submissionId)
                 .or()
                 .equalTo("_id", submissionId)
-        }.firstOrNull()
+        }
 
         if (submission == null) {
-            submission = queryList(RealmSubmission::class.java) {
+            submission = findFirstCopy(RealmSubmission::class.java) {
                 contains("parentId", submissionId)
-            }.firstOrNull()
+            }
         }
 
         if (submission == null) {
