@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.di.RealmDispatcherProvider
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -24,8 +23,7 @@ class UserSessionManager @Inject constructor(
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val timeProvider: TimeProvider,
-    private val realmDispatcherProvider: RealmDispatcherProvider
+    private val timeProvider: TimeProvider
 ) {
     private val fullName: String
 
@@ -90,8 +88,6 @@ class UserSessionManager @Inject constructor(
                 activitiesRepository.logLogout(model?.name)
             } catch (e: Exception) {
                 Log.e(TAG, "Error in logoutAsync", e)
-            } finally {
-                realmDispatcherProvider.shutdown()
             }
         }
     }

@@ -22,7 +22,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.di.RealmDispatcherProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
@@ -34,7 +33,6 @@ class UserSessionManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
-    private val realmDispatcherProvider: RealmDispatcherProvider = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -54,8 +52,7 @@ class UserSessionManagerTest {
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
             dispatcherProvider = dispatcherProvider,
-            timeProvider = TestTimeProvider(),
-            realmDispatcherProvider = realmDispatcherProvider
+            timeProvider = TestTimeProvider()
         )
     }
 
@@ -80,8 +77,7 @@ class UserSessionManagerTest {
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
             dispatcherProvider = dispatcherProvider,
-            timeProvider = TestTimeProvider(),
-            realmDispatcherProvider = realmDispatcherProvider
+            timeProvider = TestTimeProvider()
         )
     }
 
