@@ -44,7 +44,7 @@
         android:required="false" />
     <application
         android:name=".MainApplication"
-        android:allowBackup="true"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_project_name"
         android:largeHeap="true"
