@@ -59,6 +59,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private var meetupAdapter: EventsAdapter? = null
     private val viewModel: TeamCalendarViewModel by viewModels()
     private var cachedCardHeight: Int? = null
+    private var lastWidthPixels: Int? = null
     private var dateFormat: SimpleDateFormat? = null
     private var lastLocale: Locale? = null
 
@@ -414,13 +415,19 @@ class TeamCalendarFragment : BaseTeamFragment() {
     }
 
     private fun getCardViewHeight(context: Context): Int {
-        return cachedCardHeight ?: run {
-            val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
-            view.measure(
-                View.MeasureSpec.makeMeasureSpec(Resources.getSystem().displayMetrics.widthPixels, View.MeasureSpec.AT_MOST),
-                View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            )
-            view.measuredHeight.also { cachedCardHeight = it }
+        val currentWidth = Resources.getSystem().displayMetrics.widthPixels
+        val cachedHeight = cachedCardHeight
+        if (cachedHeight != null && lastWidthPixels == currentWidth) {
+            return cachedHeight
+        }
+        val view = LayoutInflater.from(context).inflate(R.layout.item_meetup, null)
+        view.measure(
+            View.MeasureSpec.makeMeasureSpec(currentWidth, View.MeasureSpec.AT_MOST),
+            View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
+        )
+        return view.measuredHeight.also {
+            cachedCardHeight = it
+            lastWidthPixels = currentWidth
         }
     }
 
