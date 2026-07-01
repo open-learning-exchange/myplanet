@@ -36,7 +36,7 @@ class DatabaseServiceTest {
             .build()
         Realm.setDefaultConfiguration(realmConfiguration)
 
-        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), org.ole.planet.myplanet.utils.DefaultDispatcherProvider(), realmConfiguration)
+        databaseService = DatabaseService(org.ole.planet.myplanet.utils.DefaultDispatcherProvider(), realmConfiguration)
     }
 
     @After

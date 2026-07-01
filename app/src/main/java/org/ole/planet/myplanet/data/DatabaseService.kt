@@ -1,18 +1,14 @@
 package org.ole.planet.myplanet.data
 
-import android.content.Context
 import io.realm.Realm
 import io.realm.RealmConfiguration
 import io.realm.RealmModel
 import io.realm.RealmQuery
-import io.realm.log.LogLevel
-import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider, private val realmConfiguration: RealmConfiguration) {
+class DatabaseService(private val dispatcherProvider: DispatcherProvider, private val realmConfiguration: RealmConfiguration) {
     val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
     private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
 

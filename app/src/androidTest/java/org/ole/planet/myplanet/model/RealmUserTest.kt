@@ -55,7 +55,7 @@ class RealmUserTest {
             override val default: CoroutineDispatcher = Dispatchers.Unconfined
             override val unconfined: CoroutineDispatcher = Dispatchers.Unconfined
         }
-        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), testDispatcherProvider, realmConfiguration)
+        databaseService = DatabaseService(testDispatcherProvider, realmConfiguration)
 
         val mockSettings = mockk<SharedPreferences>(relaxed = true)
         val mockSharedPrefManager = mockk<SharedPrefManager>(relaxed = true)

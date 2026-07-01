@@ -42,8 +42,8 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabaseService(@ApplicationContext context: Context, dispatcherProvider: DispatcherProvider, realmConfiguration: RealmConfiguration): DatabaseService {
-        return DatabaseService(context, dispatcherProvider, realmConfiguration)
+    fun provideDatabaseService(dispatcherProvider: DispatcherProvider, realmConfiguration: RealmConfiguration): DatabaseService {
+        return DatabaseService(dispatcherProvider, realmConfiguration)
     }
 
     @Provides
