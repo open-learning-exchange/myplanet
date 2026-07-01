@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import io.mockk.coEvery
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -16,8 +17,9 @@ class UserRepositoryBulkInsertTest {
 
     @Test
     fun `benchmark insertUsersFromSync`() {
+        val dbService = mockk<org.ole.planet.myplanet.data.DatabaseService>(relaxed = true)
         val userRepository = UserRepositoryImpl(
-            mockk(relaxed = true),
+            dbService,
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
@@ -35,6 +37,9 @@ class UserRepositoryBulkInsertTest {
         val realmQuery = mockk<RealmQuery<RealmUser>>(relaxed = true)
         val realmResults = mockk<RealmResults<RealmUser>>(relaxed = true)
 
+        coEvery { dbService.executeTransactionAsync(any()) } coAnswers {
+            firstArg<(Realm) -> Unit>().invoke(realm)
+        }
         every { realm.isInTransaction } returns true
         every { realm.where(RealmUser::class.java) } returns realmQuery
         every { realmQuery.`in`(any<String>(), any<Array<String>>()) } returns realmQuery
@@ -64,6 +69,6 @@ class UserRepositoryBulkInsertTest {
         }
 
         // The query is done only ONCE using `in`!
-        // verify(exactly = 1) { realm.where(RealmUser::class.java) }
+        verify(exactly = 1) { realm.where(RealmUser::class.java) }
     }
 }
