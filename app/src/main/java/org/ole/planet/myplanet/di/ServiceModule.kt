@@ -38,9 +38,8 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
-import org.ole.planet.myplanet.services.sync.ImprovedSyncManager
-import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
@@ -70,7 +69,6 @@ object ServiceModule {
         @ApplicationContext context: Context,
         sharedPrefManager: SharedPrefManager,
         apiInterface: ApiInterface,
-        improvedSyncManager: Lazy<ImprovedSyncManager>,
         transactionSyncManager: TransactionSyncManager,
         resourcesRepository: ResourcesRepository,
         loginSyncManager: LoginSyncManager,
@@ -83,7 +81,7 @@ object ServiceModule {
         coursesRepository: CoursesRepository,
         eventsRepository: EventsRepository
     ): SyncManager {
-        return SyncManager(context, sharedPrefManager, apiInterface, improvedSyncManager, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
+        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
     }
 
     @Provides
