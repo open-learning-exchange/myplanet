@@ -270,10 +270,7 @@ class TransactionSyncManager @Inject constructor(
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
-                            "courses" -> {
-                                coursesRepository.bulkInsertFromSync(mRealm, arr)
-                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
-                            }
+                            "courses" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
                             "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsSyncRepository.get().bulkInsertFromSync(mRealm, arr)
                             "tasks" -> teamsSyncRepository.get().bulkInsertTasksFromSync(mRealm, arr)
