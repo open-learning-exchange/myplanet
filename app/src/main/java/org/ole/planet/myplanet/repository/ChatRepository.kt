@@ -16,6 +16,5 @@ interface ChatRepository {
     suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory>
     suspend fun getLatestRev(id: String): String?
     suspend fun insertChatHistoryList(chats: List<JsonObject>)
-    fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
     suspend fun insertChatHistoryFromSync(docs: List<JsonObject>)
 }

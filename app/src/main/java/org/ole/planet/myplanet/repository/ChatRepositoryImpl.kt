@@ -166,18 +166,6 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val docs = mutableListOf<JsonObject>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                docs.add(jsonDoc)
-            }
-        }
-        insertChatsBatchInternal(realm, docs)
-    }
 
     private fun insertChatsBatchInternal(realm: io.realm.Realm, chats: List<JsonObject>) {
         if (chats.isEmpty()) return
