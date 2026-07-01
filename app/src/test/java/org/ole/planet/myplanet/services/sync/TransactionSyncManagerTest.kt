@@ -71,6 +71,7 @@ class TransactionSyncManagerTest {
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
             databaseService,
+            dispatcherProvider.io,
             context,
             voicesRepository,
             chatRepository,
