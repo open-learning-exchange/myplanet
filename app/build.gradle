@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< optimize-realm-first-reads-13887086349809528308
         versionCode = 5915
         versionName = "0.59.15"
+=======
+        versionCode = 5914
+        versionName = "0.59.14"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
