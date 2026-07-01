@@ -383,23 +383,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getVoicePostingPolicy(teamId: String): VoicePostingPolicy? {
-        if (teamId.isBlank()) return null
-        return withRealm { realm ->
-            val results = realm.where(RealmMyTeam::class.java)
-                .equalTo("_id", teamId)
-                .or()
-                .equalTo("teamId", teamId)
-                .findAll()
-
-            val exactMatch = results.firstOrNull { it._id == teamId }
-                ?: results.firstOrNull { it.teamId == teamId }
-                ?: results.firstOrNull()
-
-            exactMatch?.toVoicePostingPolicy()
-        }
-    }
-
     override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
         if (id.isBlank()) return null
         return withRealm { realm ->

@@ -164,6 +164,4 @@ interface TeamsRepository {
     suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
-
-    suspend fun getVoicePostingPolicy(teamId: String): VoicePostingPolicy?
 }
