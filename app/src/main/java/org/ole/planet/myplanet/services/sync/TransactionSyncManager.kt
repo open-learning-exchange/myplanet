@@ -238,6 +238,25 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "meetups") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    communityRepository.insertMeetupsFromSync(docs)
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     databaseService.executeTransactionAsync { mRealm: Realm ->
@@ -255,7 +274,6 @@ class TransactionSyncManager @Inject constructor(
                             "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsSyncRepository.get().bulkInsertFromSync(mRealm, arr)
                             "tasks" -> teamsSyncRepository.get().bulkInsertTasksFromSync(mRealm, arr)
-                            "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
                             "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                             "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
                             "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)
