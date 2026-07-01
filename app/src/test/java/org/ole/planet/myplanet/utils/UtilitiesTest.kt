@@ -1,37 +1,30 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Activity
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.lifecycle.ProcessLifecycleOwner
-import android.app.Activity
-import android.os.Looper
-import android.widget.Toast
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UtilitiesTest {
 
-    private val testDispatcher = StandardTestDispatcher()
     private val mockContext = mockk<Context>(relaxed = true)
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         mockkStatic(Looper::class)
         mockkStatic(Toast::class)
         val mockLooper = mockk<Looper>()
@@ -40,17 +33,16 @@ class UtilitiesTest {
         every { mockLooper.thread } returns currentThread
         every { mockLooper.getThread() } returns currentThread
 
-        every { Looper.myLooper() } returns mockk<Looper>()
+        every { Looper.myLooper() } returns mockk<Looper>() // Different from main looper
     }
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         unmockkAll()
     }
 
     @Test
-    fun `toast dispatches via mainDispatcher when not on main thread`() = runTest(testDispatcher) {
+    fun `toast dispatches via Handler when not on main thread`() {
         io.mockk.mockkObject(ProcessLifecycleOwner.Companion)
         val mockLifecycleOwner = mockk<LifecycleOwner>()
         val mockLifecycleRegistry = LifecycleRegistry(mockLifecycleOwner)
@@ -65,11 +57,16 @@ class UtilitiesTest {
         val mockToast = mockk<Toast>(relaxed = true)
         every { Toast.makeText(any(), any<CharSequence>(), any()) } returns mockToast
 
-        Utilities.toast(mockActivity, "test message", Toast.LENGTH_SHORT, testDispatcher)
+        mockkConstructor(Handler::class)
+        every { anyConstructed<Handler>().post(any()) } answers {
+            firstArg<Runnable>().run()
+            true
+        }
 
-        testDispatcher.scheduler.advanceUntilIdle()
+        Utilities.toast(mockActivity, "test message", Toast.LENGTH_SHORT)
 
         verify(exactly = 1) { Toast.makeText(any(), "test message", Toast.LENGTH_SHORT) }
         verify(exactly = 1) { mockToast.show() }
+        verify(exactly = 1) { anyConstructed<Handler>().post(any()) }
     }
 }
