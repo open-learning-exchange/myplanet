@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import org.ole.planet.myplanet.utils.textChanges
@@ -112,7 +111,6 @@ class ChatHistoryFragment : Fragment() {
 
         binding.searchBar.textChanges()
             .debounce(300)
-            .distinctUntilChanged()
             .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
             .launchIn(viewLifecycleOwner.lifecycleScope)
 
