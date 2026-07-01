@@ -235,5 +235,4 @@ class ResourcesRepositoryImplTest {
         verify { mockQuery.not() }
         verify { mockQuery.equalTo("userId", "model123") }
     }
-
 }
