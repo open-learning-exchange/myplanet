@@ -5,7 +5,11 @@ import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextWatcher
+import org.ole.planet.myplanet.utils.textChanges
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.launchIn
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -67,10 +71,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var userModel: RealmUser ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
-    private var searchTextWatcher: TextWatcher? = null
     private var isFirstResume = true
     private var allResourceModels: List<org.ole.planet.myplanet.model.ResourceListModel> = emptyList()
-    private var searchJob: Job? = null
 
     private var lastSearchQuery: String? = null
     private var lastSearchTags: List<String>? = null
@@ -247,20 +249,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun setupSearchTextListener() {
-        searchTextWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@launch
-                    applyFiltersAndUpdateUI()
-                }
+        etSearch.textChanges()
+            .debounce(300L)
+            .distinctUntilChanged()
+            .onEach {
+                if (!::adapterLibrary.isInitialized || !isAdded || _binding == null) return@onEach
+                applyFiltersAndUpdateUI()
             }
-
-            override fun afterTextChanged(s: Editable) {}
-        }
-        etSearch.addTextChangedListener(searchTextWatcher)
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     private suspend fun applyFiltersAndUpdateUI(scrollToTop: Boolean = true) {
@@ -581,9 +577,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onDestroyView() {
         isFirstResume = true
-        etSearch.removeTextChangedListener(searchTextWatcher)
-        searchTextWatcher = null
-
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
