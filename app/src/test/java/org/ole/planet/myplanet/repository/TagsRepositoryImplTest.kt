@@ -87,6 +87,10 @@ class TagsRepositoryImplTest {
             id = "parent2"
             name = "Parent 2"
         }
+        val childlessParentTag = RealmTag().apply {
+            id = "parent3"
+            name = "Parent 3"
+        }
         val child1 = RealmTag().apply {
             name = "Child1"
             attachedTo = RealmList("parent1")
@@ -99,13 +103,14 @@ class TagsRepositoryImplTest {
             name = "UnattachedChild"
         }
 
-        mockQueryResults(listOf(parentTag1, parentTag2), listOf(parentTag1, parentTag2, child1, child2, unattachedChild))
+        mockQueryResults(listOf(parentTag1, parentTag2, childlessParentTag), listOf(parentTag1, parentTag2, childlessParentTag, child1, child2, unattachedChild))
 
         val result = repository.getTagsWithChildren("resources")
 
-        assertEquals(2, result.size)
+        assertEquals(3, result.size)
         assertTrue(result.containsKey(parentTag1))
         assertTrue(result.containsKey(parentTag2))
+        assertTrue(result.containsKey(childlessParentTag))
 
         val childrenOfParent1 = result[parentTag1]
         assertEquals(2, childrenOfParent1?.size)
@@ -115,6 +120,9 @@ class TagsRepositoryImplTest {
         val childrenOfParent2 = result[parentTag2]
         assertEquals(1, childrenOfParent2?.size)
         assertTrue(childrenOfParent2!!.contains(child2))
+
+        val childrenOfChildlessParent = result[childlessParentTag]
+        assertEquals(0, childrenOfChildlessParent?.size)
     }
 
     @Test

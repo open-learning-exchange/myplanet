@@ -89,7 +89,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
             list = tagsWithChildren.keys.toList()
             selectedItemsList = ArrayList(recentList)
-            childMap = tagsWithChildren.entries.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
+            childMap = tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
             adapter = ResourcesTagsAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
