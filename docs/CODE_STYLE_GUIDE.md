@@ -172,7 +172,7 @@ companion object {
 | Component | Suffix | Example |
 |-----------|--------|---------|
 | Activity | `Activity` | `LoginActivity.kt` |
-| Fragment | `Fragment` | `TakeCourseFragment.kt` |
+| Fragment | `Fragment` | `CoursesFragment.kt` |
 | ViewModel | `ViewModel` | `CoursesViewModel.kt` |
 | Adapter | `Adapter` | `CoursesAdapter.kt` |
 | Repository interface | `Repository` | `CoursesRepository.kt` |
