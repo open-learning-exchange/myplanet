@@ -23,6 +23,7 @@ class DatabaseServiceTest {
 
     private lateinit var databaseService: DatabaseService
     private lateinit var realmConfiguration: RealmConfiguration
+    private lateinit var testRealm: Realm
 
     @Before
     fun setUp() {
@@ -37,10 +38,14 @@ class DatabaseServiceTest {
         Realm.setDefaultConfiguration(realmConfiguration)
 
         databaseService = DatabaseService(org.ole.planet.myplanet.utils.DefaultDispatcherProvider(), realmConfiguration)
+        testRealm = Realm.getInstance(realmConfiguration)
     }
 
     @After
     fun tearDown() {
+        if (!testRealm.isClosed) {
+            testRealm.close()
+        }
         Realm.deleteRealm(realmConfiguration)
     }
 
