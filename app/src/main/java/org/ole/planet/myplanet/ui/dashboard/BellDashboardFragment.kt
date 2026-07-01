@@ -21,7 +21,6 @@ import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -39,6 +38,9 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import kotlinx.coroutines.Job
+import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -95,12 +97,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setupNetworkStatusMonitoring() {
         networkStatusJob?.cancel()
-        networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.networkStatus.collect { status ->
-                    updateNetworkIndicator(status)
-                }
-            }
+        networkStatusJob = collectWhenStarted(viewModel.networkStatus) { status ->
+            updateNetworkIndicator(status)
         }
     }
 
@@ -229,12 +227,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun observeSurveyReminders() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                surveysRepository.dueRemindersFlow().collect { ids ->
-                    handleDueReminders(ids)
-                }
-            }
+        collectWhenStarted(surveysRepository.dueRemindersFlow()) { ids ->
+            handleDueReminders(ids)
         }
     }
 
@@ -311,14 +305,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.completedCourses.collectLatest { courses ->
-                    if (courses.isNotEmpty()) {
-                        showBadges(courses)
-                        binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
-                    }
-                }
+        collectLatestWhenStarted(viewModel.completedCourses) { courses ->
+            if (courses.isNotEmpty()) {
+                showBadges(courses)
+                binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
             }
         }
 
