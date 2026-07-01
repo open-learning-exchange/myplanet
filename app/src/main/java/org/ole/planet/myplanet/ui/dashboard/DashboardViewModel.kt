@@ -129,18 +129,14 @@ class DashboardViewModel @Inject constructor(
         libraryJob?.cancel()
         libraryJob = viewModelScope.launch(dispatcherProvider.io) {
             val myLibrary = resourcesRepository.getMyLibrary(userId)
-            withContext(dispatcherProvider.main) {
-                _uiState.update { it.copy(library = myLibrary) }
-            }
+            _uiState.update { it.copy(library = myLibrary) }
         }
 
         coursesJob?.cancel()
         coursesJob = viewModelScope.launch(dispatcherProvider.io) {
             coursesRepository.getMyCoursesFlow(userId)
                 .collect { courses ->
-                    withContext(dispatcherProvider.main) {
-                        _uiState.update { it.copy(courses = courses) }
-                    }
+                    _uiState.update { it.copy(courses = courses) }
                 }
         }
 
@@ -148,9 +144,7 @@ class DashboardViewModel @Inject constructor(
         teamsJob = viewModelScope.launch(dispatcherProvider.io) {
             teamsRepository.getMyTeamsFlow(userId)
                 .collect { teams ->
-                    withContext(dispatcherProvider.main) {
-                        _uiState.update { it.copy(teams = teams) }
-                    }
+                    _uiState.update { it.copy(teams = teams) }
                 }
         }
 
@@ -160,15 +154,11 @@ class DashboardViewModel @Inject constructor(
             val userName = user?.name
             val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
 
-            withContext(dispatcherProvider.main) {
-                _uiState.update { it.copy(fullName = fullName) }
-            }
+            _uiState.update { it.copy(fullName = fullName) }
 
             if (userName != null) {
                 val count = activitiesRepository.getOfflineLoginCount(userName)
-                withContext(dispatcherProvider.main) {
-                    _uiState.update { it.copy(offlineLogins = count) }
-                }
+                _uiState.update { it.copy(offlineLogins = count) }
             }
         }
     }
