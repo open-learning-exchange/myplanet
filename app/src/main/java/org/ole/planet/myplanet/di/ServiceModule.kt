@@ -39,6 +39,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.SyncManager
+import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
