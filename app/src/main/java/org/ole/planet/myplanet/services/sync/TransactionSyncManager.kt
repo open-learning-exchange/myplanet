@@ -242,6 +242,16 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "chat_history") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else if (table == "tablet_users") {
                     val insertStartTime = SystemClock.elapsedRealtime()
                     val docs = ArrayList<JsonObject>(arr.size())
@@ -281,7 +291,6 @@ class TransactionSyncManager @Inject constructor(
                         val insertStartTime = SystemClock.elapsedRealtime()
                         when (table) {
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
                             "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "login_activities" -> activitiesRepository.bulkInsertLoginActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
