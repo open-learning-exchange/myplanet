@@ -79,9 +79,6 @@ class SubmissionViewModelTest {
         val job = launch {
             viewModel.submissions.collect { }
         }
-        val job2 = launch {
-            viewModel.submissionCounts.collect { }
-        }
 
         advanceUntilIdle()
 
@@ -106,7 +103,6 @@ class SubmissionViewModelTest {
         assertEquals("3", subs[0].id)
 
         job.cancel()
-        job2.cancel()
     }
 
     @Test
@@ -133,9 +129,6 @@ class SubmissionViewModelTest {
         val job = launch {
             viewModel.submissions.collect { }
         }
-        val job2 = launch {
-            viewModel.submissionCounts.collect { }
-        }
         advanceUntilIdle()
 
         // Grouping by parentId, returning latest
@@ -153,8 +146,8 @@ class SubmissionViewModelTest {
         subs = viewModel.submissions.value
         assertEquals(1, subs.size)
         assertEquals("2", subs[0].id) // s2 is the latest for p1 ("Math Exam")
+        assertEquals("Math Exam", subs[0].examTitle)
         job.cancel()
-        job2.cancel()
     }
 
     @Test
@@ -176,21 +169,16 @@ class SubmissionViewModelTest {
         val job = launch {
             viewModel.submissions.collect { }
         }
-        val job2 = launch {
-            viewModel.submissionCounts.collect { }
-        }
         advanceUntilIdle()
 
         viewModel.setFilter("exam", "")
         advanceUntilIdle()
 
-        val counts = viewModel.submissionCounts.value
-        assertEquals(2, counts.size)
-        // Key is the latest submission ID, Value is the count of submissions for that parentId
-        assertEquals(2, counts["2"])
-        assertEquals(1, counts["3"])
+        val subs = viewModel.submissions.value
+        assertEquals(2, subs.size)
+        assertEquals(2, subs.find { it.id == "2" }?.submissionCount)
+        assertEquals(1, subs.find { it.id == "3" }?.submissionCount)
 
         job.cancel()
-        job2.cancel()
     }
 }
