@@ -16,6 +16,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
@@ -198,7 +199,6 @@ class SettingsActivity : AppCompatActivity() {
 
             setBetaToggleOn()
             setAutoSyncToggleOn()
-            setImprovedSyncToggleOn()
             val lp = findPreference<Preference>("app_language")
             lp?.setOnPreferenceClickListener {
                 context?.let { it1 -> languageChanger(it1) }
@@ -278,8 +278,10 @@ class SettingsActivity : AppCompatActivity() {
 
                             workManager.enqueue(freeSpaceWork)
 
-                            workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
-                                .observe(viewLifecycleOwner) { workInfo ->
+                            val liveData = workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
+                            liveData.observe(viewLifecycleOwner, object : Observer<WorkInfo?> {
+                                override fun onChanged(value: WorkInfo?) {
+                                    val workInfo = value
                                     if (workInfo != null) {
                                         when (workInfo.state) {
                                             WorkInfo.State.RUNNING -> {
@@ -307,8 +309,12 @@ class SettingsActivity : AppCompatActivity() {
                                                 // ENQUEUED or BLOCKED
                                             }
                                         }
+                                        if (workInfo.state.isFinished) {
+                                            liveData.removeObserver(this)
+                                        }
                                     }
                                 }
+                            })
 
                             dialog.setNegativeButton("Cancel") {
                                 workManager.cancelWorkById(freeSpaceWork.id)
@@ -348,18 +354,6 @@ class SettingsActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
-            }
-        }
-
-        private fun setImprovedSyncToggleOn() {
-            val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
-            improvedSyncPreference?.isChecked = sharedPrefManager.getUseImprovedSync()
-            improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
-                sharedPrefManager.setUseImprovedSync(isChecked)
-                val state = if (isChecked) "enabled" else "disabled"
-                createLog("improved_sync_toggle", state)
-                true
             }
         }
 

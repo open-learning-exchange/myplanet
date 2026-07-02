@@ -471,7 +471,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         mainThreadRealm?.close()
         mainThreadRealm = null
-        realmDispatcherProvider.shutdown()
         super.onTerminate()
         stopListenNetworkState()
     }
