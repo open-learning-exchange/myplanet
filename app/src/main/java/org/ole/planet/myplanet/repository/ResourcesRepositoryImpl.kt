@@ -550,7 +550,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 realm.executeTransaction { realmTx ->
                     documents.forEach { doc ->
                         try {
-                            RealmMyLibrary.insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
+                            RealmMyLibrary.insertMyLibrary(RealmMyLibrary.Companion.InsertParams(doc = doc, mRealm = realmTx, spm = sharedPrefManager, userId = shelfId))
                             processedCount++
                         } catch (e: Exception) {
                             e.printStackTrace()
