@@ -67,8 +67,8 @@ From `app/build.gradle` (`testImplementation` block) and what's actually importe
 | Library | Purpose | Notes |
 |---------|---------|-------|
 | JUnit 4 (`org.junit.Test`, `org.junit.Assert.*`) | Test runner and assertions | Used everywhere |
-| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in 97+ of the ~130 test files. |
-| Mockito (`org.mockito.*`) | Mocking | Legacy — only 3 files (`SubmissionViewModelTest`, `CoursesAdapterTest`, `UrlUtilsTest`). Don't introduce new Mockito usage; use MockK. |
+| **MockK** (`io.mockk.*`) | Mocking | **The standard.** Used in ~100 of the ~130 test files. |
+| Mockito (`org.mockito.*`) | Mocking | Legacy — only 2 files (`SubmissionViewModelTest`, `CoursesAdapterTest`). Don't introduce new Mockito usage; use MockK. |
 | Robolectric (`org.robolectric.*`) | Android framework shadow for JVM tests | Used wherever a test needs real Android classes (`Context`, `View`, resource strings) without an emulator. ~25 files use it. |
 | `kotlinx-coroutines-test` | `runTest`, `TestDispatcher`, `UnconfinedTestDispatcher`, `StandardTestDispatcher` | For suspend functions and Flow/StateFlow-based ViewModels |
 | `androidx.test` (`ApplicationProvider`, `AndroidJUnit4`) | Application context access | Used both in Robolectric JVM tests and real `androidTest` instrumented tests |
@@ -448,7 +448,7 @@ Use this table to find the closest existing test to copy from when you're about 
 
 **Don't put a new test in `androidTest/` by default.** It won't run in CI. Use `src/test/` unless you specifically need a real, queryable Realm instance.
 
-**Don't introduce new Mockito usage.** Three legacy files use it; the rest of the suite (97+ files) uses MockK. Use MockK for anything new, including adapter tests, even though the one existing adapter test reference uses Mockito.
+**Don't introduce new Mockito usage.** Two legacy files use it; the rest of the suite (~100 files) uses MockK. Use MockK for anything new, including adapter tests, even though the one existing adapter test reference uses Mockito.
 
 **Don't forget `mockkStatic(Log::class)` (and stub each level) when the code under test logs.** Otherwise the test will crash trying to call into the real Android `Log` class, which doesn't exist on the JVM.
 
