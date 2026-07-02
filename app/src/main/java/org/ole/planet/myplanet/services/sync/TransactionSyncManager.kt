@@ -304,6 +304,25 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "courses_progress") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    progressRepository.insertCourseProgressFromSync(docs)
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
                     executeTransaction { mRealm: Realm ->
@@ -320,7 +339,6 @@ class TransactionSyncManager @Inject constructor(
                             "tasks" -> teamsSyncRepository.get().bulkInsertTasksFromSync(mRealm, arr)
                             "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                             "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
-                            "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)
                             "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
                             else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
                         }
