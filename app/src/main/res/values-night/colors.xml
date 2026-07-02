@@ -39,6 +39,47 @@
     <color name="dropdown_bg">@color/colorPrimary</color>
     <color name="dropdown_text">@android:color/white</color>
 
+    <!-- Dashboard redesign palette — dark mode overrides -->
+    <color name="dash_bg">#18191A</color>
+    <color name="dash_surface_2">#2A2B2C</color>
+    <color name="dash_line">#484A4C</color>
+    <color name="dash_ink">#E4E6EB</color>
+    <color name="dash_ink_soft">#B0B3B8</color>
+    <!-- Library (warm red) -->
+    <color name="cat_library_bg">#2E1510</color>
+    <color name="cat_library_chip">#3E1E18</color>
+    <color name="cat_library_ink">#F5C8B8</color>
+    <color name="cat_library_accent">#ED8868</color>
+    <!-- Courses (amber/gold) -->
+    <color name="cat_courses_bg">#261E08</color>
+    <color name="cat_courses_chip">#362A10</color>
+    <color name="cat_courses_ink">#E8D090</color>
+    <color name="cat_courses_accent">#D4A830</color>
+    <color name="cat_courses_ink_soft">#A88A3A</color>
+    <!-- Teams (green) -->
+    <color name="cat_teams_bg">#0D2015</color>
+    <color name="cat_teams_chip">#152A1C</color>
+    <color name="cat_teams_ink">#A0E0B8</color>
+    <color name="cat_teams_accent">#4CC870</color>
+    <!-- Life (purple) -->
+    <color name="cat_life_bg">#1C1030</color>
+    <color name="cat_life_chip">#251540</color>
+    <color name="cat_life_ink">#CDB8E4</color>
+    <color name="cat_life_accent">#9A62CC</color>
+    <!-- Connectivity chips -->
+    <color name="chip_synced_bg">#0D2A16</color>
+    <color name="chip_synced_ink">#5FD87A</color>
+    <color name="chip_offline_bg">#2A1205</color>
+    <color name="chip_offline_ink">#F09070</color>
+    <color name="chip_connecting_bg">#26200A</color>
+    <color name="chip_connecting_ink">#D4B030</color>
+    <!-- Offline banner -->
+    <color name="offline_bg">#2A1205</color>
+    <color name="offline_stroke">#3E1C0A</color>
+    <color name="offline_icon_bg">#38180A</color>
+    <color name="offline_ink">#F09070</color>
+    <color name="notif_dot">#E85A35</color>
+    <color name="md_amber_700">#FFB300</color>
     <color name="achievement_purpose_icon">#66BB6A</color>
     <color name="achievement_goals_icon">#FFB74D</color>
     <color name="achievement_references_icon">#BA68C8</color>
