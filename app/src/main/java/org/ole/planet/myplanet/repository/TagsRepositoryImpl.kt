@@ -121,75 +121,52 @@ class TagsRepositoryImpl @Inject constructor(
     }
 
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        val ids = ArrayList<String>(jsonArray.size())
+        val tagsToInsert = ArrayList<RealmTag>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
             val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                ids.add(id)
+                tagsToInsert.add(createUnmanagedTag(jsonDoc))
             }
         }
-
-        val tagCache = mutableMapOf<String, RealmTag>()
-        // Fetch existing tags upfront to avoid N+1 queries
-        if (ids.isNotEmpty()) {
-            val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
-            for (tag in existingTags) {
-                tag._id?.let { tagCache[it] = tag }
-            }
-        }
-
-        for (jsonDoc in documentList) {
-            insertIntoRealm(realm, jsonDoc, tagCache)
+        if (tagsToInsert.isNotEmpty()) {
+            realm.insertOrUpdate(tagsToInsert)
         }
     }
 
     override suspend fun insert(documentList: List<com.google.gson.JsonObject>) {
         if (documentList.isEmpty()) return
         executeTransaction { realm ->
-            val ids = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }
-            val tagCache = mutableMapOf<String, RealmTag>()
-            if (ids.isNotEmpty()) {
-                val existingTags = realm.where(RealmTag::class.java).`in`("_id", ids.toTypedArray()).findAll()
-                for (tag in existingTags) {
-                    tag._id?.let { tagCache[it] = tag }
-                }
-            }
-            for (act in documentList) {
-                insertIntoRealm(realm, act, tagCache)
+            val tagsToInsert = documentList.map { createUnmanagedTag(it) }
+            if (tagsToInsert.isNotEmpty()) {
+                realm.insertOrUpdate(tagsToInsert)
             }
         }
     }
 
-    private fun insertIntoRealm(mRealm: io.realm.Realm, act: com.google.gson.JsonObject, cache: MutableMap<String, RealmTag>) {
-        val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
-        var tag = cache[id]
-        if (tag == null) {
-            tag = mRealm.createObject(RealmTag::class.java, id)
-            cache[id] = tag
-        }
-        if (tag != null) {
-            tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
-            tag._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
-            tag.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", act)
-            tag.db = org.ole.planet.myplanet.utils.JsonUtils.getString("db", act)
-            tag.docType = org.ole.planet.myplanet.utils.JsonUtils.getString("docType", act)
-            tag.tagId = org.ole.planet.myplanet.utils.JsonUtils.getString("tagId", act)
-            tag.linkId = org.ole.planet.myplanet.utils.JsonUtils.getString("linkId", act)
-            val el = act["attachedTo"]
-            if (el != null && el.isJsonArray) {
-                val attachedTo = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("attachedTo", act)
-                tag.attachedTo = io.realm.RealmList()
-                for (i in 0 until attachedTo.size()) {
-                    tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString(attachedTo, i))
-                }
-            } else {
-                tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString("attachedTo", act))
+    private fun createUnmanagedTag(act: com.google.gson.JsonObject): RealmTag {
+        val tag = RealmTag()
+        tag.id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+        tag._rev = org.ole.planet.myplanet.utils.JsonUtils.getString("_rev", act)
+        tag._id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", act)
+        tag.name = org.ole.planet.myplanet.utils.JsonUtils.getString("name", act)
+        tag.db = org.ole.planet.myplanet.utils.JsonUtils.getString("db", act)
+        tag.docType = org.ole.planet.myplanet.utils.JsonUtils.getString("docType", act)
+        tag.tagId = org.ole.planet.myplanet.utils.JsonUtils.getString("tagId", act)
+        tag.linkId = org.ole.planet.myplanet.utils.JsonUtils.getString("linkId", act)
+        val el = act["attachedTo"]
+        if (el != null && el.isJsonArray) {
+            val attachedTo = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("attachedTo", act)
+            tag.attachedTo = io.realm.RealmList()
+            for (i in 0 until attachedTo.size()) {
+                tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString(attachedTo, i))
             }
-            tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
+        } else {
+            tag.attachedTo = io.realm.RealmList()
+            tag.attachedTo?.add(org.ole.planet.myplanet.utils.JsonUtils.getString("attachedTo", act))
         }
+        tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
+        return tag
     }
 }
