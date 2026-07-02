@@ -9,17 +9,17 @@ import android.widget.ImageView
 import android.widget.Spinner
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class AddHealthActivity : AppCompatActivity() {
@@ -99,48 +99,42 @@ class AddHealthActivity : AppCompatActivity() {
 
         val progressBar = findViewById<View>(R.id.progressBar)
 
-        lifecycleScope.launch {
-            viewModel.isLoading.collect { isLoading ->
-                progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-            }
+        collectWhenStarted(viewModel.isLoading) { isLoading ->
+            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
         }
 
-        lifecycleScope.launch {
-            viewModel.healthData.collect { healthData ->
-                healthData?.let {
-                    myHealth = it.myHealth
-                    val health = myHealth?.profile
+        collectWhenStarted(viewModel.healthData) { healthData ->
+            healthData?.let {
+                myHealth = it.myHealth
+                val health = myHealth?.profile
 
-                    binding.etEmergency.editText?.setText(health?.emergencyContactName)
-                    binding.etContact.editText?.setText(health?.emergencyContact)
-                    val contactTypes = resources.getStringArray(R.array.contact_type)
-                    val contactType = health?.emergencyContactType
-                    if (!contactType.isNullOrEmpty()) {
-                        val index = contactTypes.indexOf(contactType)
-                        if (index >= 0) {
-                            binding.spnContactType.setSelection(index)
-                        }
+                binding.etEmergency.editText?.setText(health?.emergencyContactName)
+                binding.etContact.editText?.setText(health?.emergencyContact)
+                val contactTypes = resources.getStringArray(R.array.contact_type)
+                val contactType = health?.emergencyContactType
+                if (!contactType.isNullOrEmpty()) {
+                    val index = contactTypes.indexOf(contactType)
+                    if (index >= 0) {
+                        binding.spnContactType.setSelection(index)
                     }
-                    binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
-                    binding.etOtherNeed.editText?.setText(health?.notes)
-
-                    binding.etFname.editText?.setText(it.firstName)
-                    binding.etMname.editText?.setText(it.middleName)
-                    binding.etLname.editText?.setText(it.lastName)
-                    binding.etEmail.editText?.setText(it.email)
-                    binding.etPhone.editText?.setText(it.phoneNumber)
-                    binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(it.dob))
-                    binding.etBirthplace.editText?.setText(it.birthPlace)
                 }
+                binding.etSpecialNeed.editText?.setText(health?.specialNeeds)
+                binding.etOtherNeed.editText?.setText(health?.notes)
+
+                binding.etFname.editText?.setText(it.firstName)
+                binding.etMname.editText?.setText(it.middleName)
+                binding.etLname.editText?.setText(it.lastName)
+                binding.etEmail.editText?.setText(it.email)
+                binding.etPhone.editText?.setText(it.phoneNumber)
+                binding.etBirthdateLayout.editText?.setText(TimeUtils.formatDateToDDMMYYYY(it.dob))
+                binding.etBirthplace.editText?.setText(it.birthPlace)
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.isSaved.collect { isSaved ->
-                if (isSaved) {
-                    Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
-                    finish()
-                }
+        collectLatestWhenStarted(viewModel.isSaved) { isSaved ->
+            if (isSaved) {
+                Utilities.toast(this@AddHealthActivity, getString(R.string.my_health_saved_successfully))
+                finish()
             }
         }
     }
