@@ -1263,11 +1263,11 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
+    override suspend fun insertUsersFromSync(docs: List<JsonObject>) {
+        val documentList = ArrayList<JsonObject>(docs.size)
         val ids = mutableListOf<String>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
+        for (j in docs) {
+            var jsonDoc = j
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
@@ -1277,33 +1277,35 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        val existingUsersMap = if (ids.isNotEmpty()) {
-            realm.where(RealmUser::class.java).`in`("_id", ids.toTypedArray()).findAll()
-                .associateBy { it._id }
-                .toMutableMap()
-        } else {
-            mutableMapOf()
-        }
+        executeTransaction { realm ->
+            val existingUsersMap = if (ids.isNotEmpty()) {
+                realm.where(RealmUser::class.java).`in`("_id", ids.toTypedArray()).findAll()
+                    .associateBy { it._id }
+                    .toMutableMap()
+            } else {
+                mutableMapOf()
+            }
 
-        for (i in documentList.indices) {
-            val jsonDoc = documentList[i]
-            try {
-                val id = ids[i]
-                val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("name", jsonDoc)
-                var user = existingUsersMap[id]
+            for (i in documentList.indices) {
+                val jsonDoc = documentList[i]
+                try {
+                    val id = ids[i]
+                    val userName = org.ole.planet.myplanet.utils.JsonUtils.getString("name", jsonDoc)
+                    var user = existingUsersMap[id]
 
-                if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
-                    user = migrateGuestUser(realm, id, userName, settings)
-                    user?.let { existingUsersMap[id] = it }
+                    if (user == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
+                        user = migrateGuestUser(realm, id, userName, settings)
+                        user?.let { existingUsersMap[id] = it }
+                    }
+
+                    if (user == null) {
+                        user = realm.createObject(RealmUser::class.java, id)
+                        user?.let { existingUsersMap[id] = it }
+                    }
+                    user?.let { insertIntoUsers(jsonDoc, it, settings) }
+                } catch (err: Exception) {
+                    err.printStackTrace()
                 }
-
-                if (user == null) {
-                    user = realm.createObject(RealmUser::class.java, id)
-                    user?.let { existingUsersMap[id] = it }
-                }
-                user?.let { insertIntoUsers(jsonDoc, it, settings) }
-            } catch (err: Exception) {
-                err.printStackTrace()
             }
         }
     }
