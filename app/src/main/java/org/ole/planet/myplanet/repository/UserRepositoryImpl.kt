@@ -107,11 +107,13 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSyncedUserByName(name: String): RealmUser? {
-        return queryList(RealmUser::class.java) {
-            equalTo("name", name)
-            isNotEmpty("_id")
-            not().beginsWith("id", "guest")
-        }.firstOrNull()
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java)
+                .equalTo("name", name)
+                .isNotEmpty("_id")
+                .not().beginsWith("id", "guest")
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun createGuestUser(username: String): RealmUser? {
@@ -567,16 +569,22 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return queryList(RealmUser::class.java) {
-            equalTo("id", userId).or().equalTo("_id", userId)
-        }.firstOrNull()
+        return withRealm { realm ->
+            realm.where(RealmUser::class.java)
+                .equalTo("id", userId)
+                .or().equalTo("_id", userId)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getUserProfile(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return queryList(RealmUser::class.java, true) {
-            equalTo("id", userId).or().equalTo("_id", userId)
-        }.firstOrNull()
+        return withRealm(true) { realm ->
+            realm.where(RealmUser::class.java)
+                .equalTo("id", userId)
+                .or().equalTo("_id", userId)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
     }
 
     override suspend fun getUserImageUrl(): String? {

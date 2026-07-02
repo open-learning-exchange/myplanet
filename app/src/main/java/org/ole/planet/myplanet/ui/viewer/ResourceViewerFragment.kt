@@ -275,25 +275,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
 
-        val trackSelector = DefaultTrackSelector(requireContext())
-        exoPlayer = ExoPlayer.Builder(requireContext())
-            .setTrackSelector(trackSelector)
-            .setLoadControl(DefaultLoadControl())
-            .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
-            .build()
-
-        exoPlayer?.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                navigateBackWithError(getString(R.string.video_playback_error))
-            }
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
-                    Player.STATE_READY -> hideVideoLoading()
-                    else -> {}
-                }
-            }
-        })
+        exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
@@ -318,13 +300,27 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
 
+        exoPlayer = createExoPlayer()
+
+        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
+        playerView.player = exoPlayer
+        exoPlayer?.apply {
+            setMediaSource(mediaSource)
+            playWhenReady = true
+            prepare()
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun createExoPlayer(): ExoPlayer {
         val trackSelector = DefaultTrackSelector(requireContext())
-        exoPlayer = ExoPlayer.Builder(requireContext())
+        val player = ExoPlayer.Builder(requireContext())
             .setTrackSelector(trackSelector)
+            .setLoadControl(DefaultLoadControl())
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
 
-        exoPlayer?.addListener(object : Player.Listener {
+        player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 navigateBackWithError(getString(R.string.video_playback_error))
             }
@@ -336,14 +332,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 }
             }
         })
-
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
-        playerView.player = exoPlayer
-        exoPlayer?.apply {
-            setMediaSource(mediaSource)
-            playWhenReady = true
-            prepare()
-        }
+        return player
     }
 
     private fun setupAudioViewer() {

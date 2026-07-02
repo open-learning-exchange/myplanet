@@ -49,6 +49,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
+    private var updateTasksJob: kotlinx.coroutines.Job? = null
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
 
@@ -242,13 +243,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
-        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value) { assigneeId, onNameFetched ->
-            val job = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                val user = userRepository.getUserById(assigneeId)
-                withContext(dispatcherProvider.main) { onNameFetched(user?.name) }
-            }
-            return@TeamsTasksAdapter { job.cancel() }
-        }
+        adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value)
         adapterTask.setListener(this)
         binding.rvTask.adapter = adapterTask
         binding.taskToggle.setOnCheckedChangeListener { _: SingleSelectToggleGroup?, checkedId: Int ->
@@ -298,15 +293,31 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     }
 
     private fun updateTasks() {
-        if (isAdded) {
+        if (!isAdded) return
+
+        updateTasksJob?.cancel()
+        updateTasksJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
             val taskList = when (currentTab) {
                 R.id.btn_my -> myTasks()
                 R.id.btn_completed -> completedTasks()
                 else -> allTasks()
             }
+
+            val assigneesToFetch = taskList.mapNotNull { it.assignee }
+                .filter { it.isNotBlank() && !adapterTask.hasAssignee(it) }
+                .distinct()
+
+            if (assigneesToFetch.isNotEmpty()) {
+                val fetchedNames = withContext(dispatcherProvider.io) {
+                    assigneesToFetch.mapNotNull { id ->
+                        userRepository.getUserById(id)?.name?.let { name -> id to name }
+                    }.toMap()
+                }
+                adapterTask.updateAssignees(fetchedNames)
+            }
+
             adapterTask.submitList(taskList)
             binding.rvTask.scrollToPosition(0)
-
             showNoData(binding.tvNodata, taskList.size, "tasks")
         }
     }
