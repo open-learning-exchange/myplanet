@@ -2,16 +2,16 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.coEvery
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.runBlocking
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
-import kotlinx.coroutines.runBlocking
 
 class UserRepositoryBulkInsertTest {
 
