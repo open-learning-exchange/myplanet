@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import org.ole.planet.myplanet.callback.OnRealtimeSyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
+import java.util.concurrent.CopyOnWriteArraySet
 
 class RealtimeSyncManager {
     companion object {
@@ -18,26 +19,20 @@ class RealtimeSyncManager {
         }
     }
     
-    private val listeners = mutableSetOf<OnRealtimeSyncListener>()
+    private val listeners = CopyOnWriteArraySet<OnRealtimeSyncListener>()
     private val _dataUpdateFlow = MutableSharedFlow<TableDataUpdate>(extraBufferCapacity = 1)
     val dataUpdateFlow: SharedFlow<TableDataUpdate> = _dataUpdateFlow.asSharedFlow()
     
     fun addListener(listener: OnRealtimeSyncListener) {
-        synchronized(listeners) {
-            listeners.add(listener)
-        }
+        listeners.add(listener)
     }
     
     fun removeListener(listener: OnRealtimeSyncListener) {
-        synchronized(listeners) {
-            listeners.remove(listener)
-        }
+        listeners.remove(listener)
     }
 
     fun notifyTableUpdated(update: TableDataUpdate) {
-        synchronized(listeners) {
-            listeners.toList()
-        }.forEach { it.onTableDataUpdated(update) }
+        listeners.forEach { it.onTableDataUpdated(update) }
         _dataUpdateFlow.tryEmit(update)
     }
 

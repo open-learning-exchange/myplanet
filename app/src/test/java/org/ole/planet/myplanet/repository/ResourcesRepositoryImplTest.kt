@@ -218,4 +218,21 @@ class ResourcesRepositoryImplTest {
         assertEquals(1, result.size)
         assertEquals("Math Book", result[0].title)
     }
+
+    @Test
+    fun `getEnrichedLibraries returns correctly filtered items when not my course lib`() = runTest {
+        // We will simulate the realm query builder matching logic for `getEnrichedLibraries`
+        // In reality, the query in the repository uses `isNotNull("userId")` and `not().equalTo("userId", modelId)`
+
+        // We need to setup mockQuery to record calls
+        val mockLibrary1 = RealmMyLibrary().apply { id = "1"; title = "Match" }
+        val mockQuery = mockQueryResults(listOf(mockLibrary1))
+
+        repository.getEnrichedLibraries(false, "model123")
+
+        // Verify the correct predicates were applied to the query
+        verify { mockQuery.equalTo("isPrivate", false) }
+        verify { mockQuery.not() }
+        verify { mockQuery.equalTo("userId", "model123") }
+    }
 }

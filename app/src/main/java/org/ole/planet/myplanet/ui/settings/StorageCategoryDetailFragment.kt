@@ -249,9 +249,15 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         }
     }
 
+    private val resourceItemDiffCallback = DiffUtils.itemCallback<ResourceItem>(
+        areItemsTheSame = { o, n -> o.resourceId == n.resourceId },
+        areContentsTheSame = { o, n -> o == n },
+        getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null }
+    )
+
     inner class ResourceAdapter(
         private val onItemClicked: (ResourceItem) -> Unit
-    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(DiffUtils.itemCallback(areItemsTheSame = { o, n -> o.resourceId == n.resourceId }, areContentsTheSame = { o, n -> o == n }, getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null })) {
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(resourceItemDiffCallback) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)
