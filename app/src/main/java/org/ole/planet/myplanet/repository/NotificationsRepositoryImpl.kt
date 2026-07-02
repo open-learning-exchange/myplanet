@@ -16,6 +16,8 @@ import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.utils.TimeProvider
 
+private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
+
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
@@ -87,6 +89,37 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = "resource"
                 this.message = "$resourceCount"
                 this.relatedId = "$resourceCount"
+                this.createdAt = Date()
+            }
+            save(notification)
+        } else {
+            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
+        }
+    }
+
+    override suspend fun updateStorageNotification(userId: String?, availablePercent: Int) {
+        userId ?: return
+
+        val notificationId = "$userId:storage"
+        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+
+        if (availablePercent <= STORAGE_WARNING_AVAILABLE_PERCENT) {
+            val previousPercent = existingNotification?.message?.replace("%", "")?.toIntOrNull()
+            val percentChanged = previousPercent != availablePercent
+
+            val notification = existingNotification?.apply {
+                message = "$availablePercent%"
+                relatedId = "storage"
+                if (percentChanged) {
+                    this.isRead = false
+                    this.createdAt = Date()
+                }
+            } ?: RealmNotification().apply {
+                this.id = notificationId
+                this.userId = userId
+                this.type = "storage"
+                this.message = "$availablePercent%"
+                this.relatedId = "storage"
                 this.createdAt = Date()
             }
             save(notification)

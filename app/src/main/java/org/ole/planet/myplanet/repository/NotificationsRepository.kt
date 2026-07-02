@@ -9,6 +9,7 @@ interface NotificationsRepository {
     suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean = false): List<NotificationPayload>
     suspend fun getUnreadCount(userId: String?, isAdmin: Boolean = false): Int
     suspend fun updateResourceNotification(userId: String?, resourceCount: Int)
+    suspend fun updateStorageNotification(userId: String?, availablePercent: Int)
     suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String>
     suspend fun markAllUnreadAsRead(userId: String?): Set<String>
     suspend fun getSurveyId(relatedId: String?): String?

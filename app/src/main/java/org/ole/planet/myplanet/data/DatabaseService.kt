@@ -28,6 +28,9 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
                 .name(Realm.DEFAULT_REALM_NAME)
                 .schemaVersion(13)
                 .migration(RealmMigrations())
+                // Realm files never shrink on their own; without this, months of sync
+                // churn ratchet the file size up permanently on storage-constrained devices.
+                .compactOnLaunch()
                 .build()
             Realm.setDefaultConfiguration(config)
         }
