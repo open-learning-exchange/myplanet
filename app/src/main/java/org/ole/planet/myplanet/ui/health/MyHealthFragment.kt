@@ -183,7 +183,7 @@ class MyHealthFragment : Fragment() {
             setupButtons()
             binding.lblHealthName.text = getDisplayName(userModel)
             binding.addNewRecord.setOnClickListener {
-                startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
+                startActivity(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
             }
             binding.updateHealth.setOnClickListener {
                 startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))

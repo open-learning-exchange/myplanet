@@ -18,26 +18,66 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUser
+import org.junit.Assert.assertNull
+import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.repository.HealthRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class AddExaminationViewModelTest {
+class HealthExaminationViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private lateinit var viewModel: AddExaminationViewModel
+    private lateinit var viewModel: HealthExaminationViewModel
     private lateinit var healthRepository: HealthRepository
+    private lateinit var userRepository: UserRepository
 
     @Before
     fun setup() {
         healthRepository = mockk()
-        viewModel = AddExaminationViewModel(
+        userRepository = mockk()
+        viewModel = HealthExaminationViewModel(
             healthRepository,
+            userRepository,
             TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
+    }
+
+    @Test
+    fun loadData_success_updatesState() = runTest {
+        val mockUser = mockk<RealmUser>()
+        val mockPojo = mockk<RealmHealthExamination>()
+        val mockHealth = mockk<RealmMyHealth>()
+        val mockExamination = mockk<RealmHealthExamination>()
+
+        coEvery { mockPojo.data } returns null
+        coEvery { healthRepository.getHealthEntry("user_id") } returns Pair(mockUser, mockPojo)
+        coEvery { userRepository.ensureUserSecurityKeys("user_id") } returns mockUser
+        coEvery { healthRepository.initHealth() } returns mockHealth
+        coEvery { healthRepository.getExaminationById("exam_id") } returns mockExamination
+
+        val states = mutableListOf<HealthExaminationState>()
+        val job = launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.state.toList(states)
+        }
+
+        viewModel.loadData("user_id", "exam_id")
+        advanceUntilIdle()
+
+        val finalState = states.last()
+
+
+
+        assertFalse(finalState.isLoading)
+        assertEquals(mockUser, finalState.user)
+        assertEquals(mockPojo, finalState.pojo)
+        assertEquals(mockHealth, finalState.health)
+        assertEquals(mockExamination, finalState.examination)
+
+        job.cancel()
     }
 
     @Test
