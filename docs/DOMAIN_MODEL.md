@@ -51,7 +51,7 @@ Note: `LoginSyncManager.kt:189` re-implements the same `"manager"` substring che
 
 ### Leaders
 
-A leader is a step below manager — a `RealmUser` where `rolesList` contains `"leader"`, checked via `RealmUser.isLeader()` (`RealmUser.kt:179-182`). This helper is used in exactly one place in the codebase (`BaseContainerFragment`), so treat it as a thin, lightly-exercised check rather than a load-bearing permission system. Leaders have elevated permissions within a specific team or enterprise and appear with `isLeader = true` on their `RealmMyTeam` membership record — that per-team flag is separate from the global `RealmUser.isLeader()` role check.
+A leader is a step below manager — a `RealmUser` where `rolesList` contains `"leader"`, checked via `RealmUser.isLeader()` (`RealmUser.kt:179-182`). This helper is used in exactly one place in the codebase (`EnterprisesFinancesFragment.kt:203`), so treat it as a thin, lightly-exercised check rather than a load-bearing permission system. Leaders have elevated permissions within a specific team or enterprise and appear with `isLeader = true` on their `RealmMyTeam` membership record — that per-team flag is separate from the global `RealmUser.isLeader()` role check.
 
 ### Guests
 
@@ -113,13 +113,13 @@ Both exams and surveys share the same underlying model (`RealmStepExam`) and sub
 
 An **exam** is an assessment attached to a course step. It tests whether a learner has mastered the step's content. The learner must pass (exceed `passingPercentage`) to mark the step as complete. Exams are taken inside the course-taking flow via `ExamTakingFragment`.
 
-The `RealmStepExam` `type` field is `"exam"` for course exams. Questions are `RealmExamQuestion` objects (stored separately and linked by exam ID). A learner's answers are `RealmAnswer` objects collected inside a `RealmSubmission`.
+The `RealmStepExam` `type` field is `"courses"` for course exams. Questions are `RealmExamQuestion` objects (stored separately and linked by exam ID). A learner's answers are `RealmAnswer` objects collected inside a `RealmSubmission`.
 
 ### Surveys
 
 A **survey** is a questionnaire that does not have a pass/fail outcome. Surveys are used by managers to gather feedback, health data, or other responses from learners. They can be:
 - Standalone (assigned to learners directly from `SurveyFragment`)
-- Attached to a course step (the `RealmStepExam` `type` field is `"survey"`)
+- Attached to a course step (the `RealmStepExam` `type` field is `"surveys"`)
 - Team surveys (linked via `teamId` on `RealmStepExam`)
 
 Surveys can be sent to specific learners or made available community-wide. `SendSurveyFragment` handles the manager-side flow of assigning a survey to learners.
@@ -163,7 +163,7 @@ An **enterprise** extends the team model with financial tracking. The `TeamDetai
 
 ### Team Detail Tabs
 
-Inside `TeamDetailFragment`, the visible tab set is built by `buildPages()` (`TeamDetailFragment.kt:89-107`). For a member (or any viewer of a public team), it's this fixed sequence — note several slots are either/or, not both:
+Inside `TeamDetailFragment`, the visible tab set is built by `buildPages()` (`TeamDetailFragment.kt:76-94`). For a member (or any viewer of a public team), it's this fixed sequence — note several slots are either/or, not both:
 
 | Tab | Teams | Enterprises |
 |-----|-------|-------------|
