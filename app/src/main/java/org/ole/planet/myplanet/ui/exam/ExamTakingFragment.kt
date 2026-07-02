@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
@@ -54,6 +55,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val answerCache = mutableMapOf<String, AnswerData>()
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var surveysRepository: SurveysRepository
     @Inject
@@ -127,7 +130,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                         val currentExam = exam
                         if (currentExam != null) {
                             val newSub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
                             )
                             withContext(dispatcherProvider.main) {
                                 sub = newSub
@@ -141,7 +146,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     if (currentExam != null) {
                         if (sub == null || isTeam) {
                             sub = submissionsRepository.createExamSubmission(
-                                user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                    user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
+                                )
                             )
                         } else {
                             val resume = askResumeOrRestart()
@@ -155,7 +162,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 answerCache.clear()
                                 currentIndex = 0
                                 sub = submissionsRepository.createExamSubmission(
-                                    user?.id, user?.dob, user?.gender, currentExam, type, null
+                                    org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                        user?.id, user?.dob, user?.gender, currentExam, type, null
+                                    )
                                 )
                             }
                         }
@@ -822,5 +831,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         selectedRatingButton = null
         dynamicRatingButtons = emptyList()
         _binding = null
+    }
+
+    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded)
+        }
     }
 }
