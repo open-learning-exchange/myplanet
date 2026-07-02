@@ -9,6 +9,7 @@ import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmMyCourse : RealmObject() {
@@ -31,6 +32,7 @@ open class RealmMyCourse : RealmObject() {
     @Index
     var subjectLevel: String? = null
     var createdDate: Long = 0
+    var coverFileName: String? = null
     private var numberOfSteps: Int? = null
     var courseSteps: RealmList<RealmCourseStep>? = null
     @Transient
@@ -62,6 +64,14 @@ open class RealmMyCourse : RealmObject() {
 
     companion object {
         private val concatenatedLinks = HashSet<String>()
+
+        @JvmStatic
+        fun getCoverImageFile(context: android.content.Context, courseId: String?, fileName: String?): java.io.File? {
+            if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
+            return java.io.File(
+                "${getOlePath(context)}course_attachments/$courseId/$fileName"
+            )
+        }
 
         @JvmStatic
         fun addConcatenatedLink(link: String) {
@@ -109,6 +119,7 @@ open class RealmMyCourse : RealmObject() {
             obj.addProperty("createdDate", course.createdDate)
             obj.addProperty("method", course.method)
             obj.addProperty("memberLimit", course.memberLimit)
+            course.coverFileName?.let { obj.addProperty("coverFileName", it) }
 
             val stepsArray = JsonArray()
             val allResourcesForCourse = realm.where(RealmMyLibrary::class.java)
