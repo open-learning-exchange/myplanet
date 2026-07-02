@@ -37,6 +37,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
@@ -165,7 +166,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
 
     private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
+        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
         return dateFormat.format(this.time)
     }
 
@@ -178,8 +179,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = dateFormat.parse(dateString)
+            val date = dateFormatter.parse(dateString)
             if (date != null) {
                 Calendar.getInstance().apply {
                     time = date
@@ -204,10 +204,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-            val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
-            val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+            val start = dateFormatter.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
+            val end = dateFormatter.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
