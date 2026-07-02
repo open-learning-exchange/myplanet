@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.ui.references.ReferencesAdapter
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
@@ -261,9 +260,9 @@ class AchievementFragment : BaseContainerFragment() {
         binding.tvReferencesHeader.visibility = if (hasReferences) View.GONE else View.VISIBLE
 
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
+            binding.rvOtherInfo.adapter = AchievementsAdapter(data.references)
         } else {
-            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitJsonList(data.references)
+            (binding.rvOtherInfo.adapter as AchievementsAdapter).submitJsonList(data.references)
         }
     }
 
