@@ -69,6 +69,7 @@
                     android:paddingTop="5dp"
                     android:paddingEnd="10dp"
                     android:paddingBottom="5dp"
+                    android:gravity="center"
                     app:layout_constrainedWidth="true"
                     app:layout_constraintEnd_toStartOf="@+id/imgBtnSetting"
                     app:layout_constraintStart_toEndOf="@+id/syncIcon"
@@ -93,9 +94,7 @@
                             android:layout_marginStart="5dp"
                             android:text="@string/sync_chip_synced"
                             android:textColor="@color/daynight_textColor"
-                            android:textSize="11sp"
-                            android:maxLines="1"
-                            android:ellipsize="end" />
+                            android:textSize="11sp" />
                     </LinearLayout>
 
                     <TextView
@@ -106,8 +105,7 @@
                         android:text="@string/dash_4"
                         android:textColor="@color/hint_color"
                         android:textSize="10sp"
-                        android:maxLines="1"
-                        android:ellipsize="end" />
+                        android:gravity="center" />
                 </LinearLayout>
 
                 <ScrollView
