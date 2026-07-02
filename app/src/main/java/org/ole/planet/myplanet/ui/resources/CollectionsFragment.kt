@@ -89,9 +89,10 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
-            list = tagsRepository.getTags(dbType)
+            val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
+            list = tagsWithChildren.keys.toList()
             selectedItemsList = ArrayList(recentList)
-            childMap = tagsRepository.buildChildMap()
+            childMap = tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
             adapter = ResourcesTagsAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
