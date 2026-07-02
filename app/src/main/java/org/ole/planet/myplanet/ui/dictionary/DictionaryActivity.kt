@@ -1,5 +1,10 @@
 package org.ole.planet.myplanet.ui.dictionary
 
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.os.Build
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.lifecycleScope
@@ -14,6 +19,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -32,6 +38,23 @@ class DictionaryActivity : BaseActivity() {
     override lateinit var dispatcherProvider: DispatcherProvider
 
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
+
+    private val receiver: BroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra("download", Download::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra("download") as? Download
+            }
+            if (download != null && download.fileUrl == Constants.DICTIONARY_URL && download.progress == 100) {
+                lifecycleScope.launch {
+                    loadDictionaryIfNeeded()
+                }
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         fragmentDictionaryBinding = FragmentDictionaryBinding.inflate(layoutInflater)
@@ -57,11 +80,23 @@ class DictionaryActivity : BaseActivity() {
         }
     }
 
-    private suspend fun loadDictionaryIfNeeded() {
-        var isEmpty = true
-        databaseService.withRealm { realm ->
-            isEmpty = realm.where(RealmDictionary::class.java).count() == 0L
+    override fun onStart() {
+        super.onStart()
+        val filter = IntentFilter("message_progress")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(receiver, filter)
         }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(receiver)
+    }
+
+    private suspend fun loadDictionaryIfNeeded() {
+        val isEmpty = loadDictionaryCount() == 0L
         if (isEmpty) {
             val context = this@DictionaryActivity
             val json = try {
@@ -108,14 +143,13 @@ class DictionaryActivity : BaseActivity() {
 
     private fun setClickListener() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
-            databaseService.withRealm { realm ->
-                val dict = realm.where(RealmDictionary::class.java)
-                    .equalTo(
-                        "word",
-                        fragmentDictionaryBinding.etSearch.text.toString(),
-                        Case.INSENSITIVE
-                    )
-                    .findFirst()
+            val query = fragmentDictionaryBinding.etSearch.text.toString()
+            lifecycleScope.launch {
+                val dict = databaseService.withRealmAsync { realm ->
+                    realm.where(RealmDictionary::class.java)
+                        .equalTo("word", query, Case.INSENSITIVE)
+                        .findFirst()?.let { realm.copyFromRealm(it) }
+                }
                 if (dict != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(
                         "Definition of '<b>" + dict.word + "</b>'<br/><br/>\n " +
@@ -126,7 +160,7 @@ class DictionaryActivity : BaseActivity() {
                     )
                 } else {
                     Utilities.toast(
-                        this,
+                        this@DictionaryActivity,
                         getString(R.string.word_not_available_in_our_database)
                     )
                 }

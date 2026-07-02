@@ -4,6 +4,7 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.StateListDrawable
+import android.util.Log
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -794,7 +795,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             } else {
                                 answerData.multipleAnswers[choiceText] = choiceId
                             }
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            Log.e("ExamTakingFragment", "Error parsing saved answer", e)
+                        }
                     }
                 }
                 "ratingScale", "input", "textarea" -> {

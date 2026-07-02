@@ -42,6 +42,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 ?: return@withRealmAsync null
 
             val document = PdfDocument()
+            try {
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -108,13 +109,15 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 }
 
                 val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
+                FileOutputStream(file).use { outputStream ->
+                    document.writeTo(outputStream)
+                }
 
                 file
-            } catch (e: Exception) {
+            } finally {
+                document.close()
+            }
+        } catch (e: Exception) {
                 e.printStackTrace()
                 null
             }
@@ -133,6 +136,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
             if (submissions.isEmpty()) return@withRealmAsync null
 
             val document = PdfDocument()
+            try {
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -219,13 +223,15 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 }
 
                 val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
+                FileOutputStream(file).use { outputStream ->
+                    document.writeTo(outputStream)
+                }
 
                 file
-            } catch (e: Exception) {
+            } finally {
+                document.close()
+            }
+        } catch (e: Exception) {
                 e.printStackTrace()
                 null
             }

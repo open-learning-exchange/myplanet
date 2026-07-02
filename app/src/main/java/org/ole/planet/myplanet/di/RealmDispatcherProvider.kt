@@ -15,11 +15,14 @@ class RealmDispatcherProvider @Inject constructor() : CoroutineDispatcher() {
 
     private val dispatcher: CoroutineDispatcher
         @Synchronized get() {
-            if (_dispatcher == null) {
-                handlerThread = HandlerThread("RealmQueryThread").also { it.start() }
-                _dispatcher = Handler(handlerThread!!.looper).asCoroutineDispatcher()
+            _dispatcher?.let { return it }
+            val thread = HandlerThread("RealmQueryThread").also {
+                it.start()
+                handlerThread = it
             }
-            return _dispatcher!!
+            val newDispatcher = Handler(thread.looper).asCoroutineDispatcher()
+            _dispatcher = newDispatcher
+            return newDispatcher
         }
 
     override fun dispatch(context: CoroutineContext, block: Runnable) {
