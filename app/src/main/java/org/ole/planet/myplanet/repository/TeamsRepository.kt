@@ -12,6 +12,22 @@ import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 
+data class VoicePostingPolicy(
+    val teamId: String,
+    val isPublic: Boolean
+) {
+    fun canPost(isGuest: Boolean, isMember: Boolean): Boolean {
+        return !isGuest && (isMember || isPublic)
+    }
+}
+
+fun RealmMyTeam.toVoicePostingPolicy(): VoicePostingPolicy {
+    return VoicePostingPolicy(
+        teamId = this._id ?: this.teamId ?: "",
+        isPublic = this.isPublic
+    )
+}
+
 data class JoinedMemberData(
     val user: RealmUser,
     val visitCount: Long,

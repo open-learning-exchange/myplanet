@@ -108,9 +108,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
         collectLatestWhenStarted(loginViewModel.teams) { teams ->
             cachedTeams = teams
-            if (teams.isNotEmpty()) {
-                setupTeamDropdown(teams)
-            }
+            setupTeamDropdown(teams)
         }
 
         bindViews()
