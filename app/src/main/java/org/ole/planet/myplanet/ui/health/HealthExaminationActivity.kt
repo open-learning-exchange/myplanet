@@ -22,7 +22,7 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
+import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -42,14 +42,14 @@ import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
+class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var healthRepository: HealthRepository
 
-    private val viewModel: AddExaminationViewModel by viewModels()
-    private lateinit var binding: ActivityAddExaminationBinding
+    private val viewModel: HealthExaminationViewModel by viewModels()
+    private lateinit var binding: ActivityHealthExaminationBinding
     var userId: String? = null
     var user: RealmUser? = null
     private var currentUser: RealmUser? = null
@@ -71,7 +71,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityAddExaminationBinding.inflate(layoutInflater)
+        binding = ActivityHealthExaminationBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setHomeButtonEnabled(true)
@@ -121,10 +121,10 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
         lifecycleScope.launch {
             viewModel.saveResult.collect { success ->
                 if (success) {
-                    Utilities.toast(this@AddExaminationActivity, getString(R.string.added_successfully))
+                    Utilities.toast(this@HealthExaminationActivity, getString(R.string.added_successfully))
                     closeActivity()
                 } else {
-                    Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
+                    Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
                 }
             }
         }
@@ -298,7 +298,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
+            Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
 

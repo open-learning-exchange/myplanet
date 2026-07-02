@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
-data class AddExaminationState(
+data class HealthExaminationState(
     val isLoading: Boolean = true,
     val user: RealmUser? = null,
     val pojo: RealmHealthExamination? = null,
@@ -30,14 +30,14 @@ data class AddExaminationState(
 )
 
 @HiltViewModel
-class AddExaminationViewModel @Inject constructor(
+class HealthExaminationViewModel @Inject constructor(
     private val healthRepository: HealthRepository,
     private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(AddExaminationState())
-    val state: StateFlow<AddExaminationState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(HealthExaminationState())
+    val state: StateFlow<HealthExaminationState> = _state.asStateFlow()
 
     private val _isSaving = MutableStateFlow(false)
     val isSaving: StateFlow<Boolean> = _isSaving.asStateFlow()
@@ -82,7 +82,7 @@ class AddExaminationViewModel @Inject constructor(
                 }
             }
 
-            _state.value = AddExaminationState(
+            _state.value = HealthExaminationState(
                 isLoading = false,
                 user = user,
                 pojo = pojo,
