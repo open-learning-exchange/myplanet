@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.references
+package org.ole.planet.myplanet.ui.user
 
 import android.os.Build
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
@@ -14,12 +14,12 @@ import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)
-class ReferencesAdapterTest {
+class AchievementsAdapterTest {
 
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
-    private lateinit var adapter: ReferencesAdapter
+    private lateinit var adapter: AchievementsAdapter
 
     @Before
     fun setUp() {
@@ -36,7 +36,7 @@ class ReferencesAdapterTest {
 
         val jsonList = listOf(JsonUtils.gson.toJson(ref1), JsonUtils.gson.toJson(ref2))
 
-        adapter = ReferencesAdapter(jsonList)
+        adapter = AchievementsAdapter(jsonList)
     }
 
     @Test
@@ -90,7 +90,7 @@ class ReferencesAdapterTest {
     @Test
     fun testSubmitInvalidJson() {
         // We create a fresh adapter here, avoiding issues with lists merging unpredictably
-        adapter = ReferencesAdapter(listOf())
+        adapter = AchievementsAdapter(listOf())
 
         val invalidJsonList = listOf("invalid json", "{\"name\": \"Bob\"}")
         adapter.submitJsonList(invalidJsonList)

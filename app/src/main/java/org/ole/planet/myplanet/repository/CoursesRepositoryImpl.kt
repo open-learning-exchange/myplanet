@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.createStepResource
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -164,6 +163,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     val validCourseIds = courseIds.filter { it.isNotBlank() }
                     if (validCourseIds.isEmpty()) return@executeTransaction
 
+                    val allFoundCourseIds = mutableListOf<String>()
                     val chunkSize = 1000
                     validCourseIds.chunked(chunkSize).forEach { chunk ->
                         val courses = realm.where(RealmMyCourse::class.java)
@@ -175,16 +175,19 @@ class CoursesRepositoryImpl @Inject constructor(
                                 course.setUserId(userId)
                             }
 
-                            val foundCourseIds = courses.mapNotNull { it.courseId }.toTypedArray()
-                            if (!userId.isNullOrBlank() && foundCourseIds.isNotEmpty()) {
-                                realm.where(RealmRemovedLog::class.java)
-                                    .equalTo("type", "courses")
-                                    .equalTo("userId", userId)
-                                    .`in`("docId", foundCourseIds)
-                                    .findAll()
-                                    .deleteAllFromRealm()
-                            }
+                            allFoundCourseIds.addAll(courses.mapNotNull { it.courseId })
                             courseFound = true
+                        }
+                    }
+
+                    if (!userId.isNullOrBlank() && allFoundCourseIds.isNotEmpty()) {
+                        allFoundCourseIds.chunked(chunkSize).forEach { chunk ->
+                            realm.where(RealmRemovedLog::class.java)
+                                .equalTo("type", "courses")
+                                .equalTo("userId", userId)
+                                .`in`("docId", chunk.toTypedArray())
+                                .findAll()
+                                .deleteAllFromRealm()
                         }
                     }
                 }
@@ -706,6 +709,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 throw e
             }
         }
+        RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
     override fun bulkInsertCertificationsFromSync(realm: Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
@@ -796,8 +800,8 @@ class CoursesRepositoryImpl @Inject constructor(
                 RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
             }
             insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
-            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, examCache)
-            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB?.courseId, myMyCoursesDB?.createdDate, examCache)
+            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB, examCache)
+            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB, examCache)
             step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
             step.courseId = myMyCoursesDB?.courseId
             courseStepsList.add(step)
@@ -806,27 +810,27 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
     }
 
-    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, examCache: HashMap<String, RealmStepExam>? = null) {
+    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, course: RealmMyCourse?, examCache: HashMap<String, RealmStepExam>? = null) {
         if (stepContainer.has("exam")) {
             val obj = stepContainer.getAsJsonObject("exam")
             obj.addProperty("stepNumber", i)
-            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
+            insertCourseStepsExams(course?.courseId, stepId, obj, "", mRealm, examCache)
         }
     }
 
-    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, myCoursesID: String?, createdDate: Long?, examCache: HashMap<String, RealmStepExam>? = null) {
+    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, course: RealmMyCourse?, examCache: HashMap<String, RealmStepExam>? = null) {
         if (stepContainer.has("survey")) {
             val obj = stepContainer.getAsJsonObject("survey")
             obj.addProperty("stepNumber", i)
-            obj.addProperty("createdDate", createdDate)
-            insertCourseStepsExams(myCoursesID, stepId, obj, "", mRealm, examCache)
+            obj.addProperty("createdDate", course?.createdDate)
+            insertCourseStepsExams(course?.courseId, stepId, obj, "", mRealm, examCache)
         }
     }
 
     private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
         resources.forEach { resource ->
             if (mRealm != null) {
-                createStepResource(mRealm, resource.asJsonObject, myCoursesID, stepId, spm)
+                RealmMyLibrary.insertMyLibrary(RealmMyLibrary.Companion.InsertParams(doc = resource.asJsonObject, mRealm = mRealm, spm = spm, courseId = myCoursesID, stepId = stepId))
             }
         }
     }

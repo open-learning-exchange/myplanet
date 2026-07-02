@@ -2,7 +2,11 @@ package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
 import android.text.Editable
-import android.text.TextWatcher
+import org.ole.planet.myplanet.utils.textChanges
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.launchIn
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -36,7 +40,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private var dbType: String? = null
     private var listener: OnTagClickListener? = null
     private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
-    private var textWatcher: TextWatcher? = null
     private var currentTagDataList = mutableListOf<TagData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,14 +65,14 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
             listener?.onOkClicked(selectedItemsList)
             dismiss()
         }
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(charSequence: CharSequence?, start: Int, before: Int, count: Int) {
+        binding.etFilter.textChanges()
+            .debounce(300L)
+            .distinctUntilChanged()
+            .onEach { charSequence ->
+                if (!::adapter.isInitialized || !::list.isInitialized) return@onEach
                 charSequence?.let { filterTags(it.toString()) }
             }
-            override fun afterTextChanged(editable: Editable?) {}
-        }
-        binding.etFilter.addTextChangedListener(textWatcher)
+            .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
     private fun filterTags(charSequence: String) {
@@ -86,9 +89,10 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
-            list = tagsRepository.getTags(dbType)
+            val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
+            list = tagsWithChildren.keys.toList()
             selectedItemsList = ArrayList(recentList)
-            childMap = tagsRepository.buildChildMap()
+            childMap = tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
             adapter = ResourcesTagsAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
@@ -151,8 +155,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     override fun onDestroyView() {
         super.onDestroyView()
-        _binding?.etFilter?.removeTextChangedListener(textWatcher)
-        textWatcher = null
         _binding = null
     }
 

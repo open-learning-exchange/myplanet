@@ -18,7 +18,7 @@ import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint
+import org.ole.planet.myplanet.di.DownloadResourceUpdateEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadService
@@ -268,7 +268,7 @@ object DownloadUtils {
     private val resourcesRepository: ResourcesRepository by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(
             MainApplication.context,
-            RepositoryDependenciesEntryPoint::class.java
+            DownloadResourceUpdateEntryPoint::class.java
         )
         entryPoint.resourcesRepository()
     }
