@@ -37,7 +37,6 @@ class RealmUserTest {
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkStatic(Utilities::class)
         every { Utilities.toast(any(), any()) } returns Unit
-        every { Utilities.toast(any(), any(), any()) } returns Unit
         try {
             originalContext = MainApplication.context
         } catch (e: Exception) {

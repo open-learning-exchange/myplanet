@@ -366,7 +366,7 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
-    fun testBulkInsertFromSync() {
+    fun testInsertCourseProgressFromSync() = testScope.runTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)
         val jsonArray = JsonArray()
 
@@ -377,8 +377,6 @@ class ProgressRepositoryImplTest {
             addProperty("stepNum", 1)
             addProperty("passed", true)
         }
-        val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
-        jsonArray.add(item1)
 
         val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
         val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
@@ -393,7 +391,12 @@ class ProgressRepositoryImplTest {
         val mockProgress = RealmCourseProgress()
         every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
 
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
+        coEvery { repository invoke "executeTransaction" withArguments listOf(any<Function1<io.realm.Realm, Unit>>()) } answers {
+            val transaction = args[0] as Function1<io.realm.Realm, Unit>
+            transaction.invoke(mockRealm)
+        }
+
+        repository.insertCourseProgressFromSync(listOf(doc1))
 
         verify { mockRealm.where(RealmCourseProgress::class.java) }
         verify { mockRealm.createObject(RealmCourseProgress::class.java, "doc1") }
@@ -406,7 +409,7 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
-    fun testBulkInsertFromSync_dedup() {
+    fun testInsertCourseProgressFromSync_dedup() = testScope.runTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)
         val jsonArray = JsonArray()
 
@@ -417,8 +420,6 @@ class ProgressRepositoryImplTest {
             addProperty("stepNum", 1)
             addProperty("passed", false)
         }
-        val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
-        jsonArray.add(item1)
 
         val mockQuery = mockk<io.realm.RealmQuery<RealmCourseProgress>>(relaxed = true)
         val mockResults = mockk<io.realm.RealmResults<RealmCourseProgress>>(relaxed = true)
@@ -450,7 +451,12 @@ class ProgressRepositoryImplTest {
         val mockProgress = RealmCourseProgress()
         every { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) } returns mockProgress
 
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
+        coEvery { repository invoke "executeTransaction" withArguments listOf(any<Function1<io.realm.Realm, Unit>>()) } answers {
+            val transaction = args[0] as Function1<io.realm.Realm, Unit>
+            transaction.invoke(mockRealm)
+        }
+
+        repository.insertCourseProgressFromSync(listOf(doc1))
 
         verify { existingProgress.deleteFromRealm() }
         verify { mockRealm.createObject(RealmCourseProgress::class.java, "doc1") }
@@ -459,22 +465,7 @@ class ProgressRepositoryImplTest {
         assertEquals(true, mockProgress.passed) // Should preserve local true despite remote false
     }
 
-    @Test
-    fun testBulkInsertFromSync_designDoc() {
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val jsonArray = JsonArray()
 
-        val doc1 = com.google.gson.JsonObject().apply {
-            addProperty("_id", "_design/doc")
-        }
-        val item1 = com.google.gson.JsonObject().apply { add("doc", doc1) }
-        jsonArray.add(item1)
-
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
-
-        verify(exactly = 0) { mockRealm.where(RealmCourseProgress::class.java) }
-        verify(exactly = 0) { mockRealm.createObject(RealmCourseProgress::class.java, any<String>()) }
-    }
 
     @Test
     fun testGetCompletedCourses_nullSteps() = testScope.runTest {
