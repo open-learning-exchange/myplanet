@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< dependabot/gradle/hiltWork-1.4.0
         versionCode = 5948
         versionName = "0.59.48"
+=======
+        versionCode = 5947
+        versionName = "0.59.47"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
