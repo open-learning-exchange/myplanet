@@ -325,7 +325,7 @@ class CoursesAdapterTest {
 }
 ```
 
-Note this specific file uses Mockito (legacy) instead of MockK — it's one of the only 3 files that do. **For a new adapter test, use MockK's equivalents** (`mockk<Context>()`, `verify(exactly = 1) { mockObserver.onItemRangeChanged(...) }`) even though this reference file uses Mockito; match the project-wide convention, not this one outlier file.
+Note this specific file uses Mockito (legacy) instead of MockK — it's one of the only 2 files that do. **For a new adapter test, use MockK's equivalents** (`mockk<Context>()`, `verify(exactly = 1) { mockObserver.onItemRangeChanged(...) }`) even though this reference file uses Mockito; match the project-wide convention, not this one outlier file.
 
 ### Base/Abstract Classes
 
