@@ -13,6 +13,6 @@ interface UserSyncRepository {
     suspend fun updateExistingUser(header: String, model: RealmUser)
     suspend fun saveUser(jsonDoc: JsonObject?, key: String? = null, iv: String? = null): RealmUser?
     fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
-    fun bulkInsertUsersFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun insertUsersFromSync(docs: List<JsonObject>)
     suspend fun uploadShelfData(user: RealmUser)
 }
