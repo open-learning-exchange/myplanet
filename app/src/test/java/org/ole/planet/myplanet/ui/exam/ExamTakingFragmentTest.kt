@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.exam
 
-import io.mockk.mockk
 import org.junit.Test
 import org.ole.planet.myplanet.base.BaseExamFragment
 

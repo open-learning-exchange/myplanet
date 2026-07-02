@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.utils
 
-import androidx.recyclerview.widget.DiffUtil as RecyclerDiffUtil
-
 object DiffUtils {
     fun <T : Any> itemCallback(
         areItemsTheSame: (oldItem: T, newItem: T) -> Boolean,
