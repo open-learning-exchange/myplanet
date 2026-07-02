@@ -171,8 +171,7 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun bulkInsertFromSync_removesOrphanedConversationsAndInsertsBatch() = runTest {
-        val jsonArray = JsonArray()
+    fun insertChatHistoryFromSync_removesOrphanedConversationsAndInsertsBatch() = runTest {
         val chatDoc = JsonObject().apply {
             addProperty("_id", "chat123")
             addProperty("_rev", "1-rev")
@@ -182,7 +181,7 @@ class ChatRepositoryImplTest {
         val wrapper = JsonObject().apply {
             add("doc", chatDoc)
         }
-        jsonArray.add(wrapper)
+        val docs = listOf(wrapper)
 
         val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
         val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
@@ -195,9 +194,15 @@ class ChatRepositoryImplTest {
         every { mockQuery.findAll() } returns mockResults
         every { mockResults.iterator() } returns mutableListOf(existingChat).iterator()
 
-        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
+        coEvery { databaseService.executeTransactionAsync(any()) } answers {
+            val op = arg<(Realm) -> Unit>(0)
+            op.invoke(mockRealm)
+        }
 
-        chatRepository.bulkInsertFromSync(mockRealm, jsonArray)
+        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
+        coEvery { chatRepository.insertChatHistoryFromSync(any()) } answers { callOriginal() }
+
+        chatRepository.insertChatHistoryFromSync(docs)
 
         // Verify that existing conversations are explicitly deleted
         verify(exactly = 1) { mockConversations.deleteAllFromRealm() }

@@ -66,15 +66,7 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
             updateEmptyState(submissions.size)
         }
 
-        collectLatestWhenStarted(viewModel.exams) { exams ->
-            adapter.setExams(exams)
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_EXAM_UPDATE)
-        }
 
-        collectLatestWhenStarted(viewModel.submissionCounts) { counts ->
-            adapter.setSubmissionCounts(counts)
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_SUBMISSION_COUNT_UPDATE)
-        }
 
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}

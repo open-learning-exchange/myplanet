@@ -31,13 +31,17 @@ import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.repository.RealmRepository
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
     private val chatRepository: ChatRepository,
@@ -59,7 +63,7 @@ class TransactionSyncManager @Inject constructor(
     private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
-) {
+) : RealmRepository(databaseService, realmDispatcher) {
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
@@ -238,6 +242,49 @@ class TransactionSyncManager @Inject constructor(
                         insertDuration,
                         arr.size()
                     )
+                } else if (table == "chat_history") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    chatRepository.insertChatHistoryFromSync(arr.map { it.asJsonObject })
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "tablet_users") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (j in arr) {
+                        docs.add(j.asJsonObject)
+                    }
+                    userSyncRepository.insertUsersFromSync(docs)
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
+                } else if (table == "meetups") {
+                    val insertStartTime = SystemClock.elapsedRealtime()
+                    val docs = ArrayList<JsonObject>(arr.size())
+                    for (j in arr) {
+                        var jsonDoc = j.asJsonObject
+                        jsonDoc = getJsonObject("doc", jsonDoc)
+                        val id = getString("_id", jsonDoc)
+                        if (!id.startsWith("_design")) {
+                            docs.add(jsonDoc)
+                        }
+                    }
+                    communityRepository.insertMeetupsFromSync(docs)
+                    val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                    org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                        "insert_batch",
+                        table,
+                        insertDuration,
+                        arr.size()
+                    )
                 } else if (table == "login_activities") {
                     val insertStartTime = SystemClock.elapsedRealtime()
                     val docs = ArrayList<JsonObject>(arr.size())
@@ -259,24 +306,18 @@ class TransactionSyncManager @Inject constructor(
                     )
                 } else {
                     // Use async transaction to avoid blocking (ANR-safe)
-                    databaseService.executeTransactionAsync { mRealm: Realm ->
+                    executeTransaction { mRealm: Realm ->
                         val insertStartTime = SystemClock.elapsedRealtime()
                         when (table) {
-                            "tablet_users" -> userSyncRepository.bulkInsertUsersFromSync(mRealm, arr)
                             "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                            "chat_history" -> chatRepository.bulkInsertFromSync(mRealm, arr)
                             "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                             "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
                             "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                             "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
-                            "courses" -> {
-                                coursesRepository.bulkInsertFromSync(mRealm, arr)
-                                org.ole.planet.myplanet.model.RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
-                            }
+                            "courses" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
                             "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
                             "teams" -> teamsSyncRepository.get().bulkInsertFromSync(mRealm, arr)
                             "tasks" -> teamsSyncRepository.get().bulkInsertTasksFromSync(mRealm, arr)
-                            "meetups" -> communityRepository.bulkInsertFromSync(mRealm, arr)
                             "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                             "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
                             "courses_progress" -> progressRepository.bulkInsertFromSync(mRealm, arr)

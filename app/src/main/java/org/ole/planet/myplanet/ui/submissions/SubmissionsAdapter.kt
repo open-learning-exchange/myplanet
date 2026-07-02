@@ -23,15 +23,10 @@ class SubmissionsAdapter(
             oldItem.id == newItem.id
         },
         areContentsTheSame = { oldItem, newItem ->
-            oldItem.id == newItem.id &&
-                oldItem.status == newItem.status &&
-                oldItem.lastUpdateTime == newItem.lastUpdateTime &&
-                oldItem.submitterName == newItem.submitterName
+            oldItem == newItem
         }
     )
 ) {
-    private var examHashMap: HashMap<String?, RealmStepExam> = hashMapOf()
-    private var submissionCountMap: Map<String?, Int> = emptyMap()
     private var listener: OnHomeItemClickListener? = null
     private var type = ""
 
@@ -39,14 +34,6 @@ class SubmissionsAdapter(
         if (context is OnHomeItemClickListener) {
             listener = context
         }
-    }
-
-    fun setExams(exams: HashMap<String?, RealmStepExam>) {
-        this.examHashMap = exams
-    }
-
-    fun setSubmissionCounts(counts: Map<String?, Int>) {
-        this.submissionCountMap = counts
     }
 
     fun setType(type: String?) {
@@ -58,28 +45,6 @@ class SubmissionsAdapter(
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SubmissionsViewHolder {
         val binding = RowMysurveyBinding.inflate(LayoutInflater.from(context), parent, false)
         return SubmissionsViewHolder(binding)
-    }
-
-    override fun onBindViewHolder(
-        holder: SubmissionsViewHolder,
-        position: Int,
-        payloads: MutableList<Any>
-    ) {
-        if (payloads.isEmpty()) {
-            super.onBindViewHolder(holder, position, payloads)
-        } else {
-            val submission = getItem(position)
-            payloads.forEach { payload ->
-                when (payload) {
-                    PAYLOAD_EXAM_UPDATE -> {
-                        holder.updateExam(submission)
-                    }
-                    PAYLOAD_SUBMISSION_COUNT_UPDATE -> {
-                        holder.updateSubmissionCount(submission)
-                    }
-                }
-            }
-        }
     }
 
     override fun onBindViewHolder(holder: SubmissionsViewHolder, position: Int) {
@@ -97,11 +62,9 @@ class SubmissionsAdapter(
     }
 
     private fun showAllSubmissions(submission: SubmissionUiModel) {
-        val examTitle = examHashMap[submission.parentId]?.name ?: "Submissions"
-
         val b = Bundle()
         b.putString("parentId", submission.parentId)
-        b.putString("examTitle", examTitle)
+        b.putString("examTitle", submission.examTitle)
         b.putString("userId", submission.userId)
 
         val fragment = SubmissionListFragment()
@@ -115,18 +78,12 @@ class SubmissionsAdapter(
             binding.status.text = submission.status
             binding.date.text = getFormattedDate(submission.startTime)
             showSubmittedBy(submission)
-            updateExam(submission)
+            binding.title.text = submission.examTitle
             updateSubmissionCount(submission)
         }
 
-        fun updateExam(submission: SubmissionUiModel) {
-            if (examHashMap.containsKey(submission.parentId)) {
-                binding.title.text = examHashMap[submission.parentId]?.name
-            }
-        }
-
         fun updateSubmissionCount(submission: SubmissionUiModel) {
-            val count = submissionCountMap[submission.id] ?: 1
+            val count = submission.submissionCount
             if (count > 1) {
                 binding.submissionCount.visibility = View.VISIBLE
                 binding.submissionCount.text = "($count)"
@@ -160,8 +117,6 @@ class SubmissionsAdapter(
     }
 
     companion object {
-        const val PAYLOAD_EXAM_UPDATE = "payload_exam_update"
-        const val PAYLOAD_SUBMISSION_COUNT_UPDATE = "payload_submission_count_update"
         @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
