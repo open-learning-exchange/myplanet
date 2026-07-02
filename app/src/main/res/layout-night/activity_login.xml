@@ -33,22 +33,43 @@
                     android:id="@+id/syncIcon"
                     android:layout_width="32dp"
                     android:layout_height="32dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
                     android:background="@drawable/file_upload_animation_login"
                     android:contentDescription="@string/sync"
-                    android:visibility="gone"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/imgBtnSetting"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:background="@null"
+                    android:contentDescription="@string/settings"
+                    android:paddingStart="@dimen/_10dp"
+                    android:paddingTop="6dp"
+                    android:paddingEnd="@dimen/_10dp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:srcCompat="@drawable/ic_settings_black_24dp"
+                    app:tint="@color/daynight_textColor" />
+
                 <LinearLayout
                     android:id="@+id/chip_sync"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
                     android:background="@drawable/bg_sync_chip"
                     android:orientation="vertical"
                     android:paddingStart="8dp"
                     android:paddingTop="5dp"
                     android:paddingEnd="10dp"
                     android:paddingBottom="5dp"
+                    app:layout_constrainedWidth="true"
                     app:layout_constraintEnd_toStartOf="@+id/imgBtnSetting"
                     app:layout_constraintStart_toEndOf="@+id/syncIcon"
                     app:layout_constraintTop_toTopOf="parent">
@@ -64,6 +85,7 @@
                             android:layout_width="8dp"
                             android:layout_height="8dp"
                             android:background="@drawable/dot_sync_ok" />
+
                         <TextView
                             android:id="@+id/txt_sync_state"
                             android:layout_width="wrap_content"
@@ -71,7 +93,9 @@
                             android:layout_marginStart="5dp"
                             android:text="@string/sync_chip_synced"
                             android:textColor="@color/daynight_textColor"
-                            android:textSize="11sp" />
+                            android:textSize="11sp"
+                            android:maxLines="1"
+                            android:ellipsize="end" />
                     </LinearLayout>
 
                     <TextView
@@ -81,178 +105,207 @@
                         android:layout_marginTop="2dp"
                         android:text="@string/dash_4"
                         android:textColor="@color/hint_color"
-                        android:textSize="10sp" />
+                        android:textSize="10sp"
+                        android:maxLines="1"
+                        android:ellipsize="end" />
                 </LinearLayout>
 
-                <ImageButton
-                    android:id="@+id/imgBtnSetting"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@null"
-                    android:contentDescription="@string/settings"
-                    android:paddingStart="@dimen/_10dp"
-                    android:paddingTop="6dp"
-                    android:paddingEnd="@dimen/_10dp"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:srcCompat="@drawable/ic_settings_black_24dp"
-                    app:tint="@color/daynight_textColor" />
-                <LinearLayout
+                <ScrollView
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_horizontal"
-                    android:orientation="vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:layout_height="0dp"
+                    android:fillViewport="true"
+                    android:paddingBottom="20dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintVertical_bias="0.35">
+                    app:layout_constraintTop_toBottomOf="@+id/chip_sync">
 
-                    <de.hdodenhof.circleimageview.CircleImageView
-                        android:id="@+id/userProfile"
-                        android:layout_width="72dp"
-                        android:layout_height="72dp"
-                        android:src="@drawable/profile"
-                        app:civ_border_color="@color/md_blue_700"
-                        app:civ_border_width="2dp" />
-                    <TextView
-                        android:id="@+id/tv_welcome"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="@string/welcome_back"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="22sp" />
-                    <TextView
-                        android:id="@+id/tv_subtitle"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:text="@string/sign_in_to_continue"
-                        android:textColor="@color/hint_color"
-                        android:textSize="12sp" />
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/ltInputName"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="16dp"
-                        android:hint="@string/hint_name"
-                        android:labelFor="@+id/inputName"
-                        android:textColorHint="@color/hint_color"
-                        app:boxBackgroundMode="outline"
-                        app:boxBackgroundColor="@color/field_fill"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp"
-                        app:boxStrokeColor="@color/md_blue_700"
-                        app:boxStrokeWidth="1dp"
-                        app:boxStrokeWidthFocused="1.5dp">
-
-                        <EditText
-                            android:id="@+id/inputName"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:autofillHints=""
-                            android:inputType="text"
-                            android:textColor="@color/daynight_textColor" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/edtPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="@string/password"
-                        android:labelFor="@+id/input_password"
-                        android:textColorHint="@color/hint_color"
-                        app:boxBackgroundMode="outline"
-                        app:boxBackgroundColor="@color/field_fill"
-                        app:boxCornerRadiusBottomEnd="8dp"
-                        app:boxCornerRadiusBottomStart="8dp"
-                        app:boxCornerRadiusTopEnd="8dp"
-                        app:boxCornerRadiusTopStart="8dp"
-                        app:boxStrokeColor="@color/md_blue_700"
-                        app:boxStrokeWidth="1dp"
-                        app:boxStrokeWidthFocused="1.5dp"
-                        app:passwordToggleEnabled="true"
-                        app:passwordToggleTint="@color/daynight_textColor">
-
-                        <EditText
-                            android:id="@+id/input_password"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:autofillHints=""
-                            android:inputType="textPassword"
-                            android:textColor="@color/daynight_textColor" />
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <Button
-                        android:id="@+id/btn_signin"
-                        android:layout_width="match_parent"
-                        android:layout_height="44dp"
-                        android:layout_marginTop="16dp"
-                        android:background="@color/mainColor"
-                        android:contentDescription="@string/btn_sign_in"
-                        android:fontFamily="sans-serif-medium"
-                        android:text="@string/btn_sign_in"
-                        android:textAllCaps="false"
-                        android:textColor="@android:color/white"
-                        android:textSize="14sp" />
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="20dp">
+
+                        <de.hdodenhof.circleimageview.CircleImageView
+                            android:id="@+id/userProfile"
+                            android:layout_width="72dp"
+                            android:layout_height="72dp"
+                            android:src="@drawable/profile"
+                            app:civ_border_color="@color/md_blue_700"
+                            app:civ_border_width="2dp" />
+
+                        <TextView
+                            android:id="@+id/tv_welcome"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="@string/welcome_back"
+                            android:textColor="@color/daynight_textColor"
+                            android:textSize="22sp" />
+
+                        <TextView
+                            android:id="@+id/tv_subtitle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:text="@string/sign_in_to_continue"
+                            android:textColor="@color/hint_color"
+                            android:textSize="12sp" />
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/ltInputName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:hint="@string/hint_name"
+                            android:labelFor="@+id/inputName"
+                            android:textColorHint="@color/hint_color"
+                            app:boxBackgroundMode="outline"
+                            app:boxBackgroundColor="@color/field_fill"
+                            app:boxCornerRadiusBottomEnd="8dp"
+                            app:boxCornerRadiusBottomStart="8dp"
+                            app:boxCornerRadiusTopEnd="8dp"
+                            app:boxCornerRadiusTopStart="8dp"
+                            app:boxStrokeColor="@color/md_blue_700"
+                            app:boxStrokeWidth="1dp"
+                            app:boxStrokeWidthFocused="1.5dp">
+
+                            <EditText
+                                android:id="@+id/inputName"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:autofillHints=""
+                                android:inputType="text"
+                                android:textColor="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
+
+                        <com.google.android.material.textfield.TextInputLayout
+                            android:id="@+id/edtPassword"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:hint="@string/password"
+                            android:labelFor="@+id/input_password"
+                            android:textColorHint="@color/hint_color"
+                            app:boxBackgroundMode="outline"
+                            app:boxBackgroundColor="@color/field_fill"
+                            app:boxCornerRadiusBottomEnd="8dp"
+                            app:boxCornerRadiusBottomStart="8dp"
+                            app:boxCornerRadiusTopEnd="8dp"
+                            app:boxCornerRadiusTopStart="8dp"
+                            app:boxStrokeColor="@color/md_blue_700"
+                            app:boxStrokeWidth="1dp"
+                            app:boxStrokeWidthFocused="1.5dp"
+                            app:passwordToggleEnabled="true"
+                            app:passwordToggleTint="@color/daynight_textColor">
+
+                            <EditText
+                                android:id="@+id/input_password"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:autofillHints=""
+                                android:inputType="textPassword"
+                                android:textColor="@color/daynight_textColor" />
+                        </com.google.android.material.textfield.TextInputLayout>
 
                         <Button
-                            android:id="@+id/btn_guest_login"
-                            android:layout_width="wrap_content"
+                            android:id="@+id/btn_signin"
+                            android:layout_width="match_parent"
+                            android:layout_height="44dp"
+                            android:layout_marginTop="16dp"
+                            android:background="@color/mainColor"
+                            android:contentDescription="@string/btn_sign_in"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="@string/btn_sign_in"
+                            android:textAllCaps="false"
+                            android:textColor="@android:color/white"
+                            android:textSize="14sp" />
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:contentDescription="@string/btn_guest_login"
-                            android:text="@string/btn_guest_login"
-                            android:textColor="@color/daynight_textColor"
-                            android:textSize="12sp"
-                            android:theme="@style/PrimaryFlatButton" />
-                        <View
-                            android:layout_width="1dp"
-                            android:layout_height="12dp"
-                            android:alpha="0.3"
-                            android:background="@color/daynight_textColor" />
+                            android:layout_marginTop="8dp"
+                            android:gravity="center"
+                            android:orientation="horizontal">
+
+                            <Button
+                                android:id="@+id/btn_guest_login"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:minHeight="0dp"
+                                android:contentDescription="@string/btn_guest_login"
+                                android:text="@string/btn_guest_login"
+                                android:textColor="@color/daynight_textColor"
+                                android:textSize="12sp"
+                                android:theme="@style/PrimaryFlatButton"
+                                android:maxLines="3"
+                                android:gravity="center"
+                                android:paddingStart="4dp"
+                                android:paddingEnd="4dp" />
+
+                            <View
+                                android:layout_width="1dp"
+                                android:layout_height="match_parent"
+                                android:alpha="0.3"
+                                android:background="@color/daynight_textColor"
+                                android:layout_marginStart="4dp"
+                                android:layout_marginEnd="4dp" />
+
+                            <Button
+                                android:id="@+id/become_member"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:minHeight="0dp"
+                                android:contentDescription="@string/become_a_member"
+                                android:text="@string/become_a_member"
+                                android:textColor="@color/daynight_textColor"
+                                android:textSize="12sp"
+                                android:theme="@style/PrimaryFlatButton"
+                                android:maxLines="3"
+                                android:gravity="center"
+                                android:paddingStart="4dp"
+                                android:paddingEnd="4dp" />
+                        </LinearLayout>
+
                         <Button
-                            android:id="@+id/become_member"
+                            android:id="@+id/btn_feedback"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:contentDescription="@string/become_a_member"
-                            android:text="@string/become_a_member"
+                            android:minHeight="0dp"
+                            android:layout_marginTop="4dp"
+                            android:contentDescription="@string/feedback"
+                            android:text="@string/feedback"
                             android:textColor="@color/daynight_textColor"
                             android:textSize="12sp"
-                            android:theme="@style/PrimaryFlatButton" />
+                            android:theme="@style/PrimaryFlatButton"
+                            android:maxLines="3"
+                            android:gravity="center"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
+
+                        <Button
+                            android:id="@+id/open_community"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:minHeight="0dp"
+                            android:layout_marginTop="4dp"
+                            android:contentDescription="@string/open_community"
+                            android:text="@string/open_community"
+                            android:textColor="@color/daynight_textColor"
+                            android:textSize="12sp"
+                            android:theme="@style/PrimaryFlatButton"
+                            android:maxLines="3"
+                            android:gravity="center"
+                            android:paddingStart="8dp"
+                            android:paddingEnd="8dp" />
                     </LinearLayout>
-
-                    <Button
-                        android:id="@+id/btn_feedback"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/feedback"
-                        android:text="@string/feedback"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="12sp"
-                        android:theme="@style/PrimaryFlatButton" />
-                    <Button
-                        android:id="@+id/open_community"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:contentDescription="@string/open_community"
-                        android:text="@string/open_community"
-                        android:textColor="@color/daynight_textColor"
-                        android:textSize="12sp"
-                        android:theme="@style/PrimaryFlatButton" />
-                </LinearLayout>
+                </ScrollView>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <LinearLayout
@@ -278,6 +331,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:srcCompat="@drawable/moon_35" />
+
                     <ImageView
                         android:id="@+id/logoImageView"
                         android:layout_width="96dp"
@@ -288,6 +342,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent"
                         app:srcCompat="@drawable/ole_logo" />
+
                     <TextView
                         android:id="@+id/textView"
                         android:layout_width="wrap_content"
@@ -302,6 +357,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/logoImageView" />
+
                     <TextView
                         android:id="@+id/lblVersion"
                         android:layout_width="wrap_content"
@@ -315,6 +371,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/textView" />
+
                     <Button
                         android:id="@+id/btn_lang"
                         android:layout_width="wrap_content"
@@ -330,6 +387,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/lblVersion" />
+
                     <TextView
                         android:id="@+id/customDeviceName"
                         android:layout_width="wrap_content"
@@ -340,6 +398,7 @@
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/btn_lang" />
+
                     <TextView
                         android:id="@+id/tv_available_space"
                         android:layout_width="wrap_content"
@@ -351,6 +410,7 @@
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/customDeviceName"
                         tools:text="@string/available_space_colon" />
+
                     <Spinner
                         android:id="@+id/team"
                         android:layout_width="wrap_content"
@@ -362,6 +422,7 @@
                         app:backgroundTint="@color/daynight_textColor"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toBottomOf="@+id/tv_available_space" />
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
                         android:layout_width="match_parent"
