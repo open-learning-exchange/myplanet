@@ -13,7 +13,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
-import org.ole.planet.myplanet.MainApplication
 
 object Utilities {
     fun isValidEmail(target: CharSequence): Boolean {

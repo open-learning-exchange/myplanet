@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
@@ -54,6 +55,8 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private val answerCache = mutableMapOf<String, AnswerData>()
     @Inject
     lateinit var userSessionManager: UserSessionManager
+    @Inject
+    lateinit var coursesRepository: CoursesRepository
     @Inject
     lateinit var surveysRepository: SurveysRepository
     @Inject
@@ -828,5 +831,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         selectedRatingButton = null
         dynamicRatingButtons = emptyList()
         _binding = null
+    }
+
+    override fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            coursesRepository.updateCourseProgress(courseId, stepNum, isGraded)
+        }
     }
 }

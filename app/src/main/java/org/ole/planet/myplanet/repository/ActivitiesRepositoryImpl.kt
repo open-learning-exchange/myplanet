@@ -417,59 +417,59 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertLoginActivitiesFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
-        val ids = mutableListOf<String>()
+    override suspend fun insertLoginActivitiesFromSync(docs: List<com.google.gson.JsonObject>) {
+        executeTransaction { realm ->
+            val documentList = ArrayList<com.google.gson.JsonObject>(docs.size)
+            val ids = mutableListOf<String>()
 
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                if (id.isNotEmpty()) {
-                    ids.add(id)
-                }
-            }
-        }
-
-        val existingActivitiesMap = if (ids.isNotEmpty()) {
-            realm.where(RealmOfflineActivity::class.java)
-                .`in`("_id", ids.toTypedArray())
-                .findAll()
-                .associateBy { it._id ?: "" }
-                .toMutableMap()
-        } else {
-            mutableMapOf<String, RealmOfflineActivity>()
-        }
-
-        val fallbackCandidates = if (documentList.isNotEmpty()) {
-            val loginTimes = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct().toTypedArray()
-            val userNames = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct().toTypedArray()
-
-            if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
-                val results = realm.where(RealmOfflineActivity::class.java)
-                    .`in`("loginTime", loginTimes)
-                    .`in`("userName", userNames)
-                    .findAll()
-
-                val map = mutableMapOf<String, RealmOfflineActivity>()
-                for (activity in results) {
-                    val key = "${activity.loginTime}_${activity.userName}"
-                    if (!map.containsKey(key)) {
-                        map[key] = activity
+            for (jsonDoc in docs) {
+                val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+                if (!id.startsWith("_design")) {
+                    documentList.add(jsonDoc)
+                    if (id.isNotEmpty()) {
+                        ids.add(id)
                     }
                 }
-                map
+            }
+
+            val existingActivitiesMap = if (ids.isNotEmpty()) {
+                realm.where(RealmOfflineActivity::class.java)
+                    .`in`("_id", ids.toTypedArray())
+                    .findAll()
+                    .associateBy { it._id ?: "" }
+                    .toMutableMap()
+            } else {
+                mutableMapOf<String, RealmOfflineActivity>()
+            }
+
+            val fallbackCandidates = if (documentList.isNotEmpty()) {
+                val loginTimes = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct().toTypedArray()
+                val userNames = documentList.map { org.ole.planet.myplanet.utils.JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct().toTypedArray()
+
+                if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
+                    val results = realm.where(RealmOfflineActivity::class.java)
+                        .`in`("loginTime", loginTimes)
+                        .`in`("userName", userNames)
+                        .findAll()
+
+                    val map = mutableMapOf<String, RealmOfflineActivity>()
+                    for (activity in results) {
+                        val key = "${activity.loginTime}_${activity.userName}"
+                        if (!map.containsKey(key)) {
+                            map[key] = activity
+                        }
+                    }
+                    map
+                } else {
+                    mutableMapOf()
+                }
             } else {
                 mutableMapOf()
             }
-        } else {
-            mutableMapOf()
-        }
 
-        documentList.forEach { jsonDoc ->
-            insertActivityInternal(realm, jsonDoc, existingActivitiesMap, fallbackCandidates)
+            documentList.forEach { jsonDoc ->
+                insertActivityInternal(realm, jsonDoc, existingActivitiesMap, fallbackCandidates)
+            }
         }
     }
 
