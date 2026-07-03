@@ -51,7 +51,6 @@ class VoicesFragment : BaseVoicesFragment() {
     @Inject
     lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     private lateinit var etSearch: EditText
-    private var labelAdapter: VoicesLabelAdapter? = null
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -79,8 +78,6 @@ class VoicesFragment : BaseVoicesFragment() {
         }
 
         setupSearchTextListener()
-        setupLabelFilter()
-
         return binding.root
     }
 
@@ -337,33 +334,42 @@ class VoicesFragment : BaseVoicesFragment() {
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
-    
-    private fun setupLabelFilter() {
-        val binding = _binding ?: return
-        if (labelAdapter == null) {
-            labelAdapter = VoicesLabelAdapter(
-                onItemClick = { label ->
-                    voicesViewModel.updateSelectedLabel(label)
-                    scrollToTop()
-                }
-            )
-            binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
-            binding.filterByLabel.adapter = labelAdapter
-        }
-    }
 
     private fun updateLabelSpinner(labels: List<String>, selectedLabel: String) {
-        labelAdapter?.submitList(labels.map { VoicesLabelItem(it, it == selectedLabel) })
-
-        val position = labels.indexOf(selectedLabel)
-        if (position >= 0) {
-            _binding?.filterByLabel?.scrollToPosition(position)
+        val binding = _binding ?: return
+        val adapter = object : android.widget.ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, labels) {
+            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                (view as? android.widget.TextView)?.setTextColor(
+                    androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+                )
+                return view
+            }
+            override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                (view as? android.widget.TextView)?.apply {
+                    setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+                    setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+                }
+                return view
+            }
+        }
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.filterByLabel.adapter = adapter
+        binding.filterByLabel.backgroundTintList = androidx.core.content.ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
+        val position = labels.indexOf(selectedLabel).coerceAtLeast(0)
+        binding.filterByLabel.setSelection(position)
+        binding.filterByLabel.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, pos: Int, id: Long) {
+                voicesViewModel.updateSelectedLabel(labels[pos])
+                scrollToTop()
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
         }
     }
 
     override fun onDestroyView() {
         adapterNews?.unregisterAdapterDataObserver(observer)
-        labelAdapter = null
         _binding = null
         super.onDestroyView()
     }
