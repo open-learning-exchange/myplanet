@@ -128,11 +128,11 @@ class CoursesViewModel @Inject constructor(
                     myCourses.filter { course ->
                         val p = progressMap[course.courseId]
                         val current = p?.get("current")?.asInt ?: 0
-                        val max = p?.get("max")?.asInt ?: 0
+                        val completed = p?.get("completed")?.asBoolean == true
                         when (progressFilter) {
                             "Not Started" -> current == 0
-                            "In Progress" -> current > 0 && current < max
-                            "Completed"   -> max > 0 && current >= max
+                            "In Progress" -> current > 0 && !completed
+                            "Completed"   -> completed
                             else -> true
                         }
                     }

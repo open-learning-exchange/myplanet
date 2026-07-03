@@ -353,4 +353,75 @@ class SubmissionsRepositoryImplTest {
 
         verify { mockSub.status = "complete" }
     }
+
+    private fun invokeUpdateCourseProgressIfGraded(realm: Realm, sub: RealmSubmission) {
+        val method = SubmissionsRepositoryImpl::class.java.getDeclaredMethod(
+            "updateCourseProgressIfGraded", Realm::class.java, RealmSubmission::class.java
+        )
+        method.isAccessible = true
+        method.invoke(repository, realm, sub)
+    }
+
+    private fun gradedProgressFixture(realm: Realm, progress: org.ole.planet.myplanet.model.RealmCourseProgress) {
+        val exam = RealmStepExam().apply { id = "exam1"; courseId = "course1"; stepId = "step2" }
+        val course = org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            courseId = "course1"
+            courseSteps = io.realm.RealmList(
+                org.ole.planet.myplanet.model.RealmCourseStep().apply { id = "step1" },
+                org.ole.planet.myplanet.model.RealmCourseStep().apply { id = "step2" }
+            )
+        }
+
+        val examQuery = mockk<RealmQuery<RealmStepExam>>()
+        every { realm.where(RealmStepExam::class.java) } returns examQuery
+        every { examQuery.equalTo(any<String>(), any<String>()) } returns examQuery
+        every { examQuery.findFirst() } returns exam
+
+        val courseQuery = mockk<RealmQuery<org.ole.planet.myplanet.model.RealmMyCourse>>()
+        every { realm.where(org.ole.planet.myplanet.model.RealmMyCourse::class.java) } returns courseQuery
+        every { courseQuery.equalTo(any<String>(), any<String>()) } returns courseQuery
+        every { courseQuery.findFirst() } returns course
+
+        val progressQuery = mockk<RealmQuery<org.ole.planet.myplanet.model.RealmCourseProgress>>()
+        every { realm.where(org.ole.planet.myplanet.model.RealmCourseProgress::class.java) } returns progressQuery
+        every { progressQuery.equalTo(any<String>(), any<String>()) } returns progressQuery
+        every { progressQuery.equalTo(any<String>(), any<Int>()) } returns progressQuery
+        every { progressQuery.findFirst() } returns progress
+    }
+
+    @Test
+    fun `graded exam submission marks the matching course step passed`() {
+        val realm = mockk<Realm>()
+        val progress = org.ole.planet.myplanet.model.RealmCourseProgress().apply { stepNum = 2; passed = false }
+        gradedProgressFixture(realm, progress)
+
+        val sub = RealmSubmission().apply {
+            type = "exam"
+            status = "graded"
+            userId = "org.couchdb.user:learner"
+            parentId = "exam1@course1"
+        }
+
+        invokeUpdateCourseProgressIfGraded(realm, sub)
+
+        assertTrue(progress.passed)
+    }
+
+    @Test
+    fun `ungraded exam submission does not touch course progress`() {
+        val realm = mockk<Realm>()
+        val progress = org.ole.planet.myplanet.model.RealmCourseProgress().apply { stepNum = 2; passed = false }
+        gradedProgressFixture(realm, progress)
+
+        val sub = RealmSubmission().apply {
+            type = "exam"
+            status = "requires grading"
+            userId = "org.couchdb.user:learner"
+            parentId = "exam1@course1"
+        }
+
+        invokeUpdateCourseProgressIfGraded(realm, sub)
+
+        assertEquals(false, progress.passed)
+    }
 }

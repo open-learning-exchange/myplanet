@@ -1349,4 +1349,28 @@
         <item>مكتمل</item>
     </string-array>
 
+    <plurals name="day_streak">
+        <item quantity="zero">🔥 سلسلة %d يوم</item>
+        <item quantity="one">🔥 سلسلة يوم واحد</item>
+        <item quantity="two">🔥 سلسلة يومين</item>
+        <item quantity="few">🔥 سلسلة %d أيام</item>
+        <item quantity="many">🔥 سلسلة %d يومًا</item>
+        <item quantity="other">🔥 سلسلة %d يوم</item>
+    </plurals>
+    <plurals name="courses_in_progress">
+        <item quantity="zero">%d دورة قيد التنفيذ</item>
+        <item quantity="one">دورة واحدة قيد التنفيذ</item>
+        <item quantity="two">دورتان قيد التنفيذ</item>
+        <item quantity="few">%d دورات قيد التنفيذ</item>
+        <item quantity="many">%d دورة قيد التنفيذ</item>
+        <item quantity="other">%d دورة قيد التنفيذ</item>
+    </plurals>
+    <plurals name="courses_completed_count">
+        <item quantity="zero">%d مكتملة</item>
+        <item quantity="one">واحدة مكتملة</item>
+        <item quantity="two">اثنتان مكتملتان</item>
+        <item quantity="few">%d مكتملة</item>
+        <item quantity="many">%d مكتملة</item>
+        <item quantity="other">%d مكتملة</item>
+    </plurals>
 </resources>

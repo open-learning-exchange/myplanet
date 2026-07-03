@@ -47,6 +47,7 @@ class ProgressRepositoryImpl @Inject constructor(
             val progresses = progressesByCourseId[courseId] ?: emptyList()
             progressObject.addProperty("max", steps.size)
             progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
+            progressObject.addProperty("completed", isCourseCompleted(steps.size, progresses))
             map[courseId] = progressObject
         }
         return map
@@ -89,6 +90,14 @@ class ProgressRepositoryImpl @Inject constructor(
             equalTo("courseId", courseId)
         }
         return calculateCurrentProgress(steps, progresses)
+    }
+
+    // Single source of truth for course completion (matches web: every unique
+    // step has a progress record with passed === true, and the course has steps).
+    private fun isCourseCompleted(totalSteps: Int, progresses: List<RealmCourseProgress>): Boolean {
+        if (totalSteps == 0) return false
+        val passedSteps = progresses.filter { it.passed }.map { it.stepNum }.toSet().size
+        return passedSteps == totalSteps
     }
 
     private fun calculateCurrentProgress(
@@ -164,17 +173,8 @@ class ProgressRepositoryImpl @Inject constructor(
 
             // Get progress records for this specific course
             val courseProgressRecords = progressByCourse[course.courseId].orEmpty()
-
-            // Count UNIQUE steps that are passed (matches web: step.passed === true)
-            val passedStepNumbers = courseProgressRecords
-                .filter { it.passed }
-                .map { it.stepNum }
-                .toSet()
-            val passedSteps = passedStepNumbers.size
             val totalSteps = course.courseSteps?.size ?: 0
-
-            // Web logic: ALL steps must be passed AND course must have at least one step
-            val allStepsPassed = passedSteps == totalSteps && totalSteps > 0
+            val allStepsPassed = isCourseCompleted(totalSteps, courseProgressRecords)
 
             // Match web behavior: Show badge if ALL steps are passed AND course has steps
             if (allStepsPassed && hasValidId && hasValidTitle) {

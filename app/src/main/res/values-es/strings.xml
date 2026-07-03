@@ -1336,4 +1336,16 @@
         <item>Completado</item>
     </string-array>
 
+    <plurals name="day_streak">
+        <item quantity="one">🔥 Racha de %d día</item>
+        <item quantity="other">🔥 Racha de %d días</item>
+    </plurals>
+    <plurals name="courses_in_progress">
+        <item quantity="one">%d curso en progreso</item>
+        <item quantity="other">%d cursos en progreso</item>
+    </plurals>
+    <plurals name="courses_completed_count">
+        <item quantity="one">%d completado</item>
+        <item quantity="other">%d completados</item>
+    </plurals>
 </resources>
