@@ -10,6 +10,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -63,7 +64,7 @@ class BaseResourceFragmentTest {
         every { mockActivity.isFinishing } returns false
         every { mockActivity.isDestroyed } returns false
 
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
             val str = it.invocation.args[0] as? CharSequence

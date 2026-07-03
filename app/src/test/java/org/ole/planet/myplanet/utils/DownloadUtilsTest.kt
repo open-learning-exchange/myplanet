@@ -8,7 +8,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -44,7 +43,7 @@ class DownloadUtilsTest {
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
         every { activityManager.getRunningServices(any()) } returns mutableListOf()
 
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
 
         mockkObject(DownloadService.Companion)

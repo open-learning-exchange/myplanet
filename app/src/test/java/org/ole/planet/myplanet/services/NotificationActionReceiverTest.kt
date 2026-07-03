@@ -8,6 +8,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -60,7 +61,7 @@ class NotificationActionReceiverTest {
         every { mockDispatcherProvider.unconfined } returns testDispatcher
 
         mockNotificationUtils = mockk(relaxed = true)
-        mockkStatic(NotificationUtils::class)
+        mockkObject(NotificationUtils)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
         mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
