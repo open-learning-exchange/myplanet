@@ -56,12 +56,12 @@ class BellDashboardViewModel @Inject constructor(
             val completed = progressRepository.getCompletedCourses(userId)
             _completedCourses.value = completed
 
-            val loginTimes = if (userName.isNullOrBlank()) {
+            val activityTimes = if (userName.isNullOrBlank()) {
                 emptyList()
             } else {
-                activitiesRepository.getOfflineActivities(userName, "login").mapNotNull { it.loginTime }
+                activitiesRepository.getLearningActivityTimes(userName)
             }
-            val streak = StreakUtils.calculateDayStreak(loginTimes, timeProvider.now())
+            val streak = StreakUtils.calculateDayStreak(activityTimes, timeProvider.now())
 
             val completedIds = completed.mapNotNull { it.courseId }.toSet()
             val inProgress = progressRepository.getProgressRecords(userId)

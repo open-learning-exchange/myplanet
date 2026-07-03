@@ -47,6 +47,26 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
+    // Streak source: a day counts if the user did anything — logged in, visited
+    // a course, or opened a resource. Login events alone miss days where the
+    // session persisted and the user never saw the login screen.
+    override suspend fun getLearningActivityTimes(userName: String): List<Long> {
+        val logins = queryList(RealmOfflineActivity::class.java) {
+            equalTo("userName", userName)
+            equalTo("type", UserSessionManager.KEY_LOGIN)
+        }.mapNotNull { it.loginTime }
+
+        val courseVisits = queryList(RealmCourseActivity::class.java) {
+            equalTo("user", userName)
+        }.map { it.time }
+
+        val resourceOpens = queryList(RealmResourceActivity::class.java) {
+            equalTo("user", userName)
+        }.map { it.time }
+
+        return (logins + courseVisits + resourceOpens).filter { it > 0 }
+    }
+
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return queryList(RealmOfflineActivity::class.java) {
             equalTo("userId", userId)

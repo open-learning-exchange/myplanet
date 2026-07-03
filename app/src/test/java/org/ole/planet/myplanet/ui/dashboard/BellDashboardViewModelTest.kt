@@ -19,7 +19,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -56,10 +55,6 @@ class BellDashboardViewModelTest {
         return RealmCourseProgress().apply { this.courseId = courseId }
     }
 
-    private fun login(time: Long): RealmOfflineActivity {
-        return RealmOfflineActivity().apply { loginTime = time; type = "login" }
-    }
-
     @Test
     fun `loadLearningSummary combines streak, in-progress and completed counts`() = runTest {
         coEvery { progressRepository.getCompletedCourses("u1") } returns listOf(
@@ -68,8 +63,8 @@ class BellDashboardViewModelTest {
         coEvery { progressRepository.getProgressRecords("u1") } returns listOf(
             progressRecord("c1"), progressRecord("c2"), progressRecord("c2"), progressRecord("c3")
         )
-        coEvery { activitiesRepository.getOfflineActivities("learner", "login") } returns listOf(
-            login(now), login(now - day), login(now - 5 * day)
+        coEvery { activitiesRepository.getLearningActivityTimes("learner") } returns listOf(
+            now, now - day, now - 5 * day
         )
 
         val viewModel = BellDashboardViewModel(progressRepository, teamsRepository, activitiesRepository, timeProvider)
