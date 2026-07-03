@@ -51,13 +51,13 @@ Note: `LoginSyncManager.kt:189` re-implements the same `"manager"` substring che
 
 ### Leaders
 
-A leader is a step below manager — a `RealmUser` where `rolesList` contains `"leader"`, checked via `RealmUser.isLeader()` (`RealmUser.kt:179-182`). This helper is used in exactly one place in the codebase (`EnterprisesFinancesFragment.kt:203`), so treat it as a thin, lightly-exercised check rather than a load-bearing permission system. Leaders have elevated permissions within a specific team or enterprise and appear with `isLeader = true` on their `RealmMyTeam` membership record — that per-team flag is separate from the global `RealmUser.isLeader()` role check.
+A leader is a step below manager — a `RealmUser` where `rolesList` contains `"leader"`, checked via `RealmUser.isLeader()`. This helper has **zero call sites** in the current codebase — it is effectively dead code. Leaders have elevated permissions within a specific team or enterprise and appear with `isLeader = true` on their `RealmMyTeam` membership record — that per-team flag is separate from the unused global `RealmUser.isLeader()` role check.
 
 ### Guests
 
 A guest is a `RealmUser` whose `id` starts with `"guest"`. The vast majority of the codebase checks this directly with `user?.id?.startsWith("guest")` rather than calling a helper — that pattern appears in 25+ files (`DashboardActivity`, `VoicesFragment`, `ResourcesFragment`, `CoursesFragment`, `TeamDetailFragment`, `UserRepositoryImpl`, and more).
 
-A more careful helper, `RealmUser.isGuest()` (`RealmUser.kt:184-188`), also exists and is used in a handful of places (`TeamFragment`, `TakeCourseFragment`, `CoursesFragment`, `ResourcesFragment`, `ResourceDetailFragment`, `BaseContainerFragment`). It checks both the ID prefix and the `"guest"`/`"learner"` roles, and is the more correct check — but it is not used consistently across the codebase, so don't assume every guest-gated code path uses it.
+A more careful helper, `RealmUser.isGuest()`, also exists and is used in a handful of places (`TeamFragment`, `TakeCourseFragment`, `CoursesFragment`, `ResourcesFragment`, `ResourceDetailFragment`, `BaseContainerFragment`). It checks both the ID prefix and the `"guest"`/`"learner"` roles, and is the more correct check — but it is not used consistently across the codebase, so don't assume every guest-gated code path uses it.
 
 Guests have read-only access. Many features — joining a course, submitting a survey, posting in Voices — show a prompt asking guests to become full members first (`BecomeMemberActivity`).
 
