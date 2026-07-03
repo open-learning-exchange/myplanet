@@ -29,13 +29,32 @@ class FreeSpaceWorker @AssistedInject constructor(
         return try {
             setProgress(workDataOf("progress" to 0, "status" to "Starting cleanup..."))
 
-            // Mark all resources as offline = false in database
-            resourcesRepository.markAllResourcesOffline(false)
-
             val rootFile = File(FileUtils.getOlePath(applicationContext))
 
             withContext(dispatcherProvider.io) {
-                deleteRecursive(rootFile)
+                // Files are deleted before their Realm flags are cleared, one resource
+                // at a time, so cancelling or failing mid-run never leaves resources
+                // marked as not-downloaded while their files still exist on disk.
+                val children = rootFile.listFiles() ?: return@withContext
+                val clearedResourceIds = mutableSetOf<String>()
+                for (child in children) {
+                    if (isStopped) break
+                    val wasDirectory = child.isDirectory
+                    // cv/ holds achievement attachments that may not be uploaded yet
+                    if (wasDirectory && child.name == CV_DIR_NAME) continue
+                    val deletedBefore = deletedFiles
+                    deleteRecursive(child)
+                    if (wasDirectory && (deletedFiles > deletedBefore || !child.exists())) {
+                        clearedResourceIds.add(child.name)
+                    }
+                    if (clearedResourceIds.size >= MARK_BATCH_SIZE) {
+                        resourcesRepository.markResourcesAsNotOffline(clearedResourceIds.toSet())
+                        clearedResourceIds.clear()
+                    }
+                }
+                if (clearedResourceIds.isNotEmpty()) {
+                    resourcesRepository.markResourcesAsNotOffline(clearedResourceIds)
+                }
             }
 
             Result.success(workDataOf("deletedFiles" to deletedFiles, "freedBytes" to freedBytes))
@@ -76,5 +95,7 @@ class FreeSpaceWorker @AssistedInject constructor(
 
     companion object {
         private const val TAG = "FreeSpaceWorker"
+        private const val CV_DIR_NAME = "cv"
+        private const val MARK_BATCH_SIZE = 25
     }
 }
