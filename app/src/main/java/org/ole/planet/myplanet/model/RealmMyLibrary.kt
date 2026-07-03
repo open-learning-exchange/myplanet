@@ -180,7 +180,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
@@ -227,7 +226,6 @@ open class RealmMyLibrary : RealmObject() {
             val courseId: String? = ""
         )
 
-        @JvmStatic
         fun insertMyLibrary(params: InsertParams): RealmMyLibrary? {
             if (params.doc.entrySet().isEmpty()) return null
             val resourceId = JsonUtils.getString("_id", params.doc)
@@ -332,12 +330,10 @@ open class RealmMyLibrary : RealmObject() {
             return resource
         }
 
-        @JvmStatic
         fun listToString(list: RealmList<String>?): String {
             return list?.joinToString(", ") ?: ""
         }
 
-        @JvmStatic
         fun save(allDocs: JsonArray, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager): List<String> {
             val list: MutableList<String> = ArrayList()
             allDocs.forEach { doc ->

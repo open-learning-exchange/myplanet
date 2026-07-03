@@ -39,12 +39,10 @@ object CameraUtils {
     private val sessionExecutor: Executor by lazy { ContextCompat.getMainExecutor(context) }
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    @JvmStatic
     fun release() {
         closeCamera()
     }
 
-    @JvmStatic
     fun capturePhoto(scope: CoroutineScope, callback: ImageCaptureCallback, dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             return
@@ -121,7 +119,6 @@ object CameraUtils {
     }
 
     @SuppressLint("MissingPermission")
-    @JvmStatic
     private fun openCamera(context: Context) {
         val manager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
         try {

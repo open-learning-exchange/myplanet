@@ -42,7 +42,6 @@ open class RealmTag : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun getTagsArray(list: List<RealmTag>): JsonArray {
             val array = JsonArray()
             for (t in list) {

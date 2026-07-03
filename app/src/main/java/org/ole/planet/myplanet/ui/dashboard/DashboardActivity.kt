@@ -1082,7 +1082,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     companion object {
         const val MESSAGE_PROGRESS = "message_progress"
-        @JvmStatic
         var isFromNotificationAction = false
     }
 }

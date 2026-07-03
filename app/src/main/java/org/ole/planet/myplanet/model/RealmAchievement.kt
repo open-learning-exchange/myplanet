@@ -102,7 +102,6 @@ open class RealmAchievement : RealmObject() {
             return array
         }
 
-        @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", sub._id)
@@ -123,7 +122,6 @@ open class RealmAchievement : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun createReference(name: String?, relation: EditText, phone: EditText, email: EditText): JsonObject {
             val ob = JsonObject()
             ob.addProperty("name", name)

@@ -32,7 +32,6 @@ open class RealmRating : RealmObject() {
     var user: String? = null
 
     companion object {
-        @JvmStatic
         fun serializeRating(realmRating: RealmRating): JsonObject {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
@@ -53,7 +52,6 @@ open class RealmRating : RealmObject() {
             return ob
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, act: JsonObject) {
             var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
             if (rating == null) {
