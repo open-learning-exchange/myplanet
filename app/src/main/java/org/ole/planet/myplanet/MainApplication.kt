@@ -32,7 +32,9 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Provider
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -42,6 +44,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
+import org.ole.planet.myplanet.di.RealmDispatcherProvider
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
@@ -72,7 +75,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
-    lateinit var realmDispatcherProvider: org.ole.planet.myplanet.di.RealmDispatcherProvider
+    lateinit var realmDispatcherProvider: RealmDispatcherProvider
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
@@ -177,7 +180,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         suspend fun isServerReachable(
             urlString: String,
-            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher = kotlinx.coroutines.Dispatchers.IO
+            ioDispatcher: CoroutineDispatcher = Dispatchers.IO
         ): Boolean {
             if (urlString.isBlank()) return false
             val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
@@ -195,7 +198,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         private suspend fun tryConnect(
             urlString: String,
-            ioDispatcher: kotlinx.coroutines.CoroutineDispatcher
+            ioDispatcher: CoroutineDispatcher
         ): Boolean {
             return try {
                 val formattedUrl = if (!urlString.startsWith("http://") && !urlString.startsWith("https://")) {

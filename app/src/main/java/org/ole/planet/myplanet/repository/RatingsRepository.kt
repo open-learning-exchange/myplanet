@@ -1,10 +1,13 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+
 interface RatingsRepository {
-    suspend fun getRatings(type: String?, userId: String?): HashMap<String?, com.google.gson.JsonObject>
-    suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): com.google.gson.JsonObject?
-    suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
-    suspend fun getResourceRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject>
+    suspend fun getRatingsById(type: String, resourceId: String?, userId: String?): JsonObject?
+    suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
+    suspend fun getResourceRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun getRatingSummary(type: String, itemId: String, userId: String): RatingSummary
 
     suspend fun submitRating(
@@ -15,7 +18,7 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
 }
 
 data class RatingEntry(

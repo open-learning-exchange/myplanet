@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.realm.Sort
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -8,6 +9,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
@@ -61,9 +63,9 @@ class CommunityRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun insertMeetupsFromSync(docs: List<com.google.gson.JsonObject>) {
+    override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
         executeTransaction { realm ->
-            org.ole.planet.myplanet.model.RealmMeetup.insertList(realm, "", docs)
+            RealmMeetup.insertList(realm, "", docs)
         }
     }
 }

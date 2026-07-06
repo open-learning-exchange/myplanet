@@ -253,68 +253,63 @@ class ProgressRepositoryImpl @Inject constructor(
         courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override suspend fun insertCourseProgressFromSync(docs: List<JsonObject>) {
         val docIds = ArrayList<String>()
         val courseIds = mutableSetOf<String>()
         val userIds = mutableSetOf<String>()
         val stepNums = mutableSetOf<Int>()
 
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                docIds.add(id)
-                courseIds.add(JsonUtils.getString("courseId", jsonDoc))
-                userIds.add(JsonUtils.getString("userId", jsonDoc))
-                stepNums.add(JsonUtils.getInt("stepNum", jsonDoc))
+        docs.forEach { jsonDoc ->
+            docIds.add(JsonUtils.getString("_id", jsonDoc))
+            courseIds.add(JsonUtils.getString("courseId", jsonDoc))
+            userIds.add(JsonUtils.getString("userId", jsonDoc))
+            stepNums.add(JsonUtils.getInt("stepNum", jsonDoc))
+        }
+
+        executeTransaction { realm ->
+            val existingProgresses = if (docIds.isNotEmpty()) {
+                realm.where(RealmCourseProgress::class.java)
+                    .`in`("id", docIds.toTypedArray())
+                    .findAll()
+                    .associateBy { it.id }
+            } else {
+                emptyMap()
             }
-        }
 
-        val existingProgresses = if (docIds.isNotEmpty()) {
-            realm.where(RealmCourseProgress::class.java)
-                .`in`("id", docIds.toTypedArray())
-                .findAll()
-                .associateBy { it.id }
-        } else {
-            emptyMap()
-        }
+            val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
+                realm.where(RealmCourseProgress::class.java)
+                    .`in`("courseId", courseIds.toTypedArray())
+                    .`in`("userId", userIds.toTypedArray())
+                    .`in`("stepNum", stepNums.toTypedArray())
+                    .findAll()
+            } else {
+                emptyList()
+            }
 
-        val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
-            realm.where(RealmCourseProgress::class.java)
-                .`in`("courseId", courseIds.toTypedArray())
-                .`in`("userId", userIds.toTypedArray())
-                .`in`("stepNum", stepNums.toTypedArray())
-                .findAll()
-        } else {
-            emptyList()
-        }
+            val localRecordsByKey = localRecords
+                .filter { it.isValid }
+                .groupBy { Triple(it.courseId, it.userId, it.stepNum) }
 
-        val localRecordsByKey = localRecords
-            .filter { it.isValid }
-            .groupBy { Triple(it.courseId, it.userId, it.stepNum) }
+            docs.forEach { act ->
+                val docId = JsonUtils.getString("_id", act)
+                val courseId = JsonUtils.getString("courseId", act)
+                val userId = JsonUtils.getString("userId", act)
+                val stepNum = JsonUtils.getInt("stepNum", act)
 
-        documentList.forEach { act ->
-            val docId = JsonUtils.getString("_id", act)
-            val courseId = JsonUtils.getString("courseId", act)
-            val userId = JsonUtils.getString("userId", act)
-            val stepNum = JsonUtils.getInt("stepNum", act)
+                val existingProgress = existingProgresses[docId]
 
-            val existingProgress = existingProgresses[docId]
+                // Find local record manually instead of querying Realm again
+                val localRecord = if (existingProgress == null) {
+                    localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
+                        ?.find { it._id == null || it._id == docId }
+                } else null
 
-            // Find local record manually instead of querying Realm again
-            val localRecord = if (existingProgress == null) {
-                localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
-                    ?.find { it._id == null || it._id == docId }
-            } else null
-
-            insertCourseProgress(realm, act, existingProgress, localRecord)
+                insertCourseProgress(realm, act, existingProgress, localRecord)
+            }
         }
     }
 
-    override fun findProgressForCourse(courseData: com.google.gson.JsonArray, courseId: String): com.google.gson.JsonObject? {
+    override fun findProgressForCourse(courseData: JsonArray, courseId: String): JsonObject? {
         courseData.forEach { element ->
             val course = element.asJsonObject
             if (JsonUtils.getString("courseId", course) == courseId) {

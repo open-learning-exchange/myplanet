@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserSurveyProfile
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -181,7 +182,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
-    private fun createUserProfile(): org.ole.planet.myplanet.model.UserSurveyProfile? {
+    private fun createUserProfile(): UserSurveyProfile? {
         var fname = ""
         var lname = ""
         var mName = ""
@@ -247,7 +248,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        return org.ole.planet.myplanet.model.UserSurveyProfile(
+        return UserSurveyProfile(
             fname = fname,
             lname = lname,
             mName = mName,

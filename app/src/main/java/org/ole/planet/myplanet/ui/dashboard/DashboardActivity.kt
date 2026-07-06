@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.dashboard
 
 import android.app.AlertDialog
 import android.content.BroadcastReceiver
-import android.os.SystemClock
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
@@ -12,10 +11,13 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -29,9 +31,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -118,7 +118,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
-    private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
 
     override fun attachBaseContext(base: Context) {
@@ -132,7 +132,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
-            object : android.view.ViewTreeObserver.OnPreDrawListener {
+            object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     return if (isReady) {
                         content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -201,66 +201,50 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun collectUiState() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    dashboardViewModel.uiState.collect { state ->
-                        updateNotificationBadge(state.unreadNotifications) {
-                            openNotificationsList(user?.id ?: "")
-                        }
-                        if (state.newNotifications.isNotEmpty()) {
-                            state.newNotifications.forEach { notificationManager?.showNotification(it) }
-                            dashboardViewModel.clearNewNotifications()
-                        }
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.uiState) { state ->
+            updateNotificationBadge(state.unreadNotifications) {
+                openNotificationsList(user?.id ?: "")
+            }
+            if (state.newNotifications.isNotEmpty()) {
+                state.newNotifications.forEach { notificationManager?.showNotification(it) }
+                dashboardViewModel.clearNewNotifications()
+            }
+        }
 
-                launch {
-                    dashboardViewModel.surveyNavigationEvent.collect { surveyId ->
-                        SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.surveyNavigationEvent) { surveyId ->
+            SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
+        }
 
-                launch {
-                    dashboardViewModel.taskNavigationEvent.collect { teamData ->
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamData.first,
-                            teamName = teamData.second,
-                            teamType = teamData.third,
-                            isMyTeam = true,
-                            navigateToPage = TasksPage
-                        )
-                        openCallFragment(f)
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.taskNavigationEvent) { teamData ->
+            val f = TeamDetailFragment.newInstance(
+                teamId = teamData.first,
+                teamName = teamData.second,
+                teamType = teamData.third,
+                isMyTeam = true,
+                navigateToPage = TasksPage
+            )
+            openCallFragment(f)
+        }
 
-                launch {
-                    dashboardViewModel.joinRequestNavigationEvent.collect { teamId ->
-                        if (teamId.isNotEmpty()) {
-                            val f = TeamDetailFragment()
-                            val b = Bundle()
-                            b.putString("id", teamId)
-                            b.putBoolean("isMyTeam", true)
-                            b.putString("navigateToPage", JoinRequestsPage.id)
-                            f.arguments = b
-                            openCallFragment(f)
-                        }
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.joinRequestNavigationEvent) { teamId ->
+            if (teamId.isNotEmpty()) {
+                val f = TeamDetailFragment()
+                val b = Bundle()
+                b.putString("id", teamId)
+                b.putBoolean("isMyTeam", true)
+                b.putString("navigateToPage", JoinRequestsPage.id)
+                f.arguments = b
+                openCallFragment(f)
+            }
+        }
 
-                launch {
-                    dashboardViewModel.challengeDialogEvent.collect { data ->
-                        challengeManager.showChallengeDialog(data)
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.challengeDialogEvent) { data ->
+            challengeManager.showChallengeDialog(data)
+        }
 
-                launch {
-                    syncManager.syncStatus.collect { status ->
-                        if (status is SyncManager.SyncStatus.Success) {
-                            updateLastSyncStatus()
-                        }
-                    }
-                }
+        collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status is SyncManager.SyncStatus.Success) {
+                updateLastSyncStatus()
             }
         }
     }
@@ -288,7 +272,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
-        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -611,7 +595,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
-                                    android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                                    Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
@@ -747,7 +731,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         // Set up close button
         val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
         closeButton.setOnClickListener {
-            binding.bannerContainer.removeView(bannerView.parent as? android.view.View ?: bannerView)
+            binding.bannerContainer.removeView(bannerView.parent as? View ?: bannerView)
         }
         
         // Auto-dismiss after 10 seconds

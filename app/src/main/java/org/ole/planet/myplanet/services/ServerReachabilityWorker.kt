@@ -27,8 +27,8 @@ import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltWorker
 class ServerReachabilityWorker @AssistedInject constructor(

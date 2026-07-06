@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
@@ -52,7 +53,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         get() = arguments?.getBoolean("fromCommunity", false) == true
 
     var listener =
-        android.app.DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
+        DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             date = Calendar.getInstance()
             date?.set(Calendar.YEAR, year)
             date?.set(Calendar.MONTH, monthOfYear)
@@ -122,7 +123,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val datePickerDialog = android.app.DatePickerDialog(
+        val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, monthOfYear, dayOfMonth ->
                 val selectedDate = Calendar.getInstance().apply {
@@ -322,7 +323,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
         addTransactionBinding.tvSelectDate.setOnClickListener {
             val d = date ?: Calendar.getInstance()
-            android.app.DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
+            DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
         }
         return addTransactionBinding.root
     }

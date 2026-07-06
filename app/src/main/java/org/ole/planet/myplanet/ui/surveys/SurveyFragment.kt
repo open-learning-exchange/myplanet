@@ -69,7 +69,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         viewModel.adoptSurvey(surveyId)
     }
 
-    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
+    override suspend fun getAdapter(): ListAdapter<*, *> {
         adapterMutex.withLock {
             if (adapter == null) {
                 val userProfileModel = profileDbHandler.getUserModel()

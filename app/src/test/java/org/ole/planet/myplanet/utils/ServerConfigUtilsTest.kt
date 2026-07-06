@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -11,7 +12,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(sdk = [33], application = Application::class)
 class ServerConfigUtilsTest {
 
     private lateinit var mockSharedPrefManager: SharedPrefManager

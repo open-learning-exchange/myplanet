@@ -11,8 +11,10 @@ import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.text.format.Formatter
 import android.webkit.MimeTypeMap
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import java.io.File
@@ -189,7 +191,7 @@ object FileUtils {
         if (uri.scheme == "content") {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
-                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (idx >= 0) name = cursor.getString(idx)
                 }
             }
@@ -371,7 +373,7 @@ object FileUtils {
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
-            android.widget.Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
     }
 }
