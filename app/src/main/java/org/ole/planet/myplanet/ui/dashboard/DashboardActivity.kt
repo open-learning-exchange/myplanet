@@ -12,10 +12,12 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewTreeObserver
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -116,7 +118,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
-    private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
 
     override fun attachBaseContext(base: Context) {
@@ -130,7 +132,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
-            object : android.view.ViewTreeObserver.OnPreDrawListener {
+            object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     return if (isReady) {
                         content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -270,7 +272,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
-        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -593,7 +595,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
-                                    android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                                    Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
@@ -729,7 +731,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         // Set up close button
         val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
         closeButton.setOnClickListener {
-            binding.bannerContainer.removeView(bannerView.parent as? android.view.View ?: bannerView)
+            binding.bannerContainer.removeView(bannerView.parent as? View ?: bannerView)
         }
         
         // Auto-dismiss after 10 seconds

@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.Base64
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -108,9 +111,9 @@ class LoginSyncManager @Inject constructor(
                     try {
                         t.printStackTrace()
                         val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable. Check your internet connection."
-                            is java.net.SocketTimeoutException -> "Connection timeout. Please try again."
-                            is java.net.ConnectException -> "Unable to connect to server."
+                            is UnknownHostException -> "Server not reachable. Check your internet connection."
+                            is SocketTimeoutException -> "Connection timeout. Please try again."
+                            is ConnectException -> "Unable to connect to server."
                             else -> "Network error: ${t.message ?: "Unknown error"}"
                         }
                         withContext(dispatcherProvider.main) { listener.onSyncFailed(errorMsg) }

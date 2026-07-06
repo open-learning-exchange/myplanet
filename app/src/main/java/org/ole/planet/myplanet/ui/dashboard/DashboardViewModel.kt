@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
@@ -29,11 +30,13 @@ import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
@@ -68,8 +71,8 @@ class DashboardViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository,
-    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
+    private val progressRepository: ProgressRepository,
+    private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
@@ -304,9 +307,9 @@ class DashboardViewModel @Inject constructor(
 
                 val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
-                val today = java.time.LocalDate.now()
-                val endDate = java.time.LocalDate.of(2025, 1, 16)
-                val shouldPrompt = today.isAfter(java.time.LocalDate.of(2024, 11, 30)) &&
+                val today = LocalDate.now()
+                val endDate = LocalDate.of(2025, 1, 16)
+                val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
                         today.isBefore(endDate) &&
                         serverUrl in validUrls
 

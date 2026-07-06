@@ -5,6 +5,7 @@ import java.io.IOException
 import javax.inject.Inject
 import kotlin.math.pow
 import okhttp3.Interceptor
+import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
@@ -18,10 +19,17 @@ class RetryInterceptor @Inject constructor(
 
     companion object {
         private const val MAX_BACKOFF_SLICE_MS = 250L
+        private val READ_ONLY_POST_PATH_SUFFIXES = listOf("/_find", "/_all_docs", "/_bulk_get")
+    }
+
+    private fun isRetrySafe(request: Request): Boolean {
+        if (request.method != "POST") return true
+        return READ_ONLY_POST_PATH_SUFFIXES.any { request.url.encodedPath.endsWith(it) }
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
+        val retryAllowed = isRetrySafe(request)
         var tryCount = 0
         var response: Response? = null
         var lastError: IOException? = null
@@ -42,7 +50,7 @@ class RetryInterceptor @Inject constructor(
                 lastError = e
             }
 
-            if (tryCount >= maxRetries) {
+            if (!retryAllowed || tryCount >= maxRetries) {
                 break
             }
             tryCount++

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.Context
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -16,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = android.app.Application::class)
+@Config(application = Application::class)
 class VersionUtilsTest {
 
     @Test

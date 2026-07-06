@@ -11,12 +11,13 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmUser
 
 class UserRepositoryBulkInsertTest {
     @Test
     fun `benchmark insertUsersFromSync`() = runTest {
-        val dbService = mockk<org.ole.planet.myplanet.data.DatabaseService>(relaxed = true)
+        val dbService = mockk<DatabaseService>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             dbService,
             mockk(relaxed = true),
