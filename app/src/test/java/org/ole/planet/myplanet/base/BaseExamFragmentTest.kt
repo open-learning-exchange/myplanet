@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.base
 
+import android.content.Context
 import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
@@ -36,7 +37,7 @@ class BaseExamFragmentTest {
         val editor = mockk<MarkwonEditor>(relaxed = true)
         val markwonEditorTextWatcher = mockk<MarkwonEditorTextWatcher>(relaxed = true)
 
-        every { Markwon.create(any<android.content.Context>()) } returns markwon
+        every { Markwon.create(any<Context>()) } returns markwon
         every { MarkwonEditor.create(markwon) } returns editor
         every { MarkwonEditorTextWatcher.withProcess(editor) } returns markwonEditorTextWatcher
 

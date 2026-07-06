@@ -147,9 +147,6 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-realm {
-    syncEnabled = true
-}
 kapt {
     correctErrorTypes = true
 }

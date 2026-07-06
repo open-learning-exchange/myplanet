@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,7 +48,7 @@ class VoicesViewModel @Inject constructor(
     private val _createNewsSuccess = Channel<RealmNews?>(Channel.BUFFERED)
     val createNewsSuccess: Flow<RealmNews?> = _createNewsSuccess.receiveAsFlow()
 
-    private var observeJob: kotlinx.coroutines.Job? = null
+    private var observeJob: Job? = null
 
     val filteredNews: StateFlow<List<RealmNews?>> = combine(
         _baseNewsList,

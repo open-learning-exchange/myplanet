@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.Build
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -52,13 +54,13 @@ class NetworkUtilsTest {
     fun getUniqueIdentifier_returnsExpectedFormat() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        android.provider.Settings.Secure.putString(
+        Settings.Secure.putString(
             context.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID,
+            Settings.Secure.ANDROID_ID,
             "test_android_id"
         )
 
-        ReflectionHelpers.setStaticField(android.os.Build::class.java, "ID", "test_build_id")
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "test_build_id")
 
         val uniqueId = NetworkUtils.getUniqueIdentifier()
 
@@ -69,13 +71,13 @@ class NetworkUtilsTest {
     fun getUniqueIdentifier_withNullAndroidId_returnsExpectedFormat() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        android.provider.Settings.Secure.putString(
+        Settings.Secure.putString(
             context.contentResolver,
-            android.provider.Settings.Secure.ANDROID_ID,
+            Settings.Secure.ANDROID_ID,
             null
         )
 
-        ReflectionHelpers.setStaticField(android.os.Build::class.java, "ID", "test_build_id")
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "test_build_id")
 
         val uniqueId = NetworkUtils.getUniqueIdentifier()
 

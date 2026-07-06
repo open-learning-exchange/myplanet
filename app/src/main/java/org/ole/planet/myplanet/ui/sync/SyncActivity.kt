@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
@@ -50,6 +51,7 @@ import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -139,7 +141,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var transactionSyncManager: TransactionSyncManager
 
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+    lateinit var broadcastService: BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -458,7 +460,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             customProgressDialog.show()
             isProgressDialogShowing = true
             txtSyncState?.text = getString(R.string.sync_chip_syncing)
-            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF59E0B.toInt())
+            dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFF59E0B.toInt())
         }
     }
 
@@ -474,7 +476,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 syncIcon.invalidateDrawable(syncIconDrawable)
             }
             txtSyncState?.text = getString(R.string.sync_chip_offline)
-            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
+            dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             showAlert(this@SyncActivity, getString(R.string.sync_failed), msg)
             showWifiSettingDialog(this@SyncActivity)
         }
@@ -589,7 +591,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (prefData.getLastSync() <= 0) {
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
                 txtSyncState?.text = getString(R.string.sync_chip_offline)
-                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
+                dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
@@ -600,7 +602,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
                 txtSyncState?.text = getString(R.string.sync_chip_synced)
-                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF22C55E.toInt())
+                dotSync?.backgroundTintList = ColorStateList.valueOf(0xFF22C55E.toInt())
             }
         }
         if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
