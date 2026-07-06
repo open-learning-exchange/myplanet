@@ -14,9 +14,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
@@ -198,7 +200,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         view?.post {
             if (!isAdded) return@post
             hideVideoLoading()
-            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.unable_to_play_video))
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.go_back)) { _, _ -> requireActivity().finish() }
@@ -407,7 +409,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 imageView.setImageBitmap(bitmap)
                 imageView.scaleType = ImageView.ScaleType.FIT_CENTER
                 parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
-                (imageView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = 1f
+                (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
 
                 page.close()
                 pdfRenderer.close()

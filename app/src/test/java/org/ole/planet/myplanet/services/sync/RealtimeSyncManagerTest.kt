@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.sync
 
 import io.mockk.mockk
 import io.mockk.verify
+import java.lang.reflect.Modifier
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -29,7 +30,7 @@ class RealtimeSyncManagerTest {
 
             field?.let {
                 it.isAccessible = true
-                if (java.lang.reflect.Modifier.isStatic(it.modifiers)) {
+                if (Modifier.isStatic(it.modifiers)) {
                     it.set(null, null)
                 } else {
                     it.set(RealtimeSyncManager.Companion, null)

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -63,7 +64,7 @@ class RealmUserTest {
         val mockResourcesRepositoryLazy = mockk<Lazy<ResourcesRepository>>(relaxed = true)
         val mockCoursesRepositoryLazy = mockk<Lazy<CoursesRepository>>(relaxed = true)
         val mockUploadToShelfService = mockk<Lazy<UploadToShelfService>>(relaxed = true)
-        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val mockContext = ApplicationProvider.getApplicationContext<Context>()
         val mockConfigurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
         val mockAppScope = CoroutineScope(Dispatchers.Unconfined)
         val mockDispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
