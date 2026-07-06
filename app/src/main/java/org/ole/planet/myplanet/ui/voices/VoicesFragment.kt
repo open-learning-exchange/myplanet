@@ -6,7 +6,11 @@ import android.os.Trace
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -52,6 +56,9 @@ class VoicesFragment : BaseVoicesFragment() {
     lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
     private lateinit var etSearch: EditText
 
+    private var isSpinnerUpdating = false
+    private lateinit var labelSpinnerAdapter: ArrayAdapter<String>
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
         llImage = binding.llImages
@@ -83,6 +90,7 @@ class VoicesFragment : BaseVoicesFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupLabelSpinner()
 
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
@@ -335,36 +343,48 @@ class VoicesFragment : BaseVoicesFragment() {
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-    private fun updateLabelSpinner(labels: List<String>, selectedLabel: String) {
-        val binding = _binding ?: return
-        val adapter = object : android.widget.ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, labels) {
-            override fun getView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+    private fun setupLabelSpinner() {
+        labelSpinnerAdapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, mutableListOf()) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = super.getView(position, convertView, parent)
-                (view as? android.widget.TextView)?.setTextColor(
-                    androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+                (view as? TextView)?.setTextColor(
+                    ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
                 )
                 return view
             }
-            override fun getDropDownView(position: Int, convertView: View?, parent: android.view.ViewGroup): View {
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
                 val view = super.getDropDownView(position, convertView, parent)
-                (view as? android.widget.TextView)?.apply {
-                    setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
-                    setBackgroundColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+                (view as? TextView)?.apply {
+                    setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+                    setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
                 }
                 return view
             }
         }
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.filterByLabel.adapter = adapter
-        binding.filterByLabel.backgroundTintList = androidx.core.content.ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
-        val position = labels.indexOf(selectedLabel).coerceAtLeast(0)
-        binding.filterByLabel.setSelection(position)
-        binding.filterByLabel.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>, view: View?, pos: Int, id: Long) {
-                voicesViewModel.updateSelectedLabel(labels[pos])
+        labelSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.filterByLabel.adapter = labelSpinnerAdapter
+        binding.filterByLabel.backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
+
+        binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                if (isSpinnerUpdating) return
+                val selected = labelSpinnerAdapter.getItem(pos) ?: return
+                voicesViewModel.updateSelectedLabel(selected)
                 scrollToTop()
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>) {}
+            override fun onNothingSelected(parent: AdapterView<*>) {}
+        }
+    }
+
+    private fun updateLabelSpinner(labels: List<String>, selectedLabel: String) {
+        val binding = _binding ?: return
+        isSpinnerUpdating = true
+        labelSpinnerAdapter.clear()
+        labelSpinnerAdapter.addAll(labels)
+        val position = labels.indexOf(selectedLabel).coerceAtLeast(0)
+        binding.filterByLabel.setSelection(position)
+        binding.filterByLabel.post {
+            isSpinnerUpdating = false
         }
     }
 
