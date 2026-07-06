@@ -10,6 +10,7 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -257,7 +258,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
     inner class ResourceAdapter(
         private val onItemClicked: (ResourceItem) -> Unit
-    ) : androidx.recyclerview.widget.ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(resourceItemDiffCallback) {
+    ) : ListAdapter<ResourceItem, ResourceAdapter.ViewHolder>(resourceItemDiffCallback) {
 
         inner class ViewHolder(val binding: ItemDownloadedResourceBinding) :
             RecyclerView.ViewHolder(binding.root)

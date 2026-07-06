@@ -37,7 +37,7 @@ class ResourcesRepositoryImplTest {
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
-    private val teamsSyncRepositoryLazy: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository> = mockk(relaxed = true)
+    private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
 

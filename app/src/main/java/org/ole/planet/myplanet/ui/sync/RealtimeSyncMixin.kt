@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.sync
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
@@ -22,7 +23,7 @@ interface RealtimeSyncMixin {
 class RealtimeSyncHelper(private val fragment: Fragment, private val mixin: RealtimeSyncMixin) {
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
 
-    @OptIn(kotlinx.coroutines.FlowPreview::class)
+    @OptIn(FlowPreview::class)
     fun setupRealtimeSync() {
         fragment.collectWhenStarted(
             syncManagerInstance.dataUpdateFlow

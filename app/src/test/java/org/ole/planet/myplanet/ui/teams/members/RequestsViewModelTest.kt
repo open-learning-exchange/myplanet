@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -23,7 +24,7 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 class RequestsViewModelTest {
 
     private lateinit var teamsRepository: TeamsRepository
-    private lateinit var teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository
+    private lateinit var teamsSyncRepository: TeamsSyncRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var testDispatcherProvider: TestDispatcherProvider
     private lateinit var viewModel: RequestsViewModel

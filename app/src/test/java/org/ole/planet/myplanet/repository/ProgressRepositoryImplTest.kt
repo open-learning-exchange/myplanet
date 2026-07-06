@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -141,7 +143,7 @@ class ProgressRepositoryImplTest {
     @Test
     fun testFetchCourseData_PopulatesFieldsCorrectly() = testScope.runTest {
         val myCourses = listOf(
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            RealmMyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Test Course"
             }
@@ -276,12 +278,12 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCompletedCourses() = testScope.runTest {
         val myCourses = listOf(
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            RealmMyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
                 courseSteps = io.realm.RealmList(RealmCourseStep().apply { courseId = "course1" })
             },
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            RealmMyCourse().apply {
                 courseId = "course2"
                 courseTitle = "Course 2"
                 courseSteps = io.realm.RealmList(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
@@ -370,7 +372,7 @@ class ProgressRepositoryImplTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)
         val jsonArray = JsonArray()
 
-        val doc1 = com.google.gson.JsonObject().apply {
+        val doc1 = JsonObject().apply {
             addProperty("_id", "doc1")
             addProperty("courseId", "course1")
             addProperty("userId", "user1")
@@ -413,7 +415,7 @@ class ProgressRepositoryImplTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)
         val jsonArray = JsonArray()
 
-        val doc1 = com.google.gson.JsonObject().apply {
+        val doc1 = JsonObject().apply {
             addProperty("_id", "doc1")
             addProperty("courseId", "course1")
             addProperty("userId", "user1")
@@ -470,7 +472,7 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCompletedCourses_nullSteps() = testScope.runTest {
         val myCourses = listOf(
-            org.ole.planet.myplanet.model.RealmMyCourse().apply {
+            RealmMyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
                 courseSteps = null
@@ -494,14 +496,14 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun testFindProgressForCourse() {
-        val jsonArray = com.google.gson.JsonArray()
-        val course1 = com.google.gson.JsonObject().apply {
+        val jsonArray = JsonArray()
+        val course1 = JsonObject().apply {
             addProperty("courseId", "course1")
-            add("progress", com.google.gson.JsonObject().apply { addProperty("max", 10) })
+            add("progress", JsonObject().apply { addProperty("max", 10) })
         }
-        val course2 = com.google.gson.JsonObject().apply {
+        val course2 = JsonObject().apply {
             addProperty("courseId", "course2")
-            add("progress", com.google.gson.JsonObject().apply { addProperty("max", 20) })
+            add("progress", JsonObject().apply { addProperty("max", 20) })
         }
         jsonArray.add(course1)
         jsonArray.add(course2)
