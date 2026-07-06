@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -530,7 +531,7 @@ class CoursesAdapter(
             }
             badge.text = statusText
             badge.visibility = View.VISIBLE
-            (badge.background as? android.graphics.drawable.GradientDrawable)
+            (badge.background as? GradientDrawable)
                 ?.setColor(ContextCompat.getColor(context, statusColor))
         }
 

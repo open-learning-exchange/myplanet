@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.app.Application
 import android.content.Context
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
@@ -16,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [32], application = android.app.Application::class)
+@Config(sdk = [32], application = Application::class)
 class CoursesAdapterTest {
 
     @Mock

@@ -12,11 +12,12 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
@@ -32,9 +33,11 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -49,7 +52,7 @@ class VoicesFragment : BaseVoicesFragment() {
     @Inject
     lateinit var voicesRepository: VoicesRepository
     @Inject
-    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var etSearch: EditText
     private var labelAdapter: VoicesLabelAdapter? = null
 
@@ -125,7 +128,7 @@ class VoicesFragment : BaseVoicesFragment() {
                             llImage?.removeAllViews()
                             scrollToTop()
                         } else {
-                            org.ole.planet.myplanet.utils.Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
                         }
                     }
                 }
@@ -347,7 +350,7 @@ class VoicesFragment : BaseVoicesFragment() {
                     scrollToTop()
                 }
             )
-            binding.filterByLabel.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(requireContext(), androidx.recyclerview.widget.LinearLayoutManager.HORIZONTAL, false)
+            binding.filterByLabel.layoutManager = LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false)
             binding.filterByLabel.adapter = labelAdapter
         }
     }

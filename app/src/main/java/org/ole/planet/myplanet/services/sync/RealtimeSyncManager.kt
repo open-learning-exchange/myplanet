@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.services.sync
 
+import java.util.concurrent.CopyOnWriteArraySet
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import org.ole.planet.myplanet.callback.OnRealtimeSyncListener
 import org.ole.planet.myplanet.model.TableDataUpdate
-import java.util.concurrent.CopyOnWriteArraySet
 
 class RealtimeSyncManager {
     companion object {

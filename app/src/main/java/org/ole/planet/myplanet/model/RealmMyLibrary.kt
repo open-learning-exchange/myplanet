@@ -11,6 +11,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -221,7 +222,7 @@ open class RealmMyLibrary : RealmObject() {
         data class InsertParams(
             val doc: JsonObject,
             val mRealm: Realm?,
-            val spm: org.ole.planet.myplanet.services.SharedPrefManager,
+            val spm: SharedPrefManager,
             val userId: String? = "",
             val stepId: String? = "",
             val courseId: String? = ""
@@ -338,7 +339,7 @@ open class RealmMyLibrary : RealmObject() {
         }
 
         @JvmStatic
-        fun save(allDocs: JsonArray, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager): List<String> {
+        fun save(allDocs: JsonArray, mRealm: Realm, spm: SharedPrefManager): List<String> {
             val list: MutableList<String> = ArrayList()
             allDocs.forEach { doc ->
                 val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)

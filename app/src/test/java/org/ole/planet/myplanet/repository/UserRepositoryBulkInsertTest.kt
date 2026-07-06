@@ -2,22 +2,23 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.coEvery
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
 import kotlinx.coroutines.runBlocking
+import org.junit.Test
+import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.RealmUser
 
 class UserRepositoryBulkInsertTest {
 
     @Test
     fun `benchmark insertUsersFromSync`() {
-        val dbService = mockk<org.ole.planet.myplanet.data.DatabaseService>(relaxed = true)
+        val dbService = mockk<DatabaseService>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             dbService,
             mockk(relaxed = true),

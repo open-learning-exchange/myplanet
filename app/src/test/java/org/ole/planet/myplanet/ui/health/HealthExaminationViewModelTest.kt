@@ -17,9 +17,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmUser
-import org.junit.Assert.assertNull
 import org.ole.planet.myplanet.model.RealmMyHealth
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule

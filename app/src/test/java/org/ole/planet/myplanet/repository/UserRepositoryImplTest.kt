@@ -28,6 +28,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -152,7 +153,7 @@ class UserRepositoryImplTest {
 
         // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
         val spyRepository = spyk(repository)
-        val mockRealmUser = mockk<org.ole.planet.myplanet.model.RealmUser>(relaxed = true)
+        val mockRealmUser = mockk<RealmUser>(relaxed = true)
         coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
         val result = spyRepository.becomeMember(userObj)
@@ -165,12 +166,12 @@ class UserRepositoryImplTest {
     @Test
     fun `hasAtLeastOneUser returns true when user exists`() = runTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmUser>>()
         coEvery { databaseService.withRealmAsync<Long>(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Long>()
             block(mockRealm)
         }
-        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealm.where(RealmUser::class.java) } returns mockRealmQuery
         every { mockRealmQuery.count() } returns 1L
 
         val result = repository.hasAtLeastOneUser()
@@ -180,12 +181,12 @@ class UserRepositoryImplTest {
     @Test
     fun `hasAtLeastOneUser returns false when no user exists`() = runTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-        val mockRealmQuery = mockk<io.realm.RealmQuery<org.ole.planet.myplanet.model.RealmUser>>()
+        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmUser>>()
         coEvery { databaseService.withRealmAsync<Long>(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Long>()
             block(mockRealm)
         }
-        every { mockRealm.where(org.ole.planet.myplanet.model.RealmUser::class.java) } returns mockRealmQuery
+        every { mockRealm.where(RealmUser::class.java) } returns mockRealmQuery
         every { mockRealmQuery.count() } returns 0L
 
         val result = repository.hasAtLeastOneUser()

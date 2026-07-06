@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
@@ -28,7 +29,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(sdk = [33], application = Application::class)
 class ConstantsTest {
 
     private lateinit var context: Context

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.pdf.PdfRenderer
 import android.media.MediaMetadataRetriever
 import android.os.ParcelFileDescriptor
@@ -20,7 +21,6 @@ import java.io.File
 import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -55,12 +55,12 @@ class InlineResourceAdapter(
     )
 ) {
 
-    private var externalFilesDir: java.io.File? = null
+    private var externalFilesDir: File? = null
     private val textCache = mutableMapOf<String, String>()
     private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
     private val cacheSize = maxMemory / 8
-    private val bitmapCache = object : LruCache<String, android.graphics.Bitmap>(cacheSize) {
-        override fun sizeOf(key: String, bitmap: android.graphics.Bitmap): Int {
+    private val bitmapCache = object : LruCache<String, Bitmap>(cacheSize) {
+        override fun sizeOf(key: String, bitmap: Bitmap): Int {
             return bitmap.byteCount / 1024
         }
     }

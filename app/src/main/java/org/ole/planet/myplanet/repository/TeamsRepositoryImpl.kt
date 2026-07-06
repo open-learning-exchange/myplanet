@@ -7,11 +7,14 @@ import android.text.TextUtils
 import androidx.annotation.RequiresApi
 import androidx.core.net.toUri
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmList
+import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -27,6 +30,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
+import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -37,29 +41,32 @@ import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
     @param:AppPreferences private val preferences: SharedPreferences,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val userRepository: UserRepository,
-    private val resourcesRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.ResourcesRepository>,
+    private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val timeProvider: TimeProvider,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
@@ -341,7 +348,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamResources(teamId: String): List<org.ole.planet.myplanet.model.RealmMyLibrary> {
+    override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
         val linkedResources = resourcesRepositoryLazy.get().getLibraryItemsByResourceIds(resourceIds)
         val privateResources = resourcesRepositoryLazy.get().getTeamPrivateResources(teamId)
@@ -1374,8 +1381,8 @@ class TeamsRepositoryImpl @Inject constructor(
         return membersStats.map { stats ->
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(stats.member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                val date = java.util.Date(lastLogoutTimestamp)
-                java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault()).format(date)
+                val date = Date(lastLogoutTimestamp)
+                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
             } else {
                 "No logout record found"
             }
@@ -1497,7 +1504,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return findByField(RealmMyTeam::class.java, "_id", teamId)?.userId
     }
 
-    override suspend fun getAvailableResourcesToAdd(teamId: String): List<org.ole.planet.myplanet.model.RealmMyLibrary> {
+    override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
         val existing = getTeamResources(teamId)
         val existingIds = existing.mapNotNull { it._id }
         val allLibraryItems = resourcesRepositoryLazy.get().getPublicLibraryItems()
@@ -1597,14 +1604,14 @@ class TeamsRepositoryImpl @Inject constructor(
 
     @RequiresApi(Build.VERSION_CODES.S)
     private fun processDescription(description: String?) {
-        val links = org.ole.planet.myplanet.utils.DownloadUtils.extractLinks(description ?: "")
-        val baseUrl = org.ole.planet.myplanet.utils.UrlUtils.getUrl()
+        val links = DownloadUtils.extractLinks(description ?: "")
+        val baseUrl = UrlUtils.getUrl()
         val concatenatedLinks = LinkedHashSet<String>()
         for (link in links) {
             val concatenatedLink = "$baseUrl/$link"
             concatenatedLinks.add(concatenatedLink)
         }
-        org.ole.planet.myplanet.utils.DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
+        DownloadUtils.openDownloadService(MainApplication.context, ArrayList(concatenatedLinks), true)
     }
 
     override suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int {
@@ -1696,7 +1703,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         val ids = mutableListOf<String>()
         for (j in jsonArray) {
@@ -1721,7 +1728,7 @@ class TeamsRepositoryImpl @Inject constructor(
             insertMyTeam(realm, jsonDoc, existingTeams)
         }
     }
-    override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -1735,7 +1742,7 @@ class TeamsRepositoryImpl @Inject constructor(
             RealmTeamTask.insert(realm, jsonDoc)
         }
     }
-    override fun bulkInsertTeamActivitiesFromSync(realm: Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertTeamActivitiesFromSync(realm: Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject

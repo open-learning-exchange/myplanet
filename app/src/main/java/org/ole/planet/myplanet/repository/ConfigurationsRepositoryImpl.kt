@@ -7,6 +7,9 @@ import androidx.core.net.toUri
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -75,9 +78,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             } catch (t: Exception) {
                 t.printStackTrace()
                 when (t) {
-                    is java.net.UnknownHostException -> "Server not reachable"
-                    is java.net.SocketTimeoutException -> "Connection timeout"
-                    is java.net.ConnectException -> "Unable to connect to server"
+                    is UnknownHostException -> "Server not reachable"
+                    is SocketTimeoutException -> "Connection timeout"
+                    is ConnectException -> "Unable to connect to server"
                     is IOException -> "Network connection error"
                     else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                 }
