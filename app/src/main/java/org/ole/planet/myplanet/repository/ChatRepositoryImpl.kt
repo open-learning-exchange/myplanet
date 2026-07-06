@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.RealmList
@@ -31,7 +32,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
 
-    @androidx.annotation.VisibleForTesting
+    @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
         org.ole.planet.myplanet.MainApplication.isServerReachable(url)
     }
@@ -57,8 +58,8 @@ class ChatRepositoryImpl @Inject constructor(
                     addProperty("aiProvider", aiProvider.name)
                     addProperty("user", user)
                     addProperty("title", query)
-                    addProperty("createdDate", java.util.Date().time)
-                    addProperty("updatedDate", java.util.Date().time)
+                    addProperty("createdDate", Date().time)
+                    addProperty("updatedDate", Date().time)
                     val conversationsArray = JsonArray()
                     val conversationObject = JsonObject().apply {
                         addProperty("query", query)
@@ -199,7 +200,7 @@ class ChatRepositoryImpl @Inject constructor(
                 conversations = io.realm.RealmList<RealmConversation>().apply {
                     addAll(unmanagedConversations)
                 }
-                lastUsed = java.util.Date().time
+                lastUsed = Date().time
             }
         }
 

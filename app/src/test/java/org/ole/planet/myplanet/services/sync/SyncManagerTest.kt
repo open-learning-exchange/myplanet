@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -47,7 +48,7 @@ class SyncManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository = mockk(relaxed = true)
+    private val teamsSyncRepository: TeamsSyncRepository = mockk(relaxed = true)
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
     private val eventsRepository: EventsRepository = mockk(relaxed = true)
     private val listener: OnSyncListener = mockk(relaxed = true)

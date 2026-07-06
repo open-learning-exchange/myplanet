@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.exam
 
+import java.lang.reflect.Modifier
 import org.junit.Test
 import org.ole.planet.myplanet.base.BaseExamFragment
 
@@ -14,7 +15,7 @@ class ExamTakingFragmentTest {
             Boolean::class.javaPrimitiveType
         )
         assert(baseMethod != null)
-        assert(java.lang.reflect.Modifier.isAbstract(baseMethod.modifiers))
+        assert(Modifier.isAbstract(baseMethod.modifiers))
 
         val childMethod = ExamTakingFragment::class.java.getDeclaredMethod(
             "saveCourseProgress",
@@ -23,6 +24,6 @@ class ExamTakingFragmentTest {
             Boolean::class.javaPrimitiveType
         )
         assert(childMethod != null)
-        assert(!java.lang.reflect.Modifier.isAbstract(childMethod.modifiers))
+        assert(!Modifier.isAbstract(childMethod.modifiers))
     }
 }

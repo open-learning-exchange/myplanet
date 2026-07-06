@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -52,7 +53,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Scheduled RetryQueueWorker")
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun createScheduleWorkRequest(): PeriodicWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -77,7 +78,7 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Triggered immediate retry")
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun createImmediateRetryWorkRequest(): OneTimeWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
