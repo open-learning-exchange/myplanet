@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
+import android.app.NotificationManager
 import android.content.Context
+import android.content.SharedPreferences
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.test.core.app.ApplicationProvider
@@ -21,7 +24,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.O], application = android.app.Application::class)
+@Config(sdk = [Build.VERSION_CODES.O], application = Application::class)
 class NotificationUtilsTest {
 
     @Before
@@ -144,8 +147,8 @@ class NotificationUtilsTest {
     @Test
     fun testNotificationManagerInit() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        val prefs = mockk<android.content.SharedPreferences>()
-        val editor = mockk<android.content.SharedPreferences.Editor>()
+        val prefs = mockk<SharedPreferences>()
+        val editor = mockk<SharedPreferences.Editor>()
 
         val spyContext = spyk(context)
 
@@ -155,7 +158,7 @@ class NotificationUtilsTest {
         every { editor.putStringSet(any(), any()) } returns editor
         every { editor.apply() } returns Unit
 
-        val notificationManagerMock = mockk<android.app.NotificationManager>(relaxed = true)
+        val notificationManagerMock = mockk<NotificationManager>(relaxed = true)
         every { spyContext.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManagerMock
 
         val manager = NotificationUtils.NotificationManager(spyContext)
@@ -171,7 +174,7 @@ class NotificationUtilsTest {
     fun testCreate() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         val spyContext = spyk(context)
-        val manager = mockk<android.app.NotificationManager>(relaxed = true)
+        val manager = mockk<NotificationManager>(relaxed = true)
 
         every { spyContext.getSystemService(Context.NOTIFICATION_SERVICE) } returns manager
 

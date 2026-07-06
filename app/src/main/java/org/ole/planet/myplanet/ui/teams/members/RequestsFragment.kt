@@ -5,6 +5,7 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
@@ -42,7 +43,7 @@ class RequestsFragment : BaseMemberFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             currentUser = userSessionManager.getUserModel() ?: RealmUser()
             (adapter as? RequestsAdapter)?.setUser(currentUser)
-            viewLifecycleOwner.repeatOnLifecycle(androidx.lifecycle.Lifecycle.State.STARTED) {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.uiState.collect { uiState ->
                         (adapter as? RequestsAdapter)?.setData(

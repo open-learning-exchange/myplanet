@@ -17,6 +17,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -34,6 +35,7 @@ import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatAdapter
@@ -62,10 +64,10 @@ class VoicesAdapter(
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?,
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
-    private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
+    private val userRepository: UserRepository,
     private val getCommunityLeadersFn: () -> String,
     private val setRepliedNewsIdFn: (String?) -> Unit
-) : androidx.recyclerview.widget.ListAdapter<RealmNews, RecyclerView.ViewHolder>(
+) : ListAdapter<RealmNews, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback<RealmNews>(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true

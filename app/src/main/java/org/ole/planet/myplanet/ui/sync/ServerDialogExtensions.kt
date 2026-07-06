@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 private val httpsPrefixRegex = Regex("^https?://")
@@ -237,7 +238,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+    binding.deviceName.setText(NetworkUtils.getDeviceName())
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {

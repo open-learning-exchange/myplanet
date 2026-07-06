@@ -9,6 +9,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -205,7 +206,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.viewPager2.adapter = TeamPagerAdapter(
             this, pageConfigs, team?._id, this, this
         )
-        binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
+        binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
         binding.tabLayout.isInlineLabel = true
 
         TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->

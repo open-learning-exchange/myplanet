@@ -7,6 +7,9 @@ import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
 import io.realm.Sort
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Calendar
 import java.util.HashMap
 import java.util.UUID
@@ -21,6 +24,7 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -248,13 +252,13 @@ class VoicesRepositoryImpl @Inject constructor(
 
     override suspend fun updateTeamNotification(teamId: String, count: Int) {
         executeTransaction { it ->
-            var notification = it.where(org.ole.planet.myplanet.model.RealmTeamNotification::class.java)
+            var notification = it.where(RealmTeamNotification::class.java)
                 .equalTo("type", "chat")
                 .equalTo("parentId", teamId)
                 .findFirst()
 
             if (notification == null) {
-                notification = it.createObject(org.ole.planet.myplanet.model.RealmTeamNotification::class.java, UUID.randomUUID().toString())
+                notification = it.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
                 notification.parentId = teamId
                 notification.type = "chat"
             }
@@ -433,11 +437,11 @@ class VoicesRepositoryImpl @Inject constructor(
         return false
     }
 
-    private val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd")
+    private val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
     private fun getDateFromTimestamp(timestamp: Long): String {
-        return java.time.Instant.ofEpochMilli(timestamp)
-            .atZone(java.time.ZoneId.systemDefault())
+        return Instant.ofEpochMilli(timestamp)
+            .atZone(ZoneId.systemDefault())
             .format(dateFormatter)
     }
 

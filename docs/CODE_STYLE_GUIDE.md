@@ -32,6 +32,33 @@ This guide documents the conventions actually used in the myPlanet codebase. AI 
 - Max line length: ~120 chars (not strictly enforced, but keep it readable).
 - One blank line between top-level declarations; use judgement within functions.
 
+### Imports — No Inline Fully-Qualified Names
+
+Always import a type and use its simple name. Never reference a class by its fully-qualified name in the middle of code — that hides the file's real dependencies from the import block and makes every usage line harder to read.
+
+```kotlin
+// Good
+import org.ole.planet.myplanet.utils.JsonUtils
+
+val title = JsonUtils.getString("title", doc)
+
+// BAD - inline fully-qualified name
+val title = org.ole.planet.myplanet.utils.JsonUtils.getString("title", doc)
+```
+
+**On a name collision, use an import alias** instead of falling back to the fully-qualified name:
+
+```kotlin
+import androidx.appcompat.app.AlertDialog
+import android.app.AlertDialog as AndroidAlertDialog
+
+val builder = AndroidAlertDialog.Builder(context, R.style.CustomAlertDialog)
+```
+
+**The only exception is library `R` classes.** `com.google.android.material.R`, `androidx.media3.ui.R`, etc. cannot be imported without shadowing the app's own `R`, so those stay fully qualified at the usage site.
+
+Keep the import block sorted alphabetically and don't use wildcard imports (`import foo.*`).
+
 ### Null Safety
 
 Prefer non-null types. Use `?` only when null is genuinely meaningful. Avoid the `!!` operator — if you find yourself writing it, restructure with `?.let`, early returns, or elvis `?:`.
@@ -717,6 +744,8 @@ Before opening a PR:
 These are real patterns that have caused bugs in this codebase before.
 
 **Don't return managed Realm objects.** Always `copyFromRealm` before the object leaves the Realm thread.
+
+**Don't reference types by their fully-qualified name inline.** `org.ole.planet.myplanet.utils.JsonUtils.getString(...)` in the middle of a function is an import that escaped. Import the type (aliased if the name collides) and use the simple name — see [Imports](#imports--no-inline-fully-qualified-names). Library `R` classes are the one exception.
 
 **Don't use `!!` unless you are absolutely certain the value cannot be null.** The codebase has had NPE crashes from this.
 

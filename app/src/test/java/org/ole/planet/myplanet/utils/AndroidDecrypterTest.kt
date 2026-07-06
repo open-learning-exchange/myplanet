@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -111,7 +112,7 @@ class AndroidDecrypterTest {
         // Use the same logic as in the function to get the expected hash
         val p = de.rtner.security.auth.spi.PBKDF2Parameters("HmacSHA1", "utf-8", salt.toByteArray(), 10)
         val dk = de.rtner.security.auth.spi.PBKDF2Engine(p).deriveKey(password, 20)
-        val expectedHash = de.rtner.misc.BinTools.bin2hex(dk).lowercase(java.util.Locale.ROOT)
+        val expectedHash = de.rtner.misc.BinTools.bin2hex(dk).lowercase(Locale.ROOT)
 
         val result = AndroidDecrypter.androidDecrypter(userId, password, expectedHash, salt)
         assertTrue(result)
