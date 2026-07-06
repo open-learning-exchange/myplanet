@@ -55,6 +55,7 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.FileUtils
@@ -105,6 +106,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     companion object {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
+        private const val ANR_LOG_TYPE = "anr"
         private lateinit var instance: MainApplication
 
         @VisibleForTesting
@@ -131,31 +133,40 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
-                val entryPoint = EntryPointAccessors.fromApplication(
-                    context,
-                    CoreDependenciesEntryPoint::class.java
-                )
-                val userSessionManager = entryPoint.userSessionManager()
-                val spm = entryPoint.sharedPrefManager()
-                try {
-                    val databaseService = (context.applicationContext as MainApplication).databaseService
-                    val model = userSessionManager.getUserModel()
-                    databaseService.executeTransactionAsync { r ->
-                        val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                        log.parentCode = spm.getParentCode()
-                        log.createdOn = spm.getPlanetCode()
-                        model?.let { log.userId = it.id }
-                        log.time = "${Date().time}"
-                        log.page = ""
-                        log.version = getVersionName(context)
-                        log.type = type
-                        if (error.isNotEmpty()) {
-                            log.error = error
-                        }
+                saveLogToRealm(type, error, "${Date().time}")
+            }
+        }
+
+        // A report for a failure that may kill the process (crash/ANR) must be persisted
+        // to a plain file before this runs: the Realm write below waits on the shared
+        // write lock and dispatcher, so it can be lost if the process dies first.
+        suspend fun saveLogToRealm(type: String, error: String, time: String): Boolean {
+            val entryPoint = EntryPointAccessors.fromApplication(
+                context,
+                CoreDependenciesEntryPoint::class.java
+            )
+            val userSessionManager = entryPoint.userSessionManager()
+            val spm = entryPoint.sharedPrefManager()
+            return try {
+                val databaseService = (context.applicationContext as MainApplication).databaseService
+                val model = userSessionManager.getUserModel()
+                databaseService.executeTransactionAsync { r ->
+                    val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
+                    log.parentCode = spm.getParentCode()
+                    log.createdOn = spm.getPlanetCode()
+                    model?.let { log.userId = it.id }
+                    log.time = time
+                    log.page = ""
+                    log.version = getVersionName(context)
+                    log.type = type
+                    if (error.isNotEmpty()) {
+                        log.error = error
                     }
-                } catch (e: Exception) {
-                    e.printStackTrace()
                 }
+                true
+            } catch (e: Exception) {
+                e.printStackTrace()
+                false
             }
         }
 
@@ -218,7 +229,13 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
-            createLog(RealmApkLog.ERROR_TYPE_CRASH, e.stackTraceToString())
+            val error = e.stackTraceToString()
+            val pendingFile = CrashLogStore.save(context, RealmApkLog.ERROR_TYPE_CRASH, error)
+            applicationScope.launch {
+                if (saveLogToRealm(RealmApkLog.ERROR_TYPE_CRASH, error, "${Date().time}")) {
+                    pendingFile?.delete()
+                }
+            }
 
             val homeIntent = Intent(Intent.ACTION_MAIN).apply {
                 addCategory(Intent.CATEGORY_HOME)
@@ -256,9 +273,25 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             initApp()
             loadAndApplyTheme()
             initializeDatabaseConnection()
+            sweepPendingLogs()
             setupAnrWatchdog()
             scheduleWorkersOnStart()
             observeNetworkForDownloads()
+        }
+    }
+
+    private suspend fun sweepPendingLogs() {
+        try {
+            val pendingLogs = withContext(dispatcherProvider.io) {
+                CrashLogStore.loadPendingLogs(this@MainApplication)
+            }
+            for (pending in pendingLogs) {
+                if (saveLogToRealm(pending.type, pending.error, pending.time)) {
+                    withContext(dispatcherProvider.io) { pending.file.delete() }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
     private fun initApp() {
@@ -308,8 +341,12 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 timeout = 5000L,
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
+                        val error = "ANR detected! Duration: ${duration}ms\n $message"
+                        val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error)
                         applicationScope.launch {
-                            createLog("anr", "ANR detected! Duration: ${duration}ms\n $message")
+                            if (saveLogToRealm(ANR_LOG_TYPE, error, "${Date().time}")) {
+                                pendingFile?.delete()
+                            }
                         }
                     }
                 },
