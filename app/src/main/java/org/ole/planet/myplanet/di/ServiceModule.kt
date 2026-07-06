@@ -11,6 +11,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import org.ole.planet.myplanet.data.DatabaseService
@@ -132,7 +133,7 @@ object ServiceModule {
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
-        @RealmDispatcher realmDispatcher: kotlinx.coroutines.CoroutineDispatcher,
+        @RealmDispatcher realmDispatcher: CoroutineDispatcher,
         @ApplicationContext context: Context,
         voicesRepository: VoicesRepository,
         chatRepository: ChatRepository,

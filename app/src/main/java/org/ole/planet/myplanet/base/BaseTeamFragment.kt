@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
@@ -29,7 +30,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
-    lateinit var teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository
+    lateinit var teamsSyncRepository: TeamsSyncRepository
     @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
@@ -12,6 +13,7 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import io.realm.log.RealmLog
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -25,6 +27,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,9 +41,9 @@ class PersonalsRepositoryImplTest {
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
-        mockkStatic(io.realm.log.RealmLog::class)
-        every { io.realm.log.RealmLog.error(any<Throwable>(), any<String>(), *anyVararg()) } just Runs
-        every { io.realm.log.RealmLog.error(any<String>(), *anyVararg()) } just Runs
+        mockkStatic(RealmLog::class)
+        every { RealmLog.error(any<Throwable>(), any<String>(), *anyVararg()) } just Runs
+        every { RealmLog.error(any<String>(), *anyVararg()) } just Runs
 
         databaseService = mockk(relaxed = true)
         mockRealm = mockk(relaxed = true)
@@ -58,8 +61,8 @@ class PersonalsRepositoryImplTest {
         every { databaseService.createManagedRealmInstance() } returns mockRealm
         every { databaseService.ioDispatcher } returns testDispatcher
 
-        val apiInterface = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
-        val context = mockk<android.content.Context>(relaxed = true)
+        val apiInterface = mockk<ApiInterface>(relaxed = true)
+        val context = mockk<Context>(relaxed = true)
         repository = PersonalsRepositoryImpl(databaseService, testDispatcher, apiInterface, context)
     }
 

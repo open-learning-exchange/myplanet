@@ -40,7 +40,12 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
@@ -57,7 +62,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
@@ -66,10 +71,10 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
-    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
-    private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
+    private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val coursesRepository: CoursesRepository,
+    private val eventsRepository: EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)

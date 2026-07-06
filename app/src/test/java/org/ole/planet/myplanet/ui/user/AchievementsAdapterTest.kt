@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.user
 
+import android.app.Application
 import android.os.Build
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -13,7 +14,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)
+@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
 class AchievementsAdapterTest {
 
     @get:Rule

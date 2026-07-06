@@ -10,6 +10,7 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,7 +28,7 @@ class LifeRepositoryImplTest {
     fun setUp() {
         Logger.getLogger("io.mockk").level = Level.OFF
         databaseService = mockk(relaxed = true)
-        repository = LifeRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
+        repository = LifeRepositoryImpl(databaseService, UnconfinedTestDispatcher())
     }
 
     @Test
