@@ -590,4 +590,8 @@ class VoicesRepositoryImpl @Inject constructor(
         }
         return imageList.mapNotNull { it.resourceRemoteAddress }
     }
+
+    override suspend fun getUserById(userId: String): RealmUser? {
+        return findByField(RealmUser::class.java, "id", userId)
+    }
 }

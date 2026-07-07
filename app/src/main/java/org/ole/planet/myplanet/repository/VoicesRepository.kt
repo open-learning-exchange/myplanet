@@ -51,4 +51,5 @@ interface VoicesRepository {
     suspend fun insertNewsFromJson(doc: JsonObject)
     suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
+    suspend fun getUserById(userId: String): RealmUser?
 }
