@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
@@ -150,8 +151,8 @@ class RealmFeedbackTest {
 
         feedback.setMessages("invalid json")
 
-        mockkStatic(com.google.gson.JsonParser::class)
-        every { com.google.gson.JsonParser.parseString(any()) } throws object : Exception("Test exception") {
+        mockkStatic(JsonParser::class)
+        every { JsonParser.parseString(any()) } throws object : Exception("Test exception") {
             override fun printStackTrace() {
                 // Do nothing to keep test logs clean
             }

@@ -69,7 +69,6 @@ open class RealmMeetup : RealmObject() {
             return meetup
         }
 
-        @JvmStatic
         fun insert(mRealm: Realm, meetupDoc: JsonObject) {
             insert("", meetupDoc, mRealm)
         }
@@ -85,7 +84,6 @@ open class RealmMeetup : RealmObject() {
             mRealm.insertOrUpdate(meetup)
         }
 
-        @JvmStatic
         fun insertList(mRealm: Realm, userId: String?, documents: List<JsonObject>) {
             if (documents.isEmpty()) return
 
@@ -112,7 +110,6 @@ open class RealmMeetup : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
             val meetups = realm?.where(RealmMeetup::class.java)?.isNotEmpty("userId")
                 ?.equalTo("userId", userId, Case.INSENSITIVE)?.findAll()
@@ -123,7 +120,6 @@ open class RealmMeetup : RealmObject() {
             return ids
         }
 
-        @JvmStatic
         fun getHashMap(meetups: RealmMeetup): HashMap<String, String> {
             val map = HashMap<String, String>()
             map["Meetup Title"] = checkNull(meetups.title)
@@ -157,7 +153,6 @@ open class RealmMeetup : RealmObject() {
             return s.orEmpty()
         }
 
-        @JvmStatic
         fun serialize(meetup: RealmMeetup): JsonObject {
             val `object` = JsonObject()
             if (!meetup.meetupId.isNullOrEmpty()) `object`.addProperty("_id", meetup.meetupId)

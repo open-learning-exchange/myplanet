@@ -11,6 +11,7 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.withResumed
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -109,7 +110,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
             user = profileDbHandler.getUserModel()
             val data = loadStepData()
-            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 step = data.step
                 resources = data.resources
                 stepExams = data.stepExams

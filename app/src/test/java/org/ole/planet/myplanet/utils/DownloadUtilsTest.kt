@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.ActivityManager
+import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
@@ -8,7 +9,6 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.services.DownloadService
 import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
-@Config(sdk = [33], manifest = Config.NONE, application = android.app.Application::class)
+@Config(sdk = [33], manifest = Config.NONE, application = Application::class)
 class DownloadUtilsTest {
 
     private lateinit var context: Context
@@ -44,7 +44,7 @@ class DownloadUtilsTest {
         every { context.getSystemService(Context.ACTIVITY_SERVICE) } returns activityManager
         every { activityManager.getRunningServices(any()) } returns mutableListOf()
 
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
 
         mockkObject(DownloadService.Companion)

@@ -22,17 +22,22 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 @Singleton
 class UploadConfigs @Inject constructor(
     private val voicesRepository: VoicesRepository,
-    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository,
+    private val submissionsRepository: SubmissionsRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
-    private val userRepository: org.ole.planet.myplanet.repository.UserRepository,
-    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository
+    private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
+    private val sharedPrefManager: SharedPrefManager,
+    private val userRepository: UserRepository,
+    private val surveysRepository: SurveysRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,

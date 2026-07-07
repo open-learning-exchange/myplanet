@@ -11,6 +11,8 @@ import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import io.mockk.verify
+import java.net.UnknownHostException
+import java.util.Base64 as JavaBase64
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -50,7 +52,7 @@ class LoginSyncManagerTest {
     fun setup() {
         mockkStatic(Base64::class)
         every { Base64.encodeToString(any(), any()) } answers {
-            java.util.Base64.getEncoder().encodeToString(firstArg<ByteArray>())
+            JavaBase64.getEncoder().encodeToString(firstArg<ByteArray>())
         }
 
         mockkObject(UrlUtils)
@@ -182,7 +184,7 @@ class LoginSyncManagerTest {
 
     @Test
     fun `login handles network error`() = runTest {
-        val exception = object : java.net.UnknownHostException() {
+        val exception = object : UnknownHostException() {
             override fun printStackTrace() {
                 // Do nothing to avoid polluting test logs
             }

@@ -4,7 +4,6 @@ import android.content.Context
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
-import io.mockk.mockkStatic
 import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -22,8 +21,9 @@ class RealmMyPersonalTest {
     fun setup() {
         mockContext = mockk<Context>(relaxed = true)
 
-        mockkStatic(FileUtils::class)
-        // Using mockkObject to mock the singleton methods completely instead of static
+        // FileUtils and NetworkUtils are Kotlin objects, so mockkObject (not mockkStatic)
+        // is required to intercept their member functions
+        mockkObject(FileUtils)
         mockkObject(NetworkUtils)
     }
 

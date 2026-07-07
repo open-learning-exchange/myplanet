@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.MainDispatcherRule
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary

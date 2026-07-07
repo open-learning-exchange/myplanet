@@ -11,8 +11,10 @@ import android.os.Environment
 import android.os.StatFs
 import android.os.storage.StorageManager
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.text.format.Formatter
 import android.webkit.MimeTypeMap
+import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import java.io.File
@@ -37,12 +39,10 @@ object FileUtils {
         return cachedExternalFilesDir ?: context.getExternalFilesDir(null).also { cachedExternalFilesDir = it }
     }
 
-    @JvmStatic
     fun getOlePath(context: Context): String {
         return getExternalFilesDir(context)?.let { "$it/ole/" } ?: ""
     }
 
-    @JvmStatic
     @Throws(IOException::class)
     fun fullyReadFileToBytes(f: File): ByteArray = f.readBytes()
 
@@ -77,25 +77,21 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getSDPathFromUrl(context: Context, url: String?): File {
         return createFilePath(context, "/ole/${getIdFromUrl(url)}", getFileNameFromUrl(url))
     }
 
-    @JvmStatic
     fun checkFileExist(context: Context, url: String?): Boolean {
         if (url.isNullOrEmpty()) return false
         val f = getSDPathFromUrl(context, url)
         return f.exists() && f.length() > 0
     }
 
-    @JvmStatic
     fun getFileNameFromLocalAddress(path: String?): String {
         if (path.isNullOrBlank()) return ""
         return path.substringAfterLast('/')
     }
 
-    @JvmStatic
     fun getFileNameFromUrl(url: String?): String {
         return try {
             url?.toUri()?.lastPathSegment?.let {
@@ -107,7 +103,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getIdFromUrl(url: String?): String {
         return try {
             url?.toUri()?.pathSegments?.let { segments ->
@@ -120,12 +115,10 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getFileExtension(address: String?): String {
         return address?.let { File(it).extension } ?: ""
     }
 
-    @JvmStatic
     fun installApk(activity: Context, file: String?) {
         if (file?.endsWith("apk") != true) return
         val toInstall = File(file)
@@ -158,7 +151,6 @@ object FileUtils {
     }
 
 
-    @JvmStatic
     fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
         var cursor: Cursor? = null
         return try {
@@ -172,7 +164,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getMimeType(fileName: String?): String? {
         if (fileName.isNullOrBlank()) return null
         val ext = MimeTypeMap.getFileExtensionFromUrl(fileName)?.lowercase(Locale.getDefault())
@@ -183,13 +174,12 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getDisplayName(context: Context, uri: Uri): String {
         var name: String? = null
         if (uri.scheme == "content") {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
                 if (cursor.moveToFirst()) {
-                    val idx = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                    val idx = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
                     if (idx >= 0) name = cursor.getString(idx)
                 }
             }
@@ -197,12 +187,10 @@ object FileUtils {
         return name ?: uri.lastPathSegment ?: "image_${System.currentTimeMillis()}.jpg"
     }
 
-    @JvmStatic
     fun readBytesFromUri(context: Context, uri: Uri): ByteArray? {
         return context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
     }
 
-    @JvmStatic
     fun copyUriToFile(context: Context, sourceUri: Uri, destinationFile: File) {
         context.contentResolver.openInputStream(sourceUri)?.use { inputStream ->
             FileOutputStream(destinationFile).use { outputStream ->
@@ -211,7 +199,6 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun getPathFromURI(context: Context, uri: Uri?): String? {
         var filePath: String? = null
         if (uri != null) {
@@ -234,13 +221,11 @@ object FileUtils {
         return filePath
     }
 
-    @JvmStatic
     @Throws(Exception::class)
     fun getStringFromFile(fl: File?): String {
         return fl?.inputStream()?.bufferedReader()?.use { it.readText() } ?: ""
     }
 
-    @JvmStatic
     fun openOleFolder(context: Context): Intent {
         val intent = Intent(Intent.ACTION_GET_CONTENT)
         val uri = getOlePath(context).toUri()
@@ -249,7 +234,6 @@ object FileUtils {
         return Intent.createChooser(intent, "Open folder")
     }
 
-    @JvmStatic
     fun getImagePath(context: Context, uri: Uri?): String? {
         if (uri == null) return null
         val projection = arrayOf(MediaStore.Images.Media._ID, MediaStore.Images.Media.DATA)
@@ -283,12 +267,10 @@ object FileUtils {
         }
     }
 
-    @JvmStatic
     fun externalMemoryAvailable(): Boolean {
         return Environment.getExternalStorageState() == Environment.MEDIA_MOUNTED
     }
 
-    @JvmStatic
     val availableExternalMemorySize: Long
         /**
          * Find space left in the external memory.
@@ -311,25 +293,20 @@ object FileUtils {
      * @param size
      * @return A string with size followed by an appropriate suffix
      */
-    @JvmStatic
     fun formatSize(context: Context, size: Long): String {
         return Formatter.formatFileSize(context, size)
     }
 
-    @JvmStatic
     fun totalMemoryCapacity(context: Context): Long = getStorageStats(context).first
 
-    @JvmStatic
     fun totalAvailableMemory(context: Context): Long = getStorageStats(context).second
 
-    @JvmStatic
     fun totalAvailableMemoryRatio(context: Context): Long {
         val total = totalMemoryCapacity(context)
         val available = totalAvailableMemory(context)
         return (available.toDouble() / total.toDouble() * 100).roundToLong()
     }
 
-    @JvmStatic
     fun availableOverTotalMemoryFormattedString(context: Context): String {
         val available = totalAvailableMemory(context)
         val total = totalMemoryCapacity(context)
@@ -356,7 +333,6 @@ object FileUtils {
         return fileName?.let { File(it).name.takeIf { name -> name.isNotEmpty() } }?.substringBeforeLast('.')
     }
 
-    @JvmStatic
     fun openPdf(context: Context, file: File) {
         try {
             val uri = FileProvider.getUriForFile(
@@ -371,7 +347,7 @@ object FileUtils {
             context.startActivity(intent)
         } catch (e: Exception) {
             e.printStackTrace()
-            android.widget.Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", android.widget.Toast.LENGTH_LONG).show()
+            Toast.makeText(context, "Could not open PDF. File saved at: ${file.absolutePath}", Toast.LENGTH_LONG).show()
         }
     }
 }
