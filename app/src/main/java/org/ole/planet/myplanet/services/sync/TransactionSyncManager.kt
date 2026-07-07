@@ -254,7 +254,7 @@ class TransactionSyncManager @Inject constructor(
                                     "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items"
                                 )
                             }
-                            org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+                            SyncTimeLogger.logRealmOperation(
                                 "insert_batch",
                                 table,
                                 insertDuration,
