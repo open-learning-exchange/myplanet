@@ -112,6 +112,7 @@ interface ResourcesRepository {
     suspend fun getPublicLibraryItems(): List<RealmMyLibrary>
     suspend fun getResourceTitlesMap(): Map<String, String>
     suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
+    suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>>
 }
 
 sealed class ResourceUrlsResponse {

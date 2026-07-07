@@ -663,6 +663,12 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("courseId", courseId)
+        }.groupBy { it.stepId }
+    }
+
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
         executeTransaction { realm ->

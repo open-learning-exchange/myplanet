@@ -78,6 +78,18 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        val courseIdsToFetch = mutableSetOf<String>()
+        withRealm { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .equalTo("updated", true)
+                .findAll()
+            teams.forEach { team -> team.courses?.let { courseIdsToFetch.addAll(it) } }
+        }
+
+        val coursesResourcesMap = courseIdsToFetch.associateWith { courseId ->
+            resourcesRepositoryLazy.get().getCourseResourcesGroupedByStepId(courseId)
+        }
+
         return withRealm { realm ->
             val teams = realm.where(RealmMyTeam::class.java)
                 .equalTo("updated", true)
@@ -86,7 +98,7 @@ class TeamsRepositoryImpl @Inject constructor(
             teams.map { team ->
                 TeamUploadData(
                     teamId = team._id,
-                    serialized = RealmMyTeam.serialize(team, realm),
+                    serialized = RealmMyTeam.serialize(team, realm, coursesResourcesMap),
                     isDeletePending = team.isDeletePending,
                     imageName = team.imageName
                 )
