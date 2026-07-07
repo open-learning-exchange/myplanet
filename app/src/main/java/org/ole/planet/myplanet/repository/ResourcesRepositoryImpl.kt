@@ -5,6 +5,7 @@ import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.realm.Case
 import io.realm.Sort
 import java.io.File
 import java.text.Normalizer
@@ -69,13 +70,16 @@ class ResourcesRepositoryImpl @Inject constructor(
                 return@withRealm emptyList()
             }
 
-            val data = queryObj.findAll()
-
             if (query.isEmpty()) {
+                val data = queryObj.findAll()
                 return@withRealm realm.copyFromRealm(data)
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            queryParts.forEach { part ->
+                queryObj.contains("title", part, Case.INSENSITIVE)
+            }
+            val data = queryObj.findAll()
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val normalizedQuery = normalizeText(query)
             val startsWithQuery = mutableListOf<RealmMyLibrary>()

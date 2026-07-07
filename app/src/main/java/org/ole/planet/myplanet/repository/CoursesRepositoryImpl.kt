@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
+import io.realm.Case
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -240,6 +241,9 @@ class CoursesRepositoryImpl @Inject constructor(
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            queryParts.forEach { part ->
+                queryObj.contains("courseTitle", part, Case.INSENSITIVE)
+            }
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val data = queryObj.findAll()
             val normalizedQuery = normalizeText(query)
