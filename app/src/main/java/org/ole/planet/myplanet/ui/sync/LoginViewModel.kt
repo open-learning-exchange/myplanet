@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
@@ -39,16 +40,20 @@ class LoginViewModel @Inject constructor(
         if (!force && _teams.value.isNotEmpty()) {
             return
         }
-        viewModelScope.launch { // Launch on main to safely emit Realm objects
-            val teamsList = teamsRepository.getAllActiveTeams()
+        viewModelScope.launch {
+            val teamsList = withContext(dispatcherProvider.io) {
+                teamsRepository.getAllActiveTeams()
+            }
             _teams.value = teamsList
         }
     }
 
     fun getTeamMembers(teamId: String?) {
-        viewModelScope.launch { // Launch on main to safely emit Realm objects
+        viewModelScope.launch {
             if (!teamId.isNullOrEmpty()) {
-                val teamMembers = teamsRepository.refreshJoinedMembersForLogin(teamId)
+                val teamMembers = withContext(dispatcherProvider.io) {
+                    teamsRepository.refreshJoinedMembersForLogin(teamId)
+                }
                 _users.value = teamMembers
                 loadSavedUsers() // Refresh saved users after joining team
             } else {
