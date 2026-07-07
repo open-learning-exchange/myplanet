@@ -28,6 +28,7 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
                 .name(Realm.DEFAULT_REALM_NAME)
                 .schemaVersion(14)
                 .migration(RealmMigrations())
+                .compactOnLaunch()
                 .build()
             Realm.setDefaultConfiguration(config)
         }
