@@ -11,7 +11,9 @@ data class UploadConfig<T : RealmObject>(
     val modelClass: KClass<T>,
     val endpoint: String,
 
-    val queryBuilder: (RealmQuery<T>) -> RealmQuery<T>,
+    val queryBuilder: ((RealmQuery<T>) -> RealmQuery<T>)? = null,
+
+    val fetchPendingItems: (suspend () -> List<T>)? = null,
 
     val serializer: UploadSerializer<T>,
 
