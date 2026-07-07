@@ -28,6 +28,7 @@ import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.ArrayList
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -78,7 +79,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
     private var exitSnackbar: Snackbar? = null
-    private var teamList = java.util.ArrayList<String?>()
+    private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
     private var cachedTeams: List<RealmMyTeam>? = null
@@ -213,9 +214,9 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         guest = intent.getBooleanExtra("guest", false)
 
         val encryptedUsername = sharedPrefManager.getNewLoginUsername()
-        val username = if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedUsername) else null
+        val username = if (encryptedUsername != null) SecurePrefs.decryptString(this, encryptedUsername) else null
         val encryptedPassword = sharedPrefManager.getNewLoginPassword()
-        val password = if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedPassword) else null
+        val password = if (encryptedPassword != null) SecurePrefs.decryptString(this, encryptedPassword) else null
 
         if (guest && username != null) {
             resetGuestAsMember(username)

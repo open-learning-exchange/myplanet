@@ -11,6 +11,7 @@ import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -35,7 +36,7 @@ class TagsRepositoryImplTest {
             val operation = firstArg<(Realm) -> List<RealmTag>>()
             operation(mockRealm)
         }
-        repository = TagsRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
+        repository = TagsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
     }
 
     private fun mockQueryResults(vararg results: List<RealmTag>): RealmQuery<RealmTag> {
@@ -78,29 +79,51 @@ class TagsRepositoryImplTest {
     }
 
     @Test
-    fun `buildChildMap correctly groups tags by their attachedTo parents`() = runTest {
-        val parent1 = "parent1"
-        val parent2 = "parent2"
+    fun `getTagsWithChildren correctly maps children to parent tags`() = runTest {
+        val parentTag1 = RealmTag().apply {
+            id = "parent1"
+            name = "Parent 1"
+        }
+        val parentTag2 = RealmTag().apply {
+            id = "parent2"
+            name = "Parent 2"
+        }
+        val childlessParentTag = RealmTag().apply {
+            id = "parent3"
+            name = "Parent 3"
+        }
         val child1 = RealmTag().apply {
             name = "Child1"
-            attachedTo = RealmList(parent1)
+            attachedTo = RealmList("parent1")
         }
         val child2 = RealmTag().apply {
             name = "Child2"
-            attachedTo = RealmList(parent1, parent2)
+            attachedTo = RealmList("parent1", "parent2")
+        }
+        val unattachedChild = RealmTag().apply {
+            name = "UnattachedChild"
         }
 
-        mockQueryResults(listOf(child1, child2))
+        mockQueryResults(listOf(parentTag1, parentTag2, childlessParentTag), listOf(parentTag1, parentTag2, childlessParentTag, child1, child2, unattachedChild))
 
-        val result = repository.buildChildMap()
+        val result = repository.getTagsWithChildren("resources")
 
-        assertEquals(2, result.size)
-        assertTrue(result[parent1]!!.contains(child1))
-        assertTrue(result[parent1]!!.contains(child2))
-        assertEquals(2, result[parent1]!!.size)
+        assertEquals(3, result.size)
+        assertTrue(result.containsKey(parentTag1))
+        assertTrue(result.containsKey(parentTag2))
+        assertTrue(result.containsKey(childlessParentTag))
 
-        assertTrue(result[parent2]!!.contains(child2))
-        assertEquals(1, result[parent2]!!.size)
+        val childrenOfParent1 = result[parentTag1]
+        assertEquals(2, childrenOfParent1?.size)
+        assertTrue(childrenOfParent1!!.contains(child1))
+        assertTrue(childrenOfParent1.contains(child2))
+
+        val childrenOfParent2 = result[parentTag2]
+        assertEquals(1, childrenOfParent2?.size)
+        assertTrue(childrenOfParent2!!.contains(child2))
+
+        val childrenOfChildlessParent = result[childlessParentTag]
+        assertEquals(0, childrenOfChildlessParent?.size)
     }
 
     @Test

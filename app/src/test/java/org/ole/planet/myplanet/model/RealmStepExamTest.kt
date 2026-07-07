@@ -22,7 +22,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.utils.JsonUtils
 
 class RealmStepExamTest {
 
@@ -33,38 +32,13 @@ class RealmStepExamTest {
     fun setup() {
         MockKAnnotations.init(this)
         mockkObject(RealmExamQuestion.Companion)
-        mockkStatic(JsonUtils::class)
+        // JsonUtils is a pure-Gson Kotlin object and works as-is on the JVM — no mocking needed.
+        // TextUtils is a real Android static, so mockkStatic applies here.
         mockkStatic(TextUtils::class)
 
         every { TextUtils.isEmpty(any()) } answers {
             val str = arg<CharSequence?>(0)
             str.isNullOrEmpty()
-        }
-
-        every { JsonUtils.getString(any(), any<JsonObject>()) } answers {
-            val key = arg<String>(0)
-            val obj = arg<JsonObject>(1)
-            if (obj.has(key) && !obj.get(key).isJsonNull) obj.get(key).asString else ""
-        }
-        every { JsonUtils.getLong(any(), any<JsonObject>()) } answers {
-            val key = arg<String>(0)
-            val obj = arg<JsonObject>(1)
-            if (obj.has(key) && !obj.get(key).isJsonNull) obj.get(key).asLong else 0L
-        }
-        every { JsonUtils.getInt(any(), any<JsonObject>()) } answers {
-            val key = arg<String>(0)
-            val obj = arg<JsonObject>(1)
-            if (obj.has(key) && !obj.get(key).isJsonNull) obj.get(key).asInt else 0
-        }
-        every { JsonUtils.getBoolean(any(), any<JsonObject>()) } answers {
-            val key = arg<String>(0)
-            val obj = arg<JsonObject>(1)
-            if (obj.has(key) && !obj.get(key).isJsonNull) obj.get(key).asBoolean else false
-        }
-        every { JsonUtils.getJsonArray(any(), any<JsonObject>()) } answers {
-            val key = arg<String>(0)
-            val obj = arg<JsonObject>(1)
-            if (obj.has(key) && obj.get(key).isJsonArray) obj.get(key).asJsonArray else JsonArray()
         }
 
         every { mockRealm.isInTransaction } returns false

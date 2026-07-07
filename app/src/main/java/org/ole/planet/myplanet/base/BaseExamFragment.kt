@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -45,8 +44,6 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var exam: RealmStepExam? = null
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
-    @Inject
-    lateinit var coursesRepository: CoursesRepository
     @Inject
     @ApplicationScope
     lateinit var applicationScope: CoroutineScope
@@ -135,7 +132,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         } else if (isTeam && type?.startsWith("survey") == true) {
             showUserInfoDialog()
         } else {
-            saveCourseProgress()
+            saveCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
             val titleView = TextView(requireContext()).apply {
                 text = "${getString(R.string.thank_you_for_taking_this)}$type! ${getString(R.string.we_wish_you_all_the_best)}"
                 textSize = 18f
@@ -153,11 +150,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
         }
     }
 
-    private fun saveCourseProgress() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            coursesRepository.updateCourseProgress(exam?.courseId, stepNumber, sub?.status == "graded")
-        }
-    }
+    abstract fun saveCourseProgress(courseId: String?, stepNum: Int, isGraded: Boolean)
 
     private fun showUserInfoDialog() {
         if (!isMySurvey && exam?.isFromNation != true) {

@@ -107,7 +107,7 @@ class HealthExaminationAdapter(
         dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
         if (realmExamination != null) {
             dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
-                context.startActivity(Intent(context, AddExaminationActivity::class.java)
+                context.startActivity(Intent(context, HealthExaminationActivity::class.java)
                     .putExtra("id", getItem(position)._id)
                     .putExtra("userId", mh._id))
             }

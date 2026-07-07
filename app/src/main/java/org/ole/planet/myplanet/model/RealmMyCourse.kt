@@ -63,7 +63,6 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
-        @JvmStatic
         fun addConcatenatedLink(link: String) {
             synchronized(concatenatedLinks) {
                 concatenatedLinks.add(link)
@@ -71,7 +70,6 @@ open class RealmMyCourse : RealmObject() {
         }
 
 
-        @JvmStatic
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
@@ -96,7 +94,6 @@ open class RealmMyCourse : RealmObject() {
 
 
 
-        @JvmStatic
         fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)

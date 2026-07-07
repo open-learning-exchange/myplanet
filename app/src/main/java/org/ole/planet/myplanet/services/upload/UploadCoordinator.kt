@@ -6,6 +6,7 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.RealmObject
 import java.io.IOException
+import java.lang.reflect.Field
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,6 +14,7 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getString
@@ -20,7 +22,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadCoordinator @Inject constructor(
-    private val uploadRepository: org.ole.planet.myplanet.repository.UploadRepository,
+    private val uploadRepository: UploadRepository,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
     private val retryQueue: RetryQueue,
@@ -273,7 +275,7 @@ class UploadCoordinator @Inject constructor(
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
         try {
             var clazz: Class<*>? = obj.javaClass
-            var field: java.lang.reflect.Field? = null
+            var field: Field? = null
 
             while (clazz != null && field == null) {
                 try {

@@ -16,7 +16,6 @@ open class RealmRemovedLog : RealmObject() {
     var docId: String? = null
 
     companion object {
-        @JvmStatic
         fun onAdd(mRealm: Realm, type: String?, userId: String?, docId: String?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
@@ -39,7 +38,6 @@ open class RealmRemovedLog : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun onRemove(mRealm: Realm, type: String, userId: String?, docId: String?) {
             val startedTransaction = !mRealm.isInTransaction
             if (startedTransaction) {
@@ -61,7 +59,6 @@ open class RealmRemovedLog : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun removedIds(realm: Realm?, type: String, userId: String?): Array<String> {
             val removedLibs = realm?.where(RealmRemovedLog::class.java)
                 ?.equalTo("userId", userId)

@@ -17,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
 
 @RunWith(AndroidJUnit4::class)
 class DatabaseServiceTest {
@@ -36,7 +37,7 @@ class DatabaseServiceTest {
             .build()
         Realm.setDefaultConfiguration(realmConfiguration)
 
-        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), org.ole.planet.myplanet.utils.DefaultDispatcherProvider())
+        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), DefaultDispatcherProvider())
     }
 
     @After

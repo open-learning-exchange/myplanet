@@ -15,6 +15,7 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import io.realm.Sort
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.RequestBody
 import org.junit.After
@@ -26,6 +27,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.repository.ChatResult
@@ -44,7 +46,7 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher(), chatApiService, serverUrlMapper, sharedPrefManager), recordPrivateCalls = true)
+        chatRepository = spyk(ChatRepositoryImpl(databaseService, UnconfinedTestDispatcher(), chatApiService, serverUrlMapper, sharedPrefManager), recordPrivateCalls = true)
     }
 
     @After
@@ -171,8 +173,7 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun bulkInsertFromSync_removesOrphanedConversationsAndInsertsBatch() = runTest {
-        val jsonArray = JsonArray()
+    fun insertChatHistoryFromSync_removesOrphanedConversationsAndInsertsBatch() = runTest {
         val chatDoc = JsonObject().apply {
             addProperty("_id", "chat123")
             addProperty("_rev", "1-rev")
@@ -182,7 +183,7 @@ class ChatRepositoryImplTest {
         val wrapper = JsonObject().apply {
             add("doc", chatDoc)
         }
-        jsonArray.add(wrapper)
+        val docs = listOf(wrapper)
 
         val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
         val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
@@ -195,9 +196,15 @@ class ChatRepositoryImplTest {
         every { mockQuery.findAll() } returns mockResults
         every { mockResults.iterator() } returns mutableListOf(existingChat).iterator()
 
-        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
+        coEvery { databaseService.executeTransactionAsync(any()) } answers {
+            val op = arg<(Realm) -> Unit>(0)
+            op.invoke(mockRealm)
+        }
 
-        chatRepository.bulkInsertFromSync(mockRealm, jsonArray)
+        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
+        coEvery { chatRepository.insertChatHistoryFromSync(any()) } answers { callOriginal() }
+
+        chatRepository.insertChatHistoryFromSync(docs)
 
         // Verify that existing conversations are explicitly deleted
         verify(exactly = 1) { mockConversations.deleteAllFromRealm() }
@@ -216,8 +223,8 @@ class ChatRepositoryImplTest {
         val query = "test query"
         val user = "testUser"
         val aiProvider = AiProvider("OpenAI", "GPT-4")
-        val couchDb = org.ole.planet.myplanet.model.CouchDBResponse(ok = true, id = "test-id", rev = "test-rev")
-        val mockResponse = retrofit2.Response.success(org.ole.planet.myplanet.model.ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
+        val couchDb = CouchDBResponse(ok = true, id = "test-id", rev = "test-rev")
+        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
@@ -234,8 +241,8 @@ class ChatRepositoryImplTest {
         val aiProvider = AiProvider("OpenAI", "GPT-4")
         val id = "chat-123"
         val rev = "1-rev"
-        val couchDb = org.ole.planet.myplanet.model.CouchDBResponse(ok = true, id = id, rev = "2-rev")
-        val mockResponse = retrofit2.Response.success(org.ole.planet.myplanet.model.ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
+        val couchDb = CouchDBResponse(ok = true, id = id, rev = "2-rev")
+        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 

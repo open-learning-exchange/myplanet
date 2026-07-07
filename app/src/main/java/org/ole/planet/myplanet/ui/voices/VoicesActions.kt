@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
@@ -15,14 +16,18 @@ import com.bumptech.glide.Glide
 import com.google.android.material.textfield.TextInputLayout
 import com.google.gson.JsonObject
 import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesActions {
     data class EditDialogComponents(
@@ -36,7 +41,7 @@ object VoicesActions {
         context: Context,
         listener: OnNewsItemClickListener?
     ): EditDialogComponents {
-        val v = android.view.LayoutInflater.from(context).inflate(R.layout.alert_input, null)
+        val v = LayoutInflater.from(context).inflate(R.layout.alert_input, null)
         val tlInput = v.findViewById<TextInputLayout>(R.id.tl_input)
         val et = v.findViewById<EditText>(R.id.et_input)
         val llImage = v.findViewById<ViewGroup>(R.id.ll_alert_image)
@@ -152,7 +157,7 @@ object VoicesActions {
             if (isEdit) listener?.onDataChanged() else listener?.onReplyPosted(news?.id)
             onSuccess()
         } catch (e: Exception) {
-            org.ole.planet.myplanet.utils.Utilities.toast(dialog.context, "An error occurred: ${e.message}")
+            Utilities.toast(dialog.context, "An error occurred: ${e.message}")
         }
     }
 
@@ -199,7 +204,7 @@ object VoicesActions {
 
     suspend fun showMemberDetails(
         userModel: RealmUser?,
-        activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+        activitiesRepository: ActivitiesRepository
     ): MembersDetailFragment? {
         if (userModel == null) return null
         val userName = "${userModel.firstName} ${userModel.lastName}".trim().ifBlank { userModel.name }
@@ -210,7 +215,7 @@ object VoicesActions {
             userModel.language.toString(),
             userModel.phoneNumber.toString(),
             (userModel.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0).toString(),
-            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No logout record found"),
+            (activitiesRepository.getLastVisit(userModel.name ?: "")?.let { SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(Date(it)) } ?: "No logout record found"),
             "${userModel.firstName} ${userModel.lastName}",
             userModel.level.toString(),
             userModel.userImage
