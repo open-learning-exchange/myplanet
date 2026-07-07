@@ -264,11 +264,11 @@ class TransactionSyncManager @Inject constructor(
                                 "health" -> healthRepository.bulkInsertFromSync(mRealm, arr)
                                 "certifications" -> coursesRepository.bulkInsertCertificationsFromSync(mRealm, arr)
                                 "notifications" -> notificationsRepository.bulkInsertFromSync(mRealm, arr)
-                                else -> android.util.Log.e("SyncPerf", "Unknown table: $table")
+                                else -> Log.e("SyncPerf", "Unknown table: $table")
                             }
                             val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
                             if (table == "courses") {
-                                android.util.Log.d(
+                                Log.d(
                                     "SyncPerf",
                                     "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items"
                                 )
