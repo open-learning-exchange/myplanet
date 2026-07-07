@@ -1,92 +1,83 @@
 package org.ole.planet.myplanet.ui.chat
 
-import android.content.Context
 import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.BaseExpandableListAdapter
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
+import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 
 class ChatShareTargetAdapter(
-    private val context: Context,
-    private val expandableTitleList: List<String>,
-    private val expandableDetailList: HashMap<String, List<String>>,
-    private val sharedChildren: Set<String> = emptySet()
-) : BaseExpandableListAdapter() {
+    private val onItemClick: (ChatShareTargetModel) -> Unit
+) : ListAdapter<ChatShareTargetModel, RecyclerView.ViewHolder>(DiffCallback) {
 
-    private var nextId = 0L
-    private val groupIds = mutableMapOf<String, Long>()
-    private val childIds = mutableMapOf<Pair<String, String>, Long>()
-
-    override fun getChild(lstPosn: Int, expandedListPosition: Int): Any {
-        return expandableDetailList[expandableTitleList[lstPosn]]?.get(expandedListPosition) ?: ""
+    override fun getItemViewType(position: Int): Int {
+        return if (getItem(position).isGroup) VIEW_TYPE_GROUP else VIEW_TYPE_CHILD
     }
 
-    override fun getChildId(listPosition: Int, expandedListPosition: Int): Long {
-        val group = getGroup(listPosition) as String
-        val child = getChild(listPosition, expandedListPosition) as String
-        val key = Pair(group, child)
-        return childIds.getOrPut(key) { nextId++ }
-    }
-
-    override fun getChildView(lstPosn: Int, expandedListPosition: Int, isLastChild: Boolean, convertView: View?, parent: ViewGroup): View {
-        var reusedView = convertView
-        val expandedListText = getChild(lstPosn, expandedListPosition) as String
-        if (reusedView == null) {
-            val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            reusedView = layoutInflater.inflate(R.layout.expandable_list_item, parent, false)
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        val layoutInflater = LayoutInflater.from(parent.context)
+        return if (viewType == VIEW_TYPE_GROUP) {
+            val view = layoutInflater.inflate(R.layout.expandable_list_group, parent, false)
+            GroupViewHolder(view)
+        } else {
+            val view = layoutInflater.inflate(R.layout.expandable_list_item, parent, false)
+            ChildViewHolder(view)
         }
-        val expandedListTextView = reusedView.findViewById<View>(R.id.expandedListItem) as TextView
-        val sharedIcon = reusedView.findViewById<ImageView>(R.id.sharedIcon)
-        expandedListTextView.text = expandedListText
-        reusedView.setBackgroundColor(ContextCompat.getColor(parent.context, R.color.multi_select_grey))
-        expandedListTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
-        sharedIcon?.visibility = if (expandedListText in sharedChildren) View.VISIBLE else View.GONE
-        return reusedView
     }
 
-    override fun getChildrenCount(listPosition: Int): Int {
-        return expandableDetailList[expandableTitleList[listPosition]]?.size ?: 0
-    }
-
-    override fun getGroup(listPosition: Int): Any {
-        return expandableTitleList[listPosition]
-    }
-
-    override fun getGroupCount(): Int {
-        return expandableTitleList.size
-    }
-
-    override fun getGroupId(listPosition: Int): Long {
-        val group = getGroup(listPosition) as String
-        return groupIds.getOrPut(group) { nextId++ }
-    }
-
-    override fun getGroupView(listPosition: Int, isExpanded: Boolean, convertView: View?, parent: ViewGroup): View {
-        var reusedView = convertView
-        val listTitle = getGroup(listPosition) as String
-        if (reusedView == null) {
-            val layoutInflater = context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
-            reusedView = layoutInflater.inflate(R.layout.expandable_list_group, parent, false)
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        val item = getItem(position)
+        if (holder is GroupViewHolder) {
+            holder.bind(item)
+            holder.itemView.setOnClickListener { onItemClick(item) }
+        } else if (holder is ChildViewHolder) {
+            holder.bind(item)
+            holder.itemView.setOnClickListener { onItemClick(item) }
         }
-        val listTitleTextView = reusedView.findViewById<View>(R.id.listTitle) as TextView
-        val arrowIcon = reusedView.findViewById<ImageView>(R.id.arrowIcon)
-        listTitleTextView.setTypeface(null, Typeface.BOLD)
-        listTitleTextView.text = listTitle
-        listTitleTextView.setTextColor(ContextCompat.getColor(parent.context, R.color.daynight_textColor))
-        arrowIcon?.rotation = if (isExpanded) 180f else 0f
-        return reusedView
     }
 
-    override fun hasStableIds(): Boolean {
-        return true
+    class GroupViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val listTitleTextView: TextView = view.findViewById(R.id.listTitle)
+        private val arrowIcon: ImageView = view.findViewById(R.id.arrowIcon)
+
+        fun bind(item: ChatShareTargetModel) {
+            listTitleTextView.setTypeface(null, Typeface.BOLD)
+            listTitleTextView.text = item.title
+            listTitleTextView.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
+            arrowIcon.rotation = if (item.isExpanded) 180f else 0f
+        }
     }
 
-    override fun isChildSelectable(listPosition: Int, expandedListPosition: Int): Boolean {
-        return true
+    class ChildViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        private val expandedListTextView: TextView = view.findViewById(R.id.expandedListItem)
+        private val sharedIcon: ImageView = view.findViewById(R.id.sharedIcon)
+
+        fun bind(item: ChatShareTargetModel) {
+            expandedListTextView.text = item.title
+            itemView.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
+            expandedListTextView.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
+            sharedIcon.visibility = if (item.isShared) View.VISIBLE else View.GONE
+        }
+    }
+
+    companion object {
+        private const val VIEW_TYPE_GROUP = 0
+        private const val VIEW_TYPE_CHILD = 1
+
+        private val DiffCallback = object : DiffUtil.ItemCallback<ChatShareTargetModel>() {
+            override fun areItemsTheSame(oldItem: ChatShareTargetModel, newItem: ChatShareTargetModel): Boolean {
+                return oldItem.title == newItem.title && oldItem.isGroup == newItem.isGroup
+            }
+
+            override fun areContentsTheSame(oldItem: ChatShareTargetModel, newItem: ChatShareTargetModel): Boolean {
+                return oldItem == newItem
+            }
+        }
     }
 }
