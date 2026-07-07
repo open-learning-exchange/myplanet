@@ -86,8 +86,6 @@ Swaps `Dispatchers.Main` for a test dispatcher so `viewModelScope.launch { }` ru
 val mainDispatcherRule = MainDispatcherRule()
 ```
 
-**Known duplication:** this rule exists in two places with a near-identical implementation — `org.ole.planet.myplanet.MainDispatcherRule` and `org.ole.planet.myplanet.utils.MainDispatcherRule`. The `utils` package version is imported more often (5 files vs 2). Prefer importing `org.ole.planet.myplanet.utils.MainDispatcherRule` for new tests; don't create a third copy.
-
 ### `TestDispatcherProvider`
 
 A test double for the app's `DispatcherProvider` interface (`utils/DispatcherProvider.kt`) that routes every dispatcher (`main`, `io`, `default`, `unconfined`) to a single test dispatcher, so coroutine code under test runs deterministically:
