@@ -17,6 +17,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -132,7 +133,7 @@ class ChatViewModelTest {
     @Test
     fun `loadChatHistoryScreenData fetches all data correctly when no caches are provided`() = runTest {
         val user = mockk<RealmUser>(relaxed = true)
-        val conversation = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+        val conversation = RealmChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
         }
@@ -183,8 +184,8 @@ class ChatViewModelTest {
 
     @Test
     fun `searchChats by title correctly filters list`() = runTest {
-        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "First Chat" }
-        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Second Discussion" }
+        val chat1 = RealmChatHistory().apply { title = "First Chat" }
+        val chat2 = RealmChatHistory().apply { title = "Second Discussion" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
 
@@ -200,11 +201,11 @@ class ChatViewModelTest {
 
     @Test
     fun `searchChats by full conversation filters by question`() = runTest {
-        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+        val chat1 = RealmChatHistory().apply {
             title = "Chat 1"
             conversations = io.realm.RealmList(RealmConversation().apply { query = "How is the weather?" })
         }
-        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+        val chat2 = RealmChatHistory().apply {
             title = "Chat 2"
             conversations = io.realm.RealmList(RealmConversation().apply { query = "Tell me a joke." })
         }
@@ -223,8 +224,8 @@ class ChatViewModelTest {
 
     @Test
     fun `searchChats with empty query resets filtered list`() = runTest {
-        val chat1 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Chat 1" }
-        val chat2 = org.ole.planet.myplanet.model.RealmChatHistory().apply { title = "Chat 2" }
+        val chat1 = RealmChatHistory().apply { title = "Chat 1" }
+        val chat2 = RealmChatHistory().apply { title = "Chat 2" }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
 
@@ -243,7 +244,7 @@ class ChatViewModelTest {
     @Test
     fun `loadChatHistoryScreenData uses cached data and handles nulls gracefully`() = runTest {
         val cachedUser = mockk<RealmUser>(relaxed = true)
-        val conversation = org.ole.planet.myplanet.model.RealmChatHistory().apply {
+        val conversation = RealmChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
         }

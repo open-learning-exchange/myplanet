@@ -29,12 +29,10 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -43,6 +41,7 @@ import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
@@ -56,7 +55,6 @@ class MyHealthFragment : Fragment() {
     @Inject
     lateinit var userRepository: UserRepository
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
-    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
@@ -155,16 +153,11 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "health" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshHealthData()
-                    }
-                }
+        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
+            if (update.table == "health" && update.shouldRefreshUI) {
+                refreshHealthData()
             }
         }
-        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun getHealthRecords(memberId: String?) {
@@ -183,7 +176,7 @@ class MyHealthFragment : Fragment() {
             setupButtons()
             binding.lblHealthName.text = getDisplayName(userModel)
             binding.addNewRecord.setOnClickListener {
-                startActivity(Intent(activity, AddExaminationActivity::class.java).putExtra("userId", userId))
+                startActivity(Intent(activity, HealthExaminationActivity::class.java).putExtra("userId", userId))
             }
             binding.updateHealth.setOnClickListener {
                 startActivity(Intent(activity, AddHealthActivity::class.java).putExtra("userId", userId))
@@ -385,9 +378,6 @@ class MyHealthFragment : Fragment() {
     }
 
     override fun onDestroyView() {
-        if (::onRealtimeSyncListener.isInitialized) {
-            syncManagerInstance.removeListener(onRealtimeSyncListener)
-        }
         alertHealthListBinding?.etSearch?.removeTextChangedListener(textWatcher)
         textWatcher = null
         searchJob?.cancel()

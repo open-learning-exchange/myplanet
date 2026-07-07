@@ -31,7 +31,6 @@ open class RealmMyLife : RealmObject {
             return getMyLifeByUserId(mRealm, userId)
         }
 
-        @JvmStatic
         fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
             return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
                 .sort("weight")

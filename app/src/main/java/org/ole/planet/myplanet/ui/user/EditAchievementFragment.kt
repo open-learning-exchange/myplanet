@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.user
 
 import android.app.DatePickerDialog
 import android.content.DialogInterface
+import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.provider.OpenableColumns
@@ -221,7 +222,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
             val filename = pendingCvFilename ?: achievement?.resumeFileName ?: return@setOnClickListener
             val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$filename")
             if (cvFile.exists()) {
-                val intent = android.content.Intent(requireContext(), ResourceViewerActivity::class.java)
+                val intent = Intent(requireContext(), ResourceViewerActivity::class.java)
                 intent.putExtra("TOUCHED_FILE", "cv/$filename")
                 intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
                 startActivity(intent)

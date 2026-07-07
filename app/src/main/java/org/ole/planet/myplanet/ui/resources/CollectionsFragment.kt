@@ -1,12 +1,6 @@
 package org.ole.planet.myplanet.ui.resources
 
 import android.os.Bundle
-import android.text.Editable
-import org.ole.planet.myplanet.utils.textChanges
-import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.flow.launchIn
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,6 +11,10 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.ArrayList
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -26,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton.OnCheckedChangeListener {
@@ -89,9 +88,10 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     private fun setListAdapter() {
         viewLifecycleOwner.lifecycleScope.launch {
-            list = tagsRepository.getTags(dbType)
+            val tagsWithChildren = tagsRepository.getTagsWithChildren(dbType)
+            list = tagsWithChildren.keys.toList()
             selectedItemsList = ArrayList(recentList)
-            childMap = tagsRepository.buildChildMap()
+            childMap = tagsWithChildren.entries.filter { it.value.isNotEmpty() }.associate { (it.key.id ?: "") to it.value }.toMap(HashMap())
             adapter = ResourcesTagsAdapter(this@CollectionsFragment)
             binding.listTags.adapter = adapter
             currentTagDataList = buildTagDataList(list).toMutableList()
@@ -159,7 +159,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     companion object {
         private lateinit var recentList: MutableList<RealmTag>
-        @JvmStatic
         fun getInstance(l: MutableList<RealmTag>, dbType: String): CollectionsFragment {
             recentList = l
             val f = CollectionsFragment()

@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 
 object ServerConfigUtils {
     fun getServerAddresses(context: Context): List<ServerAddress> {
@@ -79,7 +80,7 @@ object ServerConfigUtils {
             url == BuildConfig.PLANET_SANPABLO_URL ||
             url == BuildConfig.PLANET_URIUR_URL ||
             isLocalNetwork(url)
-        ) org.ole.planet.myplanet.utils.Constants.HTTP_PROTOCOL else org.ole.planet.myplanet.utils.Constants.HTTPS_PROTOCOL
+        ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
     }
 
     fun saveAlternativeUrl(
@@ -89,7 +90,7 @@ object ServerConfigUtils {
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity.getUserInfo(uri)
+            val userinfo = ProcessUserDataActivity.getUserInfo(uri)
             Triple(userinfo[0], userinfo[1], url)
         } else {
             val user = "satellite"

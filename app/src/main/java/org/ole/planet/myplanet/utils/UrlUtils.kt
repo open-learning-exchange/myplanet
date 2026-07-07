@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import android.util.Base64
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -20,7 +21,7 @@ object UrlUtils {
             ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
     }
 
-    @androidx.annotation.VisibleForTesting
+    @VisibleForTesting
     internal fun resetForTesting() {
         spmInstance = null
     }
@@ -96,8 +97,8 @@ object UrlUtils {
         if (userId.isNullOrBlank() || imageName.isBlank()) {
             return null
         }
-        val encodedUserId = java.net.URLEncoder.encode(userId, "UTF-8")
-        val encodedImageName = java.net.URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
+        val encodedUserId = URLEncoder.encode(userId, "UTF-8")
+        val encodedImageName = URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
         return "${getUrl()}/_users/$encodedUserId/$encodedImageName"
     }
 

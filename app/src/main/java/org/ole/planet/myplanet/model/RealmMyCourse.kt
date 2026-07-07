@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -66,7 +67,7 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
-        fun getCoverImageFile(context: android.content.Context, courseId: String?, fileName: String?): File? {
+        fun getCoverImageFile(context: Context, courseId: String?, fileName: String?): File? {
             if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
             return File(
                 "${getOlePath(context)}course_attachments/$courseId/$fileName"

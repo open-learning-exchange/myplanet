@@ -22,13 +22,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
-    open lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    open lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
     @Inject
@@ -507,7 +508,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_NOTIFICATION = 112
         const val PERMISSION_REQUEST_CODE_MEDIA = 113
 
-        @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
             return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }

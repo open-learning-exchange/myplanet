@@ -45,7 +45,7 @@ class SubmissionViewModel @Inject constructor(
         submissionsRepository.getSubmissionsFlow(uid)
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
+    private val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
@@ -89,8 +89,10 @@ class SubmissionViewModel @Inject constructor(
         Triple(uniqueSubmissions, submissionCountMap, filtered)
     }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val submissions: StateFlow<List<SubmissionUiModel>> = filteredSubmissionsRaw.map { (uniqueSubmissions) ->
+    val submissions: StateFlow<List<SubmissionUiModel>> = combine(filteredSubmissionsRaw, exams) { (uniqueSubmissions, submissionCountMap), examsMap ->
         uniqueSubmissions.map { viewData ->
+            val examTitle = examsMap[viewData.submission.parentId]?.name ?: "Submissions"
+            val count = submissionCountMap[viewData.submission.id] ?: 1
             SubmissionUiModel(
                 id = viewData.submission.id,
                 status = viewData.submission.status,
@@ -98,13 +100,13 @@ class SubmissionViewModel @Inject constructor(
                 lastUpdateTime = viewData.submission.lastUpdateTime,
                 parentId = viewData.submission.parentId,
                 userId = viewData.submission.userId,
-                submitterName = viewData.submitterName
+                submitterName = viewData.submitterName,
+                examTitle = examTitle,
+                submissionCount = count
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    val submissionCounts: StateFlow<Map<String?, Int>> = filteredSubmissionsRaw.map { it.second }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
     fun setFilter(type: String, query: String) {
         _type.value = type
