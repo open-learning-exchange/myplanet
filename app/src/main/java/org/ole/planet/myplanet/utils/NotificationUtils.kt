@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.utils
 
 import android.app.Notification
 import android.app.NotificationChannel
+import android.app.NotificationManager as SystemNotificationManager
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.NotificationManager.IMPORTANCE_HIGH
-import android.app.NotificationManager as SystemNotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent

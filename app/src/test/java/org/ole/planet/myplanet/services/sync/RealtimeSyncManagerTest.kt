@@ -1,10 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
-import io.mockk.mockk
-import io.mockk.verify
 import java.lang.reflect.Modifier
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
