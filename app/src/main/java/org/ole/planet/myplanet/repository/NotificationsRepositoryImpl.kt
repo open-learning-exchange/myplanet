@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
@@ -10,11 +12,15 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
+
+private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
@@ -87,6 +93,37 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.type = "resource"
                 this.message = "$resourceCount"
                 this.relatedId = "$resourceCount"
+                this.createdAt = Date()
+            }
+            save(notification)
+        } else {
+            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
+        }
+    }
+
+    override suspend fun updateStorageNotification(userId: String?, availablePercent: Int) {
+        userId ?: return
+
+        val notificationId = "$userId:storage"
+        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+
+        if (availablePercent <= STORAGE_WARNING_AVAILABLE_PERCENT) {
+            val previousPercent = existingNotification?.message?.replace("%", "")?.toIntOrNull()
+            val percentChanged = previousPercent != availablePercent
+
+            val notification = existingNotification?.apply {
+                message = "$availablePercent%"
+                relatedId = "storage"
+                if (percentChanged) {
+                    this.isRead = false
+                    this.createdAt = Date()
+                }
+            } ?: RealmNotification().apply {
+                this.id = notificationId
+                this.userId = userId
+                this.type = "storage"
+                this.message = "$availablePercent%"
+                this.relatedId = "storage"
                 this.createdAt = Date()
             }
             save(notification)
@@ -171,13 +208,13 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getSurveyId(relatedId: String?): String? {
         return relatedId?.let {
-            findByField(org.ole.planet.myplanet.model.RealmStepExam::class.java, "name", it)?.id
+            findByField(RealmStepExam::class.java, "name", it)?.id
         }
     }
 
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
-            val task = findByField(org.ole.planet.myplanet.model.RealmTeamTask::class.java, "id", it)
+            val task = findByField(RealmTeamTask::class.java, "id", it)
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
@@ -320,10 +357,12 @@ class NotificationsRepositoryImpl @Inject constructor(
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
 
-        val notification = queryList(RealmTeamNotification::class.java) {
-            equalTo("parentId", teamId)
-            equalTo("type", "chat")
-        }.firstOrNull()
+        val notification = withRealm { realm ->
+            realm.where(RealmTeamNotification::class.java)
+                .equalTo("parentId", teamId)
+                .equalTo("type", "chat")
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
         val chatCount = count(RealmNews::class.java) {
             equalTo("viewableBy", "teams")
@@ -427,7 +466,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun parseNotification(doc: com.google.gson.JsonObject): RealmNotification? {
+    private fun parseNotification(doc: JsonObject): RealmNotification? {
         val id = doc.get("_id")?.asString ?: return null
         return RealmNotification().apply {
             this.id = id
@@ -438,12 +477,12 @@ class NotificationsRepositoryImpl @Inject constructor(
             priority = doc.get("priority")?.asInt ?: 0
             rev = doc.get("_rev")?.asString
             isRead = doc.get("status")?.asString != "unread"
-            createdAt = doc.get("time")?.let { java.util.Date(it.asLong) } ?: java.util.Date()
+            createdAt = doc.get("time")?.let { Date(it.asLong) } ?: Date()
             isFromServer = true
         }
     }
 
-    override suspend fun insert(doc: com.google.gson.JsonObject) {
+    override suspend fun insert(doc: JsonObject) {
         val parsed = parseNotification(doc) ?: return
         executeTransaction { realm ->
             val existing = realm.where(RealmNotification::class.java).equalTo("id", parsed.id).findFirst()
@@ -468,12 +507,12 @@ class NotificationsRepositoryImpl @Inject constructor(
         return deletedIds
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }

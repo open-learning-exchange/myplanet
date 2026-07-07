@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.Utilities
 
 class VoicesLabelManagerTest {
 
@@ -50,8 +51,8 @@ class VoicesLabelManagerTest {
         every { dispatcherProvider.main } returns UnconfinedTestDispatcher()
         scope = TestScope()
 
-        mockkObject(org.ole.planet.myplanet.utils.Utilities)
-        every { org.ole.planet.myplanet.utils.Utilities.getCloudConfig() } returns mockk(relaxed = true)
+        mockkObject(Utilities)
+        every { Utilities.getCloudConfig() } returns mockk(relaxed = true)
 
         addLabelFn = mockk(relaxed = true)
         removeLabelFn = mockk(relaxed = true)
@@ -92,7 +93,7 @@ class VoicesLabelManagerTest {
     @After
     fun tearDown() {
         clearAllMocks()
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.Utilities)
+        io.mockk.unmockkObject(Utilities)
         unmockkAll()
     }
 

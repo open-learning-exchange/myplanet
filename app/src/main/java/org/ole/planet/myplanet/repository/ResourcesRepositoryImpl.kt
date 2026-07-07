@@ -22,10 +22,12 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -36,11 +38,11 @@ class ResourcesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
-    private val teamsSyncRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>
+    private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
@@ -409,7 +411,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                         libraryItem.setUserId(userId)
                     }
 
-                    val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                    val removedLogs = realm.where(RealmRemovedLog::class.java)
                         .equalTo("type", "resources")
                         .equalTo("userId", userId)
                         .`in`("docId", resourceIds.toTypedArray())
@@ -427,7 +429,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val user = queryList(RealmUser::class.java) { equalTo("id", userId) }.firstOrNull()
+        val user = findByField(RealmUser::class.java, "id", userId)
         val userName = user?.name ?: return flowOf(emptySet())
 
         return queryListFlow(RealmResourceActivity::class.java) {
@@ -550,7 +552,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 realm.executeTransaction { realmTx ->
                     documents.forEach { doc ->
                         try {
-                            RealmMyLibrary.insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
+                            RealmMyLibrary.insertMyLibrary(RealmMyLibrary.Companion.InsertParams(doc = doc, mRealm = realmTx, spm = sharedPrefManager, userId = shelfId))
                             processedCount++
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -631,8 +633,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
         } else {
-            getAllLibraryItems().filter {
-                it.userId?.contains(modelId) == false
+            queryList(RealmMyLibrary::class.java, ensureLatest = true) {
+                equalTo("isPrivate", false)
+                if (modelId != null) {
+                    not().equalTo("userId", modelId)
+                }
             }
         }
 

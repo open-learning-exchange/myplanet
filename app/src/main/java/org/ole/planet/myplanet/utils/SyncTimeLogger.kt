@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.utils
 import android.util.Log
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -207,8 +209,8 @@ object SyncTimeLogger {
     }
 
     private fun formatTimestamp(timestamp: Long): String {
-        val sdf = java.text.SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-        return sdf.format(java.util.Date(timestamp))
+        val sdf = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+        return sdf.format(Date(timestamp))
     }
 
     private fun generateSummary(): String {

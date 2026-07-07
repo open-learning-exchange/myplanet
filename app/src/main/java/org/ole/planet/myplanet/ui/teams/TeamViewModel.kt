@@ -4,17 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class TeamActionResult {
@@ -26,7 +27,7 @@ sealed class TeamActionResult {
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
+    private val teamsSyncRepository: TeamsSyncRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
@@ -49,8 +50,8 @@ class TeamViewModel @Inject constructor(
     private var currentUserId: String? = null
     private var currentFromDashboard: Boolean = false
     private var currentType: String? = null
-    private var loadJob: kotlinx.coroutines.Job? = null
-    private var loadTaskJob: kotlinx.coroutines.Job? = null
+    private var loadJob: Job? = null
+    private var loadTaskJob: Job? = null
 
 
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {

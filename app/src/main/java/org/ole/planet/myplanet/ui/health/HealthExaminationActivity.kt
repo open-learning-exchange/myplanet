@@ -22,15 +22,13 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.databinding.ActivityAddExaminationBinding
+import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateKey
@@ -42,18 +40,17 @@ import org.ole.planet.myplanet.utils.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
+class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var healthRepository: HealthRepository
-    @Inject
-    lateinit var userRepository: UserRepository
 
-    private val viewModel: AddExaminationViewModel by viewModels()
-    private lateinit var binding: ActivityAddExaminationBinding
+    private val viewModel: HealthExaminationViewModel by viewModels()
+    private lateinit var binding: ActivityHealthExaminationBinding
     var userId: String? = null
     var user: RealmUser? = null
     private var currentUser: RealmUser? = null
@@ -75,7 +72,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        binding = ActivityAddExaminationBinding.inflate(layoutInflater)
+        binding = ActivityHealthExaminationBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)
         supportActionBar?.setHomeButtonEnabled(true)
@@ -99,54 +96,33 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
             saveData()
         }
 
-        lifecycleScope.launch {
-            val uid = userId
-            if (uid != null) {
-                val (u, p) = healthRepository.getHealthEntry(uid)
-                user = u
-                pojo = p
-
-                val updatedUser = userRepository.ensureUserSecurityKeys(uid)
-                if (updatedUser != null) {
-                    user = updatedUser
-                }
-            }
-
-            if (pojo != null && !TextUtils.isEmpty(pojo?.data)) {
-                try {
-                    health = JsonUtils.gson.fromJson(decrypt(pojo?.data, user?.key, user?.iv), RealmMyHealth::class.java)
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            if (health == null) {
-                health = healthRepository.initHealth()
-            }
-            if (intent.hasExtra("id")) {
-                val id = intent.getStringExtra("id")
-                if (id != null) {
-                    examination = healthRepository.getExaminationById(id)
-                }
-            }
-            initExamination()
-            validateFields()
-            btnSave.isEnabled = true
-        }
+        viewModel.loadData(userId, intent.getStringExtra("id"))
 
         lifecycleScope.launch {
-            viewModel.isSaving.collect { isSaving ->
-                btnSave.isEnabled = !isSaving
+            viewModel.state.collect { state ->
+                if (!state.isLoading) {
+                    user = state.user
+                    pojo = state.pojo
+                    health = state.health
+                    examination = state.examination
+
+                    initExamination()
+                    validateFields()
+                    btnSave.isEnabled = true
+                }
             }
         }
 
-        lifecycleScope.launch {
-            viewModel.saveResult.collect { success ->
-                if (success) {
-                    Utilities.toast(this@AddExaminationActivity, getString(R.string.added_successfully))
-                    closeActivity()
-                } else {
-                    Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
-                }
+        collectWhenStarted(viewModel.isSaving) { isSaving ->
+            btnSave.isEnabled = !isSaving
+        }
+
+        collectWhenStarted(viewModel.saveResult) { success ->
+            if (success) {
+                Utilities.toast(this@HealthExaminationActivity, getString(R.string.added_successfully))
+                closeActivity()
+            } else {
+                Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
             }
         }
     }
@@ -319,7 +295,7 @@ class AddExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChan
 
         } catch (e: Exception) {
             e.printStackTrace()
-            Utilities.toast(this@AddExaminationActivity, getString(R.string.unable_to_add_health_record))
+            Utilities.toast(this@HealthExaminationActivity, getString(R.string.unable_to_add_health_record))
         }
     }
 

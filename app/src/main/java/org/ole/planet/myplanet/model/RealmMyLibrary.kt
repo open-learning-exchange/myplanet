@@ -11,6 +11,7 @@ import io.realm.annotations.PrimaryKey
 import java.util.Calendar
 import java.util.UUID
 import org.ole.planet.myplanet.MainApplication.Companion.context
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -180,7 +181,6 @@ open class RealmMyLibrary : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
@@ -218,53 +218,46 @@ open class RealmMyLibrary : RealmObject() {
             }
         }
 
-        @JvmStatic
-        fun insertResources(doc: JsonObject, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
-            return insertMyLibrary("", doc, mRealm, spm)
-        }
+        data class InsertParams(
+            val doc: JsonObject,
+            val mRealm: Realm?,
+            val spm: SharedPrefManager,
+            val userId: String? = "",
+            val stepId: String? = "",
+            val courseId: String? = ""
+        )
 
-        @JvmStatic
-        fun createStepResource(mRealm: Realm?, res: JsonObject, myCoursesID: String?, stepId: String?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
-            return insertMyLibrary("", stepId, myCoursesID, res, mRealm, spm)
-        }
-
-        @JvmStatic
-        fun insertMyLibrary(userId: String?, doc: JsonObject, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
-            return insertMyLibrary(userId, "", "", doc, mRealm, spm)
-        }
-
-        @JvmStatic
-        fun insertMyLibrary(userId: String?, stepId: String?, courseId: String?, doc: JsonObject, mRealm: Realm?, spm: org.ole.planet.myplanet.services.SharedPrefManager): RealmMyLibrary? {
-            if (doc.entrySet().isEmpty()) return null
-            val resourceId = JsonUtils.getString("_id", doc)
-            var resource = mRealm?.where(RealmMyLibrary::class.java)?.equalTo("id", resourceId)?.findFirst()
+        fun insertMyLibrary(params: InsertParams): RealmMyLibrary? {
+            if (params.doc.entrySet().isEmpty()) return null
+            val resourceId = JsonUtils.getString("_id", params.doc)
+            var resource = params.mRealm?.where(RealmMyLibrary::class.java)?.equalTo("id", resourceId)?.findFirst()
             val wasPrivate = resource?.isPrivate == true
             val hadPrivateFor = resource?.privateFor
             val hadRev = resource?._rev
             val isLocalOnlyPrivate = hadRev.isNullOrBlank() && wasPrivate && !hadPrivateFor.isNullOrBlank()
             if (resource == null) {
-                resource = if (mRealm != null) {
-                    mRealm.createObject(RealmMyLibrary::class.java, resourceId)
+                resource = if (params.mRealm != null) {
+                    params.mRealm.createObject(RealmMyLibrary::class.java, resourceId)
                 } else {
                     RealmMyLibrary().apply { id = resourceId }
                 }
             }
             resource?.apply {
                 if (this.userId == null) this.userId = RealmList()
-                setUserId(userId, mRealm)
+                setUserId(params.userId, params.mRealm)
                 _id = resourceId
-                if (!stepId.isNullOrBlank()) {
-                    this.stepId = stepId
+                if (!params.stepId.isNullOrBlank()) {
+                    this.stepId = params.stepId
                 }
-                if (!courseId.isNullOrBlank()) {
-                    this.courseId = courseId
+                if (!params.courseId.isNullOrBlank()) {
+                    this.courseId = params.courseId
                 }
-                _rev = JsonUtils.getString("_rev", doc)
+                _rev = JsonUtils.getString("_rev", params.doc)
                 this.resourceId = resourceId
-                title = JsonUtils.getString("title", doc)
-                description = JsonUtils.getString("description", doc)
-                if (doc.has("_attachments")) {
-                    val attachments = doc["_attachments"].asJsonObject
+                title = JsonUtils.getString("title", params.doc)
+                description = JsonUtils.getString("description", params.doc)
+                if (params.doc.has("_attachments")) {
+                    val attachments = params.doc["_attachments"].asJsonObject
                     if (this.attachments == null) {
                         this.attachments = RealmList()
                     }
@@ -272,8 +265,8 @@ open class RealmMyLibrary : RealmObject() {
                     attachments.entrySet().forEach { (key, attachmentValue) ->
                         val attachmentObj = attachmentValue.asJsonObject
 
-                        val realmAttachment = if (mRealm != null) {
-                            mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
+                        val realmAttachment = if (params.mRealm != null) {
+                            params.mRealm.createObject(RealmAttachment::class.java, UUID.randomUUID().toString())
                         } else {
                             RealmAttachment().apply { id = UUID.randomUUID().toString() }
                         }
@@ -289,69 +282,67 @@ open class RealmMyLibrary : RealmObject() {
                         this.attachments?.add(realmAttachment)
 
                         if (key.indexOf("/") < 0) {
-                            resourceRemoteAddress = "${spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
+                            resourceRemoteAddress = "${params.spm.getCouchdbUrl().ifEmpty { "http://" }}/resources/$resourceId/$key"
                             resourceLocalAddress = key
                             resourceOffline = FileUtils.checkFileExist(context, resourceRemoteAddress)
                             if (resourceOffline) {
-                                downloadedRev = JsonUtils.getString("_rev", doc)
+                                downloadedRev = JsonUtils.getString("_rev", params.doc)
                             }
                         }
                     }
                 }
-                filename = JsonUtils.getString("filename", doc)
-                averageRating = JsonUtils.getString("averageRating", doc)
-                uploadDate = JsonUtils.getString("uploadDate", doc)
-                year = JsonUtils.getString("year", doc)
-                addedBy = JsonUtils.getString("addedBy", doc)
-                publisher = JsonUtils.getString("publisher", doc)
-                linkToLicense = JsonUtils.getString("linkToLicense", doc)
-                openWith = JsonUtils.getString("openWith", doc)
-                articleDate = JsonUtils.getString("articleDate", doc)
-                kind = JsonUtils.getString("kind", doc)
-                createdDate = JsonUtils.getLong("createdDate", doc)
-                language = JsonUtils.getString("language", doc)
-                author = JsonUtils.getString("author", doc)
-                mediaType = JsonUtils.getString("mediaType", doc)
-                resourceType = JsonUtils.getString("resourceType", doc)
-                timesRated = JsonUtils.getInt("timesRated", doc)
-                medium = JsonUtils.getString("medium", doc)
+                filename = JsonUtils.getString("filename", params.doc)
+                averageRating = JsonUtils.getString("averageRating", params.doc)
+                uploadDate = JsonUtils.getString("uploadDate", params.doc)
+                year = JsonUtils.getString("year", params.doc)
+                addedBy = JsonUtils.getString("addedBy", params.doc)
+                publisher = JsonUtils.getString("publisher", params.doc)
+                linkToLicense = JsonUtils.getString("linkToLicense", params.doc)
+                openWith = JsonUtils.getString("openWith", params.doc)
+                articleDate = JsonUtils.getString("articleDate", params.doc)
+                kind = JsonUtils.getString("kind", params.doc)
+                createdDate = JsonUtils.getLong("createdDate", params.doc)
+                language = JsonUtils.getString("language", params.doc)
+                author = JsonUtils.getString("author", params.doc)
+                mediaType = JsonUtils.getString("mediaType", params.doc)
+                resourceType = JsonUtils.getString("resourceType", params.doc)
+                timesRated = JsonUtils.getInt("timesRated", params.doc)
+                medium = JsonUtils.getString("medium", params.doc)
                 if (this.resourceFor == null) this.resourceFor = RealmList()
-                setResourceFor(JsonUtils.getJsonArray("resourceFor", doc), this)
+                setResourceFor(JsonUtils.getJsonArray("resourceFor", params.doc), this)
                 if (this.subject == null) this.subject = RealmList()
-                setSubject(JsonUtils.getJsonArray("subject", doc), this)
+                setSubject(JsonUtils.getJsonArray("subject", params.doc), this)
                 if (this.level == null) this.level = RealmList()
-                setLevel(JsonUtils.getJsonArray("level", doc), this)
+                setLevel(JsonUtils.getJsonArray("level", params.doc), this)
                 if (this.tag == null) this.tag = RealmList()
-                setTag(JsonUtils.getJsonArray("tags", doc), this)
+                setTag(JsonUtils.getJsonArray("tags", params.doc), this)
                 if (!isLocalOnlyPrivate) {
-                    isPrivate = JsonUtils.getBoolean("private", doc)
-                    if (isPrivate && doc.has("privateFor")) {
-                        val privateForElement = doc.get("privateFor")
+                    isPrivate = JsonUtils.getBoolean("private", params.doc)
+                    if (isPrivate && params.doc.has("privateFor")) {
+                        val privateForElement = params.doc.get("privateFor")
                         if (privateForElement.isJsonObject) {
                             privateFor = privateForElement.asJsonObject.get("teams")?.asString
                         }
                     }
                 }
                 if (this.languages == null) this.languages = RealmList()
-                setLanguages(JsonUtils.getJsonArray("languages", doc), this)
+                setLanguages(JsonUtils.getJsonArray("languages", params.doc), this)
             }
             return resource
         }
 
-        @JvmStatic
         fun listToString(list: RealmList<String>?): String {
             return list?.joinToString(", ") ?: ""
         }
 
-        @JvmStatic
-        fun save(allDocs: JsonArray, mRealm: Realm, spm: org.ole.planet.myplanet.services.SharedPrefManager): List<String> {
+        fun save(allDocs: JsonArray, mRealm: Realm, spm: SharedPrefManager): List<String> {
             val list: MutableList<String> = ArrayList()
             allDocs.forEach { doc ->
                 val document = JsonUtils.getJsonObject("doc", doc.asJsonObject)
                 val id = JsonUtils.getString("_id", document)
                 if (!id.startsWith("_design")) {
                     list.add(id)
-                    insertResources(document, mRealm, spm)
+                    insertMyLibrary(InsertParams(doc = document, mRealm = mRealm, spm = spm))
                 }
             }
             return list

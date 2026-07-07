@@ -1,6 +1,9 @@
 package org.ole.planet.myplanet.repository
 
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication.Companion.createLog
@@ -50,11 +53,11 @@ class DownloadRepositoryImpl @Inject constructor(
 
                 return@withContext DownloadResult.Error(errorMessage, response.code())
             }
-        } catch (e: java.net.UnknownHostException) {
+        } catch (e: UnknownHostException) {
             return@withContext DownloadResult.Error("Server not reachable. Check internet connection.")
-        } catch (e: java.net.SocketTimeoutException) {
+        } catch (e: SocketTimeoutException) {
             return@withContext DownloadResult.Error("Connection timeout. Please try again.")
-        } catch (e: java.net.ConnectException) {
+        } catch (e: ConnectException) {
             return@withContext DownloadResult.Error("Unable to connect to server")
         } catch (e: IOException) {
             return@withContext DownloadResult.Error("Network error: ${e.localizedMessage ?: "Unknown IO error"}")

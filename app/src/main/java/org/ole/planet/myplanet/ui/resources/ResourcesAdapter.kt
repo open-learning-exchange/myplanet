@@ -18,10 +18,12 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.RowLibraryBinding
+import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.utils.CourseRatingUtils
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.getCloudConfig
 
 class ResourcesAdapter(
@@ -31,6 +33,7 @@ class ResourcesAdapter(
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
 
     private val selectedItemIds = mutableSetOf<String>()
+    private val selectedItemsMap = LinkedHashMap<String, ResourceItem>()
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
@@ -119,7 +122,7 @@ class ResourcesAdapter(
             holder.rowLibraryBinding.timesRated.text = context.getString(R.string.rating_count_format, library.timesRated)
             holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
             holder.rowLibraryBinding.rating.text = if (TextUtils.isEmpty(library.averageRating)) "0.0" else String.format(Locale.getDefault(), "%.1f", library.averageRating?.toDoubleOrNull() ?: 0.0)
-            holder.rowLibraryBinding.tvDate.text = org.ole.planet.myplanet.utils.TimeUtils.formatDate(library.createdDate)
+            holder.rowLibraryBinding.tvDate.text = TimeUtils.formatDate(library.createdDate)
 
             displayTagCloud(holder, position)
             holder.itemView.setOnClickListener {
@@ -145,14 +148,13 @@ class ResourcesAdapter(
                     model.item.id?.let { itemId ->
                         if (isChecked) {
                             selectedItemIds.add(itemId)
+                            selectedItemsMap[itemId] = model.item
                         } else {
                             selectedItemIds.remove(itemId)
+                            selectedItemsMap.remove(itemId)
                         }
                     }
-                    if (listener != null) {
-                        val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
-                        listener?.onSelectedListChange(selectedResources)
-                    }
+                    listener?.onSelectedListChange(selectedItemsMap.values.toList())
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
@@ -169,6 +171,7 @@ class ResourcesAdapter(
             currentList.forEachIndexed { index, model ->
                 model.item.id?.let { itemId ->
                     if (selectedItemIds.add(itemId)) {
+                        selectedItemsMap[itemId] = model.item
                         notifyItemChanged(index, SELECTION_PAYLOAD)
                     }
                 }
@@ -177,16 +180,14 @@ class ResourcesAdapter(
             currentList.forEachIndexed { index, model ->
                 model.item.id?.let { itemId ->
                     if (selectedItemIds.remove(itemId)) {
+                        selectedItemsMap.remove(itemId)
                         notifyItemChanged(index, SELECTION_PAYLOAD)
                     }
                 }
             }
         }
 
-        if (listener != null) {
-            val selectedResources = currentList.filter { selectedItemIds.contains(it.item.id) }.map { it.item }
-            listener?.onSelectedListChange(selectedResources)
-        }
+        listener?.onSelectedListChange(selectedItemsMap.values.toList())
     }
 
     private fun openLibrary(model: ResourceListModel) {

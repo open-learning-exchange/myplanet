@@ -1,23 +1,16 @@
 package org.ole.planet.myplanet.ui.references
 
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentReferenceBinding
-import org.ole.planet.myplanet.databinding.RowReferenceBinding
 import org.ole.planet.myplanet.model.Reference
-import org.ole.planet.myplanet.ui.dictionary.DictionaryActivity
-import org.ole.planet.myplanet.ui.maps.OfflineMapsActivity
-import org.ole.planet.myplanet.utils.DiffUtils
 
 class ReferencesFragment : Fragment() {
     private var _binding: FragmentReferenceBinding? = null
@@ -36,41 +29,14 @@ class ReferencesFragment : Fragment() {
             Reference(getString(R.string.english_dictionary), R.drawable.ic_dictionary)
         )
         binding.rvReferences.layoutManager = GridLayoutManager(activity, 3)
-        binding.rvReferences.adapter = ReferenceAdapter()
+        binding.rvReferences.adapter = ReferencesAdapter()
         setRecyclerAdapter(list)
         return binding.root
     }
 
     private fun setRecyclerAdapter(list: List<Reference>) {
-        (binding.rvReferences.adapter as ReferenceAdapter).submitList(list)
+        (binding.rvReferences.adapter as ReferencesAdapter).submitList(list)
     }
-
-    inner class ReferenceAdapter : ListAdapter<Reference, ViewHolderReference>(
-        DiffUtils.itemCallback<Reference>(
-            { oldItem, newItem -> oldItem.title == newItem.title },
-            { oldItem, newItem -> oldItem == newItem }
-        )
-    ) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
-            val rowReferenceBinding = RowReferenceBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-            return ViewHolderReference(rowReferenceBinding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolderReference, position: Int) {
-            val reference = getItem(position)
-            holder.rowReferenceBinding.title.text = reference.title
-            holder.rowReferenceBinding.icon.setImageResource(reference.icon)
-            holder.rowReferenceBinding.root.setOnClickListener {
-                if (holder.bindingAdapterPosition == 0)
-                    startActivity(Intent(activity, OfflineMapsActivity::class.java))
-                else {
-                    startActivity(Intent(activity, DictionaryActivity::class.java))
-                }
-            }
-        }
-    }
-
-    class ViewHolderReference(val rowReferenceBinding: RowReferenceBinding) : RecyclerView.ViewHolder(rowReferenceBinding.root)
 
     override fun onDestroyView() {
         _binding = null

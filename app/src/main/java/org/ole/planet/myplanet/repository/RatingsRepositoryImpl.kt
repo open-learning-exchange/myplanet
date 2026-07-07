@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
@@ -11,6 +12,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -93,11 +95,13 @@ class RatingsRepositoryImpl @Inject constructor(
         val resolvedUserId = resolvedUser.id?.takeIf { it.isNotBlank() } ?: resolvedUser._id
         require(!resolvedUserId.isNullOrBlank()) { "Resolved user is missing an identifier" }
 
-        val existingRating = queryList(RealmRating::class.java) {
-            equalTo("type", type)
-            equalTo("userId", resolvedUserId)
-            equalTo("item", itemId)
-        }.firstOrNull()
+        val existingRating = withRealm { realm ->
+            realm.where(RealmRating::class.java)
+                .equalTo("type", type)
+                .equalTo("userId", resolvedUserId)
+                .equalTo("item", itemId)
+                .findFirst()?.let { realm.copyFromRealm(it) }
+        }
 
         if (existingRating == null || existingRating.id.isNullOrBlank()) {
             val newRating = RealmRating().apply {
@@ -206,18 +210,18 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
         documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmRating.insert(realm, jsonDoc)
+            RealmRating.insert(realm, jsonDoc)
         }
     }
 }

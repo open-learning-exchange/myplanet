@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -8,7 +9,9 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import java.io.File
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmMyCourse : RealmObject() {
@@ -31,6 +34,7 @@ open class RealmMyCourse : RealmObject() {
     @Index
     var subjectLevel: String? = null
     var createdDate: Long = 0
+    var coverFileName: String? = null
     private var numberOfSteps: Int? = null
     var courseSteps: RealmList<RealmCourseStep>? = null
     @Transient
@@ -63,15 +67,19 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
-        @JvmStatic
+        fun getCoverImageFile(context: Context, courseId: String?, fileName: String?): File? {
+            if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
+            return File(
+                "${getOlePath(context)}course_attachments/$courseId/$fileName"
+            )
+        }
+
         fun addConcatenatedLink(link: String) {
             synchronized(concatenatedLinks) {
                 concatenatedLinks.add(link)
             }
         }
 
-
-        @JvmStatic
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
@@ -91,12 +99,6 @@ open class RealmMyCourse : RealmObject() {
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
-
-
-
-
-
-        @JvmStatic
         fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
@@ -109,6 +111,7 @@ open class RealmMyCourse : RealmObject() {
             obj.addProperty("createdDate", course.createdDate)
             obj.addProperty("method", course.method)
             obj.addProperty("memberLimit", course.memberLimit)
+            course.coverFileName?.let { obj.addProperty("coverFileName", it) }
 
             val stepsArray = JsonArray()
             val allResourcesForCourse = realm.where(RealmMyLibrary::class.java)

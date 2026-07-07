@@ -49,7 +49,6 @@ open class RealmHealthExamination : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun fromJson(act: JsonObject?): RealmHealthExamination {
             val myHealth = RealmHealthExamination()
             myHealth._id = JsonUtils.getString("_id", act)
@@ -76,7 +75,6 @@ open class RealmHealthExamination : RealmObject() {
             return myHealth
         }
 
-        @JvmStatic
         fun serialize(health: RealmHealthExamination): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(health.userId)) `object`.addProperty("_id", health.userId)

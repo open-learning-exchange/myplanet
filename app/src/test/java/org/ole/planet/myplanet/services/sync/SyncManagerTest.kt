@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.Context
-import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -10,6 +9,7 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -39,8 +40,6 @@ class SyncManagerTest {
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
-    private val improvedSyncManager: ImprovedSyncManager = mockk(relaxed = true)
-    private val lazyImprovedSyncManager: Lazy<ImprovedSyncManager> = mockk(relaxed = true)
     private val transactionSyncManager: TransactionSyncManager = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val loginSyncManager: LoginSyncManager = mockk(relaxed = true)
@@ -49,7 +48,7 @@ class SyncManagerTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = TestDispatcherProvider(testDispatcher)
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository = mockk(relaxed = true)
+    private val teamsSyncRepository: TeamsSyncRepository = mockk(relaxed = true)
     private val coursesRepository: CoursesRepository = mockk(relaxed = true)
     private val eventsRepository: EventsRepository = mockk(relaxed = true)
     private val listener: OnSyncListener = mockk(relaxed = true)
@@ -59,13 +58,10 @@ class SyncManagerTest {
         mockkObject(MainApplication.Companion)
         every { MainApplication.createLog(any(), any()) } returns Unit
 
-        every { lazyImprovedSyncManager.get() } returns improvedSyncManager
-
         syncManager = SyncManager(
             context,
             sharedPrefManager,
             apiInterface,
-            lazyImprovedSyncManager,
             transactionSyncManager,
             resourcesRepository,
             loginSyncManager,
@@ -94,19 +90,8 @@ class SyncManagerTest {
     }
 
     @Test
-    fun `start with useImprovedSync=true and type=sync uses improved sync manager`() = runTest {
-        every { sharedPrefManager.getUseImprovedSync() } returns true
-
-        syncManager.start(listener, "sync", listOf("exams"))
-
-        verify { listener.onSyncStarted() }
-        verify { improvedSyncManager.start(any(), SyncMode.Standard, listOf("exams")) }
-    }
-
-    @Test
-    fun `start with useImprovedSync=false uses legacy sync manager`() = runTest {
+    fun `start authenticates and reports failure when authentication fails`() = runTest {
         every { context.getString(org.ole.planet.myplanet.R.string.invalid_configuration) } returns "Invalid configuration"
-        every { sharedPrefManager.getUseImprovedSync() } returns false
         coEvery { transactionSyncManager.authenticate() } returns false
 
         syncManager.start(listener, "sync", listOf("exams"))
@@ -118,8 +103,8 @@ class SyncManagerTest {
 
     @Test
     fun `cancelBackgroundSync clears background sync and listener`() = runTest {
-        // Prevent immediate execution of background sync logic so we can cancel it
-        every { sharedPrefManager.getUseImprovedSync() } returns true
+        // Suspend in authenticate so the background sync stays in-flight until we cancel it
+        coEvery { transactionSyncManager.authenticate() } coAnswers { awaitCancellation() }
 
         syncManager.start(listener, "sync", listOf())
         syncManager.cancelBackgroundSync()

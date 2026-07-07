@@ -32,13 +32,10 @@ open class RealmStepExam : RealmObject() {
     var sourceSurveyId: String? = null
 
     companion object {
-        @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
             insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm, null)
         }
 
-        @JvmOverloads
-        @JvmStatic
         fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm, examCache: HashMap<String, RealmStepExam>? = null) {
             val isInTransaction = mRealm.isInTransaction
 
@@ -98,7 +95,6 @@ open class RealmStepExam : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun serializeExam(exam: RealmStepExam, questions: List<RealmExamQuestion>): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
@@ -125,7 +121,6 @@ open class RealmStepExam : RealmObject() {
             return `object`
         }
 
-        @JvmStatic
         fun getIds(list: List<RealmStepExam>): Array<String?> {
             val ids = arrayOfNulls<String>(list.size)
             for ((i, e) in list.withIndex()) {
@@ -138,7 +133,6 @@ open class RealmStepExam : RealmObject() {
             return ids
         }
 
-        @JvmStatic
         fun getSurveyCreationTime(surveyId: String, mRealm: Realm): Long? {
             val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", surveyId).findFirst()
             return survey?.createdDate

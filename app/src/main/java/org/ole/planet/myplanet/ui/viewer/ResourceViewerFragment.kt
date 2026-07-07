@@ -14,9 +14,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.OptIn
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.registerReceiver
 import androidx.core.graphics.createBitmap
@@ -198,7 +200,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         view?.post {
             if (!isAdded) return@post
             hideVideoLoading()
-            androidx.appcompat.app.AlertDialog.Builder(requireContext())
+            AlertDialog.Builder(requireContext())
                 .setTitle(getString(R.string.unable_to_play_video))
                 .setMessage(message)
                 .setPositiveButton(getString(R.string.go_back)) { _, _ -> requireActivity().finish() }
@@ -275,25 +277,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             return
         }
 
-        val trackSelector = DefaultTrackSelector(requireContext())
-        exoPlayer = ExoPlayer.Builder(requireContext())
-            .setTrackSelector(trackSelector)
-            .setLoadControl(DefaultLoadControl())
-            .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
-            .build()
-
-        exoPlayer?.addListener(object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                navigateBackWithError(getString(R.string.video_playback_error))
-            }
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_BUFFERING -> showVideoLoading(getString(R.string.video_loading_buffering))
-                    Player.STATE_READY -> hideVideoLoading()
-                    else -> {}
-                }
-            }
-        })
+        exoPlayer = createExoPlayer()
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
@@ -318,13 +302,27 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
 
+        exoPlayer = createExoPlayer()
+
+        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
+        playerView.player = exoPlayer
+        exoPlayer?.apply {
+            setMediaSource(mediaSource)
+            playWhenReady = true
+            prepare()
+        }
+    }
+
+    @OptIn(UnstableApi::class)
+    private fun createExoPlayer(): ExoPlayer {
         val trackSelector = DefaultTrackSelector(requireContext())
-        exoPlayer = ExoPlayer.Builder(requireContext())
+        val player = ExoPlayer.Builder(requireContext())
             .setTrackSelector(trackSelector)
+            .setLoadControl(DefaultLoadControl())
             .setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA).setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             .build()
 
-        exoPlayer?.addListener(object : Player.Listener {
+        player.addListener(object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
                 navigateBackWithError(getString(R.string.video_playback_error))
             }
@@ -336,14 +334,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 }
             }
         })
-
-        val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
-        playerView.player = exoPlayer
-        exoPlayer?.apply {
-            setMediaSource(mediaSource)
-            playWhenReady = true
-            prepare()
-        }
+        return player
     }
 
     private fun setupAudioViewer() {
@@ -418,7 +409,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 imageView.setImageBitmap(bitmap)
                 imageView.scaleType = ImageView.ScaleType.FIT_CENTER
                 parent.addView(imageView, ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0))
-                (imageView.layoutParams as android.widget.LinearLayout.LayoutParams).weight = 1f
+                (imageView.layoutParams as LinearLayout.LayoutParams).weight = 1f
 
                 page.close()
                 pdfRenderer.close()

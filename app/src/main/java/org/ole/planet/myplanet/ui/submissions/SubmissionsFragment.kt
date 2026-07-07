@@ -16,8 +16,6 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
@@ -66,15 +64,7 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
             updateEmptyState(submissions.size)
         }
 
-        collectLatestWhenStarted(viewModel.exams) { exams ->
-            adapter.setExams(exams)
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_EXAM_UPDATE)
-        }
 
-        collectLatestWhenStarted(viewModel.submissionCounts) { counts ->
-            adapter.setSubmissionCounts(counts)
-            adapter.notifyItemRangeChanged(0, adapter.itemCount, SubmissionsAdapter.PAYLOAD_SUBMISSION_COUNT_UPDATE)
-        }
 
         textWatcher = object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
@@ -154,7 +144,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     }
 
     companion object {
-        @JvmStatic
         fun newInstance(type: String?): Fragment {
             val fragment = SubmissionsFragment()
             val b = Bundle()
