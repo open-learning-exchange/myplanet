@@ -66,7 +66,7 @@ myplanet/
 | Package | Purpose | Files | Key Items |
 |---------|---------|-------|-----------|
 | `base/` | Base classes for common functionality | 12 | BaseActivity, BaseRecyclerFragment, BasePermissionActivity, BaseContainerFragment, BaseDashboardFragment, BaseResourceFragment, BaseTeamFragment, BaseExamFragment, BaseMemberFragment, BaseDialogFragment, BaseVoicesFragment, BaseRecyclerParentFragment |
-| `callback/` | Event listeners and interfaces | 29 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
+| `callback/` | Event listeners and interfaces | 28 | OnLibraryItemSelectedListener, OnSyncListener, OnTeamUpdateListener, OnChatItemClickListener, OnNewsItemClickListener, and more |
 | `data/` | Data access and API services | 8 | DatabaseService.kt, NetworkResult.kt, RealmMigrations.kt; sub-packages: `api/` (ApiInterface, ApiClient, ChatApiService, RetryInterceptor), `auth/` (AuthSessionUpdater) |
 | `di/` | Hilt dependency injection | 13 | Modules (NetworkModule, DatabaseModule, RepositoryModule, ServiceModule, SharedPreferencesModule, DispatcherModule) + entry points (CoreDependenciesEntryPoint, NetworkDependenciesEntryPoint, RepositoryDependenciesEntryPoint, ServiceDependenciesEntryPoint) + RealmDispatcher |
 | `model/` | Realm database models and DTOs | 87 | Realm models + DTOs including ChatMessage, ChatRequest, ChatResponse, CourseProgressData, Download, ServerAddress, User |
@@ -94,7 +94,7 @@ myplanet/
 | `ui/life/` | 2 | LifeFragment, LifeAdapter |
 | `ui/maps/` | 1 | OfflineMapsActivity |
 | `ui/notifications/` | 3 | NotificationsFragment, NotificationsViewModel |
-| `ui/onBoarding/` | 2 | OnboardingActivity, OnboardingAdapter (note the capital B in the package path) |
+| `ui/onboarding/` | 2 | OnboardingActivity, OnboardingAdapter |
 | `ui/personals/` | 3 | PersonalsFragment, PersonalsAdapter |
 | `ui/ratings/` | 2 | RatingsFragment, RatingsViewModel |
 | `ui/references/` | 2 | ReferencesFragment, ReferencesAdapter |
@@ -1139,7 +1139,7 @@ git rebase --continue
 
 ## Codebase Inventory Summary
 
-### Source Files (457 total Kotlin files in `app/src/main/java`) + 142 test files (140 in `app/src/test`, 2 in `app/src/androidTest`)
+### Source Files (456 total Kotlin files in `app/src/main/java`) + 142 test files (140 in `app/src/test`, 2 in `app/src/androidTest`)
 
 | Component | Files | Purpose |
 |-----------|-------|---------|
@@ -1149,7 +1149,7 @@ git rebase --continue
 | `services/` | 37 | Background tasks & managers (21 root-level + sync/upload/retry sub-packages) |
 | `di/` | 13 | Dependency injection (modules + entry points + RealmDispatcher) |
 | `base/` | 12 | Reusable base classes |
-| `callback/` | 29 | Event listeners and interfaces |
+| `callback/` | 28 | Event listeners and interfaces |
 | `data/` | 8 | Data services, API, auth |
 | `utils/` | 46 | Helper utilities |
 | Root | 1 | MainApplication.kt |
@@ -1163,13 +1163,13 @@ git rebase --continue
 | Menu files | 2 |
 | XML config files | 3 |
 
-### AndroidManifest Permissions (17 total)
+### AndroidManifest Permissions (16 total)
 
 **Network**: INTERNET, ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE, CHANGE_WIFI_STATE, CHANGE_NETWORK_STATE
 **Device**: CAMERA, RECORD_AUDIO, WAKE_LOCK, BLUETOOTH
 **System**: PACKAGE_USAGE_STATS, REQUEST_INSTALL_PACKAGES (default flavor only; removed in lite)
 **Notifications**: POST_NOTIFICATIONS, C2DM RECEIVE
-**Foreground services**: FOREGROUND_SERVICE, FOREGROUND_SERVICE_DATA_SYNC
+**Foreground services**: FOREGROUND_SERVICE_DATA_SYNC (FOREGROUND_SERVICE appears only as the `android:permission` attribute on the DownloadService `<service>` element, not as a `<uses-permission>`)
 **Other**: SEND_DOWNLOAD_COMPLETED_INTENTS; REQUEST_WRITE_PERMISSION (not a real Android permission — candidate for removal)
 
 Note: SYSTEM_ALERT_WINDOW is **not** declared (removed at some point; older docs claimed it).
