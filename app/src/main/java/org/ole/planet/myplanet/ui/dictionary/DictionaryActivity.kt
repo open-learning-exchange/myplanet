@@ -117,28 +117,28 @@ class DictionaryActivity : BaseActivity() {
                 null
             }
             json?.let { jsonArray ->
-                databaseService.withRealm { realm ->
-                    realm.executeTransactionAsync { bgRealm ->
-                        jsonArray.forEach { js ->
-                            val doc = js.asJsonObject
-                            val dict = bgRealm.createObject(
-                                RealmDictionary::class.java, UUID.randomUUID().toString()
-                            )
-                            dict.code = JsonUtils.getString("code", doc)
-                            dict.language = JsonUtils.getString("language", doc)
-                            dict.advanceCode = JsonUtils.getString("advance_code", doc)
-                            dict.word = JsonUtils.getString("word", doc)
-                            dict.meaning = JsonUtils.getString("meaning", doc)
-                            dict.definition = JsonUtils.getString("definition", doc)
-                            dict.synonym = JsonUtils.getString("synonym", doc)
-                            dict.antonym = JsonUtils.getString("antonoym", doc)
-                        }
+                databaseService.executeTransactionAsync { bgRealm ->
+                    jsonArray.forEach { js ->
+                        val doc = js.asJsonObject
+                        val dict = bgRealm.createObject(
+                            RealmDictionary::class.java, UUID.randomUUID().toString()
+                        )
+                        dict.code = JsonUtils.getString("code", doc)
+                        dict.language = JsonUtils.getString("language", doc)
+                        dict.advanceCode = JsonUtils.getString("advance_code", doc)
+                        dict.word = JsonUtils.getString("word", doc)
+                        dict.meaning = JsonUtils.getString("meaning", doc)
+                        dict.definition = JsonUtils.getString("definition", doc)
+                        dict.synonym = JsonUtils.getString("synonym", doc)
+                        dict.antonym = JsonUtils.getString("antonoym", doc)
                     }
                 }
             }
-        } else {
-            setClickListener()
         }
+
+        val count = loadDictionaryCount()
+        fragmentDictionaryBinding.tvResult.text = getString(R.string.list_size, count)
+        setClickListener()
     }
 
     private suspend fun loadDictionaryCount(): Long {
