@@ -32,15 +32,11 @@ class FreeSpaceWorker @AssistedInject constructor(
             val rootFile = File(FileUtils.getOlePath(applicationContext))
 
             withContext(dispatcherProvider.io) {
-                // Files are deleted before their Realm flags are cleared, one resource
-                // at a time, so cancelling or failing mid-run never leaves resources
-                // marked as not-downloaded while their files still exist on disk.
                 val children = rootFile.listFiles() ?: return@withContext
                 val clearedResourceIds = mutableSetOf<String>()
                 for (child in children) {
                     if (isStopped) break
                     val wasDirectory = child.isDirectory
-                    // cv/ holds achievement attachments that may not be uploaded yet
                     if (wasDirectory && child.name == CV_DIR_NAME) continue
                     val deletedBefore = deletedFiles
                     deleteRecursive(child)
