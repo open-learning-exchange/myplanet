@@ -30,7 +30,7 @@ class LifeRepositoryTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         databaseService = mockk(relaxed = true)
-        repository = LifeRepositoryImpl(databaseService, testDispatcher)
+        repository = LifeRepositoryImpl(databaseService, testDispatcher, mockk(relaxed = true), mockk(relaxed = true))
     }
 
     @Test

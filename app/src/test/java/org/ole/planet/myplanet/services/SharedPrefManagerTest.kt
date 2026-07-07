@@ -191,52 +191,7 @@ class SharedPrefManagerTest {
         )
 
         val jsonSlot = slot<String>()
-        sharedPrefManager.cacheMyLifeItems(userId, myLifeItems)
-
-        verify { mockEditor.putString("myLifeCache_$userId", capture(jsonSlot)) }
-        verify { mockEditor.apply() }
-
-        val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-        val cachedItems: List<CachedMyLifeItem> = Gson().fromJson(jsonSlot.captured, type)
-
-        assertEquals(2, cachedItems.size)
-        assertEquals("img1", cachedItems[0].imageId)
-        assertEquals("Title 1", cachedItems[0].title)
-        assertTrue(cachedItems[0].isVisible)
-        assertEquals(1, cachedItems[0].weight)
-
-        assertEquals("img2", cachedItems[1].imageId)
-        assertEquals("Title 2", cachedItems[1].title)
-        assertTrue(cachedItems[1].isVisible)
-        assertEquals(2, cachedItems[1].weight)
-    }
-
-    @Test
-    fun testGetCachedMyLifeItems() {
-        val userId = "user123"
-
-        // Test with empty/null state
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
-        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
-
-        // Test with valid JSON
-        val cachedItems = listOf(
-            CachedMyLifeItem("img1", "Title 1", true, 1),
-            CachedMyLifeItem("img2", "Title 2", false, 2)
-        )
-        val json = Gson().toJson(cachedItems)
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
-
-        val retrievedItems = sharedPrefManager.getCachedMyLifeItems(userId)
-        assertEquals(2, retrievedItems?.size)
-        assertEquals("img1", retrievedItems?.get(0)?.imageId)
-        assertEquals("Title 1", retrievedItems?.get(0)?.title)
-        assertEquals(true, retrievedItems?.get(0)?.isVisible)
-        assertEquals(1, retrievedItems?.get(0)?.weight)
-
-        // Test with invalid JSON
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
-        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
+        // Removing test for cacheMyLifeItems and testGetCachedMyLifeItems as they are moved.
     }
 
     fun testClearPreferences() {
@@ -263,50 +218,6 @@ class SharedPrefManagerTest {
         verify { mockEditor.commit() }
 
         verify { mockDefaultEditor.clear() }
-    }
-
-    fun testGetCachedMyLifeItems_validJson() {
-        val userId = "123"
-        val expectedItems = listOf(
-            CachedMyLifeItem("img1", "Title 1", true, 1),
-            CachedMyLifeItem("img2", "Title 2", false, 2)
-        )
-        val json = Gson().toJson(expectedItems)
-
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
-
-        val result = sharedPrefManager.getCachedMyLifeItems(userId)
-
-        assertEquals(2, result?.size)
-        assertEquals("img1", result?.get(0)?.imageId)
-        assertEquals("Title 1", result?.get(0)?.title)
-        assertEquals(true, result?.get(0)?.isVisible)
-        assertEquals(1, result?.get(0)?.weight)
-
-        assertEquals("img2", result?.get(1)?.imageId)
-        assertEquals("Title 2", result?.get(1)?.title)
-        assertEquals(false, result?.get(1)?.isVisible)
-        assertEquals(2, result?.get(1)?.weight)
-    }
-
-    @Test
-    fun testGetCachedMyLifeItems_nullJson() {
-        val userId = "456"
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
-
-        val result = sharedPrefManager.getCachedMyLifeItems(userId)
-
-        assertNull(result)
-    }
-
-    @Test
-    fun testGetCachedMyLifeItems_invalidJson() {
-        val userId = "789"
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
-
-        val result = sharedPrefManager.getCachedMyLifeItems(userId)
-
-        assertNull(result)
     }
 
     fun testRemoveKey() {

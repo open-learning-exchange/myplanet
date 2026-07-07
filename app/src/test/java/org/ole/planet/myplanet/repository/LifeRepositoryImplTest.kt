@@ -16,19 +16,29 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import com.google.gson.Gson
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.services.SharedPrefManager
+import android.content.SharedPreferences
 
 class LifeRepositoryImplTest {
 
     private lateinit var databaseService: DatabaseService
+    private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var mockSharedPreferences: SharedPreferences
+    private lateinit var gson: Gson
     private lateinit var repository: LifeRepositoryImpl
 
     @Before
     fun setUp() {
         Logger.getLogger("io.mockk").level = Level.OFF
         databaseService = mockk(relaxed = true)
-        repository = LifeRepositoryImpl(databaseService, UnconfinedTestDispatcher())
+        sharedPrefManager = mockk(relaxed = true)
+        mockSharedPreferences = mockk(relaxed = true)
+        io.mockk.every { sharedPrefManager.rawPreferences } returns mockSharedPreferences
+        gson = Gson()
+        repository = LifeRepositoryImpl(databaseService, UnconfinedTestDispatcher(), sharedPrefManager, gson)
     }
 
     @Test
