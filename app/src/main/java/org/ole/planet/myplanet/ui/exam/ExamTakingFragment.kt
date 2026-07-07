@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
 import android.text.TextWatcher
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -799,7 +800,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                             } else {
                                 answerData.multipleAnswers[choiceText] = choiceId
                             }
-                        } catch (_: Exception) {}
+                        } catch (e: Exception) {
+                            Log.e("ExamTakingFragment", "Error parsing saved answer", e)
+                        }
                     }
                 }
                 "ratingScale", "input", "textarea" -> {
