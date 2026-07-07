@@ -58,7 +58,7 @@ class FreeSpaceWorkerTest {
         coEvery { worker.setProgress(any()) } returns Unit
 
         oleDir = Files.createTempDirectory("ole-test").toFile()
-        mockkStatic(FileUtils::class)
+        mockkObject(FileUtils)
         every { FileUtils.getOlePath(any()) } returns oleDir.path
 
         // Mock application context for getOlePath
