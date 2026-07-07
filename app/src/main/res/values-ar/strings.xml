@@ -10,6 +10,7 @@
     <string name="remember_sync">تذكر مزامنة التطبيق المحمول.</string>
     <string name="per_survey">%1$s لكل استبيان</string>
     <string name="course_completed">%1$s مكتمل!</string>
+    <string name="course_cover_image">صورة غلاف الدورة</string>
     <string name="course_in_progress">أدخل الدورة %1$s أكملها (%2$d من %3$d تم)</string>
     <string name="course_not_started">%1$s لم يبدأ</string>
     <string name="app_name">My Planet</string>
