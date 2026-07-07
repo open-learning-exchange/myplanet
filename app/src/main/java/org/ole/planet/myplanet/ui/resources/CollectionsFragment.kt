@@ -159,7 +159,6 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
 
     companion object {
         private lateinit var recentList: MutableList<RealmTag>
-        @JvmStatic
         fun getInstance(l: MutableList<RealmTag>, dbType: String): CollectionsFragment {
             recentList = l
             val f = CollectionsFragment()

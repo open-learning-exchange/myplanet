@@ -22,7 +22,6 @@ open class RealmCourseActivity : RealmObject() {
     var user: String? = null
 
     companion object {
-        @JvmStatic
         fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", realmCourseActivities.user)

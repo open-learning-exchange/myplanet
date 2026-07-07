@@ -47,7 +47,6 @@ open class RealmRetryOperation : RealmObject() {
         private const val BASE_DELAY_MS = 30_000L
         private const val MAX_DELAY_MS = 30 * 60 * 1000L
 
-        @JvmStatic
         fun createFromRetryFailure(
             realm: Realm,
             uploadType: String,
@@ -81,7 +80,6 @@ open class RealmRetryOperation : RealmObject() {
             return operation
         }
 
-        @JvmStatic
         fun calculateNextRetryTime(attemptCount: Int): Long {
             val delay = minOf(BASE_DELAY_MS * (1L shl attemptCount), MAX_DELAY_MS)
             return System.currentTimeMillis() + delay

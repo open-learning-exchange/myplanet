@@ -10,6 +10,7 @@ import okhttp3.Call
 import okhttp3.Interceptor
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -121,6 +122,69 @@ class RetryInterceptorTest {
     @Test
     fun testSuccessAfterIOException() {
         val request = Request.Builder().url("http://example.com").build()
+        val successResponse = createResponse(request, 200)
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } throws SocketTimeoutException("timeout") andThen successResponse
+        every { chain.call() } returns notCancelledCall()
+
+        val result = retryInterceptor.intercept(chain)
+
+        assertEquals(200, result.code)
+        verify(exactly = 2) { chain.proceed(request) }
+        verify(exactly = 1) { broadcastService.trySendBroadcast(any()) }
+    }
+
+    @Test
+    fun testDocumentCreatingPostIsNotRetriedOnIOException() {
+        val request = Request.Builder()
+            .url("http://example.com/submissions")
+            .post("{}".toRequestBody())
+            .build()
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } throws SocketTimeoutException("timeout")
+        every { chain.call() } returns notCancelledCall()
+
+        try {
+            retryInterceptor.intercept(chain)
+            fail("Expected IOException without retries")
+        } catch (e: IOException) {
+            assertTrue(e is SocketTimeoutException)
+        }
+
+        verify(exactly = 1) { chain.proceed(request) }
+        verify(exactly = 0) { broadcastService.trySendBroadcast(any()) }
+    }
+
+    @Test
+    fun testDocumentCreatingPostIsNotRetriedOn5xx() {
+        val request = Request.Builder()
+            .url("http://example.com/submissions")
+            .post("{}".toRequestBody())
+            .build()
+        val errorResponse = createResponse(request, 502)
+
+        val chain = mockk<Interceptor.Chain>()
+        every { chain.request() } returns request
+        every { chain.proceed(request) } returns errorResponse
+        every { chain.call() } returns notCancelledCall()
+
+        val result = retryInterceptor.intercept(chain)
+
+        assertEquals(502, result.code)
+        verify(exactly = 1) { chain.proceed(request) }
+        verify(exactly = 0) { broadcastService.trySendBroadcast(any()) }
+    }
+
+    @Test
+    fun testReadOnlyFindPostIsStillRetried() {
+        val request = Request.Builder()
+            .url("http://example.com/submissions/_find")
+            .post("{}".toRequestBody())
+            .build()
         val successResponse = createResponse(request, 200)
 
         val chain = mockk<Interceptor.Chain>()

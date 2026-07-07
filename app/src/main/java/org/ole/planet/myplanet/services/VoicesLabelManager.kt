@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.view.View
+import android.widget.PopupMenu
+import androidx.appcompat.view.ContextThemeWrapper
 import fisk.chipcloud.ChipCloud
 import io.realm.RealmList
 import java.util.Locale
@@ -33,8 +35,8 @@ class VoicesLabelManager(
             val usedLabels = voice?.labels?.toSet() ?: emptySet()
             val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
 
-            val wrapper = androidx.appcompat.view.ContextThemeWrapper(context, R.style.CustomPopupMenu)
-            val menu = android.widget.PopupMenu(wrapper, binding.btnAddLabel)
+            val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
+            val menu = PopupMenu(wrapper, binding.btnAddLabel)
             availableLabels.keys.forEach { labelName ->
                 menu.menu.add(labelName)
             }

@@ -63,7 +63,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         DialogUtils.CustomProgressDialog(this)
     }
 
-    @JvmField
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {

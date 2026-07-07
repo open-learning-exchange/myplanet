@@ -11,6 +11,7 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import io.realm.log.RealmLog
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineDispatcher
@@ -59,9 +60,9 @@ class RealmRepositoryTest {
         every { databaseService.createManagedRealmInstance() } returns realm
 
         // Mock RealmLog to prevent UnsatisfiedLinkError during tests when exceptions are caught
-        io.mockk.mockkStatic(io.realm.log.RealmLog::class)
-        every { io.realm.log.RealmLog.error(any<Throwable>(), any<String>(), *anyVararg()) } just Runs
-        every { io.realm.log.RealmLog.error(any<String>(), *anyVararg()) } just Runs
+        io.mockk.mockkStatic(RealmLog::class)
+        every { RealmLog.error(any<Throwable>(), any<String>(), *anyVararg()) } just Runs
+        every { RealmLog.error(any<String>(), *anyVararg()) } just Runs
 
         repository = TestRealmRepository(databaseService, testDispatcher)
     }

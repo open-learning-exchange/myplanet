@@ -7,7 +7,6 @@ import android.provider.Settings
 import androidx.core.content.pm.PackageInfoCompat.getLongVersionCode
 
 object VersionUtils {
-    @JvmStatic
     fun getVersionCode(context: Context): Int {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -23,7 +22,6 @@ object VersionUtils {
         return 0
     }
 
-    @JvmStatic
     fun getVersionName(context: Context): String? {
         try {
             val pInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -34,17 +32,14 @@ object VersionUtils {
         return ""
     }
 
-    @JvmStatic
     fun getAndroidId(context: Context): String {
         return Settings.Secure.getString(context.contentResolver, Settings.Secure.ANDROID_ID)
     }
 
-    @JvmStatic
     fun isVersionAllowed(currentVersion: String, minApkVersion: String): Boolean {
         return compareVersions(currentVersion, minApkVersion) >= 0
     }
 
-    @JvmStatic
     fun compareVersions(version1: String, version2: String): Int {
         val parts1 = version1.removeSuffix("-lite").removePrefix("v").split(".").map { it.toInt() }
         val parts2 = version2.removePrefix("v").split(".").map { it.toInt() }
@@ -57,7 +52,6 @@ object VersionUtils {
         return parts1.size.compareTo(parts2.size)
     }
 
-    @JvmStatic
     fun parseApkVersionString(raw: String?): Int? {
         if (raw.isNullOrEmpty()) return null
         var vsn = raw.replace("v".toRegex(), "")

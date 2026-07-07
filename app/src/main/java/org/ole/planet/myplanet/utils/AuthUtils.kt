@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import android.widget.Toast
 import kotlin.coroutines.resume
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -18,7 +19,7 @@ object AuthUtils {
         return userRepository.validateUsername(username)
     }
 
-    suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?, ioDispatcher: kotlinx.coroutines.CoroutineDispatcher) {
+    suspend fun login(activity: LoginActivity, loginSyncManager: LoginSyncManager, name: String?, password: String?, ioDispatcher: CoroutineDispatcher) {
         if (activity.forceSyncTrigger()) return
 
         withContext(ioDispatcher) {
