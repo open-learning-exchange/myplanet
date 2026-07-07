@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
+import org.ole.planet.myplanet.data.queryListSorted
 
 open class RealmRepository(
     protected val databaseService: DatabaseService,
@@ -40,6 +41,24 @@ open class RealmRepository(
     protected suspend fun <T : RealmObject> queryList(clazz: Class<T>, maxDepth: Int, builder: RealmQuery<T>.() -> Unit = {}): List<T> = withRealm(false) { realm ->
         realm.queryList(clazz, maxDepth, builder)
     }
+
+    protected suspend fun <T : RealmObject> queryListSorted(
+        clazz: Class<T>,
+        sortField: String,
+        sortOrder: io.realm.Sort,
+        builder: RealmQuery<T>.() -> Unit = {},
+    ): List<T> = queryListSorted(clazz, sortField, sortOrder, false, builder)
+
+    protected suspend fun <T : RealmObject> queryListSorted(
+        clazz: Class<T>,
+        sortField: String,
+        sortOrder: io.realm.Sort,
+        ensureLatest: Boolean,
+        builder: RealmQuery<T>.() -> Unit = {},
+    ): List<T> =
+        withRealm(ensureLatest) { realm ->
+            realm.queryListSorted(clazz, sortField, sortOrder, builder)
+        }
 
     protected suspend fun <T : RealmObject> findFirstCopy(
         clazz: Class<T>,

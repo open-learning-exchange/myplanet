@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
+import io.mockk.coEvery
 import io.mockk.mockk
 import io.mockk.slot
 import io.mockk.verify
@@ -36,6 +37,7 @@ class TestRealmRepository(
     realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher) {
     suspend fun queryFlow() = queryListFlow(TestRealmObject::class.java)
+    suspend fun querySorted() = queryListSorted(TestRealmObject::class.java, "testField", io.realm.Sort.ASCENDING)
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -58,6 +60,9 @@ class RealmRepositoryTest {
 
         every { databaseService.ioDispatcher } returns testDispatcher
         every { databaseService.createManagedRealmInstance() } returns realm
+        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
+            firstArg<(Realm) -> Any>().invoke(realm)
+        }
 
         // Mock RealmLog to prevent UnsatisfiedLinkError during tests when exceptions are caught
         io.mockk.mockkStatic(RealmLog::class)
@@ -246,5 +251,24 @@ class RealmRepositoryTest {
         assertEquals(emptyList<TestRealmObject>(), emittedLists[0])
         verify(exactly = 0) { frozenRealmInitial.copyFromRealm(any<RealmResults<TestRealmObject>>()) }
         job.cancel()
+    }
+
+    @Test
+    fun `queryListSorted applies sort and copies objects`() = runTest {
+        val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
+        val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val copiedList = listOf(TestRealmObject())
+
+        every { realm.where(TestRealmObject::class.java) } returns realmQuery
+        every { realmQuery.sort("testField", io.realm.Sort.ASCENDING) } returns realmQuery
+        every { realmQuery.findAll() } returns initialResults
+        every { realm.copyFromRealm(initialResults) } returns copiedList
+
+        val result = repository.querySorted()
+
+        assertEquals(copiedList, result)
+        verify { realmQuery.sort("testField", io.realm.Sort.ASCENDING) }
+        verify { realmQuery.findAll() }
+        verify { realm.copyFromRealm(initialResults) }
     }
 }
