@@ -252,13 +252,7 @@ class MyHealthFragment : Fragment() {
                 if (isAdded) {
                     alertHealthListBinding?.searchProgress?.visibility = View.GONE
                     rv.visibility = View.VISIBLE
-                    val searchAdapter = HealthUsersAdapter { selected ->
-                        userId = if (selected._id.isNullOrEmpty()) selected.id else selected._id
-                        getHealthRecords(userId)
-                        dialog?.dismiss()
-                    }
-                    searchAdapter.submitList(userModelList)
-                    rv.adapter = searchAdapter
+                    adapter.submitList(userModelList)
                     btnAddMember.visibility =
                         if (userModelList.isEmpty()) View.VISIBLE else View.GONE
                 }
