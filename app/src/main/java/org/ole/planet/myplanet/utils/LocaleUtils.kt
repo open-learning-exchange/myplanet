@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.content.Context
+import android.content.SharedPreferences
 import android.content.res.Configuration
 import android.os.LocaleList
 import androidx.core.content.edit
@@ -10,7 +11,7 @@ import java.util.Locale
 object LocaleUtils {
     private const val SELECTED_LANGUAGE = "Locale.Helper.Selected.Language"
     @Volatile private var cachedLanguage: String? = null
-    @Volatile private var cachedPrefs: android.content.SharedPreferences? = null
+    @Volatile private var cachedPrefs: SharedPreferences? = null
 
     fun preload(context: Context) {
         if (cachedLanguage == null) {

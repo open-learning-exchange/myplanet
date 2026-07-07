@@ -29,6 +29,8 @@ import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ActivityReplyBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.VoicesActions
 import org.ole.planet.myplanet.ui.voices.VoicesViewModel
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
 import org.ole.planet.myplanet.utils.FileUtils.getImagePath
@@ -57,12 +60,12 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
+    lateinit var activitiesRepository: ActivitiesRepository
 
     @Inject
-    lateinit var dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider
+    lateinit var dispatcherProvider: DispatcherProvider
     @Inject
-    lateinit var userRepository: org.ole.planet.myplanet.repository.UserRepository
+    lateinit var userRepository: UserRepository
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject

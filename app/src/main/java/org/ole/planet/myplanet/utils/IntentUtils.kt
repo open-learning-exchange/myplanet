@@ -8,7 +8,6 @@ import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
 object IntentUtils {
-    @JvmStatic
     fun openAudioFile(context: Context, path: String?, resourceTitle: String? = null) {
         val intent = Intent(context, ResourceViewerActivity::class.java).apply {
             putExtra("isFullPath", true)
@@ -19,7 +18,6 @@ object IntentUtils {
         context.startActivity(intent)
     }
 
-    @JvmStatic
     fun openPlayStore(context: Context) {
         val appPackageName = context.packageName
         val intent = Intent(Intent.ACTION_VIEW, "market://details?id=$appPackageName".toUri()).apply {

@@ -23,6 +23,7 @@ import com.nex3z.togglebuttongroup.SingleSelectToggleGroup
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Date
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,7 +50,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
-    private var updateTasksJob: kotlinx.coroutines.Job? = null
+    private var updateTasksJob: Job? = null
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
 

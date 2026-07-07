@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
@@ -42,7 +43,7 @@ interface CoursesRepository {
         userName: String,
         planetCode: String,
         parentCode: String,
-        tags: List<org.ole.planet.myplanet.model.RealmTag>,
+        tags: List<RealmTag>,
         grade: String,
         subject: String
     )
@@ -55,15 +56,15 @@ interface CoursesRepository {
     suspend fun removeCourseFromShelf(courseId: String, userId: String)
     suspend fun logCourseVisit(courseId: String, title: String, userId: String)
     suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
-    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun getCourseTags(courseId: String): List<RealmTag>
     suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>>
-    suspend fun getCourseRatings(userId: String?): HashMap<String?, com.google.gson.JsonObject>
+    suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     suspend fun filterCoursesByTag(query: String, tags: List<RealmTag>, isMyCourseLib: Boolean, userId: String?): List<RealmMyCourse>
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    fun insertCertification(realm: io.realm.Realm, doc: com.google.gson.JsonObject)
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    fun insertCertification(realm: io.realm.Realm, doc: JsonObject)
 }

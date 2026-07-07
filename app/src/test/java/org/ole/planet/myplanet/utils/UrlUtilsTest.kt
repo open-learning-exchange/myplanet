@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Application
 import android.net.Uri
 import io.mockk.every
 import io.mockk.mockk
@@ -16,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(sdk = [33], application = Application::class)
 class UrlUtilsTest {
     private lateinit var mockSpm: SharedPrefManager
     private lateinit var sharedPrefManager: SharedPrefManager

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.util.Log
 import io.realm.RealmObject
+import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -66,7 +67,7 @@ class UploadRepositoryImpl @Inject constructor(
         return failedLocally
     }
 
-    private class FieldCacheEntry(val field: java.lang.reflect.Field?)
+    private class FieldCacheEntry(val field: Field?)
 
     private val fieldCache = ConcurrentHashMap<Pair<Class<*>, String>, FieldCacheEntry>()
 
@@ -77,7 +78,7 @@ class UploadRepositoryImpl @Inject constructor(
 
             if (entry == null) {
                 var clazz: Class<*>? = obj.javaClass
-                var field: java.lang.reflect.Field? = null
+                var field: Field? = null
 
                 while (clazz != null && field == null) {
                     try {

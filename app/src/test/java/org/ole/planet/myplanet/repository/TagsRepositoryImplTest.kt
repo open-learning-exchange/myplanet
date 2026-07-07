@@ -11,6 +11,7 @@ import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -35,7 +36,7 @@ class TagsRepositoryImplTest {
             val operation = firstArg<(Realm) -> List<RealmTag>>()
             operation(mockRealm)
         }
-        repository = TagsRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
+        repository = TagsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
     }
 
     private fun mockQueryResults(vararg results: List<RealmTag>): RealmQuery<RealmTag> {
