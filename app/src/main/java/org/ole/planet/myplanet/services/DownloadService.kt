@@ -410,10 +410,10 @@ class DownloadService : Service() {
     }
 
     private fun getStorageError(fileSize: Long): String? {
-        if (fileSize <= 0) return null
         if (!externalMemoryAvailable()) return "Download failed: storage not available"
-        if (fileSize > availableExternalMemorySize) {
-            Log.e(TAG, "getStorageError: need ${fileSize}B but only ${availableExternalMemorySize}B available")
+        val required = if (fileSize > 0) fileSize + STORAGE_HEADROOM_BYTES else STORAGE_HEADROOM_BYTES
+        if (required > availableExternalMemorySize) {
+            Log.e(TAG, "getStorageError: need ${required}B (file=${fileSize}B + headroom) but only ${availableExternalMemorySize}B available")
             return "Download failed: not enough storage"
         }
         return null
@@ -509,6 +509,7 @@ class DownloadService : Service() {
 
     companion object {
         private const val TAG = "DownloadService"
+        private const val STORAGE_HEADROOM_BYTES = 100L * 1024 * 1024
         const val PREFS_NAME = "MyPrefsFile"
         const val MESSAGE_PROGRESS = "message_progress"
         const val RESOURCE_NOT_FOUND_ACTION = "resource_not_found_action"

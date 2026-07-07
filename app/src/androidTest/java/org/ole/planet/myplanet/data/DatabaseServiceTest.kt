@@ -12,7 +12,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -24,6 +23,7 @@ class DatabaseServiceTest {
 
     private lateinit var databaseService: DatabaseService
     private lateinit var realmConfiguration: RealmConfiguration
+    private lateinit var keepAliveRealm: Realm
 
     @Before
     fun setUp() {
@@ -36,34 +36,41 @@ class DatabaseServiceTest {
             .schemaVersion(1)
             .build()
         Realm.setDefaultConfiguration(realmConfiguration)
+        keepAliveRealm = Realm.getDefaultInstance()
 
         databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), DefaultDispatcherProvider())
     }
 
     @After
     fun tearDown() {
+        keepAliveRealm.close()
+        awaitGlobalInstanceCount(0)
         Realm.deleteRealm(realmConfiguration)
+    }
+
+    private fun awaitGlobalInstanceCount(expected: Int) {
+        val deadline = System.currentTimeMillis() + 5000
+        while (System.currentTimeMillis() < deadline) {
+            if (Realm.getGlobalInstanceCount(realmConfiguration) == expected) break
+            Thread.sleep(10)
+        }
+        assertEquals(expected, Realm.getGlobalInstanceCount(realmConfiguration))
     }
 
     @Test
     fun testWithRealmAsync_successPath_closesRealm() = runBlocking {
-        var capturedRealm: Realm? = null
         val result = databaseService.withRealmAsync { realm ->
-            capturedRealm = realm
             assertFalse(realm.isClosed)
             "success"
         }
         assertEquals("success", result)
-        assertNotNull(capturedRealm)
-        assertTrue(capturedRealm!!.isClosed)
+        awaitGlobalInstanceCount(1)
     }
 
     @Test
     fun testWithRealmAsync_exceptionPath_closesRealm() = runBlocking {
-        var capturedRealm: Realm? = null
         val exception = runCatching {
             databaseService.withRealmAsync { realm ->
-                capturedRealm = realm
                 assertFalse(realm.isClosed)
                 throw RuntimeException("Test exception")
             }
@@ -71,35 +78,29 @@ class DatabaseServiceTest {
 
         assertNotNull(exception)
         assertEquals("Test exception", exception?.message)
-        assertNotNull(capturedRealm)
-        assertTrue(capturedRealm!!.isClosed)
+        awaitGlobalInstanceCount(1)
     }
 
     @Test
     fun testExecuteTransactionAsync_commitsData() = runBlocking {
-        var capturedRealm: Realm? = null
         databaseService.executeTransactionAsync { realm ->
-            capturedRealm = realm
             val meetup = realm.createObject(RealmMeetup::class.java, "test-id")
             meetup.meetupId = "test-id"
             meetup.title = "Test Meetup"
         }
+        awaitGlobalInstanceCount(1)
 
         databaseService.withRealmAsync { realm ->
             val meetup = realm.where(RealmMeetup::class.java).equalTo("meetupId", "test-id").findFirst()
             assertNotNull(meetup)
             assertEquals("Test Meetup", meetup?.title)
-            assertNotNull(capturedRealm)
-            assertTrue(capturedRealm!!.isClosed)
         }
     }
 
     @Test
     fun testExecuteTransactionAsync_exceptionPath_closesRealm() = runBlocking {
-        var capturedRealm: Realm? = null
         val exception = runCatching {
             databaseService.executeTransactionAsync { realm ->
-                capturedRealm = realm
                 assertFalse(realm.isClosed)
                 throw RuntimeException("Test exception in transaction")
             }
@@ -107,14 +108,11 @@ class DatabaseServiceTest {
 
         assertNotNull(exception)
         assertEquals("Test exception in transaction", exception?.message)
-        assertNotNull(capturedRealm)
-        assertTrue(capturedRealm!!.isClosed)
+        awaitGlobalInstanceCount(1)
     }
 
     @Test
     fun testConcurrency_doesNotLeaveRealmsOpen() = runBlocking {
-        val initialGlobalCount = Realm.getGlobalInstanceCount(realmConfiguration)
-
         val deferreds = (1..50).map { i ->
             async(Dispatchers.Default) {
                 databaseService.withRealmAsync { realm ->
@@ -127,7 +125,6 @@ class DatabaseServiceTest {
         val results = deferreds.awaitAll()
         assertEquals(50, results.size)
 
-        val finalGlobalCount = Realm.getGlobalInstanceCount(realmConfiguration)
-        assertEquals("Global instance count should be unchanged after concurrent ops", initialGlobalCount, finalGlobalCount)
+        awaitGlobalInstanceCount(1)
     }
 }
