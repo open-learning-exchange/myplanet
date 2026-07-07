@@ -10,6 +10,7 @@
     <string name="remember_sync">Recuerda sincronizar la aplicación móvil.</string>
     <string name="per_survey">%1$s por encuesta</string>
     <string name="course_completed">%1$s terminado!</string>
+    <string name="course_cover_image">Imagen de portada del curso</string>
     <string name="course_in_progress">Ingresa al curso %1$s completalo (%2$d de %3$d hecho)</string>
     <string name="course_not_started">%1$s no iniciado</string>
     <string name="app_name">myPlanet</string>

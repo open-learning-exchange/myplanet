@@ -7,11 +7,13 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.SystemClock
 import android.util.Log
 import androidx.annotation.RequiresApi
+import androidx.annotation.VisibleForTesting
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -253,7 +255,7 @@ class DownloadService : Service() {
                 }
 
                 if (resolvedAltBase != null && resolvedPrimaryBase != null) {
-                    val parsed = android.net.Uri.parse(url)
+                    val parsed = Uri.parse(url)
                     val path = parsed.path.orEmpty()
                     val query = if (parsed.query != null) "?${parsed.query}" else ""
                     val altUrl = resolvedAltBase + path + query
@@ -522,7 +524,7 @@ class DownloadService : Service() {
             return downloadQueue.maxByOrNull { it.priority } ?: downloadQueue.first()
         }
 
-        @androidx.annotation.VisibleForTesting
+        @VisibleForTesting
         internal fun getNextUrl(
             preferences: SharedPreferences,
             key: String,

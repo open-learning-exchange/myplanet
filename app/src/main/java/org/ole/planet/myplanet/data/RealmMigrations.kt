@@ -127,5 +127,12 @@ class RealmMigrations : RealmMigration {
                 ?.setNullable("imageName", true)
             version++
         }
+
+        if (version == 13L) {
+            schema.get("RealmMyCourse")
+                ?.addField("coverFileName", String::class.java)
+                ?.setNullable("coverFileName", true)
+            version++
+        }
     }
 }

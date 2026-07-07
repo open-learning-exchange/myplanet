@@ -144,7 +144,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     }
 
     companion object {
-        @JvmStatic
         fun newInstance(type: String?): Fragment {
             val fragment = SubmissionsFragment()
             val b = Bundle()

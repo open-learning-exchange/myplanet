@@ -24,7 +24,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -306,7 +308,7 @@ class SubmissionsRepositoryImplTest {
         }
 
         val result = repository.createExamSubmission(
-            org.ole.planet.myplanet.model.CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team")
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team")
         )
         // Function executeTransaction wrapper does not execute anything, so result can be null.
         // We verify the interaction.
@@ -316,7 +318,7 @@ class SubmissionsRepositoryImplTest {
     @Test
     fun `saveExamAnswer executes without exceptions`() = runTest {
         val answerData = mockk<ExamAnswerData>(relaxed = true)
-        val mockAnswer = org.ole.planet.myplanet.model.RealmAnswer()
+        val mockAnswer = RealmAnswer()
         val mockExam = mockk<RealmStepExam>(relaxed = true)
         val mockQuestion = mockk<RealmExamQuestion>(relaxed = true)
         val mockSubmission = mockk<RealmSubmission>(relaxed = true)

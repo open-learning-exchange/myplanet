@@ -7,6 +7,7 @@ import io.mockk.spyk
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.ole.planet.myplanet.model.RealmNews
 
 class BaseTeamFragmentTest {
 
@@ -14,7 +15,7 @@ class BaseTeamFragmentTest {
         public override fun shouldQueryTeamFromRealm(): Boolean {
             return super.shouldQueryTeamFromRealm()
         }
-        override fun onNewsItemClick(news: org.ole.planet.myplanet.model.RealmNews?) {}
+        override fun onNewsItemClick(news: RealmNews?) {}
         override fun clearImages() {}
     }
 

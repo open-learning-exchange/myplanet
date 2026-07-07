@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.NotificationPayload
+import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
 interface NotificationsRepository {
@@ -13,7 +17,7 @@ interface NotificationsRepository {
     suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String>
     suspend fun markAllUnreadAsRead(userId: String?): Set<String>
     suspend fun getSurveyId(relatedId: String?): String?
-    suspend fun getTaskDetails(relatedId: String?): org.ole.planet.myplanet.model.TaskNotificationResult?
+    suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult?
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String>
     suspend fun getTaskTeamNamesByTaskIds(taskIds: List<String>): Map<String, String>
@@ -22,9 +26,9 @@ interface NotificationsRepository {
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
     suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
-    suspend fun getPendingSyncNotifications(): List<org.ole.planet.myplanet.model.RealmNotification>
+    suspend fun getPendingSyncNotifications(): List<RealmNotification>
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    suspend fun insert(doc: com.google.gson.JsonObject)
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun insert(doc: JsonObject)
     suspend fun deleteNotifications(ids: Set<String>): Set<String>
 }

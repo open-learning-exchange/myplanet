@@ -180,7 +180,6 @@ class RatingsFragment : DialogFragment() {
     }
 
     companion object {
-        @JvmStatic
         fun newInstance(type: String?, id: String?, title: String?): RatingsFragment {
             val fragment = RatingsFragment()
             val b = Bundle()

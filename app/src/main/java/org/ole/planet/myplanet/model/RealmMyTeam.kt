@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -8,6 +9,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import java.io.File
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -57,21 +59,18 @@ open class RealmMyTeam : RealmObject() {
     var imageName: String? = null
 
     companion object {
-        @JvmStatic
         fun getFirstAttachmentName(doc: JsonObject): String? {
             val attachments = doc.getAsJsonObject("_attachments") ?: return null
             return attachments.keySet().firstOrNull()
         }
 
-        @JvmStatic
-        fun getAttachmentFile(context: android.content.Context, teamId: String?, imageName: String?): java.io.File? {
+        fun getAttachmentFile(context: Context, teamId: String?, imageName: String?): File? {
             if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
-            return java.io.File(
+            return File(
                 "${getOlePath(context)}team_attachments/$teamId/$imageName"
             )
         }
 
-        @JvmStatic
         fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             val hadLocalChanges = team.updated
 
@@ -142,7 +141,6 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
             team.description = JsonUtils.getString("description", doc)
             team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
@@ -157,7 +155,6 @@ open class RealmMyTeam : RealmObject() {
             getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 
-        @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
             val `object` = JsonObject()
 
@@ -224,7 +221,6 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
-        @JvmStatic
         fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
             val `object` = serialize(team)
 
