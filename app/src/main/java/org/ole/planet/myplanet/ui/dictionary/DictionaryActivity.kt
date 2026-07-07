@@ -3,16 +3,18 @@ package org.ole.planet.myplanet.ui.dictionary
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
 import androidx.core.text.HtmlCompat
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import io.realm.Case
 import java.util.UUID
 import javax.inject.Inject
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -36,6 +38,9 @@ class DictionaryActivity : BaseActivity() {
 
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
+
+    @Inject
+    override lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
 
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
 
@@ -78,21 +83,22 @@ class DictionaryActivity : BaseActivity() {
             Utilities.toast(this, getString(R.string.downloading_started_please_check_notificati))
             DownloadUtils.openDownloadService(this, list, false)
         }
+
+        registerReceiver()
     }
 
-    override fun onStart() {
-        super.onStart()
-        val filter = IntentFilter("message_progress")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(receiver, filter)
+    override fun registerReceiver() {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (isActive) {
+                        when (intent.action) {
+                            "message_progress" -> receiver.onReceive(this@DictionaryActivity, intent)
+                        }
+                    }
+                }
+            }
         }
-    }
-
-    override fun onStop() {
-        super.onStop()
-        unregisterReceiver(receiver)
     }
 
     private suspend fun loadDictionaryIfNeeded() {

@@ -139,7 +139,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var transactionSyncManager: TransactionSyncManager
 
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+    open lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -769,7 +769,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 
-    fun registerReceiver() {
+    open fun registerReceiver() {
         collectWhenStarted(broadcastService.events) { intent ->
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
                 broadcastReceiver.onReceive(this@SyncActivity, intent)
