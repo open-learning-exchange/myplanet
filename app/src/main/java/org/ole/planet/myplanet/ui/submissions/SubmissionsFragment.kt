@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.submissions
 
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -14,13 +12,15 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
 class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
@@ -31,8 +31,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
-    private lateinit var textWatcher: TextWatcher
-    private var searchJob: Job? = null
     private lateinit var adapter: SubmissionsAdapter
     var type: String? = ""
 
@@ -66,18 +64,10 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
 
 
 
-        textWatcher = object : TextWatcher {
-            override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
-            override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    viewModel.setFilter(type ?: "", charSequence.toString())
-                }
-            }
-            override fun afterTextChanged(editable: Editable) {}
-        }
-        binding.etSearch.addTextChangedListener(textWatcher)
+        binding.etSearch.textChanges()
+            .debounce(300)
+            .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
         showHideRadioButton()
     }
 
@@ -134,9 +124,6 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     }
 
     override fun onDestroyView() {
-        if (this::textWatcher.isInitialized) {
-            binding.etSearch.removeTextChangedListener(textWatcher)
-        }
         binding.rbExam.setOnCheckedChangeListener(null)
         binding.rbSurvey.setOnCheckedChangeListener(null)
         _binding = null
