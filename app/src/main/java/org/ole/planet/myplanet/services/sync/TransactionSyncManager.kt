@@ -300,7 +300,7 @@ class TransactionSyncManager @Inject constructor(
         val insertStartTime = SystemClock.elapsedRealtime()
         insert()
         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-        org.ole.planet.myplanet.utils.SyncTimeLogger.logRealmOperation(
+        SyncTimeLogger.logRealmOperation(
             "insert_batch",
             table,
             insertDuration,
