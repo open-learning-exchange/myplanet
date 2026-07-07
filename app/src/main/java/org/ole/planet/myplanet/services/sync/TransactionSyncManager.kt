@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.os.SystemClock
 import android.util.Base64
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -309,8 +310,7 @@ class TransactionSyncManager @Inject constructor(
         )
     }
 
-    // Unwraps each row's "doc" and drops CouchDB design documents.
-    private fun extractDocs(arr: com.google.gson.JsonArray): List<JsonObject> {
+    private fun extractDocs(arr: JsonArray): List<JsonObject> {
         val docs = ArrayList<JsonObject>(arr.size())
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
