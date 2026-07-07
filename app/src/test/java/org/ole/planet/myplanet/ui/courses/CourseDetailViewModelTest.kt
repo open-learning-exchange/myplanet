@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.domain.usecase.GetCourseDetailUseCase
+import org.ole.planet.myplanet.domain.usecase.GetRatingSummaryUseCase
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUser
@@ -50,6 +52,8 @@ class CourseDetailViewModelTest {
     }
 
     private lateinit var viewModel: CourseDetailViewModel
+    private lateinit var getCourseDetailUseCase: GetCourseDetailUseCase
+    private lateinit var getRatingSummaryUseCase: GetRatingSummaryUseCase
 
     private val courseId = "course_1"
 
@@ -66,12 +70,23 @@ class CourseDetailViewModelTest {
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
 
-        viewModel = CourseDetailViewModel(
+        getCourseDetailUseCase = GetCourseDetailUseCase(
             coursesRepository,
             submissionsRepository,
             ratingsRepository,
             userSessionManager,
             dispatcherProvider
+        )
+
+        getRatingSummaryUseCase = GetRatingSummaryUseCase(
+            ratingsRepository,
+            userSessionManager,
+            dispatcherProvider
+        )
+
+        viewModel = CourseDetailViewModel(
+            getCourseDetailUseCase,
+            getRatingSummaryUseCase
         )
     }
 
@@ -114,7 +129,7 @@ class CourseDetailViewModelTest {
         assertTrue(state is CourseDetailUiState.Success)
         state as CourseDetailUiState.Success
         assertEquals(7, state.examCount)
-        assertEquals(4.0f, state.ratingSummary?.get("averageRating")?.asFloat)
+        assertEquals(4.0f, state.ratingSummary?.averageRating)
         coVerify { coursesRepository.getCourseExamCount(courseId) }
     }
 
@@ -187,7 +202,7 @@ class CourseDetailViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value as CourseDetailUiState.Success
-        assertEquals(5.0f, state.ratingSummary?.get("averageRating")?.asFloat)
-        assertEquals(10, state.ratingSummary?.get("total")?.asInt)
+        assertEquals(5.0f, state.ratingSummary?.averageRating)
+        assertEquals(10, state.ratingSummary?.totalRatings)
     }
 }
