@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -31,7 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
-    private var lastKnownRating: com.google.gson.JsonObject? = null
+    private var lastKnownRating: JsonObject? = null
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUser? = null
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {

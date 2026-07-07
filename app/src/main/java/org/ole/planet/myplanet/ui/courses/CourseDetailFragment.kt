@@ -5,6 +5,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -55,7 +56,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
                 is CourseDetailUiState.Error -> {
                     context?.let { ctx ->
-                        android.widget.Toast.makeText(ctx, state.message, android.widget.Toast.LENGTH_LONG).show()
+                        Toast.makeText(ctx, state.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }

@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.HashMap
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +20,7 @@ data class NewsUpdateData(
     val id: String?,
     val _id: String?,
     val _rev: String?,
-    val imagesArray: com.google.gson.JsonArray
+    val imagesArray: JsonArray
 )
 
 interface VoicesRepository {
@@ -47,7 +48,7 @@ interface VoicesRepository {
     suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?)
     suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?)
     suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews>
-    suspend fun insertNewsFromJson(doc: com.google.gson.JsonObject)
-    suspend fun insertNewsList(docs: List<com.google.gson.JsonObject>)
+    suspend fun insertNewsFromJson(doc: JsonObject)
+    suspend fun insertNewsList(docs: List<JsonObject>)
     suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String>
 }

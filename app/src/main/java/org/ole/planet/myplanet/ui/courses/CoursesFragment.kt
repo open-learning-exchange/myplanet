@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
+import android.os.Parcelable
 import android.view.View
 import android.widget.Button
 import androidx.core.view.isVisible
@@ -48,7 +49,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     var userModel: RealmUser? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
-    private var pendingScrollState: android.os.Parcelable? = null
+    private var pendingScrollState: Parcelable? = null
     private val viewModel: CoursesViewModel by viewModels()
 
     @Inject
@@ -90,7 +91,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         }
     }
 
-    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
+    override suspend fun getAdapter(): ListAdapter<*, *> {
         val hostActivity = activity ?: throw CancellationException("Fragment detached")
 
         if (userModel == null) {

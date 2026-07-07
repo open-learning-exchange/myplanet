@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,7 @@ class TeamsVoicesViewModel @Inject constructor(
     private val _createNewsSuccess = Channel<Boolean>(Channel.BUFFERED)
     val createNewsSuccess: Flow<Boolean> = _createNewsSuccess.receiveAsFlow()
 
-    private var observeJob: kotlinx.coroutines.Job? = null
+    private var observeJob: Job? = null
 
     suspend fun getFilteredNews(teamId: String): List<RealmNews?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
