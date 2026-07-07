@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -8,6 +9,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import java.io.File
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -62,9 +64,9 @@ open class RealmMyTeam : RealmObject() {
             return attachments.keySet().firstOrNull()
         }
 
-        fun getAttachmentFile(context: android.content.Context, teamId: String?, imageName: String?): java.io.File? {
+        fun getAttachmentFile(context: Context, teamId: String?, imageName: String?): File? {
             if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
-            return java.io.File(
+            return File(
                 "${getOlePath(context)}team_attachments/$teamId/$imageName"
             )
         }

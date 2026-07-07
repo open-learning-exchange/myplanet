@@ -1,10 +1,12 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.net.Uri
 import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,17 +24,25 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.NewsUpdateData
 import org.ole.planet.myplanet.repository.PersonalsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
 import org.ole.planet.myplanet.services.upload.UploadResult
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -53,17 +63,17 @@ class UploadManager @Inject constructor(
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
-    private val voicesRepository: org.ole.planet.myplanet.repository.VoicesRepository,
+    private val voicesRepository: VoicesRepository,
     private val uploadConfigs: UploadConfigs,
-    private val resourcesRepository: org.ole.planet.myplanet.repository.ResourcesRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val teamsRepository: Lazy<TeamsRepository>,
-    private val teamsSyncRepository: Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>,
+    private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val apiInterface: ApiInterface,
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
-    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider,
+    private val activitiesRepository: ActivitiesRepository,
+    private val dispatcherProvider: DispatcherProvider,
     @ApplicationScope private val scope: CoroutineScope,
     private val photoUploader: PhotoUploader,
-    private val achievementUploader: org.ole.planet.myplanet.services.upload.AchievementUploader,
+    private val achievementUploader: AchievementUploader,
     private val timeProvider: TimeProvider
 ) : FileUploader(apiInterface, scope) {
 
@@ -167,7 +177,7 @@ class UploadManager @Inject constructor(
             val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
-                is org.ole.planet.myplanet.services.upload.UploadResult.Success -> {
+                is UploadResult.Success -> {
                     listener?.let { l ->
                         val libraryIds = result.items.map { it.localId }
                         if (libraryIds.isNotEmpty()) {
@@ -183,7 +193,7 @@ class UploadManager @Inject constructor(
                     }
                     notifyListener(listener, "Uploaded ${result.items.size} resources successfully")
                 }
-                is org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess -> {
+                is UploadResult.PartialSuccess -> {
                     listener?.let { l ->
                         val libraryIds = result.succeeded.map { it.localId }
                         if (libraryIds.isNotEmpty()) {
@@ -199,10 +209,10 @@ class UploadManager @Inject constructor(
                     }
                     notifyListener(listener, "Partial success: ${result.succeeded.size} succeeded, ${result.failed.size} failed")
                 }
-                is org.ole.planet.myplanet.services.upload.UploadResult.Failure -> {
+                is UploadResult.Failure -> {
                     notifyListener(listener, "Upload failed: ${result.errors.size} errors")
                 }
-                is org.ole.planet.myplanet.services.upload.UploadResult.Empty -> {
+                is UploadResult.Empty -> {
                     notifyListener(listener, "No resources to upload")
                 }
             }
@@ -308,13 +318,13 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String) {
-        val imageFile = org.ole.planet.myplanet.model.RealmMyTeam
+        val imageFile = RealmMyTeam
             .getAttachmentFile(context, teamId, imageName) ?: return
         if (!imageFile.exists()) return
         try {
             val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
             val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
-            val encodedName = android.net.Uri.encode(imageName)
+            val encodedName = Uri.encode(imageName)
             val url = "${UrlUtils.getUrl()}/teams/$teamId/$encodedName"
             val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
             val newRev = response.body()?.get("rev")?.asString
@@ -367,11 +377,11 @@ class UploadManager @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             newsItems.processInBatches { batch ->
-                val successfulUpdates = mutableListOf<org.ole.planet.myplanet.repository.NewsUpdateData>()
+                val successfulUpdates = mutableListOf<NewsUpdateData>()
                 batch.forEach { news ->
                     try {
                         // Upload images first and collect metadata
-                        val imagesArray = com.google.gson.JsonArray()
+                        val imagesArray = JsonArray()
                         var messageWithImages = news.message ?: ""
 
                         news.imageUrls.forEach { imageUrl ->
@@ -436,7 +446,7 @@ class UploadManager @Inject constructor(
                         // Update database on success
                         if (newsResponse.isSuccessful && newsResponse.body() != null) {
                             val body = newsResponse.body()
-                            successfulUpdates.add(org.ole.planet.myplanet.repository.NewsUpdateData(
+                            successfulUpdates.add(NewsUpdateData(
                                 id = news.id,
                                 _id = getString("id", body),
                                 _rev = getString("rev", body),

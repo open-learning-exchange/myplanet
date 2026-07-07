@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import android.os.Handler
 import android.os.Looper
 import android.util.Patterns
 import android.webkit.MimeTypeMap
@@ -13,6 +14,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ProcessLifecycleOwner
 import fisk.chipcloud.ChipCloudConfig
 import java.math.BigInteger
+import java.text.Normalizer
+import java.util.Locale
 
 object Utilities {
     fun isValidEmail(target: CharSequence): Boolean {
@@ -39,7 +42,7 @@ object Utilities {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            android.os.Handler(Looper.getMainLooper()).post {
+            Handler(Looper.getMainLooper()).post {
                 showToastIfValid(context, message, duration)
             }
         }
@@ -83,7 +86,7 @@ object Utilities {
     }
 
     fun normalizeText(str: String): String {
-        return java.text.Normalizer.normalize(str.lowercase(java.util.Locale.getDefault()), java.text.Normalizer.Form.NFD)
+        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 

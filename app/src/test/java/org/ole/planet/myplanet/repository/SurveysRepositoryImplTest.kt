@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
@@ -14,6 +15,7 @@ import io.realm.RealmResults
 import java.util.concurrent.TimeUnit
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
@@ -43,7 +45,7 @@ import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [Build.VERSION_CODES.P], application = android.app.Application::class)
+@Config(sdk = [Build.VERSION_CODES.P], application = Application::class)
 class SurveysRepositoryImplTest {
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: SurveysRepositoryImpl
@@ -94,7 +96,7 @@ class SurveysRepositoryImplTest {
         dispatcherProvider = mockk(relaxed = true)
 
         // Mock DispatcherProvider setup for flows
-        every { dispatcherProvider.io } returns kotlinx.coroutines.Dispatchers.Unconfined
+        every { dispatcherProvider.io } returns Dispatchers.Unconfined
 
         sharedPreferences = mockk(relaxed = true)
         sharedPreferencesEditor = mockk(relaxed = true)

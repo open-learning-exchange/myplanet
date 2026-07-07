@@ -174,7 +174,7 @@ class BaseResourceFragmentTest {
     }
     @Test
     fun `showNotConnectedToast shows toast when fragment is active`() {
-        val mockActivity = mockk<androidx.fragment.app.FragmentActivity>(relaxed = true)
+        val mockActivity = mockk<FragmentActivity>(relaxed = true)
         every { fragment.isAdded } returns true
         every { fragment.activity } returns mockActivity
         every { fragment.requireActivity() } returns mockActivity

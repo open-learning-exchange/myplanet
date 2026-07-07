@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.NotificationManager.IMPORTANCE_HIGH
+import android.app.NotificationManager as SystemNotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -59,7 +61,7 @@ object NotificationUtils {
     const val EXTRA_RELATED_ID = "related_id"
 
     fun create(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
         val a = NotificationCompat.Builder(context, "11")
         setChannel(manager)
         val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
@@ -77,9 +79,9 @@ object NotificationUtils {
         nm.cancelAll()
     }
 
-    fun setChannel(notificationManager: android.app.NotificationManager?) {
+    fun setChannel(notificationManager: SystemNotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = android.app.NotificationManager.IMPORTANCE_LOW
+            val importance = SystemNotificationManager.IMPORTANCE_LOW
             val notificationChannel = NotificationChannel("11", "ole", importance)
             notificationManager?.createNotificationChannel(notificationChannel)
         }
@@ -260,7 +262,7 @@ object NotificationUtils {
 
         private fun createNotificationChannels() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
                 listOfNotNull(
                     createChannel(ChannelConfig(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true)),
                     createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true)),
@@ -315,7 +317,7 @@ object NotificationUtils {
             }
         }
 
-        private fun buildNotification(config: NotificationConfig): android.app.Notification {
+        private fun buildNotification(config: NotificationConfig): Notification {
             val channelId = getChannelForType(config.type)
             val intent = createNotificationIntent(config)
             val pendingIntent = PendingIntent.getActivity(

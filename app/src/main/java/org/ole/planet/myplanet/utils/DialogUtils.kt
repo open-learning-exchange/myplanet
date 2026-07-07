@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.app.AlertDialog as AndroidAlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -36,7 +37,7 @@ object DialogUtils {
     }
 
     fun guestDialog(context: Context, profileDbHandler: UserSessionManager) {
-        val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
+        val builder = AndroidAlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
         builder.setCancelable(false)
@@ -46,8 +47,8 @@ object DialogUtils {
         val dialog = builder.create()
         dialog.show()
 
-        val becomeMember = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
-        val cancel = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)
+        val becomeMember = dialog.getButton(AndroidAlertDialog.BUTTON_POSITIVE)
+        val cancel = dialog.getButton(AndroidAlertDialog.BUTTON_NEGATIVE)
         becomeMember.contentDescription = context.getString(R.string.confirm_membership)
         cancel.contentDescription = context.getString(R.string.cancel)
 

@@ -8,6 +8,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -33,7 +34,7 @@ open class RealmAchievement : RealmObject() {
     val achievementsArray: JsonArray
         get() = parseStringListToJsonArray(achievements)
 
-    @io.realm.annotations.Ignore
+    @Ignore
     private var cachedReferencesArray: JsonArray? = null
 
     fun getReferencesArray(): JsonArray {

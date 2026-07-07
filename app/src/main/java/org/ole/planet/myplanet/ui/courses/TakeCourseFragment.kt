@@ -17,6 +17,7 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.delay
@@ -50,7 +51,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var currentStep = 0
     private var cachedCourseProgress: Int? = null
     private var currentCourseProgress = 0
-    private val isFetchingProgress = java.util.concurrent.atomic.AtomicBoolean(false)
+    private val isFetchingProgress = AtomicBoolean(false)
     private var joinDialog: AlertDialog? = null
     private var lastPositionBeforeExam = -1
     private var pendingJoinDialog = false

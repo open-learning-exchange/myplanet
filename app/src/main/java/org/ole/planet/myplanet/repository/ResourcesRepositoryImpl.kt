@@ -22,10 +22,12 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -36,11 +38,11 @@ class ResourcesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
-    private val teamsSyncRepositoryLazy: dagger.Lazy<org.ole.planet.myplanet.repository.TeamsSyncRepository>
+    private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
@@ -409,7 +411,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                         libraryItem.setUserId(userId)
                     }
 
-                    val removedLogs = realm.where(org.ole.planet.myplanet.model.RealmRemovedLog::class.java)
+                    val removedLogs = realm.where(RealmRemovedLog::class.java)
                         .equalTo("type", "resources")
                         .equalTo("userId", userId)
                         .`in`("docId", resourceIds.toTypedArray())

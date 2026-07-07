@@ -1,10 +1,15 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.Context
+import android.text.TextUtils
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
 import io.realm.RealmList
 import io.realm.Sort
+import java.io.File
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
@@ -13,6 +18,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
+import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -24,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmTeamReference
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
@@ -33,16 +41,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
-    @dagger.hilt.android.qualifiers.ApplicationContext private val context: android.content.Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    @ApplicationContext private val context: Context,
+    private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
-    override suspend fun generateSubmissionPdf(submissionId: String): java.io.File? {
+    override suspend fun generateSubmissionPdf(submissionId: String): File? {
         return exporter.generateSubmissionPdf(context, submissionId)
     }
 
-    override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): java.io.File? {
+    override suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File? {
         return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 
@@ -459,7 +467,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
-    override suspend fun createExamSubmission(request: org.ole.planet.myplanet.model.CreateExamSubmissionRequest): RealmSubmission? {
+    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): RealmSubmission? {
         val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
@@ -533,7 +541,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return detachedSub
     }
 
-    override suspend fun saveExamAnswer(answerData: org.ole.planet.myplanet.model.ExamAnswerData): Boolean {
+    override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
         val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission) = answerData
         val submissionId = submission?.id
         val questionId = question.id
@@ -723,7 +731,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         return submission
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -893,10 +901,10 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         val user = payloadData.user
         val exam = payloadData.exam
 
-        if (!android.text.TextUtils.isEmpty(submission._id)) {
+        if (!TextUtils.isEmpty(submission._id)) {
             `object`.addProperty("_id", submission._id)
         }
-        if (!android.text.TextUtils.isEmpty(submission._rev)) {
+        if (!TextUtils.isEmpty(submission._rev)) {
             `object`.addProperty("_rev", submission._rev)
         }
         `object`.addProperty("parentId", submission.parentId)
@@ -927,7 +935,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        if (android.text.TextUtils.isEmpty(submission.user)) {
+        if (TextUtils.isEmpty(submission.user)) {
             `object`.add("user", user?.serialize())
         } else {
             `object`.add("user", JsonParser.parseString(submission.user))
@@ -935,7 +943,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: android.content.Context, source: String, parentCode: String): JsonObject = withRealmAsync { mRealm ->
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject = withRealmAsync { mRealm ->
         val jsonObject = JsonObject()
 
         try {

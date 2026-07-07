@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import android.app.AlertDialog
 import android.content.Context
 import android.content.DialogInterface
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -19,6 +20,8 @@ import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
 import fisk.chipcloud.ChipDeletedListener
+import java.text.Normalizer
+import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -34,13 +37,16 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
+import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
@@ -69,7 +75,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var isFirstResume = true
-    private var allResourceModels: List<org.ole.planet.myplanet.model.ResourceListModel> = emptyList()
+    private var allResourceModels: List<ResourceListModel> = emptyList()
 
     private var lastSearchQuery: String? = null
     private var lastSearchTags: List<String>? = null
@@ -117,7 +123,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
+    override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
@@ -154,9 +160,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 broadcastService.events.collect { intent ->
-                    if (intent.action == org.ole.planet.myplanet.ui.dashboard.DashboardActivity.MESSAGE_PROGRESS) {
-                        val download = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
-                            intent.getParcelableExtra("download", org.ole.planet.myplanet.model.Download::class.java)
+                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                        val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra("download", Download::class.java)
                         } else {
                             @Suppress("DEPRECATION")
                             intent.getParcelableExtra("download")
@@ -456,7 +462,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onTagClicked(tag: TagItem) {
         val realmTag = allResourceModels.flatMap { it.tags }.find { it.id == tag.id }
         if (realmTag != null) {
-            val rTag = searchTags.find { it.id == realmTag.id } ?: org.ole.planet.myplanet.model.RealmTag().apply {
+            val rTag = searchTags.find { it.id == realmTag.id } ?: RealmTag().apply {
                 id = realmTag.id
                 name = realmTag.name
             }
@@ -653,20 +659,20 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     private fun normalizeText(text: String): String {
-        return java.text.Normalizer.normalize(text, java.text.Normalizer.Form.NFD)
+        return Normalizer.normalize(text, Normalizer.Form.NFD)
             .replace("\\p{Mn}+".toRegex(), "")
-            .lowercase(java.util.Locale.ROOT)
+            .lowercase(Locale.ROOT)
     }
 
-    private fun searchLocalModels(models: List<org.ole.planet.myplanet.model.ResourceListModel>, query: String): List<org.ole.planet.myplanet.model.ResourceListModel> {
+    private fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
         if (query.isEmpty()) return models
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { normalizeText(it) }
         val normalizedQuery = normalizeText(query)
 
-        val startsWithQuery = mutableListOf<org.ole.planet.myplanet.model.ResourceListModel>()
-        val containsQuery = mutableListOf<org.ole.planet.myplanet.model.ResourceListModel>()
+        val startsWithQuery = mutableListOf<ResourceListModel>()
+        val containsQuery = mutableListOf<ResourceListModel>()
 
         for (model in models) {
             val title = model.item.title?.let { normalizeText(it) } ?: continue
@@ -679,7 +685,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return startsWithQuery + containsQuery
     }
 
-    private fun filterLocalLibraryByTag(models: List<org.ole.planet.myplanet.model.ResourceListModel>, s: String, tags: List<RealmTag>): List<org.ole.planet.myplanet.model.ResourceListModel> {
+    private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<RealmTag>): List<ResourceListModel> {
         var filteredList = searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
@@ -690,7 +696,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return filteredList
     }
 
-    private fun applyFilterModels(models: List<org.ole.planet.myplanet.model.ResourceListModel>): List<org.ole.planet.myplanet.model.ResourceListModel> {
+    private fun applyFilterModels(models: List<ResourceListModel>): List<ResourceListModel> {
         return models.filter { model ->
             val l = model.library
             val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true

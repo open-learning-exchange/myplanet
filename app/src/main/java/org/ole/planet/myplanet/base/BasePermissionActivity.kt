@@ -22,13 +22,14 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
     @Inject
-    open lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
+    open lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
     @Inject
