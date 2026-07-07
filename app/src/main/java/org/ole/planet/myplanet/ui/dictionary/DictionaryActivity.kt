@@ -40,7 +40,7 @@ class DictionaryActivity : BaseActivity() {
     override lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
-    override lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+    override lateinit var broadcastService: BroadcastService
 
     private lateinit var fragmentDictionaryBinding: FragmentDictionaryBinding
 
