@@ -8,10 +8,9 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmTag
 
@@ -28,17 +27,17 @@ data class FilterState(
 
 class CourseFilterController(
     private val rootView: View,
-    private val scope: CoroutineScope,
-    private val onFilterChanged: (FilterState) -> Unit,
     private val onScrollToTop: () -> Unit
 ) {
+    private val _filterState = MutableStateFlow(FilterState("", "", "", emptyList()))
+    val filterState: StateFlow<FilterState> = _filterState.asStateFlow()
+
     private lateinit var etSearch: EditText
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
     private lateinit var spnProgress: Spinner
     private lateinit var tvSelected: TextView
     val searchTags: MutableList<RealmTag> = ArrayList()
-    private var searchJob: Job? = null
     private var searchTextWatcher: TextWatcher? = null
 
     fun setup() {
@@ -69,7 +68,7 @@ class CourseFilterController(
         val spinnerListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (view == null) return
-                onFilterChanged(currentState())
+                _filterState.value = currentState()
                 onScrollToTop()
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
@@ -84,11 +83,7 @@ class CourseFilterController(
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
-                searchJob?.cancel()
-                searchJob = scope.launch {
-                    delay(300)
-                    onFilterChanged(currentState())
-                }
+                _filterState.value = currentState()
             }
             override fun afterTextChanged(s: Editable) {}
         }
@@ -101,7 +96,7 @@ class CourseFilterController(
 
     fun addTag(tag: RealmTag) {
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
-        onFilterChanged(currentState())
+        _filterState.value = currentState()
         refreshTagText()
         onScrollToTop()
     }
@@ -109,7 +104,7 @@ class CourseFilterController(
     fun setTags(list: List<RealmTag>) {
         searchTags.clear()
         list.forEach { tag -> if (!searchTags.any { it.name == tag.name }) searchTags.add(tag) }
-        onFilterChanged(currentState())
+        _filterState.value = currentState()
         onScrollToTop()
     }
 
@@ -117,7 +112,7 @@ class CourseFilterController(
         searchTags.clear()
         searchTags.add(tag)
         tvSelected.text = tvSelected.context.getString(R.string.tag_selected, tag.name)
-        onFilterChanged(currentState())
+        _filterState.value = currentState()
         onScrollToTop()
     }
 
@@ -128,7 +123,7 @@ class CourseFilterController(
         spnGrade.setSelection(0)
         spnSubject.setSelection(0)
         spnProgress.setSelection(0)
-        onFilterChanged(currentState())
+        _filterState.value = currentState()
         onScrollToTop()
     }
 
@@ -164,6 +159,6 @@ class CourseFilterController(
     fun detach() {
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
-        searchJob?.cancel()
+
     }
 }
