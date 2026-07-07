@@ -185,7 +185,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter(viewLifecycleOwner.lifecycleScope, dispatcherProvider) { library ->
+        inlineResourceAdapter = InlineResourceAdapter(
+            dispatcherProvider = dispatcherProvider,
+            launchCoroutine = { block -> viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) { block() } }
+        ) { library ->
             openResource(library)
         }
         fragmentCourseStepBinding.rvInlineResources.apply {

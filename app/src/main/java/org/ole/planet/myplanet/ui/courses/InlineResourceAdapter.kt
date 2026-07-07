@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private val parentScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
+    private val launchCoroutine: (suspend () -> Unit) -> Job,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
     DiffUtils.itemCallback<RealmMyLibrary>(
@@ -65,19 +65,16 @@ class InlineResourceAdapter(
         }
     }
 
-    class ViewHolder(val binding: ItemInlineResourceBinding, private val parentScope: CoroutineScope, private val dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
-        private var previewJob: Job? = null
+    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
+        var previewJob: Job? = null
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
             previewJob = null
         }
 
-        fun launchPreview(block: suspend CoroutineScope.() -> Unit): Job {
-            cancelPreviousPreviews()
-            val job = parentScope.launch(dispatcherProvider.main, block = block)
-            previewJob = job
-            return job
+        suspend fun launchPreview(block: suspend () -> Unit) {
+            block()
         }
     }
 
@@ -92,7 +89,7 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding, parentScope, dispatcherProvider)
+        return ViewHolder(binding)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
@@ -219,8 +216,10 @@ class InlineResourceAdapter(
 
     private fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        holder.launchPreview {
-            val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        holder.cancelPreviousPreviews()
+        holder.previewJob = launchCoroutine {
+            holder.launchPreview {
+                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
             val cachedBitmap = bitmapCache.get(cacheKey)
             val bitmap = if (cachedBitmap != null) {
                 cachedBitmap
@@ -242,11 +241,12 @@ class InlineResourceAdapter(
                     }
                 }?.also { bitmapCache.put(cacheKey, it) }
             }
-            if (bitmap != null) {
-                holder.binding.ivResourcePreview.visibility = View.VISIBLE
-                holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
-                holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                holder.binding.ivResourcePreview.setImageBitmap(bitmap)
+                if (bitmap != null) {
+                    holder.binding.ivResourcePreview.visibility = View.VISIBLE
+                    holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
+                    holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    holder.binding.ivResourcePreview.setImageBitmap(bitmap)
+                }
             }
         }
     }
@@ -254,8 +254,10 @@ class InlineResourceAdapter(
     private fun showAudioPreview(holder: ViewHolder, file: File) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
         if (!file.exists()) return
-        holder.launchPreview {
-            val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        holder.cancelPreviousPreviews()
+        holder.previewJob = launchCoroutine {
+            holder.launchPreview {
+                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
             val cachedDuration = textCache[cacheKey]
             val durationText = if (cachedDuration != null) {
                 cachedDuration
@@ -274,14 +276,17 @@ class InlineResourceAdapter(
                     }
                 }.also { textCache[cacheKey] = it }
             }
-            holder.binding.tvAudioDuration.text = durationText
+                holder.binding.tvAudioDuration.text = durationText
+            }
         }
     }
 
     private fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        holder.launchPreview {
-            val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        holder.cancelPreviousPreviews()
+        holder.previewJob = launchCoroutine {
+            holder.launchPreview {
+                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
             val cachedPreview = textCache[cacheKey]
             val preview = if (cachedPreview != null) {
                 cachedPreview
@@ -305,17 +310,20 @@ class InlineResourceAdapter(
                     }
                 }?.also { textCache[cacheKey] = it }
             }
-            if (!preview.isNullOrEmpty()) {
-                holder.binding.tvTextPreview.visibility = View.VISIBLE
-                holder.binding.tvTextPreview.text = preview
+                if (!preview.isNullOrEmpty()) {
+                    holder.binding.tvTextPreview.visibility = View.VISIBLE
+                    holder.binding.tvTextPreview.text = preview
+                }
             }
         }
     }
 
     private fun showTextPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        holder.launchPreview {
-            val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        holder.cancelPreviousPreviews()
+        holder.previewJob = launchCoroutine {
+            holder.launchPreview {
+                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
             val cachedText = textCache[cacheKey]
             val text = if (cachedText != null) {
                 cachedText
@@ -328,9 +336,10 @@ class InlineResourceAdapter(
                     }
                 }?.also { textCache[cacheKey] = it }
             }
-            if (!text.isNullOrEmpty()) {
-                holder.binding.tvTextPreview.visibility = View.VISIBLE
-                holder.binding.tvTextPreview.text = text
+                if (!text.isNullOrEmpty()) {
+                    holder.binding.tvTextPreview.visibility = View.VISIBLE
+                    holder.binding.tvTextPreview.text = text
+                }
             }
         }
     }
