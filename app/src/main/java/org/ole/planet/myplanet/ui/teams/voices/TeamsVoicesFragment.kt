@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.ui.voices.VoicesAdapter
 import org.ole.planet.myplanet.ui.voices.VoicesAdapterHelper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
@@ -87,9 +88,10 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         }
 
         if (shouldQueryTeamFromRealm()) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                team = teamsRepository.getTeamByIdOrTeamId(teamId)
-                updateCanPostMessage(team?.toVoicePostingPolicy(), isMemberFlow.value)
+            viewModel.loadTeam(teamId)
+            collectWhenStarted(viewModel.teamPolicy) { (teamResult, policy) ->
+                team = teamResult
+                updateCanPostMessage(policy, isMemberFlow.value)
             }
         } else {
             updateCanPostMessage(team?.toVoicePostingPolicy(), isMemberFlow.value)
