@@ -15,6 +15,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.di.NetworkModule
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
@@ -42,7 +43,7 @@ class SharedPrefManagerTest {
         every { mockEditor.putLong(any(), any()) } returns mockEditor
         every { mockEditor.remove(any()) } returns mockEditor
 
-        sharedPrefManager = SharedPrefManager(mockContext, org.ole.planet.myplanet.di.NetworkModule.provideGson())
+        sharedPrefManager = SharedPrefManager(mockContext, NetworkModule.provideGson())
     }
 
     @Test
@@ -58,7 +59,7 @@ class SharedPrefManagerTest {
         verify { mockEditor.putString("savedUsers", capture(jsonSlot)) }
         verify { mockEditor.apply() }
 
-        val expectedJson = org.ole.planet.myplanet.di.NetworkModule.provideGson().toJson(users)
+        val expectedJson = NetworkModule.provideGson().toJson(users)
         assertEquals(expectedJson, jsonSlot.captured)
 
         // Retrieve mocked using the generated JSON

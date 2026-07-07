@@ -7,6 +7,8 @@ import io.realm.Realm
 import io.realm.RealmList
 import java.text.Normalizer
 import java.util.Calendar
+import java.util.Collections
+import java.util.HashMap
 import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
@@ -138,7 +140,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return withRealm { realm ->
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val steps = course?.courseSteps
-            if (steps != null) java.util.Collections.unmodifiableList(realm.copyFromRealm(steps)) else emptyList()
+            if (steps != null) Collections.unmodifiableList(realm.copyFromRealm(steps)) else emptyList()
         }
     }
 
@@ -583,7 +585,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
-    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): java.util.HashMap<String?, JsonObject> {
+    override suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject> {
         return progressRepository.getCourseProgress(courseIds, userId)
     }
 
@@ -761,6 +763,7 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", doc)
         myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", doc)
         myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", doc)
+        myMyCoursesDB?.coverFileName = JsonUtils.getString("coverFileName", doc).ifEmpty { null }
         val courseStepsJsonArray = JsonUtils.getJsonArray("steps", doc)
         val stepsSize = courseStepsJsonArray.size()
         myMyCoursesDB?.setNumberOfSteps(stepsSize)

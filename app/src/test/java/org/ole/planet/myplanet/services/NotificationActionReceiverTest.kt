@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.services
 
+import android.app.Application
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -8,6 +9,7 @@ import androidx.test.core.app.ApplicationProvider
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -31,7 +33,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(sdk = [33], application = Application::class)
 @OptIn(ExperimentalCoroutinesApi::class)
 class NotificationActionReceiverTest {
 
@@ -60,7 +62,7 @@ class NotificationActionReceiverTest {
         every { mockDispatcherProvider.unconfined } returns testDispatcher
 
         mockNotificationUtils = mockk(relaxed = true)
-        mockkStatic(NotificationUtils::class)
+        mockkObject(NotificationUtils)
         every { NotificationUtils.getInstance(any()) } returns mockNotificationUtils
 
         mockkStatic("org.ole.planet.myplanet.di.ServiceDependenciesEntryPointKt")
@@ -71,7 +73,7 @@ class NotificationActionReceiverTest {
             dispatcherProvider = mockDispatcherProvider
         })
         try {
-            val injectedField = org.ole.planet.myplanet.services.Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
+            val injectedField = Hilt_NotificationActionReceiver::class.java.getDeclaredField("injected")
             injectedField.isAccessible = true
             injectedField.set(receiver, true)
         } catch (e: Exception) {

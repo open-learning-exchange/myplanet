@@ -79,7 +79,6 @@ open class RealmFeedback : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun serializeFeedback(feedback: RealmFeedback): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", feedback.title)

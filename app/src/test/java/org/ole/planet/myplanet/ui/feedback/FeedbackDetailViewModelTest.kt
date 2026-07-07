@@ -10,6 +10,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -85,7 +86,7 @@ class FeedbackDetailViewModelTest {
         coEvery { feedbackRepository.getFeedbackById(feedbackId) } returns mockFeedback
 
         val eventsList = mutableListOf<FeedbackDetailViewModel.FeedbackDetailEvent>()
-        val job = launch(kotlinx.coroutines.test.UnconfinedTestDispatcher(testDispatcher.scheduler)) {
+        val job = launch(UnconfinedTestDispatcher(testDispatcher.scheduler)) {
             viewModel.events.toList(eventsList)
         }
 

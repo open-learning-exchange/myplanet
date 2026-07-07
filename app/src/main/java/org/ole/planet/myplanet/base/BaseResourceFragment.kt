@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -38,6 +39,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -71,7 +73,7 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+    lateinit var broadcastService: BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
     private var pendingSurveyDialog: AlertDialog? = null
@@ -163,7 +165,7 @@ abstract class BaseResourceFragment : Fragment() {
                 textSize = 18f
                 maxLines = 5
                 isSingleLine = false
-                setTextColor(androidx.core.content.ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
             }
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)

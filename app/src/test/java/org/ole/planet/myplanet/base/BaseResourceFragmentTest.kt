@@ -10,6 +10,7 @@ import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -63,7 +64,7 @@ class BaseResourceFragmentTest {
         every { mockActivity.isFinishing } returns false
         every { mockActivity.isDestroyed } returns false
 
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
             val str = it.invocation.args[0] as? CharSequence
@@ -173,7 +174,7 @@ class BaseResourceFragmentTest {
     }
     @Test
     fun `showNotConnectedToast shows toast when fragment is active`() {
-        val mockActivity = mockk<androidx.fragment.app.FragmentActivity>(relaxed = true)
+        val mockActivity = mockk<FragmentActivity>(relaxed = true)
         every { fragment.isAdded } returns true
         every { fragment.activity } returns mockActivity
         every { fragment.requireActivity() } returns mockActivity

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.RealmTag
 
 interface TagsRepository {
@@ -9,6 +11,6 @@ interface TagsRepository {
     suspend fun getTagsForCourse(courseId: String): List<RealmTag>
     suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>>
     suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>>
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
-    suspend fun insert(documentList: List<com.google.gson.JsonObject>)
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun insert(documentList: List<JsonObject>)
 }

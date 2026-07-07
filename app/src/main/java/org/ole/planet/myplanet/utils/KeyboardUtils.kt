@@ -8,7 +8,6 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 
 object KeyboardUtils {
-    @JvmStatic
     fun hideSoftKeyboard(activity: Activity) {
         try {
             val inputMethodManager = activity.getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
@@ -18,7 +17,6 @@ object KeyboardUtils {
         }
     }
 
-    @JvmStatic
     fun setupUI(v: View, activity: Activity) {
         // Set up touch listener for non-text box views to hide keyboard.
         val onTouchListener = View.OnTouchListener { _: View?, _: MotionEvent? ->

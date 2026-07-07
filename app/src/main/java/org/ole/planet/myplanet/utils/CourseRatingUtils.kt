@@ -8,7 +8,6 @@ import java.util.Locale
 import org.ole.planet.myplanet.R
 
 object CourseRatingUtils {
-    @JvmStatic
     fun showRating(
         context: Context,
         obj: JsonObject?,
