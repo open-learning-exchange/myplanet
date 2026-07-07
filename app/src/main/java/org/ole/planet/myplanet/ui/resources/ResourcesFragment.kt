@@ -675,7 +675,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val containsQuery = mutableListOf<ResourceListModel>()
 
         for (model in models) {
-            val title = model.item.title?.let { normalizeText(it) } ?: continue
+            val title = model.normalizedTitle ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(model)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {

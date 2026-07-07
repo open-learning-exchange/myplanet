@@ -8,5 +8,6 @@ data class ResourceListModel(
     val rating: JsonObject?,
     val tags: List<TagItem>,
     var isOpened: Boolean = false,
-    var isLocallyOffline: Boolean = false
+    var isLocallyOffline: Boolean = false,
+    val normalizedTitle: String? = null
 )

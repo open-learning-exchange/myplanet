@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
@@ -66,7 +67,13 @@ class ResourcesViewModel @Inject constructor(
                 resourceLocalAddress = library.resourceLocalAddress
             )
             val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
-            ResourceListModel(library, item, rating, tags)
+            ResourceListModel(
+                library = library,
+                item = item,
+                rating = rating,
+                tags = tags,
+                normalizedTitle = library.title?.let { Utilities.normalizeText(it) }
+            )
         }
     }
 }

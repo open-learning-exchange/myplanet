@@ -69,13 +69,21 @@ class ResourcesRepositoryImpl @Inject constructor(
                 return@withRealm emptyList()
             }
 
-            val data = queryObj.findAll()
-
             if (query.isEmpty()) {
-                return@withRealm realm.copyFromRealm(data)
+                return@withRealm realm.copyFromRealm(queryObj.findAll())
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            if (queryParts.isNotEmpty()) {
+                queryObj.beginGroup()
+                for (part in queryParts) {
+                    queryObj.contains("title", part, io.realm.Case.INSENSITIVE)
+                }
+                queryObj.endGroup()
+            }
+
+            val data = queryObj.findAll()
+
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val normalizedQuery = normalizeText(query)
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
