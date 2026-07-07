@@ -3,8 +3,6 @@ package org.ole.planet.myplanet.ui.chat
 import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -17,25 +15,26 @@ import androidx.slidingpanelayout.widget.SlidingPaneLayout
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
-import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 private data class Quartet<A, B, C, D>(val first: A, val second: B, val third: C, val fourth: D)
 
@@ -52,15 +51,12 @@ class ChatHistoryFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
     private var sharedNewsMessages: List<RealmNews> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
-    private var searchBarWatcher: TextWatcher? = null
-    private var searchJob: Job? = null
     
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
     private val syncManagerInstance = RealtimeSyncManager.getInstance()
-    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -107,20 +103,10 @@ class ChatHistoryFragment : Fragment() {
 
         refreshChatHistory()
 
-        searchBarWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                searchJob?.cancel()
-                searchJob = viewLifecycleOwner.lifecycleScope.launch {
-                    delay(300)
-                    sharedViewModel.searchChats(s.toString(), isFullSearch, isQuestion)
-                }
-            }
-
-            override fun afterTextChanged(s: Editable?) {}
-        }
-        binding.searchBar.addTextChangedListener(searchBarWatcher)
+        binding.searchBar.textChanges()
+            .debounce(300)
+            .onEach { text -> sharedViewModel.searchChats(text?.toString() ?: "", isFullSearch, isQuestion) }
+            .launchIn(viewLifecycleOwner.lifecycleScope)
 
         binding.fullSearch.setOnCheckedChangeListener { _, isChecked ->
             val density = Resources.getSystem().displayMetrics.density
@@ -264,24 +250,14 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "chats" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshChatHistory()
-                    }
-                }
+        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
+            if (update.table == "chats" && update.shouldRefreshUI) {
+                refreshChatHistory()
             }
         }
-        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     override fun onDestroyView() {
-        if (::onRealtimeSyncListener.isInitialized) {
-            syncManagerInstance.removeListener(onRealtimeSyncListener)
-        }
-        searchBarWatcher?.let { binding.searchBar.removeTextChangedListener(it) }
-        searchBarWatcher = null
         sharedNewsMessages = emptyList()
         shareTargets = ChatShareTargets(null, emptyList(), emptyList())
         user = null

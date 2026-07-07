@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.app.Application
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
@@ -22,7 +23,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(application = android.app.Application::class)
+@Config(application = Application::class)
 class RealmMeetupTest {
 
     @MockK

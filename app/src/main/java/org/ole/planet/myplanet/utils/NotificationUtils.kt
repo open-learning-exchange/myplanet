@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.utils
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager.IMPORTANCE_DEFAULT
 import android.app.NotificationManager.IMPORTANCE_HIGH
+import android.app.NotificationManager as SystemNotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -58,9 +60,8 @@ object NotificationUtils {
     const val EXTRA_NOTIFICATION_TYPE = "notification_type"
     const val EXTRA_RELATED_ID = "related_id"
 
-    @JvmStatic
     fun create(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?) {
-        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+        val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
         val a = NotificationCompat.Builder(context, "11")
         setChannel(manager)
         val notification = a.setContentTitle(contentTitle).setContentText(contentText).setSmallIcon(smallIcon)
@@ -68,28 +69,24 @@ object NotificationUtils {
         manager.notify(111, notification)
     }
 
-    @JvmStatic
     fun cancel(context: Context, id: Int) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
     }
 
-    @JvmStatic
     fun cancelAll(context: Context) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancelAll()
     }
 
-    @JvmStatic
-    fun setChannel(notificationManager: android.app.NotificationManager?) {
+    fun setChannel(notificationManager: SystemNotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val importance = android.app.NotificationManager.IMPORTANCE_LOW
+            val importance = SystemNotificationManager.IMPORTANCE_LOW
             val notificationChannel = NotificationChannel("11", "ole", importance)
             notificationManager?.createNotificationChannel(notificationChannel)
         }
     }
 
-    @JvmStatic
     fun getInstance(context: Context): NotificationManager {
         return NotificationManager(context)
     }
@@ -254,26 +251,35 @@ object NotificationUtils {
             createNotificationChannels()
         }
 
+        private data class ChannelConfig(
+            val id: String,
+            val name: String,
+            val desc: String,
+            val importance: Int,
+            val vibrate: Boolean,
+            val badge: Boolean = false
+        )
+
         private fun createNotificationChannels() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as android.app.NotificationManager
+                val systemNotificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
                 listOfNotNull(
-                    createChannel(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true),
-                    createChannel(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true),
-                    createChannel(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true),
-                    createChannel(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false),
-                    createChannel(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true)
+                    createChannel(ChannelConfig(CHANNEL_GENERAL, "General Notifications", "General app notifications", IMPORTANCE_DEFAULT, true)),
+                    createChannel(ChannelConfig(CHANNEL_SURVEYS, "Survey Notifications", "New surveys and survey reminders", IMPORTANCE_HIGH, true, true)),
+                    createChannel(ChannelConfig(CHANNEL_TASKS, "Task Notifications", "Task assignments and deadlines", IMPORTANCE_HIGH, true, true)),
+                    createChannel(ChannelConfig(CHANNEL_SYSTEM, "System Notifications", "Storage warnings and system updates", IMPORTANCE_DEFAULT, false)),
+                    createChannel(ChannelConfig(CHANNEL_TEAM, "Team Notifications", "Team join requests and team updates", IMPORTANCE_DEFAULT, true))
                 ).forEach { systemNotificationManager.createNotificationChannel(it) }
             }
         }
 
-        private fun createChannel(id: String, name: String, desc: String, importance: Int, vibrate: Boolean, badge: Boolean = false): NotificationChannel? {
+        private fun createChannel(config: ChannelConfig): NotificationChannel? {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return null
-            return NotificationChannel(id, name, importance).apply {
-                description = desc
+            return NotificationChannel(config.id, config.name, config.importance).apply {
+                description = config.desc
                 enableLights(true)
-                enableVibration(vibrate)
-                if (badge) setShowBadge(true)
+                enableVibration(config.vibrate)
+                if (config.badge) setShowBadge(true)
             }
         }
 
@@ -311,7 +317,7 @@ object NotificationUtils {
             }
         }
 
-        private fun buildNotification(config: NotificationConfig): android.app.Notification {
+        private fun buildNotification(config: NotificationConfig): Notification {
             val channelId = getChannelForType(config.type)
             val intent = createNotificationIntent(config)
             val pendingIntent = PendingIntent.getActivity(

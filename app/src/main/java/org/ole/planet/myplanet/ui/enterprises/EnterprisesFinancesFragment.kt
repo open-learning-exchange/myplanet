@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.net.Uri
 import android.os.Bundle
@@ -37,6 +38,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
@@ -51,7 +53,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         get() = arguments?.getBoolean("fromCommunity", false) == true
 
     var listener =
-        android.app.DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
+        DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             date = Calendar.getInstance()
             date?.set(Calendar.YEAR, year)
             date?.set(Calendar.MONTH, monthOfYear)
@@ -121,7 +123,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val datePickerDialog = android.app.DatePickerDialog(
+        val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, monthOfYear, dayOfMonth ->
                 val selectedDate = Calendar.getInstance().apply {
@@ -165,7 +167,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
 
     private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
+        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
         return dateFormat.format(this.time)
     }
 
@@ -178,8 +180,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = dateFormat.parse(dateString)
+            val date = dateFormatter.parse(dateString)
             if (date != null) {
                 Calendar.getInstance().apply {
                     time = date
@@ -204,10 +205,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-            val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
-            val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+            val start = dateFormatter.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
+            val end = dateFormatter.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
@@ -324,7 +323,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
         addTransactionBinding.tvSelectDate.setOnClickListener {
             val d = date ?: Calendar.getInstance()
-            android.app.DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
+            DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
         }
         return addTransactionBinding.root
     }

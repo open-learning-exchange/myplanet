@@ -10,6 +10,7 @@ import androidx.work.Operation
 import androidx.work.PeriodicWorkRequest
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import androidx.work.impl.WorkManagerImpl
 import io.mockk.MockKAnnotations
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -34,7 +35,7 @@ import org.ole.planet.myplanet.model.RealmRetryOperation
 class RetryQueueWorkerTest {
 
     @MockK(relaxed = true)
-    lateinit var workManagerImpl: androidx.work.impl.WorkManagerImpl
+    lateinit var workManagerImpl: WorkManagerImpl
 
     @MockK(relaxed = true)
     lateinit var context: MainApplication
@@ -63,8 +64,8 @@ class RetryQueueWorkerTest {
 
         every { context.applicationContext } returns context
 
-        mockkStatic(androidx.work.impl.WorkManagerImpl::class)
-        every { androidx.work.impl.WorkManagerImpl.getInstance(any()) } returns workManagerImpl
+        mockkStatic(WorkManagerImpl::class)
+        every { WorkManagerImpl.getInstance(any()) } returns workManagerImpl
 
         mockkStatic(WorkManager::class)
         every { WorkManager.getInstance(any()) } returns workManagerImpl

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -52,7 +53,7 @@ class CourseDetailViewModel @Inject constructor(
     private val _stepItems = MutableStateFlow<List<StepItem>>(emptyList())
     val stepItems: StateFlow<List<StepItem>> = _stepItems
 
-    private var loadJob: kotlinx.coroutines.Job? = null
+    private var loadJob: Job? = null
 
     fun loadCourseDetail(courseId: String) {
         loadJob?.cancel()

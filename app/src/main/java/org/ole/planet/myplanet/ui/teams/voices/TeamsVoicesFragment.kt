@@ -18,9 +18,10 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -88,19 +89,18 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         if (shouldQueryTeamFromRealm()) {
             viewLifecycleOwner.lifecycleScope.launch {
                 team = teamsRepository.getTeamByIdOrTeamId(teamId)
-                updateCanPostMessage(team, isMemberFlow.value)
+                updateCanPostMessage(team?.toVoicePostingPolicy(), isMemberFlow.value)
             }
         } else {
-            updateCanPostMessage(team, isMemberFlow.value)
+            updateCanPostMessage(team?.toVoicePostingPolicy(), isMemberFlow.value)
         }
         binding.addMessage.isVisible = false
         return binding.root
     }
 
-    private fun updateCanPostMessage(team: RealmMyTeam?, isMember: Boolean) {
+    private fun updateCanPostMessage(policy: VoicePostingPolicy?, isMember: Boolean) {
         val isGuest = user?.id?.startsWith("guest") == true
-        val isPublicTeam = team?.isPublic == true
-        val canPost = !isGuest && (isMember || isPublicTeam)
+        val canPost = policy?.canPost(isGuest, isMember) ?: (!isGuest && isMember)
         binding.addMessage.isVisible = canPost
         (binding.rvDiscussion.adapter as? VoicesAdapter)?.let { adapter ->
             adapter.setCurrentUser(user)
@@ -143,9 +143,9 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                 }
                 launch {
                     combine(isMemberFlow, teamFlow) { isMember, teamData ->
-                        Pair(isMember, teamData)
-                    }.collectLatest { (isMember, teamData) ->
-                        updateCanPostMessage(teamData, isMember)
+                        Pair(isMember, teamData?.toVoicePostingPolicy())
+                    }.collectLatest { (isMember, policy) ->
+                        updateCanPostMessage(policy, isMember)
                     }
                 }
             }
@@ -276,10 +276,4 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         super.onDestroyView()
     }
 
-    private fun shouldQueryTeamFromRealm(): Boolean {
-        val hasDirectData = requireArguments().containsKey("teamName") &&
-                requireArguments().containsKey("teamType") &&
-                requireArguments().containsKey("teamId")
-        return !hasDirectData
-    }
 }

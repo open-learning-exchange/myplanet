@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.RealmList
@@ -31,7 +32,7 @@ class ChatRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager
 ) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
 
-    @androidx.annotation.VisibleForTesting
+    @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
         org.ole.planet.myplanet.MainApplication.isServerReachable(url)
     }
@@ -57,8 +58,8 @@ class ChatRepositoryImpl @Inject constructor(
                     addProperty("aiProvider", aiProvider.name)
                     addProperty("user", user)
                     addProperty("title", query)
-                    addProperty("createdDate", java.util.Date().time)
-                    addProperty("updatedDate", java.util.Date().time)
+                    addProperty("createdDate", Date().time)
+                    addProperty("updatedDate", Date().time)
                     val conversationsArray = JsonArray()
                     val conversationObject = JsonObject().apply {
                         addProperty("query", query)
@@ -151,22 +152,21 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertChatHistoryBatch(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        bulkInsertFromSync(realm, jsonArray)
+    override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
+        executeTransaction { realm ->
+            val unwrappedDocs = mutableListOf<JsonObject>()
+            for (j in docs) {
+                var jsonDoc = j
+                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+                val id = JsonUtils.getString("_id", jsonDoc)
+                if (!id.startsWith("_design")) {
+                    unwrappedDocs.add(jsonDoc)
+                }
+            }
+            insertChatsBatchInternal(realm, unwrappedDocs)
+        }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val docs = mutableListOf<JsonObject>()
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                docs.add(jsonDoc)
-            }
-        }
-        insertChatsBatchInternal(realm, docs)
-    }
 
     private fun insertChatsBatchInternal(realm: io.realm.Realm, chats: List<JsonObject>) {
         if (chats.isEmpty()) return
@@ -200,7 +200,7 @@ class ChatRepositoryImpl @Inject constructor(
                 conversations = io.realm.RealmList<RealmConversation>().apply {
                     addAll(unmanagedConversations)
                 }
-                lastUsed = java.util.Date().time
+                lastUsed = Date().time
             }
         }
 

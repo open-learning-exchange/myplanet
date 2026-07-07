@@ -13,7 +13,6 @@ import androidx.core.content.edit
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
@@ -33,7 +32,6 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiClient
@@ -42,10 +40,14 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
@@ -54,14 +56,14 @@ import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
-    private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
@@ -69,10 +71,10 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
-    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
-    private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
+    private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val coursesRepository: CoursesRepository,
+    private val eventsRepository: EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -88,20 +90,7 @@ class SyncManager @Inject constructor(
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
             _syncStatus.value = SyncStatus.Syncing()
-
-            // Use improved sync manager if beta sync is enabled
-            val useImproved = sharedPrefManager.getUseImprovedSync()
-            val isSyncRequest = type.equals("sync", ignoreCase = true)
-            if (useImproved && isSyncRequest) {
-                initializeAndStartImprovedSync(listener, syncTables)
-            } else {
-                if (useImproved && !isSyncRequest) {
-                    createLog("sync_manager_route", "legacy|reason=$type")
-                } else if (!useImproved) {
-                    createLog("sync_manager_route", "legacy")
-                }
-                authenticateAndSync()
-            }
+            authenticateAndSync()
         }
     }
 
@@ -125,40 +114,7 @@ class SyncManager @Inject constructor(
 
     fun isMainSyncActive(): Boolean = isSyncing.get()
 
-    private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
-        syncScope.launch {
-            try {
-                val manager = improvedSyncManager.get()
-                val syncMode = SyncMode.Standard
-                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                val wrappedListener = object : OnSyncListener {
-                    override fun onSyncStarted() {
-                        listener?.onSyncStarted()
-                    }
-                    override fun onSyncComplete() {
-                        isSyncing.set(false)
-                        listener?.onSyncComplete()
-                        this@SyncManager.listener = null
-                        _syncStatus.value = SyncStatus.Success("Sync completed")
-                    }
-                    override fun onSyncFailed(msg: String?) {
-                        isSyncing.set(false)
-                        listener?.onSyncFailed(msg)
-                        this@SyncManager.listener = null
-                        _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
-                    }
-                }
-                manager.start(wrappedListener, syncMode, syncTables)
-            } catch (e: Exception) {
-                isSyncing.set(false)
-                listener?.onSyncFailed(e.message)
-                _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
-            }
-        }
-    }
-
     private fun destroy() {
-        improvedSyncManager.get().cancel()
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
@@ -333,15 +289,16 @@ class SyncManager @Inject constructor(
             logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
             logger.endProcess("resource_get_total_count")
 
-            val batchSize = 100
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 100)
             var skip = 0
             var batchCount = 0
 
             Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
-            logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: $batchSize")
+            logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
+                val batchSize = batchSizer.currentSize
                 val batchStartTime = SystemClock.elapsedRealtime()
 
                 try {
@@ -356,10 +313,12 @@ class SyncManager @Inject constructor(
                     val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 
                     if (response == null) {
+                        batchSizer.recordFailure()
                         logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         skip += batchSize
                         continue
                     }
+                    batchSizer.recordSuccess(batchApiDuration)
 
                     val rows = getJsonArray("rows", response)
                     logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
@@ -425,6 +384,7 @@ class SyncManager @Inject constructor(
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    batchSizer.recordFailure()
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     skip += batchSize
                 }
@@ -688,15 +648,17 @@ class SyncManager @Inject constructor(
 
             if (validIds.isEmpty()) return 0
 
-            val batchSize = 50
-            val totalBatches = (validIds.size + batchSize - 1) / batchSize
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
+            var i = 0
+            var batchNum = 0
 
-            for (i in 0 until validIds.size step batchSize) {
-                val batchNum = (i / batchSize) + 1
+            while (i < validIds.size) {
+                batchNum++
                 val batchStartTime = SystemClock.elapsedRealtime()
 
-                val end = minOf(i + batchSize, validIds.size)
+                val end = minOf(i + batchSizer.currentSize, validIds.size)
                 val batch = validIds.subList(i, end)
+                i = end
 
                 val keysObject = JsonObject()
                 keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
@@ -712,12 +674,14 @@ class SyncManager @Inject constructor(
                 val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
 
                 if (response == null) {
-                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum/$totalBatches)", apiDuration, false, 0)
+                    batchSizer.recordFailure()
+                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, false, 0)
                     continue
                 }
+                batchSizer.recordSuccess(apiDuration)
 
                 val responseRows = getJsonArray("rows", response)
-                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum/$totalBatches)", apiDuration, true, responseRows.size())
+                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
                 if (responseRows.size() == 0) continue
 
@@ -744,7 +708,7 @@ class SyncManager @Inject constructor(
 
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 if (batchDuration > 1000) {
-                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum/$totalBatches: ${batchDuration}ms for ${documentsToProcess.size} docs")
+                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
                 }
             }
 

@@ -13,7 +13,6 @@ import javax.crypto.spec.SecretKeySpec
 
 class AndroidDecrypter {
     companion object {
-        @JvmStatic
         @Throws(Exception::class)
         fun encrypt(plainText: String, key: String?, iv: String?): String {
             val clean = plainText.toByteArray()
@@ -33,7 +32,6 @@ class AndroidDecrypter {
             return bytesToHex(encryptedIVAndText)
         }
 
-        @JvmStatic
         fun hexStringToByteArray(s: String): ByteArray {
             val len = s.length
             val data = ByteArray(len / 2)
@@ -45,7 +43,6 @@ class AndroidDecrypter {
             return data
         }
 
-        @JvmStatic
         private fun bytesToHex(hashInBytes: ByteArray): String {
             val sb = StringBuilder()
             for (b in hashInBytes) {
@@ -54,7 +51,6 @@ class AndroidDecrypter {
             return sb.toString()
         }
 
-        @JvmStatic
         fun decrypt(encrypted: String?, key: String?, initVector: String?): String? {
             try {
                 if (encrypted == null || key == null || initVector == null) {
@@ -83,7 +79,6 @@ class AndroidDecrypter {
             return null
         }
 
-        @JvmStatic
         fun androidDecrypter(usrId: String?, usrRawPwd: String?, dbPwdKeyValue: String?, dbSalt: String?): Boolean {
             try {
                 if (dbPwdKeyValue == null) return false
@@ -101,7 +96,6 @@ class AndroidDecrypter {
             return false
         }
 
-        @JvmStatic
         fun generateIv(): String {
             try {
                 val iv = ByteArray(16)
@@ -114,7 +108,6 @@ class AndroidDecrypter {
             return ""
         }
 
-        @JvmStatic
         fun generateKey(): String? {
             val keyGenerator: KeyGenerator
             val secretKey: SecretKey

@@ -1,13 +1,17 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.View
 import android.webkit.ConsoleMessage
 import android.webkit.CookieManager
+import android.webkit.GeolocationPermissions
+import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -19,8 +23,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import androidx.webkit.WebSettingsCompat
+import androidx.webkit.WebViewAssetLoader
 import androidx.webkit.WebViewFeature
 import java.io.File
+import java.io.FileInputStream
+import java.net.URLConnection
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
@@ -107,14 +114,14 @@ class WebViewActivity : AppCompatActivity() {
             displayZoomControls = false
             
             // Disable geolocation
-            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 setGeolocationEnabled(false)
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
+                val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
                 when (nightModeFlags) {
-                    android.content.res.Configuration.UI_MODE_NIGHT_YES -> {
+                    Configuration.UI_MODE_NIGHT_YES -> {
                         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                             WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, true)
                         } else {
@@ -126,7 +133,7 @@ class WebViewActivity : AppCompatActivity() {
                         activityWebViewBinding.contentWebView.contentWebView.setBackgroundColor(ContextCompat.getColor(this@WebViewActivity, R.color.md_black_1000))
                     }
 
-                    android.content.res.Configuration.UI_MODE_NIGHT_NO -> {
+                    Configuration.UI_MODE_NIGHT_NO -> {
                         if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
                             WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, false)
                         } else {
@@ -147,15 +154,15 @@ class WebViewActivity : AppCompatActivity() {
         activityWebViewBinding.contentWebView.wv.webViewClient = createWebViewClient(assetLoader)
     }
 
-    private fun setupAssetLoader(): androidx.webkit.WebViewAssetLoader? {
+    private fun setupAssetLoader(): WebViewAssetLoader? {
         val resourceId = intent.getStringExtra("RESOURCE_ID") ?: return null
         val directory = File(getExternalFilesDir(null), "ole/$resourceId")
-        val externalPathHandler = androidx.webkit.WebViewAssetLoader.PathHandler { path ->
+        val externalPathHandler = WebViewAssetLoader.PathHandler { path ->
             try {
                 val file = File(directory, path)
                 if (file.exists() && file.canonicalPath.startsWith(directory.canonicalPath)) {
-                    val mimeType = java.net.URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
-                    return@PathHandler WebResourceResponse(mimeType, "utf-8", java.io.FileInputStream(file))
+                    val mimeType = URLConnection.guessContentTypeFromName(file.name) ?: "application/octet-stream"
+                    return@PathHandler WebResourceResponse(mimeType, "utf-8", FileInputStream(file))
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -163,12 +170,12 @@ class WebViewActivity : AppCompatActivity() {
             null
         }
 
-        return androidx.webkit.WebViewAssetLoader.Builder()
+        return WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", externalPathHandler)
             .build()
     }
 
-    private fun createWebViewClient(assetLoader: androidx.webkit.WebViewAssetLoader?): WebViewClient {
+    private fun createWebViewClient(assetLoader: WebViewAssetLoader?): WebViewClient {
         return object : WebViewClient() {
             override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                 super.onPageStarted(view, url, favicon)
@@ -220,8 +227,8 @@ class WebViewActivity : AppCompatActivity() {
     }
 
     private fun applyNightMode(view: WebView) {
-        val nightModeFlags = resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK
-        if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+        val nightModeFlags = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (nightModeFlags == Configuration.UI_MODE_NIGHT_YES) {
             view.evaluateJavascript(
                 """
                     (function() {
@@ -297,7 +304,7 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onShowFileChooser(
                 webView: WebView?,
-                filePathCallback: android.webkit.ValueCallback<Array<android.net.Uri>>?,
+                filePathCallback: ValueCallback<Array<Uri>>?,
                 fileChooserParams: FileChooserParams?
             ): Boolean {
                 return false
@@ -305,7 +312,7 @@ class WebViewActivity : AppCompatActivity() {
 
             override fun onGeolocationPermissionsShowPrompt(
                 origin: String?,
-                callback: android.webkit.GeolocationPermissions.Callback?
+                callback: GeolocationPermissions.Callback?
             ) {
                 callback?.invoke(origin, false, false)
             }
