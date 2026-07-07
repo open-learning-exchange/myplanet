@@ -10,14 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _downloadComplete = MutableStateFlow(false)
@@ -46,27 +49,28 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
-        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-        return enrichedLibraries
-            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
-            .map { (library, rating, libraryTags) ->
-            val item = ResourceItem(
-                id = library.id,
-                title = library.title,
-                description = library.description,
-                createdDate = library.createdDate,
-                averageRating = library.averageRating,
-                timesRated = library.timesRated,
-                resourceId = library.resourceId,
-                isOffline = library.isResourceOffline(),
-                _rev = library._rev,
-                uploadDate = library.uploadDate,
-                filename = library.filename,
-                resourceLocalAddress = library.resourceLocalAddress
-            )
-            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
-            ResourceListModel(library, item, rating, tags)
+    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> =
+        withContext(dispatcherProvider.io) {
+            val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
+            enrichedLibraries
+                .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
+                .map { (library, rating, libraryTags) ->
+                val item = ResourceItem(
+                    id = library.id,
+                    title = library.title,
+                    description = library.description,
+                    createdDate = library.createdDate,
+                    averageRating = library.averageRating,
+                    timesRated = library.timesRated,
+                    resourceId = library.resourceId,
+                    isOffline = library.isResourceOffline(),
+                    _rev = library._rev,
+                    uploadDate = library.uploadDate,
+                    filename = library.filename,
+                    resourceLocalAddress = library.resourceLocalAddress
+                )
+                val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
+                ResourceListModel(library, item, rating, tags)
+            }
         }
-    }
 }

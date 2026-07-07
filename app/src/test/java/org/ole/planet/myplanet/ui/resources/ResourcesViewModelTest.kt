@@ -13,7 +13,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
@@ -21,12 +24,14 @@ class ResourcesViewModelTest {
     private lateinit var viewModel: ResourcesViewModel
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         viewModel = ResourcesViewModel(
-            resourcesRepository
+            resourcesRepository,
+            dispatcherProvider
         )
     }
 
@@ -80,5 +85,22 @@ class ResourcesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(setOf("res1", "res2"), viewModel.openedResourceIds.value)
+    }
+
+    @Test
+    fun `getLibraryListModels fetches and maps resources correctly`() = runTest {
+        val library = mockk<RealmMyLibrary>(relaxed = true) {
+            coEvery { id } returns "lib1"
+            coEvery { title } returns "Test Lib"
+            coEvery { isResourceOffline() } returns true
+        }
+        val metadata = LibraryWithMetadata(library, null, emptyList())
+        coEvery { resourcesRepository.getEnrichedLibraries(true, "model1") } returns listOf(metadata)
+
+        val result = viewModel.getLibraryListModels(true, "model1")
+
+        assertEquals(1, result.size)
+        assertEquals("lib1", result[result.size - 1].item.id)
+        assertEquals("Test Lib", result[result.size - 1].item.title)
     }
 }
