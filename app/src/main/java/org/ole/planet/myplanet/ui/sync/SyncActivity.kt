@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.repository.CommunityRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -139,7 +140,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     lateinit var transactionSyncManager: TransactionSyncManager
 
     @Inject
-    open lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+    open lateinit var broadcastService: BroadcastService
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
