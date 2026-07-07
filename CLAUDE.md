@@ -5,7 +5,7 @@
 **myPlanet** is an Android mobile application serving as an offline extension of the Open Learning Exchange's Planet Learning Management System. It enables learners to access educational resources (books, videos, courses) without continuous internet connectivity.
 
 ### Key Characteristics
-- **Primary Language**: Kotlin (with Java compatibility layer)
+- **Primary Language**: Kotlin (100% — no Java sources remain)
 - **Min SDK**: 26 (Android 8.0)
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
 - **Current Version**: 0.57.30 (versionCode: 5730)

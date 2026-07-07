@@ -99,7 +99,7 @@ class HealthRepositoryImplTest {
     fun tearDown() {
         unmockkObject(AndroidDecrypter)
         unmockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
-        unmockkStatic(JsonUtils::class)
+        unmockkObject(JsonUtils)
         unmockkObject(RealmHealthExamination.Companion)
     }
 
@@ -283,7 +283,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun bulkInsertFromSync_inserts_items() = testScope.runTest {
-        mockkStatic(JsonUtils::class)
+        mockkObject(JsonUtils)
         mockkObject(RealmHealthExamination.Companion)
 
         val jsonArray = JsonArray()

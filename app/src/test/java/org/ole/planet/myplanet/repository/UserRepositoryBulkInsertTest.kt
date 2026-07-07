@@ -2,22 +2,22 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.mockk.coEvery
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
+import kotlinx.coroutines.test.runTest
 import org.junit.Test
+import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmUser
-import kotlinx.coroutines.runBlocking
 
 class UserRepositoryBulkInsertTest {
-
     @Test
-    fun `benchmark insertUsersFromSync`() {
-        val dbService = mockk<org.ole.planet.myplanet.data.DatabaseService>(relaxed = true)
+    fun `benchmark insertUsersFromSync`() = runTest {
+        val dbService = mockk<DatabaseService>(relaxed = true)
         val userRepository = UserRepositoryImpl(
             dbService,
             mockk(relaxed = true),
@@ -64,9 +64,7 @@ class UserRepositoryBulkInsertTest {
         for (j in jsonArray) {
             list.add(j.asJsonObject)
         }
-        runBlocking {
-            userRepository.insertUsersFromSync(list)
-        }
+        userRepository.insertUsersFromSync(list)
 
         // The query is done only ONCE using `in`!
         verify(exactly = 1) { realm.where(RealmUser::class.java) }

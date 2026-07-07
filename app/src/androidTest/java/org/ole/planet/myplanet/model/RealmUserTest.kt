@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -34,9 +35,18 @@ class RealmUserTest {
     private lateinit var realmConfiguration: RealmConfiguration
     private lateinit var userRepository: UserRepositoryImpl
     private lateinit var databaseService: DatabaseService
+    private lateinit var anchorRealm: Realm
 
     @Before
     fun setUp() {
+        val realDispatcherProvider = object : DispatcherProvider {
+            override val main: CoroutineDispatcher = Dispatchers.Main
+            override val io: CoroutineDispatcher = Dispatchers.IO
+            override val default: CoroutineDispatcher = Dispatchers.Default
+            override val unconfined: CoroutineDispatcher = Dispatchers.Unconfined
+        }
+        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), realDispatcherProvider)
+
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             Realm.init(ApplicationProvider.getApplicationContext())
             realmConfiguration = RealmConfiguration.Builder()
@@ -47,15 +57,8 @@ class RealmUserTest {
                 .schemaVersion(1)
                 .build()
             Realm.setDefaultConfiguration(realmConfiguration)
+            anchorRealm = Realm.getInstance(realmConfiguration)
         }
-
-        val testDispatcherProvider = object : DispatcherProvider {
-            override val main: CoroutineDispatcher = Dispatchers.Unconfined
-            override val io: CoroutineDispatcher = Dispatchers.Unconfined
-            override val default: CoroutineDispatcher = Dispatchers.Unconfined
-            override val unconfined: CoroutineDispatcher = Dispatchers.Unconfined
-        }
-        databaseService = DatabaseService(ApplicationProvider.getApplicationContext(), testDispatcherProvider)
 
         val mockSettings = mockk<SharedPreferences>(relaxed = true)
         val mockSharedPrefManager = mockk<SharedPrefManager>(relaxed = true)
@@ -63,7 +66,7 @@ class RealmUserTest {
         val mockResourcesRepositoryLazy = mockk<Lazy<ResourcesRepository>>(relaxed = true)
         val mockCoursesRepositoryLazy = mockk<Lazy<CoursesRepository>>(relaxed = true)
         val mockUploadToShelfService = mockk<Lazy<UploadToShelfService>>(relaxed = true)
-        val mockContext = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val mockContext = ApplicationProvider.getApplicationContext<Context>()
         val mockConfigurationsRepository = mockk<ConfigurationsRepository>(relaxed = true)
         val mockAppScope = CoroutineScope(Dispatchers.Unconfined)
         val mockDispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
@@ -96,7 +99,7 @@ class RealmUserTest {
     }
 
     @Test
-    fun cleanupDuplicateUsers_removesGuestWhenCouchDbUserExists() = runBlocking {
+    fun cleanupDuplicateUsers_removesGuestWhenCouchDbUserExists() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
@@ -112,7 +115,9 @@ class RealmUserTest {
             realm.close()
         }
 
-        userRepository.cleanupDuplicateUsers()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            runBlocking { userRepository.cleanupDuplicateUsers() }
+        }
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
@@ -124,7 +129,7 @@ class RealmUserTest {
     }
 
     @Test
-    fun cleanupDuplicateUsers_keepsCouchDbUserWhenGuestExists() = runBlocking {
+    fun cleanupDuplicateUsers_keepsCouchDbUserWhenGuestExists() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
@@ -140,7 +145,9 @@ class RealmUserTest {
             realm.close()
         }
 
-        userRepository.cleanupDuplicateUsers()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            runBlocking { userRepository.cleanupDuplicateUsers() }
+        }
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
@@ -152,7 +159,7 @@ class RealmUserTest {
     }
 
     @Test
-    fun cleanupDuplicateUsers_keepsAllUsersWhenNoDuplicates() = runBlocking {
+    fun cleanupDuplicateUsers_keepsAllUsersWhenNoDuplicates() {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
@@ -168,7 +175,9 @@ class RealmUserTest {
             realm.close()
         }
 
-        userRepository.cleanupDuplicateUsers()
+        InstrumentationRegistry.getInstrumentation().runOnMainSync {
+            runBlocking { userRepository.cleanupDuplicateUsers() }
+        }
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)

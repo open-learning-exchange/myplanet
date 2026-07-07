@@ -131,7 +131,6 @@ open class RealmNews : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUser?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
             val shouldManageTransaction = !mRealm.isInTransaction
             if (shouldManageTransaction) {
@@ -215,7 +214,6 @@ open class RealmNews : RealmObject() {
             return news
         }
 
-        @JvmStatic
         fun getViewInJson(map: HashMap<String?, String>): String {
             val viewInArray = JsonArray()
             if (!TextUtils.isEmpty(map["viewInId"])) {

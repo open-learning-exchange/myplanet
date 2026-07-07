@@ -18,11 +18,10 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
-import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator

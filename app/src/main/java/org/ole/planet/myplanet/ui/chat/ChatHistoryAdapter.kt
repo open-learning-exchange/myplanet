@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.annotation.VisibleForTesting
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.drawable.toDrawable
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -169,7 +170,7 @@ class ChatHistoryAdapter(
         }
     }
 
-    @androidx.annotation.VisibleForTesting(otherwise = androidx.annotation.VisibleForTesting.PRIVATE)
+    @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal fun getSharedViewInIds(chatId: String?): Set<String> {
         if (chatId == null) return emptySet()
         return cachedSharedViewInIds[chatId] ?: emptySet()

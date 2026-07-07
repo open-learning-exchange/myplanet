@@ -75,7 +75,7 @@
             android:name=".ui.health.AddHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.health.AddExaminationActivity"
+            android:name=".ui.health.HealthExaminationActivity"
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.maps.OfflineMapsActivity" />
         <activity

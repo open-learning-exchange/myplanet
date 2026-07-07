@@ -18,6 +18,7 @@ import android.widget.CompoundButton
 import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -26,15 +27,19 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.coroutines.resume
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
+import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
+import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.CameraUtils.ImageCaptureCallback
 import org.ole.planet.myplanet.utils.CameraUtils.capturePhoto
@@ -131,7 +136,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                         val currentExam = exam
                         if (currentExam != null) {
                             val newSub = submissionsRepository.createExamSubmission(
-                                org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
                             )
@@ -147,7 +152,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                     if (currentExam != null) {
                         if (sub == null || isTeam) {
                             sub = submissionsRepository.createExamSubmission(
-                                org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
                                 )
                             )
@@ -163,7 +168,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                                 answerCache.clear()
                                 currentIndex = 0
                                 sub = submissionsRepository.createExamSubmission(
-                                    org.ole.planet.myplanet.model.CreateExamSubmissionRequest(
+                                    CreateExamSubmissionRequest(
                                         user?.id, user?.dob, user?.gender, currentExam, type, null
                                     )
                                 )
@@ -670,7 +675,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         val result = submissionsRepository.saveExamAnswer(
-            org.ole.planet.myplanet.model.ExamAnswerData(
+            ExamAnswerData(
                 sub, currentQuestion, ans, listAns, otherText,
                 binding.etAnswer.isVisible, type ?: "exam", currentIndex,
                 questions?.size ?: 0, isExplicitSubmission
@@ -749,7 +754,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     }
 
     private suspend fun askResumeOrRestart(): Boolean = suspendCancellableCoroutine { cont ->
-        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+        val dialog = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
             .setTitle(R.string.resume_survey)
             .setMessage(R.string.resume_survey_message)
             .setPositiveButton(R.string.continuation) { _, _ -> if (cont.isActive) cont.resume(true) }
@@ -759,7 +764,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         cont.invokeOnCancellation { dialog.dismiss() }
     }
 
-    private fun populateCacheFromSavedAnswers(sub: org.ole.planet.myplanet.model.RealmSubmission?) {
+    private fun populateCacheFromSavedAnswers(sub: RealmSubmission?) {
         val answers = sub?.answers ?: return
         answers.forEach { answer ->
             val questionId = answer.questionId ?: return@forEach
@@ -824,7 +829,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         super.onDestroyView()
         saveCurrentAnswer()
         lifecycleScope.launch {
-            withContext(kotlinx.coroutines.NonCancellable) {
+            withContext(NonCancellable) {
                 updateAnsDb()
             }
         }

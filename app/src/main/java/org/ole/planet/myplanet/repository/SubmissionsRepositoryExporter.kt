@@ -14,6 +14,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -263,7 +264,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         return currentY
     }
 
-    private fun formatAnswer(answer: org.ole.planet.myplanet.model.RealmAnswer?): String {
+    private fun formatAnswer(answer: RealmAnswer?): String {
         if (answer == null) return "No answer provided"
         val value = answer.value
         val choices = answer.valueChoices

@@ -27,7 +27,6 @@ class MyPlanet : Serializable {
     }
 
     companion object {
-        @JvmStatic
         fun getMyPlanetActivities(context: Context, spm: SharedPrefManager, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
             val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
@@ -41,7 +40,6 @@ class MyPlanet : Serializable {
             return postJSON
         }
 
-        @JvmStatic
         fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: RealmUser): JsonObject {
             val postJSON = JsonObject()
             val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
@@ -60,7 +58,6 @@ class MyPlanet : Serializable {
             return postJSON
         }
 
-        @JvmStatic
         fun getTabletUsages(context: Context, spm: SharedPrefManager): JsonArray {
             val cal = Calendar.getInstance()
             cal.timeInMillis = spm.getLastUsageUploaded()

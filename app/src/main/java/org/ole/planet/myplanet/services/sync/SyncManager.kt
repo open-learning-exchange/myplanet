@@ -40,10 +40,14 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
@@ -52,12 +56,13 @@ import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
@@ -66,10 +71,10 @@ class SyncManager @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository,
-    private val teamsSyncRepository: org.ole.planet.myplanet.repository.TeamsSyncRepository,
-    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository,
-    private val eventsRepository: org.ole.planet.myplanet.repository.EventsRepository
+    private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val coursesRepository: CoursesRepository,
+    private val eventsRepository: EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -284,15 +289,16 @@ class SyncManager @Inject constructor(
             logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
             logger.endProcess("resource_get_total_count")
 
-            val batchSize = 100
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 100)
             var skip = 0
             var batchCount = 0
 
             Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
-            logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: $batchSize")
+            logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
+                val batchSize = batchSizer.currentSize
                 val batchStartTime = SystemClock.elapsedRealtime()
 
                 try {
@@ -307,10 +313,12 @@ class SyncManager @Inject constructor(
                     val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 
                     if (response == null) {
+                        batchSizer.recordFailure()
                         logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         skip += batchSize
                         continue
                     }
+                    batchSizer.recordSuccess(batchApiDuration)
 
                     val rows = getJsonArray("rows", response)
                     logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
@@ -376,6 +384,7 @@ class SyncManager @Inject constructor(
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    batchSizer.recordFailure()
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     skip += batchSize
                 }
@@ -639,15 +648,17 @@ class SyncManager @Inject constructor(
 
             if (validIds.isEmpty()) return 0
 
-            val batchSize = 50
-            val totalBatches = (validIds.size + batchSize - 1) / batchSize
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
+            var i = 0
+            var batchNum = 0
 
-            for (i in 0 until validIds.size step batchSize) {
-                val batchNum = (i / batchSize) + 1
+            while (i < validIds.size) {
+                batchNum++
                 val batchStartTime = SystemClock.elapsedRealtime()
 
-                val end = minOf(i + batchSize, validIds.size)
+                val end = minOf(i + batchSizer.currentSize, validIds.size)
                 val batch = validIds.subList(i, end)
+                i = end
 
                 val keysObject = JsonObject()
                 keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
@@ -663,12 +674,14 @@ class SyncManager @Inject constructor(
                 val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
 
                 if (response == null) {
-                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum/$totalBatches)", apiDuration, false, 0)
+                    batchSizer.recordFailure()
+                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, false, 0)
                     continue
                 }
+                batchSizer.recordSuccess(apiDuration)
 
                 val responseRows = getJsonArray("rows", response)
-                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum/$totalBatches)", apiDuration, true, responseRows.size())
+                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
                 if (responseRows.size() == 0) continue
 
@@ -695,7 +708,7 @@ class SyncManager @Inject constructor(
 
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 if (batchDuration > 1000) {
-                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum/$totalBatches: ${batchDuration}ms for ${documentsToProcess.size} docs")
+                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
                 }
             }
 

@@ -10,6 +10,7 @@
     <string name="remember_sync">Xusuusnow inaad la socodsiiso codsiga mobilka.</string>
     <string name="per_survey">%1$s halkii sahamin</string>
     <string name="course_completed">%1$s dhameystiran!</string>
+    <string name="course_cover_image">Sawirka daboolka koorsada</string>
     <string name="course_in_progress">Geli koorsada %1$s dhameystir (%2$d ka %3$d la sameeyay)</string>
     <string name="course_not_started">%1$s lama bilaabin</string>
     <string name="app_name">My Planet</string>

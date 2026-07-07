@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.res.ColorStateList
 import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Bundle
@@ -29,10 +30,7 @@ import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
-import java.util.Calendar
 import java.util.Date
-import java.util.Locale
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.launchIn
@@ -459,7 +457,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             customProgressDialog.show()
             isProgressDialogShowing = true
             txtSyncState?.text = getString(R.string.sync_chip_syncing)
-            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFF59E0B.toInt())
+            dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFF59E0B.toInt())
         }
     }
 
@@ -475,7 +473,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 syncIcon.invalidateDrawable(syncIconDrawable)
             }
             txtSyncState?.text = getString(R.string.sync_chip_offline)
-            dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
+            dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             showAlert(this@SyncActivity, getString(R.string.sync_failed), msg)
             showWifiSettingDialog(this@SyncActivity)
         }
@@ -590,7 +588,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             if (prefData.getLastSync() <= 0) {
                 lblLastSyncDate.text = getString(R.string.last_synced_never)
                 txtSyncState?.text = getString(R.string.sync_chip_offline)
-                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFFEF4444.toInt())
+                dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
                 var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
@@ -601,15 +599,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
                 lblLastSyncDate.text = getString(R.string.last_sync, relativeTime)
                 txtSyncState?.text = getString(R.string.sync_chip_synced)
-                dotSync?.backgroundTintList = android.content.res.ColorStateList.valueOf(0xFF22C55E.toInt())
+                dotSync?.backgroundTintList = ColorStateList.valueOf(0xFF22C55E.toInt())
             }
         }
-        if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext)) {
-            return checkForceSync(7)
-        } else if (autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext) && autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)) {
-            return checkForceSync(30)
-        }
-        return false
+        val maxDays = ForceSyncPolicy.maxDaysForAutoSync(
+            autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext),
+            autoSynFeature(Constants.KEY_AUTOSYNC_WEEKLY, applicationContext),
+            autoSynFeature(Constants.KEY_AUTOSYNC_MONTHLY, applicationContext)
+        )
+        return maxDays?.let { checkForceSync(it) } ?: false
     }
 
     fun showWifiDialog() {
@@ -619,27 +617,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     private fun checkForceSync(maxDays: Int): Boolean {
-        cal_today = Calendar.getInstance(Locale.ENGLISH)
-        cal_last_Sync = Calendar.getInstance(Locale.ENGLISH)
-        val lastSyncTime = prefData.getLastSync().let { if (it == 0L) -1L else it }
-        if (lastSyncTime <= 0) {
-            return false
+        val daysDiff = ForceSyncPolicy.overdueDays(
+            prefData.getLastSync(), System.currentTimeMillis(), maxDays
+        ) ?: return false
+        val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
+        alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
+            Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
         }
-        cal_last_Sync.timeInMillis = lastSyncTime
-        cal_today.timeInMillis = System.currentTimeMillis()
-        val msDiff = cal_today.timeInMillis - cal_last_Sync.timeInMillis
-        val daysDiff = TimeUnit.MILLISECONDS.toDays(msDiff)
-        return if (daysDiff >= maxDays) {
-            val alertDialogBuilder = AlertDialog.Builder(this, R.style.AlertDialogTheme)
-            alertDialogBuilder.setMessage("${getString(R.string.it_has_been_more_than)}${(daysDiff - 1)}${getString(R.string.days_since_you_last_synced_this_device)}${getString(R.string.connect_it_to_the_server_over_wifi_and_sync_it_to_reactivate_this_tablet)}")
-            alertDialogBuilder.setPositiveButton(R.string.okay) { _: DialogInterface?, _: Int ->
-                Toast.makeText(applicationContext, getString(R.string.connect_to_the_server_over_wifi_and_sync_your_device_to_continue), Toast.LENGTH_LONG).show()
-            }
-            alertDialogBuilder.show()
-            true
-        } else {
-            false
-        }
+        alertDialogBuilder.show()
+        return true
     }
 
     fun onLogin() {
@@ -818,8 +805,6 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         super.onDestroy()
     }
     companion object {
-        lateinit var cal_today: Calendar
-        lateinit var cal_last_Sync: Calendar
         private val secondsAgoRegex by lazy { Regex("^\\d{1,2} seconds ago$") }
         private val urlProtocolRegex by lazy { Regex("^https?://") }
         fun restartApp() {

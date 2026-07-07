@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.base
 
 import android.app.Application
+import android.content.Context
 import android.view.View
 import android.widget.TextView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.test.core.app.ApplicationProvider
 import io.realm.RealmList
 import org.junit.Assert.assertEquals
@@ -19,14 +21,14 @@ class BaseRecyclerFragmentTest {
 
     class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
         override fun getLayout(): Int = 0
-        override suspend fun getAdapter(): androidx.recyclerview.widget.ListAdapter<*, *> {
+        override suspend fun getAdapter(): ListAdapter<*, *> {
             throw NotImplementedError()
         }
     }
 
     @Test
     fun showNoData_withZeroCount_makesViewVisibleAndSetsMessage() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         val textView = TextView(context)
 
         BaseRecyclerFragment.showNoData(textView, 0, "courses")
@@ -37,7 +39,7 @@ class BaseRecyclerFragmentTest {
 
     @Test
     fun showNoData_withNonZeroCount_makesViewGoneAndSetsMessage() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         val textView = TextView(context)
 
         BaseRecyclerFragment.showNoData(textView, 1, "resources")
@@ -48,7 +50,7 @@ class BaseRecyclerFragmentTest {
 
     @Test
     fun showNoData_withUnknownSource_setsDefaultMessage() {
-        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         val textView = TextView(context)
 
         BaseRecyclerFragment.showNoData(textView, 0, "unknown_source")
