@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 
 object DialogUtils {
-    @JvmStatic
     fun getProgressDialog(context: Context): CustomProgressDialog {
         val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
@@ -67,13 +66,11 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun showError(prgDialog: CustomProgressDialog?, message: String?) {
         prgDialog?.setTitle(message)
         prgDialog?.disableNegativeButton()
     }
 
-    @JvmStatic
     fun showWifiSettingDialog(context: Context) {
         if (!NetworkUtils.isWifiBluetoothEnabled()) return
         showDialog(context)
@@ -105,14 +102,12 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun showSnack(v: View?, s: String?) {
         if (v != null) {
             s?.let { Snackbar.make(v, it, Snackbar.LENGTH_LONG).show() }
         }
     }
 
-    @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -127,7 +122,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getDialog(
         context: Context,
         message: String,
@@ -142,7 +136,6 @@ object DialogUtils {
             .create()
     }
 
-    @JvmStatic
     fun getDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
@@ -153,7 +146,6 @@ object DialogUtils {
             .create()
     }
 
-    @JvmStatic
     fun getUpdateDialog(
         context: Context,
         info: MyPlanet?,
@@ -174,7 +166,6 @@ object DialogUtils {
             }
     }
 
-    @JvmStatic
     fun startDownloadUpdate(
         context: Context,
         path: String,
@@ -199,7 +190,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getCustomProgressDialog(context: Context): CustomProgressDialog {
         return CustomProgressDialog(context)
     }

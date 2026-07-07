@@ -508,7 +508,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_NOTIFICATION = 112
         const val PERMISSION_REQUEST_CODE_MEDIA = 113
 
-        @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
             return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }

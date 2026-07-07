@@ -4,7 +4,7 @@ import android.content.Context
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.mockkStatic
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.realm.Realm
 import io.realm.RealmList
@@ -35,7 +35,7 @@ class RealmUserTest {
         MockKAnnotations.init(this)
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
         try {
             originalContext = MainApplication.context

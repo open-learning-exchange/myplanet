@@ -44,9 +44,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
 
     @Inject
     lateinit var activitiesRepository: ActivitiesRepository
-    @JvmField
     protected var llImage: ViewGroup? = null
-    @JvmField
     protected var adapterNews: VoicesAdapter? = null
     lateinit var openFolderLauncher: ActivityResultLauncher<Intent>
     private lateinit var replyActivityLauncher: ActivityResultLauncher<Intent>

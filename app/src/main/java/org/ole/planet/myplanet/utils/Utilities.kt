@@ -37,7 +37,6 @@ object Utilities {
         return ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)
     }
 
-    @JvmStatic
     fun toast(context: Context?, message: CharSequence?, duration: Int = Toast.LENGTH_LONG) {
         context ?: return
         if (Looper.myLooper() == Looper.getMainLooper()) {

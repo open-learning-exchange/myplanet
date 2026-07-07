@@ -75,7 +75,6 @@ class MembersDetailFragment : Fragment() {
 
 
     companion object {
-        @JvmStatic
         fun newInstance(
             name: String,
             email: String,

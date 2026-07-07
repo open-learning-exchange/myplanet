@@ -60,7 +60,6 @@ object NotificationUtils {
     const val EXTRA_NOTIFICATION_TYPE = "notification_type"
     const val EXTRA_RELATED_ID = "related_id"
 
-    @JvmStatic
     fun create(context: Context, smallIcon: Int, contentTitle: String?, contentText: String?) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as SystemNotificationManager
         val a = NotificationCompat.Builder(context, "11")
@@ -70,19 +69,16 @@ object NotificationUtils {
         manager.notify(111, notification)
     }
 
-    @JvmStatic
     fun cancel(context: Context, id: Int) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancel(id)
     }
 
-    @JvmStatic
     fun cancelAll(context: Context) {
         val nm = NotificationManagerCompat.from(context)
         nm.cancelAll()
     }
 
-    @JvmStatic
     fun setChannel(notificationManager: SystemNotificationManager?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val importance = SystemNotificationManager.IMPORTANCE_LOW
@@ -91,7 +87,6 @@ object NotificationUtils {
         }
     }
 
-    @JvmStatic
     fun getInstance(context: Context): NotificationManager {
         return NotificationManager(context)
     }

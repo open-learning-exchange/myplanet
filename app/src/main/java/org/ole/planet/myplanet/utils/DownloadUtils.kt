@@ -30,7 +30,6 @@ object DownloadUtils {
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
     private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
-    @JvmStatic
     fun createChannels(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
@@ -62,7 +61,6 @@ object DownloadUtils {
         }
     }
 
-    @JvmStatic
     fun buildInitialNotification(context: Context): Notification {
         createChannels(context)
         return NotificationCompat.Builder(context, DOWNLOAD_CHANNEL)
@@ -78,7 +76,6 @@ object DownloadUtils {
             .build()
     }
 
-    @JvmStatic
     fun buildProgressNotification(
         context: Context,
         current: Int,
@@ -108,7 +105,6 @@ object DownloadUtils {
         return builder.build()
     }
 
-    @JvmStatic
     fun buildCompletionNotification(
         context: Context,
         completed: Int,
@@ -132,7 +128,6 @@ object DownloadUtils {
             .setAutoCancel(true)
             .build()
     }
-    @JvmStatic
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
         return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
     }
@@ -254,7 +249,6 @@ object DownloadUtils {
         return links
     }
 
-    @JvmStatic
     fun updateResourceOfflineStatus(url: String) {
         MainApplication.applicationScope.launch {
             try {

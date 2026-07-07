@@ -9,6 +9,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
@@ -53,7 +54,7 @@ class FreeSpaceWorkerTest {
         // Mock setProgress
         coEvery { worker.setProgress(any()) } returns Unit
 
-        mockkStatic(FileUtils::class)
+        mockkObject(FileUtils)
         every { FileUtils.getOlePath(any()) } returns "mock/ole/path"
 
         // Mock application context for getOlePath

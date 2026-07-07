@@ -452,7 +452,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     companion object {
         private const val JOIN_DIALOG_FALLBACK_MS = 5000L
 
-        @JvmStatic
         fun newInstance(b: Bundle?): TakeCourseFragment {
             val takeCourseFragment = TakeCourseFragment()
             takeCourseFragment.arguments = b

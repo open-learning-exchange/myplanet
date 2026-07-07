@@ -116,7 +116,6 @@ class SubmissionsAdapter(
     }
 
     companion object {
-        @JvmStatic
         fun openSurvey(listener: OnHomeItemClickListener?, id: String?, isMySurvey: Boolean, isTeam: Boolean, teamId: String?) {
             if (listener != null) {
                 val b = Bundle()
