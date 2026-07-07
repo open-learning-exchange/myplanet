@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -370,7 +371,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    private suspend fun downloadCourseCoversFromBatch(arr: com.google.gson.JsonArray) {
+    private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) {
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -378,7 +379,7 @@ class TransactionSyncManager @Inject constructor(
             val coverFileName = getString("coverFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
             if (coverFileName.isNotEmpty() && hasAttachment) {
-                val destFile = org.ole.planet.myplanet.model.RealmMyCourse
+                val destFile = RealmMyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
                     downloadCourseCover(docId, coverFileName, destFile)
