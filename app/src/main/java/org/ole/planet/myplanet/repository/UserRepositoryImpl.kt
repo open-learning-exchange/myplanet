@@ -11,6 +11,7 @@ import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
+import org.ole.planet.myplanet.model.User
 import java.text.Normalizer
 import java.util.Calendar
 import java.util.Date
@@ -1204,6 +1205,64 @@ class UserRepositoryImpl @Inject constructor(
             not().beginsWith("_id", "guest")
             equalTo("isUpdated", true)
         }.map { RealmAchievement.serialize(it) }
+    }
+
+    override suspend fun getSavedUsers(): List<User> = sharedPrefManager.getSavedUsers()
+
+    override suspend fun saveSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?) {
+        val existingUsers: MutableList<User> = ArrayList(sharedPrefManager.getSavedUsers())
+        if (source == "guest") {
+            val newUser = User("", name, encryptedPassword, "", "guest")
+            var newUserIndex = -1
+            for (i in existingUsers.indices) {
+                if (existingUsers[i].name == newUser.name?.trim { it <= ' ' }) {
+                    newUserIndex = i
+                    break
+                }
+            }
+            if (newUserIndex != -1) {
+                existingUsers[newUserIndex] = newUser
+            } else {
+                existingUsers.add(newUser)
+            }
+            sharedPrefManager.setSavedUsers(existingUsers)
+        } else if (source == "member") {
+            val newUser = User(userName, name, encryptedPassword, userProfile, "member")
+            var newUserIndex = -1
+            for (i in existingUsers.indices) {
+                if (existingUsers[i].fullName == newUser.fullName?.trim { it <= ' ' }) {
+                    newUserIndex = i
+                    break
+                }
+            }
+            if (newUserIndex != -1) {
+                existingUsers[newUserIndex] = newUser
+            } else {
+                existingUsers.add(newUser)
+            }
+            sharedPrefManager.setSavedUsers(existingUsers)
+        }
+    }
+
+    override suspend fun resetGuestAsMember(username: String?) {
+        val existingUsers = sharedPrefManager.getSavedUsers().toMutableList()
+        var newUserExists = false
+        for ((_, name) in existingUsers) {
+            if (name == username) {
+                newUserExists = true
+                break
+            }
+        }
+        if (newUserExists) {
+            val iterator = existingUsers.iterator()
+            while (iterator.hasNext()) {
+                val (_, name) = iterator.next()
+                if (name == username) {
+                    iterator.remove()
+                }
+            }
+            sharedPrefManager.setSavedUsers(existingUsers)
+        }
     }
 
     override suspend fun markAchievementUploaded(id: String, rev: String?) {

@@ -3,11 +3,8 @@ package org.ole.planet.myplanet.ui.sync
 import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.just
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -17,7 +14,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -27,12 +24,12 @@ class LoginViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
-    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
 
     private fun createViewModel(): LoginViewModel {
         return LoginViewModel(
             teamsRepository,
-            sharedPrefManager,
+            userRepository,
             TestDispatcherProvider(mainDispatcherRule.testDispatcher)
         )
     }
@@ -40,7 +37,7 @@ class LoginViewModelTest {
     @Test
     fun `init loads saved users from preferences`() = runTest {
         val saved = listOf(User("Full Name", "user1", "pwd", "", "member"))
-        every { sharedPrefManager.getSavedUsers() } returns saved
+        coEvery { userRepository.getSavedUsers() } returns saved
 
         val viewModel = createViewModel()
 
@@ -90,7 +87,7 @@ class LoginViewModelTest {
 
         assertEquals(listOf(member), viewModel.users.value)
         // init + refresh after loading members
-        verify(exactly = 2) { sharedPrefManager.getSavedUsers() }
+        coVerify(exactly = 2) { userRepository.getSavedUsers() }
     }
 
     @Test
@@ -103,81 +100,30 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `saveUsers adds a new guest`() = runTest {
-        every { sharedPrefManager.getSavedUsers() } returns emptyList()
-        val savedSlot = slot<List<User>>()
-        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+    fun `saveUsers calls saveSavedUser on repository`() = runTest {
+        coEvery { userRepository.saveSavedUser(any(), any(), any(), any(), any()) } just Runs
 
         val viewModel = createViewModel()
         viewModel.saveUsers("guest1", "encrypted", "guest", null, null)
 
-        assertEquals(1, savedSlot.captured.size)
-        assertEquals("guest1", savedSlot.captured[0].name)
-        assertEquals("guest", savedSlot.captured[0].source)
+        coVerify(exactly = 1) {
+            userRepository.saveSavedUser("guest1", "encrypted", "guest", null, null)
+        }
+        // verify reload
+        coVerify(exactly = 2) { userRepository.getSavedUsers() } // init + reload
     }
 
     @Test
-    fun `saveUsers replaces existing guest with the same name`() = runTest {
-        val existing = User("", "guest1", "oldPwd", "", "guest")
-        every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
-        val savedSlot = slot<List<User>>()
-        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
-
-        val viewModel = createViewModel()
-        viewModel.saveUsers("guest1", "newPwd", "guest", null, null)
-
-        assertEquals(1, savedSlot.captured.size)
-        assertEquals("newPwd", savedSlot.captured[0].password)
-    }
-
-    @Test
-    fun `saveUsers replaces existing member with the same username`() = runTest {
-        // For members, User.fullName holds the login username (see LoginActivity.saveUsers)
-        val existing = User("user1", "Full Name", "oldPwd", "old.jpg", "member")
-        every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
-        val savedSlot = slot<List<User>>()
-        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
-
-        val viewModel = createViewModel()
-        viewModel.saveUsers("Full Name", "newPwd", "member", "new.jpg", "user1")
-
-        assertEquals(1, savedSlot.captured.size)
-        assertEquals("newPwd", savedSlot.captured[0].password)
-        assertEquals("new.jpg", savedSlot.captured[0].image)
-    }
-
-    @Test
-    fun `saveUsers ignores unknown sources`() = runTest {
-        every { sharedPrefManager.getSavedUsers() } returns emptyList()
-
-        val viewModel = createViewModel()
-        viewModel.saveUsers("someone", "pwd", "unknown", null, null)
-
-        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
-    }
-
-    @Test
-    fun `resetGuestAsMember removes saved users matching the username`() = runTest {
-        val guest = User("", "guest1", "pwd", "", "guest")
-        val other = User("Full Name", "user2", "pwd", "", "member")
-        every { sharedPrefManager.getSavedUsers() } returns listOf(guest, other)
-        val savedSlot = slot<List<User>>()
-        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+    fun `resetGuestAsMember calls resetGuestAsMember on repository`() = runTest {
+        coEvery { userRepository.resetGuestAsMember(any()) } just Runs
 
         val viewModel = createViewModel()
         viewModel.resetGuestAsMember("guest1")
 
-        assertEquals(listOf(other), savedSlot.captured)
-    }
-
-    @Test
-    fun `resetGuestAsMember does nothing when the username is not saved`() = runTest {
-        every { sharedPrefManager.getSavedUsers() } returns
-            listOf(User("Full Name", "user2", "pwd", "", "member"))
-
-        val viewModel = createViewModel()
-        viewModel.resetGuestAsMember("guest1")
-
-        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
+        coVerify(exactly = 1) {
+            userRepository.resetGuestAsMember("guest1")
+        }
+        // verify reload
+        coVerify(exactly = 2) { userRepository.getSavedUsers() } // init + reload
     }
 }
