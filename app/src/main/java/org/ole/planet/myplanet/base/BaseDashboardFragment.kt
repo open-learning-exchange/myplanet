@@ -28,7 +28,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDashboardActionListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
@@ -55,8 +54,7 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionListener,
-    OnSyncListener {
+open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
@@ -107,7 +105,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    override fun forceDownloadNewsImages() {
+    fun forceDownloadNewsImages() {
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -120,7 +118,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         dpd.show()
     }
 
-    override fun downloadDictionary() {
+    fun downloadDictionary() {
         val list = ArrayList<String>()
         list.add(Constants.DICTIONARY_URL)
         if (!FileUtils.checkFileExist(requireContext(), Constants.DICTIONARY_URL)) {
@@ -374,7 +372,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    override fun showResourceDownloadDialog() {
+    fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = prefData.getUserId().ifEmpty { "--" }
             val libraryList = viewModel.getLibraryListForUser(userId)
@@ -382,7 +380,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    override fun showUserResourceDialog() {
+    fun showUserResourceDialog() {
         viewModel.loadUsers()
 
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
@@ -431,7 +429,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         dialog.show()
     }
 
-    override fun syncKeyId() {
+    fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
             transactionSyncManager.syncAllHealthData(prefData.rawPreferences, this)
         } else {

@@ -60,10 +60,10 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         personalAdapter?.setListener(this)
         binding.rvMypersonal.adapter = personalAdapter
         collectLatestWhenStarted(viewModel.personals) { realmMyPersonals ->
-            personalAdapter?.submitList(realmMyPersonals)
-            showNodata()
+            personalAdapter?.submitList(realmMyPersonals) {
+                showNodata()
+            }
         }
-        showNodata()
     }
 
     private fun showNodata() {

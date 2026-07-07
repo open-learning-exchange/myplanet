@@ -763,6 +763,7 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", doc)
         myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", doc)
         myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", doc)
+        myMyCoursesDB?.coverFileName = JsonUtils.getString("coverFileName", doc).ifEmpty { null }
         val courseStepsJsonArray = JsonUtils.getJsonArray("steps", doc)
         val stepsSize = courseStepsJsonArray.size()
         myMyCoursesDB?.setNumberOfSteps(stepsSize)
