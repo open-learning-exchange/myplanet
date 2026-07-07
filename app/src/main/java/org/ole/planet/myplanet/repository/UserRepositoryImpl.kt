@@ -1033,7 +1033,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun cleanupDuplicateUsers() {
-        withRealm { realm ->
+        executeTransaction { realm ->
             val allUsers = realm.where(RealmUser::class.java).findAll()
             val usersByName = allUsers.groupBy { it.name }
 
