@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -384,6 +385,9 @@ class TransactionSyncManager @Inject constructor(
                 if (table == "teams") {
                     downloadTeamAttachmentsFromBatch(arr)
                 }
+                if (table == "courses") {
+                    downloadCourseCoversFromBatch(arr)
+                }
                 totalDocs += arr.size()
                 skip += arr.size()
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
@@ -443,6 +447,39 @@ class TransactionSyncManager @Inject constructor(
                 downloadTeamAttachment(docId, attachmentName, destFile)
             }
         }
+    }
+
+    private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) {
+        for (j in arr) {
+            val jsonDoc = getJsonObject("doc", j.asJsonObject)
+            val docId = getString("_id", jsonDoc)
+            if (docId.startsWith("_design")) continue
+            val coverFileName = getString("coverFileName", jsonDoc)
+            val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
+            if (coverFileName.isNotEmpty() && hasAttachment) {
+                val destFile = RealmMyCourse
+                    .getCoverImageFile(context, docId, coverFileName) ?: continue
+                if (!destFile.exists()) {
+                    downloadCourseCover(docId, coverFileName, destFile)
+                }
+            }
+        }
+    }
+
+    private suspend fun downloadCourseCover(docId: String, coverFileName: String, destFile: File) {
+        try {
+            val encodedName = android.net.Uri.encode(coverFileName)
+            val url = "${UrlUtils.getUrl()}/courses/$docId/$encodedName"
+            val response = apiInterface.downloadFile(UrlUtils.header, url)
+            if (response.isSuccessful) {
+                response.body()?.let { body ->
+                    destFile.parentFile?.mkdirs()
+                    destFile.outputStream().use { out ->
+                        body.byteStream().use { it.copyTo(out) }
+                    }
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     private suspend fun downloadTeamAttachment(docId: String, attachmentName: String, destFile: File) {
