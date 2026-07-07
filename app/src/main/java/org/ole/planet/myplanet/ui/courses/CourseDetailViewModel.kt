@@ -10,8 +10,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.domain.usecase.GetCourseDetailUseCase
-import org.ole.planet.myplanet.domain.usecase.GetRatingSummaryUseCase
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
@@ -35,8 +33,8 @@ sealed interface CourseDetailUiState {
 
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
-    private val getCourseDetailUseCase: GetCourseDetailUseCase,
-    private val getRatingSummaryUseCase: GetRatingSummaryUseCase
+    private val courseDetailProvider: CourseDetailProvider,
+    private val ratingSummaryProvider: RatingSummaryProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
@@ -52,7 +50,7 @@ class CourseDetailViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.value = CourseDetailUiState.Loading
 
-            getCourseDetailUseCase(courseId)
+            courseDetailProvider(courseId)
                 .catch { e ->
                     _uiState.value = CourseDetailUiState.Error(e.message ?: "An error occurred")
                 }
@@ -98,7 +96,7 @@ class CourseDetailViewModel @Inject constructor(
             val currentState = _uiState.value
             if (currentState is CourseDetailUiState.Success) {
                 try {
-                    val summaryModel = getRatingSummaryUseCase(courseId)
+                    val summaryModel = ratingSummaryProvider(courseId)
                     _uiState.value = currentState.copy(
                         ratingSummary = summaryModel.ratingSummary,
                         user = summaryModel.user

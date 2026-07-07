@@ -1,19 +1,19 @@
-package org.ole.planet.myplanet.domain.usecase
+package org.ole.planet.myplanet.ui.courses
 
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import kotlinx.coroutines.withContext
 
 data class CourseDetailModel(
     val course: RealmMyCourse,
@@ -25,7 +25,7 @@ data class CourseDetailModel(
     val steps: List<StepItem>
 )
 
-class GetCourseDetailUseCase @Inject constructor(
+class CourseDetailProvider @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val ratingsRepository: RatingsRepository,

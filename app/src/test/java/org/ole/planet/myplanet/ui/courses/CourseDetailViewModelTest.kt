@@ -19,8 +19,6 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.domain.usecase.GetCourseDetailUseCase
-import org.ole.planet.myplanet.domain.usecase.GetRatingSummaryUseCase
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmUser
@@ -52,8 +50,8 @@ class CourseDetailViewModelTest {
     }
 
     private lateinit var viewModel: CourseDetailViewModel
-    private lateinit var getCourseDetailUseCase: GetCourseDetailUseCase
-    private lateinit var getRatingSummaryUseCase: GetRatingSummaryUseCase
+    private lateinit var courseDetailProvider: CourseDetailProvider
+    private lateinit var ratingSummaryProvider: RatingSummaryProvider
 
     private val courseId = "course_1"
 
@@ -70,7 +68,7 @@ class CourseDetailViewModelTest {
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
 
-        getCourseDetailUseCase = GetCourseDetailUseCase(
+        courseDetailProvider = CourseDetailProvider(
             coursesRepository,
             submissionsRepository,
             ratingsRepository,
@@ -78,15 +76,15 @@ class CourseDetailViewModelTest {
             dispatcherProvider
         )
 
-        getRatingSummaryUseCase = GetRatingSummaryUseCase(
+        ratingSummaryProvider = RatingSummaryProvider(
             ratingsRepository,
             userSessionManager,
             dispatcherProvider
         )
 
         viewModel = CourseDetailViewModel(
-            getCourseDetailUseCase,
-            getRatingSummaryUseCase
+            courseDetailProvider,
+            ratingSummaryProvider
         )
     }
 
