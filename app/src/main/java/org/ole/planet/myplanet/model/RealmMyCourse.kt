@@ -8,6 +8,7 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
+import java.io.File
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -65,23 +66,19 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
-        @JvmStatic
-        fun getCoverImageFile(context: android.content.Context, courseId: String?, fileName: String?): java.io.File? {
+        fun getCoverImageFile(context: android.content.Context, courseId: String?, fileName: String?): File? {
             if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
-            return java.io.File(
+            return File(
                 "${getOlePath(context)}course_attachments/$courseId/$fileName"
             )
         }
 
-        @JvmStatic
         fun addConcatenatedLink(link: String) {
             synchronized(concatenatedLinks) {
                 concatenatedLinks.add(link)
             }
         }
 
-
-        @JvmStatic
         fun saveConcatenatedLinksToPrefs(spm: SharedPrefManager) {
             val existingJsonLinks = spm.getConcatenatedLinks()
             val existingConcatenatedLinks = if (existingJsonLinks != null) {
@@ -101,12 +98,6 @@ open class RealmMyCourse : RealmObject() {
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
-
-
-
-
-
-        @JvmStatic
         fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
