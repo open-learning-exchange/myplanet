@@ -10,9 +10,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 
+import org.ole.planet.myplanet.MainApplication
+
 object ThemeManager {
+    private val coreEntryPoint: CoreDependenciesEntryPoint get() =
+        EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
+
     private fun getSpm(context: Context): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+        coreEntryPoint.sharedPrefManager()
 
     fun showThemeDialog(context: Context) {
         val options = arrayOf(

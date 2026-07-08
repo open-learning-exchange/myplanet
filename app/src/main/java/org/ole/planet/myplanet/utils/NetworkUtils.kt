@@ -24,10 +24,13 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 object NetworkUtils {
+    private val coreEntryPoint by lazy {
+        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+    }
+
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val coroutineScope: CoroutineScope by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-        entryPoint.applicationScope()
+        coreEntryPoint.applicationScope()
     }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
@@ -177,8 +180,7 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-        return spm.getCustomDeviceName()
+        return coreEntryPoint.sharedPrefManager().getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {

@@ -45,8 +45,11 @@ class ThemeManagerTest {
         mockSpm = mockk(relaxed = true)
         mockEntryPoint = mockk(relaxed = true)
 
+        org.ole.planet.myplanet.MainApplication.testContext = activity.applicationContext
         mockkStatic(EntryPointAccessors::class)
+        org.ole.planet.myplanet.MainApplication.testContext = activity.applicationContext
         mockkStatic(AppCompatDelegate::class)
+
 
         every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
         every { mockEntryPoint.sharedPrefManager() } returns mockSpm
@@ -55,6 +58,8 @@ class ThemeManagerTest {
     @After
     fun tearDown() {
         activityController.pause().stop().destroy()
+        org.ole.planet.myplanet.MainApplication.testContext = null
+        org.ole.planet.myplanet.MainApplication.testContext = null
         unmockkAll()
     }
 

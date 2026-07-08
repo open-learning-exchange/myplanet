@@ -16,6 +16,10 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 
 object SyncTimeLogger {
+    private val coreEntryPoint by lazy {
+        EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
+    }
+
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
@@ -73,14 +77,13 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
-        val dispatcherProvider = entryPoint.dispatcherProvider()
+        val dispatcherProvider = coreEntryPoint.dispatcherProvider()
 
         MainApplication.applicationScope.launch(dispatcherProvider.io) {
-            val spm = entryPoint.sharedPrefManager()
+            val spm = coreEntryPoint.sharedPrefManager()
             MainApplication.createLog("sync summary", summary)
             val updateUrl = spm.getServerUrl()
-            val serverUrlMapper = entryPoint.serverUrlMapper()
+            val serverUrlMapper = coreEntryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
