@@ -78,6 +78,7 @@ interface TeamsRepository {
     suspend fun getShareableEnterpriseDetails(userId: String?): List<TeamDetails>
     suspend fun getTeamDetails(userId: String?): List<TeamDetails>
 
+    suspend fun getTeamResources(teamId: String): List<RealmMyLibrary>
     suspend fun getTeamCourseIds(teamId: String): List<String>
     suspend fun addCoursesToTeam(teamId: String, courseIds: List<String>): Result<Unit>
     suspend fun removeCourseFromTeam(teamId: String, courseId: String): Result<Unit>

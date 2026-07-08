@@ -69,7 +69,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         val safeActivity = activity ?: return
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val libraries = resourcesRepository.getLibraryItemsByIds(teamsRepository.getResourceIds(teamId))
+            val libraries = teamsRepository.getTeamResources(teamId)
             val canRemoveResources = teamsRepository.isTeamLeader(teamId, user?.id)
 
             if (!::adapterLibrary.isInitialized) {

@@ -341,7 +341,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
         val resourceIds = getResourceIds(teamId)
         val linkedResources = resourcesRepositoryLazy.get().getLibraryItemsByResourceIds(resourceIds)
         val privateResources = resourcesRepositoryLazy.get().getTeamPrivateResources(teamId)
