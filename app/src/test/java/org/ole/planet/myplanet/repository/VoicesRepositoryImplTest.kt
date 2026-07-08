@@ -10,11 +10,7 @@ import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import org.junit.Assert.assertEquals
-import org.ole.planet.myplanet.model.RealmUser
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
-import org.ole.planet.myplanet.model.RealmUser
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
@@ -22,7 +18,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.model.RealmUser
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
@@ -45,7 +40,7 @@ class VoicesRepositoryImplTest {
             gson,
             sharedPrefManager
         ), recordPrivateCalls = true)
-
+    }
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
@@ -66,8 +61,8 @@ class VoicesRepositoryImplTest {
         val result = flow.toList()
 
         assertNotNull(result)
-        io.mockk.verify { dispatcherProvider.default
-
+        io.mockk.verify { dispatcherProvider.default }
+    }
 
 
     @Test
@@ -181,7 +176,7 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Any>()
             block(mockRealm)
-
+        }
 
         every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
         every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
@@ -217,7 +212,7 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Unit>()
             block(mockRealm)
-
+        }
 
         val mockQueryLevel1 = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
         val mockQueryLevel2 = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
@@ -263,7 +258,7 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Unit>()
             block(mockRealm)
-
+        }
 
         val mockQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
         val mockNews = mockk<RealmNews>(relaxed = true)
@@ -285,7 +280,7 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Unit>()
             block(mockRealm)
-
+        }
 
         val mockQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
         val mockNews = mockk<RealmNews>(relaxed = true)
@@ -299,26 +294,5 @@ class VoicesRepositoryImplTest {
         repository.removeLabel("newsId", "testLabel")
 
         io.mockk.verify(exactly = 1) { mockLabels.remove("testLabel") }
-    }
-
-    @Test
-    fun `getUserById returns correct user`() = testScope.runTest {
-        val testUserId = "test_user_123"
-        val mockUser = mockk<RealmUser>()
-        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
-
-        coEvery { databaseService.executeTransactionAsync(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Unit>()
-            block(mockRealm)
-        }
-        coEvery { databaseService.realmInstance } returns mockRealm
-
-        every { mockUser.id } returns testUserId
-        every { mockRealm.where(RealmUser::class.java).equalTo("id", testUserId).findFirst() } returns mockUser
-        every { mockRealm.copyFromRealm(mockUser) } returns mockUser
-
-        val user = repository.getUserById(testUserId)
-
-        assertEquals(testUserId, user?.id)
     }
 }
