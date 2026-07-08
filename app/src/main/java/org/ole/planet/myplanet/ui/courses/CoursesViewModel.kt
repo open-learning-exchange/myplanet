@@ -43,7 +43,7 @@ class CoursesViewModel @Inject constructor(
         map: HashMap<String?, JsonObject>,
         progressMap: HashMap<String?, JsonObject>?,
         tagsMap: Map<String, List<Tag>>
-    ) {
+    ): CoursesUiState {
         val sortedCourseList = if (isMyCourseLib) {
             myCourses.forEach { it.isMyCourse = true }
             myCourses.sortedBy { it.courseTitle }
@@ -53,12 +53,12 @@ class CoursesViewModel @Inject constructor(
         }
 
         val mappedCourses = sortedCourseList.map { it.toCourse() }
-        _coursesState.value = CoursesUiState(mappedCourses, map, progressMap, tagsMap)
+        return CoursesUiState(mappedCourses, map, progressMap, tagsMap)
     }
 
     fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
+            val newState = withContext(dispatcherProvider.io) {
                 try {
                     val allCourses = coursesRepository.getAllCourses()
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
@@ -89,19 +89,26 @@ class CoursesViewModel @Inject constructor(
                     processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    null
                 }
+            }
+            if (newState != null) {
+                _coursesState.value = newState
             }
         }
     }
 
     suspend fun refreshCourseRatings(userId: String?) {
-        withContext(dispatcherProvider.io) {
+        val map = withContext(dispatcherProvider.io) {
             try {
-                val map = coursesRepository.getCourseRatings(userId)
-                _coursesState.value = _coursesState.value.copy(map = map)
+                coursesRepository.getCourseRatings(userId)
             } catch (e: Exception) {
                 e.printStackTrace()
+                null
             }
+        }
+        if (map != null) {
+            _coursesState.value = _coursesState.value.copy(map = map)
         }
     }
 
@@ -115,7 +122,7 @@ class CoursesViewModel @Inject constructor(
         progressFilter: String = ""
     ) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
+            val newState = withContext(dispatcherProvider.io) {
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
                 val map = _coursesState.value.map
@@ -140,21 +147,22 @@ class CoursesViewModel @Inject constructor(
 
                 processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, map, progressMap, tagsMap)
             }
+            _coursesState.value = newState
         }
     }
 
     fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean, onComplete: () -> Unit) {
         if (courseIds.isEmpty()) return
-        viewModelScope.launch(dispatcherProvider.io) {
-            courseIds.forEach { courseId ->
-                coursesRepository.removeCourseFromShelf(courseId, userId)
-                if (deleteProgress) {
-                    coursesRepository.deleteCourseProgress(courseId)
+        viewModelScope.launch {
+            withContext(dispatcherProvider.io) {
+                courseIds.forEach { courseId ->
+                    coursesRepository.removeCourseFromShelf(courseId, userId)
+                    if (deleteProgress) {
+                        coursesRepository.deleteCourseProgress(courseId)
+                    }
                 }
             }
-            withContext(dispatcherProvider.main) {
-                onComplete()
-            }
+            onComplete()
         }
     }
 }
