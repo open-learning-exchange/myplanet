@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
@@ -51,7 +52,6 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
@@ -658,18 +658,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return if (::recyclerView.isInitialized) recyclerView else null
     }
 
-    private fun normalizeText(text: String): String {
-        return Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace("\\p{Mn}+".toRegex(), "")
-            .lowercase(Locale.ROOT)
-    }
-
     private fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
         if (query.isEmpty()) return models
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(query)
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(query)
 
         val startsWithQuery = mutableListOf<ResourceListModel>()
         val containsQuery = mutableListOf<ResourceListModel>()

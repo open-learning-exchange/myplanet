@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class ResourcesRepositoryImpl @Inject constructor(
@@ -69,28 +70,21 @@ class ResourcesRepositoryImpl @Inject constructor(
                 return@withRealm emptyList()
             }
 
+            val data = queryObj.findAll()
+
             if (query.isEmpty()) {
-                return@withRealm realm.copyFromRealm(queryObj.findAll())
+                return@withRealm realm.copyFromRealm(data)
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            if (queryParts.isNotEmpty()) {
-                queryObj.beginGroup()
-                for (part in queryParts) {
-                    queryObj.contains("title", part, io.realm.Case.INSENSITIVE)
-                }
-                queryObj.endGroup()
-            }
 
-            val data = queryObj.findAll()
-
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
-            val normalizedQuery = normalizeText(query)
+            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+            val normalizedQuery = Utilities.normalizeText(query)
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
             val containsQuery = mutableListOf<RealmMyLibrary>()
 
             for (item in data) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
+                val title = item.title?.let { Utilities.normalizeText(it) } ?: continue
                 if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                     startsWithQuery.add(item)
                 } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
@@ -684,12 +678,5 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     companion object {
         private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
-        @VisibleForTesting
-        internal fun normalizeText(str: String): String {
-            return Normalizer.normalize(str, Normalizer.Form.NFD)
-                .replace(DIACRITICS_REGEX, "")
-                .lowercase(Locale.ROOT)
-        }
     }
 }

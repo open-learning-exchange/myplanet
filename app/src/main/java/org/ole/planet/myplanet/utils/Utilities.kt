@@ -86,7 +86,7 @@ object Utilities {
     }
 
     fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
+        return Normalizer.normalize(str.lowercase(Locale.ROOT), Normalizer.Form.NFD)
             .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
     }
 

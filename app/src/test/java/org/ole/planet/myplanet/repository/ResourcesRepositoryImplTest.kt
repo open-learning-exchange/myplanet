@@ -111,14 +111,14 @@ class ResourcesRepositoryImplTest {
     @Test
     fun testNormalizeText() {
         // Happy paths
-        assertEquals("hello world", ResourcesRepositoryImpl.normalizeText("HELLO World"))
+        assertEquals("hello world", org.ole.planet.myplanet.utils.Utilities.normalizeText("HELLO World"))
 
         // Diacritics testing
-        assertEquals("cafe", ResourcesRepositoryImpl.normalizeText("Café"))
-        assertEquals("nino", ResourcesRepositoryImpl.normalizeText("Niño"))
-        assertEquals("a e i o u", ResourcesRepositoryImpl.normalizeText("á é í ó ú"))
-        assertEquals("c", ResourcesRepositoryImpl.normalizeText("ç"))
-        assertEquals("aeiou", ResourcesRepositoryImpl.normalizeText("äëïöü"))
+        assertEquals("cafe", org.ole.planet.myplanet.utils.Utilities.normalizeText("Café"))
+        assertEquals("nino", org.ole.planet.myplanet.utils.Utilities.normalizeText("Niño"))
+        assertEquals("a e i o u", org.ole.planet.myplanet.utils.Utilities.normalizeText("á é í ó ú"))
+        assertEquals("c", org.ole.planet.myplanet.utils.Utilities.normalizeText("ç"))
+        assertEquals("aeiou", org.ole.planet.myplanet.utils.Utilities.normalizeText("äëïöü"))
     }
 
     @Test
