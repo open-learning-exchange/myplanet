@@ -42,10 +42,10 @@ class ResourceViewerActivity : AppCompatActivity() {
                             externalCacheDir?.canonicalPath,
                             Environment.getExternalStorageDirectory()?.canonicalPath
                         )
-                        allowedRoots.any { canonicalPath.startsWith(it) }
+                        allowedRoots.any { canonicalPath.startsWith(it + File.separator) || canonicalPath == it }
                     } else {
                         val baseDir = File(getExternalFilesDir(null), "ole").canonicalPath
-                        canonicalPath.startsWith(baseDir)
+                        canonicalPath.startsWith(baseDir + File.separator) || canonicalPath == baseDir
                     }
 
                     if (!isAllowed) {
