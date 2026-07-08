@@ -69,6 +69,7 @@ class ChatHistoryFragment : Fragment() {
         return binding.root
     }
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val slidingPaneLayout = binding.slidingPaneLayout
