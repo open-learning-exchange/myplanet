@@ -7,7 +7,8 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Sort
 import java.io.File
-import java.text.Normalizer
+import org.ole.planet.myplanet.utils.ResourceSearchUtils
+import org.ole.planet.myplanet.utils.Utilities
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
@@ -75,21 +76,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 return@withRealm realm.copyFromRealm(data)
             }
 
-            val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
-            val normalizedQuery = normalizeText(query)
-            val startsWithQuery = mutableListOf<RealmMyLibrary>()
-            val containsQuery = mutableListOf<RealmMyLibrary>()
-
-            for (item in data) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
-                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                    startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                    containsQuery.add(item)
-                }
-            }
-            realm.copyFromRealm(startsWithQuery + containsQuery)
+            return@withRealm realm.copyFromRealm(ResourceSearchUtils.searchList(data, query) { it.title })
         }
     }
 
@@ -676,12 +663,5 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     companion object {
         private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
-        @VisibleForTesting
-        internal fun normalizeText(str: String): String {
-            return Normalizer.normalize(str, Normalizer.Form.NFD)
-                .replace(DIACRITICS_REGEX, "")
-                .lowercase(Locale.ROOT)
-        }
     }
 }

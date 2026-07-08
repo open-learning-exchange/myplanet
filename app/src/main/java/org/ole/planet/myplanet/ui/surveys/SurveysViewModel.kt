@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.ui.surveys
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.text.Normalizer
+import org.ole.planet.myplanet.utils.Utilities
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -136,13 +136,13 @@ class SurveysViewModel @Inject constructor(
 
     private fun filter(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(s)
         val startsWithQuery = mutableListOf<RealmStepExam>()
         val containsQuery = mutableListOf<RealmStepExam>()
 
         for (item in list) {
-            val title = item.name?.let { normalizeText(it) } ?: continue
+            val title = item.name?.let { Utilities.normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                 startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
@@ -152,10 +152,6 @@ class SurveysViewModel @Inject constructor(
         return startsWithQuery + containsQuery
     }
 
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
 
     fun adoptSurvey(surveyId: String) {
         viewModelScope.launch {

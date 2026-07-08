@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.repository
+import org.ole.planet.myplanet.utils.Utilities
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -111,14 +112,14 @@ class ResourcesRepositoryImplTest {
     @Test
     fun testNormalizeText() {
         // Happy paths
-        assertEquals("hello world", ResourcesRepositoryImpl.normalizeText("HELLO World"))
+        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
 
         // Diacritics testing
-        assertEquals("cafe", ResourcesRepositoryImpl.normalizeText("Café"))
-        assertEquals("nino", ResourcesRepositoryImpl.normalizeText("Niño"))
-        assertEquals("a e i o u", ResourcesRepositoryImpl.normalizeText("á é í ó ú"))
-        assertEquals("c", ResourcesRepositoryImpl.normalizeText("ç"))
-        assertEquals("aeiou", ResourcesRepositoryImpl.normalizeText("äëïöü"))
+        assertEquals("cafe", Utilities.normalizeText("Café"))
+        assertEquals("nino", Utilities.normalizeText("Niño"))
+        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
+        assertEquals("c", Utilities.normalizeText("ç"))
+        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
     }
 
     @Test

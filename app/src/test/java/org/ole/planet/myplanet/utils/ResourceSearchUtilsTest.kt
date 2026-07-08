@@ -9,12 +9,6 @@ import io.mockk.mockk
 
 class ResourceSearchUtilsTest {
 
-    @Test
-    fun testNormalizeText() {
-        val input = "Café au lait"
-        val expected = "cafe au lait"
-        assertEquals(expected, ResourceSearchUtils.normalizeText(input))
-    }
 
     @Test
     fun testSearchLocalModels() {

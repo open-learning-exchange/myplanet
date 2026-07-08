@@ -1,34 +1,30 @@
 package org.ole.planet.myplanet.utils
 
 import org.ole.planet.myplanet.model.ResourceListModel
-import java.text.Normalizer
-import java.util.Locale
 
 object ResourceSearchUtils {
-    fun normalizeText(text: String): String {
-        return Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace("\\p{Mn}+".toRegex(), "")
-            .lowercase(Locale.ROOT)
-    }
-
-    fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
-        if (query.isEmpty()) return models
+    fun <T> searchList(list: List<T>, query: String, titleSelector: (T) -> String?): List<T> {
+        if (query.isEmpty()) return list
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(query)
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(query)
 
-        val startsWithQuery = mutableListOf<ResourceListModel>()
-        val containsQuery = mutableListOf<ResourceListModel>()
+        val startsWithQuery = mutableListOf<T>()
+        val containsQuery = mutableListOf<T>()
 
-        for (model in models) {
-            val title = model.item.title?.let { normalizeText(it) } ?: continue
+        for (item in list) {
+            val title = titleSelector(item)?.let { Utilities.normalizeText(it) } ?: continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(model)
+                startsWithQuery.add(item)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(model)
+                containsQuery.add(item)
             }
         }
         return startsWithQuery + containsQuery
+    }
+
+    fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
+        return searchList(models, query) { it.item.title }
     }
 }
