@@ -150,6 +150,22 @@ android {
 kapt {
     correctErrorTypes = true
 }
+
+// Disable Hilt annotation processing in kapt (since Hilt uses KSP)
+tasks.matching { it.name.startsWith("kapt") && it.name.endsWith("Kotlin") && !it.name.contains("GenerateStubs") }.configureEach { task ->
+    task.doFirst {
+        def providerList = task.annotationProcessorOptionProviders
+        for (int i = 0; i < providerList.size(); i++) {
+            def providers = providerList[i]
+            if (providers instanceof Iterable) {
+                def filtered = providers.findAll { provider ->
+                    !provider.class.name.contains("HiltCommandLineArgumentProvider")
+                }
+                providerList[i] = filtered
+            }
+        }
+    }
+}
 kotlin {
     compilerOptions {
         freeCompilerArgs.add("-Xannotation-default-target=param-property")
