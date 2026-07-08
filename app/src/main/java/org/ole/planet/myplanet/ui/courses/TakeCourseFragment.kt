@@ -111,12 +111,13 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
             lastPositionBeforeExam = -1
             setNavigationButtons()
-            binding.viewPager2.adapter =
-                CoursesPagerAdapter(
-                    this@TakeCourseFragment,
-                    courseId,
-                    steps.mapNotNull { it?.id }.toTypedArray()
-                )
+            val coursesPagerAdapter = CoursesPagerAdapter(
+                this@TakeCourseFragment,
+                courseId
+            )
+            binding.viewPager2.adapter = coursesPagerAdapter
+            coursesPagerAdapter.submitList(steps.mapNotNull { it?.id })
+
             binding.viewPager2.isUserInputEnabled = false
             binding.viewPager2.setCurrentItem(position, false)
             binding.viewPager2.registerOnPageChangeCallback(object :
