@@ -58,6 +58,12 @@ class FeedbackRepositoryImplTest {
 
         val result = repository.getPendingFeedback()
 
+        io.mockk.coVerify {
+            mockRealm.where(RealmFeedback::class.java)
+            mockQuery.equalTo("isUploaded", false)
+            mockQuery.findAll()
+        }
+
         assertEquals(2, result.size)
         assertEquals(expectedList, result)
     }
