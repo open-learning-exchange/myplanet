@@ -135,8 +135,7 @@ class MyHealthFragment : Fragment() {
 
     private fun setupButtons() {
         val isHealthProvider = userModel?.rolesList?.contains("health") ?: false
-        binding.btnnewPatient.visibility =
-            if (isHealthProvider) View.VISIBLE else View.GONE
+        binding.btnnewPatient.visibility = if (isHealthProvider) View.VISIBLE else View.GONE
 
         binding.btnnewPatient.setOnClickListener {
             if (isHealthProvider) {
