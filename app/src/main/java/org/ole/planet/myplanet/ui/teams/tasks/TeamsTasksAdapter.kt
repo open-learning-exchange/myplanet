@@ -28,6 +28,8 @@ class TeamsTasksAdapter(
 
     fun hasAssignee(id: String): Boolean = assigneeCache.containsKey(id)
 
+    fun getKnownAssigneeIds(): Set<String> = assigneeCache.keys.toSet()
+
     fun updateAssignees(newAssignees: Map<String, String>) {
         assigneeCache.putAll(newAssignees)
     }

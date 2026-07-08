@@ -298,6 +298,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         updateTasksJob?.cancel()
         updateTasksJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
+            val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
+
             val (taskList, fetchedNames) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {
                     R.id.btn_my -> myTasks()
@@ -306,7 +308,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 }
 
                 val assigneesToFetch = list.mapNotNull { it.assignee }
-                    .filter { it.isNotBlank() && !adapterTask.hasAssignee(it) }
+                    .filter { it.isNotBlank() && !knownAssigneeIds.contains(it) }
                     .distinct()
 
                 val names = if (assigneesToFetch.isNotEmpty()) {
