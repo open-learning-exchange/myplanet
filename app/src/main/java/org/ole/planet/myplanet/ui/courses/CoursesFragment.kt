@@ -179,7 +179,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         filterController = CourseFilterController(
             rootView = requireView(),
-            scope = viewLifecycleOwner.lifecycleScope,
+            dispatcherProvider = dispatcherProvider,
             onFilterChanged = { state ->
                 viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade,
                     state.subject, state.tagNames, state.progressFilter)

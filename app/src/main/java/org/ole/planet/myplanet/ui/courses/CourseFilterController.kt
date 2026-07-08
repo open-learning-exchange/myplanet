@@ -14,6 +14,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class FilterState(
     val searchText: String,
@@ -28,10 +29,11 @@ data class FilterState(
 
 class CourseFilterController(
     private val rootView: View,
-    private val scope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
     private val onFilterChanged: (FilterState) -> Unit,
     private val onScrollToTop: () -> Unit
 ) {
+    private val scope: CoroutineScope = CoroutineScope(dispatcherProvider.main)
     private lateinit var etSearch: EditText
     private lateinit var spnGrade: Spinner
     private lateinit var spnSubject: Spinner
