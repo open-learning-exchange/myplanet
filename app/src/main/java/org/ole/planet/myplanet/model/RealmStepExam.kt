@@ -120,10 +120,5 @@ open class RealmStepExam : RealmObject() {
             `object`.add("questions", RealmExamQuestion.serializeQuestions(questions))
             return `object`
         }
-
-        fun getSurveyCreationTime(surveyId: String, mRealm: Realm): Long? {
-            val survey = mRealm.where(RealmStepExam::class.java).equalTo("id", surveyId).findFirst()
-            return survey?.createdDate
-        }
     }
 }
