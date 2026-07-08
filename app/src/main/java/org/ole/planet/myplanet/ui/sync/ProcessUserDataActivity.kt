@@ -206,11 +206,11 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
         val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
         liveData.observe(this, object : Observer<WorkInfo?> {
-            override fun onChanged(workInfo: WorkInfo?) {
-                if (workInfo != null && workInfo.state.isFinished) {
+            override fun onChanged(value: WorkInfo?) {
+                if (value != null && value.state.isFinished) {
                     liveData.removeObserver(this)
-                    if (workInfo.state == WorkInfo.State.SUCCEEDED) {
-                        val successMessage = workInfo.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
+                    if (value.state == WorkInfo.State.SUCCEEDED) {
+                        val successMessage = value.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
                         onSuccess(successMessage)
                     }
                 }
@@ -235,13 +235,13 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
         val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
         liveData.observe(this, object : Observer<WorkInfo?> {
-            override fun onChanged(workInfo: WorkInfo?) {
-                if (workInfo != null && workInfo.state.isFinished) {
+            override fun onChanged(value: WorkInfo?) {
+                if (value != null && value.state.isFinished) {
                     liveData.removeObserver(this)
                     lifecycleScope.launch(dispatcherProvider.main) {
                         if (!isFinishing && !isDestroyed) {
                             customProgressDialog.dismiss()
-                            if (workInfo.state == WorkInfo.State.SUCCEEDED) {
+                            if (value.state == WorkInfo.State.SUCCEEDED) {
                                 Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
                             }
                         }
