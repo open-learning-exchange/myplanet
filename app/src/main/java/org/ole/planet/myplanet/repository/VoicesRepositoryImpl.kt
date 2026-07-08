@@ -37,7 +37,8 @@ class VoicesRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val userRepositoryLazy: dagger.Lazy<UserRepository>
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -86,9 +87,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserById(userId: String): RealmUser? {
-        return withRealm { realm ->
-            realm.findCopyByField(RealmUser::class.java, "id", userId)
-        }
+        return userRepositoryLazy.get().getUserById(userId)
     }
 
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
