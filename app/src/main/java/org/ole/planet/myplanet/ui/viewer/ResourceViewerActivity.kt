@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
@@ -38,7 +39,8 @@ class ResourceViewerActivity : AppCompatActivity() {
                     val isAllowed = if (isFullPath) {
                         val allowedRoots = listOfNotNull(
                             getExternalFilesDir(null)?.canonicalPath,
-                            externalCacheDir?.canonicalPath
+                            externalCacheDir?.canonicalPath,
+                            Environment.getExternalStorageDirectory()?.canonicalPath
                         )
                         allowedRoots.any { canonicalPath.startsWith(it) }
                     } else {
