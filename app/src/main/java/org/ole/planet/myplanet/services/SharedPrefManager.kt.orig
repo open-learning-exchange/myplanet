@@ -12,7 +12,6 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
-import org.ole.planet.myplanet.utils.SecurePrefs
 
 data class CachedMyLifeItem(
     var imageId: String?,
@@ -133,18 +132,8 @@ class SharedPrefManager @Inject constructor(
     fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
     fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
 
-    fun getNewLoginPassword(): String? {
-        val encrypted = pref.getString("new_login_password", null)
-        return if (encrypted.isNullOrEmpty()) {
-            null
-        } else {
-            SecurePrefs.decryptString(context, encrypted)
-        }
-    }
-    fun setNewLoginPassword(password: String?) = pref.edit {
-        if (password == null) remove("new_login_password")
-        else putString("new_login_password", SecurePrefs.encryptString(context, password))
-    }
+    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
+    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
@@ -167,17 +156,8 @@ class SharedPrefManager @Inject constructor(
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
     fun setUrlUser(user: String) = pref.edit { putString(URL_USER, user) }
 
-    fun getUrlPwd(): String {
-        val encrypted = pref.getString(URL_PWD, "")
-        return if (encrypted.isNullOrEmpty()) {
-            ""
-        } else {
-            SecurePrefs.decryptString(context, encrypted) ?: ""
-        }
-    }
-    fun setUrlPwd(pwd: String) = pref.edit {
-        putString(URL_PWD, SecurePrefs.encryptString(context, pwd))
-    }
+    fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
+    fun setUrlPwd(pwd: String) = pref.edit { putString(URL_PWD, pwd) }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
     fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
