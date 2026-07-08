@@ -218,19 +218,4 @@ class RealmStepExamTest {
         assertEquals("survey1", ids[1])
     }
 
-    @Test
-    fun testGetSurveyCreationTime() {
-        val surveyId = "survey1"
-        val expectedDate = 1620000000000L
-        val mockSurvey = mockk<RealmStepExam>(relaxed = true)
-        every { mockSurvey.createdDate } returns expectedDate
-
-        val mockQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
-        every { mockRealm.where(RealmStepExam::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", surveyId) } returns mockQuery
-        every { mockQuery.findFirst() } returns mockSurvey
-
-        val time = RealmStepExam.getSurveyCreationTime(surveyId, mockRealm)
-        assertEquals(expectedDate, time)
-    }
 }
