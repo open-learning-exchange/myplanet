@@ -8,6 +8,12 @@ import androidx.viewpager2.adapter.FragmentStateAdapter
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
     private val steps = mutableListOf<String>()
+    private val itemIds = mutableMapOf<String, Long>()
+    private var nextId = 1L
+
+    companion object {
+        private const val COURSE_DETAIL_ID = 0L
+    }
 
     fun submitList(newSteps: List<String>) {
         val diffCallback = object : DiffUtil.Callback() {
@@ -28,6 +34,13 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
         }
 
         val diffResult = DiffUtil.calculateDiff(diffCallback)
+
+        newSteps.forEach { stepId ->
+            if (!itemIds.containsKey(stepId)) {
+                itemIds[stepId] = nextId++
+            }
+        }
+
         steps.clear()
         steps.addAll(newSteps)
         diffResult.dispatchUpdatesTo(this)
@@ -57,14 +70,14 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
 
     override fun getItemId(position: Int): Long {
         return if (position == 0) {
-            courseId?.hashCode()?.toLong() ?: RecyclerView.NO_ID
+            COURSE_DETAIL_ID
         } else {
-            steps[position - 1].hashCode().toLong()
+            itemIds[steps[position - 1]] ?: RecyclerView.NO_ID
         }
     }
 
     override fun containsItem(itemId: Long): Boolean {
-        if (itemId == (courseId?.hashCode()?.toLong() ?: RecyclerView.NO_ID)) return true
-        return steps.any { it.hashCode().toLong() == itemId }
+        if (itemId == COURSE_DETAIL_ID) return true
+        return steps.any { itemIds[it] == itemId }
     }
 }
