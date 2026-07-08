@@ -448,6 +448,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         joinDialog?.dismiss()
         joinDialog = null
         _binding = null
+        coursesPagerAdapter = null
         super.onDestroyView()
     }
 
