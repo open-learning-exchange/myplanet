@@ -18,15 +18,12 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentRatingBinding
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class RatingsFragment : DialogFragment() {
     private var _binding: FragmentRatingBinding? = null
     private val binding get() = _binding!!
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     private val viewModel: RatingsViewModel by viewModels()
     var id: String? = ""
     var type: String? = ""
@@ -140,12 +137,9 @@ class RatingsFragment : DialogFragment() {
     }
     
     private fun loadRatingData() {
-        val userId = sharedPrefManager.getUserId()
         val t = type ?: return
         val i = id ?: return
-        if (userId.isNotEmpty()) {
-            viewModel.loadRatingData(t, i, userId)
-        }
+        viewModel.loadRatingData(t, i)
     }
 
     override fun onDestroyView() {
@@ -156,21 +150,17 @@ class RatingsFragment : DialogFragment() {
     private fun submitRating() {
         val comment = binding.etComment.text.toString()
         val rating = binding.ratingBar.rating
-        val userId = sharedPrefManager.getUserId()
 
         val t = type ?: return
         val i = id ?: return
         val ttl = title ?: return
-        if (userId.isNotEmpty()) {
-            viewModel.submitRating(
-                type = t,
-                itemId = i,
-                title = ttl,
-                userId = userId,
-                rating = rating,
-                comment = comment
-            )
-        }
+        viewModel.submitRating(
+            type = t,
+            itemId = i,
+            title = ttl,
+            rating = rating,
+            comment = comment
+        )
     }
 
     private fun updateSubmitButtonState() {
