@@ -1,0 +1,71 @@
+Starting a Gradle Daemon, 1 busy Daemon could not be reused, use --status for details
+Calculating task graph as configuration cache cannot be reused because environment variable 'ANDROID_HOME' has changed.
+Gradle cache: GRADLE_BUILD_CACHE_URL=http://34.134.219.48:5071/cache/
+
+> Configure project :app
+WARNING: The option setting 'android.newDsl=false' is deprecated.
+The current default is 'true'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+WARNING: The option setting 'android.enableJetifier=true' is deprecated.
+The current default is 'false'.
+It will be removed in version 10.0 of the Android Gradle plugin.
+Using a Project object as a dependency notation has been deprecated. This will fail with an error in Gradle 10. Please use the project(String) method on DependencyHandler or the createProjectDependency(String) method on DependencyFactory instead. Consult the upgrading guide for further information: https://docs.gradle.org/9.6.1/userguide/upgrading_version_9.html#dependency_project_notation
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:generateDefaultDebugResValues UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:kspDefaultDebugKotlin UP-TO-DATE
+> Task :app:kaptGenerateStubsDefaultDebugKotlin UP-TO-DATE
+> Task :app:kaptDefaultDebugKotlin UP-TO-DATE
+> Task :app:compileDefaultDebugKotlin
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    The argument '-Xannotation-default-target=param-property' is redundant for the current language version 2.4.
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    'val id: Long' is deprecated. Deprecated in Java.
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/MainApplication.kt line 211
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    'val id: Long' is deprecated. Deprecated in Java.
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/di/NetworkModule.kt line 25
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/ui/chat/ChatHistoryFragment.kt line 107
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/ui/resources/CollectionsFragment.kt line 68
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/ui/resources/ResourcesFragment.kt line 256
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    This declaration is in a preview state and can be changed in a backwards-incompatible manner with a best-effort migration. Its usage should be marked with '@kotlinx.coroutines.FlowPreview' or '@OptIn(kotlinx.coroutines.FlowPreview::class)' if you accept the drawback of relying on preview API
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/ui/surveys/SurveyFragment.kt line 96
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    The corresponding parameter in the supertype 'Observer' is named 'value'. This may cause problems when calling this function with named arguments.
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/ui/sync/ProcessUserDataActivity.kt line 209
+Problem found: Kotlin compiler warning (id: kotlin:compiler:warning:compiler-warning)
+  Kotlin compiler warning
+    The corresponding parameter in the supertype 'Observer' is named 'value'. This may cause problems when calling this function with named arguments.
+    Location: /app/app/src/main/java/org/ole/planet/myplanet/ui/sync/ProcessUserDataActivity.kt line 238
+
+[Incubating] Problems report is available at: file:///app/build/reports/problems/problems-report.html
+
+BUILD SUCCESSFUL in 1m 55s
+15 actionable tasks: 1 executed, 14 up-to-date
+Configuration cache entry stored.
