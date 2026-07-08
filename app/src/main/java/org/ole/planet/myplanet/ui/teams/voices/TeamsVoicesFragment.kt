@@ -89,9 +89,11 @@ class TeamsVoicesFragment : BaseTeamFragment() {
 
         if (shouldQueryTeamFromRealm()) {
             viewModel.loadTeam(teamId)
-            collectWhenStarted(viewModel.teamPolicy) { (teamResult, policy) ->
-                team = teamResult
-                updateCanPostMessage(policy, isMemberFlow.value)
+            collectWhenStarted(viewModel.teamPolicy) { result ->
+                result?.let { (teamResult, policy) ->
+                    team = teamResult
+                    updateCanPostMessage(policy, isMemberFlow.value)
+                }
             }
         } else {
             updateCanPostMessage(team?.toVoicePostingPolicy(), isMemberFlow.value)
