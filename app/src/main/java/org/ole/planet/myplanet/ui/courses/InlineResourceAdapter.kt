@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
     private val dispatcherProvider: DispatcherProvider,
-    private val launchCoroutine: (suspend () -> Unit) -> Job,
+    private val onPreviewRequested: (ViewHolder, RealmMyLibrary, File) -> Unit,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
     DiffUtils.itemCallback<RealmMyLibrary>(
@@ -66,15 +66,16 @@ class InlineResourceAdapter(
     }
 
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
-        var previewJob: Job? = null
+        private var previewJob: Job? = null
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
             previewJob = null
         }
 
-        suspend fun launchPreview(block: suspend () -> Unit) {
-            block()
+        fun setPreviewJob(job: Job) {
+            cancelPreviousPreviews()
+            previewJob = job
         }
     }
 
@@ -176,10 +177,7 @@ class InlineResourceAdapter(
             when {
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
-                mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
-                mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
-                mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
-                mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
+                else -> onPreviewRequested(holder, resource, resourceFile)
             }
         } else {
             binding.pbDownload.visibility = View.VISIBLE
@@ -188,6 +186,16 @@ class InlineResourceAdapter(
         binding.ivResourceIcon.setImageResource(
             ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
         )
+    }
+
+    suspend fun loadPreview(holder: ViewHolder, resource: RealmMyLibrary, file: File) {
+        val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
+        when {
+            mimeType?.contains("pdf") == true -> showPdfPreview(holder, file)
+            mimeType?.startsWith("audio") == true -> showAudioPreview(holder, file)
+            mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, file)
+            mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, file)
+        }
     }
 
     private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
@@ -214,133 +222,113 @@ class InlineResourceAdapter(
         }
     }
 
-    private fun showPdfPreview(holder: ViewHolder, file: File) {
+    private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        holder.cancelPreviousPreviews()
-        holder.previewJob = launchCoroutine {
-            holder.launchPreview {
-                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedBitmap = bitmapCache.get(cacheKey)
-            val bitmap = if (cachedBitmap != null) {
-                cachedBitmap
-            } else {
-                withContext(dispatcherProvider.io) {
-                    try {
-                        ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-                            PdfRenderer(fd).use { renderer ->
-                                renderer.openPage(0).use { page ->
-                                    val scale = 2
-                                    createBitmap(page.width * scale, page.height * scale).also {
-                                        page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                    }
+        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cachedBitmap = bitmapCache.get(cacheKey)
+        val bitmap = if (cachedBitmap != null) {
+            cachedBitmap
+        } else {
+            withContext(dispatcherProvider.io) {
+                try {
+                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+                        PdfRenderer(fd).use { renderer ->
+                            renderer.openPage(0).use { page ->
+                                val scale = 2
+                                createBitmap(page.width * scale, page.height * scale).also {
+                                    page.render(it, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
                                 }
                             }
                         }
-                    } catch (e: Exception) {
-                        null
                     }
-                }?.also { bitmapCache.put(cacheKey, it) }
-            }
-                if (bitmap != null) {
-                    holder.binding.ivResourcePreview.visibility = View.VISIBLE
-                    holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
-                    holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    holder.binding.ivResourcePreview.setImageBitmap(bitmap)
+                } catch (e: Exception) {
+                    null
                 }
-            }
+            }?.also { bitmapCache.put(cacheKey, it) }
+        }
+        if (bitmap != null) {
+            holder.binding.ivResourcePreview.visibility = View.VISIBLE
+            holder.binding.ivResourcePreview.scaleType = ImageView.ScaleType.FIT_CENTER
+            holder.binding.ivResourcePreview.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            holder.binding.ivResourcePreview.setImageBitmap(bitmap)
         }
     }
 
-    private fun showAudioPreview(holder: ViewHolder, file: File) {
+    private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
         if (!file.exists()) return
-        holder.cancelPreviousPreviews()
-        holder.previewJob = launchCoroutine {
-            holder.launchPreview {
-                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedDuration = textCache[cacheKey]
-            val durationText = if (cachedDuration != null) {
-                cachedDuration
-            } else {
-                withContext(dispatcherProvider.io) {
-                    val retriever = MediaMetadataRetriever()
-                    try {
-                        retriever.setDataSource(file.absolutePath)
-                        val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
-                        val totalSeconds = durationMs / 1000
-                        String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60)
-                    } catch (e: Exception) {
-                        ""
-                    } finally {
-                        retriever.release()
-                    }
-                }.also { textCache[cacheKey] = it }
-            }
-                holder.binding.tvAudioDuration.text = durationText
-            }
+        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cachedDuration = textCache[cacheKey]
+        val durationText = if (cachedDuration != null) {
+            cachedDuration
+        } else {
+            withContext(dispatcherProvider.io) {
+                val retriever = MediaMetadataRetriever()
+                try {
+                    retriever.setDataSource(file.absolutePath)
+                    val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0L
+                    val totalSeconds = durationMs / 1000
+                    String.format("%d:%02d", totalSeconds / 60, totalSeconds % 60)
+                } catch (e: Exception) {
+                    ""
+                } finally {
+                    retriever.release()
+                }
+            }.also { textCache[cacheKey] = it }
         }
+        holder.binding.tvAudioDuration.text = durationText
     }
 
-    private fun showCsvPreview(holder: ViewHolder, file: File) {
+    private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        holder.cancelPreviousPreviews()
-        holder.previewJob = launchCoroutine {
-            holder.launchPreview {
-                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedPreview = textCache[cacheKey]
-            val preview = if (cachedPreview != null) {
-                cachedPreview
-            } else {
-                withContext(dispatcherProvider.io) {
-                    try {
-                        val sb = StringBuilder()
-                        CSVReaderBuilder(FileReader(file))
-                            .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
-                            .build().use { reader ->
-                                var count = 0
-                                for (row in reader) {
-                                    if (count >= 5) break
-                                    sb.appendLine(row.joinToString("  |  "))
-                                    count++
-                                }
+        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cachedPreview = textCache[cacheKey]
+        val preview = if (cachedPreview != null) {
+            cachedPreview
+        } else {
+            withContext(dispatcherProvider.io) {
+                try {
+                    val sb = StringBuilder()
+                    CSVReaderBuilder(FileReader(file))
+                        .withCSVParser(CSVParserBuilder().withSeparator(',').withQuoteChar('"').build())
+                        .build().use { reader ->
+                            var count = 0
+                            for (row in reader) {
+                                if (count >= 5) break
+                                sb.appendLine(row.joinToString("  |  "))
+                                count++
                             }
-                        sb.toString().trimEnd().takeIf { it.isNotEmpty() }
-                    } catch (e: Exception) {
-                        null
-                    }
-                }?.also { textCache[cacheKey] = it }
-            }
-                if (!preview.isNullOrEmpty()) {
-                    holder.binding.tvTextPreview.visibility = View.VISIBLE
-                    holder.binding.tvTextPreview.text = preview
+                        }
+                    sb.toString().trimEnd().takeIf { it.isNotEmpty() }
+                } catch (e: Exception) {
+                    null
                 }
-            }
+            }?.also { textCache[cacheKey] = it }
+        }
+        if (!preview.isNullOrEmpty()) {
+            holder.binding.tvTextPreview.visibility = View.VISIBLE
+            holder.binding.tvTextPreview.text = preview
         }
     }
 
-    private fun showTextPreview(holder: ViewHolder, file: File) {
+    private suspend fun showTextPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        holder.cancelPreviousPreviews()
-        holder.previewJob = launchCoroutine {
-            holder.launchPreview {
-                val cacheKey = "${file.absolutePath}_${file.lastModified()}"
-            val cachedText = textCache[cacheKey]
-            val text = if (cachedText != null) {
-                cachedText
-            } else {
-                withContext(dispatcherProvider.io) {
-                    try {
-                        file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
-                    } catch (e: Exception) {
-                        null
-                    }
-                }?.also { textCache[cacheKey] = it }
-            }
-                if (!text.isNullOrEmpty()) {
-                    holder.binding.tvTextPreview.visibility = View.VISIBLE
-                    holder.binding.tvTextPreview.text = text
+        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cachedText = textCache[cacheKey]
+        val text = if (cachedText != null) {
+            cachedText
+        } else {
+            withContext(dispatcherProvider.io) {
+                try {
+                    file.bufferedReader().useLines { it.take(8).joinToString("\n") }.takeIf { it.isNotEmpty() }
+                } catch (e: Exception) {
+                    null
                 }
-            }
+            }?.also { textCache[cacheKey] = it }
+        }
+        if (!text.isNullOrEmpty()) {
+            holder.binding.tvTextPreview.visibility = View.VISIBLE
+            holder.binding.tvTextPreview.text = text
         }
     }
 }
