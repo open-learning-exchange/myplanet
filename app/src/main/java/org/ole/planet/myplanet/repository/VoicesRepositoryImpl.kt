@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import dagger.Lazy
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -38,7 +39,7 @@ class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val teamsRepository: TeamsRepository
+    private val teamsRepository: Lazy<TeamsRepository>
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -593,6 +594,6 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun isTeamLeader(teamId: String, userId: String?): Boolean {
-        return teamsRepository.isTeamLeader(teamId, userId)
+        return teamsRepository.get().isTeamLeader(teamId, userId)
     }
 }
