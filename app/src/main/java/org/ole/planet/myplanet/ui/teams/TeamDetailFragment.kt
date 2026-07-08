@@ -220,7 +220,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             binding.viewPager2.registerOnPageChangeCallback(
                 object : ViewPager2.OnPageChangeCallback() {
                     override fun onPageSelected(position: Int) {
-                        val pageConfig = pageConfigs.getOrNull(position)
+                        val adapter = binding.viewPager2.adapter as? TeamPagerAdapter
+                        val pageConfig = adapter?.getPageConfig(position) ?: pageConfigs.getOrNull(position)
                         val pageId = pageConfig?.id
                         team?._id?.let { teamId ->
                             pageId?.let {
@@ -228,7 +229,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                             }
                         }
 
-                        val fragmentTag = "f$position"
+                        val itemId = adapter?.getItemId(position) ?: position.toLong()
+                        val fragmentTag = "f$itemId"
                         val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
                         if (fragment is OnTeamPageListener) {
                             MainApplication.listener = fragment
@@ -238,7 +240,9 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             )
         }
 
-        selectPage(restorePageId, false)
+        binding.viewPager2.post {
+            selectPage(restorePageId, false)
+        }
     }
 
     private fun setupNonMyTeamButtons(user: RealmUser?, hasPendingRequest: Boolean) {

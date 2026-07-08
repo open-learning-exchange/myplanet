@@ -49,16 +49,11 @@ class TeamPagerAdapter(
     fun getPageTitle(position: Int): CharSequence =
         parentFragment.getString(pages[position].titleRes)
 
-    override fun getItemId(position: Int): Long {
-        val page = pages.getOrNull(position)
-        val pageId = page?.id?.hashCode()?.toLong() ?: position.toLong()
-        return pageId
-    }
+    fun getPageConfig(position: Int): TeamPageConfig? = pages.getOrNull(position)
 
-    override fun containsItem(itemId: Long): Boolean {
-        val contains = pages.any { it.id.hashCode().toLong() == itemId }
-        return contains
-    }
+    override fun getItemId(position: Int) = pages[position].id.hashCode().toLong()
+
+    override fun containsItem(itemId: Long) = pages.any { it.id.hashCode().toLong() == itemId }
 
     override fun createFragment(position: Int): Fragment {
         val page = pages[position]
