@@ -1,1 +1,0 @@
-./gradlew testDefaultDebugUnitTest --tests "*FeedbackRepositoryImplTest*"
