@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.DiffUtil
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
@@ -21,11 +22,27 @@ import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 
 class TeamPagerAdapter(
     private val parentFragment: Fragment,
-    private val pages: List<TeamPageConfig>,
+    private var pages: List<TeamPageConfig>,
     private val teamId: String?,
     private val onMemberChangeListener: OnMemberChangeListener,
     private val teamUpdateListener: OnTeamUpdateListener
 ) : FragmentStateAdapter(parentFragment) {
+
+    fun updatePages(newPages: List<TeamPageConfig>) {
+        val diffCallback = object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = pages.size
+            override fun getNewListSize(): Int = newPages.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return pages[oldItemPosition].id == newPages[newItemPosition].id
+            }
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return pages[oldItemPosition] == newPages[newItemPosition]
+            }
+        }
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        pages = newPages.toList()
+        diffResult.dispatchUpdatesTo(this)
+    }
 
     override fun getItemCount(): Int = pages.size
 
