@@ -9,8 +9,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.services.upload.UploadConfig
-import org.ole.planet.myplanet.services.upload.UploadedItem
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
@@ -18,7 +16,7 @@ class UploadRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
-    override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
+    override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
         return withRealmAsync { realm ->
             val query = realm.where(config.modelClass.java)
             val filteredQuery = config.queryBuilder(query)
@@ -27,8 +25,8 @@ class UploadRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem> {
-        val failedLocally = mutableListOf<UploadedItem>()
+    override suspend fun <T : RealmObject> markUploaded(config: UploadUpdateContract<T>, succeeded: List<UploadedItemResult>): List<UploadedItemResult> {
+        val failedLocally = mutableListOf<UploadedItemResult>()
         executeTransaction { realm ->
             val localIds = succeeded.map { it.localId }
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"

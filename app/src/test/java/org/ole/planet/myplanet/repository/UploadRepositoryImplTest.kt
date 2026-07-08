@@ -18,6 +18,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadSerializer
 
@@ -62,12 +63,9 @@ class UploadRepositoryImplTest {
             filteredQuery
         }
 
-        val config = UploadConfig(
+        val config = UploadQueryContract(
             modelClass = DummyModel::class,
-            endpoint = "test",
-            queryBuilder = queryBuilder,
-            serializer = mockk<UploadSerializer<DummyModel>>(),
-            idExtractor = { null }
+            queryBuilder = queryBuilder
         )
 
         every { filteredQuery.findAll() } returns results

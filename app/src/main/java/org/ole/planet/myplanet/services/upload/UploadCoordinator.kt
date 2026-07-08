@@ -14,6 +14,10 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.services.upload.UploadConfig
+import org.ole.planet.myplanet.repository.UploadQueryContract
+import org.ole.planet.myplanet.repository.UploadUpdateContract
+import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -97,7 +101,11 @@ class UploadCoordinator @Inject constructor(
     private suspend fun <T : RealmObject> queryItemsToUpload(
         config: UploadConfig<T>
     ): List<PreparedUpload<T>> {
-        val items = uploadRepository.queryPending(config)
+        val queryContract = UploadQueryContract<T>(
+            modelClass = config.modelClass,
+            queryBuilder = config.queryBuilder
+        )
+        val items = uploadRepository.queryPending(queryContract)
 
         val tempResults = items.mapNotNull { copiedItem ->
             if (config.filterGuests && config.guestUserIdExtractor != null) {
@@ -245,7 +253,30 @@ class UploadCoordinator @Inject constructor(
         succeeded: List<UploadedItem>,
         config: UploadConfig<T>
     ): List<UploadedItem> {
-        return uploadRepository.markUploaded(config, succeeded)
+        val mappedAdditionalUpdates: ((io.realm.Realm, T, UploadedItemResult) -> Unit)? = config.additionalUpdates?.let { original ->
+            { realm, item, result ->
+                val uploadedItem = UploadedItem(result.localId, result.remoteId, result.remoteRev, JsonObject())
+                original(realm, item, uploadedItem)
+            }
+        }
+
+        val updateContract = UploadUpdateContract<T>(
+            modelClass = config.modelClass,
+            idExtractor = config.idExtractor,
+            additionalUpdates = mappedAdditionalUpdates
+        )
+
+        val itemResults = succeeded.map {
+            UploadedItemResult(it.localId, it.remoteId, it.remoteRev)
+        }
+
+        val failedResults = uploadRepository.markUploaded(updateContract, itemResults)
+
+        val failedLocally = failedResults.mapNotNull { failedResult ->
+            succeeded.find { it.localId == failedResult.localId }
+        }
+
+        return failedLocally
     }
 
     private suspend fun <T : RealmObject> queueRetryableFailures(
