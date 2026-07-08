@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.databinding.AlertSoundRecorderBinding
 import org.ole.planet.myplanet.databinding.FragmentAddResourceBinding
-import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.FileUtils
@@ -61,8 +60,6 @@ class AddResourceFragment : BottomSheetDialogFragment() {
     private lateinit var requestCameraLauncher: ActivityResultLauncher<String>
     private var type: Int = 0
     private var teamId: String? = null
-    @Inject
-    lateinit var personalsRepository: PersonalsRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
