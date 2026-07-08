@@ -1,0 +1,40 @@
+--- app/src/test/java/org/ole/planet/myplanet/repository/ChatRepositoryImplTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/repository/ChatRepositoryImplTest.kt
+@@ -17,2 +17,3 @@
+ import kotlinx.coroutines.test.UnconfinedTestDispatcher
++import kotlinx.coroutines.ExperimentalCoroutinesApi
+ import kotlinx.coroutines.test.runTest
+@@ -32,2 +33,3 @@
+
++@OptIn(ExperimentalCoroutinesApi::class)
+ class ChatRepositoryImplTest {
+--- app/src/test/java/org/ole/planet/myplanet/repository/ChatRepositoryTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/repository/ChatRepositoryTest.kt
+@@ -6,2 +6,3 @@
+ import io.realm.Realm
++import kotlinx.coroutines.ExperimentalCoroutinesApi
+ import kotlinx.coroutines.test.UnconfinedTestDispatcher
+@@ -14,2 +15,3 @@
+
++@OptIn(ExperimentalCoroutinesApi::class)
+ class ChatRepositoryTest {
+--- app/src/test/java/org/ole/planet/myplanet/model/RealmUserTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/model/RealmUserTest.kt
+@@ -12,2 +12,3 @@
+ import kotlinx.coroutines.Dispatchers
++import kotlinx.coroutines.ExperimentalCoroutinesApi
+ import kotlinx.coroutines.test.resetMain
+@@ -19,2 +20,3 @@
+
++@OptIn(ExperimentalCoroutinesApi::class)
+ class RealmUserTest {
+--- app/src/androidTest/java/org/ole/planet/myplanet/model/RealmUserTest.kt
++++ app/src/androidTest/java/org/ole/planet/myplanet/model/RealmUserTest.kt
+@@ -11,2 +11,3 @@
+ import kotlinx.coroutines.CoroutineScope
++import kotlinx.coroutines.ExperimentalCoroutinesApi
+ import kotlinx.coroutines.Dispatchers
+@@ -24,2 +25,3 @@
+
++@OptIn(ExperimentalCoroutinesApi::class)
+ @RunWith(AndroidJUnit4::class)
