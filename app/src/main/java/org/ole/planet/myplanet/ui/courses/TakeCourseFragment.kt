@@ -43,6 +43,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var coursesRepository: CoursesRepository
+    @Inject
+    lateinit var sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager
     private var courseId: String? = null
     private var userModel: RealmUser? = null
     private var currentCourse: RealmMyCourse? = null
@@ -88,6 +90,8 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             }
             binding.contentLayout.visibility = View.VISIBLE
             currentCourse = course
+            sharedPrefManager.setLastVisitedCourseId(course.courseId)
+            sharedPrefManager.setLastVisitedCourseTitle(course.courseTitle)
             binding.tvCourseTitle.text = currentCourse?.courseTitle
 
             steps = coursesRepository.getCourseSteps(courseId ?: return@launch)

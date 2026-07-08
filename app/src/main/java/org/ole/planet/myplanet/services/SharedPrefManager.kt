@@ -71,6 +71,8 @@ class SharedPrefManager @Inject constructor(
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
+        private const val LAST_VISITED_COURSE_ID = "lastVisitedCourseId"
+        private const val LAST_VISITED_COURSE_TITLE = "lastVisitedCourseTitle"
         private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     }
 
@@ -246,6 +248,12 @@ class SharedPrefManager @Inject constructor(
 
     fun getConcatenatedLinks(): String? = pref.getString(CONCATENATED_LINKS, null)
     fun setConcatenatedLinks(json: String) = pref.edit { putString(CONCATENATED_LINKS, json) }
+
+    fun getLastVisitedCourseId(): String? = pref.getString(LAST_VISITED_COURSE_ID, null)
+    fun setLastVisitedCourseId(id: String?) = pref.edit { putString(LAST_VISITED_COURSE_ID, id) }
+
+    fun getLastVisitedCourseTitle(): String? = pref.getString(LAST_VISITED_COURSE_TITLE, null)
+    fun setLastVisitedCourseTitle(title: String?) = pref.edit { putString(LAST_VISITED_COURSE_TITLE, title) }
 
     fun getRawString(key: String, default: String = ""): String = pref.getString(key, default) ?: default
     fun setRawString(key: String, value: String) = pref.edit { putString(key, value) }
