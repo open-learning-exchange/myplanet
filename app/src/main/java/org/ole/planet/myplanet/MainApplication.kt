@@ -107,6 +107,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         private const val AUTO_SYNC_WORK_TAG = "autoSyncWork"
         private const val TASK_NOTIFICATION_WORK_TAG = "taskNotificationWork"
         private const val ANR_LOG_TYPE = "anr"
+        private const val THREAD_STATS_TAG = 1001
         private lateinit var instance: MainApplication
 
         @VisibleForTesting
@@ -208,7 +209,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
-                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+                    TrafficStats.setThreadStatsTag(THREAD_STATS_TAG)
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"
