@@ -134,11 +134,11 @@ class SharedPrefManager @Inject constructor(
     fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
 
     fun getNewLoginPassword(): String? {
-        val encrypted = pref.getString("new_login_password", null)
-        return if (encrypted.isNullOrEmpty()) {
+        val stored = pref.getString("new_login_password", null)
+        return if (stored.isNullOrEmpty()) {
             null
         } else {
-            SecurePrefs.decryptString(context, encrypted)
+            SecurePrefs.decryptString(context, stored) ?: stored.also { setNewLoginPassword(it) }
         }
     }
     fun setNewLoginPassword(password: String?) = pref.edit {
@@ -168,11 +168,11 @@ class SharedPrefManager @Inject constructor(
     fun setUrlUser(user: String) = pref.edit { putString(URL_USER, user) }
 
     fun getUrlPwd(): String {
-        val encrypted = pref.getString(URL_PWD, "")
-        return if (encrypted.isNullOrEmpty()) {
+        val stored = pref.getString(URL_PWD, "")
+        return if (stored.isNullOrEmpty()) {
             ""
         } else {
-            SecurePrefs.decryptString(context, encrypted) ?: ""
+            SecurePrefs.decryptString(context, stored) ?: stored.also { setUrlPwd(it) }
         }
     }
     fun setUrlPwd(pwd: String) = pref.edit {
