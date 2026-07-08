@@ -82,6 +82,10 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
             updateAttendanceButton()
         }
 
+        collectWhenStarted(viewModel.isEventActive) {
+            updateAttendanceButton()
+        }
+
         collectWhenStarted(viewModel.updateSuccess) { success ->
             if (success == true) {
                 Toast.makeText(requireContext(), getString(R.string.meetup_updated), Toast.LENGTH_SHORT).show()
@@ -223,9 +227,10 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun updateAttendanceButton() {
         val meetup = viewModel.meetup.value
         val user = viewModel.user.value
+        val isEventActive = viewModel.isEventActive.value
         val isJoined = !meetup?.userId.isNullOrEmpty()
         binding.btnLeave.setText(if (isJoined) R.string.leave else R.string.join)
-        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true
+        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true && isEventActive
     }
 
     override fun onDestroyView() {

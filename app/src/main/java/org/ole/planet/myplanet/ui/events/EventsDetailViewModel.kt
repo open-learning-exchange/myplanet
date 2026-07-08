@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.util.Calendar
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMeetup
@@ -31,6 +32,18 @@ class EventsDetailViewModel @Inject constructor(
     private val _updateSuccess = MutableStateFlow<Boolean?>(null)
     val updateSuccess: StateFlow<Boolean?> = _updateSuccess.asStateFlow()
 
+    private val _isEventActive = MutableStateFlow(false)
+    val isEventActive: StateFlow<Boolean> = _isEventActive.asStateFlow()
+
+    private fun checkEventActive(meetup: RealmMeetup?) {
+        if (meetup == null) {
+            _isEventActive.value = false
+            return
+        }
+        val currentTime = Calendar.getInstance().timeInMillis
+        _isEventActive.value = currentTime in meetup.startDate..meetup.endDate
+    }
+
     fun loadData(meetUpId: String?) {
         viewModelScope.launch {
             _user.value = userSessionManager.getUserModel()
@@ -38,6 +51,7 @@ class EventsDetailViewModel @Inject constructor(
             if (!meetUpId.isNullOrBlank()) {
                 val loadedMeetup = eventsRepository.getMeetupByLocalId(meetUpId)
                 _meetup.value = loadedMeetup
+                checkEventActive(loadedMeetup)
                 _members.value = eventsRepository.getJoinedMembers(meetUpId)
             }
         }
@@ -70,7 +84,9 @@ class EventsDetailViewModel @Inject constructor(
             )
 
             if (success) {
-                _meetup.value = eventsRepository.getMeetupByLocalId(meetupId)
+                val updatedMeetup = eventsRepository.getMeetupByLocalId(meetupId)
+                _meetup.value = updatedMeetup
+                checkEventActive(updatedMeetup)
             }
             _updateSuccess.value = success
         }
@@ -83,7 +99,9 @@ class EventsDetailViewModel @Inject constructor(
     fun toggleAttendance(meetupId: String) {
         viewModelScope.launch {
             val currentUser = _user.value
-            _meetup.value = eventsRepository.toggleAttendance(meetupId, currentUser?.id)
+            val updatedMeetup = eventsRepository.toggleAttendance(meetupId, currentUser?.id)
+            _meetup.value = updatedMeetup
+            checkEventActive(updatedMeetup)
             _members.value = eventsRepository.getJoinedMembers(meetupId)
         }
     }
