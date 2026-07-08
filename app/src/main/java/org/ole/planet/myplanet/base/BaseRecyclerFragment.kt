@@ -279,11 +279,5 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             textView.setText(messageRes)
         }
 
-        fun showNoFilter(v: View?, count: Int) {
-            v ?: return
-            v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
-            textView.setText(R.string.no_course_matched_filter)
-        }
     }
 }
