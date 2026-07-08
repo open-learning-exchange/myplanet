@@ -96,9 +96,9 @@ class VoicesViewModel @Inject constructor(
 
         val lowerQuery = query.trim().lowercase()
         return list.filter { news ->
-            news?.message?.lowercase()?.contains(lowerQuery) == true ||
-            news?.userName?.lowercase()?.contains(lowerQuery) == true ||
-            news?.newsTitle?.lowercase()?.contains(lowerQuery) == true
+            news?.message?.contains(lowerQuery, ignoreCase = true) == true ||
+            news?.userName?.contains(lowerQuery, ignoreCase = true) == true ||
+            news?.newsTitle?.contains(lowerQuery, ignoreCase = true) == true
         }
     }
 
@@ -175,7 +175,7 @@ class VoicesViewModel @Inject constructor(
         allLabels.sorted()
     }
 
-    fun filterByLabel(
+    private fun filterByLabel(
         newsList: List<RealmNews?>,
         selectedLabel: String
     ): List<RealmNews?> {
