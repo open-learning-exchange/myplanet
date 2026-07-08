@@ -14,7 +14,6 @@ import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.repository.UploadUpdateContract
 import org.ole.planet.myplanet.repository.UploadedItemResult
@@ -255,7 +254,7 @@ class UploadCoordinator @Inject constructor(
     ): List<UploadedItem> {
         val mappedAdditionalUpdates: ((io.realm.Realm, T, UploadedItemResult) -> Unit)? = config.additionalUpdates?.let { original ->
             { realm, item, result ->
-                val uploadedItem = UploadedItem(result.localId, result.remoteId, result.remoteRev, JsonObject())
+                val uploadedItem = UploadedItem(result.localId, result.remoteId, result.remoteRev, result.response)
                 original(realm, item, uploadedItem)
             }
         }
@@ -267,7 +266,7 @@ class UploadCoordinator @Inject constructor(
         )
 
         val itemResults = succeeded.map {
-            UploadedItemResult(it.localId, it.remoteId, it.remoteRev)
+            UploadedItemResult(it.localId, it.remoteId, it.remoteRev, it.response)
         }
 
         val failedResults = uploadRepository.markUploaded(updateContract, itemResults)

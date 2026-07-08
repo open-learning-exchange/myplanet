@@ -19,5 +19,6 @@ data class UploadUpdateContract<T : RealmObject>(
 data class UploadedItemResult(
     val localId: String,
     val remoteId: String,
-    val remoteRev: String
+    val remoteRev: String,
+    val response: com.google.gson.JsonObject
 )
