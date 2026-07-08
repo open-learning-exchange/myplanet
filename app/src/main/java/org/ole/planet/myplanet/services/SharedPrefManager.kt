@@ -133,18 +133,8 @@ class SharedPrefManager @Inject constructor(
     fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
     fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
 
-    fun getNewLoginPassword(): String? {
-        val stored = pref.getString("new_login_password", null)
-        return if (stored.isNullOrEmpty()) {
-            null
-        } else {
-            SecurePrefs.decryptString(context, stored) ?: stored.also { setNewLoginPassword(it) }
-        }
-    }
-    fun setNewLoginPassword(password: String?) = pref.edit {
-        if (password == null) remove("new_login_password")
-        else putString("new_login_password", SecurePrefs.encryptString(context, password))
-    }
+    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
+    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
