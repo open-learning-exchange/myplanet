@@ -209,20 +209,12 @@ class SubmissionViewModelTest {
         }
         advanceUntilIdle()
 
-        // Initial empty state (from stateIn) and then the real emission = 2
-        assertEquals(2, emissions)
+        assertEquals(2, emissions) // Initial empty state + real emission
 
-        // The flow distinct filtering happens at the Repository layer (getSubmissionsFlow).
-        // Since we are mocking SubmissionsRepository in this ViewModel test,
-        // the emissions downstream in UI will just reflect whatever the mock emits.
-        // But since we want to prove equivalent emissions don't trigger duplicates in the UI
-        // let's ensure the ViewModel handles it if distinct is correctly working.
-        // We're essentially just verifying the state flow behavior under updates.
         flowEmitter.value = subListDup
         advanceUntilIdle()
 
-        // As a state flow, duplicate list outputs are skipped if distinctUntilChanged is used,
-        // However, ViewModel StateFlow also inherently skips `.value` updates if structurally equivalent (because of `.equals`).
+        // Equivalent list emission from repository is suppressed downstream
         assertEquals(2, emissions)
 
         job.cancel()

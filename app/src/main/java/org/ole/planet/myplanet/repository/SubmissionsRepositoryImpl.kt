@@ -16,6 +16,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
@@ -67,12 +68,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
-        return queryListFlow(RealmSubmission::class.java,
-            comparator = { old, new ->
-                old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
-            }
-        ) {
+        return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
+        }.distinctUntilChanged { old, new ->
+            // Assuming any meaningful mutation bumps lastUpdateTime.
+            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
     }
 

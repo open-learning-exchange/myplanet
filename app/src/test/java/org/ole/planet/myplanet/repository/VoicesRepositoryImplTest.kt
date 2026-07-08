@@ -15,7 +15,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
-import io.realm.RealmQuery
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -45,7 +44,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](any<Class<*>>(), any<Function2<*, *, Boolean>>(), any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()
@@ -56,7 +55,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getDiscussionsByTeamIdFlow_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](any<Class<*>>(), any<Function2<*, *, Boolean>>(), any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
 
         val flow = repository.getDiscussionsByTeamIdFlow("testTeam")
         val result = flow.toList()
