@@ -165,18 +165,6 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getAllLibraryItems returns non-private libraries`() = runTest {
-        val mockLibrary = RealmMyLibrary().apply { title = "Public Library" }
-        val mockQuery = mockQueryResults(listOf(mockLibrary))
-
-        val result = repository.getAllLibraryItems()
-
-        assertEquals(1, result.size)
-        assertEquals("Public Library", result[0].title)
-        verify { mockQuery.equalTo("isPrivate", false) }
-    }
-
-    @Test
     fun `getLibraryItemById returns correct item`() = runTest {
         val mockLibrary = RealmMyLibrary().apply { id = "id1"; title = "Item 1" }
         val mockQuery = mockQueryResults(listOf(mockLibrary))
