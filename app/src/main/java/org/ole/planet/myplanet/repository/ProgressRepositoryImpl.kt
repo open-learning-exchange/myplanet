@@ -56,23 +56,32 @@ class ProgressRepositoryImpl @Inject constructor(
         val mycourses = coursesRepositoryLazy.get().getMyCourses(userId ?: "")
         val arr = JsonArray()
         val courseIds = mycourses.mapNotNull { it.courseId }
+        val courseIdsArray = courseIds.toTypedArray()
         val courseProgress = getCourseProgress(courseIds, userId)
+
+        val allSubmissions = queryList(RealmSubmission::class.java) {
+            equalTo("userId", userId)
+            equalTo("type", "exam")
+        }
+
+        val allExams = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmStepExam::class.java) {
+            `in`("courseId", courseIdsArray)
+        }
+        val examsByCourseId = allExams.groupBy { it.courseId }
+
         mycourses.forEach { course ->
             val obj = JsonObject()
             obj.addProperty("courseName", course.courseTitle)
             obj.addProperty("courseId", course.courseId)
             obj.add("progress", courseProgress[course.courseId])
+
             val submissions = course.courseId?.let { courseId ->
-                queryList(RealmSubmission::class.java) {
-                    equalTo("userId", userId)
-                    contains("parentId", courseId)
-                    equalTo("type", "exam")
-                }
+                allSubmissions.filter { it.parentId?.contains(courseId) == true }
             }
-            val exams = queryList(RealmStepExam::class.java) {
-                equalTo("courseId", course.courseId)
-            }
+
+            val exams = examsByCourseId[course.courseId] ?: emptyList()
             val examIds: List<String> = exams.mapNotNull { it.id }
+
             if (!submissions.isNullOrEmpty()) {
                 submissionMap(submissions, examIds, obj)
             }
