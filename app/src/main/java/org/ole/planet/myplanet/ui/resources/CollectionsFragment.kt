@@ -11,6 +11,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Locale
 import javax.inject.Inject
 import kotlin.collections.ArrayList
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.launchIn
@@ -59,6 +60,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         setListeners()
     }
 
+    @OptIn(FlowPreview::class)
     private fun setListeners() {
         binding.btnOk.setOnClickListener {
             listener?.onOkClicked(selectedItemsList)

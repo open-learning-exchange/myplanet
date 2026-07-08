@@ -23,6 +23,7 @@ import fisk.chipcloud.ChipDeletedListener
 import java.text.Normalizer
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -251,6 +252,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
+    @OptIn(FlowPreview::class)
     private fun setupSearchTextListener() {
         etSearch.textChanges()
             .debounce(300L)
