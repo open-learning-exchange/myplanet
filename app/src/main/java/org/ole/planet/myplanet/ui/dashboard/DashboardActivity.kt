@@ -259,8 +259,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             binding.myToolbar.updatePadding(top = insets.top)
-            view.updatePadding(left = insets.left, right = insets.right)
-            binding.fragmentContainer.updatePadding(bottom = insets.bottom)
+            view.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
             WindowInsetsCompat.CONSUMED
         }
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
