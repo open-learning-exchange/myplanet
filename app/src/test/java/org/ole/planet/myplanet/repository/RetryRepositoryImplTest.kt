@@ -237,9 +237,8 @@ class RetryRepositoryImplTest {
         val results = mockk<RealmResults<RealmRetryOperation>>()
 
         val operation1 = RealmRetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
-        val operation2 = RealmRetryOperation().apply { attemptCount = 5; maxAttempts = 5 } // should be filtered out
-
-        val list = listOf(operation1, operation2)
+        // The filtering is now handled by Realm's rawPredicate, so mock the filtered result
+        val list = listOf(operation1)
 
         val transactionSlot = slot<(Realm) -> Any>()
         coEvery { databaseService.withRealmAsync<Any>(capture(transactionSlot)) } answers {
@@ -249,10 +248,12 @@ class RetryRepositoryImplTest {
         every { realm.where(RealmRetryOperation::class.java) } returns query
         every { query.equalTo("status", RealmRetryOperation.STATUS_PENDING) } returns query
         every { query.lessThanOrEqualTo("nextRetryTime", any<Long>()) } returns query
+        every { query.rawPredicate("attemptCount < maxAttempts") } returns query
         every { query.findAll() } returns results
         every { results.iterator() } returns list.toMutableList().iterator()
+        every { results.size } returns list.size
         every { realm.copyFromRealm(any<Iterable<RealmRetryOperation>>()) } answers {
-            arg<Iterable<RealmRetryOperation>>(0).toList()
+            list
         }
 
         val pending = repository.getPending()
