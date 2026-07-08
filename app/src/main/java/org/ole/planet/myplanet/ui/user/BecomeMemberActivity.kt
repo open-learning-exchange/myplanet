@@ -241,8 +241,8 @@ class BecomeMemberActivity : BaseActivity() {
         lifecycleScope.launch {
             userRepository.cleanupDuplicateUsers()
 
-            sharedPrefManager.setNewLoginUsername(SecurePrefs.encryptString(this@BecomeMemberActivity, username))
-            sharedPrefManager.setNewLoginPassword(SecurePrefs.encryptString(this@BecomeMemberActivity, password))
+            sharedPrefManager.setNewLoginUsername(username)
+            sharedPrefManager.setNewLoginPassword(password)
 
             val intent = Intent(this@BecomeMemberActivity, LoginActivity::class.java)
 
