@@ -19,10 +19,12 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.databinding.FragmentMySubmissionBinding
 import org.ole.planet.myplanet.services.UserSessionManager
+import kotlinx.coroutines.flow.drop
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
     private var _binding: FragmentMySubmissionBinding? = null
     private val binding get() = _binding!!
@@ -65,6 +67,7 @@ class SubmissionsFragment : Fragment(), CompoundButton.OnCheckedChangeListener {
 
 
         binding.etSearch.textChanges()
+            .drop(1)
             .debounce(300)
             .onEach { text -> viewModel.setFilter(type ?: "", text?.toString() ?: "") }
             .launchIn(viewLifecycleOwner.lifecycleScope)
