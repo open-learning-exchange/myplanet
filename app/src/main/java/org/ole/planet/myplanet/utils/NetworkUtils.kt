@@ -180,7 +180,8 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        return coreEntryPoint.sharedPrefManager().getCustomDeviceName()
+        val spm = coreEntryPoint.sharedPrefManager()
+        return spm.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {
