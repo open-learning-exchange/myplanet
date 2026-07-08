@@ -106,13 +106,13 @@ class CoursesRepositoryImplTest {
         }
 
         every { mockData.iterator() } returns mutableListOf(containsCourse, notMatchCourse, startsWithCourse).iterator()
-        every { mockQuery.contains("courseTitle", "Math", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
         every { mockRealm.copyFromRealm(any<List<RealmMyCourse>>()) } answers { firstArg() }
 
         val result = repository.search("Math")
 
-        verify { mockQuery.contains("courseTitle", "Math", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) }
         assertEquals(2, result.size)
         assertEquals(startsWithCourse, result[0])
         assertEquals(containsCourse, result[1])
@@ -134,15 +134,15 @@ class CoursesRepositoryImplTest {
         }
 
         every { mockData.iterator() } returns mutableListOf(matchCourse, notMatchCourse).iterator()
-        every { mockQuery.contains("courseTitle", "Basic", io.realm.Case.INSENSITIVE) } returns mockQuery
-        every { mockQuery.contains("courseTitle", "Math", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("courseTitleNormal", "basic", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
         every { mockRealm.copyFromRealm(any<List<RealmMyCourse>>()) } answers { firstArg() }
 
         val result = repository.search("Basic Math")
 
-        verify { mockQuery.contains("courseTitle", "Basic", io.realm.Case.INSENSITIVE) }
-        verify { mockQuery.contains("courseTitle", "Math", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("courseTitleNormal", "basic", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) }
         assertEquals(1, result.size)
         assertEquals(matchCourse, result[0])
     }

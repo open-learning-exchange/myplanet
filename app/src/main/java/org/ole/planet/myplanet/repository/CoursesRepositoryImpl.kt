@@ -242,7 +242,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
             queryParts.forEach { part ->
-                queryObj.contains("courseTitle", part, Case.INSENSITIVE)
+                queryObj.contains("courseTitleNormal", normalizeText(part), Case.INSENSITIVE)
             }
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val data = queryObj.findAll()

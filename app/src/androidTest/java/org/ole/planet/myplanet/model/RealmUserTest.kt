@@ -54,7 +54,7 @@ class RealmUserTest {
                 .inMemory()
                 .allowWritesOnUiThread(true)
                 .allowQueriesOnUiThread(true)
-                .schemaVersion(1)
+                .schemaVersion(15)
                 .build()
             Realm.setDefaultConfiguration(realmConfiguration)
             anchorRealm = Realm.getInstance(realmConfiguration)

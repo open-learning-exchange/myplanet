@@ -258,23 +258,23 @@ class ResourcesRepositoryImplTest {
         every { mockQuery.equalTo("isPrivate", false) } returns mockQuery
 
         val startsWithLib = mockk<RealmMyLibrary>(relaxed = true) {
-            every { title } returns "Apple Tree"
+            every { title } returns "Ápple Tree"
         }
         val containsLib = mockk<RealmMyLibrary>(relaxed = true) {
-            every { title } returns "Green Apple"
+            every { title } returns "Green Ápple"
         }
         val notMatchLib = mockk<RealmMyLibrary>(relaxed = true) {
             every { title } returns "Banana"
         }
 
         every { mockData.iterator() } returns mutableListOf(containsLib, notMatchLib, startsWithLib).iterator()
-        every { mockQuery.contains("title", "Apple", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
         every { mockRealm.copyFromRealm(any<List<RealmMyLibrary>>()) } answers { firstArg() }
 
         val result = repository.search("Apple", false, null)
 
-        verify { mockQuery.contains("title", "Apple", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) }
         assertEquals(2, result.size)
         assertEquals(startsWithLib, result[0])
         assertEquals(containsLib, result[1])
@@ -295,15 +295,15 @@ class ResourcesRepositoryImplTest {
         }
 
         every { mockData.iterator() } returns mutableListOf(matchLib, notMatchLib).iterator()
-        every { mockQuery.contains("title", "Apple", io.realm.Case.INSENSITIVE) } returns mockQuery
-        every { mockQuery.contains("title", "Tree", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("titleNormal", "tree", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
         every { mockRealm.copyFromRealm(any<List<RealmMyLibrary>>()) } answers { firstArg() }
 
-        val result = repository.search("Apple Tree", false, null)
+        val result = repository.search("Ápple Tree", false, null)
 
-        verify { mockQuery.contains("title", "Apple", io.realm.Case.INSENSITIVE) }
-        verify { mockQuery.contains("title", "Tree", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("titleNormal", "tree", io.realm.Case.INSENSITIVE) }
         assertEquals(1, result.size)
         assertEquals(matchLib, result[0])
     }

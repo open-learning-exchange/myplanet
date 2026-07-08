@@ -134,5 +134,21 @@ class RealmMigrations : RealmMigration {
                 ?.setNullable("coverFileName", true)
             version++
         }
+
+        if (version == 14L) {
+            schema.get("RealmMyLibrary")
+                ?.addField("titleNormal", String::class.java)
+                ?.addIndex("titleNormal")
+                ?.transform { obj ->
+                    val title = obj.getString("title")
+                    if (title != null) {
+                        val normalized = java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD)
+                            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+                            .lowercase(java.util.Locale.ROOT)
+                        obj.setString("titleNormal", normalized)
+                    }
+                }
+            version++
+        }
     }
 }
