@@ -46,8 +46,6 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    @Inject
-    lateinit var healthRepository: HealthRepository
 
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
