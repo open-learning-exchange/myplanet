@@ -29,6 +29,7 @@ class VoicesRepositoryImplTest {
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository> = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -38,7 +39,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             gson,
-            sharedPrefManager
+            sharedPrefManager,
+            teamsRepositoryLazy
         ), recordPrivateCalls = true)
     }
 
@@ -76,7 +78,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             realGson,
-            sharedPrefManager
+            sharedPrefManager,
+            teamsRepositoryLazy
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
@@ -126,7 +129,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             realGson,
-            sharedPrefManager
+            sharedPrefManager,
+            teamsRepositoryLazy
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
