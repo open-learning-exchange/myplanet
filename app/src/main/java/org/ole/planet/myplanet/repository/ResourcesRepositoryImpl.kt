@@ -677,6 +677,5 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     companion object {
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
     }
 }

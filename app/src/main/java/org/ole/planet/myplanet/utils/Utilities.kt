@@ -87,7 +87,7 @@ object Utilities {
 
     fun normalizeText(str: String): String {
         return Normalizer.normalize(str.lowercase(Locale.ROOT), Normalizer.Form.NFD)
-            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+            .replace(Regex("\\p{Mn}+"), "")
     }
 
     fun getMimeType(url: String?): String? {
