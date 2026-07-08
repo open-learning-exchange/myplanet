@@ -32,18 +32,15 @@ interface SubmissionsRepository {
     ): Boolean
     suspend fun hasPendingOfflineSubmissions(): Boolean
     suspend fun hasPendingExamResults(): Boolean
-    suspend fun createSurveySubmission(examId: String, userId: String?)
     suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>)
     suspend fun saveSubmission(submission: RealmSubmission)
     suspend fun markSubmissionComplete(id: String, payload: JsonObject)
     suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
     fun getNormalizedSubmitterName(submission: RealmSubmission): String?
-    suspend fun getAllPendingSubmissions(): List<RealmSubmission>
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String? = null): List<RealmSubmission>
     suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem>
     suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
-    suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam>
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
     suspend fun hasPendingSurvey(courseId: String, userId: String?): Boolean
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
