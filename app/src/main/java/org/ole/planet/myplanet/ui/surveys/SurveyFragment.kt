@@ -87,6 +87,7 @@ class SurveyFragment : BaseRecyclerFragment<RealmStepExam?>(), OnSurveyAdoptList
         return requireNotNull(adapter) { "SurveysAdapter must be initialized inside mutex" }
     }
 
+    @OptIn(kotlinx.coroutines.FlowPreview::class)
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         realtimeSyncHelper = RealtimeSyncHelper(this, this)
