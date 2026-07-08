@@ -73,25 +73,16 @@ class UploadRepositoryImpl @Inject constructor(
         return failedLocally
     }
 
-    override suspend fun executeUploadRequest(url: String, isPut: Boolean, serializedData: JsonObject): Response<JsonObject> {
-        return if (isPut) {
-            apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
-        } else {
-            apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
-        }
+    override suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+        return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
     }
 
-    override suspend fun handleConflictResolution(url: String): Response<JsonObject> {
+    override suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+        return apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
+    }
+
+    override suspend fun fetchExistingDoc(url: String): Response<JsonObject> {
         return apiInterface.getJsonObject(UrlUtils.header, url)
-    }
-
-    override fun normalizeUploadResult(localId: String, responseBody: JsonObject, idField: String, revField: String): UploadedItem {
-        return UploadedItem(
-            localId = localId,
-            remoteId = JsonUtils.getString(idField, responseBody),
-            remoteRev = JsonUtils.getString(revField, responseBody),
-            response = responseBody
-        )
     }
 
     private class FieldCacheEntry(val field: Field?)

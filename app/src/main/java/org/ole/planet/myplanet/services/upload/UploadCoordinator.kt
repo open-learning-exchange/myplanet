@@ -16,6 +16,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
@@ -161,7 +162,11 @@ class UploadCoordinator @Inject constructor(
                     "${UrlUtils.getUrl()}/${config.endpoint}/${preparedItem.dbId}"
                 }
 
-                val response = uploadRepository.executeUploadRequest(requestUrl, !preparedItem.dbId.isNullOrEmpty(), preparedItem.serialized)
+                val response = if (preparedItem.dbId.isNullOrEmpty()) {
+                    uploadRepository.postUpload(requestUrl, preparedItem.serialized)
+                } else {
+                    uploadRepository.putUpload(requestUrl, preparedItem.serialized)
+                }
 
                 val responseBody = response.body()
                 if (response.isSuccessful && responseBody != null) {
@@ -170,7 +175,7 @@ class UploadCoordinator @Inject constructor(
                         is ResponseHandler.Custom -> config.responseHandler.idField to config.responseHandler.revField
                     }
 
-                    val uploadedItem = uploadRepository.normalizeUploadResult(
+                    val uploadedItem = normalizeUploadResult(
                         preparedItem.localId,
                         responseBody,
                         idField,
@@ -182,10 +187,10 @@ class UploadCoordinator @Inject constructor(
                 } else if (response.code() == 409) {
                     try {
                         val docId = preparedItem.dbId ?: preparedItem.localId
-                        val getResponse = uploadRepository.handleConflictResolution("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
+                        val getResponse = uploadRepository.fetchExistingDoc("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
                         val existingDoc = getResponse.body()
                         if (getResponse.isSuccessful && existingDoc != null) {
-                            val uploadedItem = uploadRepository.normalizeUploadResult(
+                            val uploadedItem = normalizeUploadResult(
                                 preparedItem.localId,
                                 existingDoc,
                                 "_id",
@@ -260,6 +265,15 @@ class UploadCoordinator @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun normalizeUploadResult(localId: String, responseBody: JsonObject, idField: String, revField: String): UploadedItem {
+        return UploadedItem(
+            localId = localId,
+            remoteId = getString(idField, responseBody),
+            remoteRev = getString(revField, responseBody),
+            response = responseBody
+        )
     }
 
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {

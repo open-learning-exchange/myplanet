@@ -10,7 +10,7 @@ import retrofit2.Response
 interface UploadRepository {
     suspend fun <T: RealmObject> queryPending(config: UploadConfig<T>): List<T>
     suspend fun <T: RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem>
-    suspend fun executeUploadRequest(url: String, isPut: Boolean, serializedData: JsonObject): Response<JsonObject>
-    suspend fun handleConflictResolution(url: String): Response<JsonObject>
-    fun normalizeUploadResult(localId: String, responseBody: JsonObject, idField: String, revField: String): UploadedItem
+    suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject>
+    suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject>
+    suspend fun fetchExistingDoc(url: String): Response<JsonObject>
 }

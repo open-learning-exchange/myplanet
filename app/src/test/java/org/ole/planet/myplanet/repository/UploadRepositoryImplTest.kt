@@ -22,6 +22,8 @@ import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadSerializer
 
 import org.ole.planet.myplanet.data.api.ApiInterface
+import io.mockk.mockkStatic
+import org.ole.planet.myplanet.utils.UrlUtils
 
 open class DummyModel : RealmObject()
 
@@ -38,12 +40,20 @@ class UploadRepositoryImplTest {
         databaseService = mockk(relaxed = true)
         apiInterface = mockk(relaxed = true)
         repository = UploadRepositoryImpl(databaseService, apiInterface, testDispatcher)
+
+        val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        every { spm.getUrlUser() } returns "user"
+        every { spm.getUrlPwd() } returns "pass"
+        UrlUtils.init(spm)
+        mockkStatic(android.util.Base64::class)
+        every { android.util.Base64.encodeToString(any(), any()) } returns "encoded_credentials"
     }
 
     @After
     fun tearDown() {
         io.mockk.unmockkAll()
     }
+
 
     @Test
     fun `queryPending returns list from copyFromRealm`() = runTest {
@@ -81,5 +91,65 @@ class UploadRepositoryImplTest {
 
         assertEquals(expectedList, actualList)
         verify(exactly = 1) { realm.copyFromRealm(results) }
+    }
+
+
+    @Test
+    fun `postUpload calls postDoc on ApiInterface`() = runTest {
+        val url = "testUrl"
+        val data = com.google.gson.JsonObject()
+        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
+        val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        every { spm.getUrlUser() } returns "user"
+        every { spm.getUrlPwd() } returns "pass"
+        UrlUtils.init(spm)
+        mockkStatic(android.util.Base64::class)
+        every { android.util.Base64.encodeToString(any(), any()) } returns "encoded_credentials"
+
+        coEvery { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(data)) } returns expectedResponse
+
+        val result = repository.postUpload(url, data)
+
+        assertEquals(expectedResponse, result)
+        io.mockk.coVerify(exactly = 1) { apiInterface.postDoc(any(), eq("application/json"), eq(url), eq(data)) }
+    }
+
+    @Test
+    fun `putUpload calls putDoc on ApiInterface`() = runTest {
+        val url = "testUrl"
+        val data = com.google.gson.JsonObject()
+        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
+        val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        every { spm.getUrlUser() } returns "user"
+        every { spm.getUrlPwd() } returns "pass"
+        UrlUtils.init(spm)
+        mockkStatic(android.util.Base64::class)
+        every { android.util.Base64.encodeToString(any(), any()) } returns "encoded_credentials"
+
+        coEvery { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(data)) } returns expectedResponse
+
+        val result = repository.putUpload(url, data)
+
+        assertEquals(expectedResponse, result)
+        io.mockk.coVerify(exactly = 1) { apiInterface.putDoc(any(), eq("application/json"), eq(url), eq(data)) }
+    }
+
+    @Test
+    fun `fetchExistingDoc calls getJsonObject on ApiInterface`() = runTest {
+        val url = "testUrl"
+        val expectedResponse = mockk<retrofit2.Response<com.google.gson.JsonObject>>()
+        val spm = mockk<org.ole.planet.myplanet.services.SharedPrefManager>(relaxed = true)
+        every { spm.getUrlUser() } returns "user"
+        every { spm.getUrlPwd() } returns "pass"
+        UrlUtils.init(spm)
+        mockkStatic(android.util.Base64::class)
+        every { android.util.Base64.encodeToString(any(), any()) } returns "encoded_credentials"
+
+        coEvery { apiInterface.getJsonObject(any(), eq(url)) } returns expectedResponse
+
+        val result = repository.fetchExistingDoc(url)
+
+        assertEquals(expectedResponse, result)
+        io.mockk.coVerify(exactly = 1) { apiInterface.getJsonObject(any(), eq(url)) }
     }
 }
