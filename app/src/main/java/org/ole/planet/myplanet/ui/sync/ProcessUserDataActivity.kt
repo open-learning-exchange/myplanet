@@ -144,7 +144,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         prefData.setServerPin(password)
         prefData.setUrlScheme(uri.scheme ?: "")
         prefData.setUrlHost(uri.host ?: "")
-        prefData.setUrlPort(if (uri.port == -1) (if (uri.scheme == "http") 80 else 443) else uri.port)
         prefData.setServerUrl(url)
         prefData.setCouchdbUrl(couchdbURL)
         prefData.setUrlUser(urlUser)

@@ -34,19 +34,19 @@ class UserProfileViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<ProfileUpdateState>(ProfileUpdateState.Idle)
     val updateState: StateFlow<ProfileUpdateState> = _updateState.asStateFlow()
 
-    fun loadUserProfile(userId: String?) {
-        if (userId.isNullOrBlank()) return
+    fun loadCurrentUserProfile() {
         viewModelScope.launch(dispatcherProvider.io) {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) return@launch
             _userModel.value = userRepository.getUserByAnyId(userId)
         }
     }
 
-    fun refreshUserProfile(userId: String?) {
-        loadUserProfile(userId)
+    fun refreshCurrentUserProfile() {
+        loadCurrentUserProfile()
     }
 
-    fun updateUserProfile(
-        userId: String?,
+    fun updateCurrentUserProfile(
         firstName: String?,
         lastName: String?,
         middleName: String?,
@@ -57,12 +57,13 @@ class UserProfileViewModel @Inject constructor(
         gender: String?,
         dob: String?,
     ) {
-        if (userId.isNullOrBlank()) {
-            _updateState.value = ProfileUpdateState.Error("Invalid user id")
-            return
-        }
-
         viewModelScope.launch(dispatcherProvider.io) {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) {
+                _updateState.value = ProfileUpdateState.Error("Invalid user id")
+                return@launch
+            }
+
             runCatching {
                 userRepository.updateUserDetails(
                     userId = userId,
@@ -87,13 +88,14 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateProfileImage(userId: String?, imagePath: String?) {
-        if (userId.isNullOrBlank()) {
-            _updateState.value = ProfileUpdateState.Error("Invalid user id")
-            return
-        }
-
+    fun updateCurrentUserProfileImage(imagePath: String?) {
         viewModelScope.launch(dispatcherProvider.io) {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) {
+                _updateState.value = ProfileUpdateState.Error("Invalid user id")
+                return@launch
+            }
+
             runCatching { userRepository.updateUserImage(userId, imagePath) }
                 .onSuccess { updatedUser ->
                     updatedUser?.let { _userModel.value = it }
