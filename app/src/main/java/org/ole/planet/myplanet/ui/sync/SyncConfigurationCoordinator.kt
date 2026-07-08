@@ -3,9 +3,11 @@ package org.ole.planet.myplanet.ui.sync
 import com.afollestad.materialdialogs.MaterialDialog
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 enum class CallerContext {
@@ -18,7 +20,8 @@ enum class CallerContext {
 class SyncConfigurationCoordinator(
     private val configurationsRepository: ConfigurationsRepository,
     private val prefData: SharedPrefManager,
-    private val callback: Callback
+    private val callback: Callback,
+    private val dispatcherProvider: DispatcherProvider
 ) {
 
     interface Callback {
@@ -41,9 +44,11 @@ class SyncConfigurationCoordinator(
         currentDialog: MaterialDialog?,
         serverDialogBinding: DialogServerUrlBinding?
     ) {
-        scope.launch {
+        scope.launch(dispatcherProvider.main) {
             callback.showProgressDialog()
-            val result = configurationsRepository.getMinApk(url, pin)
+            val result = withContext(dispatcherProvider.io) {
+                configurationsRepository.getMinApk(url, pin)
+            }
             callback.dismissProgressDialog()
             when (result) {
                 is ConfigurationsRepository.ConfigurationResult.Success -> {

@@ -230,7 +230,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 override fun onClearDataDialog() {
                     clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false)
                 }
-            }
+            },
+            dispatcherProvider
         )
     }
 
