@@ -84,7 +84,7 @@ class SubmissionsRepositoryImplTest {
     fun `getPendingSurveysFlow queries correctly`() = runTest {
         val mockList = listOf(mockk<RealmSubmission>())
         coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
+            repository["queryListFlow"](any<Class<*>>(), any<Function2<*, *, Boolean>>(), any<Function1<*, *>>())
         } returns kotlinx.coroutines.flow.flowOf(mockList)
 
         val result = repository.getPendingSurveysFlow("user_123").first()
@@ -95,7 +95,7 @@ class SubmissionsRepositoryImplTest {
     fun `getSubmissionsFlow queries correctly`() = runTest {
         val mockList = listOf(mockk<RealmSubmission>())
         coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
+            repository["queryListFlow"](any<Class<*>>(), any<Function2<*, *, Boolean>>(), any<Function1<*, *>>())
         } returns kotlinx.coroutines.flow.flowOf(mockList)
 
         val result = repository.getSubmissionsFlow("user_123").first()

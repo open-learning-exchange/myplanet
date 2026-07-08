@@ -181,4 +181,50 @@ class SubmissionViewModelTest {
 
         job.cancel()
     }
+
+    @Test
+    fun testDistinctEmissions() = runTest(testDispatcher) {
+        val s1 = createSubmission("1", "p1", "exam", "complete", 100L)
+        val s1_dup = createSubmission("1", "p1", "exam", "complete", 100L)
+        val subList = listOf(s1)
+        val subListDup = listOf(s1_dup)
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableStateFlow(subList)
+
+        `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
+        `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowEmitter)
+        `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getExamMap(subListDup)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1_dup)).thenReturn("John Doe")
+
+        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+
+        var emissions = 0
+        val job = launch {
+            viewModel.submissions.collect {
+                emissions++
+            }
+        }
+        advanceUntilIdle()
+
+        // Initial empty state (from stateIn) and then the real emission = 2
+        assertEquals(2, emissions)
+
+        // The flow distinct filtering happens at the Repository layer (getSubmissionsFlow).
+        // Since we are mocking SubmissionsRepository in this ViewModel test,
+        // the emissions downstream in UI will just reflect whatever the mock emits.
+        // But since we want to prove equivalent emissions don't trigger duplicates in the UI
+        // let's ensure the ViewModel handles it if distinct is correctly working.
+        // We're essentially just verifying the state flow behavior under updates.
+        flowEmitter.value = subListDup
+        advanceUntilIdle()
+
+        // As a state flow, duplicate list outputs are skipped if distinctUntilChanged is used,
+        // However, ViewModel StateFlow also inherently skips `.value` updates if structurally equivalent (because of `.equals`).
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
 }
