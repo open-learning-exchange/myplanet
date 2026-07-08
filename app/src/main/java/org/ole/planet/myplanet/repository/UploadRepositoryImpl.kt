@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonObject
+import retrofit2.Response
 import io.realm.RealmObject
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
@@ -8,13 +10,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadedItem
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    private val apiInterface: ApiInterface,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
@@ -65,6 +71,27 @@ class UploadRepositoryImpl @Inject constructor(
             }
         }
         return failedLocally
+    }
+
+    override suspend fun executeUploadRequest(url: String, isPut: Boolean, serializedData: JsonObject): Response<JsonObject> {
+        return if (isPut) {
+            apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
+        } else {
+            apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
+        }
+    }
+
+    override suspend fun handleConflictResolution(url: String): Response<JsonObject> {
+        return apiInterface.getJsonObject(UrlUtils.header, url)
+    }
+
+    override fun normalizeUploadResult(localId: String, responseBody: JsonObject, idField: String, revField: String): UploadedItem {
+        return UploadedItem(
+            localId = localId,
+            remoteId = JsonUtils.getString(idField, responseBody),
+            remoteRev = JsonUtils.getString(revField, responseBody),
+            response = responseBody
+        )
     }
 
     private class FieldCacheEntry(val field: Field?)

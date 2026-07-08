@@ -21,19 +21,23 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadSerializer
 
+import org.ole.planet.myplanet.data.api.ApiInterface
+
 open class DummyModel : RealmObject()
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadRepositoryImplTest {
 
     private lateinit var databaseService: DatabaseService
+    private lateinit var apiInterface: ApiInterface
     private lateinit var repository: UploadRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         databaseService = mockk(relaxed = true)
-        repository = UploadRepositoryImpl(databaseService, testDispatcher)
+        apiInterface = mockk(relaxed = true)
+        repository = UploadRepositoryImpl(databaseService, apiInterface, testDispatcher)
     }
 
     @After
