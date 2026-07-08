@@ -477,12 +477,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo> {
         if (requestIds.isEmpty()) return emptyList()
         val requests = queryList(RealmMyTeam::class.java) {
-            beginGroup()
-            requestIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("_id", id)
-            }
-            endGroup()
+            `in`("_id", requestIds.toTypedArray())
         }
         return requests.map {
             JoinRequestInfo(
@@ -501,12 +496,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         val teams = queryList(RealmMyTeam::class.java) {
-            beginGroup()
-            ids.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("_id", id)
-            }
-            endGroup()
+            `in`("_id", ids.toTypedArray())
         }
         return teams.associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
     }
@@ -1328,7 +1318,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.associateBy { it.name }
 
                 for (admin in validAdmins) {
-                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name.orEmpty())
+                    val adminFromRealm = adminFromRealmMap[admin.name]
                     if (adminFromRealm != null) {
                         members.add(adminFromRealm)
                     } else {
