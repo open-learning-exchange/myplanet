@@ -105,6 +105,37 @@
                     android:layout_gravity="center"
                     android:orientation="horizontal" />
             </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/ll_learning_summary"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/tv_day_streak"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="8dp"
+                    android:padding="2dp"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/tv_course_summary"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:contentDescription="@string/my_courses"
+                    android:padding="2dp"
+                    android:textColor="@color/daynight_textColor"
+                    android:textSize="14sp"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </androidx.cardview.widget.CardView>

@@ -1338,4 +1338,16 @@
         <item>Terminé</item>
     </string-array>
 
+    <plurals name="day_streak">
+        <item quantity="one">🔥 Série de %d jour</item>
+        <item quantity="other">🔥 Série de %d jours</item>
+    </plurals>
+    <plurals name="courses_in_progress">
+        <item quantity="one">%d cours en cours</item>
+        <item quantity="other">%d cours en cours</item>
+    </plurals>
+    <plurals name="courses_completed_count">
+        <item quantity="one">%d terminé</item>
+        <item quantity="other">%d terminés</item>
+    </plurals>
 </resources>

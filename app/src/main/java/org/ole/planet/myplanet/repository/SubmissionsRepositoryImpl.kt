@@ -22,8 +22,10 @@ import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.QuestionAnswer
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmSubmitPhotos
@@ -778,9 +780,30 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             updateMembership(mRealm, sub, submission)
             updateUserId(sub, submission)
             updateAnswers(mRealm, sub, submission, skipOverwrite)
+            updateCourseProgressIfGraded(mRealm, sub)
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    // A graded exam submission is the only signal that an exam step is passed;
+    // without this, courses with tests taken on the device can never complete
+    // unless the server also rewrites the courses_progress doc.
+    private fun updateCourseProgressIfGraded(mRealm: io.realm.Realm, sub: RealmSubmission?) {
+        if (sub?.type != "exam" || sub.status != "graded") return
+        val userId = sub.userId ?: return
+        val examId = sub.parentId?.substringBefore("@") ?: return
+        val exam = mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst() ?: return
+        val courseId = exam.courseId ?: return
+        val course = mRealm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst() ?: return
+        val stepNum = (course.courseSteps?.indexOfFirst { it.id == exam.stepId } ?: -1) + 1
+        if (stepNum <= 0) return
+        mRealm.where(RealmCourseProgress::class.java)
+            .equalTo("courseId", courseId)
+            .equalTo("userId", userId)
+            .equalTo("stepNum", stepNum)
+            .findFirst()
+            ?.passed = true
     }
 
     private fun updateBasicFields(

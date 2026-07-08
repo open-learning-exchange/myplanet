@@ -1334,4 +1334,16 @@
         <item>पूरा भएको</item>
     </string-array>
 
+    <plurals name="day_streak">
+        <item quantity="one">🔥 लगातार %d दिन</item>
+        <item quantity="other">🔥 लगातार %d दिन</item>
+    </plurals>
+    <plurals name="courses_in_progress">
+        <item quantity="one">%d पाठ्यक्रम प्रगतिमा छ</item>
+        <item quantity="other">%d पाठ्यक्रम प्रगतिमा छन्</item>
+    </plurals>
+    <plurals name="courses_completed_count">
+        <item quantity="one">%d पूरा भयो</item>
+        <item quantity="other">%d पूरा भए</item>
+    </plurals>
 </resources>

@@ -1334,4 +1334,16 @@
         <item>Dhammaystiran</item>
     </string-array>
 
+    <plurals name="day_streak">
+        <item quantity="one">🔥 %d maalin oo isku xigta</item>
+        <item quantity="other">🔥 %d maalmood oo isku xigta</item>
+    </plurals>
+    <plurals name="courses_in_progress">
+        <item quantity="one">%d koorso oo socota</item>
+        <item quantity="other">%d koorsooyin oo socda</item>
+    </plurals>
+    <plurals name="courses_completed_count">
+        <item quantity="one">%d la dhammeeyey</item>
+        <item quantity="other">%d la dhammeeyey</item>
+    </plurals>
 </resources>

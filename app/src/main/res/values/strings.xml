@@ -1333,5 +1333,17 @@
         <item>In Progress</item>
         <item>Completed</item>
     </string-array>
+    <plurals name="day_streak">
+        <item quantity="one">🔥 %d-day streak</item>
+        <item quantity="other">🔥 %d-day streak</item>
+    </plurals>
+    <plurals name="courses_in_progress">
+        <item quantity="one">%d course in progress</item>
+        <item quantity="other">%d courses in progress</item>
+    </plurals>
+    <plurals name="courses_completed_count">
+        <item quantity="one">%d completed</item>
+        <item quantity="other">%d completed</item>
+    </plurals>
 
 </resources>

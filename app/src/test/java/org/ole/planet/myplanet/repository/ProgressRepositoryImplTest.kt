@@ -258,6 +258,36 @@ class ProgressRepositoryImplTest {
     }
 
     @Test
+    fun testGetCourseProgressCompletedRequiresPassedSteps() = testScope.runTest {
+        val courseIds = listOf("visited", "passed")
+        val steps = listOf(
+            RealmCourseStep().apply { courseId = "visited" },
+            RealmCourseStep().apply { courseId = "passed" }
+        )
+        val progresses = listOf(
+            RealmCourseProgress().apply { courseId = "visited"; stepNum = 1; passed = false },
+            RealmCourseProgress().apply { courseId = "passed"; stepNum = 1; passed = true }
+        )
+
+        coEvery {
+            repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
+        } returns steps
+        coEvery {
+            repository invoke "queryList" withArguments listOf(RealmCourseProgress::class.java, any<Function1<RealmQuery<RealmCourseProgress>, Unit>>())
+        } returns progresses
+
+        val result = repository.getCourseProgress(courseIds, "user1")
+        advanceUntilIdle()
+
+        // Both courses have every step visited (current == max)…
+        assertEquals(1, result["visited"]?.get("current")?.asInt)
+        assertEquals(1, result["passed"]?.get("current")?.asInt)
+        // …but only the one whose steps were all passed counts as completed.
+        assertEquals(false, result["visited"]?.get("completed")?.asBoolean)
+        assertEquals(true, result["passed"]?.get("completed")?.asBoolean)
+    }
+
+    @Test
     fun testGetProgressRecords() = testScope.runTest {
         val progresses = listOf(
             RealmCourseProgress().apply { userId = "user1"; courseId = "course1" },

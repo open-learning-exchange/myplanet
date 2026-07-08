@@ -522,10 +522,10 @@ class CoursesAdapter(
             }
             val badge = rowCourseBinding.statusBadge
             val current = getInt("current", progress)
-            val max = getInt("max", progress)
+            val completed = progress?.get("completed")?.asBoolean == true
             val (statusText, statusColor) = when {
                 progress == null -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
-                current >= max   -> Pair(context.getString(R.string.status_completed),   R.color.status_completed)
+                completed        -> Pair(context.getString(R.string.status_completed),   R.color.status_completed)
                 current > 0      -> Pair(context.getString(R.string.status_in_progress), R.color.status_in_progress)
                 else             -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
             }

@@ -75,13 +75,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         setupNetworkStatusMonitoring()
         (activity as DashboardActivity?)?.supportActionBar?.hide()
         observeCompletedCourses()
+        observeLearningSummary()
         observeSurveyReminders()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
             user = profileDbHandler.getUserModel()
             binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
-                viewModel.loadCompletedCourses(it)
+                viewModel.loadLearningSummary(it, user?.name)
             }
             if (wasUserNull && (user?.id?.startsWith("guest") != true) && !DashboardActivity.isFromNotificationAction) {
                 checkPendingSurveys()
@@ -317,6 +318,34 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
+
+    private fun observeLearningSummary() {
+        binding.cardProfileBell.tvCourseSummary.setOnClickListener {
+            homeItemClickListener?.openMyFragment(CoursesFragment())
+        }
+        collectLatestWhenStarted(viewModel.learningSummary) { summary ->
+            if (summary == null) return@collectLatestWhenStarted
+            val streakVisible = summary.streakDays > 0
+            if (streakVisible) {
+                binding.cardProfileBell.tvDayStreak.text =
+                    resources.getQuantityString(R.plurals.day_streak, summary.streakDays, summary.streakDays)
+            }
+            binding.cardProfileBell.tvDayStreak.visibility = if (streakVisible) View.VISIBLE else View.GONE
+
+            val parts = mutableListOf<String>()
+            if (summary.inProgressCourses > 0) {
+                parts += resources.getQuantityString(R.plurals.courses_in_progress, summary.inProgressCourses, summary.inProgressCourses)
+            }
+            if (summary.completedCourses > 0) {
+                parts += resources.getQuantityString(R.plurals.courses_completed_count, summary.completedCourses, summary.completedCourses)
+            }
+            binding.cardProfileBell.tvCourseSummary.text = parts.joinToString(" · ")
+            binding.cardProfileBell.tvCourseSummary.visibility = if (parts.isNotEmpty()) View.VISIBLE else View.GONE
+
+            binding.cardProfileBell.llLearningSummary.visibility =
+                if (streakVisible || parts.isNotEmpty()) View.VISIBLE else View.GONE
+        }
+    }
 
     private fun showBadges(completedCourses: List<CourseCompletion>) {
         binding.cardProfileBell.llBadges.removeAllViews()

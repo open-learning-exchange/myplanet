@@ -341,7 +341,7 @@ class DashboardViewModel @Inject constructor(
         return if (progress != null) {
             val max = JsonUtils.getInt("max", progress)
             val current = JsonUtils.getInt("current", progress)
-            if (current == max) {
+            if (JsonUtils.getBoolean("completed", progress)) {
                 application.getString(org.ole.planet.myplanet.R.string.course_completed, courseName)
             } else {
                 application.getString(org.ole.planet.myplanet.R.string.course_in_progress, courseName, current, max)
