@@ -1209,7 +1209,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getSavedUsers(): List<User> = sharedPrefManager.getSavedUsers()
 
-    override suspend fun saveSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?) {
+    override suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?) {
         val existingUsers: MutableList<User> = ArrayList(sharedPrefManager.getSavedUsers())
         if (source == "guest") {
             val newUser = User("", name, encryptedPassword, "", "guest")

@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.model.User
 
 interface UserRepository {
     suspend fun getSavedUsers(): List<User>
-    suspend fun saveSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
+    suspend fun upsertSavedUser(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?)
     suspend fun resetGuestAsMember(username: String?)
     suspend fun getHealthProfile(userId: String): RealmMyHealth?
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)

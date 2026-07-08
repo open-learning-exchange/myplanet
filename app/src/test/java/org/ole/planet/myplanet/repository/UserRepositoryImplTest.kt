@@ -199,12 +199,12 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `saveSavedUser adds a new guest`() = runTest {
+    fun `upsertSavedUser adds a new guest`() = runTest {
         every { sharedPrefManager.getSavedUsers() } returns emptyList()
         val savedSlot = slot<List<User>>()
         every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
 
-        repository.saveSavedUser("guest1", "encrypted", "guest", null, null)
+        repository.upsertSavedUser("guest1", "encrypted", "guest", null, null)
 
         assertEquals(1, savedSlot.captured.size)
         assertEquals("guest1", savedSlot.captured[0].name)
@@ -212,26 +212,26 @@ class UserRepositoryImplTest {
     }
 
     @Test
-    fun `saveSavedUser replaces existing guest with the same name`() = runTest {
+    fun `upsertSavedUser replaces existing guest with the same name`() = runTest {
         val existing = User("", "guest1", "oldPwd", "", "guest")
         every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
         val savedSlot = slot<List<User>>()
         every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
 
-        repository.saveSavedUser("guest1", "newPwd", "guest", null, null)
+        repository.upsertSavedUser("guest1", "newPwd", "guest", null, null)
 
         assertEquals(1, savedSlot.captured.size)
         assertEquals("newPwd", savedSlot.captured[0].password)
     }
 
     @Test
-    fun `saveSavedUser replaces existing member with the same username`() = runTest {
+    fun `upsertSavedUser replaces existing member with the same username`() = runTest {
         val existing = User("user1", "Full Name", "oldPwd", "old.jpg", "member")
         every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
         val savedSlot = slot<List<User>>()
         every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
 
-        repository.saveSavedUser("Full Name", "newPwd", "member", "new.jpg", "user1")
+        repository.upsertSavedUser("Full Name", "newPwd", "member", "new.jpg", "user1")
 
         assertEquals(1, savedSlot.captured.size)
         assertEquals("newPwd", savedSlot.captured[0].password)
@@ -255,6 +255,15 @@ class UserRepositoryImplTest {
     fun `resetGuestAsMember does nothing when the username is not saved`() = runTest {
         every { sharedPrefManager.getSavedUsers() } returns listOf(User("Full Name", "user2", "pwd", "", "member"))
         repository.resetGuestAsMember("guest1")
+        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
+    }
+
+    @Test
+    fun `upsertSavedUser ignores unknown sources`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns emptyList()
+
+        repository.upsertSavedUser("someone", "pwd", "unknown", null, null)
+
         verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
     }
 }

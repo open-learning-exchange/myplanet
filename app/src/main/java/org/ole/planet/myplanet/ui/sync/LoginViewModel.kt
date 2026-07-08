@@ -65,7 +65,7 @@ class LoginViewModel @Inject constructor(
 
     fun saveUsers(name: String?, encryptedPassword: String?, source: String, userProfile: String?, userName: String?) {
         viewModelScope.launch(dispatcherProvider.io) {
-            userRepository.saveSavedUser(name, encryptedPassword, source, userProfile, userName)
+            userRepository.upsertSavedUser(name, encryptedPassword, source, userProfile, userName)
             loadSavedUsers()
         }
     }
