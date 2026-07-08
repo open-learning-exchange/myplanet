@@ -16,8 +16,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
@@ -39,9 +40,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
-import kotlinx.coroutines.FlowPreview
-
-@OptIn(FlowPreview::class)
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     private lateinit var adapterCourses: CoursesAdapter
@@ -186,15 +184,16 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         )
         filterController.setup()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            filterController.filterState
-                .debounce(300)
-                .collect { state ->
-                    viewModel.filterCourses(
-                        isMyCourseLib, model?.id, state.searchText, state.grade,
-                        state.subject, state.tagNames, state.progressFilter
-                    )
-                }
+        var lastState: FilterState? = null
+        collectLatestWhenStarted(filterController.filterState.drop(1)) { state ->
+            if (lastState != null && state.searchText != lastState?.searchText && state.copy(searchText = "") == lastState?.copy(searchText = "")) {
+                delay(300)
+            }
+            lastState = state
+            viewModel.filterCourses(
+                isMyCourseLib, model?.id, state.searchText, state.grade,
+                state.subject, state.tagNames, state.progressFilter
+            )
         }
 
         selectionController = CourseSelectionController(

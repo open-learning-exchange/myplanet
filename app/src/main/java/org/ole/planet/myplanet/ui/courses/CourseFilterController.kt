@@ -159,6 +159,5 @@ class CourseFilterController(
     fun detach() {
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
-
     }
 }
