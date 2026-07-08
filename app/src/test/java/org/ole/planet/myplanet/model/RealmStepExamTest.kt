@@ -205,17 +205,4 @@ class RealmStepExamTest {
         assertEquals("team1", json.get("teamId").asString)
         assertTrue(json.has("questions"))
     }
-
-    @Test
-    fun testGetIds() {
-        val exam1 = RealmStepExam().apply { id = "exam1"; courseId = "course1"; type = "exam" }
-        val exam2 = RealmStepExam().apply { id = "survey1"; type = "survey" }
-
-        val ids = RealmStepExam.getIds(listOf(exam1, exam2))
-
-        assertEquals(2, ids.size)
-        assertEquals("exam1@course1", ids[0])
-        assertEquals("survey1", ids[1])
-    }
-
 }

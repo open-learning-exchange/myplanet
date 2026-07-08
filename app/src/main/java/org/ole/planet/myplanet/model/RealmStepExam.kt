@@ -120,18 +120,5 @@ open class RealmStepExam : RealmObject() {
             `object`.add("questions", RealmExamQuestion.serializeQuestions(questions))
             return `object`
         }
-
-        fun getIds(list: List<RealmStepExam>): Array<String?> {
-            val ids = arrayOfNulls<String>(list.size)
-            for ((i, e) in list.withIndex()) {
-                if (e.type?.startsWith("survey") == true) {
-                    ids[i] = e.id
-                } else {
-                    ids[i] = e.id + "@" + e.courseId
-                }
-            }
-            return ids
-        }
-
     }
 }
