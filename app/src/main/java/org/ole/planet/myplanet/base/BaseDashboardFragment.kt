@@ -118,17 +118,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         dpd.show()
     }
 
-    fun downloadDictionary() {
-        val list = ArrayList<String>()
-        list.add(Constants.DICTIONARY_URL)
-        if (!FileUtils.checkFileExist(requireContext(), Constants.DICTIONARY_URL)) {
-            Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
-            DownloadUtils.openDownloadService(activity, list, false)
-        } else {
-            Utilities.toast(activity, getString(R.string.file_already_exists))
-        }
-    }
-
     private fun observeUiState() {
         viewLifecycleOwner.lifecycleScope.launch {
             launch {
