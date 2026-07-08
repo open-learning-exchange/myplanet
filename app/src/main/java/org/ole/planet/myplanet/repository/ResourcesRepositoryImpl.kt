@@ -211,6 +211,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = RealmMyLibrary().apply {
             this.id = id
             this.title = title
+            this.titleNormal = normalizeText(title)
             this.addedBy = request.addedBy
             this.author = request.author
             this.resourceId = id
