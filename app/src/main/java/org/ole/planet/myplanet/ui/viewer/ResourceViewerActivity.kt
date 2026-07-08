@@ -28,6 +28,21 @@ class ResourceViewerActivity : AppCompatActivity() {
             val isFullPath = intent.getBooleanExtra("isFullPath", false)
             val auth = intent.getStringExtra("Auth") ?: ""
 
+            if (!isOnline && filePath != null) {
+                try {
+                    val file = if (isFullPath) java.io.File(filePath) else java.io.File(getExternalFilesDir(null), "ole/$filePath")
+                    val canonicalPath = file.canonicalPath
+                    val appDataDir = java.io.File(applicationInfo.dataDir).canonicalPath
+                    if (canonicalPath.startsWith(appDataDir)) {
+                        finish()
+                        return
+                    }
+                } catch (e: Exception) {
+                    finish()
+                    return
+                }
+            }
+
             val typeString = intent.getStringExtra("resourceType") ?: ResourceViewerFragment.ResourceType.UNKNOWN.name
             val type = ResourceViewerFragment.ResourceType.valueOf(typeString)
 
