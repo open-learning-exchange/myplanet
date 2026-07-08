@@ -55,8 +55,8 @@ class VoicesRepositoryImplTest {
         val result = flow.toList()
 
         assertNotNull(result)
-        io.mockk.verify { dispatcherProvider.default }
-    }
+        io.mockk.verify { dispatcherProvider.default
+
 
     @Test
     fun getDiscussionsByTeamIdFlow_uses_dispatcherProvider_default() = testScope.runTest {
@@ -87,20 +87,20 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Any>()
             block(mockRealm)
-        }
+
 
         val news1 = RealmNews().apply {
             viewableBy = "community"
             viewIn = null
-        }
+
         val news2 = RealmNews().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"user1\"}]"
-        }
+
         val news3 = RealmNews().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"user2\"}]"
-        }
+
 
         every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
         every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
@@ -118,7 +118,7 @@ class VoicesRepositoryImplTest {
         org.junit.Assert.assertEquals(2, result.size)
         org.junit.Assert.assertEquals("community", result[0].viewableBy)
         org.junit.Assert.assertEquals("[{\"_id\":\"user1\"}]", result[1].viewIn)
-    }
+
 
     @Test
     fun `getNewsByTeamId filters correctly based on viewableBy and viewIn`() = testScope.runTest {
@@ -137,20 +137,20 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Any>()
             block(mockRealm)
-        }
+
 
         val news1 = RealmNews().apply {
             viewableBy = "teams"
             viewableId = "team1"
-        }
+
         val news2 = RealmNews().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team1\"}]"
-        }
+
         val news3 = RealmNews().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team2\"}]"
-        }
+
 
         every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
         every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
@@ -171,7 +171,7 @@ class VoicesRepositoryImplTest {
         org.junit.Assert.assertEquals(2, result.size)
         org.junit.Assert.assertEquals("teams", result[0].viewableBy)
         org.junit.Assert.assertEquals("[{\"_id\":\"team1\"}]", result[1].viewIn)
-    }
+
 
     @Test
     fun `getFilteredNews executes correct Realm query`() = testScope.runTest {
@@ -202,13 +202,13 @@ class VoicesRepositoryImplTest {
         val result = repository.getFilteredNews("team1")
 
         org.junit.Assert.assertEquals(1, result.size)
-        io.mockk.verify(exactly = 1) { mockRealmQuery.beginGroup() }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE) }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE) }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.endGroup() }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.or() }
-        io.mockk.verify(exactly = 1) { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE) }
-    }
+        io.mockk.verify(exactly = 1) { mockRealmQuery.beginGroup()
+        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableBy", "teams", io.realm.Case.INSENSITIVE)
+        io.mockk.verify(exactly = 1) { mockRealmQuery.equalTo("viewableId", "team1", io.realm.Case.INSENSITIVE)
+        io.mockk.verify(exactly = 1) { mockRealmQuery.endGroup()
+        io.mockk.verify(exactly = 1) { mockRealmQuery.or()
+        io.mockk.verify(exactly = 1) { mockRealmQuery.contains("viewIn", "\"_id\":\"team1\"", io.realm.Case.INSENSITIVE)
+
 
     @Test
     fun `deleteNews recursively deletes replies`() = testScope.runTest {
@@ -244,18 +244,18 @@ class VoicesRepositoryImplTest {
         every { mockQueryTarget.equalTo("replyTo", "reply2_id") } returns mockk(relaxed = true) {
             every { findAll() } returns mockk(relaxed = true) {
                 every { iterator() } returns mutableListOf<RealmNews>().iterator()
-            }
-        }
+
+
 
         every { mockQueryTarget.equalTo("id", "newsId") } returns mockQueryTarget
         every { mockQueryTarget.findAll() } returns realmResultsTarget
 
         repository.deleteNews("newsId")
 
-        io.mockk.verify(exactly = 1) { reply2.deleteFromRealm() }
-        io.mockk.verify(exactly = 1) { reply1.deleteFromRealm() }
-        io.mockk.verify(exactly = 1) { realmResultsTarget.deleteAllFromRealm() }
-    }
+        io.mockk.verify(exactly = 1) { reply2.deleteFromRealm()
+        io.mockk.verify(exactly = 1) { reply1.deleteFromRealm()
+        io.mockk.verify(exactly = 1) { realmResultsTarget.deleteAllFromRealm()
+
 
     @Test
     fun `addLabel modifies realm object correctly`() = testScope.runTest {
@@ -276,8 +276,8 @@ class VoicesRepositoryImplTest {
 
         repository.addLabel("newsId", "testLabel")
 
-        io.mockk.verify(exactly = 1) { mockLabels.add("testLabel") }
-    }
+        io.mockk.verify(exactly = 1) { mockLabels.add("testLabel")
+
 
     @Test
     fun `removeLabel modifies realm object correctly`() = testScope.runTest {
@@ -298,8 +298,8 @@ class VoicesRepositoryImplTest {
 
         repository.removeLabel("newsId", "testLabel")
 
-        io.mockk.verify(exactly = 1) { mockLabels.remove("testLabel") }
-    }
+        io.mockk.verify(exactly = 1) { mockLabels.remove("testLabel")
+
 
     @Test
     fun `getUserById returns correct user`() = testScope.runTest {
@@ -310,7 +310,7 @@ class VoicesRepositoryImplTest {
         coEvery { databaseService.executeTransactionAsync(any()) } answers {
             val block = firstArg<(io.realm.Realm) -> Unit>()
             block(mockRealm)
-        }
+
         coEvery { databaseService.realmInstance } returns mockRealm
 
         every { mockUser.id } returns testUserId
@@ -320,5 +320,3 @@ class VoicesRepositoryImplTest {
         val user = repository.getUserById(testUserId)
 
         assertEquals(testUserId, user?.id)
-    }
-}
