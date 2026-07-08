@@ -17,7 +17,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -185,7 +184,17 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         filterController.setup()
 
         var lastState: FilterState? = null
-        collectLatestWhenStarted(filterController.filterState.drop(1)) { state ->
+        var isFirstEmission = true
+        collectLatestWhenStarted(filterController.filterState) { state ->
+            if (isFirstEmission) {
+                isFirstEmission = false
+                if (!state.isActive) {
+                    lastState = state
+                    return@collectLatestWhenStarted
+                }
+            }
+            if (state == lastState) return@collectLatestWhenStarted
+
             if (lastState != null && state.searchText != lastState?.searchText && state.copy(searchText = "") == lastState?.copy(searchText = "")) {
                 delay(300)
             }
