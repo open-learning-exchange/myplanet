@@ -21,7 +21,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
@@ -47,12 +46,6 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java)
-    }
-
-    override suspend fun getAllLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java, ensureLatest = true) {
-            equalTo("isPrivate", false)
-        }
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
@@ -156,16 +149,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary> {
-        if (stepId == null) return emptyList()
-
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("stepId", stepId)
-            equalTo("resourceOffline", resourceOffline)
-            isNotNull("resourceLocalAddress")
-        }
-    }
-
     override suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary> {
         if (stepId == null) return emptyList()
 
@@ -190,7 +173,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         } > 0
     }
 
-    override suspend fun saveLibraryItem(item: RealmMyLibrary) {
+    private suspend fun saveLibraryItem(item: RealmMyLibrary) {
         save(item)
     }
 
@@ -287,7 +270,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
+    private suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
         executeTransaction { realm ->
             val results = realm.where(RealmMyLibrary::class.java)
                 .equalTo("resourceLocalAddress", localAddress)
@@ -316,14 +299,6 @@ class ResourcesRepositoryImpl @Inject constructor(
             equalTo("userId", userId)
                 .equalTo("resourceOffline", false)
                 .isNotNull("resourceLocalAddress")
-        }
-    }
-
-    override suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", true)
-                .greaterThan("createdDate", timestamp)
-                .equalTo("mediaType", "image")
         }
     }
 
@@ -458,32 +433,6 @@ class ResourcesRepositoryImpl @Inject constructor(
         return filterLibrariesNeedingUpdate(results)
     }
 
-    override suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary> {
-        val teamIds = queryList(RealmMyTeam::class.java) {
-            equalTo("userId", userId)
-            equalTo("docType", "membership")
-        }.mapNotNull { it.teamId }
-
-        val resourceIdsFromTeams = if (teamIds.isNotEmpty()) {
-            queryList(RealmMyTeam::class.java) {
-                `in`("teamId", teamIds.toTypedArray())
-                equalTo("docType", "resourceLink")
-            }.mapNotNull { it.resourceId }
-        } else {
-            emptyList()
-        }
-
-        return queryList(RealmMyLibrary::class.java) {
-            beginGroup()
-            equalTo("userId", userId)
-            if (resourceIdsFromTeams.isNotEmpty()) {
-                or()
-                `in`("resourceId", resourceIdsFromTeams.toTypedArray())
-            }
-            endGroup()
-        }
-    }
-
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
         val validCurrentIds = currentIds.filterNotNull().toSet()
         executeTransaction { realm ->
@@ -606,15 +555,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getResourceRatings(resourceId: String): JsonObject? {
-        return ratingsRepository.getRatingsById("resource", resourceId, null)
-    }
-
-    override suspend fun getResourceTags(resourceId: String): List<RealmTag> {
-        return tagsRepository.getTagsForResource(resourceId)
-    }
-
-    override suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
+    private suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
         val allRatings = ratingsRepository.getResourceRatings(userId)
         val filteredRatings = HashMap<String?, JsonObject>(ceil(ids.size / 0.75).toInt())
         for (id in ids) {
@@ -625,7 +566,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return filteredRatings
     }
 
-    override suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
+    private suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
         return tagsRepository.getTagsForResources(ids)
     }
 
