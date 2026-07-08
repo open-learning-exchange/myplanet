@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 
@@ -35,7 +34,7 @@ object DialogUtils {
         return prgDialog
     }
 
-    fun guestDialog(context: Context, profileDbHandler: UserSessionManager) {
+    fun guestDialog(context: Context) {
         val builder = AndroidAlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
