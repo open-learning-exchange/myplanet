@@ -16,6 +16,8 @@ import java.text.DateFormatSymbols
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.combine
+import androidx.fragment.app.viewModels
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
 import org.ole.planet.myplanet.model.RealmOfflineActivity
@@ -27,6 +29,8 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 class ActivitiesFragment : Fragment() {
     private var _binding: FragmentActivitiesBinding? = null
     private val binding get() = _binding!!
+    private val viewModel: ActivitiesViewModel by viewModels()
+
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -41,13 +45,16 @@ class ActivitiesFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val daynightTextColor = ResourcesCompat.getColor(resources, R.color.daynight_textColor, null)
 
-        val endMillis = Calendar.getInstance().timeInMillis
-        val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
-
         viewLifecycleOwner.lifecycleScope.launch {
             val userName = userSessionManager.getUserModel()?.name ?: return@launch
             val loginsFlow = activitiesRepository.getOfflineLogins(userName)
-            collectLatestWhenStarted(loginsFlow) { logins ->
+
+            val combinedFlow = loginsFlow.combine(viewModel.dateRange) { logins, dateRange ->
+                Pair(logins, dateRange)
+            }
+
+            collectLatestWhenStarted(combinedFlow) { (logins, dateRange) ->
+                val (startMillis, endMillis) = dateRange
                 val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
                 renderChart(monthlyCounts, daynightTextColor)
             }
@@ -69,7 +76,7 @@ class ActivitiesFragment : Fragment() {
             }
             .groupingBy { it }
             .eachCount()
-            .toSortedMap()
+            .toSortedMap<Int, Int>()
     }
 
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
