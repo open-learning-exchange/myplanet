@@ -361,7 +361,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { _: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
-                    DialogUtils.guestDialog(requireContext(), profileDbHandler)
+                    DialogUtils.guestDialog(requireContext())
                 } else {
                     addToMyList()
                     val fragment = CoursesFragment().apply {
