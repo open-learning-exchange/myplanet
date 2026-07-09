@@ -10,8 +10,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 
-import org.ole.planet.myplanet.MainApplication
-
 object ThemeManager {
     private var sharedPrefManager: SharedPrefManager? = null
 

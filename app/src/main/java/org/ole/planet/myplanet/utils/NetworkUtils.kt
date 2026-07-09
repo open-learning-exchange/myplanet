@@ -24,9 +24,8 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 
 object NetworkUtils {
-    private val coreEntryPoint by lazy {
+    private val coreEntryPoint: CoreDependenciesEntryPoint get() =
         EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-    }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val coroutineScope: CoroutineScope by lazy {
