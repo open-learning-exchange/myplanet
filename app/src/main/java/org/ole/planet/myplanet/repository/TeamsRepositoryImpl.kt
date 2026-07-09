@@ -83,10 +83,22 @@ class TeamsRepositoryImpl @Inject constructor(
                 .equalTo("updated", true)
                 .findAll()
 
+            val courseIds = teams.flatMap { it.courses ?: emptyList() }.distinct()
+            val coursesResourcesMap = if (courseIds.isNotEmpty()) {
+                val libraryItems = realm.where(RealmMyLibrary::class.java)
+                    .`in`("courseId", courseIds.toTypedArray())
+                    .findAll()
+                realm.copyFromRealm(libraryItems)
+                    .groupBy { it.courseId ?: "" }
+                    .mapValues { (_, items) -> items.groupBy { it.stepId } }
+            } else {
+                emptyMap()
+            }
+
             teams.map { team ->
                 TeamUploadData(
                     teamId = team._id,
-                    serialized = RealmMyTeam.serialize(team, realm),
+                    serialized = RealmMyTeam.serialize(team, realm, coursesResourcesMap),
                     isDeletePending = team.isDeletePending,
                     imageName = team.imageName
                 )
