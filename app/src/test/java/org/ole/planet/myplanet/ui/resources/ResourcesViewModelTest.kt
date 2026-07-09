@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.resources
 
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -90,9 +91,9 @@ class ResourcesViewModelTest {
     @Test
     fun `getLibraryListModels fetches and maps resources correctly`() = runTest {
         val library = mockk<RealmMyLibrary>(relaxed = true) {
-            coEvery { id } returns "lib1"
-            coEvery { title } returns "Test Lib"
-            coEvery { isResourceOffline() } returns true
+            every { id } returns "lib1"
+            every { title } returns "Test Lib"
+            every { isResourceOffline() } returns true
         }
         val metadata = LibraryWithMetadata(library, null, emptyList())
         coEvery { resourcesRepository.getEnrichedLibraries(true, "model1") } returns listOf(metadata)
@@ -100,7 +101,7 @@ class ResourcesViewModelTest {
         val result = viewModel.getLibraryListModels(true, "model1")
 
         assertEquals(1, result.size)
-        assertEquals("lib1", result[result.size - 1].item.id)
-        assertEquals("Test Lib", result[result.size - 1].item.title)
+        assertEquals("lib1", result.first().item.id)
+        assertEquals("Test Lib", result.first().item.title)
     }
 }
