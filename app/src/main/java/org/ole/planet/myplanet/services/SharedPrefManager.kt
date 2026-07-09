@@ -9,16 +9,8 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
-
-data class CachedMyLifeItem(
-    var imageId: String?,
-    var title: String?,
-    var isVisible: Boolean,
-    var weight: Int
-)
 
 @Singleton
 class SharedPrefManager @Inject constructor(
@@ -71,7 +63,6 @@ class SharedPrefManager @Inject constructor(
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
-        private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     }
 
     fun getSavedUsers(): List<User> {
@@ -284,21 +275,6 @@ class SharedPrefManager @Inject constructor(
         editor.commit()
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
-    }
-
-    fun getCachedMyLifeItems(userId: String): List<CachedMyLifeItem>? {
-        val json = pref.getString("$MY_LIFE_CACHE_PREFIX$userId", null) ?: return null
-        return try {
-            val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        pref.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
 }
