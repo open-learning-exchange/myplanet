@@ -126,16 +126,18 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
-                    viewModel.discussions.collect {
-                        setData(it)
+                    viewModel.discussions.collect { list ->
+                        setData(list)
+                        if (!list.isNullOrEmpty()) {
+                            binding.rvDiscussion.post {
+                                binding.rvDiscussion.smoothScrollToPosition(0)
+                            }
+                        }
                     }
                 }
                 launch {
                     viewModel.createNewsSuccess.collect { success ->
                         if (success) {
-                            binding.rvDiscussion.post {
-                                binding.rvDiscussion.smoothScrollToPosition(0)
-                            }
                             binding.etMessage.text?.clear()
                             imageList.clear()
                             llImage?.removeAllViews()
