@@ -38,7 +38,6 @@ class SharedPrefManager @Inject constructor(
         private const val URL_PWD = "url_pwd"
         private const val URL_SCHEME = "url_Scheme"
         private const val URL_HOST = "url_Host"
-        private const val URL_PORT = "url_Port"
         private const val ALTERNATIVE_URL = "alternativeUrl"
         private const val PROCESSED_ALTERNATIVE_URL = "processedAlternativeUrl"
         private const val IS_ALTERNATIVE_URL = "isAlternativeUrl"
@@ -120,11 +119,29 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
-    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
+    fun getNewLoginUsername(): String? {
+        val encryptedUsername = pref.getString("new_login_username", null)
+        return if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedUsername) else null
+    }
+    fun setNewLoginUsername(username: String?) = pref.edit {
+        if (username != null) {
+            putString("new_login_username", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, username))
+        } else {
+            remove("new_login_username")
+        }
+    }
 
-    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
-    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
+    fun getNewLoginPassword(): String? {
+        val encryptedPassword = pref.getString("new_login_password", null)
+        return if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedPassword) else null
+    }
+    fun setNewLoginPassword(password: String?) = pref.edit {
+        if (password != null) {
+            putString("new_login_password", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, password))
+        } else {
+            remove("new_login_password")
+        }
+    }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
@@ -155,9 +172,6 @@ class SharedPrefManager @Inject constructor(
 
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
-
-    fun getUrlPort(): Int = pref.getInt(URL_PORT, 443)
-    fun setUrlPort(port: Int) = pref.edit { putInt(URL_PORT, port) }
 
     fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
