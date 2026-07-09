@@ -181,4 +181,42 @@ class SubmissionViewModelTest {
 
         job.cancel()
     }
+
+    @Test
+    fun testDistinctEmissions() = runTest(testDispatcher) {
+        val s1 = createSubmission("1", "p1", "exam", "complete", 100L)
+        val s1_dup = createSubmission("1", "p1", "exam", "complete", 100L)
+        val subList = listOf(s1)
+        val subListDup = listOf(s1_dup)
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableStateFlow(subList)
+
+        `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
+        `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowEmitter)
+        `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getExamMap(subListDup)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1_dup)).thenReturn("John Doe")
+
+        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+
+        var emissions = 0
+        val job = launch {
+            viewModel.submissions.collect {
+                emissions++
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(2, emissions) // Initial empty state + real emission
+
+        flowEmitter.value = subListDup
+        advanceUntilIdle()
+
+        // Equivalent list emission from repository is suppressed downstream
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
 }

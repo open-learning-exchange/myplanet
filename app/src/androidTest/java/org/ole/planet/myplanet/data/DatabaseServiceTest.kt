@@ -33,7 +33,7 @@ class DatabaseServiceTest {
             .inMemory()
             .allowWritesOnUiThread(true)
             .allowQueriesOnUiThread(true)
-            .schemaVersion(1)
+            .schemaVersion(15)
             .build()
         Realm.setDefaultConfiguration(realmConfiguration)
         keepAliveRealm = Realm.getDefaultInstance()

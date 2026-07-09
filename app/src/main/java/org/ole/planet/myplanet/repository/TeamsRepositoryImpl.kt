@@ -168,13 +168,6 @@ class TeamsRepositoryImpl @Inject constructor(
             teamId
         }
     }
-    override suspend fun getTasks(userId: String?): List<RealmTeamTask> {
-        return queryList(RealmTeamTask::class.java) {
-            notEqualTo("status", "archived")
-                .equalTo("completed", false)
-                .equalTo("assignee", userId)
-        }
-    }
 
     override suspend fun getAllActiveTeams(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
@@ -241,7 +234,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getShareableEnterprises(): List<RealmMyTeam> {
+    private suspend fun getShareableEnterprises(): List<RealmMyTeam> {
         return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
             notEqualTo("status", "archived")
@@ -489,12 +482,7 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo> {
         if (requestIds.isEmpty()) return emptyList()
         val requests = queryList(RealmMyTeam::class.java) {
-            beginGroup()
-            requestIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("_id", id)
-            }
-            endGroup()
+            `in`("_id", requestIds.toTypedArray())
         }
         return requests.map {
             JoinRequestInfo(
@@ -505,20 +493,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getJoinRequestById(id: String?): RealmMyTeam? {
-        if (id.isNullOrEmpty()) return null
-        return findByField(RealmMyTeam::class.java, "_id", id)
-    }
 
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         val teams = queryList(RealmMyTeam::class.java) {
-            beginGroup()
-            ids.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("_id", id)
-            }
-            endGroup()
+            `in`("_id", ids.toTypedArray())
         }
         return teams.associateBy({ it._id ?: "" }, { it.name ?: "Unknown Team" })
     }
@@ -528,65 +507,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return if (request?.docType == "request") request.teamId else null
     }
 
-    override suspend fun getTaskNotifications(userId: String?): List<Triple<String, String, String>> {
-        if (userId.isNullOrEmpty()) return emptyList()
-        return queryList(RealmTeamTask::class.java) {
-            notEqualTo("status", "archived")
-            equalTo("completed", false)
-            equalTo("assignee", userId)
-        }.mapNotNull { task ->
-            val title = task.title ?: return@mapNotNull null
-            val id = task.id ?: return@mapNotNull null
-            Triple(title, formatDate(task.deadline), id)
-        }
-    }
 
-    override suspend fun getJoinRequestNotifications(userId: String?): List<JoinRequestNotification> {
-        if (userId.isNullOrEmpty()) return emptyList()
-
-        val teamIds = queryList(RealmMyTeam::class.java) {
-            equalTo("userId", userId)
-            equalTo("docType", "membership")
-            equalTo("isLeader", true)
-        }.mapNotNull { it.teamId }.distinct()
-
-        if (teamIds.isEmpty()) {
-            return emptyList()
-        }
-
-        val joinRequests = queryList(RealmMyTeam::class.java) {
-            `in`("teamId", teamIds.toTypedArray())
-            equalTo("docType", "request")
-        }
-
-        if (joinRequests.isEmpty()) return emptyList()
-
-        val requestsByGroup = joinRequests.groupBy { "${it.userId}_${it.teamId}" }
-        val mostRecentRequests = requestsByGroup.mapNotNull { (_, requests) ->
-            requests.maxByOrNull { it.createdDate }
-        }
-
-        val relevantTeamIds = mostRecentRequests.mapNotNull { it.teamId }.distinct().toTypedArray()
-        val relevantUserIds = mostRecentRequests.mapNotNull { it.userId }.distinct().toTypedArray()
-
-        val teamsMap = if (relevantTeamIds.isNotEmpty()) {
-            queryList(RealmMyTeam::class.java) { `in`("_id", relevantTeamIds) }.associateBy { it._id }
-        } else emptyMap()
-
-        val usersMap = if (relevantUserIds.isNotEmpty()) {
-            queryList(RealmUser::class.java) { `in`("id", relevantUserIds) }.associateBy { it.id }
-        } else emptyMap()
-
-        return mostRecentRequests.mapNotNull { request ->
-            val requestId = request._id ?: return@mapNotNull null
-            val team = teamsMap[request.teamId]
-            val requester = usersMap[request.userId]
-
-            val requesterName = requester?.name ?: "Unknown User"
-            val teamName = team?.name ?: "Unknown Team"
-            JoinRequestNotification(requesterName, teamName, requestId)
-        }
-    }
 
     override suspend fun getTeamTransactionsWithBalance(
         teamId: String,
@@ -759,7 +680,7 @@ class TeamsRepositoryImpl @Inject constructor(
         } > 0
     }
 
-    override suspend fun getTeamMemberStatuses(userId: String?, teamIds: Collection<String>): Map<String, TeamMemberStatus> {
+    private suspend fun getTeamMemberStatuses(userId: String?, teamIds: Collection<String>): Map<String, TeamMemberStatus> {
         if (userId.isNullOrBlank() || teamIds.isEmpty()) return emptyMap()
 
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
@@ -800,7 +721,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long> {
+    private suspend fun getRecentVisitCounts(teamIds: Collection<String>): Map<String, Long> {
         if (teamIds.isEmpty()) return emptyMap()
 
         val validIds = teamIds.filter { it.isNotBlank() }.distinct()
@@ -1026,7 +947,7 @@ class TeamsRepositoryImpl @Inject constructor(
         delete(RealmTeamTask::class.java, "id", taskId)
     }
 
-    override suspend fun upsertTask(task: RealmTeamTask) {
+    private suspend fun upsertTask(task: RealmTeamTask) {
         if (task.link.isNullOrBlank()) {
             val linkObj = JsonObject().apply { addProperty("teams", task.teamId) }
             task.link = gson.toJson(linkObj)
@@ -1112,47 +1033,6 @@ class TeamsRepositoryImpl @Inject constructor(
         save(log)
     }
 
-    override suspend fun createEnterprise(
-        name: String,
-        description: String,
-        services: String,
-        rules: String,
-        isPublic: Boolean,
-        user: RealmUser,
-    ): Result<String> {
-        return runCatching {
-            val enterpriseId = AndroidDecrypter.generateIv()
-            executeTransaction { realm ->
-                val enterprise = realm.createObject(RealmMyTeam::class.java, enterpriseId)
-                enterprise.status = "active"
-                enterprise.createdDate = Date().time
-                enterprise.type = "enterprise"
-                enterprise.services = services
-                enterprise.rules = rules
-                enterprise.name = name
-                enterprise.description = description
-                enterprise.createdBy = user._id
-                enterprise.teamId = ""
-                enterprise.isPublic = isPublic
-                enterprise.userId = user.id
-                enterprise.parentCode = user.parentCode
-                enterprise.teamPlanetCode = user.planetCode
-                enterprise.updated = true
-
-                val membershipId = AndroidDecrypter.generateIv()
-                val membership = realm.createObject(RealmMyTeam::class.java, membershipId)
-                membership.userId = user._id
-                membership.teamId = enterpriseId
-                membership.teamPlanetCode = user.planetCode
-                membership.userPlanetCode = user.planetCode
-                membership.docType = "membership"
-                membership.isLeader = true
-                membership.teamType = "enterprise"
-                membership.updated = true
-            }
-            enterpriseId
-        }
-    }
 
     override suspend fun updateTeam(
         teamId: String,
@@ -1263,20 +1143,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }.mapNotNull { it.resourceId }
     }
 
-    override suspend fun getResourceIdsByUser(userId: String?): List<String> {
-        if (userId.isNullOrBlank()) return emptyList()
-        val teamIds = queryList(RealmMyTeam::class.java) {
-            equalTo("userId", userId)
-            equalTo("docType", "membership")
-        }.mapNotNull { it.teamId }
-
-        if (teamIds.isEmpty()) return emptyList()
-
-        return queryList(RealmMyTeam::class.java) {
-            `in`("teamId", teamIds.toTypedArray())
-            equalTo("docType", "resourceLink")
-        }.mapNotNull { it.resourceId }
-    }
 
     override suspend fun getTeamType(teamId: String): String? {
         if (teamId.isBlank()) return null
@@ -1340,7 +1206,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 }.associateBy { it.name }
 
                 for (admin in validAdmins) {
-                    val adminFromRealm = findByField(RealmUser::class.java, "name", admin.name.orEmpty())
+                    val adminFromRealm = adminFromRealmMap[admin.name]
                     if (adminFromRealm != null) {
                         members.add(adminFromRealm)
                     } else {
@@ -1523,14 +1389,6 @@ class TeamsRepositoryImpl @Inject constructor(
         return allLibraryItems.filter { it._id !in existingIds }
     }
 
-    override suspend fun getTeamVisitCount(userName: String?, teamId: String?): Long {
-        if (userName == null || teamId == null) return 0
-        return count(RealmTeamLog::class.java) {
-            equalTo("type", "teamVisit")
-            equalTo("user", userName)
-            equalTo("teamId", teamId)
-        }
-    }
 
     override suspend fun insertTeamLog(json: JsonObject) {
         executeTransaction { realm ->
