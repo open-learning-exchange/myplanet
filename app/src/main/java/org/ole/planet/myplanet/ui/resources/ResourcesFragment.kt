@@ -332,7 +332,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             }
         }
     }
@@ -397,7 +397,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
-                    guestDialog(requireContext(), profileDbHandler)
+                    guestDialog(requireContext())
                 } else {
                     val fragment = ResourcesFragment().apply {
                         arguments = Bundle().apply {
