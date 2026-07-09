@@ -43,20 +43,17 @@ class VoicesRepositoryImpl @Inject constructor(
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
-        return withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .findAll()
-                .mapNotNull { news ->
-                    if (news.userId?.startsWith("guest") == true) null
-                    else NewsUploadData(
-                        id = news.id,
-                        _id = news._id,
-                        message = news.message,
-                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = serializeNews(news)
-                    )
-                }
-        }
+        return queryList(RealmNews::class.java)
+            .mapNotNull { news ->
+                if (news.userId?.startsWith("guest") == true) null
+                else NewsUploadData(
+                    id = news.id,
+                    _id = news._id,
+                    message = news.message,
+                    imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                    newsJson = serializeNews(news)
+                )
+            }
     }
 
     override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {

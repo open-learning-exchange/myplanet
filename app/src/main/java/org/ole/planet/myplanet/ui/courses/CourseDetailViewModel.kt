@@ -2,26 +2,19 @@ package org.ole.planet.myplanet.ui.courses
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.StepItem
-import org.ole.planet.myplanet.repository.CoursesRepository
-import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.utils.MarkdownUtils
 
 sealed interface CourseDetailUiState {
@@ -32,7 +25,7 @@ sealed interface CourseDetailUiState {
         val examCount: Int,
         val resources: List<RealmMyLibrary>,
         val downloadedResources: List<RealmMyLibrary>,
-        val ratingSummary: JsonObject?,
+        val ratingSummary: RatingSummary?,
         val user: RealmUser?
     ) : CourseDetailUiState
     data class Error(val message: String) : CourseDetailUiState
@@ -40,11 +33,8 @@ sealed interface CourseDetailUiState {
 
 @HiltViewModel
 class CourseDetailViewModel @Inject constructor(
-    private val coursesRepository: CoursesRepository,
-    private val submissionsRepository: SubmissionsRepository,
-    private val ratingsRepository: RatingsRepository,
-    private val userSessionManager: UserSessionManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val courseDetailProvider: CourseDetailProvider,
+    private val ratingSummaryProvider: RatingSummaryProvider
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<CourseDetailUiState>(CourseDetailUiState.Loading)
@@ -60,62 +50,33 @@ class CourseDetailViewModel @Inject constructor(
         loadJob = viewModelScope.launch {
             _uiState.value = CourseDetailUiState.Loading
 
-            coursesRepository.getCourseByCourseIdFlow(courseId)
-                .map { course ->
-                    if (course == null) {
-                        return@map CourseDetailUiState.Error("Course not found")
-                    }
-
-                    withContext(dispatcherProvider.io) {
-                        val user = userSessionManager.getUserModel()
-                        val examCount = coursesRepository.getCourseExamCount(courseId)
-                        val resources = coursesRepository.getCourseOnlineResources(courseId)
-                        val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
-                        val steps = coursesRepository.getCourseSteps(courseId)
-
-                        val stepItems = steps.map { step ->
-                            val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
-                            StepItem(
-                                id = step.id,
-                                stepTitle = step.stepTitle,
-                                questionCount = count
-                            )
-                        }
-                        _stepItems.value = stepItems
-
-                        var ratingSummaryObject: JsonObject? = null
-                        val userId = user?.id
-                        if (userId != null) {
-                            val ratingSummary = ratingsRepository.getRatingSummary("course", courseId, userId)
-                            ratingSummaryObject = JsonObject().apply {
-                                addProperty("averageRating", ratingSummary.averageRating)
-                                addProperty("total", ratingSummary.totalRatings)
-                                ratingSummary.userRating?.let { addProperty("userRating", it) }
-                            }
-                        }
-
-                        val markdownDescription = MarkdownUtils.prependBaseUrlToImages(
-                            course.description,
-                            "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-                            600, 350
-                        )
-
-                        CourseDetailUiState.Success(
-                            course = course,
-                            markdownDescription = markdownDescription,
-                            examCount = examCount,
-                            resources = resources,
-                            downloadedResources = downloadedResources,
-                            ratingSummary = ratingSummaryObject,
-                            user = user
-                        )
-                    }
-                }
+            courseDetailProvider(courseId)
                 .catch { e ->
-                    emit(CourseDetailUiState.Error(e.message ?: "An error occurred"))
+                    _uiState.value = CourseDetailUiState.Error(e.message ?: "An error occurred")
                 }
-                .collect { state ->
-                    _uiState.value = state
+                .collect { courseDetail ->
+                    if (courseDetail == null) {
+                        _uiState.value = CourseDetailUiState.Error("Course not found")
+                        return@collect
+                    }
+
+                    _stepItems.value = courseDetail.steps
+
+                    val markdownDescription = MarkdownUtils.prependBaseUrlToImages(
+                        courseDetail.course.description,
+                        "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
+                        600, 350
+                    )
+
+                    _uiState.value = CourseDetailUiState.Success(
+                        course = courseDetail.course,
+                        markdownDescription = markdownDescription,
+                        examCount = courseDetail.examCount,
+                        resources = courseDetail.resources,
+                        downloadedResources = courseDetail.downloadedResources,
+                        ratingSummary = courseDetail.ratingSummary,
+                        user = courseDetail.user
+                    )
                 }
         }
     }
@@ -135,26 +96,11 @@ class CourseDetailViewModel @Inject constructor(
             val currentState = _uiState.value
             if (currentState is CourseDetailUiState.Success) {
                 try {
-                    val (ratingSummaryObject, user) = withContext(dispatcherProvider.io) {
-                        val user = userSessionManager.getUserModel()
-                        val userId = user?.id
-                        if (userId != null) {
-                            val ratingSummary = ratingsRepository.getRatingSummary("course", courseId, userId)
-                            val ratingSummaryObject = JsonObject().apply {
-                                addProperty("averageRating", ratingSummary.averageRating)
-                                addProperty("total", ratingSummary.totalRatings)
-                                ratingSummary.userRating?.let { addProperty("userRating", it) }
-                            }
-                            Pair(ratingSummaryObject, user)
-                        } else {
-                            Pair(null, user)
-                        }
-                    }
-                    if (ratingSummaryObject != null) {
-                        _uiState.value = currentState.copy(ratingSummary = ratingSummaryObject, user = user)
-                    } else {
-                        _uiState.value = currentState.copy(ratingSummary = null, user = user)
-                    }
+                    val summaryModel = ratingSummaryProvider(courseId)
+                    _uiState.value = currentState.copy(
+                        ratingSummary = summaryModel.ratingSummary,
+                        user = summaryModel.user
+                    )
                 } catch (e: Exception) {
                     // Optionally handle error
                 }

@@ -73,6 +73,12 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         }
     }
 
+    fun setRatings(ratingSummary: org.ole.planet.myplanet.repository.RatingSummary?) {
+        if (ratingSummary != null) {
+            CourseRatingUtils.showRating(requireContext(), ratingSummary, rating, timesRated, ratingBar)
+        }
+    }
+
     fun setRatings(`object`: JsonObject?) {
         if (`object` != null) {
             CourseRatingUtils.showRating(requireContext(), `object`, rating, timesRated, ratingBar)

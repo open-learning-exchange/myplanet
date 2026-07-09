@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -55,6 +57,56 @@ class VoicesRepositoryImplTest {
 
         assertNotNull(result)
         io.mockk.verify { dispatcherProvider.default }
+    }
+
+    @Test
+    fun `getNewsForUpload filters guest users and correctly serializes payloads`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
+
+        val realGson = Gson()
+        val repoWithRealGson = spyk(VoicesRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            dispatcherProvider,
+            realGson,
+            sharedPrefManager
+        ), recordPrivateCalls = true)
+
+        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
+            val block = firstArg<(io.realm.Realm) -> Any>()
+            block(mockRealm)
+        }
+
+        coEvery { repoWithRealGson["queryList"](RealmNews::class.java, any<Boolean>(), any<Function1<*, *>>()) } answers {
+            val block = thirdArg<io.realm.RealmQuery<RealmNews>.() -> Unit>()
+
+            val guestNews = RealmNews().apply {
+                id = "guest_news_id"
+                userId = "guest_123"
+            }
+            val validNews = RealmNews().apply {
+                id = "valid_news_id"
+                _id = "valid_news_id"
+                userId = "user_123"
+                message = "Hello World"
+                user = "{}"
+                conversations = "[]"
+            }
+
+            listOf(guestNews, validNews)
+        }
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("valid_news_id", result[0].id)
+        assertEquals("Hello World", result[0].message)
+        assertEquals("Hello World", result[0].newsJson.get("message").asString)
+        assertNotNull(result[0].newsJson.get("user"))
     }
 
     @Test

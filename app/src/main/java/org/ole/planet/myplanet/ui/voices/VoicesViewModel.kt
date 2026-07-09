@@ -53,8 +53,10 @@ class VoicesViewModel @Inject constructor(
         _searchQuery,
         _selectedLabel
     ) { news, query, label ->
-        val labelFiltered = filterByLabel(news, label)
-        applySearchFilter(labelFiltered, query)
+        withContext(dispatcherProvider.default) {
+            val labelFiltered = filterByLabel(news, label)
+            applySearchFilter(labelFiltered, query)
+        }
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun observeCommunityNews(userIdentifier: String) {
@@ -89,10 +91,12 @@ class VoicesViewModel @Inject constructor(
 
     private fun applySearchFilter(list: List<RealmNews?>, query: String): List<RealmNews?> {
         if (query.isEmpty()) return list
+
+        val lowerQuery = query.trim().lowercase()
         return list.filter { news ->
-            news?.message?.contains(query, ignoreCase = true) == true ||
-            news?.userName?.contains(query, ignoreCase = true) == true ||
-            news?.newsTitle?.contains(query, ignoreCase = true) == true
+            news?.message?.contains(lowerQuery, ignoreCase = true) == true ||
+            news?.userName?.contains(lowerQuery, ignoreCase = true) == true ||
+            news?.newsTitle?.contains(lowerQuery, ignoreCase = true) == true
         }
     }
 
@@ -169,11 +173,11 @@ class VoicesViewModel @Inject constructor(
         allLabels.sorted()
     }
 
-    suspend fun filterByLabel(
+    private fun filterByLabel(
         newsList: List<RealmNews?>,
         selectedLabel: String
-    ): List<RealmNews?> = withContext(dispatcherProvider.default) {
-        if (selectedLabel == "All") return@withContext newsList
+    ): List<RealmNews?> {
+        if (selectedLabel == "All") return newsList
 
         val labelDisplayToValue = mutableMapOf<String, String>()
         Constants.LABELS.forEach { (labelName, labelValue) ->
@@ -187,7 +191,7 @@ class VoicesViewModel @Inject constructor(
             }
         }
 
-        newsList.filter { news ->
+        return newsList.filter { news ->
             when {
                 selectedLabel == "Shared Chat" -> {
                     news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
