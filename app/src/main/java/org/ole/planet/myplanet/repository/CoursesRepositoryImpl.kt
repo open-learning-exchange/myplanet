@@ -79,10 +79,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
-    override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
-        return getCourseById(courseId)
-    }
-
     override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
         return queryListFlow(RealmMyCourse::class.java) {
             equalTo("courseId", courseId)
@@ -131,14 +127,6 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         val course = getCourseById(courseId)
         return course?.courseSteps?.toList() ?: emptyList()
-    }
-
-    override suspend fun getCourseStepIds(courseId: String): List<String?> {
-        if (courseId.isBlank()) {
-            return emptyList()
-        }
-        val course = getCourseById(courseId)
-        return course?.courseSteps?.map { it.id } ?: emptyList()
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
