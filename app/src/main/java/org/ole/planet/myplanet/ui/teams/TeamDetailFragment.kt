@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
+import androidx.fragment.app.viewModels
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -26,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
@@ -48,7 +48,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     @Inject
     lateinit var userSessionManager: UserSessionManager
     
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    private val teamViewModel: TeamViewModel by viewModels()
 
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
@@ -440,7 +440,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
+        collectWhenStarted(teamViewModel.getTeamUpdateFlow()) { update ->
             if (update.table == "teams" && update.shouldRefreshUI) {
                 refreshTeamDetails()
             }

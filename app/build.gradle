@@ -150,11 +150,6 @@ android {
 kapt {
     correctErrorTypes = true
 }
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
-    }
-}
 dependencies {
     testImplementation(libs.test.junit)
     testImplementation(libs.test.mockk)

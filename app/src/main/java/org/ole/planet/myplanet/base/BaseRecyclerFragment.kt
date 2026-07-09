@@ -218,22 +218,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
-    private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-        val lan = languages.isEmpty() || languages.contains(l.language)
-        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-        return sub && lev && lan && med
-    }
-
     override fun onDetach() {
         super.onDetach()
         cleanupReferences()
@@ -279,11 +263,5 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             textView.setText(messageRes)
         }
 
-        fun showNoFilter(v: View?, count: Int) {
-            v ?: return
-            v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
-            textView.setText(R.string.no_course_matched_filter)
-        }
     }
 }
