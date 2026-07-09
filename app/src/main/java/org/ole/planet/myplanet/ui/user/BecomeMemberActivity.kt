@@ -196,8 +196,11 @@ class BecomeMemberActivity : BaseActivity() {
         val lvAdapter  = ArrayAdapter(this, R.layout.become_a_member_spinner_layout, levels)
         activityBecomeMemberBinding.spnLevel.adapter = lvAdapter
 
-        val username = intent.getStringExtra("username") ?: ""
+        var username = intent.getStringExtra("username") ?: ""
         guest = intent.getBooleanExtra("guest", false)
+        if (guest && username.isEmpty()) {
+            username = sharedPrefManager.getUserName()
+        }
 
         setupTextWatchers()
 

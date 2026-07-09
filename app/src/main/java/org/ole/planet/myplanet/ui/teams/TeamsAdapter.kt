@@ -24,6 +24,7 @@ class TeamsAdapter(
     private val onRequestToJoinClick: (TeamDetails) -> Unit
 ) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
     private var type: String? = ""
+    private val dateCache = mutableMapOf<Long, String>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsViewHolder {
         val binding = ItemTeamListBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -34,7 +35,7 @@ class TeamsAdapter(
         val team = getItem(position)
 
         with(holder.binding) {
-            created.text = TimeUtils.getFormattedDate(team.createdDate ?: 0)
+            created.text = dateCache.getOrPut(team.createdDate ?: 0L) { TimeUtils.getFormattedDate(team.createdDate ?: 0) }
             type.text = team.teamType
             type.visibility = if (team.teamType == null) View.GONE else View.VISIBLE
             name.text = team.name
