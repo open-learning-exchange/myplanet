@@ -4,6 +4,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.realm.Realm
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Before
@@ -12,6 +13,7 @@ import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryTest {
     private lateinit var chatRepository: ChatRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
