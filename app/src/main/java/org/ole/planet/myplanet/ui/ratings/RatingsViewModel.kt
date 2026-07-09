@@ -49,12 +49,20 @@ class RatingsViewModel @Inject constructor(
         data class Error(val message: String) : SubmitState()
     }
 
-    fun loadRatingData(type: String, itemId: String, userId: String) {
+    fun loadRatingData(type: String, itemId: String) {
         viewModelScope.launch(dispatcherProvider.io) {
             try {
                 _ratingState.value = RatingUiState.Loading
 
-                _userState.value = userRepository.getUserById(userId)
+                val user = userRepository.getUserProfile()
+                _userState.value = user
+
+                if (user == null) {
+                    _ratingState.value = RatingUiState.Error("User not found")
+                    return@launch
+                }
+
+                val userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: ""
 
                 val summary = ratingsRepository.getRatingSummary(type, itemId, userId)
                 _ratingState.value = summary.toUiState()
@@ -69,7 +77,6 @@ class RatingsViewModel @Inject constructor(
         type: String,
         itemId: String,
         title: String,
-        userId: String,
         rating: Float,
         comment: String
     ) {
@@ -77,7 +84,7 @@ class RatingsViewModel @Inject constructor(
             try {
                 _submitState.value = SubmitState.Submitting
 
-                val user = _userState.value ?: userRepository.getUserById(userId)
+                val user = _userState.value ?: userRepository.getUserProfile()
 
                 if (user == null) {
                     _submitState.value = SubmitState.Error("User not found")
@@ -86,11 +93,13 @@ class RatingsViewModel @Inject constructor(
 
                 _userState.value = user
 
+                val userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: ""
+
                 val summary = ratingsRepository.submitRating(
                     type = type,
                     itemId = itemId,
                     title = title,
-                    userId = user.id?.takeIf { it.isNotBlank() } ?: user._id ?: userId,
+                    userId = userId,
                     rating = rating,
                     comment = comment
                 )
