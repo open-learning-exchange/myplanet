@@ -136,6 +136,23 @@ class RealmMigrations : RealmMigration {
         }
 
         if (version == 14L) {
+            schema.get("RealmMyCourse")
+                ?.transform { obj ->
+                    val title = obj.getString("courseTitle")
+                    if (title != null && obj.getString("courseTitleNormal") == null) {
+                        val lowercased = title.lowercase(java.util.Locale.ROOT)
+                        val normalized = java.text.Normalizer.normalize(lowercased, java.text.Normalizer.Form.NFD)
+                        val sb = java.lang.StringBuilder(normalized.length)
+                        for (i in 0 until normalized.length) {
+                            val c = normalized[i]
+                            if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
+                                sb.append(c)
+                            }
+                        }
+                        obj.setString("courseTitleNormal", sb.toString())
+                    }
+                }
+
             schema.get("RealmMyLibrary")
                 ?.addField("titleNormal", String::class.java)
                 ?.addIndex("titleNormal")
