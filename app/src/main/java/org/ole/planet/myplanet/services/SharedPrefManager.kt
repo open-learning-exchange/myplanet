@@ -128,11 +128,29 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
-    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
+    fun getNewLoginUsername(): String? {
+        val encryptedUsername = pref.getString("new_login_username", null)
+        return if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedUsername) else null
+    }
+    fun setNewLoginUsername(username: String?) = pref.edit {
+        if (username != null) {
+            putString("new_login_username", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, username))
+        } else {
+            remove("new_login_username")
+        }
+    }
 
-    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
-    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
+    fun getNewLoginPassword(): String? {
+        val encryptedPassword = pref.getString("new_login_password", null)
+        return if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedPassword) else null
+    }
+    fun setNewLoginPassword(password: String?) = pref.edit {
+        if (password != null) {
+            putString("new_login_password", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, password))
+        } else {
+            remove("new_login_password")
+        }
+    }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }

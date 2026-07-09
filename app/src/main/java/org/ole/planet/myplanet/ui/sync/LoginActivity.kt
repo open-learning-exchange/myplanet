@@ -210,10 +210,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private fun handleAutoLogin() {
         guest = intent.getBooleanExtra("guest", false)
 
-        val encryptedUsername = sharedPrefManager.getNewLoginUsername()
-        val username = if (encryptedUsername != null) SecurePrefs.decryptString(this, encryptedUsername) else null
-        val encryptedPassword = sharedPrefManager.getNewLoginPassword()
-        val password = if (encryptedPassword != null) SecurePrefs.decryptString(this, encryptedPassword) else null
+        val username = sharedPrefManager.getNewLoginUsername()
+        val password = sharedPrefManager.getNewLoginPassword()
 
         if (guest && username != null) {
             resetGuestAsMember(username)

@@ -8,6 +8,9 @@ import com.google.gson.reflect.TypeToken
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
+import io.mockk.mockkObject
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertEquals
@@ -304,4 +307,47 @@ class SharedPrefManagerTest {
         verify { mockEditor.remove("some_key") }
         verify { mockEditor.apply() }
     }
+
+    @Test
+    fun testGetAndSetNewLoginUsername() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_user") } returns "encrypted_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_user") } returns "test_user"
+
+        // Set
+        sharedPrefManager.setNewLoginUsername("test_user")
+        verify { mockEditor.putString("new_login_username", "encrypted_user") }
+
+        // Get
+        every { mockSharedPreferences.getString("new_login_username", null) } returns "encrypted_user"
+        assertEquals("test_user", sharedPrefManager.getNewLoginUsername())
+
+        // Set null
+        sharedPrefManager.setNewLoginUsername(null)
+        verify { mockEditor.remove("new_login_username") }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testGetAndSetNewLoginPassword() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pass") } returns "encrypted_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_pass") } returns "test_pass"
+
+        // Set
+        sharedPrefManager.setNewLoginPassword("test_pass")
+        verify { mockEditor.putString("new_login_password", "encrypted_pass") }
+
+        // Get
+        every { mockSharedPreferences.getString("new_login_password", null) } returns "encrypted_pass"
+        assertEquals("test_pass", sharedPrefManager.getNewLoginPassword())
+
+        // Set null
+        sharedPrefManager.setNewLoginPassword(null)
+        verify { mockEditor.remove("new_login_password") }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
 }
