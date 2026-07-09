@@ -86,8 +86,9 @@ object Utilities {
     }
 
     fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.ROOT), Normalizer.Form.NFD)
+        return Normalizer.normalize(str, Normalizer.Form.NFD)
             .replace(Regex("\\p{Mn}+"), "")
+            .lowercase(Locale.ROOT)
     }
 
     fun getMimeType(url: String?): String? {
