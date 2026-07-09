@@ -131,6 +131,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         lateinit var applicationScope: CoroutineScope
 
+        val coreDependenciesEntryPoint: CoreDependenciesEntryPoint by lazy {
+            EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+        }
+
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
                 saveLogToRealm(type, error, "${Date().time}")
@@ -180,11 +184,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         suspend fun isServerReachable(
             urlString: String,
-            ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
         ): Boolean {
             if (urlString.isBlank()) return false
-            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-            val serverUrlMapper = entryPoint.serverUrlMapper()
+            val serverUrlMapper = coreDependenciesEntryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
