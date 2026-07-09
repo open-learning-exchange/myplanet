@@ -22,8 +22,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
+    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
+    private val sharedPrefManager: SharedPrefManager by lazy {
+        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+        entryPoint.sharedPrefManager()
+    }
+
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val coroutineScope: CoroutineScope by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
@@ -177,8 +184,7 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-        return spm.getCustomDeviceName()
+        return sharedPrefManager.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {

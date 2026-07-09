@@ -10,6 +10,7 @@ import io.realm.Realm
 import io.realm.RealmList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -20,6 +21,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.Utilities
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RealmUserTest {
 
     @MockK
