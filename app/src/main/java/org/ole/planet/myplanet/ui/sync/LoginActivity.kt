@@ -31,6 +31,11 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import javax.inject.Inject
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import org.ole.planet.myplanet.utils.textChanges
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -60,6 +65,7 @@ import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
+@OptIn(FlowPreview::class)
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     @Inject
@@ -70,8 +76,6 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     override lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var usernameWatcher: TextWatcher
-    private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
@@ -371,18 +375,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
         }
-        usernameWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                val lowercaseText = s.toString().lowercase()
-                if (s.toString() != lowercaseText) {
+        binding.inputName.textChanges()
+            .onEach { s ->
+                val input = s?.toString() ?: ""
+                val lowercaseText = input.lowercase()
+                if (input != lowercaseText) {
                     binding.inputName.setText(lowercaseText)
                     binding.inputName.setSelection(lowercaseText.length)
                 }
             }
-
-            override fun afterTextChanged(s: Editable?) {
+            .debounce(300)
+            .onEach { s ->
                 val input = s?.toString() ?: ""
                 if (input.isNotEmpty()) {
                     binding.inputName.error = validateUsernameInput(input)
@@ -391,18 +394,16 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
                 updateSignInButtonState()
             }
-        }
-        binding.inputName.addTextChangedListener(usernameWatcher)
+            .launchIn(lifecycleScope)
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
     }
 
     private fun setupFormValidation() {
-        passwordWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
+        binding.inputPassword.textChanges()
+            .debounce(300)
+            .onEach { s ->
                 val input = s?.toString() ?: ""
                 if (input.isNotEmpty()) {
                     binding.inputPassword.error = validatePasswordInput(input)
@@ -411,8 +412,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
                 updateSignInButtonState()
             }
-        }
-        binding.inputPassword.addTextChangedListener(passwordWatcher)
+            .launchIn(lifecycleScope)
     }
 
     private fun validateUsernameInput(username: String): String? {
@@ -695,11 +695,5 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::usernameWatcher.isInitialized) {
-            binding.inputName.removeTextChangedListener(usernameWatcher)
-        }
-        if (this::passwordWatcher.isInitialized) {
-            binding.inputPassword.removeTextChangedListener(passwordWatcher)
-        }
     }
 }
