@@ -25,6 +25,9 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
+    private val coreEntryPoint: CoreDependenciesEntryPoint get() =
+        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val sharedPrefManager: SharedPrefManager by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
@@ -33,8 +36,7 @@ object NetworkUtils {
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val coroutineScope: CoroutineScope by lazy {
-        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-        entryPoint.applicationScope()
+        coreEntryPoint.applicationScope()
     }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
@@ -184,7 +186,8 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        return sharedPrefManager.getCustomDeviceName()
+        val spm = coreEntryPoint.sharedPrefManager()
+        return spm.getCustomDeviceName()
     }
 
     fun extractProtocol(url: String): String? {
