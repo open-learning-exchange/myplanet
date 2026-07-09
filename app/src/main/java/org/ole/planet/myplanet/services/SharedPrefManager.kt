@@ -46,7 +46,6 @@ class SharedPrefManager @Inject constructor(
         private const val URL_PWD = "url_pwd"
         private const val URL_SCHEME = "url_Scheme"
         private const val URL_HOST = "url_Host"
-        private const val URL_PORT = "url_Port"
         private const val ALTERNATIVE_URL = "alternativeUrl"
         private const val PROCESSED_ALTERNATIVE_URL = "processedAlternativeUrl"
         private const val IS_ALTERNATIVE_URL = "isAlternativeUrl"
@@ -182,9 +181,6 @@ class SharedPrefManager @Inject constructor(
 
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
-
-    fun getUrlPort(): Int = pref.getInt(URL_PORT, 443)
-    fun setUrlPort(port: Int) = pref.edit { putInt(URL_PORT, port) }
 
     fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }

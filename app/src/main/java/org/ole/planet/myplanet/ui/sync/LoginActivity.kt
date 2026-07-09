@@ -41,7 +41,6 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
@@ -63,8 +62,6 @@ import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
-    @Inject
-    lateinit var teamsRepository: TeamsRepository
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
     @Inject

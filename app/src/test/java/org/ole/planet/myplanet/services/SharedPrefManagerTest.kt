@@ -147,16 +147,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testGetAndSetUrlPort() {
-        every { mockSharedPreferences.getInt("url_Port", 443) } returns 8080
-        assertEquals(8080, sharedPrefManager.getUrlPort())
-
-        sharedPrefManager.setUrlPort(8081)
-        verify { mockEditor.putInt("url_Port", 8081) }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
     fun testGetAndSetLoggedIn() {
         every { mockSharedPreferences.getBoolean(SharedPrefManager.KEY_LOGIN, false) } returns true
         assertTrue(sharedPrefManager.isLoggedIn())
