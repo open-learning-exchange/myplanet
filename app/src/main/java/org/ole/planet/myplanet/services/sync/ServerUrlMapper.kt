@@ -1,14 +1,19 @@
 package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
+import android.content.Context
 import android.net.Uri
 import androidx.core.net.toUri
+import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.utils.SecurePrefs
 
 @Singleton
-class ServerUrlMapper @Inject constructor() {
+class ServerUrlMapper @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val serverMappings = mapOf(
         "http://${BuildConfig.PLANET_SANPABLO_URL}" to "https://${BuildConfig.PLANET_SANPABLO_CLONE_URL}",
         "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
@@ -75,7 +80,11 @@ class ServerUrlMapper @Inject constructor() {
 
         editor.apply {
             putString("url_user", urlUser)
-            putString("url_pwd", urlPwd)
+            try {
+                putString("url_pwd", SecurePrefs.encryptString(context, urlPwd))
+            } catch (e: Exception) {
+                putString("url_pwd", urlPwd)
+            }
             putString("url_Scheme", uri.scheme)
             putString("url_Host", uri.host)
             putString("alternativeUrl", url)

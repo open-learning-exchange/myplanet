@@ -162,11 +162,26 @@ class SharedPrefManager @Inject constructor(
         return if (stored.isNullOrEmpty()) {
             ""
         } else {
-            SecurePrefs.decryptString(context, stored) ?: stored.also { setUrlPwd(it) }
+            try {
+                val decrypted = SecurePrefs.decryptString(context, stored)
+                if (decrypted != null) {
+                    decrypted
+                } else if (!stored.startsWith("ey")) {
+                    stored.also { setUrlPwd(it) }
+                } else {
+                    stored
+                }
+            } catch (e: Exception) {
+                stored
+            }
         }
     }
     fun setUrlPwd(pwd: String) = pref.edit {
-        putString(URL_PWD, SecurePrefs.encryptString(context, pwd))
+        try {
+            putString(URL_PWD, SecurePrefs.encryptString(context, pwd))
+        } catch (e: Exception) {
+            putString(URL_PWD, pwd)
+        }
     }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
