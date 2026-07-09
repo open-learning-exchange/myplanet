@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -38,7 +39,6 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
-
 @AndroidEntryPoint
 class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     private lateinit var adapterCourses: CoursesAdapter
@@ -179,14 +179,31 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         filterController = CourseFilterController(
             rootView = requireView(),
-            scope = viewLifecycleOwner.lifecycleScope,
-            onFilterChanged = { state ->
-                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade,
-                    state.subject, state.tagNames, state.progressFilter)
-            },
             onScrollToTop = { scrollToTop() }
         )
         filterController.setup()
+
+        var lastState: FilterState? = null
+        var isFirstEmission = true
+        collectLatestWhenStarted(filterController.filterState) { state ->
+            if (isFirstEmission) {
+                isFirstEmission = false
+                if (!state.isActive) {
+                    lastState = state
+                    return@collectLatestWhenStarted
+                }
+            }
+            if (state == lastState) return@collectLatestWhenStarted
+
+            if (lastState != null && state.searchText != lastState?.searchText && state.copy(searchText = "") == lastState?.copy(searchText = "")) {
+                delay(300)
+            }
+            lastState = state
+            viewModel.filterCourses(
+                isMyCourseLib, model?.id, state.searchText, state.grade,
+                state.subject, state.tagNames, state.progressFilter
+            )
+        }
 
         selectionController = CourseSelectionController(
             rootView = requireView(),
@@ -361,7 +378,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mycourses) { _: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
-                    DialogUtils.guestDialog(requireContext(), profileDbHandler)
+                    DialogUtils.guestDialog(requireContext())
                 } else {
                     addToMyList()
                     val fragment = CoursesFragment().apply {

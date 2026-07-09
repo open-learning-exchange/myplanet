@@ -34,10 +34,34 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         }
     }
 
-    fun createManagedRealmInstance(): Realm = Realm.getDefaultInstance()
+    fun createManagedRealmInstance(): Realm = openRealm()
+
+    private fun openRealm(): Realm {
+        return try {
+            Realm.getDefaultInstance()
+        } catch (e: RuntimeException) {
+            if (!isUnsupportedSchemaVersion(e)) {
+                throw e
+            }
+            val config = Realm.getDefaultConfiguration() ?: throw e
+            Realm.deleteRealm(config)
+            Realm.getDefaultInstance()
+        }
+    }
+
+    private fun isUnsupportedSchemaVersion(e: Throwable): Boolean {
+        var cause: Throwable? = e
+        while (cause != null) {
+            if (cause is RealmMigrations.UnsupportedSchemaVersionException) {
+                return true
+            }
+            cause = cause.cause
+        }
+        return false
+    }
 
     private inline fun <T> withRealmInstance(block: (Realm) -> T): T {
-        val realm = Realm.getDefaultInstance()
+        val realm = openRealm()
         return try {
             block(realm)
         } finally {
@@ -59,7 +83,7 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
 
     suspend fun executeTransactionAsync(transaction: (Realm) -> Unit) {
         withContext(realmDispatcher) {
-            val realm = Realm.getDefaultInstance()
+            val realm = openRealm()
             try {
                 realm.executeTransaction { r ->
                     transaction(r)

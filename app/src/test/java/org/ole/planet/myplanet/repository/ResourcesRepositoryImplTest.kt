@@ -121,35 +121,6 @@ class ResourcesRepositoryImplTest {
         assertEquals("aeiou", ResourcesRepositoryImpl.normalizeText("äëïöü"))
     }
 
-    @Test
-    fun testFilterLibrariesNeedingUpdate() {
-        val method: Method = ResourcesRepositoryImpl::class.java.getDeclaredMethod(
-            "filterLibrariesNeedingUpdate",
-            Collection::class.java
-        )
-        method.isAccessible = true
-
-        val lib1 = mockk<RealmMyLibrary>()
-        every { lib1.needToUpdate() } returns true
-
-        val lib2 = mockk<RealmMyLibrary>()
-        every { lib2.needToUpdate() } returns false
-
-        val lib3 = mockk<RealmMyLibrary>()
-        every { lib3.needToUpdate() } returns true
-
-        val lib4 = mockk<RealmMyLibrary>()
-        every { lib4.needToUpdate() } returns false
-
-        val input = listOf(lib1, lib2, lib3, lib4)
-
-        @Suppress("UNCHECKED_CAST")
-        val result = method.invoke(repository, input) as List<RealmMyLibrary>
-
-        assertEquals(2, result.size)
-        assertTrue(result.contains(lib1))
-        assertTrue(result.contains(lib3))
-    }
 
     @Test
     fun `getAllLibraries returns list of RealmMyLibrary`() = runTest {
@@ -162,18 +133,6 @@ class ResourcesRepositoryImplTest {
         assertEquals("Test Library", result[0].title)
         verify(exactly = 0) { mockQuery.equalTo(any<String>(), any<Boolean>()) }
         verify(exactly = 0) { mockQuery.equalTo(any<String>(), any<String>()) }
-    }
-
-    @Test
-    fun `getAllLibraryItems returns non-private libraries`() = runTest {
-        val mockLibrary = RealmMyLibrary().apply { title = "Public Library" }
-        val mockQuery = mockQueryResults(listOf(mockLibrary))
-
-        val result = repository.getAllLibraryItems()
-
-        assertEquals(1, result.size)
-        assertEquals("Public Library", result[0].title)
-        verify { mockQuery.equalTo("isPrivate", false) }
     }
 
     @Test

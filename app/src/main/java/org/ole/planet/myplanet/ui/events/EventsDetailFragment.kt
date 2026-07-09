@@ -223,9 +223,16 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private fun updateAttendanceButton() {
         val meetup = viewModel.meetup.value
         val user = viewModel.user.value
+
+        val currentTime = Calendar.getInstance().timeInMillis
+        val endDate = meetup?.endDate ?: 0L
+        // endDate is set to midnight of that day. Add 86399999L (23:59:59.999) to cover the whole day.
+        val endOfDay = if (endDate > 0) endDate + 86399999L else 0L
+        val isEventActive = endOfDay == 0L || currentTime <= endOfDay
+
         val isJoined = !meetup?.userId.isNullOrEmpty()
         binding.btnLeave.setText(if (isJoined) R.string.leave else R.string.join)
-        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true
+        binding.btnLeave.isEnabled = user?.id?.isNotBlank() == true && isEventActive
     }
 
     override fun onDestroyView() {
