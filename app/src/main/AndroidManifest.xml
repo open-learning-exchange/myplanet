@@ -96,7 +96,8 @@
         <activity android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
         <activity android:name=".ui.viewer.ResourceViewerActivity"
-            android:configChanges="orientation|screenSize" />
+            android:configChanges="orientation|screenSize"
+            android:exported="false" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
             android:theme="@style/AppTheme" />
