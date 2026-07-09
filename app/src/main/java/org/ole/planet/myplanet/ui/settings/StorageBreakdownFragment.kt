@@ -20,7 +20,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
 
@@ -29,9 +28,6 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     private var _binding: FragmentStorageBreakdownBinding? = null
     private val binding get() = _binding!!
-
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider

@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
+import io.realm.Case
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -78,16 +79,6 @@ class CoursesRepositoryImpl @Inject constructor(
             realm.where(RealmMyCourse::class.java)
                 .equalTo("courseId", courseId)
                 .findFirst()?.let { realm.copyFromRealm(it) }
-        }
-    }
-
-    override suspend fun getCourseByCourseId(courseId: String): RealmMyCourse? {
-        if (courseId.isBlank()) {
-            return null
-        }
-        return withRealm { realm ->
-            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            course?.let { realm.copyFromRealm(it) }
         }
     }
 
@@ -141,16 +132,6 @@ class CoursesRepositoryImpl @Inject constructor(
             val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
             val steps = course?.courseSteps
             if (steps != null) Collections.unmodifiableList(realm.copyFromRealm(steps)) else emptyList()
-        }
-    }
-
-    override suspend fun getCourseStepIds(courseId: String): List<String?> {
-        if (courseId.isBlank()) {
-            return emptyList()
-        }
-        return withRealm { realm ->
-            val course = realm.where(RealmMyCourse::class.java).equalTo("courseId", courseId).findFirst()
-            course?.courseSteps?.map { it.id } ?: emptyList()
         }
     }
 
@@ -240,6 +221,9 @@ class CoursesRepositoryImpl @Inject constructor(
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            queryParts.forEach { part ->
+                queryObj.contains("courseTitleNormal", normalizeText(part), Case.INSENSITIVE)
+            }
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val data = queryObj.findAll()
             val normalizedQuery = normalizeText(query)
@@ -597,10 +581,6 @@ class CoursesRepositoryImpl @Inject constructor(
         return submissionsRepository.hasUnfinishedSurveys(courseId, userId)
     }
 
-    override suspend fun getCourseTags(courseId: String): List<RealmTag> {
-        return tagsRepository.getTagsForCourse(courseId)
-    }
-
     override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>> {
         return tagsRepository.getTagsForCourses(courseIds)
     }
@@ -621,66 +601,6 @@ class CoursesRepositoryImpl @Inject constructor(
                     .findAll()
                     .deleteAllFromRealm()
             }
-        }
-    }
-
-    override suspend fun filterCoursesByTag(
-        query: String,
-        tags: List<RealmTag>,
-        isMyCourseLib: Boolean,
-        userId: String?
-    ): List<RealmMyCourse> {
-        return withRealm { realm ->
-            var realmQuery = realm.where(RealmMyCourse::class.java)
-
-            if (tags.isNotEmpty()) {
-                val tagIds = tags.mapNotNull { it.id }.toTypedArray()
-                val linkedCourseIds = realm.where(RealmTag::class.java)
-                    .equalTo("db", "courses")
-                    .`in`("tagId", tagIds)
-                    .findAll()
-                    .mapNotNull { it.linkId }
-                    .toTypedArray()
-
-                if (linkedCourseIds.isEmpty()) {
-                    return@withRealm emptyList()
-                }
-                realmQuery = realmQuery.`in`("courseId", linkedCourseIds)
-            }
-
-            if (isMyCourseLib && !userId.isNullOrBlank()) {
-                realmQuery = realmQuery.equalTo("userId", userId)
-            }
-
-            val data = realmQuery.findAll()
-
-            val list: List<RealmMyCourse> = if (query.isEmpty()) {
-                realm.copyFromRealm(data)
-            } else {
-                val queryParts = query.split(" ").filterNot { it.isEmpty() }
-                val normalizedQueryParts = queryParts.map { normalizeText(it) }
-                val normalizedQuery = normalizeText(query)
-                val startsWithQuery = mutableListOf<RealmMyCourse>()
-                val containsQuery = mutableListOf<RealmMyCourse>()
-
-                for (item in data) {
-                    val title = item.courseTitle?.let { normalizeText(it) } ?: continue
-
-                    if (title.startsWith(normalizedQuery)) {
-                        startsWithQuery.add(item)
-                    } else if (matchesAllParts(title, normalizedQueryParts)) {
-                        containsQuery.add(item)
-                    }
-                }
-                val filteredData = startsWithQuery + containsQuery
-                realm.copyFromRealm(filteredData)
-            }
-
-            if (!isMyCourseLib) {
-                list.forEach { it.isMyCourse = it.userId?.contains(userId) == true }
-            }
-
-            list.distinctBy { it.courseId }
         }
     }
 
@@ -728,7 +648,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun insertCertification(realm: Realm, doc: JsonObject) {
+    private fun insertCertification(realm: Realm, doc: JsonObject) {
         val id = JsonUtils.getString("_id", doc)
         var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
         if (certification == null) {

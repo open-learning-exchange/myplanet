@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.services.upload.AchievementUploader
@@ -110,6 +111,12 @@ object ServiceModule {
         timeProvider: TimeProvider
     ): UploadManager {
         return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRealtimeSyncManager(): RealtimeSyncManager {
+        return RealtimeSyncManager.getInstance()
     }
 
     @Provides

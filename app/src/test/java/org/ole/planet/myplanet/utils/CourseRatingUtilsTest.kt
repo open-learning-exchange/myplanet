@@ -21,7 +21,7 @@ class CourseRatingUtilsTest {
     fun showRating_withNullObject_setsDefaultValues() {
         every { context.getString(R.string.rating_count_format, 0) } returns "0 ratings"
 
-        CourseRatingUtils.showRating(context, null, average, ratingCount, ratingBar)
+        CourseRatingUtils.showRating(context, null as JsonObject?, average, ratingCount, ratingBar)
 
         verify { average.text = "0.00" }
         verify { ratingCount.text = "0 ratings" }
