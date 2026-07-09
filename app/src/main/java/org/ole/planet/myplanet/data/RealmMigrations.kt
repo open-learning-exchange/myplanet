@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.data
 
 import io.realm.DynamicRealm
 import io.realm.RealmMigration
+import java.text.Normalizer
+import java.util.Locale
 
 class RealmMigrations : RealmMigration {
 
@@ -149,35 +151,21 @@ class RealmMigrations : RealmMigration {
         }
 
         if (version == 14L) {
-            schema.get("RealmMyCourse")
-                ?.transform { obj ->
-                    val title = obj.getString("courseTitle")
-                    if (title != null && obj.getString("courseTitleNormal") == null) {
-                        val lowercased = title.lowercase(java.util.Locale.ROOT)
-                        val normalized = java.text.Normalizer.normalize(lowercased, java.text.Normalizer.Form.NFD)
-                        val sb = java.lang.StringBuilder(normalized.length)
-                        for (i in 0 until normalized.length) {
-                            val c = normalized[i]
-                            if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
-                                sb.append(c)
-                            }
+            schema.get("RealmMyCourse")?.transform { obj ->
+                val title = obj.getString("courseTitle")
+                if (title != null && obj.getString("courseTitleNormal") == null) {
+                    val lowercased = title.lowercase(Locale.ROOT)
+                    val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
+                    val sb = StringBuilder(normalized.length)
+                    for (i in 0 until normalized.length) {
+                        val c = normalized[i]
+                        if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
+                            sb.append(c)
                         }
-                        obj.setString("courseTitleNormal", sb.toString())
                     }
+                    obj.setString("courseTitleNormal", sb.toString())
                 }
-
-            schema.get("RealmMyLibrary")
-                ?.addField("titleNormal", String::class.java)
-                ?.addIndex("titleNormal")
-                ?.transform { obj ->
-                    val title = obj.getString("title")
-                    if (title != null) {
-                        val normalized = java.text.Normalizer.normalize(title, java.text.Normalizer.Form.NFD)
-                            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
-                            .lowercase(java.util.Locale.ROOT)
-                        obj.setString("titleNormal", normalized)
-                    }
-                }
+            }
             version++
         }
     }
