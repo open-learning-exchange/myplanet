@@ -88,7 +88,6 @@ class AchievementFragment : BaseContainerFragment() {
         return userRepository.getAchievementData(uId, pCode)
     }
 
-
     private fun updateAchievementUI() {
         achievementData?.let {
             setupAchievementHeader(it)
@@ -110,7 +109,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-
         if (!TextUtils.isEmpty(user?.userImage)) {
             Glide.with(requireActivity())
                 .load(user?.userImage)
@@ -129,7 +127,6 @@ class AchievementFragment : BaseContainerFragment() {
 
         binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
     }
-
 
     private fun setupRealtimeSync() {
         collectWhenStarted(viewModel.dataUpdateFlow) { update ->
