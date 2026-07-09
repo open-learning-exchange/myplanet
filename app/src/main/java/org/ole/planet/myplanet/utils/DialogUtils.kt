@@ -13,7 +13,6 @@ import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogProgressBinding
@@ -53,14 +52,9 @@ object DialogUtils {
 
         becomeMember.setOnClickListener {
             val guest = true
-            MainApplication.applicationScope.launch {
-                val username = profileDbHandler.getUserModel()?.name
-                withContext(Dispatchers.Main) {
-                    val intent = Intent(context, BecomeMemberActivity::class.java)
-                    intent.putExtra("guest", guest)
-                    context.startActivity(intent)
-                }
-            }
+            val intent = Intent(context, BecomeMemberActivity::class.java)
+            intent.putExtra("guest", guest)
+            context.startActivity(intent)
         }
         cancel.setOnClickListener {
             dialog.dismiss()
