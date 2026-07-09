@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.ui.chat
 
-data class ChatShareTargetModel(
+data class ChatShareTargetItem(
     val title: String,
     val isGroup: Boolean,
     val isExpanded: Boolean = false,

@@ -262,15 +262,15 @@ class ChatHistoryAdapter(
         dataMap: Map<String, List<String>>,
         sharedChildren: Set<String>,
         expandedGroups: Set<String>
-    ): List<ChatShareTargetModel> {
-        val flatList = mutableListOf<ChatShareTargetModel>()
+    ): List<ChatShareTargetItem> {
+        val flatList = mutableListOf<ChatShareTargetItem>()
         for ((groupTitle, children) in dataMap) {
             val isExpanded = expandedGroups.contains(groupTitle)
-            flatList.add(ChatShareTargetModel(title = groupTitle, isGroup = true, isExpanded = isExpanded))
+            flatList.add(ChatShareTargetItem(title = groupTitle, isGroup = true, isExpanded = isExpanded))
             if (isExpanded) {
                 for (childTitle in children) {
                     flatList.add(
-                        ChatShareTargetModel(
+                        ChatShareTargetItem(
                             title = childTitle,
                             isGroup = false,
                             parentTitle = groupTitle,

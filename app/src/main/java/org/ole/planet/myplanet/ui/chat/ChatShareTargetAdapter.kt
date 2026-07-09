@@ -13,8 +13,8 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 
 class ChatShareTargetAdapter(
-    private val onItemClick: (ChatShareTargetModel) -> Unit
-) : ListAdapter<ChatShareTargetModel, RecyclerView.ViewHolder>(DiffCallback) {
+    private val onItemClick: (ChatShareTargetItem) -> Unit
+) : ListAdapter<ChatShareTargetItem, RecyclerView.ViewHolder>(DiffCallback) {
 
     override fun getItemViewType(position: Int): Int {
         return if (getItem(position).isGroup) VIEW_TYPE_GROUP else VIEW_TYPE_CHILD
@@ -46,7 +46,7 @@ class ChatShareTargetAdapter(
         private val listTitleTextView: TextView = view.findViewById(R.id.listTitle)
         private val arrowIcon: ImageView = view.findViewById(R.id.arrowIcon)
 
-        fun bind(item: ChatShareTargetModel) {
+        fun bind(item: ChatShareTargetItem) {
             listTitleTextView.setTypeface(null, Typeface.BOLD)
             listTitleTextView.text = item.title
             listTitleTextView.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
@@ -58,7 +58,7 @@ class ChatShareTargetAdapter(
         private val expandedListTextView: TextView = view.findViewById(R.id.expandedListItem)
         private val sharedIcon: ImageView = view.findViewById(R.id.sharedIcon)
 
-        fun bind(item: ChatShareTargetModel) {
+        fun bind(item: ChatShareTargetItem) {
             expandedListTextView.text = item.title
             itemView.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
             expandedListTextView.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
@@ -70,12 +70,12 @@ class ChatShareTargetAdapter(
         private const val VIEW_TYPE_GROUP = 0
         private const val VIEW_TYPE_CHILD = 1
 
-        private val DiffCallback = object : DiffUtil.ItemCallback<ChatShareTargetModel>() {
-            override fun areItemsTheSame(oldItem: ChatShareTargetModel, newItem: ChatShareTargetModel): Boolean {
+        private val DiffCallback = object : DiffUtil.ItemCallback<ChatShareTargetItem>() {
+            override fun areItemsTheSame(oldItem: ChatShareTargetItem, newItem: ChatShareTargetItem): Boolean {
                 return oldItem.title == newItem.title && oldItem.isGroup == newItem.isGroup
             }
 
-            override fun areContentsTheSame(oldItem: ChatShareTargetModel, newItem: ChatShareTargetModel): Boolean {
+            override fun areContentsTheSame(oldItem: ChatShareTargetItem, newItem: ChatShareTargetItem): Boolean {
                 return oldItem == newItem
             }
         }
