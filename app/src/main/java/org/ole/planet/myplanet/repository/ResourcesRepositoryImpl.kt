@@ -132,11 +132,15 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         if (userId == null) return emptyList()
 
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-            equalTo("userId", userId)
+        return withRealm { realm ->
+            val results = realm.where(RealmMyLibrary::class.java)
+                .equalTo("isPrivate", false)
+                .equalTo("userId", userId)
+                .findAll()
+
+            val filtered = results.filter { it.needToUpdate() }
+            realm.copyFromRealm(filtered)
         }
-        return filterLibrariesNeedingUpdate(results)
     }
 
     override suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
@@ -160,11 +164,14 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
 
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-            equalTo("userId", userId)
+        return withRealm { realm ->
+            val results = realm.where(RealmMyLibrary::class.java)
+                .equalTo("isPrivate", false)
+                .equalTo("userId", userId)
+                .findAll()
+
+            results.count { it.needToUpdate() }
         }
-        return filterLibrariesNeedingUpdate(results).size
     }
 
     override suspend fun resourceTitleExists(title: String): Boolean {
@@ -280,10 +287,6 @@ class ResourcesRepositoryImpl @Inject constructor(
                 library.downloadedRev = library._rev
             }
         }
-    }
-
-    private fun filterLibrariesNeedingUpdate(results: Collection<RealmMyLibrary>): List<RealmMyLibrary> {
-        return results.filter { it.needToUpdate() }
     }
 
     override fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
@@ -416,21 +419,26 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
         val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
 
-        if (!targetUserId.isNullOrBlank()) {
-            val userLibraries = queryList(RealmMyLibrary::class.java) {
-                equalTo("isPrivate", false)
-                equalTo("userId", targetUserId)
-            }
-            val userLibrariesNeedingUpdate = filterLibrariesNeedingUpdate(userLibraries)
-            if (userLibrariesNeedingUpdate.isNotEmpty()) {
-                return userLibrariesNeedingUpdate
-            }
-        }
+        return withRealm { realm ->
+            if (!targetUserId.isNullOrBlank()) {
+                val userLibraries = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("isPrivate", false)
+                    .equalTo("userId", targetUserId)
+                    .findAll()
 
-        val results = queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
+                val userLibrariesNeedingUpdate = userLibraries.filter { it.needToUpdate() }
+                if (userLibrariesNeedingUpdate.isNotEmpty()) {
+                    return@withRealm realm.copyFromRealm(userLibrariesNeedingUpdate)
+                }
+            }
+
+            val results = realm.where(RealmMyLibrary::class.java)
+                .equalTo("isPrivate", false)
+                .findAll()
+
+            val filtered = results.filter { it.needToUpdate() }
+            realm.copyFromRealm(filtered)
         }
-        return filterLibrariesNeedingUpdate(results)
     }
 
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
