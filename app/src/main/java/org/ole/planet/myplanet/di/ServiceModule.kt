@@ -121,12 +121,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    fun provideRealtimeSyncManager(): RealtimeSyncManager {
-        return RealtimeSyncManager.getInstance()
-    }
-
-    @Provides
-    @Singleton
     fun provideUploadToShelfService(
         @ApplicationContext context: Context,
         @AppPreferences preferences: SharedPreferences,
