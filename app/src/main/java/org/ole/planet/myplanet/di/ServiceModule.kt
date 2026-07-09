@@ -88,12 +88,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    fun provideRealtimeSyncManager(): RealtimeSyncManager {
-        return RealtimeSyncManager.getInstance()
-    }
-
-    @Provides
-    @Singleton
     fun provideUploadManager(
         @ApplicationContext context: Context,
         submissionsRepository: SubmissionsRepository,
@@ -117,6 +111,12 @@ object ServiceModule {
         timeProvider: TimeProvider
     ): UploadManager {
         return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRealtimeSyncManager(): RealtimeSyncManager {
+        return RealtimeSyncManager.getInstance()
     }
 
     @Provides
