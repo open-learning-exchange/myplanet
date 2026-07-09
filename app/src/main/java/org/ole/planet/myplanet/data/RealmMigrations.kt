@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.data
 
 import io.realm.DynamicRealm
 import io.realm.RealmMigration
+import java.text.Normalizer
+import java.util.Locale
 
 class RealmMigrations : RealmMigration {
 
@@ -145,6 +147,25 @@ class RealmMigrations : RealmMigration {
             schema.get("RealmMyCourse")
                 ?.addField("coverFileName", String::class.java)
                 ?.setNullable("coverFileName", true)
+            version++
+        }
+
+        if (version == 14L) {
+            schema.get("RealmMyCourse")?.transform { obj ->
+                val title = obj.getString("courseTitle")
+                if (title != null && obj.getString("courseTitleNormal") == null) {
+                    val lowercased = title.lowercase(Locale.ROOT)
+                    val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
+                    val sb = StringBuilder(normalized.length)
+                    for (i in 0 until normalized.length) {
+                        val c = normalized[i]
+                        if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
+                            sb.append(c)
+                        }
+                    }
+                    obj.setString("courseTitleNormal", sb.toString())
+                }
+            }
             version++
         }
     }

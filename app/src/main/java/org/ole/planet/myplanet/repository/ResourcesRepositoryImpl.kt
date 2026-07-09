@@ -5,6 +5,7 @@ import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.realm.Case
 import io.realm.Sort
 import java.io.File
 import java.text.Normalizer
@@ -62,13 +63,16 @@ class ResourcesRepositoryImpl @Inject constructor(
                 return@withRealm emptyList()
             }
 
-            val data = queryObj.findAll()
-
             if (query.isEmpty()) {
+                val data = queryObj.findAll()
                 return@withRealm realm.copyFromRealm(data)
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
+            queryParts.forEach { part ->
+                queryObj.contains("titleNormal", normalizeText(part), Case.INSENSITIVE)
+            }
+            val data = queryObj.findAll()
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val normalizedQuery = normalizeText(query)
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
@@ -197,6 +201,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = RealmMyLibrary().apply {
             this.id = id
             this.title = title
+            this.titleNormal = normalizeText(title)
             this.addedBy = request.addedBy
             this.author = request.author
             this.resourceId = id
@@ -610,6 +615,12 @@ class ResourcesRepositoryImpl @Inject constructor(
                 .findAll()
                 .associate { (it.resourceId ?: "") to (it.title ?: "") }
         }
+    }
+
+    override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>> {
+        return queryList(RealmMyLibrary::class.java) {
+            equalTo("courseId", courseId)
+        }.groupBy { it.stepId }
     }
 
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
