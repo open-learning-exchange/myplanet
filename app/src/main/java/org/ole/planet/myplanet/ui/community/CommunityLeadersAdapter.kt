@@ -18,7 +18,7 @@ internal class CommunityLeadersAdapter(
     var context: Context
 ) : ListAdapter<RealmUser, CommunityLeadersAdapter.CommunityLeadersViewHolder>(
     DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem -> oldItem.name == newItem.name },
+        areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.firstName == newItem.firstName &&
                     oldItem.lastName == newItem.lastName &&

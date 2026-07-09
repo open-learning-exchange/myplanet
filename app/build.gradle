@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< feature-events-adapter-diffutil-payloads-7898670320632569101
         versionCode = 6043
         versionName = "0.60.43"
+=======
+        versionCode = 6042
+        versionName = "0.60.42"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -149,11 +154,6 @@ android {
 }
 kapt {
     correctErrorTypes = true
-}
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
-    }
 }
 dependencies {
     testImplementation(libs.test.junit)

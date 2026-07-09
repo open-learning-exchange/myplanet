@@ -100,10 +100,10 @@ class RetryRepositoryImpl @Inject constructor(
             val results = realm.where(RealmRetryOperation::class.java)
                 .equalTo("status", RealmRetryOperation.STATUS_PENDING)
                 .lessThanOrEqualTo("nextRetryTime", timeProvider.now())
+                .rawPredicate("attemptCount < maxAttempts")
                 .findAll()
 
-            results.filter { it.attemptCount < it.maxAttempts }
-                .let { realm.copyFromRealm(it) }
+            realm.copyFromRealm(results)
         }
     }
 
