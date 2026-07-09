@@ -56,10 +56,10 @@ class RatingsViewModelTest {
             userRating = 5
         )
 
-        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } returns mockSummary
 
-        viewModel.loadRatingData(type, itemId, userId)
+        viewModel.loadRatingData(type, itemId)
         advanceUntilIdle()
 
         val state = viewModel.ratingState.value
@@ -79,10 +79,10 @@ class RatingsViewModelTest {
 
         val mockUser = RealmUser().apply { id = userId }
 
-        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } throws RuntimeException("fail")
 
-        viewModel.loadRatingData(type, itemId, userId)
+        viewModel.loadRatingData(type, itemId)
         advanceUntilIdle()
 
         val state = viewModel.ratingState.value
@@ -105,12 +105,27 @@ class RatingsViewModelTest {
             userRating = 5
         )
 
-        coEvery { userRepository.getUserById(userId) } returns mockUser
+        coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } returns mockSummary
 
-        viewModel.loadRatingData(type, itemId, userId)
+        viewModel.loadRatingData(type, itemId)
         advanceUntilIdle()
 
         assertEquals(mockUser, viewModel.userState.value)
+    }
+
+    @Test
+    fun `getRatingSummary handles null user`() = runTest {
+        val type = "course"
+        val itemId = "item-1"
+
+        coEvery { userRepository.getUserProfile() } returns null
+
+        viewModel.loadRatingData(type, itemId)
+        advanceUntilIdle()
+
+        val state = viewModel.ratingState.value
+        assertTrue(state is RatingsViewModel.RatingUiState.Error)
+        assertEquals("User not found", (state as RatingsViewModel.RatingUiState.Error).message)
     }
 }
