@@ -61,6 +61,9 @@ class EventsAdapter(
                     }
                 }
             }
+            binding.root.setOnClickListener {
+                onMeetupClick?.invoke(meetup)
+            }
         }
     }
 

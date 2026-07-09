@@ -22,10 +22,14 @@ class EventsAdapterTest {
     private lateinit var context: Context
     private lateinit var adapter: EventsAdapter
 
+    private var clickedMeetup: RealmMeetup? = null
+
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        adapter = EventsAdapter()
+        adapter = EventsAdapter { meetup ->
+            clickedMeetup = meetup
+        }
     }
 
     @Test
@@ -90,5 +94,9 @@ class EventsAdapterTest {
         assertEquals("New Title", holder.binding.tvTitle.text.toString())
         assertEquals("New Location", holder.binding.tvLocation.text.toString())
         assertEquals("Old Desc", holder.binding.tvDescription.text.toString())
+
+        holder.binding.root.performClick()
+        assertEquals("New Title", clickedMeetup?.title)
+        assertEquals("New Location", clickedMeetup?.meetupLocation)
     }
 }
