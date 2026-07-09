@@ -364,14 +364,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
         binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
         binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }

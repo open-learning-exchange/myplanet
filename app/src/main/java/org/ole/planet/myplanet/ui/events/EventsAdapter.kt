@@ -18,6 +18,8 @@ class EventsAdapter(
         areContentsTheSame = { oldItem, newItem -> oldItem.id == newItem.id && oldItem.title == newItem.title && oldItem.description == newItem.description && oldItem.startDate == newItem.startDate && oldItem.endDate == newItem.endDate && oldItem.startTime == newItem.startTime && oldItem.endTime == newItem.endTime && oldItem.meetupLocation == newItem.meetupLocation && oldItem.meetupLink == newItem.meetupLink && oldItem.recurring == newItem.recurring && oldItem.creator == newItem.creator }
     )
 ) {
+    private val dateCache = mutableMapOf<Long, String>()
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): EventsViewHolder {
         val binding = ItemMeetupBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return EventsViewHolder(binding)
@@ -29,8 +31,8 @@ class EventsAdapter(
         val context = binding.root.context
         binding.tvTitle.text = context.getString(R.string.message_placeholder, meetup.title)
         binding.tvDescription.text = context.getString(R.string.message_placeholder, meetup.description)
-        binding.tvDateFrom.text = formatDate(meetup.startDate)
-        binding.tvDateTo.text = formatDate(meetup.endDate)
+        binding.tvDateFrom.text = dateCache.getOrPut(meetup.startDate) { formatDate(meetup.startDate) }
+        binding.tvDateTo.text = dateCache.getOrPut(meetup.endDate) { formatDate(meetup.endDate) }
         binding.tvTime.text = "${meetup.startTime} - ${meetup.endTime}"
         binding.tvLocation.text = context.getString(R.string.message_placeholder, meetup.meetupLocation)
         binding.tvLink.text = context.getString(R.string.message_placeholder, meetup.meetupLink)
