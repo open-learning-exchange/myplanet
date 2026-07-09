@@ -229,18 +229,6 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         } > 0
     }
 
-    override suspend fun createSurveySubmission(examId: String, userId: String?) {
-        val parentId = withRealm { realm ->
-            val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
-            if (!courseId.isNullOrEmpty()) {
-                "$examId@$courseId"
-            } else {
-                examId
-            }
-        }
-        getOrCreateSubmission(userId, parentId)
-    }
-
     override suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>) {
         val parentId = withRealm { realm ->
             val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
@@ -357,12 +345,6 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }.getOrNull()
     }
 
-    override suspend fun getAllPendingSubmissions(): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java) {
-            equalTo("status", "pending", Case.INSENSITIVE)
-        }
-    }
-
     override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<RealmSubmission> {
         return queryList(RealmSubmission::class.java) {
             equalTo("parentId", parentId)
@@ -423,7 +405,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         } ?: false
     }
 
-    override suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
+    private suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
         return queryList(RealmStepExam::class.java) {
             equalTo("courseId", courseId)
             equalTo("type", "survey")
