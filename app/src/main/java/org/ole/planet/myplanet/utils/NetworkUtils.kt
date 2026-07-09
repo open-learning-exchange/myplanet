@@ -22,10 +22,17 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
     private val coreEntryPoint: CoreDependenciesEntryPoint get() =
         EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+
+    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
+    private val sharedPrefManager: SharedPrefManager by lazy {
+        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+        entryPoint.sharedPrefManager()
+    }
 
     // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
     private val coroutineScope: CoroutineScope by lazy {
