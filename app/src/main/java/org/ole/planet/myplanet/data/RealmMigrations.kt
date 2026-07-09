@@ -4,7 +4,20 @@ import io.realm.DynamicRealm
 import io.realm.RealmMigration
 
 class RealmMigrations : RealmMigration {
+
+    companion object {
+        const val MINIMUM_SUPPORTED_VERSION = 4L
+    }
+
+    class UnsupportedSchemaVersionException(version: Long) : IllegalStateException(
+        "Realm schema version $version is below the minimum supported version " +
+            "$MINIMUM_SUPPORTED_VERSION; the local database must be recreated"
+    )
+
     override fun migrate(realm: DynamicRealm, oldVersion: Long, newVersion: Long) {
+        if (oldVersion < MINIMUM_SUPPORTED_VERSION) {
+            throw UnsupportedSchemaVersionException(oldVersion)
+        }
         val schema = realm.schema
         var version = oldVersion
 

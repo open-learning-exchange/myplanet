@@ -12,7 +12,6 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -20,7 +19,6 @@ import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 
@@ -36,7 +34,7 @@ object DialogUtils {
         return prgDialog
     }
 
-    fun guestDialog(context: Context, profileDbHandler: UserSessionManager) {
+    fun guestDialog(context: Context) {
         val builder = AndroidAlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
@@ -54,12 +52,9 @@ object DialogUtils {
 
         becomeMember.setOnClickListener {
             val guest = true
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
-                val intent = Intent(context, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.getUserModel()?.name)
-                intent.putExtra("guest", guest)
-                context.startActivity(intent)
-            }
+            val intent = Intent(context, BecomeMemberActivity::class.java)
+            intent.putExtra("guest", guest)
+            context.startActivity(intent)
         }
         cancel.setOnClickListener {
             dialog.dismiss()
