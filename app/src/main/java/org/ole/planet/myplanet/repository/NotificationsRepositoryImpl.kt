@@ -253,12 +253,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         val map = mutableMapOf<String, String>()
 
         val tasks = queryList(RealmTeamTask::class.java) {
-            beginGroup()
-            taskIds.forEachIndexed { index, taskId ->
-                if (index > 0) or()
-                equalTo("id", taskId)
-            }
-            endGroup()
+            `in`("id", taskIds.toTypedArray())
         }
 
         val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
@@ -327,12 +322,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         val map = mutableMapOf<String, String>()
 
         val tasks = queryList(RealmTeamTask::class.java) {
-            beginGroup()
-            taskTitles.forEachIndexed { index, title ->
-                if (index > 0) or()
-                equalTo("title", title)
-            }
-            endGroup()
+            `in`("title", taskTitles.toTypedArray())
         }
 
         val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
@@ -390,12 +380,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         // 1. Fetch all relevant notifications in a single query
         val notificationsResult = queryList(RealmTeamNotification::class.java) {
             equalTo("type", "chat")
-            beginGroup()
-            teamIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("parentId", id)
-            }
-            endGroup()
+            `in`("parentId", teamIds.toTypedArray())
         }
         val notificationsById = mutableMapOf<String, RealmTeamNotification>()
         notificationsResult.forEach {
@@ -407,12 +392,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         // 2. Fetch all relevant chat counts in a single query
         val chatsResult = queryList(RealmNews::class.java) {
             equalTo("viewableBy", "teams")
-            beginGroup()
-            teamIds.forEachIndexed { index, id ->
-                if (index > 0) or()
-                equalTo("viewableId", id)
-            }
-            endGroup()
+            `in`("viewableId", teamIds.toTypedArray())
         }
         val chatCountsById = mutableMapOf<String, Long>()
         chatsResult.forEach {

@@ -386,7 +386,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 }
             }
             R.id.action_sync -> logSyncInSharedPrefs()
@@ -397,7 +397,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingsActivity::class.java))
@@ -869,7 +869,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -881,7 +881,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -1009,14 +1009,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }

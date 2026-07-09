@@ -35,6 +35,7 @@ object Constants {
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
     const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
+    const val NETWORK_TRAFFIC_TAG = 0x4F_4C_45 // "OLE"
 
     init {
         initClasses()

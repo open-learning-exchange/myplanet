@@ -17,6 +17,7 @@ import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -100,6 +101,42 @@ class SubmissionsRepositoryImplTest {
 
         val result = repository.getSubmissionsFlow("user_123").first()
         assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
+        val s1 = mockk<RealmSubmission>(relaxed = true).apply {
+            every { id } returns "1"
+            every { lastUpdateTime } returns 100L
+        }
+        val s1_dup = mockk<RealmSubmission>(relaxed = true).apply {
+            every { id } returns "1"
+            every { lastUpdateTime } returns 100L
+        }
+        val subList = listOf(s1)
+        val subListDup = listOf(s1_dup)
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<RealmSubmission>>(replay = 1)
+
+        coEvery {
+            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
+        } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Equivalent list should be suppressed
+        flowEmitter.emit(subListDup)
+        assertEquals(1, emissions)
+
+        job.cancel()
     }
 
     @Test
