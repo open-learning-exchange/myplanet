@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.ui.sync
 
 import com.afollestad.materialdialogs.MaterialDialog
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -32,8 +30,7 @@ class SyncConfigurationCoordinator(
         fun onClearDataDialog()
     }
 
-    fun checkMinApk(
-        scope: CoroutineScope,
+    suspend fun checkMinApk(
         url: String,
         pin: String,
         callerContext: CallerContext,
@@ -41,21 +38,19 @@ class SyncConfigurationCoordinator(
         currentDialog: MaterialDialog?,
         serverDialogBinding: DialogServerUrlBinding?
     ) {
-        scope.launch {
-            callback.showProgressDialog()
-            val result = configurationsRepository.getMinApk(url, pin)
-            callback.dismissProgressDialog()
-            when (result) {
-                is ConfigurationsRepository.ConfigurationResult.Success -> {
-                    handleConfigurationSuccess(
-                        result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerContext,
-                        serverConfigAction, currentDialog, serverDialogBinding
-                    )
-                }
-                is ConfigurationsRepository.ConfigurationResult.Failure -> {
-                    callback.setSyncFailed(true)
-                    callback.showErrorDialog(result.errorMessage)
-                }
+        callback.showProgressDialog()
+        val result = configurationsRepository.getMinApk(url, pin)
+        callback.dismissProgressDialog()
+        when (result) {
+            is ConfigurationsRepository.ConfigurationResult.Success -> {
+                handleConfigurationSuccess(
+                    result.id, result.code, result.url, result.defaultUrl, result.isAlternativeUrl, callerContext,
+                    serverConfigAction, currentDialog, serverDialogBinding
+                )
+            }
+            is ConfigurationsRepository.ConfigurationResult.Failure -> {
+                callback.setSyncFailed(true)
+                callback.showErrorDialog(result.errorMessage)
             }
         }
     }
