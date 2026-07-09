@@ -76,7 +76,6 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var broadcastService: BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
-    private var pendingSurveyDialog: AlertDialog? = null
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -205,40 +204,6 @@ abstract class BaseResourceFragment : Fragment() {
                 dialog.show()
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
                     ?: 0) > 0
-            }
-        }
-    }
-
-    fun showPendingSurveyDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
-            val list = submissionsRepository.getPendingSurveys(user?.id)
-            if (list.isEmpty()) return@launch
-            val exams = submissionsRepository.getExamMap(list)
-            val arrayAdapter = createSurveyAdapter(list, exams)
-            pendingSurveyDialog?.dismiss()
-            pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
-                .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                    SubmissionsAdapter.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-                }.setPositiveButton(R.string.dismiss, null).create()
-            pendingSurveyDialog?.setOnDismissListener {
-                pendingSurveyDialog = null
-            }
-            pendingSurveyDialog?.show()
-        }
-    }
-
-    private fun createSurveyAdapter(
-        list: List<RealmSubmission>,
-        exams: Map<String?, RealmStepExam>
-    ): ArrayAdapter<RealmSubmission> {
-        return object : ArrayAdapter<RealmSubmission>(requireActivity(), android.R.layout.simple_list_item_1, list) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: LayoutInflater.from(activity)
-                    .inflate(android.R.layout.simple_list_item_1, parent, false)
-                val text = exams[list[position].parentId]?.name ?: getString(R.string.n_a)
-                (view as TextView).text = text
-                return view
             }
         }
     }
@@ -401,8 +366,6 @@ abstract class BaseResourceFragment : Fragment() {
     override fun onDestroyView() {
         downloadSuggestionDialog?.dismiss()
         downloadSuggestionDialog = null
-        pendingSurveyDialog?.dismiss()
-        pendingSurveyDialog = null
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null

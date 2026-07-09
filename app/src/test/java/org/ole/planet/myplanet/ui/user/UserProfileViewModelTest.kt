@@ -58,9 +58,10 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `updateUserProfile with null userId sets updateState to Error without invoking userRepository`() = runTest {
-        viewModel.updateUserProfile(
-            userId = null,
+    fun `updateCurrentUserProfile with blank active userId sets updateState to Error without invoking userRepository`() = runTest {
+        coEvery { userRepository.getActiveUserIdSuspending() } returns ""
+
+        viewModel.updateCurrentUserProfile(
             firstName = "John",
             lastName = "Doe",
             middleName = null,
@@ -79,8 +80,10 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `updateUserProfile success sets updateState to Success and updates userModel`() = runTest {
+    fun `updateCurrentUserProfile success sets updateState to Success and updates userModel`() = runTest {
         val userId = "user123"
+        coEvery { userRepository.getActiveUserIdSuspending() } returns userId
+
         val mockUser = mockk<RealmUser>()
         coEvery { userRepository.updateUserDetails(
             userId = userId,
@@ -95,8 +98,7 @@ class UserProfileViewModelTest {
             dob = null
         ) } returns mockUser
 
-        viewModel.updateUserProfile(
-            userId = userId,
+        viewModel.updateCurrentUserProfile(
             firstName = "John",
             lastName = "Doe",
             middleName = null,
@@ -115,8 +117,9 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `updateUserProfile exception sets updateState to Error with exception message`() = runTest {
+    fun `updateCurrentUserProfile exception sets updateState to Error with exception message`() = runTest {
         val userId = "user123"
+        coEvery { userRepository.getActiveUserIdSuspending() } returns userId
         val errorMessage = "Database error"
         coEvery { userRepository.updateUserDetails(
             userId = userId,
@@ -131,8 +134,7 @@ class UserProfileViewModelTest {
             dob = null
         ) } throws Exception(errorMessage)
 
-        viewModel.updateUserProfile(
-            userId = userId,
+        viewModel.updateCurrentUserProfile(
             firstName = "John",
             lastName = "Doe",
             middleName = null,
@@ -150,12 +152,13 @@ class UserProfileViewModelTest {
     }
 
     @Test
-    fun `loadUserProfile sets userModel to value returned by userRepository`() = runTest {
+    fun `loadCurrentUserProfile sets userModel to value returned by userRepository`() = runTest {
         val userId = "user123"
+        coEvery { userRepository.getActiveUserIdSuspending() } returns userId
         val mockUser = mockk<RealmUser>()
         coEvery { userRepository.getUserByAnyId(userId) } returns mockUser
 
-        viewModel.loadUserProfile(userId)
+        viewModel.loadCurrentUserProfile()
 
         advanceUntilIdle()
 
