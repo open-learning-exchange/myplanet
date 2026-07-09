@@ -301,4 +301,15 @@ class VoicesRepositoryImplTest {
 
         io.mockk.verify(exactly = 1) { mockLabels.remove("testLabel") }
     }
+
+    @Test
+    fun `getUserById delegates to userRepository`() = testScope.runTest {
+        val testUserId = "test_user_123"
+        val mockUser = mockk<RealmUser>()
+
+        coEvery { userRepository.getUserById(testUserId) } returns mockUser
+
+        val user = repository.getUserById(testUserId)
+        assertEquals(mockUser, user)
+    }
 }
