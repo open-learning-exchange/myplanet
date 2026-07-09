@@ -652,7 +652,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         refreshResourcesData()
     }
 
-    override fun shouldAutoRefresh(table: String): Boolean = true
+    override fun shouldAutoRefresh(table: String): Boolean = false
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
@@ -660,8 +660,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun normalizeText(text: String): String {
         return Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace("\\p{Mn}+".toRegex(), "")
+            .replace(DIACRITICS_REGEX, "")
             .lowercase(Locale.ROOT)
+    }
+
+    companion object {
+        private val DIACRITICS_REGEX = "\\p{Mn}+".toRegex()
     }
 
     private fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {
