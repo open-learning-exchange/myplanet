@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
+    private val parentScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val onPreviewRequested: (ViewHolder, RealmMyLibrary, File) -> Unit,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
     DiffUtils.itemCallback<RealmMyLibrary>(
@@ -177,7 +177,16 @@ class InlineResourceAdapter(
             when {
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
-                else -> onPreviewRequested(holder, resource, resourceFile)
+                else -> {
+                    holder.setPreviewJob(parentScope.launch(dispatcherProvider.main) {
+                        when {
+                            mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
+                            mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
+                            mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, resourceFile)
+                            mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, resourceFile)
+                        }
+                    })
+                }
             }
         } else {
             binding.pbDownload.visibility = View.VISIBLE
@@ -186,16 +195,6 @@ class InlineResourceAdapter(
         binding.ivResourceIcon.setImageResource(
             ResourceOpener.getResourceTypeIcon(resource.resourceLocalAddress)
         )
-    }
-
-    suspend fun loadPreview(holder: ViewHolder, resource: RealmMyLibrary, file: File) {
-        val mimeType = Utilities.getMimeType(resource.resourceLocalAddress)
-        when {
-            mimeType?.contains("pdf") == true -> showPdfPreview(holder, file)
-            mimeType?.startsWith("audio") == true -> showAudioPreview(holder, file)
-            mimeType?.contains("csv") == true || resource.resourceLocalAddress?.endsWith(".csv") == true -> showCsvPreview(holder, file)
-            mimeType?.startsWith("text") == true || resource.resourceLocalAddress?.endsWith(".txt") == true || resource.resourceLocalAddress?.endsWith(".md") == true -> showTextPreview(holder, file)
-        }
     }
 
     private fun showImagePreview(binding: ItemInlineResourceBinding, context: Context, file: File) {
