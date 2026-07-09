@@ -8,6 +8,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -27,7 +28,6 @@ import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
@@ -39,12 +39,13 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
 
+    private val viewModel: AchievementViewModel by viewModels()
+
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -87,7 +88,6 @@ class AchievementFragment : BaseContainerFragment() {
         return userRepository.getAchievementData(uId, pCode)
     }
 
-
     private fun updateAchievementUI() {
         achievementData?.let {
             setupAchievementHeader(it)
@@ -109,7 +109,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-
         if (!TextUtils.isEmpty(user?.userImage)) {
             Glide.with(requireActivity())
                 .load(user?.userImage)
@@ -129,9 +128,8 @@ class AchievementFragment : BaseContainerFragment() {
         binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
     }
 
-
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
+        collectWhenStarted(viewModel.dataUpdateFlow) { update ->
             if (update.table == "achievements" && update.shouldRefreshUI) {
                 refreshAchievementData()
             }
