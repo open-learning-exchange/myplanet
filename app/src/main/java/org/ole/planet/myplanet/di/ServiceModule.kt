@@ -60,13 +60,6 @@ object ServiceModule {
 
     @Provides
     @Singleton
-    @ApplicationScope
-    fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
-        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
-    }
-
-    @Provides
-    @Singleton
     fun provideSyncManager(
         @ApplicationContext context: Context,
         sharedPrefManager: SharedPrefManager,
@@ -117,6 +110,13 @@ object ServiceModule {
         timeProvider: TimeProvider
     ): UploadManager {
         return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
+    }
+
+    @Provides
+    @Singleton
+    @ApplicationScope
+    fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
     }
 
     @Provides
