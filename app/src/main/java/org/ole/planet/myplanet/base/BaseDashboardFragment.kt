@@ -275,7 +275,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val userId = prefData.getUserId().ifEmpty { "--" }
-
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         for ((itemCnt, items) in visibleItems.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)

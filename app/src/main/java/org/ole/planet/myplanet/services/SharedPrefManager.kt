@@ -9,7 +9,6 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
@@ -263,4 +262,5 @@ class SharedPrefManager @Inject constructor(
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
     }
+
 }

@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -22,9 +23,10 @@ data class CachedMyLifeItem(
 
 class LifeRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher override val realmDispatcher: CoroutineDispatcher,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val sharedPrefManager: SharedPrefManager,
-    private val gson: Gson
+    private val gson: Gson,
+    @ApplicationScope private val appScope: CoroutineScope
 ) : RealmRepository(databaseService, realmDispatcher), LifeRepository {
 
     private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
@@ -68,7 +70,7 @@ class LifeRepositoryImpl @Inject constructor(
                 null
             }
             if (cached != null) {
-                CoroutineScope(realmDispatcher).launch {
+                appScope.launch(realmDispatcher) {
                     val realmItems = getMyLifeByUserId(userId, ensureLatest = false)
                     if (realmItems.isNotEmpty()) {
                         cacheMyLifeItems(userId, realmItems)

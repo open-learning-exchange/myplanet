@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -10,6 +11,7 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -18,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LifeRepositoryTest {
@@ -30,8 +33,17 @@ class LifeRepositoryTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         databaseService = mockk(relaxed = true)
-        repository = LifeRepositoryImpl(databaseService, testDispatcher, mockk(relaxed = true), mockk(relaxed = true))
+        val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+        every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
+        repository = LifeRepositoryImpl(
+            databaseService,
+            testDispatcher,
+            sharedPrefManager,
+            Gson(),
+            CoroutineScope(testDispatcher)
+        )
     }
+
 
     @Test
     fun updateVisibility_itemNotFound_doesNothing() = runTest {

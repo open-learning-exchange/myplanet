@@ -177,23 +177,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testCacheMyLifeItems() {
-        val userId = "user123"
-        val myLifeItems = listOf(
-            RealmMyLife("img1", "user123", "Title 1").apply {
-                _id = "id1"
-                weight = 1
-            },
-            RealmMyLife("img2", "user123", "Title 2").apply {
-                _id = "id2"
-                weight = 2
-            }
-        )
-
-        val jsonSlot = slot<String>()
-        // Removing test for cacheMyLifeItems and testGetCachedMyLifeItems as they are moved.
-    }
-
     fun testClearPreferences() {
         mockkStatic(PreferenceManager::class)
         val mockDefaultSharedPreferences: SharedPreferences = mockk()
@@ -220,6 +203,7 @@ class SharedPrefManagerTest {
         verify { mockDefaultEditor.clear() }
     }
 
+    @Test
     fun testRemoveKey() {
         sharedPrefManager.removeKey("some_key")
         verify { mockEditor.remove("some_key") }
