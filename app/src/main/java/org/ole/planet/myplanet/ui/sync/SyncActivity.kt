@@ -241,15 +241,16 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
             "SyncActivity" -> CallerContext.SYNC_ACTIVITY
             else -> CallerContext.OTHER
         }
-        syncConfigurationCoordinator.checkMinApk(
-            lifecycleScope,
-            url,
-            pin,
-            callerContext,
-            serverConfigAction,
-            currentDialog,
-            serverDialogBinding
-        )
+        lifecycleScope.launch {
+            syncConfigurationCoordinator.checkMinApk(
+                url,
+                pin,
+                callerContext,
+                serverConfigAction,
+                currentDialog,
+                serverDialogBinding
+            )
+        }
     }
     fun clearDataDialog(message: String, config: Boolean, onCancel: () -> Unit = {}) {
         AlertDialog.Builder(this, R.style.AlertDialogTheme)
