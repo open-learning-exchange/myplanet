@@ -6,12 +6,10 @@ import android.view.View
 import android.widget.TextView
 import androidx.recyclerview.widget.ListAdapter
 import androidx.test.core.app.ApplicationProvider
-import io.realm.RealmList
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 

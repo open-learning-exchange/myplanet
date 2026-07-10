@@ -8,7 +8,6 @@ import io.realm.Realm
 import io.realm.RealmList
 import java.text.Normalizer
 import java.util.Calendar
-import java.util.Collections
 import java.util.HashMap
 import java.util.Locale
 import java.util.UUID

@@ -13,7 +13,6 @@ import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UploadUpdateContract

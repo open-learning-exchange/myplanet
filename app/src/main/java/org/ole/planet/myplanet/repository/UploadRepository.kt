@@ -5,8 +5,6 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import kotlin.reflect.KClass
-import org.ole.planet.myplanet.services.upload.UploadConfig
-import org.ole.planet.myplanet.services.upload.UploadedItem
 import retrofit2.Response
 
 interface UploadRepository {

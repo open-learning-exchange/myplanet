@@ -7,8 +7,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
 import android.view.LayoutInflater

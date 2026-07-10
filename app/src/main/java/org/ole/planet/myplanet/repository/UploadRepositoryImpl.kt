@@ -11,9 +11,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.services.upload.UploadConfig
-import org.ole.planet.myplanet.services.upload.UploadedItem
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
