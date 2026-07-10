@@ -97,12 +97,6 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
             isRatingViewInitialized = true
         }
         setRatings(state.ratingSummary)
-
-        binding.root.doOnPreDraw {
-            _binding?.root?.post {
-                (parentFragment as? TakeCourseFragment)?.onCourseDetailContentReady()
-            }
-        }
     }
 
     private fun setCourseCover(courseId: String?, coverFileName: String?, courseRev: String?) {
