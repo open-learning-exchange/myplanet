@@ -61,7 +61,7 @@ class DownloadRepositoryImplTest {
 
         assertTrue(result is DownloadResult.Success)
         val successResult = result as DownloadResult.Success
-        assertTrue((result as DownloadResult.Success).body == mockResponseBody)
+        assertTrue(successResult.body == mockResponseBody)
     }
 
     @Test
@@ -120,7 +120,7 @@ class DownloadRepositoryImplTest {
 
             assertTrue("Expected Error for code $code", result is DownloadResult.Error)
             assertEquals("Wrong message for code $code", expectedMessage, (result as DownloadResult.Error).message)
-            assertEquals("Wrong code for $code", code, (result as DownloadResult.Error).code)
+            assertEquals("Wrong code for $code", code, result.code)
         }
     }
 

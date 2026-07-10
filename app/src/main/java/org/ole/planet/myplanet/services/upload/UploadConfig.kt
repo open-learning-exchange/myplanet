@@ -11,7 +11,9 @@ data class UploadConfig<T : RealmObject>(
     val modelClass: KClass<T>,
     val endpoint: String,
 
-    val queryBuilder: (RealmQuery<T>) -> RealmQuery<T>,
+    val queryBuilder: ((RealmQuery<T>) -> RealmQuery<T>)? = null,
+
+    val fetchPendingItems: (suspend () -> List<T>)? = null,
 
     val serializer: UploadSerializer<T>,
 
@@ -30,7 +32,13 @@ data class UploadConfig<T : RealmObject>(
     val afterUpload: (suspend (T, UploadedItem) -> Unit)? = null,
 
     val additionalUpdates: ((Realm, T, UploadedItem) -> Unit)? = null
-)
+) {
+    init {
+        require(queryBuilder != null || fetchPendingItems != null) {
+            "UploadConfig must specify either queryBuilder or fetchPendingItems"
+        }
+    }
+}
 
 sealed class UploadSerializer<T : RealmObject> {
     data class Simple<T : RealmObject>(

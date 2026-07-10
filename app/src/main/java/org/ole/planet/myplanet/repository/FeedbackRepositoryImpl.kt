@@ -68,6 +68,11 @@ class FeedbackRepositoryImpl @Inject constructor(
             }
         }
 
+    override suspend fun getPendingFeedback(): List<RealmFeedback> =
+        queryList(RealmFeedback::class.java) {
+            equalTo("isUploaded", false)
+        }
+
     override suspend fun getFeedbackById(id: String?): RealmFeedback? {
         return id?.let { findByField(RealmFeedback::class.java, "id", it) }
     }

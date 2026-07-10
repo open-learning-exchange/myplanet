@@ -25,11 +25,15 @@ class UploadRepositoryImpl @Inject constructor(
 ) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
     override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
-        return withRealmAsync { realm ->
-            val query = realm.where(config.modelClass.java)
-            val filteredQuery = config.queryBuilder(query)
-            val results = filteredQuery.findAll()
-            realm.copyFromRealm(results)
+        return if (config.fetchPendingItems != null) {
+            config.fetchPendingItems.invoke()
+        } else {
+            withRealmAsync { realm ->
+                val query = realm.where(config.modelClass.java)
+                val filteredQuery = config.queryBuilder?.invoke(query) ?: query
+                val results = filteredQuery.findAll()
+                realm.copyFromRealm(results)
+            }
         }
     }
 
