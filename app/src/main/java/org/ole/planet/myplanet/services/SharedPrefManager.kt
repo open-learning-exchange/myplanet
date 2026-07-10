@@ -9,16 +9,8 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
-
-data class CachedMyLifeItem(
-    var imageId: String?,
-    var title: String?,
-    var isVisible: Boolean,
-    var weight: Int
-)
 
 @Singleton
 class SharedPrefManager @Inject constructor(
@@ -71,7 +63,6 @@ class SharedPrefManager @Inject constructor(
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
-        private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
     }
 
     fun getSavedUsers(): List<User> {
@@ -128,11 +119,29 @@ class SharedPrefManager @Inject constructor(
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
-    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
+    fun getNewLoginUsername(): String? {
+        val encryptedUsername = pref.getString("new_login_username", null)
+        return if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedUsername) else null
+    }
+    fun setNewLoginUsername(username: String?) = pref.edit {
+        if (username != null) {
+            putString("new_login_username", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, username))
+        } else {
+            remove("new_login_username")
+        }
+    }
 
-    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
-    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
+    fun getNewLoginPassword(): String? {
+        val encryptedPassword = pref.getString("new_login_password", null)
+        return if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedPassword) else null
+    }
+    fun setNewLoginPassword(password: String?) = pref.edit {
+        if (password != null) {
+            putString("new_login_password", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, password))
+        } else {
+            remove("new_login_password")
+        }
+    }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
@@ -266,21 +275,6 @@ class SharedPrefManager @Inject constructor(
         editor.commit()
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
-    }
-
-    fun getCachedMyLifeItems(userId: String): List<CachedMyLifeItem>? {
-        val json = pref.getString("$MY_LIFE_CACHE_PREFIX$userId", null) ?: return null
-        return try {
-            val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        pref.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
 }
