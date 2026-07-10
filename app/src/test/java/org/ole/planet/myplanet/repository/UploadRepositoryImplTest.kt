@@ -19,8 +19,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.repository.UploadQueryContract
-import org.ole.planet.myplanet.services.upload.UploadConfig
-import org.ole.planet.myplanet.services.upload.UploadSerializer
 
 open class DummyModel : RealmObject()
 
