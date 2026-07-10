@@ -6,10 +6,10 @@ import android.util.Log
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityResourceViewerBinding
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
-import java.io.File
 
 @AndroidEntryPoint
 class ResourceViewerActivity : AppCompatActivity() {

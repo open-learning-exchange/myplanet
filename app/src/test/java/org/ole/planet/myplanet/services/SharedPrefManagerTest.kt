@@ -3,15 +3,13 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.mockkStatic
 import io.mockk.mockkObject
+import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
-import io.mockk.slot
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -19,7 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.di.NetworkModule
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
