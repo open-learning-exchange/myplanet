@@ -94,7 +94,7 @@ class SubmissionsAdapter(
                 if (count > 1) {
                     showAllSubmissions(submission)
                 } else {
-                    if (type == "survey") {
+                    if (type == "survey" && submission.status != "complete" && submission.status != "requires grading") {
                         openSurvey(listener, submission.id, true, false, "")
                     } else {
                         openSubmissionDetail(listener, submission.id)
