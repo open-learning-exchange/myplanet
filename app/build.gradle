@@ -12,8 +12,8 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5986
-        versionName = "0.59.86"
+        versionCode = 6056
+        versionName = "0.60.56"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -149,11 +149,6 @@ android {
 }
 kapt {
     correctErrorTypes = true
-}
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
-    }
 }
 dependencies {
     testImplementation(libs.test.junit)

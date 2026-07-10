@@ -12,23 +12,6 @@ data class LibraryWithMetadata(
     val tags: List<RealmTag>
 )
 
-data class ResourceUploadData(
-    val libraryId: String?,
-    val title: String?,
-    val isPrivate: Boolean,
-    val privateFor: String?,
-    val serialized: JsonObject
-)
-
-data class UploadedResourceInfo(
-    val libraryId: String,
-    val id: String,
-    val rev: String,
-    val isPrivate: Boolean,
-    val privateFor: String?,
-    val title: String?
-)
-
 data class LocalResourceRequest(
     val title: String?,
     val addedBy: String?,
@@ -52,7 +35,6 @@ data class LocalResourceRequest(
 
 interface ResourcesRepository {
     suspend fun getAllLibraries(): List<RealmMyLibrary>
-    suspend fun getAllLibraryItems(): List<RealmMyLibrary>
     suspend fun getLibraryItemById(id: String): RealmMyLibrary?
     suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary>
     suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary?
@@ -61,20 +43,16 @@ interface ResourcesRepository {
     suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary>
     suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary>
     suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary>
-    suspend fun getStepResources(stepId: String?, resourceOffline: Boolean): List<RealmMyLibrary>
     suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary>
     fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>>
     fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>>
-    suspend fun getPrivateImagesCreatedAfter(timestamp: Long): List<RealmMyLibrary>
     suspend fun countLibrariesNeedingUpdate(userId: String?): Int
     suspend fun resourceTitleExists(title: String): Boolean
-    suspend fun saveLibraryItem(item: RealmMyLibrary)
     suspend fun saveLocalResource(request: LocalResourceRequest): Result<Unit>
     suspend fun markResourceAdded(userId: String?, resourceId: String)
     suspend fun updateUserLibrary(resourceId: String, userId: String, isAdd: Boolean): RealmMyLibrary?
     suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit)
     suspend fun markResourceOfflineByUrl(url: String)
-    suspend fun markResourceOfflineByLocalAddress(localAddress: String)
     suspend fun markAllResourcesOffline(isOffline: Boolean)
     suspend fun saveSearchActivity(
         userName: String,
@@ -94,7 +72,6 @@ interface ResourcesRepository {
     suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit>
     suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>>
     suspend fun getDownloadSuggestionList(userId: String? = null): List<RealmMyLibrary>
-    suspend fun getLibraryByUserId(userId: String): List<RealmMyLibrary>
     suspend fun removeDeletedResources(currentIds: List<String?>)
     suspend fun getMyLibIds(userId: String): JsonArray
     suspend fun removeResourceFromShelf(resourceId: String, userId: String)
@@ -102,16 +79,13 @@ interface ResourcesRepository {
     suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
-    suspend fun getResourceRatings(resourceId: String): JsonObject?
-    suspend fun getResourceTags(resourceId: String): List<RealmTag>
-    suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject>
-    suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>>
     suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary>
     suspend fun getPublicLibraryItems(): List<RealmMyLibrary>
     suspend fun getResourceTitlesMap(): Map<String, String>
     suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
+    suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>>
 }
 
 sealed class ResourceUrlsResponse {

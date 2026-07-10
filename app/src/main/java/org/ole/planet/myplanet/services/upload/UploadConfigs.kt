@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -37,7 +38,8 @@ class UploadConfigs @Inject constructor(
     private val teamsSyncRepository: Lazy<TeamsSyncRepository>,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
-    private val surveysRepository: SurveysRepository
+    private val surveysRepository: SurveysRepository,
+    private val feedbackRepository: FeedbackRepository
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -158,9 +160,7 @@ class UploadConfigs @Inject constructor(
     val Feedback = UploadConfig(
         modelClass = RealmFeedback::class,
         endpoint = "feedback",
-        queryBuilder = { query ->
-            query.equalTo("isUploaded", false)
-        },
+        fetchPendingItems = { feedbackRepository.getPendingFeedback() },
         serializer = UploadSerializer.Simple(RealmFeedback::serializeFeedback),
         idExtractor = { it.id },
         additionalUpdates = { _, feedback, _ ->

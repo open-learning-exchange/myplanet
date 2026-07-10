@@ -47,34 +47,28 @@ import org.ole.planet.myplanet.utils.Utilities
 class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var _binding: FragmentTeamsTasksBinding? = null
     private val binding get() = _binding!!
-    private var deadline: Calendar? = null
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
     private var updateTasksJob: Job? = null
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
+    private val teamsTasksViewModel: TeamsTasksViewModel by viewModels()
 
     private lateinit var adapterTask: TeamsTasksAdapter
     var listener = DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
-            deadline = Calendar.getInstance()
-            deadline?.set(Calendar.YEAR, year)
-            deadline?.set(Calendar.MONTH, monthOfYear)
-            deadline?.set(Calendar.DAY_OF_MONTH, dayOfMonth)
+            teamsTasksViewModel.setDeadlineDate(year, monthOfYear, dayOfMonth)
             if (datePicker != null) {
-                datePicker?.text = deadline?.timeInMillis?.let { formatDateTZ(it) }
+                datePicker?.text = teamsTasksViewModel.getFormattedDeadlineDate()
             }
             timePicker()
         }
 
     private fun timePicker() {
-        val dl = deadline ?: Calendar.getInstance()
+        val dl = teamsTasksViewModel.getDeadlineCalendar()
         val timePickerDialog = TimePickerDialog(activity, { _: TimePicker?, hourOfDay: Int, minute: Int ->
-            deadline?.set(Calendar.HOUR_OF_DAY, hourOfDay)
-            deadline?.set(Calendar.MINUTE, minute)
+            teamsTasksViewModel.setDeadlineTime(hourOfDay, minute)
             if (datePicker != null) {
-                datePicker?.text = deadline?.timeInMillis?.let {
-                    TimeUtils.getFormattedDateWithTime(it)
-                }
+                datePicker?.text = teamsTasksViewModel.getFormattedDeadlineWithTime()
             }
         }, dl[Calendar.HOUR_OF_DAY], dl[Calendar.MINUTE], true)
         timePickerDialog.show()
@@ -95,13 +89,13 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
         var selectedAssignee: RealmUser? = null
+        teamsTasksViewModel.clearDeadline()
 
         if (t != null) {
             alertTaskBinding.etTask.setText(t.title)
             alertTaskBinding.etDescription.setText(t.description)
+            teamsTasksViewModel.setDeadline(t.deadline)
             datePicker?.text = formatDate(t.deadline)
-            deadline = Calendar.getInstance()
-            deadline?.time = Date(t.deadline)
 
             if (!t.assignee.isNullOrBlank()) {
                 val assignee = t.assignee.orEmpty()
@@ -162,7 +156,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 Utilities.toast(activity, getString(R.string.task_title_is_required))
                 isValid = false
             }
-            if (deadline == null) {
+            if (teamsTasksViewModel.deadline.value == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
                 isValid = false  }
             if (desc.isEmpty()) {
@@ -213,8 +207,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
     private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
         viewLifecycleOwner.lifecycleScope.launch {
-            val deadlineMillis = deadline?.timeInMillis
-            if (deadlineMillis == null) {
+            val deadlineMillis = teamsTasksViewModel.getDeadlineMillis()
+
+            if (teamsTasksViewModel.deadline.value == null) {
                 Utilities.toast(activity, getString(R.string.deadline_is_required))
                 return@launch
             }
@@ -298,22 +293,30 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
         updateTasksJob?.cancel()
         updateTasksJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
-            val taskList = when (currentTab) {
-                R.id.btn_my -> myTasks()
-                R.id.btn_completed -> completedTasks()
-                else -> allTasks()
-            }
+            val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
 
-            val assigneesToFetch = taskList.mapNotNull { it.assignee }
-                .filter { it.isNotBlank() && !adapterTask.hasAssignee(it) }
-                .distinct()
+            val (taskList, fetchedNames) = withContext(dispatcherProvider.io) {
+                val list = when (currentTab) {
+                    R.id.btn_my -> myTasks()
+                    R.id.btn_completed -> completedTasks()
+                    else -> allTasks()
+                }
 
-            if (assigneesToFetch.isNotEmpty()) {
-                val fetchedNames = withContext(dispatcherProvider.io) {
+                val assigneesToFetch = list.mapNotNull { it.assignee }
+                    .filter { it.isNotBlank() && !knownAssigneeIds.contains(it) }
+                    .distinct()
+
+                val names = if (assigneesToFetch.isNotEmpty()) {
                     assigneesToFetch.mapNotNull { id ->
                         userRepository.getUserById(id)?.name?.let { name -> id to name }
                     }.toMap()
+                } else {
+                    emptyMap()
                 }
+                Pair(list, names)
+            }
+
+            if (fetchedNames.isNotEmpty()) {
                 adapterTask.updateAssignees(fetchedNames)
             }
 
