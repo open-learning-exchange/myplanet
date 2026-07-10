@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowMysurveyBinding
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
@@ -74,7 +75,8 @@ class SubmissionsAdapter(
 
     inner class SubmissionsViewHolder(val binding: RowMysurveyBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(submission: SubmissionUiModel) {
-            binding.status.text = submission.status
+            binding.status.text = submission.status?.takeIf { it.isNotEmpty() }
+                ?: context.getString(R.string.status_not_started)
             binding.date.text = getFormattedDate(submission.startTime)
             showSubmittedBy(submission)
             binding.title.text = submission.examTitle
@@ -91,14 +93,12 @@ class SubmissionsAdapter(
             }
 
             itemView.setOnClickListener {
-                if (count > 1) {
+                if (type == "survey") {
+                    openSurvey(listener, submission.id, false, submission.isTeam, submission.teamId)
+                } else if (count > 1) {
                     showAllSubmissions(submission)
                 } else {
-                    if (type == "survey" && submission.status != "complete" && submission.status != "requires grading") {
-                        openSurvey(listener, submission.id, true, false, "")
-                    } else {
-                        openSubmissionDetail(listener, submission.id)
-                    }
+                    openSubmissionDetail(listener, submission.id)
                 }
             }
         }
