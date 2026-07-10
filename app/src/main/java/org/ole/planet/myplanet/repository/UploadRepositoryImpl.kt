@@ -24,21 +24,17 @@ class UploadRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
-    override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
-        return if (config.fetchPendingItems != null) {
-            config.fetchPendingItems.invoke()
-        } else {
-            withRealmAsync { realm ->
-                val query = realm.where(config.modelClass.java)
-                val filteredQuery = config.queryBuilder?.invoke(query) ?: query
-                val results = filteredQuery.findAll()
-                realm.copyFromRealm(results)
-            }
+    override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
+        return withRealmAsync { realm ->
+            val query = realm.where(config.modelClass.java)
+            val filteredQuery = config.queryBuilder(query)
+            val results = filteredQuery.findAll()
+            realm.copyFromRealm(results)
         }
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem> {
-        val failedLocally = mutableListOf<UploadedItem>()
+    override suspend fun <T : RealmObject> markUploaded(config: UploadUpdateContract<T>, succeeded: List<UploadedItemResult>): List<UploadedItemResult> {
+        val failedLocally = mutableListOf<UploadedItemResult>()
         executeTransaction { realm ->
             val localIds = succeeded.map { it.localId }
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
