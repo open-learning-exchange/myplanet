@@ -682,7 +682,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                 containsQuery.add(model)
             }
         }
-        return startsWithQuery + containsQuery
+        return (startsWithQuery + containsQuery).distinctBy { it.item.id }
     }
 
     private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<RealmTag>): List<ResourceListModel> {
