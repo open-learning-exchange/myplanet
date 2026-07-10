@@ -99,11 +99,17 @@ class UploadCoordinator @Inject constructor(
     private suspend fun <T : RealmObject> queryItemsToUpload(
         config: UploadConfig<T>
     ): List<PreparedUpload<T>> {
-        val queryContract = UploadQueryContract<T>(
-            modelClass = config.modelClass,
-            queryBuilder = config.queryBuilder
-        )
-        val items = uploadRepository.queryPending(queryContract)
+        val items = if (config.fetchPendingItems != null) {
+            config.fetchPendingItems.invoke()
+        } else if (config.queryBuilder != null) {
+            val queryContract = UploadQueryContract<T>(
+                modelClass = config.modelClass,
+                queryBuilder = config.queryBuilder
+            )
+            uploadRepository.queryPending(queryContract)
+        } else {
+            emptyList()
+        }
 
         val tempResults = items.mapNotNull { copiedItem ->
             if (config.filterGuests && config.guestUserIdExtractor != null) {
