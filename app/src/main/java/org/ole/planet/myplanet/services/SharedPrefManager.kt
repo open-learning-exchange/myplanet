@@ -161,26 +161,26 @@ class SharedPrefManager @Inject constructor(
         val stored = pref.getString(URL_PWD, "")
         return if (stored.isNullOrEmpty()) {
             ""
-        } else {
+        } else if (stored.startsWith("enc:")) {
             try {
-                val decrypted = SecurePrefs.decryptString(context, stored)
-                if (decrypted != null) {
-                    decrypted
-                } else if (!stored.startsWith("ey")) {
-                    stored.also { setUrlPwd(it) }
-                } else {
-                    stored
-                }
+                val ciphertext = stored.substring(4)
+                val decrypted = SecurePrefs.decryptString(context, ciphertext)
+                decrypted ?: ""
             } catch (e: Exception) {
-                stored
+                ""
             }
+        } else {
+            // Legacy plaintext migration
+            stored.also { setUrlPwd(it) }
         }
     }
     fun setUrlPwd(pwd: String) = pref.edit {
         try {
-            putString(URL_PWD, SecurePrefs.encryptString(context, pwd))
+            val encrypted = SecurePrefs.encryptString(context, pwd)
+            putString(URL_PWD, "enc:$encrypted")
         } catch (e: Exception) {
-            putString(URL_PWD, pwd)
+            // We should NOT fallback to plaintext on exception if we want to fix the security issue securely.
+            // But we don't want to crash.
         }
     }
 

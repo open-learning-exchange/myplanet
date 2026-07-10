@@ -81,9 +81,10 @@ class ServerUrlMapper @Inject constructor(
         editor.apply {
             putString("url_user", urlUser)
             try {
-                putString("url_pwd", SecurePrefs.encryptString(context, urlPwd))
+                val encrypted = SecurePrefs.encryptString(context, urlPwd)
+                putString("url_pwd", "enc:$encrypted")
             } catch (e: Exception) {
-                putString("url_pwd", urlPwd)
+                // Do not fallback to plaintext
             }
             putString("url_Scheme", uri.scheme)
             putString("url_Host", uri.host)
