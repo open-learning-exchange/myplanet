@@ -12,6 +12,7 @@ import io.realm.RealmConfiguration
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -29,6 +30,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
 class RealmUserTest {
 
@@ -54,7 +56,7 @@ class RealmUserTest {
                 .inMemory()
                 .allowWritesOnUiThread(true)
                 .allowQueriesOnUiThread(true)
-                .schemaVersion(1)
+                .schemaVersion(15)
                 .build()
             Realm.setDefaultConfiguration(realmConfiguration)
             anchorRealm = Realm.getInstance(realmConfiguration)

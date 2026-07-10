@@ -15,6 +15,7 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import io.realm.Sort
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.RequestBody
@@ -35,6 +36,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import retrofit2.Response
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
     private lateinit var chatRepository: ChatRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)

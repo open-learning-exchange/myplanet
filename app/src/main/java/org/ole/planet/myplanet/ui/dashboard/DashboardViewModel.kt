@@ -9,6 +9,7 @@ import java.time.LocalDate
 import javax.inject.Inject
 import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -157,20 +158,20 @@ class DashboardViewModel @Inject constructor(
 
         profileJob?.cancel()
         profileJob = viewModelScope.launch(dispatcherProvider.main) {
-            val (userName, fullName) = withContext(dispatcherProvider.io) {
+            val (fullName, offlineLogins) = withContext(dispatcherProvider.io) {
                 val user = userRepository.getUserById(userId)
                 val userName = user?.name
                 val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-                Pair(userName, fullName)
-            }
-            _uiState.update { it.copy(fullName = fullName) }
 
-            if (userName != null) {
-                val count = withContext(dispatcherProvider.io) {
+                val count = if (userName != null) {
                     activitiesRepository.getOfflineLoginCount(userName)
+                } else {
+                    0
                 }
-                _uiState.update { it.copy(offlineLogins = count) }
+                Pair(fullName, count)
             }
+
+            _uiState.update { it.copy(fullName = fullName, offlineLogins = offlineLogins) }
         }
     }
 
@@ -299,29 +300,36 @@ class DashboardViewModel @Inject constructor(
 
         viewModelScope.launch {
             try {
-                val courseData = withContext(dispatcherProvider.io) { progressRepository.fetchCourseData(userId) }
-                val uniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
-                val allUniqueDates = withContext(dispatcherProvider.io) { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
-                val courseName = withContext(dispatcherProvider.io) { coursesRepository.getCourseTitleById(courseId) }
-                val hasUnfinishedSurvey = submissionsRepository.hasPendingSurvey(courseId, userId)
+                val dialogData = withContext(dispatcherProvider.io) {
+                    val courseDataDeferred = async { progressRepository.fetchCourseData(userId) }
+                    val uniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, userId) }
+                    val allUniqueDatesDeferred = async { voicesRepository.getCommunityVoiceDates(startTime, endTime, null) }
+                    val courseNameDeferred = async { coursesRepository.getCourseTitleById(courseId) }
+                    val hasUnfinishedSurveyDeferred = async { submissionsRepository.hasPendingSurvey(courseId, userId) }
 
-                val progress = progressRepository.findProgressForCourse(courseData, courseId)
+                    val courseData = courseDataDeferred.await()
+                    val uniqueDates = uniqueDatesDeferred.await()
+                    val allUniqueDates = allUniqueDatesDeferred.await()
+                    val courseName = courseNameDeferred.await()
+                    val hasUnfinishedSurvey = hasUnfinishedSurveyDeferred.await()
 
-                val today = LocalDate.now()
-                val endDate = LocalDate.of(2025, 1, 16)
-                val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
-                        today.isBefore(endDate) &&
-                        serverUrl in validUrls
+                    val progress = progressRepository.findProgressForCourse(courseData, courseId)
 
-                if (!isGuest && shouldPrompt) {
-                    val courseStatus = getCourseStatusString(progress, courseName)
-                    val voiceCount = uniqueDates.size
-                    val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
-                    var hasValidSync = false
-                    if (prereqsMet) {
-                        hasValidSync = withContext(dispatcherProvider.io) { progressRepository.hasUserCompletedSync(userId ?: "") }
-                    }
-                    _challengeDialogEvent.emit(
+                    val today = LocalDate.now()
+                    val endDate = LocalDate.of(2025, 1, 16)
+                    val shouldPrompt = today.isAfter(LocalDate.of(2024, 11, 30)) &&
+                            today.isBefore(endDate) &&
+                            serverUrl in validUrls
+
+                    if (!isGuest && shouldPrompt) {
+                        val courseStatus = getCourseStatusString(progress, courseName)
+                        val voiceCount = uniqueDates.size
+                        val prereqsMet = courseStatus.contains("terminado", ignoreCase = true) && voiceCount >= 5
+                        var hasValidSync = false
+                        if (prereqsMet) {
+                            hasValidSync = progressRepository.hasUserCompletedSync(userId ?: "")
+                        }
+
                         ChallengeDialogData(
                             voiceCount = uniqueDates.size,
                             courseStatus = courseStatus,
@@ -329,7 +337,13 @@ class DashboardViewModel @Inject constructor(
                             hasUnfinishedSurvey = hasUnfinishedSurvey,
                             hasValidSync = hasValidSync
                         )
-                    )
+                    } else {
+                        null
+                    }
+                }
+
+                if (dialogData != null) {
+                    _challengeDialogEvent.emit(dialogData)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()

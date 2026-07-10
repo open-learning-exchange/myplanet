@@ -13,11 +13,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.toVoicePostingPolicy
 import org.ole.planet.myplanet.ui.voices.DefaultLabelManipulator
 import org.ole.planet.myplanet.ui.voices.LabelManipulator
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -26,9 +28,11 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class TeamsVoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
+
+    private val _teamPolicy = MutableStateFlow<Pair<RealmMyTeam?, VoicePostingPolicy?>?>(null)
+    val teamPolicy: StateFlow<Pair<RealmMyTeam?, VoicePostingPolicy?>?> = _teamPolicy.asStateFlow()
 
     private val _discussions = MutableStateFlow<List<RealmNews?>>(emptyList())
     val discussions: StateFlow<List<RealmNews?>> = _discussions.asStateFlow()
@@ -37,6 +41,13 @@ class TeamsVoicesViewModel @Inject constructor(
     val createNewsSuccess: Flow<Boolean> = _createNewsSuccess.receiveAsFlow()
 
     private var observeJob: Job? = null
+
+    fun loadTeam(teamId: String) {
+        viewModelScope.launch(dispatcherProvider.io) {
+            val teamResult = teamsRepository.getTeamByIdOrTeamId(teamId)
+            _teamPolicy.value = Pair(teamResult, teamResult?.toVoicePostingPolicy())
+        }
+    }
 
     suspend fun getFilteredNews(teamId: String): List<RealmNews?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
@@ -65,7 +76,7 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     suspend fun getUserById(userId: String): RealmUser? {
-        return userRepository.getUserById(userId)
+        return voicesRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {

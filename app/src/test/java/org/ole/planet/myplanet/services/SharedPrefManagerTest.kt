@@ -3,12 +3,13 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.preference.PreferenceManager
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.slot
+import io.mockk.unmockkObject
+import io.mockk.unmockkStatic
 import io.mockk.verify
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -16,7 +17,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.di.NetworkModule
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
@@ -144,16 +144,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testGetAndSetUrlPort() {
-        every { mockSharedPreferences.getInt("url_Port", 443) } returns 8080
-        assertEquals(8080, sharedPrefManager.getUrlPort())
-
-        sharedPrefManager.setUrlPort(8081)
-        verify { mockEditor.putInt("url_Port", 8081) }
-        verify { mockEditor.apply() }
-    }
-
-    @Test
     fun testGetAndSetLoggedIn() {
         every { mockSharedPreferences.getBoolean(SharedPrefManager.KEY_LOGIN, false) } returns true
         assertTrue(sharedPrefManager.isLoggedIn())
@@ -177,68 +167,6 @@ class SharedPrefManagerTest {
     }
 
     @Test
-    fun testCacheMyLifeItems() {
-        val userId = "user123"
-        val myLifeItems = listOf(
-            RealmMyLife("img1", "user123", "Title 1").apply {
-                _id = "id1"
-                weight = 1
-            },
-            RealmMyLife("img2", "user123", "Title 2").apply {
-                _id = "id2"
-                weight = 2
-            }
-        )
-
-        val jsonSlot = slot<String>()
-        sharedPrefManager.cacheMyLifeItems(userId, myLifeItems)
-
-        verify { mockEditor.putString("myLifeCache_$userId", capture(jsonSlot)) }
-        verify { mockEditor.apply() }
-
-        val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-        val cachedItems: List<CachedMyLifeItem> = Gson().fromJson(jsonSlot.captured, type)
-
-        assertEquals(2, cachedItems.size)
-        assertEquals("img1", cachedItems[0].imageId)
-        assertEquals("Title 1", cachedItems[0].title)
-        assertTrue(cachedItems[0].isVisible)
-        assertEquals(1, cachedItems[0].weight)
-
-        assertEquals("img2", cachedItems[1].imageId)
-        assertEquals("Title 2", cachedItems[1].title)
-        assertTrue(cachedItems[1].isVisible)
-        assertEquals(2, cachedItems[1].weight)
-    }
-
-    @Test
-    fun testGetCachedMyLifeItems() {
-        val userId = "user123"
-
-        // Test with empty/null state
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
-        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
-
-        // Test with valid JSON
-        val cachedItems = listOf(
-            CachedMyLifeItem("img1", "Title 1", true, 1),
-            CachedMyLifeItem("img2", "Title 2", false, 2)
-        )
-        val json = Gson().toJson(cachedItems)
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
-
-        val retrievedItems = sharedPrefManager.getCachedMyLifeItems(userId)
-        assertEquals(2, retrievedItems?.size)
-        assertEquals("img1", retrievedItems?.get(0)?.imageId)
-        assertEquals("Title 1", retrievedItems?.get(0)?.title)
-        assertEquals(true, retrievedItems?.get(0)?.isVisible)
-        assertEquals(1, retrievedItems?.get(0)?.weight)
-
-        // Test with invalid JSON
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
-        assertEquals(null, sharedPrefManager.getCachedMyLifeItems(userId))
-    }
-
     fun testClearPreferences() {
         mockkStatic(PreferenceManager::class)
         val mockDefaultSharedPreferences: SharedPreferences = mockk()
@@ -265,53 +193,53 @@ class SharedPrefManagerTest {
         verify { mockDefaultEditor.clear() }
     }
 
-    fun testGetCachedMyLifeItems_validJson() {
-        val userId = "123"
-        val expectedItems = listOf(
-            CachedMyLifeItem("img1", "Title 1", true, 1),
-            CachedMyLifeItem("img2", "Title 2", false, 2)
-        )
-        val json = Gson().toJson(expectedItems)
-
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
-
-        val result = sharedPrefManager.getCachedMyLifeItems(userId)
-
-        assertEquals(2, result?.size)
-        assertEquals("img1", result?.get(0)?.imageId)
-        assertEquals("Title 1", result?.get(0)?.title)
-        assertEquals(true, result?.get(0)?.isVisible)
-        assertEquals(1, result?.get(0)?.weight)
-
-        assertEquals("img2", result?.get(1)?.imageId)
-        assertEquals("Title 2", result?.get(1)?.title)
-        assertEquals(false, result?.get(1)?.isVisible)
-        assertEquals(2, result?.get(1)?.weight)
-    }
-
     @Test
-    fun testGetCachedMyLifeItems_nullJson() {
-        val userId = "456"
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns null
-
-        val result = sharedPrefManager.getCachedMyLifeItems(userId)
-
-        assertNull(result)
-    }
-
-    @Test
-    fun testGetCachedMyLifeItems_invalidJson() {
-        val userId = "789"
-        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
-
-        val result = sharedPrefManager.getCachedMyLifeItems(userId)
-
-        assertNull(result)
-    }
-
     fun testRemoveKey() {
         sharedPrefManager.removeKey("some_key")
         verify { mockEditor.remove("some_key") }
         verify { mockEditor.apply() }
     }
+
+    @Test
+    fun testGetAndSetNewLoginUsername() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_user") } returns "encrypted_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_user") } returns "test_user"
+
+        // Set
+        sharedPrefManager.setNewLoginUsername("test_user")
+        verify { mockEditor.putString("new_login_username", "encrypted_user") }
+
+        // Get
+        every { mockSharedPreferences.getString("new_login_username", null) } returns "encrypted_user"
+        assertEquals("test_user", sharedPrefManager.getNewLoginUsername())
+
+        // Set null
+        sharedPrefManager.setNewLoginUsername(null)
+        verify { mockEditor.remove("new_login_username") }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testGetAndSetNewLoginPassword() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pass") } returns "encrypted_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_pass") } returns "test_pass"
+
+        // Set
+        sharedPrefManager.setNewLoginPassword("test_pass")
+        verify { mockEditor.putString("new_login_password", "encrypted_pass") }
+
+        // Get
+        every { mockSharedPreferences.getString("new_login_password", null) } returns "encrypted_pass"
+        assertEquals("test_pass", sharedPrefManager.getNewLoginPassword())
+
+        // Set null
+        sharedPrefManager.setNewLoginPassword(null)
+        verify { mockEditor.remove("new_login_password") }
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
 }

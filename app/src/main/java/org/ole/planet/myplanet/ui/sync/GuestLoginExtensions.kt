@@ -1,49 +1,55 @@
 package org.ole.planet.myplanet.ui.sync
 
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertGuestLoginBinding
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.textChanges
 
+@OptIn(FlowPreview::class)
 fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
     val binding = AlertGuestLoginBinding.inflate(LayoutInflater.from(this))
     val view: View = binding.root
-    binding.etUserName.addTextChangedListener(object : TextWatcher {
-        override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
 
-        override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-            val input = s.toString()
+    val job = binding.etUserName.textChanges()
+        .onEach { s ->
+            val input = s?.toString() ?: ""
+            val lowercaseText = input.lowercase()
+            if (input != lowercaseText) {
+                binding.etUserName.setText(lowercaseText)
+                binding.etUserName.setSelection(lowercaseText.length)
+            }
+        }
+        .debounce(300)
+        .onEach { s ->
+            val input = s?.toString() ?: ""
             lifecycleScope.launch {
                 val error = AuthUtils.validateUsername(input, userRepository)
                 if (error != null) {
                     binding.etUserName.error = error
                 } else {
-                    val lowercaseText = input.lowercase()
-                    if (input != lowercaseText) {
-                        binding.etUserName.setText(lowercaseText)
-                        binding.etUserName.setSelection(lowercaseText.length)
-                    }
                     binding.etUserName.error = null
                 }
             }
         }
-
-        override fun afterTextChanged(s: Editable) {}
-    })
+        .launchIn(lifecycleScope)
     val dialog = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         .setTitle(R.string.btn_guest_login)
         .setView(view)
         .setPositiveButton(R.string.login, null)
         .setNegativeButton(R.string.cancel, null)
         .create()
+    dialog.setOnDismissListener { job.cancel() }
     dialog.show()
     val login = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
     val cancel = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)

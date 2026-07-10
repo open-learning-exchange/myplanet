@@ -1,9 +1,12 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import android.os.Bundle
+import android.os.Environment
+import android.util.Log
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityResourceViewerBinding
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
@@ -28,8 +31,42 @@ class ResourceViewerActivity : AppCompatActivity() {
             val isFullPath = intent.getBooleanExtra("isFullPath", false)
             val auth = intent.getStringExtra("Auth") ?: ""
 
+            if (!isOnline && filePath != null) {
+                try {
+                    val file = if (isFullPath) File(filePath) else File(getExternalFilesDir(null), "ole/$filePath")
+                    val canonicalPath = file.canonicalPath
+
+                    val isAllowed = if (isFullPath) {
+                        val allowedRoots = listOfNotNull(
+                            getExternalFilesDir(null)?.canonicalPath,
+                            externalCacheDir?.canonicalPath,
+                            Environment.getExternalStorageDirectory()?.canonicalPath
+                        )
+                        allowedRoots.any { canonicalPath.startsWith(it + File.separator) || canonicalPath == it }
+                    } else {
+                        val baseDir = File(getExternalFilesDir(null), "ole").canonicalPath
+                        canonicalPath.startsWith(baseDir + File.separator) || canonicalPath == baseDir
+                    }
+
+                    if (!isAllowed) {
+                        Log.w("ResourceViewer", "Rejected path: $canonicalPath")
+                        finish()
+                        return
+                    }
+                } catch (e: Exception) {
+                    Log.e("ResourceViewer", "Error resolving path", e)
+                    finish()
+                    return
+                }
+            }
+
             val typeString = intent.getStringExtra("resourceType") ?: ResourceViewerFragment.ResourceType.UNKNOWN.name
-            val type = ResourceViewerFragment.ResourceType.valueOf(typeString)
+            val type = try {
+                ResourceViewerFragment.ResourceType.valueOf(typeString)
+            } catch (e: IllegalArgumentException) {
+                Log.w("ResourceViewer", "Invalid resource type: $typeString")
+                ResourceViewerFragment.ResourceType.UNKNOWN
+            }
 
             val fragment = ResourceViewerFragment.newInstance(resourceId, filePath, title, type, isOnline, auth, isFullPath)
             supportFragmentManager.beginTransaction()

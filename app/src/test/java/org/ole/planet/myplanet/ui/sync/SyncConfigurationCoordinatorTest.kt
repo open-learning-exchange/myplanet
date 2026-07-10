@@ -55,7 +55,7 @@ class SyncConfigurationCoordinatorTest {
     fun `failure reports sync failed and shows the error`() = runTest(testDispatcher) {
         stubResult(ConfigurationResult.Failure("server unreachable", "https://planet.example.org"))
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
         advanceUntilIdle()
 
         verifyOrder {
@@ -70,7 +70,7 @@ class SyncConfigurationCoordinatorTest {
     fun `login caller continues after successful version check`() = runTest(testDispatcher) {
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.LOGIN_ACTIVITY, "sync", null, null)
+        coordinator.checkMinApk("url", "pin", CallerContext.LOGIN_ACTIVITY, "sync", null, null)
         advanceUntilIdle()
 
         verify { callback.setSyncFailed(false) }
@@ -85,7 +85,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getServerPin() } returns "1234"
         stubResult(success.copy(isAlternativeUrl = true))
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.LOGIN_ACTIVITY, "sync", null, null)
+        coordinator.checkMinApk("url", "pin", CallerContext.LOGIN_ACTIVITY, "sync", null, null)
         advanceUntilIdle()
 
         verify { ServerConfigUtils.saveAlternativeUrl(success.url, "1234", prefData) }
@@ -97,7 +97,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns null
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
         advanceUntilIdle()
 
         verify { prefData.setConfigurationId("config1") }
@@ -110,7 +110,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns "config1"
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
         advanceUntilIdle()
 
         verify(exactly = 0) { prefData.setConfigurationId(any()) }
@@ -122,7 +122,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns "otherConfig"
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
         advanceUntilIdle()
 
         verify { callback.onClearDataDialog() }
@@ -134,7 +134,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns null
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "sync", null, null)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "sync", null, null)
         advanceUntilIdle()
 
         verify(exactly = 0) { callback.onContinueSync(any(), any(), any(), any()) }
@@ -145,7 +145,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns "config1"
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "save", dialog, binding)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "save", dialog, binding)
         advanceUntilIdle()
 
         verify { callback.onSaveConfigAndContinue(dialog, binding, success.defaultUrl) }
@@ -156,7 +156,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns "otherConfig"
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "save", dialog, binding)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "save", dialog, binding)
         advanceUntilIdle()
 
         verify { callback.onClearDataDialog() }
@@ -168,7 +168,7 @@ class SyncConfigurationCoordinatorTest {
         every { prefData.getConfigurationId() } returns "config1"
         stubResult(success)
 
-        coordinator.checkMinApk(this, "url", "pin", CallerContext.SYNC_ACTIVITY, "save", dialog, null)
+        coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "save", dialog, null)
         advanceUntilIdle()
 
         verify(exactly = 0) { callback.onSaveConfigAndContinue(any(), any(), any()) }

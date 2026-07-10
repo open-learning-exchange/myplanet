@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.repository
 
+import android.text.TextUtils
 import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkStatic
 import io.mockk.spyk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
@@ -11,11 +13,13 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -29,6 +33,7 @@ class VoicesRepositoryImplTest {
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -38,7 +43,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             gson,
-            sharedPrefManager
+            sharedPrefManager,
+            dagger.Lazy { userRepository }
         ), recordPrivateCalls = true)
     }
 
@@ -51,6 +57,57 @@ class VoicesRepositoryImplTest {
 
         assertNotNull(result)
         io.mockk.verify { dispatcherProvider.default }
+    }
+
+    @Test
+    fun `getNewsForUpload filters guest users and correctly serializes payloads`() = testScope.runTest {
+        mockkStatic(TextUtils::class)
+        every { TextUtils.isEmpty(any()) } answers { firstArg<CharSequence?>().isNullOrEmpty() }
+
+        val mockRealm = mockk<io.realm.Realm>(relaxed = true)
+        val mockRealmQuery = mockk<io.realm.RealmQuery<RealmNews>>(relaxed = true)
+
+        val realGson = Gson()
+        val repoWithRealGson = spyk(VoicesRepositoryImpl(
+            databaseService,
+            UnconfinedTestDispatcher(),
+            dispatcherProvider,
+            realGson,
+            sharedPrefManager,
+            dagger.Lazy { userRepository }
+        ), recordPrivateCalls = true)
+
+        coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
+            val block = firstArg<(io.realm.Realm) -> Any>()
+            block(mockRealm)
+        }
+
+        coEvery { repoWithRealGson["queryList"](RealmNews::class.java, any<Boolean>(), any<Function1<*, *>>()) } answers {
+            val block = thirdArg<io.realm.RealmQuery<RealmNews>.() -> Unit>()
+
+            val guestNews = RealmNews().apply {
+                id = "guest_news_id"
+                userId = "guest_123"
+            }
+            val validNews = RealmNews().apply {
+                id = "valid_news_id"
+                _id = "valid_news_id"
+                userId = "user_123"
+                message = "Hello World"
+                user = "{}"
+                conversations = "[]"
+            }
+
+            listOf(guestNews, validNews)
+        }
+
+        val result = repoWithRealGson.getNewsForUpload()
+
+        assertEquals(1, result.size)
+        assertEquals("valid_news_id", result[0].id)
+        assertEquals("Hello World", result[0].message)
+        assertEquals("Hello World", result[0].newsJson.get("message").asString)
+        assertNotNull(result[0].newsJson.get("user"))
     }
 
     @Test
@@ -76,7 +133,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             realGson,
-            sharedPrefManager
+            sharedPrefManager,
+            dagger.Lazy { userRepository }
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
@@ -126,7 +184,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             realGson,
-            sharedPrefManager
+            sharedPrefManager,
+            dagger.Lazy { userRepository }
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
@@ -294,5 +353,16 @@ class VoicesRepositoryImplTest {
         repository.removeLabel("newsId", "testLabel")
 
         io.mockk.verify(exactly = 1) { mockLabels.remove("testLabel") }
+    }
+
+    @Test
+    fun `getUserById delegates to userRepository`() = testScope.runTest {
+        val testUserId = "test_user_123"
+        val mockUser = mockk<RealmUser>()
+
+        coEvery { userRepository.getUserById(testUserId) } returns mockUser
+
+        val user = repository.getUserById(testUserId)
+        assertEquals(mockUser, user)
     }
 }

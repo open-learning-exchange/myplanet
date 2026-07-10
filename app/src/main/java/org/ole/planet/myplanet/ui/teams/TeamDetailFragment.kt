@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -26,7 +27,6 @@ import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
@@ -48,7 +48,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     @Inject
     lateinit var userSessionManager: UserSessionManager
     
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    private val teamViewModel: TeamViewModel by viewModels()
 
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
@@ -202,39 +202,47 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             binding.viewPager2.id = View.generateViewId()
         }
 
-        binding.viewPager2.adapter = null
-        binding.viewPager2.adapter = TeamPagerAdapter(
-            this, pageConfigs, team?._id, this, this
-        )
-        binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
-        binding.tabLayout.isInlineLabel = true
+        val currentAdapter = binding.viewPager2.adapter as? TeamPagerAdapter
+        if (currentAdapter != null) {
+            currentAdapter.updatePages(pageConfigs)
+        } else {
+            binding.viewPager2.adapter = TeamPagerAdapter(
+                this, pageConfigs, team?._id, this, this
+            )
+            binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
+            binding.tabLayout.isInlineLabel = true
 
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-            tab.text = title
-        }.attach()
+            TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+                val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+                tab.text = title
+            }.attach()
 
-        selectPage(restorePageId, false)
+            binding.viewPager2.registerOnPageChangeCallback(
+                object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(position: Int) {
+                        val adapter = binding.viewPager2.adapter as? TeamPagerAdapter
+                        val pageConfig = adapter?.getPageConfig(position) ?: pageConfigs.getOrNull(position)
+                        val pageId = pageConfig?.id
+                        team?._id?.let { teamId ->
+                            pageId?.let {
+                                teamLastPage[teamId] = it
+                            }
+                        }
 
-        binding.viewPager2.registerOnPageChangeCallback(
-            object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    val pageConfig = pageConfigs.getOrNull(position)
-                    val pageId = pageConfig?.id
-                    team?._id?.let { teamId ->
-                        pageId?.let {
-                            teamLastPage[teamId] = it
+                        val itemId = adapter?.getItemId(position) ?: position.toLong()
+                        val fragmentTag = "f$itemId"
+                        val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
+                        if (fragment is OnTeamPageListener) {
+                            MainApplication.listener = fragment
                         }
                     }
-
-                    val fragmentTag = "f$position"
-                    val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
-                    if (fragment is OnTeamPageListener) {
-                        MainApplication.listener = fragment
-                    }
                 }
-            }
-        )
+            )
+        }
+
+        binding.viewPager2.post {
+            selectPage(restorePageId, false)
+        }
     }
 
     private fun setupNonMyTeamButtons(user: RealmUser?, hasPendingRequest: Boolean) {
@@ -432,7 +440,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
+        collectWhenStarted(teamViewModel.getTeamUpdateFlow()) { update ->
             if (update.table == "teams" && update.shouldRefreshUI) {
                 refreshTeamDetails()
             }

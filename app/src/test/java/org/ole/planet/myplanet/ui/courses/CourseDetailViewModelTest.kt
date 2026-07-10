@@ -50,6 +50,8 @@ class CourseDetailViewModelTest {
     }
 
     private lateinit var viewModel: CourseDetailViewModel
+    private lateinit var courseDetailProvider: CourseDetailProvider
+    private lateinit var ratingSummaryProvider: RatingSummaryProvider
 
     private val courseId = "course_1"
 
@@ -66,12 +68,23 @@ class CourseDetailViewModelTest {
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
 
-        viewModel = CourseDetailViewModel(
+        courseDetailProvider = CourseDetailProvider(
             coursesRepository,
             submissionsRepository,
             ratingsRepository,
             userSessionManager,
             dispatcherProvider
+        )
+
+        ratingSummaryProvider = RatingSummaryProvider(
+            ratingsRepository,
+            userSessionManager,
+            dispatcherProvider
+        )
+
+        viewModel = CourseDetailViewModel(
+            courseDetailProvider,
+            ratingSummaryProvider
         )
     }
 
@@ -114,7 +127,7 @@ class CourseDetailViewModelTest {
         assertTrue(state is CourseDetailUiState.Success)
         state as CourseDetailUiState.Success
         assertEquals(7, state.examCount)
-        assertEquals(4.0f, state.ratingSummary?.get("averageRating")?.asFloat)
+        assertEquals(4.0f, state.ratingSummary?.averageRating)
         coVerify { coursesRepository.getCourseExamCount(courseId) }
     }
 
@@ -187,7 +200,7 @@ class CourseDetailViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value as CourseDetailUiState.Success
-        assertEquals(5.0f, state.ratingSummary?.get("averageRating")?.asFloat)
-        assertEquals(10, state.ratingSummary?.get("total")?.asInt)
+        assertEquals(5.0f, state.ratingSummary?.averageRating)
+        assertEquals(10, state.ratingSummary?.totalRatings)
     }
 }

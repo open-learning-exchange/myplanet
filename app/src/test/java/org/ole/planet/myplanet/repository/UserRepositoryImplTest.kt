@@ -5,14 +5,18 @@ import android.content.SharedPreferences
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.Lazy
+import io.mockk.Runs
 import io.mockk.coEvery
 import io.mockk.every
+import io.mockk.just
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.mockkStatic
+import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
+import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -29,6 +33,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -191,5 +196,74 @@ class UserRepositoryImplTest {
 
         val result = repository.hasAtLeastOneUser()
         assertEquals(false, result)
+    }
+
+    @Test
+    fun `upsertSavedUser adds a new guest`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns emptyList()
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.upsertSavedUser("guest1", "encrypted", "guest", null, null)
+
+        assertEquals(1, savedSlot.captured.size)
+        assertEquals("guest1", savedSlot.captured[0].name)
+        assertEquals("guest", savedSlot.captured[0].source)
+    }
+
+    @Test
+    fun `upsertSavedUser replaces existing guest with the same name`() = runTest {
+        val existing = User("", "guest1", "oldPwd", "", "guest")
+        every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.upsertSavedUser("guest1", "newPwd", "guest", null, null)
+
+        assertEquals(1, savedSlot.captured.size)
+        assertEquals("newPwd", savedSlot.captured[0].password)
+    }
+
+    @Test
+    fun `upsertSavedUser replaces existing member with the same username`() = runTest {
+        val existing = User("user1", "Full Name", "oldPwd", "old.jpg", "member")
+        every { sharedPrefManager.getSavedUsers() } returns listOf(existing)
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.upsertSavedUser("Full Name", "newPwd", "member", "new.jpg", "user1")
+
+        assertEquals(1, savedSlot.captured.size)
+        assertEquals("newPwd", savedSlot.captured[0].password)
+        assertEquals("new.jpg", savedSlot.captured[0].image)
+    }
+
+    @Test
+    fun `resetGuestAsMember removes saved users matching the username`() = runTest {
+        val guest = User("", "guest1", "pwd", "", "guest")
+        val other = User("Full Name", "user2", "pwd", "", "member")
+        every { sharedPrefManager.getSavedUsers() } returns listOf(guest, other)
+        val savedSlot = slot<List<User>>()
+        every { sharedPrefManager.setSavedUsers(capture(savedSlot)) } just Runs
+
+        repository.resetGuestAsMember("guest1")
+
+        assertEquals(listOf(other), savedSlot.captured)
+    }
+
+    @Test
+    fun `resetGuestAsMember does nothing when the username is not saved`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns listOf(User("Full Name", "user2", "pwd", "", "member"))
+        repository.resetGuestAsMember("guest1")
+        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
+    }
+
+    @Test
+    fun `upsertSavedUser ignores unknown sources`() = runTest {
+        every { sharedPrefManager.getSavedUsers() } returns emptyList()
+
+        repository.upsertSavedUser("someone", "pwd", "unknown", null, null)
+
+        verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
     }
 }

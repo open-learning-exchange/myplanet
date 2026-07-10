@@ -60,6 +60,9 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
+        coEvery {
+            repository invoke "queryList" withArguments listOf(RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
+        } returns emptyList<RealmSubmission>()
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
     }

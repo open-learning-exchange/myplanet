@@ -28,6 +28,8 @@ class TeamsTasksAdapter(
 
     fun hasAssignee(id: String): Boolean = assigneeCache.containsKey(id)
 
+    fun getKnownAssigneeIds(): Set<String> = assigneeCache.keys.toSet()
+
     fun updateAssignees(newAssignees: Map<String, String>) {
         assigneeCache.putAll(newAssignees)
     }
@@ -55,23 +57,36 @@ class TeamsTasksAdapter(
         }
         showAssignee(binding, it)
         binding.icMore.setOnClickListener {
-            listener?.onClickMore(getItem(position))
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onClickMore(getItem(adapterPosition))
+            }
         }
         binding.editTask.setOnClickListener {
-            listener?.onEdit(getItem(position))
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onEdit(getItem(adapterPosition))
+            }
         }
         binding.deleteTask.setOnClickListener {
-            listener?.onDelete(getItem(position))
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onDelete(getItem(adapterPosition))
+            }
         }
         holder.itemView.setOnClickListener {
-            val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setTitle(getItem(position).title)
-                .setMessage(getItem(position).description)
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }.create()
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                val item = getItem(adapterPosition)
+                val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(item.title)
+                    .setMessage(item.description)
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }.create()
 
-            alertDialog.show()
+                alertDialog.show()
+            }
         }
         if (nonTeamMember) {
             binding.editTask.visibility = View.GONE

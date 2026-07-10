@@ -23,6 +23,7 @@ import fisk.chipcloud.ChipDeletedListener
 import java.text.Normalizer
 import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -89,6 +90,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private val viewModel: ResourcesViewModel by viewModels()
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
+    private var refreshJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -112,7 +114,8 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         if (!isAdded || requireActivity().isFinishing) return
         val binding = _binding ?: return
 
-        lifecycleScope.launch {
+        refreshJob?.cancel()
+        refreshJob = lifecycleScope.launch {
             try {
                 allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
                 lastSearchQuery = null
@@ -329,7 +332,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             if (userModel?.id?.startsWith("guest") == false) {
                 AddResourceFragment().show(childFragmentManager, getString(R.string.add_res))
             } else {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             }
         }
     }
@@ -394,7 +397,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         builder.setCancelable(true)
             .setPositiveButton(R.string.go_to_mylibrary) { dialog: DialogInterface, _: Int ->
                 if (userModel?.id?.startsWith("guest") == true) {
-                    guestDialog(requireContext(), profileDbHandler)
+                    guestDialog(requireContext())
                 } else {
                     val fragment = ResourcesFragment().apply {
                         arguments = Bundle().apply {
@@ -652,7 +655,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         refreshResourcesData()
     }
 
-    override fun shouldAutoRefresh(table: String): Boolean = true
+    override fun shouldAutoRefresh(table: String): Boolean = false
     
     override fun getSyncRecyclerView(): RecyclerView? {
         return if (::recyclerView.isInitialized) recyclerView else null
@@ -660,8 +663,12 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     private fun normalizeText(text: String): String {
         return Normalizer.normalize(text, Normalizer.Form.NFD)
-            .replace("\\p{Mn}+".toRegex(), "")
+            .replace(DIACRITICS_REGEX, "")
             .lowercase(Locale.ROOT)
+    }
+
+    companion object {
+        private val DIACRITICS_REGEX = "\\p{Mn}+".toRegex()
     }
 
     private fun searchLocalModels(models: List<ResourceListModel>, query: String): List<ResourceListModel> {

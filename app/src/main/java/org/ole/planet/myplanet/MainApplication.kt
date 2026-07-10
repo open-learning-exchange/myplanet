@@ -34,7 +34,6 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
@@ -55,6 +54,7 @@ import org.ole.planet.myplanet.services.TaskNotificationWorker
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.utils.ANRWatchdog
+import org.ole.planet.myplanet.utils.Constants.NETWORK_TRAFFIC_TAG
 import org.ole.planet.myplanet.utils.CrashLogStore
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
@@ -131,6 +131,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
         lateinit var applicationScope: CoroutineScope
 
+        val coreDependenciesEntryPoint: CoreDependenciesEntryPoint by lazy {
+            EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+        }
+
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
                 saveLogToRealm(type, error, "${Date().time}")
@@ -180,11 +184,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         suspend fun isServerReachable(
             urlString: String,
-            ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
         ): Boolean {
             if (urlString.isBlank()) return false
-            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-            val serverUrlMapper = entryPoint.serverUrlMapper()
+            val serverUrlMapper = coreDependenciesEntryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
@@ -208,7 +211,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 }
                 val url = URL(formattedUrl)
                 val responseCode = withContext(ioDispatcher) {
-                    TrafficStats.setThreadStatsTag(Thread.currentThread().id.toInt())
+                    TrafficStats.setThreadStatsTag(NETWORK_TRAFFIC_TAG)
                     val connection = url.openConnection() as HttpURLConnection
                     try {
                         connection.requestMethod = "GET"

@@ -60,7 +60,6 @@ import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
 import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -72,8 +71,6 @@ class UserProfileFragment : Fragment() {
     private var _binding: FragmentUserProfileBinding? = null
     private val binding get() = _binding!!
     private val viewModel: UserProfileViewModel by viewModels()
-    @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var userSessionManager: UserSessionManager
     private var model: RealmUser? = null
@@ -147,7 +144,7 @@ class UserProfileFragment : Fragment() {
         binding.btEditProfile.setOnClickListener { openEditProfileDialog() }
         setupStatsRecycler()
         observeUserProfile()
-        viewModel.loadUserProfile(sharedPrefManager.getUserId())
+        viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -405,10 +402,8 @@ class UserProfileFragment : Fragment() {
             val email = binding.email.text.toString()
             val phoneNumber = binding.phoneNumber.text.toString()
             val dob = date ?: model?.dob
-            val userId = sharedPrefManager.getUserId()
 
-            viewModel.updateUserProfile(
-                userId = userId,
+            viewModel.updateCurrentUserProfile(
                 firstName = firstName,
                 lastName = lastName,
                 middleName = middleName,
@@ -553,7 +548,7 @@ class UserProfileFragment : Fragment() {
 
     private fun startIntent(uri: Uri?) {
         val path = uri?.toString()
-        viewModel.updateProfileImage(sharedPrefManager.getUserId(), path)
+        viewModel.updateCurrentUserProfileImage(path)
     }
 
     inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
