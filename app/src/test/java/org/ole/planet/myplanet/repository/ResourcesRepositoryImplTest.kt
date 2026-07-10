@@ -217,18 +217,21 @@ class ResourcesRepositoryImplTest {
 
         val startsWithLib = mockk<RealmMyLibrary>(relaxed = true) {
             every { title } returns "Ápple Tree"
+            every { titleNormal } returns "apple tree"
         }
         val containsLib = mockk<RealmMyLibrary>(relaxed = true) {
             every { title } returns "Green Ápple"
+            every { titleNormal } returns "green apple"
         }
         val notMatchLib = mockk<RealmMyLibrary>(relaxed = true) {
             every { title } returns "Banana"
+            every { titleNormal } returns "banana"
         }
 
         every { mockData.iterator() } returns mutableListOf(containsLib, notMatchLib, startsWithLib).iterator()
         every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(any<List<RealmMyLibrary>>()) } answers { firstArg() }
+        every { mockRealm.copyFromRealm(any<Iterable<RealmMyLibrary>>()) } answers { firstArg<Iterable<RealmMyLibrary>>().toList() }
 
         val result = repository.search("Apple", false, null)
 
@@ -247,16 +250,18 @@ class ResourcesRepositoryImplTest {
 
         val matchLib = mockk<RealmMyLibrary>(relaxed = true) {
             every { title } returns "The Apple Tree"
+            every { titleNormal } returns "the apple tree"
         }
         val notMatchLib = mockk<RealmMyLibrary>(relaxed = true) {
             every { title } returns "The Orange Tree"
+            every { titleNormal } returns "the orange tree"
         }
 
         every { mockData.iterator() } returns mutableListOf(matchLib, notMatchLib).iterator()
         every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.contains("titleNormal", "tree", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(any<List<RealmMyLibrary>>()) } answers { firstArg() }
+        every { mockRealm.copyFromRealm(any<Iterable<RealmMyLibrary>>()) } answers { firstArg<Iterable<RealmMyLibrary>>().toList() }
 
         val result = repository.search("Ápple Tree", false, null)
 

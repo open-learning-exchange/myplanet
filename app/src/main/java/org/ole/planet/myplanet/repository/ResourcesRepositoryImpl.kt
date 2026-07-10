@@ -69,17 +69,19 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            queryParts.forEach { part ->
-                queryObj.contains("titleNormal", normalizeText(part), Case.INSENSITIVE)
-            }
-            val data = queryObj.findAll()
             val normalizedQueryParts = queryParts.map { normalizeText(it) }
             val normalizedQuery = normalizeText(query)
+
+            normalizedQueryParts.forEach { part ->
+                queryObj.contains("titleNormal", part, Case.INSENSITIVE)
+            }
+
+            val data = queryObj.findAll()
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
             val containsQuery = mutableListOf<RealmMyLibrary>()
 
             for (item in data) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
+                val title = item.titleNormal ?: item.title?.let { normalizeText(it) } ?: continue
                 if (title.startsWith(normalizedQuery, ignoreCase = true)) {
                     startsWithQuery.add(item)
                 } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
