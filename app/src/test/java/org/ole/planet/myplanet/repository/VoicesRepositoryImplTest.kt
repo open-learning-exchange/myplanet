@@ -73,7 +73,8 @@ class VoicesRepositoryImplTest {
             UnconfinedTestDispatcher(),
             dispatcherProvider,
             realGson,
-            sharedPrefManager
+            sharedPrefManager,
+            dagger.Lazy { userRepository }
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {

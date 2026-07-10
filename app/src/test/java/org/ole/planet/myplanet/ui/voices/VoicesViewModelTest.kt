@@ -15,7 +15,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -27,7 +26,6 @@ class VoicesViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var voicesRepository: VoicesRepository
-    private lateinit var userRepository: UserRepository
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var viewModel: VoicesViewModel
 
@@ -41,9 +39,8 @@ class VoicesViewModelTest {
     @Before
     fun setup() {
         voicesRepository = mockk(relaxed = true)
-        userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
-        viewModel = VoicesViewModel(voicesRepository, userRepository, teamsRepository, testDispatcherProvider)
+        viewModel = VoicesViewModel(voicesRepository, teamsRepository, testDispatcherProvider)
     }
 
     @Test
