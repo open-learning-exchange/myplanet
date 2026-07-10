@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonObject
+import retrofit2.Response
 import io.realm.RealmObject
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
@@ -8,13 +10,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadedItem
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
+    private val apiInterface: ApiInterface,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
@@ -69,6 +75,18 @@ class UploadRepositoryImpl @Inject constructor(
             }
         }
         return failedLocally
+    }
+
+    override suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+        return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
+    }
+
+    override suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+        return apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
+    }
+
+    override suspend fun fetchExistingDoc(url: String): Response<JsonObject> {
+        return apiInterface.getJsonObject(UrlUtils.header, url)
     }
 
     private class FieldCacheEntry(val field: Field?)

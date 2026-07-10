@@ -13,7 +13,6 @@ import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -23,7 +22,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @Singleton
 class UploadCoordinator @Inject constructor(
     private val uploadRepository: UploadRepository,
-    private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context,
     private val retryQueue: RetryQueue,
     private val dispatcherProvider: DispatcherProvider
@@ -165,9 +163,9 @@ class UploadCoordinator @Inject constructor(
                 }
 
                 val response = if (preparedItem.dbId.isNullOrEmpty()) {
-                    apiInterface.postDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                    uploadRepository.postUpload(requestUrl, preparedItem.serialized)
                 } else {
-                    apiInterface.putDoc(UrlUtils.header, "application/json", requestUrl, preparedItem.serialized)
+                    uploadRepository.putUpload(requestUrl, preparedItem.serialized)
                 }
 
                 val responseBody = response.body()
@@ -177,11 +175,11 @@ class UploadCoordinator @Inject constructor(
                         is ResponseHandler.Custom -> config.responseHandler.idField to config.responseHandler.revField
                     }
 
-                    val uploadedItem = UploadedItem(
-                        localId = preparedItem.localId,
-                        remoteId = getString(idField, responseBody),
-                        remoteRev = getString(revField, responseBody),
-                        response = responseBody
+                    val uploadedItem = normalizeUploadResult(
+                        preparedItem.localId,
+                        responseBody,
+                        idField,
+                        revField
                     )
 
                     config.afterUpload?.invoke(preparedItem.item, uploadedItem)
@@ -189,17 +187,14 @@ class UploadCoordinator @Inject constructor(
                 } else if (response.code() == 409) {
                     try {
                         val docId = preparedItem.dbId ?: preparedItem.localId
-                        val getResponse = apiInterface.getJsonObject(
-                            UrlUtils.header,
-                            "${UrlUtils.getUrl()}/${config.endpoint}/$docId"
-                        )
+                        val getResponse = uploadRepository.fetchExistingDoc("${UrlUtils.getUrl()}/${config.endpoint}/$docId")
                         val existingDoc = getResponse.body()
                         if (getResponse.isSuccessful && existingDoc != null) {
-                            val uploadedItem = UploadedItem(
-                                localId = preparedItem.localId,
-                                remoteId = getString("_id", existingDoc),
-                                remoteRev = getString("_rev", existingDoc),
-                                response = existingDoc
+                            val uploadedItem = normalizeUploadResult(
+                                preparedItem.localId,
+                                existingDoc,
+                                "_id",
+                                "_rev"
                             )
                             config.afterUpload?.invoke(preparedItem.item, uploadedItem)
                             succeeded.add(uploadedItem)
@@ -270,6 +265,15 @@ class UploadCoordinator @Inject constructor(
                 )
             }
         }
+    }
+
+    private fun normalizeUploadResult(localId: String, responseBody: JsonObject, idField: String, revField: String): UploadedItem {
+        return UploadedItem(
+            localId = localId,
+            remoteId = getString(idField, responseBody),
+            remoteRev = getString(revField, responseBody),
+            response = responseBody
+        )
     }
 
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
