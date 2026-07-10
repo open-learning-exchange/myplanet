@@ -13,11 +13,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
@@ -29,7 +28,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class TeamsVoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
@@ -78,7 +76,7 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     suspend fun getUserById(userId: String): RealmUser? {
-        return userRepository.getUserById(userId)
+        return voicesRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {

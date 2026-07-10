@@ -6,5 +6,6 @@ interface LifeRepository {
     suspend fun updateVisibility(isVisible: Boolean, myLifeId: String)
     suspend fun updateMyLifeListOrder(list: List<RealmMyLife>)
     suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean = false): List<RealmMyLife>
+    suspend fun getMyLifeForDashboard(userId: String, seedBase: List<RealmMyLife>): List<RealmMyLife>
     suspend fun seedMyLifeIfEmpty(userId: String?, items: List<RealmMyLife>)
 }

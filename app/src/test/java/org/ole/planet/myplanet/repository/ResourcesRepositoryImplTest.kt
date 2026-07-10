@@ -10,7 +10,6 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import java.lang.reflect.Method
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -121,35 +120,6 @@ class ResourcesRepositoryImplTest {
         assertEquals("aeiou", ResourcesRepositoryImpl.normalizeText("äëïöü"))
     }
 
-    @Test
-    fun testFilterLibrariesNeedingUpdate() {
-        val method: Method = ResourcesRepositoryImpl::class.java.getDeclaredMethod(
-            "filterLibrariesNeedingUpdate",
-            Collection::class.java
-        )
-        method.isAccessible = true
-
-        val lib1 = mockk<RealmMyLibrary>()
-        every { lib1.needToUpdate() } returns true
-
-        val lib2 = mockk<RealmMyLibrary>()
-        every { lib2.needToUpdate() } returns false
-
-        val lib3 = mockk<RealmMyLibrary>()
-        every { lib3.needToUpdate() } returns true
-
-        val lib4 = mockk<RealmMyLibrary>()
-        every { lib4.needToUpdate() } returns false
-
-        val input = listOf(lib1, lib2, lib3, lib4)
-
-        @Suppress("UNCHECKED_CAST")
-        val result = method.invoke(repository, input) as List<RealmMyLibrary>
-
-        assertEquals(2, result.size)
-        assertTrue(result.contains(lib1))
-        assertTrue(result.contains(lib3))
-    }
 
     @Test
     fun `getAllLibraries returns list of RealmMyLibrary`() = runTest {
@@ -222,5 +192,77 @@ class ResourcesRepositoryImplTest {
         verify { mockQuery.equalTo("isPrivate", false) }
         verify { mockQuery.not() }
         verify { mockQuery.equalTo("userId", "model123") }
+    }
+
+    @Test
+    fun `search empty query returns all public libraries`() = runTest {
+        val mockData = mockk<RealmResults<RealmMyLibrary>>(relaxed = true)
+        val mockQuery = mockk<RealmQuery<RealmMyLibrary>>(relaxed = true)
+        every { mockRealm.where(RealmMyLibrary::class.java) } returns mockQuery
+        every { mockQuery.equalTo("isPrivate", false) } returns mockQuery
+        every { mockQuery.findAll() } returns mockData
+        every { mockRealm.copyFromRealm(mockData) } returns emptyList()
+
+        val result = repository.search("", false, null)
+        assertEquals(0, result.size)
+        verify { mockQuery.findAll() }
+    }
+
+    @Test
+    fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
+        val mockData = mockk<RealmResults<RealmMyLibrary>>(relaxed = true)
+        val mockQuery = mockk<RealmQuery<RealmMyLibrary>>(relaxed = true)
+        every { mockRealm.where(RealmMyLibrary::class.java) } returns mockQuery
+        every { mockQuery.equalTo("isPrivate", false) } returns mockQuery
+
+        val startsWithLib = mockk<RealmMyLibrary>(relaxed = true) {
+            every { title } returns "Ápple Tree"
+        }
+        val containsLib = mockk<RealmMyLibrary>(relaxed = true) {
+            every { title } returns "Green Ápple"
+        }
+        val notMatchLib = mockk<RealmMyLibrary>(relaxed = true) {
+            every { title } returns "Banana"
+        }
+
+        every { mockData.iterator() } returns mutableListOf(containsLib, notMatchLib, startsWithLib).iterator()
+        every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.findAll() } returns mockData
+        every { mockRealm.copyFromRealm(any<List<RealmMyLibrary>>()) } answers { firstArg() }
+
+        val result = repository.search("Apple", false, null)
+
+        verify { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) }
+        assertEquals(2, result.size)
+        assertEquals(startsWithLib, result[0])
+        assertEquals(containsLib, result[1])
+    }
+
+    @Test
+    fun `search multi word matches all parts`() = runTest {
+        val mockData = mockk<RealmResults<RealmMyLibrary>>(relaxed = true)
+        val mockQuery = mockk<RealmQuery<RealmMyLibrary>>(relaxed = true)
+        every { mockRealm.where(RealmMyLibrary::class.java) } returns mockQuery
+        every { mockQuery.equalTo("isPrivate", false) } returns mockQuery
+
+        val matchLib = mockk<RealmMyLibrary>(relaxed = true) {
+            every { title } returns "The Apple Tree"
+        }
+        val notMatchLib = mockk<RealmMyLibrary>(relaxed = true) {
+            every { title } returns "The Orange Tree"
+        }
+
+        every { mockData.iterator() } returns mutableListOf(matchLib, notMatchLib).iterator()
+        every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.contains("titleNormal", "tree", io.realm.Case.INSENSITIVE) } returns mockQuery
+        every { mockQuery.findAll() } returns mockData
+        every { mockRealm.copyFromRealm(any<List<RealmMyLibrary>>()) } answers { firstArg() }
+
+        val result = repository.search("Ápple Tree", false, null)
+
+        verify { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) }
+        verify { mockQuery.contains("titleNormal", "tree", io.realm.Case.INSENSITIVE) }
+        assertEquals(1, result.size)
+        assertEquals(matchLib, result[0])
     }
 }
