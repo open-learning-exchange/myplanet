@@ -10,14 +10,17 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
-    private val resourcesRepository: ResourcesRepository
+    private val resourcesRepository: ResourcesRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _downloadComplete = MutableStateFlow(false)
@@ -46,9 +49,9 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
-    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
+    suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-        return enrichedLibraries
+        enrichedLibraries
             .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
             .map { (library, rating, libraryTags) ->
             val item = ResourceItem(
