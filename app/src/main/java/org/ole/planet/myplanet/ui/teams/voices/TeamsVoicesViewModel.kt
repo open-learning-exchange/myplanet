@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class TeamsVoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
     private val teamsRepository: TeamsRepository,
-    private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
@@ -78,7 +77,7 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     suspend fun getUserById(userId: String): RealmUser? {
-        return userRepository.getUserById(userId)
+        return voicesRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {

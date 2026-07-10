@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.utils.Constants
@@ -30,7 +29,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 @HiltViewModel
 class VoicesViewModel @Inject constructor(
     private val voicesRepository: VoicesRepository,
-    private val userRepository: UserRepository,
     private val teamsRepository: TeamsRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
@@ -126,7 +124,7 @@ class VoicesViewModel @Inject constructor(
     // Note: The following are read-only suspend functions designed to be called directly from
     // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
     suspend fun getUserById(userId: String): RealmUser? {
-        return userRepository.getUserById(userId)
+        return voicesRepository.getUserById(userId)
     }
 
     suspend fun getReplyCount(newsId: String): Int {
