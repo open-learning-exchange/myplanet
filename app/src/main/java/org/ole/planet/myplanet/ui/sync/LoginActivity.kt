@@ -30,12 +30,11 @@ import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
 import javax.inject.Inject
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
-import org.ole.planet.myplanet.utils.textChanges
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -64,6 +63,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
 @OptIn(FlowPreview::class)
 @AndroidEntryPoint

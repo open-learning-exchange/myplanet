@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
 import java.text.Normalizer
@@ -31,7 +32,6 @@ import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
-import io.realm.Case
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
