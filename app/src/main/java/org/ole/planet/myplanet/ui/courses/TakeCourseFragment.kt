@@ -222,13 +222,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     addRemoveCourse()
                 }
 
-                pendingJoinDialog = true
-                maybeShowJoinDialog()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    delay(JOIN_DIALOG_FALLBACK_MS)
-                    courseDetailContentReady = true
-                    maybeShowJoinDialog()
-                }
+                joinDialog?.show()
             } else {
                 binding.btnRemove.visibility = View.GONE
             }
