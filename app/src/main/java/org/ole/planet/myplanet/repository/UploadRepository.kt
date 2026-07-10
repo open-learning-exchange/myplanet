@@ -1,10 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonObject
 import io.realm.RealmObject
 import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadedItem
-
-import com.google.gson.JsonObject
 import retrofit2.Response
 
 interface UploadRepository {
