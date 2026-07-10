@@ -99,7 +99,7 @@ open class RealmMyCourse : RealmObject() {
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
-        fun serialize(course: RealmMyCourse, realm: Realm): JsonObject {
+        fun serialize(course: RealmMyCourse, resourcesByStepId: Map<String?, List<RealmMyLibrary>>): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
             obj.addProperty("_rev", course.courseRev)
@@ -114,10 +114,6 @@ open class RealmMyCourse : RealmObject() {
             course.coverFileName?.let { obj.addProperty("coverFileName", it) }
 
             val stepsArray = JsonArray()
-            val allResourcesForCourse = realm.where(RealmMyLibrary::class.java)
-                .equalTo("courseId", course.courseId)
-                .findAll()
-            val resourcesByStepId = allResourcesForCourse.groupBy { it.stepId }
 
             course.courseSteps?.forEach { step ->
                 val stepObj = JsonObject()
