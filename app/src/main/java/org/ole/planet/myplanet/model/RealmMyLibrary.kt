@@ -43,6 +43,8 @@ open class RealmMyLibrary : RealmObject() {
     var year: String? = null
     var medium: String? = null
     var title: String? = null
+    @Index
+    var titleNormal: String? = null
     var averageRating: String? = null
     var filename: String? = null
     var mediaType: String? = null
@@ -254,7 +256,13 @@ open class RealmMyLibrary : RealmObject() {
                 }
                 _rev = JsonUtils.getString("_rev", params.doc)
                 this.resourceId = resourceId
-                title = JsonUtils.getString("title", params.doc)
+                val titleString = JsonUtils.getString("title", params.doc)
+                title = titleString
+                titleNormal = titleString.let {
+                    java.text.Normalizer.normalize(it, java.text.Normalizer.Form.NFD)
+                        .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+                        .lowercase(java.util.Locale.ROOT)
+                }
                 description = JsonUtils.getString("description", params.doc)
                 if (params.doc.has("_attachments")) {
                     val attachments = params.doc["_attachments"].asJsonObject
