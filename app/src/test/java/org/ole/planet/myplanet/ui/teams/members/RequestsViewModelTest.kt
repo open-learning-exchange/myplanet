@@ -2,26 +2,14 @@ package org.ole.planet.myplanet.ui.teams.members
 
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -30,6 +18,9 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @ExperimentalCoroutinesApi
 class RequestsViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var teamsSyncRepository: TeamsSyncRepository
@@ -40,17 +31,11 @@ class RequestsViewModelTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         teamsRepository = mockk()
         teamsSyncRepository = mockk()
         userSessionManager = mockk()
         testDispatcherProvider = TestDispatcherProvider(testDispatcher)
         viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager, testDispatcherProvider)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test

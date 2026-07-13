@@ -5,32 +5,23 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class FeedbackDetailViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var viewModel: FeedbackDetailViewModel
     private lateinit var feedbackRepository: FeedbackRepository
@@ -39,7 +30,6 @@ class FeedbackDetailViewModelTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         feedbackRepository = mockk()
         dispatcherProvider = mockk {
             every { main } returns testDispatcher
@@ -48,11 +38,6 @@ class FeedbackDetailViewModelTest {
             every { unconfined } returns testDispatcher
         }
         viewModel = FeedbackDetailViewModel(feedbackRepository, dispatcherProvider)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test

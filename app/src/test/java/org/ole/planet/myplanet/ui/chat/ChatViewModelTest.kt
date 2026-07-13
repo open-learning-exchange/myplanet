@@ -3,29 +3,16 @@ package org.ole.planet.myplanet.ui.chat
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertFalse
-import org.junit.Rule
 import org.junit.Assert.assertNull
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
@@ -39,6 +26,9 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 class ChatViewModelTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var viewModel: ChatViewModel
     private lateinit var chatRepository: ChatRepository
     private lateinit var userRepository: UserRepository
@@ -49,18 +39,12 @@ class ChatViewModelTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         chatRepository = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
         viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test

@@ -15,16 +15,9 @@ import io.mockk.mockkStatic
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -37,6 +30,9 @@ import org.ole.planet.myplanet.utils.Utilities
 class BaseResourceFragmentTest {
 
     @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
+    @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var fragment: BaseResourceFragment
@@ -47,7 +43,6 @@ class BaseResourceFragmentTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         fragment = spyk(object : BaseResourceFragment() {})
         mockPrgDialog = mockk(relaxed = true)
         fragment.prgDialog = mockPrgDialog
@@ -77,7 +72,6 @@ class BaseResourceFragmentTest {
 
     @After
     fun teardown() {
-        Dispatchers.resetMain()
         unmockkAll()
     }
 

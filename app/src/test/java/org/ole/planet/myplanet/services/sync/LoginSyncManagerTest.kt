@@ -16,9 +16,7 @@ import java.util.Base64 as JavaBase64
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
@@ -38,6 +36,9 @@ import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginSyncManagerTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var loginSyncManager: LoginSyncManager
     private val context: Context = mockk(relaxed = true)

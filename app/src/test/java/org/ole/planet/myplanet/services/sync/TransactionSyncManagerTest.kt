@@ -10,9 +10,7 @@ import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -45,6 +43,9 @@ import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TransactionSyncManagerTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var transactionSyncManager: TransactionSyncManager
     private val apiInterface: ApiInterface = mockk()

@@ -5,26 +5,15 @@ import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -42,6 +31,9 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class DashboardViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var viewModel: DashboardViewModel
     private val application = mockk<Application>()
@@ -61,7 +53,6 @@ class DashboardViewModelTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         every { dispatcherProvider.main } returns testDispatcher
         every { dispatcherProvider.io } returns testDispatcher
         every { dispatcherProvider.default } returns testDispatcher
@@ -81,11 +72,6 @@ class DashboardViewModelTest {
             voicesRepository,
             dispatcherProvider
         )
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test

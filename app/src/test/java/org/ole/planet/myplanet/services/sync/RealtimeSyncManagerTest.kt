@@ -5,17 +5,17 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.TableDataUpdate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealtimeSyncManagerTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Before
     @After

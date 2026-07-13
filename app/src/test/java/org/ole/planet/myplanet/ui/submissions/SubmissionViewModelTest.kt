@@ -1,25 +1,14 @@
 package org.ole.planet.myplanet.ui.submissions
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.junit.After
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -29,6 +18,9 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 class SubmissionViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private val testDispatcher = mainDispatcherRule.testDispatcher
     private val testDispatcherProvider = object : DispatcherProvider {
         override val io = testDispatcher
@@ -43,14 +35,8 @@ class SubmissionViewModelTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         submissionsRepository = mock(SubmissionsRepository::class.java)
         userRepository = mock(UserRepository::class.java)
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     private fun createSubmission(id: String, parentId: String, type: String, status: String, lastUpdateTime: Long, userId: String = "user1"): RealmSubmission {

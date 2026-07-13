@@ -5,27 +5,20 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.repository.PersonalsRepository
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 class AddResourceViewModelTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var viewModel: AddResourceViewModel
     private val personalsRepository = mockk<PersonalsRepository>(relaxed = true)
     private val testDispatcher = mainDispatcherRule.testDispatcher
