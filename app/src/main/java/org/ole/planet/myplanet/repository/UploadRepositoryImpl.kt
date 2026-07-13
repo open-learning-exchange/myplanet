@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.repository
 
 import android.util.Log
 import com.google.gson.JsonObject
-import retrofit2.Response
 import io.realm.RealmObject
 import java.lang.reflect.Field
 import java.util.concurrent.ConcurrentHashMap
@@ -12,10 +11,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.services.upload.UploadConfig
-import org.ole.planet.myplanet.services.upload.UploadedItem
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
@@ -24,21 +21,17 @@ class UploadRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
-    override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
-        return if (config.fetchPendingItems != null) {
-            config.fetchPendingItems.invoke()
-        } else {
-            withRealmAsync { realm ->
-                val query = realm.where(config.modelClass.java)
-                val filteredQuery = config.queryBuilder?.invoke(query) ?: query
-                val results = filteredQuery.findAll()
-                realm.copyFromRealm(results)
-            }
+    override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
+        return withRealmAsync { realm ->
+            val query = realm.where(config.modelClass.java)
+            val filteredQuery = config.queryBuilder(query)
+            val results = filteredQuery.findAll()
+            realm.copyFromRealm(results)
         }
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem> {
-        val failedLocally = mutableListOf<UploadedItem>()
+    override suspend fun <T : RealmObject> markUploaded(config: UploadUpdateContract<T>, succeeded: List<UploadedItemResult>): List<UploadedItemResult> {
+        val failedLocally = mutableListOf<UploadedItemResult>()
         executeTransaction { realm ->
             val localIds = succeeded.map { it.localId }
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"

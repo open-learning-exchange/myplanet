@@ -2,7 +2,7 @@
 gradle = "9.2.1"
 realm = "10.19.0"
 hilt = "2.60.1"
-ksp = "2.3.9"
+ksp = "2.3.10"
 kotlin = "2.4.0"
 hiltWork = "1.4.0"
 media3 = "1.10.1"
