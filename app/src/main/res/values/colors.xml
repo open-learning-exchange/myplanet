@@ -17,22 +17,16 @@
     <color name="light_dark">#FFFFFF</color>
     <color name="mainColor">@color/colorPrimary</color>
     <color name="mainColorLight">@color/colorPrimaryLight</color>
-    <color name="dashboard_item_alternative">@color/md_grey_300</color>
     <color name="total_color">@color/md_blue_900</color>
 
     <color name="black_overlay">#66000000</color>
     <color name="bg_white">#FFFFFF</color>
-    <color name="green">#C304E019</color>
 
-    <color name="selected_color">#80B0E0E6</color>
     <color name="empty_rating">@color/md_grey_500</color>
     <color name="ic_download">#000000</color>
     <color name="profile_pic">#BDBDBD</color>
     <color name="user_profile_label">@color/md_blue_700</color>
     <color name="user_profile_description">@color/md_grey_700</color>
-    <color name="user_profile_background">@color/md_grey_300</color>
-    <color name="multi_select_grey">@color/md_grey_300</color>
-    <color name="background_color">#FFFFFF</color>
     <color name="text_color">#000000</color>
     <color name="teams_heading">#000000</color>
 
@@ -49,10 +43,7 @@
     <color name="warning_color">#FF9800</color>
 
     <color name="status_not_started">#9E9E9E</color>
-    <color name="status_in_progress">#FFC107</color>
-    <color name="status_completed">#4CAF50</color>
 
     <color name="field_fill">#E8EEF5</color>
     <color name="md_blue_100">#BBDEFB</color>
-    <color name="md_blue_200">#90CAF9</color>
 </resources>
