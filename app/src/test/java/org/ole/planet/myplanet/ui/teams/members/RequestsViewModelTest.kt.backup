@@ -3,25 +3,17 @@ package org.ole.planet.myplanet.ui.teams.members
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -36,7 +28,7 @@ class RequestsViewModelTest {
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var testDispatcherProvider: TestDispatcherProvider
     private lateinit var viewModel: RequestsViewModel
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {

@@ -2,10 +2,8 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -15,15 +13,14 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class EnterprisesFinancesViewModelTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var viewModel: EnterprisesFinancesViewModel
-    private val testDispatcher = StandardTestDispatcher()
-
-    @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

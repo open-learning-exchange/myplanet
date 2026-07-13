@@ -3,30 +3,24 @@ package org.ole.planet.myplanet.ui.resources
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.repository.ResourcesRepository
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
 
     private lateinit var viewModel: ResourcesViewModel
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {

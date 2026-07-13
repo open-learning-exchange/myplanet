@@ -9,15 +9,16 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.RealmQuery
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -28,13 +29,17 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @ExperimentalCoroutinesApi
 class ProgressRepositoryImplTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var repository: ProgressRepositoryImpl
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private lateinit var mockCoursesRepository: CoursesRepository
@@ -46,7 +51,7 @@ class ProgressRepositoryImplTest {
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
         repository = spyk(ProgressRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider,
             { mockCoursesRepository },
             { mockk(relaxed = true) }
@@ -316,7 +321,7 @@ class ProgressRepositoryImplTest {
         val activitiesRepo = mockk<ActivitiesRepository>()
         val localRepository = ProgressRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider,
             { mockCoursesRepository },
             { activitiesRepo }

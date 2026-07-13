@@ -15,22 +15,29 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import java.io.File
 import java.nio.file.Files
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertFalse
+import org.junit.Rule
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.FileUtils
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FreeSpaceWorkerTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var worker: FreeSpaceWorker
     private lateinit var context: Context
     private lateinit var workerParams: WorkerParameters
@@ -38,7 +45,7 @@ class FreeSpaceWorkerTest {
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var oleDir: File
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

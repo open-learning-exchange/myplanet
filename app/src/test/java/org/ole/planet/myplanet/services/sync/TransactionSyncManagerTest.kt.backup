@@ -9,10 +9,8 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -68,7 +66,7 @@ class TransactionSyncManagerTest {
     private val healthRepository: HealthRepository = mockk()
     private val progressRepository: ProgressRepository = mockk()
     private val surveysRepository: SurveysRepository = mockk()
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider: DispatcherProvider = mockk()
 

@@ -5,8 +5,6 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -20,13 +18,12 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserProfileViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var userRepository: UserRepository
     private lateinit var userSessionManager: UserSessionManager

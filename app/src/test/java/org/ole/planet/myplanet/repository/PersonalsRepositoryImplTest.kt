@@ -16,27 +16,34 @@ import io.realm.RealmResults
 import io.realm.log.RealmLog
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertFalse
+import org.junit.Rule
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmMyPersonal
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var databaseService: DatabaseService
     private lateinit var mockRealm: Realm
     private lateinit var repository: PersonalsRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

@@ -14,16 +14,18 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertNotNull
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -33,14 +35,18 @@ import org.ole.planet.myplanet.data.queryList
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var repository: HealthRepositoryImpl
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val mockApiInterface: ApiInterface = mockk(relaxed = true)
@@ -90,7 +96,7 @@ class HealthRepositoryImplTest {
         repository = HealthRepositoryImpl(
             mockApiInterface,
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider
         )
     }

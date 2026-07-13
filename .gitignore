@@ -1,7 +1,4 @@
 ```
-# Backup files
-*.backup
-
 # Compiled and build artifacts
 *.class
 *.o
@@ -10,41 +7,50 @@
 *.dll
 *.so
 *.a
+*.pyc
+__pycache__/
 
 # Dependencies
 node_modules/
 venv/
 .venv/
-__pycache__/
-.mypy_cache/
-.pytest_cache/
 target/
 .gradle/
+.mypy_cache/
+.pytest_cache/
+.julia/
+zig*/
 
-# Logs and temp files
-*.log
-*.tmp
-*.swp
+# Android/Kotlin specific
+*.apk
+*.aar
+*.dex
+build/
+app/build/
+.gradle/
+local.properties
+.proguard/
 
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
+# IDE files
 .vscode/
 .idea/
+*.swp
+*.swo
+*.tmp
+
+# Logs and coverage
+*.log
+*.tmp
+coverage/
+htmlcov/
+.coverage
 
 # System files
 .DS_Store
 Thumbs.db
 
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Build outputs
-dist/
-build/
+# Environment variables
+.env
+.env.local
+*.env.*
 ```

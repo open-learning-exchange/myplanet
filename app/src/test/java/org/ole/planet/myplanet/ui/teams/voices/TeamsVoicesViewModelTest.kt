@@ -2,8 +2,6 @@ package org.ole.planet.myplanet.ui.teams.voices
 
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,13 +14,12 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TeamsVoicesViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var viewModel: TeamsVoicesViewModel
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)

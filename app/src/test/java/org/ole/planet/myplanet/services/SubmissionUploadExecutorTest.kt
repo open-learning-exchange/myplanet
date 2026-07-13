@@ -12,9 +12,7 @@ import javax.inject.Inject
 import kotlin.coroutines.ContinuationInterceptor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -29,20 +27,23 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.DispatcherModule
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @HiltAndroidTest
 @UninstallModules(DispatcherModule::class)
 @RunWith(RobolectricTestRunner::class)
 @Config(application = HiltTestApplication::class, sdk = [33])
 class SubmissionUploadExecutorTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     @get:Rule
     val hiltRule = HiltAndroidRule(this)
 
     private val testScheduler = TestCoroutineScheduler()
-    private val ioDispatcher = StandardTestDispatcher(testScheduler)
+    private val ioDispatcher = mainDispatcherRule.testDispatcher
 
     @BindValue
     @JvmField

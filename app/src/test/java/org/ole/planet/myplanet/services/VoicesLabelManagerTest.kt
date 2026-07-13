@@ -17,20 +17,27 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.RealmList
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 class VoicesLabelManagerTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var context: Context
     private lateinit var dispatcherProvider: DispatcherProvider
@@ -48,7 +55,7 @@ class VoicesLabelManagerTest {
     fun setUp() {
         context = mockk(relaxed = true)
         dispatcherProvider = mockk(relaxed = true)
-        every { dispatcherProvider.main } returns UnconfinedTestDispatcher()
+        every { dispatcherProvider.main } returns mainDispatcherRule.testDispatcher
         scope = TestScope()
 
         mockkObject(Utilities)

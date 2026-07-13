@@ -10,18 +10,23 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTag
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TagsRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: TagsRepositoryImpl
@@ -36,7 +41,7 @@ class TagsRepositoryImplTest {
             val operation = firstArg<(Realm) -> List<RealmTag>>()
             operation(mockRealm)
         }
-        repository = TagsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
+        repository = TagsRepositoryImpl(databaseService, mainDispatcherRule.testDispatcher)
     }
 
     private fun mockQueryResults(vararg results: List<RealmTag>): RealmQuery<RealmTag> {

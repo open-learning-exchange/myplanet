@@ -16,17 +16,20 @@ import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService
 
 class TestRealmObject : RealmObject()
@@ -35,16 +38,18 @@ class TestRealmRepository(
     databaseService: DatabaseService,
     realmDispatcher: CoroutineDispatcher
 ) : RealmRepository(databaseService, realmDispatcher) {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     suspend fun queryFlow() = queryListFlow(TestRealmObject::class.java)
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RealmRepositoryTest {
 
     private lateinit var databaseService: DatabaseService
     private lateinit var realm: Realm
     private lateinit var repository: TestRealmRepository
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

@@ -14,16 +14,20 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import javax.inject.Provider
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -36,13 +40,16 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 @ExperimentalCoroutinesApi
 class SubmissionsRepositoryImplTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var databaseService: DatabaseService
     private lateinit var teamsRepositoryProvider: Provider<TeamsRepository>
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var exporter: SubmissionsRepositoryExporter
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     private lateinit var repository: SubmissionsRepositoryImpl
 

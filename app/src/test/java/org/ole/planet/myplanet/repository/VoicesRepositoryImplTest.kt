@@ -7,28 +7,33 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.spyk
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertNotNull
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @ExperimentalCoroutinesApi
 class VoicesRepositoryImplTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var repository: VoicesRepositoryImpl
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
@@ -40,7 +45,7 @@ class VoicesRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
         repository = spyk(VoicesRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider,
             gson,
             sharedPrefManager,
@@ -70,7 +75,7 @@ class VoicesRepositoryImplTest {
         val realGson = Gson()
         val repoWithRealGson = spyk(VoicesRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider,
             realGson,
             sharedPrefManager,
@@ -130,7 +135,7 @@ class VoicesRepositoryImplTest {
         val realGson = Gson()
         val repoWithRealGson = spyk(VoicesRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider,
             realGson,
             sharedPrefManager,
@@ -181,7 +186,7 @@ class VoicesRepositoryImplTest {
         val realGson = Gson()
         val repoWithRealGson = spyk(VoicesRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             dispatcherProvider,
             realGson,
             sharedPrefManager,

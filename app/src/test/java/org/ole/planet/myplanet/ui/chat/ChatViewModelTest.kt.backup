@@ -4,28 +4,19 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertFalse
-import org.junit.Rule
 import org.junit.Assert.assertNull
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
@@ -37,6 +28,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModelTest {
 
     private lateinit var viewModel: ChatViewModel
@@ -44,7 +36,7 @@ class ChatViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var voicesRepository: VoicesRepository
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
 
     @Before

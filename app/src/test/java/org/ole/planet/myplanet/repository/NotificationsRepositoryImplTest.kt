@@ -9,27 +9,35 @@ import io.mockk.slot
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertFalse
+import org.junit.Rule
 import org.junit.Assert.assertNotNull
+import org.junit.Rule
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var databaseService: DatabaseService
     private lateinit var userRepository: dagger.Lazy<UserRepository>
     private lateinit var teamsRepository: dagger.Lazy<TeamsRepository>
     private lateinit var repository: NotificationsRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setUp() {

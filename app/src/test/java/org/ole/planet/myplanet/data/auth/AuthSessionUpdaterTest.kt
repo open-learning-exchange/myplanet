@@ -7,7 +7,6 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import java.lang.reflect.Method
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertNull

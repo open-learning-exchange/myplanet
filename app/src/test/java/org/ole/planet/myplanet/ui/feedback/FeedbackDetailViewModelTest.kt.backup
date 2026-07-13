@@ -6,36 +6,30 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
-import org.junit.Rule
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackDetailViewModelTest {
 
     private lateinit var viewModel: FeedbackDetailViewModel
     private lateinit var feedbackRepository: FeedbackRepository
     private lateinit var dispatcherProvider: DispatcherProvider
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher = StandardTestDispatcher()
 
     @Before
     fun setup() {
@@ -92,7 +86,7 @@ class FeedbackDetailViewModelTest {
         coEvery { feedbackRepository.getFeedbackById(feedbackId) } returns mockFeedback
 
         val eventsList = mutableListOf<FeedbackDetailViewModel.FeedbackDetailEvent>()
-        val job = launch(testDispatcher) {
+        val job = launch(UnconfinedTestDispatcher(testDispatcher.scheduler)) {
             viewModel.events.toList(eventsList)
         }
 

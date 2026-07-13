@@ -11,27 +11,32 @@ import io.realm.Realm
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 open class DummyModel : RealmObject()
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UploadRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var databaseService: DatabaseService
     private lateinit var apiInterface: ApiInterface
     private lateinit var repository: UploadRepositoryImpl
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setUp() {

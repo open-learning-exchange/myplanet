@@ -6,9 +6,7 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -30,13 +28,12 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class CourseDetailViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
-
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule()
+
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     private val coursesRepository: CoursesRepository = mockk()
     private val submissionsRepository: SubmissionsRepository = mockk()

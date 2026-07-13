@@ -3,9 +3,8 @@ package org.ole.planet.myplanet.services.sync
 import java.lang.reflect.Modifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -51,7 +50,7 @@ class RealtimeSyncManagerTest {
         val update = TableDataUpdate("test_table_flow", 2, 3, false)
 
         val results = mutableListOf<TableDataUpdate>()
-        val job = launch(mainDispatcherRule.testDispatcher) {
+        val job = launch(UnconfinedTestDispatcher()) {
             manager.dataUpdateFlow.collect {
                 results.add(it)
             }
@@ -71,10 +70,10 @@ class RealtimeSyncManagerTest {
 
         val results1 = mutableListOf<TableDataUpdate>()
         val results2 = mutableListOf<TableDataUpdate>()
-        val job1 = launch(mainDispatcherRule.testDispatcher) {
+        val job1 = launch(UnconfinedTestDispatcher()) {
             manager.dataUpdateFlow.collect { results1.add(it) }
         }
-        val job2 = launch(mainDispatcherRule.testDispatcher) {
+        val job2 = launch(UnconfinedTestDispatcher()) {
             manager.dataUpdateFlow.collect { results2.add(it) }
         }
 

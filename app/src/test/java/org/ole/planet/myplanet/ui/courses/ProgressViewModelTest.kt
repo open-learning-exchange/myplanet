@@ -4,8 +4,6 @@ import com.google.gson.JsonArray
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -19,13 +17,12 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ProgressViewModelTest {
 
-    private val testDispatcher = StandardTestDispatcher()
     @get:Rule
-    val mainDispatcherRule = MainDispatcherRule(testDispatcher)
+    val mainDispatcherRule = MainDispatcherRule()
 
+    private val testDispatcher = mainDispatcherRule.testDispatcher
     private lateinit var viewModel: ProgressViewModel
     private val progressRepository: ProgressRepository = mockk()
     private val userSessionManager: UserSessionManager = mockk()

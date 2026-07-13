@@ -18,16 +18,18 @@ import io.mockk.unmockkObject
 import io.mockk.unmockkStatic
 import io.mockk.verify
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Assert.assertEquals
+import org.junit.Rule
 import org.junit.Assert.assertFalse
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
@@ -37,11 +39,14 @@ import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var databaseService: DatabaseService
     private lateinit var settings: SharedPreferences
@@ -55,7 +60,7 @@ class UserRepositoryImplTest {
 
     private lateinit var repository: UserRepositoryImpl
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {
@@ -84,7 +89,7 @@ class UserRepositoryImplTest {
 
         repository = UserRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             settings,
             sharedPrefManager,
             apiInterface,

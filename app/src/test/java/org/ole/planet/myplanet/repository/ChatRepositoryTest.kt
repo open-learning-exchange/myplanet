@@ -4,17 +4,20 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.realm.Realm
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Before
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var chatRepository: ChatRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val mockRealm: Realm = mockk(relaxed = true)
@@ -27,7 +30,7 @@ class ChatRepositoryTest {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
         chatRepository = ChatRepositoryImpl(
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             chatApiService,
             serverUrlMapper,
             sharedPrefManager

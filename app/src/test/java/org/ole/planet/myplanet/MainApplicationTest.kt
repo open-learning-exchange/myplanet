@@ -6,20 +6,22 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MainApplicationTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var mockContext: Context
     private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
@@ -50,7 +52,7 @@ class MainApplicationTest {
 
     @Test
     fun `isServerReachable tests dispatcher and returns false for invalid URL`() = runTest {
-        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val testDispatcher = mainDispatcherRule.testDispatcher
 
         var result: Boolean? = null
 

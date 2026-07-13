@@ -3,9 +3,7 @@ package org.ole.planet.myplanet.ui.voices
 import io.mockk.coEvery
 import io.mockk.mockk
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -16,7 +14,6 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class NewsViewModelTest {
 
     @get:Rule
@@ -26,10 +23,10 @@ class NewsViewModelTest {
     private lateinit var viewModel: NewsViewModel
 
     private val testDispatcherProvider = object : DispatcherProvider {
-        override val main: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val io: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val default: CoroutineDispatcher = UnconfinedTestDispatcher()
-        override val unconfined: CoroutineDispatcher = UnconfinedTestDispatcher()
+        override val main: CoroutineDispatcher = mainDispatcherRule.testDispatcher
+        override val io: CoroutineDispatcher = mainDispatcherRule.testDispatcher
+        override val default: CoroutineDispatcher = mainDispatcherRule.testDispatcher
+        override val unconfined: CoroutineDispatcher = mainDispatcherRule.testDispatcher
     }
 
     @Before
@@ -45,7 +42,7 @@ class NewsViewModelTest {
         coEvery { voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
         var capturedResult: List<String>? = null
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+        backgroundScope.launch(mainDispatcherRule.testDispatcher) {
             viewModel.privateImageUrls.collect { urls ->
                 capturedResult = urls
             }
@@ -65,7 +62,7 @@ class NewsViewModelTest {
         coEvery { voicesRepository.getPrivateImageUrlsCreatedAfter(timestamp) } returns expectedUrls
 
         var capturedResult: List<String>? = null
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+        backgroundScope.launch(mainDispatcherRule.testDispatcher) {
             viewModel.privateImageUrls.collect { urls ->
                 capturedResult = urls
             }

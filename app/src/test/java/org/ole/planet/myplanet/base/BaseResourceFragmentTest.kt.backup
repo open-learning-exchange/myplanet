@@ -17,13 +17,10 @@ import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.ole.planet.myplanet.utils.MainDispatcherRule
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.setMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
@@ -43,7 +40,7 @@ class BaseResourceFragmentTest {
     private lateinit var mockPrgDialog: DialogUtils.CustomProgressDialog
     private lateinit var mockLifecycleOwner: LifecycleOwner
     private lateinit var mockActivity: FragmentActivity
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setup() {

@@ -8,15 +8,15 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.junit.Rule
 import org.junit.After
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -27,10 +27,13 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryImplTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
@@ -44,7 +47,7 @@ class TeamsRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val apiInterfaceMock = mockk<ApiInterface>(relaxed = true)
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {
@@ -67,7 +70,7 @@ class TeamsRepositoryImplTest {
         teamsRepository = TeamsRepositoryImpl(
             activitiesRepository,
             databaseService,
-            UnconfinedTestDispatcher(),
+            mainDispatcherRule.testDispatcher,
             userSessionManager,
             uploadManager,
             gson,

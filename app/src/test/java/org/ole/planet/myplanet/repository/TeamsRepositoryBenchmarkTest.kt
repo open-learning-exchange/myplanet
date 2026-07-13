@@ -11,11 +11,11 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -24,10 +24,13 @@ import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryBenchmarkTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
@@ -42,7 +45,7 @@ class TeamsRepositoryBenchmarkTest {
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository> = mockk()
     private val realm: Realm = mockk(relaxed = true)
 
-    private val testDispatcher = StandardTestDispatcher()
+    private val testDispatcher = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {
