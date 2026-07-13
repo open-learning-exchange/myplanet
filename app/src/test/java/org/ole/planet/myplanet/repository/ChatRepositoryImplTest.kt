@@ -17,13 +17,9 @@ import io.realm.RealmResults
 import io.realm.Sort
 import kotlinx.coroutines.test.runTest
 import okhttp3.RequestBody
-import org.junit.Rule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

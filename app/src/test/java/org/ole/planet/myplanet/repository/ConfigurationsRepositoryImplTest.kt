@@ -8,12 +8,12 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import io.realm.Realm
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

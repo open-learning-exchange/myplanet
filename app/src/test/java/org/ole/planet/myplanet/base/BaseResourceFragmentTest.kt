@@ -16,14 +16,15 @@ import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)

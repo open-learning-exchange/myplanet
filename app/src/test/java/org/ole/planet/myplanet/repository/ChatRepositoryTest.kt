@@ -4,10 +4,9 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.realm.Realm
-import org.junit.Rule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Before
+import org.junit.Rule
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
