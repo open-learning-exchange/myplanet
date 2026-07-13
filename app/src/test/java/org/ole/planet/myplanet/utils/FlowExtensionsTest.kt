@@ -8,14 +8,12 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
-import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -28,7 +26,6 @@ class FlowExtensionsTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         ArchTaskExecutor.getInstance().setDelegate(object : TaskExecutor() {
             override fun executeOnDiskIO(runnable: Runnable) {
                 runnable.run()
@@ -44,7 +41,6 @@ class FlowExtensionsTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
         ArchTaskExecutor.getInstance().setDelegate(null)
     }
 

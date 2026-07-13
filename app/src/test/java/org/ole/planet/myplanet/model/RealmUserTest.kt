@@ -10,20 +10,20 @@ import io.realm.Realm
 import io.realm.RealmList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.resetMain
-import org.ole.planet.myplanet.utils.MainDispatcherRule
-import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealmUserTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @MockK
     lateinit var mockRealm: Realm
@@ -36,7 +36,6 @@ class RealmUserTest {
     @Before
     fun setup() {
         MockKAnnotations.init(this)
-        Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
@@ -51,7 +50,6 @@ class RealmUserTest {
     @After
     fun tearDown() {
         MainApplication.testContext = originalContext
-        Dispatchers.resetMain()
         unmockkAll()
     }
 

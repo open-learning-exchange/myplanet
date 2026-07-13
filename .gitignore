@@ -4,37 +4,39 @@
 *.o
 *.obj
 *.out
-*.dll
-*.so
-*.a
+build/
+target/
 
 # Dependencies
+.gradle/
+node_modules/
+venv/
+.venv/
 __pycache__/
 .mypy_cache/
 .pytest_cache/
-.gradle/
-target/
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
 
 # Logs and temp files
 *.log
 *.tmp
-*.swp
 
 # Environment
 .env
 .env.local
 *.env.*
 
-# Editors
-.vscode/
-.idea/
-
 # Coverage reports
 coverage/
 htmlcov/
 .coverage
 
-# Build directories (if present)
-build/
-dist/
+# System files
+.DS_Store
+Thumbs.db
 ```

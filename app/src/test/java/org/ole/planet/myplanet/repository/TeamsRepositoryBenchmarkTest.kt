@@ -10,10 +10,7 @@ import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -49,7 +46,6 @@ class TeamsRepositoryBenchmarkTest {
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         every { dispatcherProvider.main } returns testDispatcher
         every { dispatcherProvider.io } returns testDispatcher
         every { dispatcherProvider.default } returns testDispatcher

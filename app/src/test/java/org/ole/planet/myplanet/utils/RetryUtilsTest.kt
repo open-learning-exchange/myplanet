@@ -1,16 +1,18 @@
 package org.ole.planet.myplanet.utils
 
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Rule
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryUtilsTest {
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Test
     fun `test retry calls block exactly once when it succeeds on first attempt`() = runTest {
@@ -45,7 +47,7 @@ class RetryUtilsTest {
     }
 
     @Test
-    fun `test retry respects delayMs using UnconfinedTestDispatcher and advanceTimeBy`() = runTest(UnconfinedTestDispatcher()) {
+    fun `test retry respects delayMs using UnconfinedTestDispatcher and advanceTimeBy`() = runTest {
         var attempts = 0
         val maxAttempts = 3
         val delayMs = 2000L

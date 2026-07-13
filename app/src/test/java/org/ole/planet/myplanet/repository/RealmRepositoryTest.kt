@@ -15,17 +15,11 @@ import io.realm.log.RealmLog
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.Rule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -46,6 +40,9 @@ class TestRealmRepository(
 
 class RealmRepositoryTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var databaseService: DatabaseService
     private lateinit var realm: Realm
     private lateinit var repository: TestRealmRepository
@@ -56,8 +53,6 @@ class RealmRepositoryTest {
         Logger.getLogger("io.mockk").level = Level.OFF
         // Suppress MockK warning for mocking RealmResults
         Logger.getLogger("io.mockk.impl.log.JULLogger").level = Level.OFF
-
-        Dispatchers.setMain(testDispatcher)
         databaseService = mockk()
         realm = mockk(relaxed = true)
 
@@ -74,7 +69,6 @@ class RealmRepositoryTest {
 
     @After
     fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     @Test
