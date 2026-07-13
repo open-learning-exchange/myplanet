@@ -1334,4 +1334,7 @@
         <item>Dhammaystiran</item>
     </string-array>
 
+    <string name="open_link_with">Ku fur xiriirka adigoo isticmaalaya</string>
+    <string name="just_once">Hal mar kaliya</string>
+    <string name="always">Mar walba</string>
 </resources>

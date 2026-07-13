@@ -1334,4 +1334,7 @@
         <item>पूरा भएको</item>
     </string-array>
 
+    <string name="open_link_with">यससँग लिङ्क खोल्नुहोस्</string>
+    <string name="just_once">एक पटक मात्र</string>
+    <string name="always">सधैं</string>
 </resources>

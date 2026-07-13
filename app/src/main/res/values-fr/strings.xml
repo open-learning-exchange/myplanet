@@ -1338,4 +1338,7 @@
         <item>Terminé</item>
     </string-array>
 
+    <string name="open_link_with">Ouvrir le lien avec</string>
+    <string name="just_once">Une seule fois</string>
+    <string name="always">Toujours</string>
 </resources>
