@@ -9,6 +9,8 @@ import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestCoroutineScheduler
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Test
@@ -16,6 +18,7 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository.ConfigurationResult
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 
 class SyncConfigurationCoordinatorTest {
@@ -25,9 +28,11 @@ class SyncConfigurationCoordinatorTest {
     private val callback: SyncConfigurationCoordinator.Callback = mockk(relaxed = true)
     private val dialog: MaterialDialog = mockk()
     private val binding: DialogServerUrlBinding = mockk()
+    private val testScheduler = TestCoroutineScheduler()
+    private val testDispatcher = StandardTestDispatcher(testScheduler)
 
     private val coordinator =
-        SyncConfigurationCoordinator(configurationsRepository, prefData, callback)
+        SyncConfigurationCoordinator(configurationsRepository, prefData, callback, TestDispatcherProvider(testDispatcher))
 
     private val success = ConfigurationResult.Success(
         id = "config1",
@@ -47,7 +52,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `failure reports sync failed and shows the error`() = runTest {
+    fun `failure reports sync failed and shows the error`() = runTest(testDispatcher) {
         stubResult(ConfigurationResult.Failure("server unreachable", "https://planet.example.org"))
 
         coordinator.checkMinApk("url", "pin", CallerContext.SYNC_ACTIVITY, "sync", dialog, binding)
@@ -62,7 +67,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `login caller continues after successful version check`() = runTest {
+    fun `login caller continues after successful version check`() = runTest(testDispatcher) {
         stubResult(success)
 
         coordinator.checkMinApk("url", "pin", CallerContext.LOGIN_ACTIVITY, "sync", null, null)
@@ -74,7 +79,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `login caller saves alternative url before continuing`() = runTest {
+    fun `login caller saves alternative url before continuing`() = runTest(testDispatcher) {
         mockkObject(ServerConfigUtils)
         every { ServerConfigUtils.saveAlternativeUrl(any(), any(), any()) } returns ""
         every { prefData.getServerPin() } returns "1234"
@@ -88,7 +93,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `first sync stores configuration identity and continues`() = runTest {
+    fun `first sync stores configuration identity and continues`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns null
         stubResult(success)
 
@@ -101,7 +106,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `sync against the already-configured server continues without re-saving`() = runTest {
+    fun `sync against the already-configured server continues without re-saving`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns "config1"
         stubResult(success)
 
@@ -113,7 +118,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `sync against a different server asks to clear data`() = runTest {
+    fun `sync against a different server asks to clear data`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns "otherConfig"
         stubResult(success)
 
@@ -125,7 +130,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `sync without a dialog does not invoke continue`() = runTest {
+    fun `sync without a dialog does not invoke continue`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns null
         stubResult(success)
 
@@ -136,7 +141,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `save action with a matching configuration saves and continues`() = runTest {
+    fun `save action with a matching configuration saves and continues`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns "config1"
         stubResult(success)
 
@@ -147,7 +152,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `save action against a different server asks to clear data`() = runTest {
+    fun `save action against a different server asks to clear data`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns "otherConfig"
         stubResult(success)
 
@@ -159,7 +164,7 @@ class SyncConfigurationCoordinatorTest {
     }
 
     @Test
-    fun `save action without a binding does not invoke save`() = runTest {
+    fun `save action without a binding does not invoke save`() = runTest(testDispatcher) {
         every { prefData.getConfigurationId() } returns "config1"
         stubResult(success)
 
