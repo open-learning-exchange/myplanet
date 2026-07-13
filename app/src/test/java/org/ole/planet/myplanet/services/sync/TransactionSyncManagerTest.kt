@@ -9,8 +9,11 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

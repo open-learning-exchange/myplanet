@@ -5,10 +5,15 @@ import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.advanceUntilIdle
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.resetMain
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.setMain
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

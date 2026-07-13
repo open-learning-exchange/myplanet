@@ -2,33 +2,29 @@ package org.ole.planet.myplanet.ui.surveys
 
 import io.mockk.coEvery
 import io.mockk.mockk
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysViewModelTest {
 
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
+
     private lateinit var surveysRepository: SurveysRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var viewModel: SurveysViewModel
-    private val testDispatcher = StandardTestDispatcher()
-    private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
-        Dispatchers.setMain(testDispatcher)
         surveysRepository = mockk()
         userSessionManager = mockk()
 
@@ -36,11 +32,6 @@ class SurveysViewModelTest {
             surveysRepository,
             userSessionManager
         )
-    }
-
-    @After
-    fun tearDown() {
-        Dispatchers.resetMain()
     }
 
     private fun createSurvey(
@@ -75,7 +66,7 @@ class SurveysViewModelTest {
         stubLoadSurveys(listOf(survey1, survey2, survey3))
 
         viewModel.loadSurveys(false, null, false)
-        testDispatcher.scheduler.advanceUntilIdle()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         // Default should be DATE_DESC
         var currentSurveys = viewModel.surveys.value
@@ -113,7 +104,7 @@ class SurveysViewModelTest {
         stubLoadSurveys(listOf(survey1, survey2))
 
         viewModel.loadSurveys(false, null, false)
-        testDispatcher.scheduler.advanceUntilIdle()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         // Toggle from default (DATE_DESC) -> TITLE_ASC
         viewModel.toggleTitleSort()
@@ -135,7 +126,7 @@ class SurveysViewModelTest {
         stubLoadSurveys(listOf(survey1, survey2, survey3))
 
         viewModel.loadSurveys(false, null, false)
-        testDispatcher.scheduler.advanceUntilIdle()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         val currentSurveys = viewModel.surveys.value
         assertEquals("2", currentSurveys[0].id)
@@ -152,7 +143,7 @@ class SurveysViewModelTest {
         stubLoadSurveys(listOf(survey1, survey2, survey3))
 
         viewModel.loadSurveys(false, null, false)
-        testDispatcher.scheduler.advanceUntilIdle()
+        mainDispatcherRule.testDispatcher.scheduler.advanceUntilIdle()
 
         viewModel.search("niño")
         assertEquals(1, viewModel.surveys.value.size)

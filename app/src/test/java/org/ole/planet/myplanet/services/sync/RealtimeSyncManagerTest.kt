@@ -4,7 +4,9 @@ import java.lang.reflect.Modifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame

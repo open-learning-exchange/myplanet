@@ -15,8 +15,11 @@ import java.net.UnknownHostException
 import java.util.Base64 as JavaBase64
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After

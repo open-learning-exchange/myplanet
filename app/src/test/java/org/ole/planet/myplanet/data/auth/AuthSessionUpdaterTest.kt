@@ -7,22 +7,23 @@ import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import java.lang.reflect.Method
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertNull
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AuthSessionUpdaterTest {
 
-    private val testDispatcher = UnconfinedTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var mockCallback: AuthSessionUpdater.AuthCallback
     private lateinit var mockSharedPrefManager: SharedPrefManager
@@ -34,10 +35,10 @@ class AuthSessionUpdaterTest {
         mockCallback = mockk(relaxed = true)
         mockSharedPrefManager = mockk(relaxed = true)
         mockDispatcherProvider = mockk(relaxed = true)
-        every { mockDispatcherProvider.io } returns testDispatcher
-        every { mockDispatcherProvider.main } returns testDispatcher
-        every { mockDispatcherProvider.default } returns testDispatcher
-        every { mockDispatcherProvider.unconfined } returns testDispatcher
+        every { mockDispatcherProvider.io } returns mainDispatcherRule.testDispatcher
+        every { mockDispatcherProvider.main } returns mainDispatcherRule.testDispatcher
+        every { mockDispatcherProvider.default } returns mainDispatcherRule.testDispatcher
+        every { mockDispatcherProvider.unconfined } returns mainDispatcherRule.testDispatcher
     }
 
     @After
@@ -50,6 +51,7 @@ class AuthSessionUpdaterTest {
 
     @Test
     fun `getSessionUrl returns null when UrlUtils throws Exception`() {
+        val testScope = kotlinx.coroutines.test.TestScope(mainDispatcherRule.testDispatcher)
         authSessionUpdater = AuthSessionUpdater(
             callback = mockCallback,
             sharedPrefManager = mockSharedPrefManager,
@@ -69,6 +71,7 @@ class AuthSessionUpdaterTest {
 
     @Test
     fun `getJsonObject returns null when sharedPrefManager throws Exception`() {
+        val testScope = kotlinx.coroutines.test.TestScope(mainDispatcherRule.testDispatcher)
         authSessionUpdater = AuthSessionUpdater(
             callback = mockCallback,
             sharedPrefManager = mockSharedPrefManager,
@@ -86,7 +89,7 @@ class AuthSessionUpdaterTest {
     }
 
     @Test
-    fun `sendPost calls onError when getSessionUrl throws Exception`() = runTest(testDispatcher) {
+    fun `sendPost calls onError when getSessionUrl throws Exception`() = runTest(mainDispatcherRule.testDispatcher) {
         mockkObject(UrlUtils)
         every { UrlUtils.getUrl() } throws RuntimeException("Mocked getUrl exception")
 

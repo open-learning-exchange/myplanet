@@ -1,51 +1,50 @@
-# clutter
+```
+# Backup files
+*.backup
+
+# Compiled and build artifacts
+*.class
+*.o
+*.obj
+*.out
+*.dll
+*.so
+*.a
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+__pycache__/
+.mypy_cache/
+.pytest_cache/
+target/
+.gradle/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# System files
 .DS_Store
 Thumbs.db
 
-# IntelliJ files/folder
-.idea
-*.iml
+# Coverage reports
+coverage/
+htmlcov/
+.coverage
 
-# Signing folder
-.signing
-
-# Application files
-*.apk
-*.ap_
-*.aab
-
-# ART/Dalvik VM files
-*.dex
-
-# Java class files
-*.class
-
-# Generated folders
-bin
-gen
-out
-
-# Gradle files/folders
-.gradle
-build
-app/build
-app/release
-.kotlin
-
-# Local configuration
-local.properties
-
-# Eclipse Proguard folder
-proguard
-
-# Log files
-*.log
-
-# Android Studio Navigation editor temp folder
-.navigation
-
-# Android Studio captures folder
-captures
-
-# version.xml out of build.gradle
-app/src/main/res/values/versions.xml
+# Build outputs
+dist/
+build/
+```
