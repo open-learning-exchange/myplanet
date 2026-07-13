@@ -4,45 +4,19 @@
 *.o
 *.obj
 *.out
-build/
-target/
-
-# Dependencies
-.gradle/
-node_modules/
-venv/
-.venv/
+*.dll
+*.so
+*.a
+*.pyc
 __pycache__/
-.mypy_cache/
-.pytest_cache/
-
-# Editors
-.vscode/
-.idea/
-*.swp
-*.swo
-
-# Logs and temp files
-*.log
-*.tmp
-
-# System files
-.DS_Store
-Thumbs.db
-.env
-.env.local
-*.env.*
-
-# Coverage reports
-coverage/
-htmlcov/
-.coverage
-
-# Archives
+*.pyo
+*.pyd
+*.jar
+*.war
+*.ear
 *.zip
-*.gz
 *.tar
-*.tgz
+*.gz
 *.bz2
 *.xz
 *.7z
@@ -61,4 +35,33 @@ htmlcov/
 *.tar.bz2
 *.tar.xz
 *.tar.zst
+
+# Dependencies
+node_modules/
+venv/
+.venv/
+.env
+.env.local
+*.env.*
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+coverage/
+htmlcov/
+.coverage
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+*.log
+Thumbs.db
+.DS_Store
+
+# Build and distribution directories
+dist/
+build/
 ```

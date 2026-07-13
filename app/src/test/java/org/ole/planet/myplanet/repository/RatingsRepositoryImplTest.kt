@@ -20,13 +20,9 @@ import java.util.logging.Logger
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertNotNull
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService

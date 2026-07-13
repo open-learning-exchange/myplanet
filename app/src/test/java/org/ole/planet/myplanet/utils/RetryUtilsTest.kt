@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.utils
 
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest

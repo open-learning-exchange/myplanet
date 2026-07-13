@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -19,13 +21,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.data.DatabaseService

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
@@ -12,15 +14,10 @@ import io.realm.RealmQuery
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertFalse
-import org.junit.Rule
 import org.junit.Assert.assertNotNull
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNotification

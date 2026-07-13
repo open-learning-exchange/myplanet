@@ -16,9 +16,7 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Rule
 import org.junit.After
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

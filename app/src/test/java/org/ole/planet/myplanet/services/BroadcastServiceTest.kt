@@ -1,14 +1,13 @@
 package org.ole.planet.myplanet.services
 
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+
 import android.content.Intent
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test

@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+
 import android.text.TextUtils
 import com.google.gson.Gson
 import io.mockk.coEvery
@@ -12,11 +14,8 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertNotNull
-import org.junit.Rule
 import org.junit.Before
-import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmNews
