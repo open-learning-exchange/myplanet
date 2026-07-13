@@ -491,7 +491,6 @@
     <string name="recording_audio">Grabando audio…</string>
     <string name="selected">"Seleccionado: "</string>
     <string name="last_sync">Última sincronización con el servidor: %s</string>
-    <string name="last_syncs">Última sincronización</string>
     <string name="no_team_available">No hay equipo/empresa disponible</string>
     <string name="last_sync_date">Fecha de última sincronización: %s</string>
     <string name="no_assignee">Sin asignado/a</string>
@@ -513,9 +512,7 @@
     <string name="add_documents">Agregar documentos</string>
     <string name="leave">Salir</string>
     <string name="steps">Pasos</string>
-    <string name="csv_filename">Nombre del archivo CSV</string>
     <string name="please_enter_reply">Por favor, ingresa una respuesta</string>
-    <string name="image_filename">Nombre del archivo de imagen</string>
     <string name="select_date">Seleccionar fecha</string>
     <string name="public_public">Público</string>
     <string name="joined_members_colon">Miembros unidos:</string>
@@ -570,17 +567,13 @@
     <string name="mistakes">Errores</string>
     <string name="take_survey">Realizar encuesta</string>
     <string name="checkbox">Casilla</string>
-    <string name="this_file_type_is_currently_unsupported">Este tipo de archivo no es compatible en este momento.</string>
     <string name="unable_to_open_resource">No se puede abrir el recurso.</string>
     <string name="select_resource_to_open">"Selecciona el recurso para abrir: "</string>
     <string name="shared_to_community">Compartido con la comunidad.</string>
     <string name="no_data_available_please_check_and_try_again">No hay datos disponibles, por favor verifica e intenta de nuevo.</string>
-    <string name="no_course_matched_filter">No hay cursos que coincidan con el filtro</string>
     <string name="added_to_my_library">agregado a myLibrary</string>
     <string name="added_to_my_courses">agregado a myCourses</string>
-    <string name="do_you_want_to_stay_online">¿Deseas permanecer en línea?</string>
     <string name="device_not_connected_to_planet">Dispositivo no conectado a Planet.</string>
-    <string name="all_files_downloaded_successfully">Todos los archivos se han descargado correctamente.</string>
     <string name="removed_from_mylibrary">Eliminado de miBiblioteca.</string>
     <string name="removed_from_mycourse">Eliminado de misCursos.</string>
     <string name="please_allow_usages_permission_to_myplanet_app">Por favor, permite los permisos de uso a la aplicación myPlanet.</string>
@@ -600,8 +593,6 @@
     <string name="storage_available">"Almacenamiento disponible: "</string>
     <string name="please_select_starting_date">"Por favor, selecciona la fecha de inicio: "</string>
     <string name="read_offline_news_from">"Leer noticias sin conexión desde: "</string>
-    <string name="downloading_started_please_check_notification">Descarga iniciada, por favor revisa las notificaciones…</string>
-    <string name="file_already_exists">El archivo ya existe…</string>
     <string name="feature_not_available">Función no disponible</string>
     <string name="sync">Sincronizar</string>
     <string name="session_expired">Sesión expirada.</string>
@@ -628,7 +619,6 @@
     <string name="please_enter_feedback">Por favor, ingresa tu comentario.</string>
     <string name="feedback_priority_is_required">Se requiere prioridad de comentario.</string>
     <string name="feedback_type_is_required">Se requiere tipo de comentario.</string>
-    <string name="thank_you_your_feedback_has_been_submitted">Gracias, se ha enviado tu comentario</string>
     <string name="feedback_saved">Comentario guardado..</string>
     <string name="email_colon">"Correo electrónico: "</string>
     <string name="level_is_required">Se requiere nivel</string>
@@ -695,9 +685,6 @@
     <string name="please_enter_message">Por favor ingresa un mensaje</string>
     <string name="record_survey">Registrar encuesta</string>
     <string name="survey_sent_to_users">Encuesta enviada a los usuarios</string>
-    <string name="wifi_is_turned_off_saving_battery_power">El wifi está desactivado. Ahorrando energía de la batería</string>
-    <string name="turning_on_wifi_please_wait">Activando wifi. Por favor espera…</string>
-    <string name="you_are_now_connected">"Ahora estás conectado "</string>
     <string name="press_back_again_to_exit">Presiona ATRÁS de nuevo para salir</string>
     <string name="press_back_again_to_logout">Presiona ATRÁS de nuevo para cerrar sesión</string>
     <string name="exit">Salir</string>
@@ -718,7 +705,6 @@
     <string name="invalid_url">URL inválida</string>
     <string name="please_enter_valid_url_to_continue">Por favor ingresa una URL válida para continuar.</string>
     <string name="uploading_data_to_server_please_wait">Cargando datos al servidor, por favor espera.....</string>
-    <string name="check_the_server_address_again_what_i_connected_to_wasn_t_the_planet_server">Verifica de nuevo la dirección del servidor. A lo que me conecté no fue el servidor de Planet</string>
     <string name="device_couldn_t_reach_local_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).</string>
     <string name="device_couldn_t_reach_nation_server">El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a Internet e inténtelo de nuevo.</string>
     <string name="server_not_configured_properly_connect_this_device_with_planet_server">El servidor no está configurado correctamente. Conecta este dispositivo con el servidor de Planet</string>
@@ -766,12 +752,9 @@
     <string name="add_achievement">Agregar logro</string>
     <string name="select_resources">"Seleccionar recursos: "</string>
     <string name="date_of_birth">"Fecha de nacimiento: "</string>
-    <string name="unable_to_load">"No se puede cargar "</string>
     <string name="recording_started">Grabación iniciada....</string>
     <string name="ole_is_recording_audio">Ole está grabando audio</string>
     <string name="recording_stopped">Grabación detenida.</string>
-    <string name="audio_file_saved_in_database">Archivo de audio guardado en la base de datos.</string>
-    <string name="connection_failed_reason">"Error en la conexión: motivo "</string>
     <string name="are_you_sure">¿Estás seguro?</string>
     <string name="data_cleared">Datos eliminados</string>
     <string name="are_you_sure_want_to_delete_all_the_files">¿Estás seguro de que quieres eliminar todos los archivos?</string>
@@ -867,7 +850,6 @@
     <string name="auto_sync">Sincronización automática</string>
     <string name="force_weekly_sync">Forzar sincronización semanal</string>
     <string name="force_monthly_sync">Forzar sincronización mensual</string>
-    <string name="beta_function_for_wifi_switch">Función beta para interruptor de WiFi</string>
     <string name="upgrade_application">Actualizar aplicación</string>
     <string name="always_move_to_maximum_version">¿Mover siempre a la versión máxima?</string>
     <string name="all_beta_functions">Todas las funciones beta</string>
@@ -895,7 +877,6 @@
     <string name="request_failed_please_retry">La solicitud ha fallado, por favor inténtelo de nuevo</string>
     <string name="confirm_removal">Confirmar eliminación</string>
     <string name="send_to_nation">Permite que tus logros se compartan con la nación</string>
-    <string name="image_resource">recurso de imagen</string>
     <string name="play_audio">reproducir audio</string>
     <string name="video_player">reproductor de video</string>
     <string name="video_unavailable">Video no disponible: archivo no encontrado y no se pudo conectar al servidor</string>
@@ -974,7 +955,6 @@
     <string name="share_chat">compartir chat</string>
     <string name="shared_chat">chat compartido</string>
     <string name="check_apk_version">verificando versión de la aplicación</string>
-    <string name="checking_server">verificando el servidor</string>
     <string name="add_note">Agregar una nota (opcional)</string>
     <string name="no_teams">equipos no disponibles</string>
     <string name="no_chats">no hay chats anteriores</string>
@@ -999,13 +979,10 @@
     <string name="user_role">- %s</string>
     <string name="user_name">%1$s (%2$s)</string>
     <string name="two_strings">%1$s %2$s</string>
-    <string name="three_strings">%1$s %2$s %3$s</string>
     <string name="member_description">%1$s (%2$d visitas)</string>
     <string name="dark_mode">Modo oscuro</string>
     <string name="last_visit">Última visita: %1$s</string>
     <string name="no_visit">sin visita</string>
-    <string name="dark_mode_off">Desactivado</string>
-    <string name="dark_mode_on">Activado</string>
     <string name="dark_mode_follow_system">Seguir el sistema</string>
     <string name="theme_mode_light">Claro</string>
     <string name="theme_mode_dark">Oscuro</string>
@@ -1053,7 +1030,6 @@
     <string name="new_chat">Nuevo chat</string>
     <string name="chat_enter_message">introduzca mensaje</string>
     <string name="hour">hora</string>
-    <string name="hours">horas</string>
     <string name="switching_off_manual_configuration_to_clear_data">Desactivar la configuración manual borrará todos los datos, ¿Está seguro de que desea continuar?</string>
     <string name="switching_on_manual_configuration_to_clear_data">Activar la configuración manual borrará todos los datos, ¿Está seguro de que desea continuar?</string>
     <string name="chart_description">Gráfico de actividad de inicio de sesión</string>
@@ -1097,7 +1073,6 @@
     <string name="no_reports">No hay informes disponibles</string>
     <string name="fetching_ai_providers">Obteniendo proveedores de IA…</string>
     <string name="adopt_survey">Adoptar encuesta</string>
-    <string name="survey_adopted_successfully">¡Encuesta adoptada con éxito!</string>
     <string name="user_verification_in_progress">Verificación de usuario en progreso. Por favor, espere mientras procesamos los datos.</string>
     <string name="go_to_mylibrary">Ir a Mi Biblioteca</string>
     <string name="choose_an_option">Elige una opción</string>
@@ -1119,7 +1094,6 @@
     <string name="user_created_successfully">Usuario creado con éxito.</string>
     <string name="unable_to_save_user_please_sync">No se pudo guardar el usuario, por favor sincronice.</string>
     <string name="server_sync_successfully">Sincronización del servidor con éxito.</string>
-    <string name="server_sync_has_failed">La sincronización del servidor ha fallado.</string>
     <string name="response">Respuesta</string>
     <string name="full_conversation_response">Respuesta completa de la conversación</string>
     <string name="add_new_event">+ nuevo evento</string>
@@ -1127,29 +1101,8 @@
     <string name="remind_later">Recordar más tarde</string>
     <string name="remind_me_later">Recuérdame más tarde</string>
     <string name="remind_me_in">Recuérdame en:</string>
-    <string name="minutes">Minutos</string>
-    <string name="days">Días</string>
     <string name="set_reminder">Establecer recordatorio</string>
     <string name="reminder_surveys_to_complete">Recordatorio: Tienes %1$d %2$s por completar</string>
-
-    <plurals name="minutes">
-        <item quantity="one">%d minuto</item>
-        <item quantity="many">%d minutos</item>
-        <item quantity="other">%d minutos</item>
-    </plurals>
-
-    <plurals name="hours">
-        <item quantity="one">%d hora</item>
-        <item quantity="many">%d horas</item>
-        <item quantity="other">%d horas</item>
-    </plurals>
-
-    <plurals name="days">
-        <item quantity="one">%d día</item>
-        <item quantity="many">%d días</item>
-        <item quantity="other">%d días</item>
-    </plurals>
-
     <string name="your_health_data_will_appear_here_as_you_continue_tracking_it">Sus datos de salud aparecerán aquí a medida que continúe registrándolos</string>
     <string name="no_health_records_available">No hay registros de salud disponibles</string>
     <string name="permission_required">Se requiere permiso</string>
@@ -1172,23 +1125,12 @@
     <string name="download_in_background">Iniciando descarga en segundo plano…</string>
     <string name="creating_member_account">Creando cuenta de miembro…</string>
     <string name="cancel_adding_examination">¿Está seguro de que desea cancelar la adición del examen? Se perderán los datos.</string>
-    <string name="syncing_team_data">Sincronizando datos del equipo…</string>
-    <string name="syncing_chat_history">Sincronizando historial de chat…</string>
-    <string name="syncing_courses_data">Sincronizando datos de los cursos…</string>
-    <string name="syncing_feedback">Sincronizando comentarios…</string>
-    <string name="syncing_health_data">Sincronizando datos de salud…</string>
-    <string name="syncing_resources">Sincronizando recursos…</string>
-    <string name="syncing_achievements">Sincronizando logros…</string>
     <string name="nation_leaders">Lideres de la nación</string>
     <string name="filter_by_label">filtrar por etiqueta</string>
     <string name="is_available">%1$s está disponible. Toca para continuar aprendiendo</string>
     <string name="failed_to_add_please_retry">Error al agregar. Por favor, inténtalo de nuevo</string>
     <string name="failed_to_remove_resource">Error al eliminar el recurso. Por favor, inténtalo de nuevo</string>
-    <string name="failed_to_adopt_survey">No se pudo adoptar la encuesta. Por favor, inténtalo de nuevo</string>
-    <string name="failed_to_save_chat">Error al guardar el chat. Por favor, inténtalo de nuevo.</string>
-    <string name="failed_to_delete_report">Error al eliminar el informe. Por favor, inténtalo de nuevo</string>
     <string name="delete_report">Eliminar informe</string>
-    <string name="loading_courses">Cargando cursos…</string>
     <string name="loading_teams">Cargando equipos…</string>
     <string name="year_of_birth">Año de nacimiento</string>
     <string name="year_of_birth_cannot_be_empty">el año de nacimiento no puede estar vacío</string>
@@ -1259,10 +1201,6 @@
     <string name="status_in_progress">En progreso</string>
     <string name="status_completed">Completado</string>
     <string name="read_aloud">Leer en voz alta</string>
-    <string name="stop_reading">Detener lectura</string>
-    <string name="tts_not_available">La función de texto a voz no está disponible en este dispositivo</string>
-    <string name="pdf_no_text_layer">Este PDF no contiene una capa de texto legible</string>
-    <string name="pdf_extracting_text">Preparando texto, por favor espere…</string>
     <string name="storage_breakdown">desglose de almacenamiento</string>
     <string name="storage_breakdown_summary">ver y gestionar el espacio usado por las descargas</string>
     <string name="storage_breakdown_title">Contenido descargado</string>
@@ -1290,16 +1228,8 @@
     <string name="label_link">Enlace: </string>
     <string name="number_of_visits">Número de visitas</string>
     <string name="label_name_with_colon">Nombre:</string>
-    <string name="label_relationship">Relación:</string>
-    <string name="label_phone_no">Teléfono:</string>
-    <string name="label_email_with_colon">Correo electrónico:</string>
-    <string name="track_title">Título de la pista</string>
-    <string name="unknown_artist">Artista desconocido</string>
-    <string name="markdown_filename">Nombre de archivo Markdown</string>
     <string name="type_nodots">Tipo</string>
-    <string name="enterprise_reports">Informes empresariales</string>
     <string name="label_add_references">Añada referencias abajo</string>
-    <string name="link">Enlace</string>
     <string name="server_url_not_configured">URL del servidor no configurada</string>
     <string name="welcome_back">Bienvenido de nuevo</string>
     <string name="welcome_new">Bienvenido</string>
