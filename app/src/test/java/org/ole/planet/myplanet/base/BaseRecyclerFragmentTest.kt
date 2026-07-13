@@ -1,66 +1,66 @@
 package org.ole.planet.myplanet.base
 
-import io.realm.RealmList
+import android.app.Application
+import android.content.Context
+import android.view.View
+import android.widget.TextView
+import androidx.recyclerview.widget.ListAdapter
+import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.junit.runners.JUnit4
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.R
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
-@RunWith(JUnit4::class)
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], application = Application::class)
 class BaseRecyclerFragmentTest {
 
     class TestBaseRecyclerFragment : BaseRecyclerFragment<Any>() {
         override fun getLayout(): Int = 0
-        override suspend fun getAdapter(): androidx.recyclerview.widget.RecyclerView.Adapter<out androidx.recyclerview.widget.RecyclerView.ViewHolder> {
+        override suspend fun getAdapter(): ListAdapter<*, *> {
             throw NotImplementedError()
         }
     }
 
     @Test
-    fun testApplyFilter() {
-        val fragment = TestBaseRecyclerFragment()
+    fun showNoData_withZeroCount_makesViewVisibleAndSetsMessage() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val textView = TextView(context)
 
-        val lib1 = RealmMyLibrary().apply {
-            subject = RealmList("Math")
-            level = RealmList("Beginner")
-            language = "English"
-            mediaType = "Video"
-        }
+        BaseRecyclerFragment.showNoData(textView, 0, "courses")
 
-        val lib2 = RealmMyLibrary().apply {
-            subject = RealmList("Science")
-            level = RealmList("Advanced")
-            language = "Spanish"
-            mediaType = "PDF"
-        }
+        assertEquals(View.VISIBLE, textView.visibility)
+        assertEquals(context.getString(R.string.no_courses), textView.text.toString())
+    }
 
-        val libraries = listOf(lib1, lib2)
+    @Test
+    fun showNoData_withNonZeroCount_makesViewGoneAndSetsMessage() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val textView = TextView(context)
 
-        // No filters
-        assertEquals(2, fragment.applyFilter(libraries).size)
+        BaseRecyclerFragment.showNoData(textView, 1, "resources")
 
-        // Subject filter
-        fragment.subjects = mutableSetOf("Math")
-        assertEquals(1, fragment.applyFilter(libraries).size)
-        assertEquals(lib1, fragment.applyFilter(libraries)[0])
+        assertEquals(View.GONE, textView.visibility)
+        assertEquals(context.getString(R.string.no_resources), textView.text.toString())
+    }
 
-        // Reset and apply Language filter
-        fragment.subjects = mutableSetOf()
-        fragment.languages = mutableSetOf("Spanish")
-        assertEquals(1, fragment.applyFilter(libraries).size)
-        assertEquals(lib2, fragment.applyFilter(libraries)[0])
+    @Test
+    fun showNoData_withUnknownSource_setsDefaultMessage() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val textView = TextView(context)
 
-        // Multiple filters matching one
-        fragment.languages = mutableSetOf("English")
-        fragment.mediums = mutableSetOf("Video")
-        assertEquals(1, fragment.applyFilter(libraries).size)
-        assertEquals(lib1, fragment.applyFilter(libraries)[0])
+        BaseRecyclerFragment.showNoData(textView, 0, "unknown_source")
 
-        // Multiple filters matching none
-        fragment.languages = mutableSetOf("English")
-        fragment.mediums = mutableSetOf("PDF")
-        assertEquals(0, fragment.applyFilter(libraries).size)
+        assertEquals(View.VISIBLE, textView.visibility)
+        assertEquals(context.getString(R.string.no_data_available_please_check_and_try_again), textView.text.toString())
+    }
+
+    @Test
+    fun showNoData_withNullView_doesNothing() {
+        // Just calling it to ensure no exceptions are thrown
+        BaseRecyclerFragment.showNoData(null, 0, "courses")
     }
 
     @Test

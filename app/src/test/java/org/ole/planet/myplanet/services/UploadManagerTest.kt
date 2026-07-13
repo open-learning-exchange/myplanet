@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.services
 
 import android.content.Context
+import android.os.SystemClock
 import android.util.Log
 import com.google.gson.Gson
+import com.google.gson.JsonObject
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -20,33 +22,40 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.upload.AchievementUploader
+import org.ole.planet.myplanet.services.upload.PhotoUploader
+import org.ole.planet.myplanet.services.upload.UploadConfig
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
+import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UploadManagerTest {
     private lateinit var uploadManager: UploadManager
     private val context: Context = mockk(relaxed = true)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
@@ -58,8 +67,11 @@ class UploadManagerTest {
     private val uploadConfigs: UploadConfigs = mockk(relaxed = true)
     private val resourcesRepository: ResourcesRepository = mockk(relaxed = true)
     private val teamsRepository: Lazy<TeamsRepository> = mockk(relaxed = true)
+    private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val apiInterface: ApiInterface = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
+    private lateinit var photoUploader: PhotoUploader
+    private val achievementUploader: AchievementUploader = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -67,17 +79,20 @@ class UploadManagerTest {
     @Before
     fun setup() {
         mockkStatic(Log::class)
-        io.mockk.mockkObject(org.ole.planet.myplanet.utils.UrlUtils)
-        every { org.ole.planet.myplanet.utils.UrlUtils.header } returns "mockHeader"
-        every { org.ole.planet.myplanet.utils.UrlUtils.getUrl() } returns "http://mock.url"
+        mockkStatic(SystemClock::class)
+        every { SystemClock.elapsedRealtime() } returns 0L
+        io.mockk.mockkObject(UrlUtils)
+        every { UrlUtils.header } returns "mockHeader"
+        every { UrlUtils.getUrl() } returns "http://mock.url"
         every { Log.d(any(), any()) } returns 0
         every { Log.e(any(), any()) } returns 0
         every { Log.e(any(), any(), any()) } returns 0
 
+        photoUploader = PhotoUploader(submissionsRepository, apiInterface, TestDispatcherProvider(testDispatcher), testScope)
+
         uploadManager = spyk(
             UploadManager(
                 context,
-                databaseService,
                 submissionsRepository,
                 sharedPrefManager,
                 gson,
@@ -89,10 +104,14 @@ class UploadManagerTest {
                 uploadConfigs,
                 resourcesRepository,
                 teamsRepository,
+                teamsSyncRepository,
                 apiInterface,
                 activitiesRepository,
                 TestDispatcherProvider(testDispatcher),
-                testScope
+                testScope,
+                photoUploader,
+                achievementUploader,
+                TestTimeProvider()
             )
         )
     }
@@ -100,7 +119,7 @@ class UploadManagerTest {
     @After
     fun tearDown() {
         unmockkAll()
-        io.mockk.unmockkObject(org.ole.planet.myplanet.utils.UrlUtils)
+        io.mockk.unmockkObject(UrlUtils)
     }
 
     @Test
@@ -146,7 +165,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadFeedback returns true on Empty`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.Empty
+        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.Empty
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
@@ -155,7 +174,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadFeedback returns false on Failure`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.Failure(emptyList())
+        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.Failure(emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
@@ -164,7 +183,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadFeedback returns true on PartialSuccess with no failures`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess(emptyList(), emptyList())
+        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
@@ -173,12 +192,20 @@ class UploadManagerTest {
 
     @Test
     fun `uploadFeedback returns false on PartialSuccess with failures`() = testScope.runTest {
-        val mockError = org.ole.planet.myplanet.services.upload.UploadError("id", Exception(), false)
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns org.ole.planet.myplanet.services.upload.UploadResult.PartialSuccess(emptyList(), listOf(mockError))
+        val mockError = UploadError("id", Exception(), false)
+        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), listOf(mockError))
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
         assert(!result)
+    }
+
+    @Test
+    fun `uploadTeamTask delegates to uploadCoordinator`() = testScope.runTest {
+        coEvery { uploadCoordinator.upload<RealmTeamTask>(any()) } returns UploadResult.Success(1, emptyList())
+        uploadManager.uploadTeamTask()
+        advanceUntilIdle()
+        coVerify { uploadCoordinator.upload(uploadConfigs.TeamTask) }
     }
 
     @Test
@@ -211,12 +238,12 @@ class UploadManagerTest {
     @Test
     fun `uploadSubmitPhotos uploads photos successfully`() = testScope.runTest {
         val photoId = "photo123"
-        val mockSerialized = com.google.gson.JsonObject().apply {
+        val mockSerialized = JsonObject().apply {
             addProperty("test", "data")
         }
         val mockPhotosList = listOf(Pair(photoId, mockSerialized))
 
-        val mockResponseObject = com.google.gson.JsonObject().apply {
+        val mockResponseObject = JsonObject().apply {
             addProperty("id", "uploaded123")
             addProperty("rev", "rev123")
         }
@@ -235,8 +262,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadResource returns early when no resources to upload`() = testScope.runTest {
-        coEvery { userRepository.getUserModelSuspending() } returns null
-        coEvery { resourcesRepository.getUnuploadedResources(any()) } returns emptyList()
+        coEvery { uploadCoordinator.upload(any<UploadConfig<*>>()) } returns UploadResult.Empty
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
@@ -248,12 +274,52 @@ class UploadManagerTest {
     @Test
     fun `uploadResource notifies listener on failure`() = testScope.runTest {
         val errorMessage = "Test error"
-        coEvery { userRepository.getUserModelSuspending() } throws Exception(errorMessage)
+        coEvery { uploadCoordinator.upload(any<UploadConfig<*>>()) } throws Exception(errorMessage)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
         advanceUntilIdle()
 
         coVerify { listener.onSuccess("Resource upload failed: $errorMessage") }
+    }
+
+    @Test
+    fun `uploadMyPersonal delegates to personalsRepository and calls uploadAttachment`() = testScope.runTest {
+        val mockPersonal = mockk<RealmMyPersonal>(relaxed = true)
+        every { mockPersonal.isUploaded } returns false
+        every { mockPersonal.path } returns null
+
+        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns Pair("remote-id", "remote-rev")
+
+        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        advanceUntilIdle()
+
+        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
+        assert(result == "Personal resource uploaded successfully")
+    }
+
+    @Test
+    fun `uploadMyPersonal returns failure message when response is null`() = testScope.runTest {
+        val mockPersonal = mockk<RealmMyPersonal>(relaxed = true)
+        every { mockPersonal.isUploaded } returns false
+
+        coEvery { personalsRepository.uploadPersonalDocument(mockPersonal) } returns null
+
+        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        advanceUntilIdle()
+
+        coVerify { personalsRepository.uploadPersonalDocument(mockPersonal) }
+        assert(result == "Failed to upload personal resource: No response")
+    }
+
+    @Test
+    fun `uploadMyPersonal returns already uploaded message`() = testScope.runTest {
+        val mockPersonal = mockk<RealmMyPersonal>(relaxed = true)
+        every { mockPersonal.isUploaded } returns true
+
+        val result = uploadManager.uploadMyPersonal(mockPersonal)
+        advanceUntilIdle()
+
+        assert(result == "Resource already uploaded")
     }
 }

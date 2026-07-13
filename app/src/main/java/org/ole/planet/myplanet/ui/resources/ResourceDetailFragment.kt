@@ -12,7 +12,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
@@ -23,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -32,6 +32,7 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var _binding: FragmentLibraryDetailBinding? = null
     private val binding get() = _binding!!
     private var libraryId: String? = null
+    private var lastKnownRating: JsonObject? = null
     private lateinit var library: RealmMyLibrary
     var userModel: RealmUser? = null
     private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
@@ -162,21 +163,37 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private fun updateDownloadButtonState() {
         val isDownloaded = library.isResourceOffline()
         val mediaType = library.mediaType?.lowercase().orEmpty()
-        val fileExtension = getFileExtension(library.resourceLocalAddress)?.lowercase().orEmpty()
+        val fileExtension = getFileExtension(library.resourceLocalAddress).lowercase()
         val isVideo = mediaType.startsWith("video") || fileExtension == "mp4"
+        val isAudio = mediaType.startsWith("audio") || fileExtension == "mp3" || fileExtension == "aac" || fileExtension == "wav"
 
         when {
-            !isDownloaded -> {
-                binding.btnDownload.setImageResource(R.drawable.ic_download)
-                binding.btnDownload.contentDescription = getString(R.string.download)
-            }
             isVideo -> {
-                binding.btnDownload.setImageResource(R.drawable.ic_play)
-                binding.btnDownload.contentDescription = getString(R.string.view)
+                if (isDownloaded || NetworkUtils.isNetworkConnected) {
+                    binding.btnDownload.setImageResource(R.drawable.ic_play)
+                    binding.btnDownload.contentDescription = getString(R.string.view)
+                } else {
+                    binding.btnDownload.setImageResource(R.drawable.ic_download)
+                    binding.btnDownload.contentDescription = getString(R.string.download)
+                }
+            }
+            isAudio -> {
+                if (isDownloaded) {
+                    binding.btnDownload.setImageResource(R.drawable.ic_play)
+                    binding.btnDownload.contentDescription = getString(R.string.view)
+                } else {
+                    binding.btnDownload.setImageResource(R.drawable.ic_download)
+                    binding.btnDownload.contentDescription = getString(R.string.download)
+                }
             }
             else -> {
-                binding.btnDownload.setImageResource(R.drawable.ic_eye)
-                binding.btnDownload.contentDescription = getString(R.string.view)
+                if (isDownloaded) {
+                    binding.btnDownload.setImageResource(R.drawable.ic_eye)
+                    binding.btnDownload.contentDescription = getString(R.string.view)
+                } else {
+                    binding.btnDownload.setImageResource(R.drawable.ic_download)
+                    binding.btnDownload.contentDescription = getString(R.string.download)
+                }
             }
         }
     }
@@ -258,23 +275,24 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         }
     }
 
-    private var lastKnownRating: com.google.gson.JsonObject? = null
+    override fun onRatingChanged(type: String, id: String) {
+        onRatingChanged()
+    }
+
     override fun onRatingChanged() {
         lastKnownRating?.let { setRatings(it) }
-
-        viewLifecycleOwner.lifecycleScope.launch {
+        lifecycleScope.launch {
             if (!isAdded) return@launch
             try {
-                withTimeout(2000) {
-                    val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
-                    lastKnownRating = rating
-                    setRatings(rating)
-                }
+                val rating = ratingsRepository.getRatingsById("resource", library.resourceId, userModel?.id)
+                lastKnownRating = rating
+                setRatings(rating)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
     }
+
     override fun onDestroyView() {
         _binding = null
         super.onDestroyView()

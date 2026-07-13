@@ -10,6 +10,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
+import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
 @Qualifier
@@ -19,6 +20,10 @@ annotation class AppPreferences
 @Qualifier
 @Retention(AnnotationRetention.BINARY)
 annotation class DefaultPreferences
+
+@Qualifier
+@Retention(AnnotationRetention.BINARY)
+annotation class DownloadPreferences
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -36,5 +41,12 @@ object SharedPreferencesModule {
     @DefaultPreferences
     fun provideDefaultSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return PreferenceManager.getDefaultSharedPreferences(context)
+    }
+
+    @Provides
+    @Singleton
+    @DownloadPreferences
+    fun provideDownloadSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
+        return context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
     }
 }

@@ -48,11 +48,10 @@ class SendSurveyFragment : BaseDialogFragment() {
         }
         fragmentSendSurveyBinding.sendSurvey.setOnClickListener {
             viewLifecycleOwner.lifecycleScope.launch {
+                val surveyId = id ?: return@launch
                 val selectedItems = (fragmentSendSurveyBinding.listUsers.adapter as CheckboxAdapter).selectedItemsList
-                for (i in selectedItems) {
-                    val u = users[i]
-                    submissionsRepository.createSurveySubmission(id!!, u.id)
-                }
+                val selectedUserIds = selectedItems.mapNotNull { users[it].id }
+                submissionsRepository.createBulkSurveySubmissions(surveyId, selectedUserIds)
                 Utilities.toast(activity, getString(R.string.survey_sent_to_users))
                 dismiss()
             }

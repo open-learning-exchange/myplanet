@@ -16,12 +16,13 @@ open class RealmCourseProgress : RealmObject() {
     var _rev: String? = null
     var stepNum = 0
     var passed = false
+    @Index
     var userId: String? = null
+    @Index
     var courseId: String? = null
     var parentCode: String? = null
 
     companion object {
-        @JvmStatic
         fun serializeProgress(progress: RealmCourseProgress): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("userId", progress.userId)

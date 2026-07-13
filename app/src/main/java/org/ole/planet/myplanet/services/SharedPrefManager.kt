@@ -9,21 +9,16 @@ import com.google.gson.reflect.TypeToken
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.utils.Constants.PREFS_NAME
 
-data class CachedMyLifeItem(
-    val imageId: String?,
-    val title: String?,
-    val isVisible: Boolean,
-    val weight: Int
-)
-
 @Singleton
-class SharedPrefManager @Inject constructor(@ApplicationContext private val context: Context) {
+class SharedPrefManager @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val gson: Gson
+) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-    private val gson = Gson()
+
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
@@ -43,7 +38,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         private const val URL_PWD = "url_pwd"
         private const val URL_SCHEME = "url_Scheme"
         private const val URL_HOST = "url_Host"
-        private const val URL_PORT = "url_Port"
         private const val ALTERNATIVE_URL = "alternativeUrl"
         private const val PROCESSED_ALTERNATIVE_URL = "processedAlternativeUrl"
         private const val IS_ALTERNATIVE_URL = "isAlternativeUrl"
@@ -57,8 +51,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         private const val USER_NAME = "name"
         private const val COMMUNITY_LEADERS = "communityLeaders"
         private const val AUTO_SYNC = "autoSync"
-        private const val FAST_SYNC = "fastSync"
-        private const val USE_IMPROVED_SYNC = "useImprovedSync"
         private const val AUTO_SYNC_INTERVAL = "autoSyncInterval"
         private const val AUTO_SYNC_POSITION = "autoSyncPosition"
         private const val FIRST_RUN = "firstRun"
@@ -71,18 +63,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         private const val KEY_NOTIFICATION_SHOWN = "notification_shown"
         private const val VERSION_DETAIL = "versionDetail"
         private const val CONCATENATED_LINKS = "concatenated_links"
-        private const val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
-    }
-
-    enum class SyncKey(val key: String) {
-        CHAT_HISTORY("chat_history_synced"),
-        TEAMS("teams_synced"),
-        FEEDBACK("feedback_synced"),
-        ACHIEVEMENTS("achievements_synced"),
-        HEALTH("health_synced"),
-        COURSES("courses_synced"),
-        RESOURCES("resources_synced"),
-        EXAMS("exams_synced")
     }
 
     fun getSavedUsers(): List<User> {
@@ -139,28 +119,29 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         pref.edit { putString(TEAM_NAME, teamName) }
     }
 
-    fun isSynced(key: SyncKey): Boolean {
-        return pref.getBoolean(key.key, false)
+    fun getNewLoginUsername(): String? {
+        val encryptedUsername = pref.getString("new_login_username", null)
+        return if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedUsername) else null
     }
-
-    fun setSynced(key: SyncKey, synced: Boolean) {
-        pref.edit {
-            putBoolean(key.key, synced)
-            if (synced) {
-                putLong("${key.key}_time", System.currentTimeMillis())
-            }
+    fun setNewLoginUsername(username: String?) = pref.edit {
+        if (username != null) {
+            putString("new_login_username", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, username))
+        } else {
+            remove("new_login_username")
         }
     }
 
-    fun getSyncTime(key: SyncKey): Long {
-        return pref.getLong("${key.key}_time", 0L)
+    fun getNewLoginPassword(): String? {
+        val encryptedPassword = pref.getString("new_login_password", null)
+        return if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encryptedPassword) else null
     }
-
-    fun getNewLoginUsername(): String? = pref.getString("new_login_username", null)
-    fun setNewLoginUsername(username: String?) = pref.edit { putString("new_login_username", username) }
-
-    fun getNewLoginPassword(): String? = pref.getString("new_login_password", null)
-    fun setNewLoginPassword(password: String?) = pref.edit { putString("new_login_password", password) }
+    fun setNewLoginPassword(password: String?) = pref.edit {
+        if (password != null) {
+            putString("new_login_password", org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, password))
+        } else {
+            remove("new_login_password")
+        }
+    }
 
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
@@ -191,9 +172,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
 
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
-
-    fun getUrlPort(): Int = pref.getInt(URL_PORT, 443)
-    fun setUrlPort(port: Int) = pref.edit { putInt(URL_PORT, port) }
 
     fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
@@ -237,12 +215,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, true)
     fun setAutoSync(value: Boolean) = pref.edit { putBoolean(AUTO_SYNC, value) }
 
-    fun getFastSync(): Boolean = pref.getBoolean(FAST_SYNC, false)
-    fun setFastSync(value: Boolean) = pref.edit { putBoolean(FAST_SYNC, value) }
-
-    fun getUseImprovedSync(): Boolean = pref.getBoolean(USE_IMPROVED_SYNC, false)
-    fun setUseImprovedSync(value: Boolean) = pref.edit { putBoolean(USE_IMPROVED_SYNC, value) }
-
     fun getAutoSyncInterval(): Int = pref.getInt(AUTO_SYNC_INTERVAL, 60 * 60)
     fun setAutoSyncInterval(interval: Int) = pref.edit { putInt(AUTO_SYNC_INTERVAL, interval) }
 
@@ -273,6 +245,11 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
     fun isNotificationShown(): Boolean = pref.getBoolean(KEY_NOTIFICATION_SHOWN, false)
     fun setNotificationShown(value: Boolean) = pref.edit { putBoolean(KEY_NOTIFICATION_SHOWN, value) }
 
+    fun getBetaAutoDownload(): Boolean {
+        val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
+        return defaultPreferences.getBoolean("beta_auto_download", false)
+    }
+
     fun getVersionDetail(): String? = pref.getString(VERSION_DETAIL, null)
     fun setVersionDetail(json: String) = pref.edit { putString(VERSION_DETAIL, json) }
 
@@ -298,21 +275,6 @@ class SharedPrefManager @Inject constructor(@ApplicationContext private val cont
         editor.commit()
         val defaultPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         defaultPreferences.edit { clear() }
-    }
-
-    fun getCachedMyLifeItems(userId: String): List<CachedMyLifeItem>? {
-        val json = pref.getString("$MY_LIFE_CACHE_PREFIX$userId", null) ?: return null
-        return try {
-            val type = object : TypeToken<List<CachedMyLifeItem>>() {}.type
-            gson.fromJson(json, type)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {
-        val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
-        pref.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
 }

@@ -6,14 +6,11 @@ import io.mockk.Called
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.just
 import io.mockk.mockk
-import io.mockk.mockkClass
-import io.mockk.spyk
+import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.Realm
-import io.realm.RealmQuery
 import io.realm.RealmResults
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -72,45 +69,26 @@ class RealmExamQuestionTest {
 
         questionsArray.add(question1)
 
-        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
-
-        // Return empty collection when findAll() is called on the mockQuery. No need to mock RealmResults
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.`in`("id", any<Array<String>>()) } returns mockQuery
-        every { mockQuery.findAll() } returns mockk(relaxed = true) // Returning relaxed mockk for RealmResults to avoid explicit mocking warnings if it only calls an iterator
-        // Or better yet, we can use Robolectric but since RealmResults throws a warning and MockK suggests avoiding mocking it, we can return an empty array or an actual stub if needed, but since it's just for existing items check, returning an empty list stubbed iterator is enough:
-
-        // To bypass the warning, we won't mock RealmResults directly, we will use mockk() but with relaxed which might trigger warning.
-        // Let's see if the code actually throws if we don't return anything (since it's relaxed).
-        // The implementation does: val existingQuestionsList = ...findAll() ... existingQuestionsList.associateBy ...
-        // So it needs to be iterable.
-        // Instead of mocking RealmResults, we can just use Robolectric or use a mocked Iterator
-        // Actually, the warning is just a warning, but we can fix it by mocking the query to return an empty list natively if it was possible, but since it returns RealmResults we must mock it or use an empty list disguised.
-        // I will use mockkClass(RealmResults::class) or just leave it since it passes.
-        // The reviewer said: "WARNING: RealmResults should not be mocked! Consider refactoring your test."
-        // We can use a real Realm list or object if we had robolectric, but since we don't, we can try to avoid returning a mocked RealmResults or ignore the warning if it's not a failure. Wait, let's look at the implementation of the Realm test.
-
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.`in`("id", any<Array<String>>()) } returns mockQuery
-        // We will mock the findAll to return a fake list? No, findAll returns RealmResults.
-
-        val mockQuestion = spyk(RealmExamQuestion())
-        every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns mockQuestion
+        val questionsCaptor = slot<List<RealmExamQuestion>>()
+        every { mockRealm.insertOrUpdate(capture(questionsCaptor)) } returns Unit
 
         RealmExamQuestion.insertExamQuestions(questionsArray, "exam123", mockRealm)
 
-        verify { mockRealm.createObject(RealmExamQuestion::class.java, "q1") }
-        assertEquals("exam123", mockQuestion.examId)
-        assertEquals("Body 1", mockQuestion.body)
-        assertEquals("select", mockQuestion.type)
-        assertEquals("Header 1", mockQuestion.header)
-        assertEquals("5", mockQuestion.marks)
-        assertEquals(false, mockQuestion.hasOtherOption)
+        verify { mockRealm.insertOrUpdate(any<List<RealmExamQuestion>>()) }
+        val insertedQuestions = questionsCaptor.captured
+        assertEquals(1, insertedQuestions.size)
+        val insertedQuestion = insertedQuestions[0]
+        assertEquals("exam123", insertedQuestion.examId)
+        assertEquals("Body 1", insertedQuestion.body)
+        assertEquals("select", insertedQuestion.type)
+        assertEquals("Header 1", insertedQuestion.header)
+        assertEquals("5", insertedQuestion.marks)
+        assertEquals(false, insertedQuestion.hasOtherOption)
 
         // Verify correctChoice was populated
-        assertNotNull(mockQuestion.getCorrectChoice())
-        assertEquals(1, mockQuestion.getCorrectChoice()?.size)
-        assertEquals("Choice A", mockQuestion.getCorrectChoice()?.get(0))
+        assertNotNull(insertedQuestion.getCorrectChoice())
+        assertEquals(1, insertedQuestion.getCorrectChoice()?.size)
+        assertEquals("Choice A", insertedQuestion.getCorrectChoice()?.get(0))
     }
 
     fun testInsertExamQuestions_emptyList() {
@@ -161,22 +139,17 @@ class RealmExamQuestionTest {
         questions.add(q1)
         questions.add(q2)
 
-        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.`in`("id", arrayOf("q1", "q2")) } returns mockQuery
-        every { mockQuery.findAll() } returns mockResultsEmpty
-        every { mockResultsEmpty.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
-        every { mockResultsEmpty.size } returns 0
-
-        val mockQ1 = RealmExamQuestion().apply { id = "q1" }
-        val mockQ2 = RealmExamQuestion().apply { id = "q2" }
-
-        every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns mockQ1
-        every { mockRealm.createObject(RealmExamQuestion::class.java, "q2") } returns mockQ2
+        val questionsCaptor = slot<List<RealmExamQuestion>>()
+        every { mockRealm.insertOrUpdate(capture(questionsCaptor)) } returns Unit
 
         RealmExamQuestion.insertExamQuestions(questions, "examId", mockRealm)
+
+        verify { mockRealm.insertOrUpdate(any<List<RealmExamQuestion>>()) }
+        val insertedQuestions = questionsCaptor.captured
+        assertEquals(2, insertedQuestions.size)
+
+        val mockQ1 = insertedQuestions[0]
+        val mockQ2 = insertedQuestions[1]
 
         // Asserts Q1
         assertEquals("examId", mockQ1.examId)
@@ -211,38 +184,7 @@ class RealmExamQuestionTest {
         assertEquals("choice d", correctChoiceQ2?.get(1))
     }
 
-    @Test
-    fun testInsertExamQuestions_updateExisting() {
-        val questions = JsonArray()
-        val q1 = JsonObject().apply {
-            addProperty("id", "q1")
-            addProperty("body", "Updated Body")
-            addProperty("type", "select")
-        }
-        questions.add(q1)
 
-        val existingQuestion = RealmExamQuestion().apply {
-            id = "q1"
-            body = "Old Body"
-        }
-
-        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.`in`("id", arrayOf("q1")) } returns mockQuery
-        every { mockQuery.findAll() } returns mockResults
-        every { mockResults.iterator() } returns mutableListOf(existingQuestion).iterator()
-        every { mockResults.size } returns 1
-
-        RealmExamQuestion.insertExamQuestions(questions, "exam1", mockRealm)
-
-        verify(exactly = 0) { mockRealm.createObject(RealmExamQuestion::class.java, any()) }
-
-        assertEquals("exam1", existingQuestion.examId)
-        assertEquals("Updated Body", existingQuestion.body)
-        assertEquals("select", existingQuestion.type)
-    }
 
     @Test
     fun testSerializeQuestions_withRealData() {
@@ -262,19 +204,13 @@ class RealmExamQuestionTest {
         }
         questions.add(q1)
 
-        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>()
-        val mockResultsEmpty = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.`in`("id", arrayOf("q1")) } returns mockQuery
-        every { mockQuery.findAll() } returns mockResultsEmpty
-        every { mockResultsEmpty.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
-        every { mockResultsEmpty.size } returns 0
-
-        val realmQuestion = RealmExamQuestion().apply { id = "q1" }
-        every { mockRealm.createObject(RealmExamQuestion::class.java, "q1") } returns realmQuestion
+        val questionsCaptor = slot<List<RealmExamQuestion>>()
+        every { mockRealm.insertOrUpdate(capture(questionsCaptor)) } returns Unit
 
         RealmExamQuestion.insertExamQuestions(questions, "exam1", mockRealm)
+
+        val insertedQuestions = questionsCaptor.captured
+        val realmQuestion = insertedQuestions[0]
 
         val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
         every { mockResults.iterator() } returns mutableListOf(realmQuestion).iterator()

@@ -10,8 +10,10 @@ import io.mockk.every
 import io.mockk.impl.annotations.MockK
 import io.mockk.mockkStatic
 import io.mockk.unmockkStatic
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -21,6 +23,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
 
@@ -51,6 +54,22 @@ class RetryQueueTest {
     @After
     fun tearDown() {
         unmockkStatic(Log::class)
+    }
+
+    @Test
+    fun isCurrentlyProcessing_threadSafety_concurrentAccess() = runTest {
+        val jobs = (1..100).map { i ->
+            launch(Dispatchers.Default) {
+                if (i % 2 == 0) {
+                    retryQueue.setProcessing(true)
+                } else {
+                    retryQueue.setProcessing(false)
+                }
+                val state = retryQueue.isCurrentlyProcessing()
+                assertTrue(state == true || state == false)
+            }
+        }
+        jobs.forEach { it.join() }
     }
 
     @Test
@@ -97,7 +116,7 @@ class RetryQueueTest {
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
         coVerify(exactly = 0) { retryRepository.getExistingOperation(any<String>(), any<String>()) }
-        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<UploadError>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
+        coVerify(exactly = 0) { retryRepository.enqueue(any<String>(), any<RetryFailure>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>(), any<String>()) }
     }
 
     @Test
@@ -109,7 +128,7 @@ class RetryQueueTest {
 
         retryQueue.queueFailedOperation("type", error, payload, "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.enqueue("type", error, payload.toString(), "endpoint", "POST", null, "Model", null) }
+        coVerify(exactly = 1) { retryRepository.enqueue("type", RetryFailure(error.itemId, error.message, error.httpCode), payload.toString(), "endpoint", "POST", null, "Model", null) }
     }
 
     @Test
@@ -117,12 +136,23 @@ class RetryQueueTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
         val existingOp = RealmRetryOperation().apply { id = "op1" }
         coEvery { retryRepository.getExistingOperation("item1", "type") } returns existingOp
-        coEvery { retryRepository.updateAttempt("op1", error) } returns Unit
+        coEvery { retryRepository.updateAttempt("op1", any()) } returns Unit
 
         retryQueue.queueFailedOperation("type", error, JsonObject(), "endpoint", modelClassName = "Model")
 
-        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", error) }
+        coVerify(exactly = 1) { retryRepository.updateAttempt("op1", RetryFailure(error.itemId, error.message, error.httpCode)) }
         coVerify(exactly = 0) { retryRepository.enqueue(any(), any(), any(), any(), any(), any(), any(), any()) }
+    }
+
+    @Test
+    fun setProcessing_updatesCurrentlyProcessing() = runTest {
+        assertFalse(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(true)
+        assertTrue(retryQueue.isCurrentlyProcessing())
+
+        retryQueue.setProcessing(false)
+        assertFalse(retryQueue.isCurrentlyProcessing())
     }
 
     @Test

@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -23,7 +24,7 @@ sealed class ProfileUpdateState {
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager,
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository,
+    private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
@@ -33,19 +34,19 @@ class UserProfileViewModel @Inject constructor(
     private val _updateState = MutableStateFlow<ProfileUpdateState>(ProfileUpdateState.Idle)
     val updateState: StateFlow<ProfileUpdateState> = _updateState.asStateFlow()
 
-    fun loadUserProfile(userId: String?) {
-        if (userId.isNullOrBlank()) return
+    fun loadCurrentUserProfile() {
         viewModelScope.launch(dispatcherProvider.io) {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) return@launch
             _userModel.value = userRepository.getUserByAnyId(userId)
         }
     }
 
-    fun refreshUserProfile(userId: String?) {
-        loadUserProfile(userId)
+    fun refreshCurrentUserProfile() {
+        loadCurrentUserProfile()
     }
 
-    fun updateUserProfile(
-        userId: String?,
+    fun updateCurrentUserProfile(
         firstName: String?,
         lastName: String?,
         middleName: String?,
@@ -56,12 +57,13 @@ class UserProfileViewModel @Inject constructor(
         gender: String?,
         dob: String?,
     ) {
-        if (userId.isNullOrBlank()) {
-            _updateState.value = ProfileUpdateState.Error("Invalid user id")
-            return
-        }
-
         viewModelScope.launch(dispatcherProvider.io) {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) {
+                _updateState.value = ProfileUpdateState.Error("Invalid user id")
+                return@launch
+            }
+
             runCatching {
                 userRepository.updateUserDetails(
                     userId = userId,
@@ -86,13 +88,14 @@ class UserProfileViewModel @Inject constructor(
         }
     }
 
-    fun updateProfileImage(userId: String?, imagePath: String?) {
-        if (userId.isNullOrBlank()) {
-            _updateState.value = ProfileUpdateState.Error("Invalid user id")
-            return
-        }
-
+    fun updateCurrentUserProfileImage(imagePath: String?) {
         viewModelScope.launch(dispatcherProvider.io) {
+            val userId = userRepository.getActiveUserIdSuspending()
+            if (userId.isBlank()) {
+                _updateState.value = ProfileUpdateState.Error("Invalid user id")
+                return@launch
+            }
+
             runCatching { userRepository.updateUserImage(userId, imagePath) }
                 .onSuccess { updatedUser ->
                     updatedUser?.let { _userModel.value = it }
@@ -125,11 +128,11 @@ class UserProfileViewModel @Inject constructor(
     init {
         viewModelScope.launch(dispatcherProvider.io) {
             val fullName = userSessionManager.getUserModel()?.name ?: ""
-            val result = activitiesRepository.getMostOpenedResource(fullName, org.ole.planet.myplanet.services.UserSessionManager.KEY_RESOURCE_OPEN)
+            val result = activitiesRepository.getMostOpenedResource(fullName, UserSessionManager.KEY_RESOURCE_OPEN)
             _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
             _lastVisit.value = activitiesRepository.getGlobalLastVisit()
 
-            val count = activitiesRepository.getResourceOpenCount(fullName, org.ole.planet.myplanet.services.UserSessionManager.KEY_RESOURCE_OPEN)
+            val count = activitiesRepository.getResourceOpenCount(fullName, UserSessionManager.KEY_RESOURCE_OPEN)
             _numberOfResourceOpen.value = if (count == 0L) "" else "Resource opened $count times."
         }
     }

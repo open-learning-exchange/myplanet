@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.model
 
 import android.util.Base64
-import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject

@@ -18,7 +18,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+
+private val httpsPrefixRegex = Regex("^https?://")
 
 fun SyncActivity.showConfigurationUIElements(
     binding: DialogServerUrlBinding,
@@ -40,6 +43,7 @@ fun SyncActivity.showConfigurationUIElements(
         }
     binding.ltAdvanced.visibility = if (manualSelected) View.VISIBLE else View.GONE
     binding.switchServerUrl.visibility = if (manualSelected) View.VISIBLE else View.GONE
+    binding.clearData.visibility = if (prefData.getConfigurationId().isNullOrBlank()) View.GONE else View.VISIBLE
 
     if (manualSelected) {
         setupManualUi(binding)
@@ -112,14 +116,38 @@ fun SyncActivity.refreshServerList() {
         serverListAddresses,
         prefData.getPinnedServerUrl(),
     )
-    serverAddressAdapter?.submitList(filteredList)
 
     val pinnedUrl = prefData.getServerUrl()
-    val pinnedIndex = filteredList.indexOfFirst {
-        it.url.replace(Regex("^https?://"), "") == pinnedUrl.replace(Regex("^https?://"), "")
+    val urlWithoutProtocol = pinnedUrl.replace(httpsPrefixRegex, "")
+
+    // build the final list — if showing more, still pin selected server at top
+    val finalList = if (showAdditionalServers && urlWithoutProtocol.isNotEmpty()) {
+        val pinnedServer = filteredList.find {
+            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
+        }
+        if (pinnedServer != null) {
+            // pinned server at top, then everyone else without the duplicate
+            listOf(pinnedServer) + filteredList.filter {
+                it.url.replace(httpsPrefixRegex, "") != urlWithoutProtocol
+            }
+        } else {
+            filteredList
+        }
+    } else {
+        filteredList
     }
-    if (pinnedIndex != -1) {
-        serverAddressAdapter?.setSelectedPosition(pinnedIndex)
+
+    // submitList is async, so pass a callback for when it's done
+    serverAddressAdapter?.submitList(finalList) {
+        // this runs AFTER the list diff is done and views are updated
+        val pinnedIndex = finalList.indexOfFirst {
+            it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
+        }
+        if (pinnedIndex != -1) {
+            serverAddressAdapter?.setSelectedPosition(pinnedIndex)
+        } else {
+            serverAddressAdapter?.clearSelection()
+        }
     }
 }
 
@@ -140,58 +168,37 @@ fun SyncActivity.setupManualUi(binding: DialogServerUrlBinding) {
 fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: MaterialDialog) {
     serverAddresses.layoutManager = LinearLayoutManager(this)
     serverListAddresses = ServerConfigUtils.getServerAddresses(this)
-
     val storedUrl = prefData.getServerUrl().takeIf { it.isNotEmpty() }
     val storedPin = prefData.getServerPin().takeIf { it.isNotEmpty() }
-    val urlWithoutProtocol = storedUrl?.replace(Regex("^https?://"), "")
-
+    val urlWithoutProtocol = storedUrl?.replace(httpsPrefixRegex, "")
     val filteredList = ServerConfigUtils.getFilteredList(
         showAdditionalServers,
         serverListAddresses,
         prefData.getPinnedServerUrl(),
     )
-
     serverAddressAdapter = ServerAddressAdapter(
-        { serverListAddress ->
-            val actualUrl = serverListAddress.url.replace(Regex("^https?://"), "")
+        onItemClick = { serverListAddress ->
+            val actualUrl = serverListAddress.url.replace(httpsPrefixRegex, "")
             binding.inputServerUrl.setText(actualUrl)
             binding.inputServerPassword.setText(ServerConfigUtils.getPinForUrl(actualUrl))
-            val protocol = if (
-                actualUrl == BuildConfig.PLANET_XELA_URL ||
-                actualUrl == BuildConfig.PLANET_SANPABLO_URL ||
-                actualUrl == BuildConfig.PLANET_URIUR_URL ||
-                isLocalNetwork(actualUrl)
-            ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
+            val protocol = ServerConfigUtils.getDefaultProtocol(actualUrl)
             prefData.setServerProtocol(protocol)
-            if (serverCheck) {
-                performSync(dialog)
-            }
+            if (serverCheck) performSync(dialog)
         },
-        { _, _ ->
+        onClearDataDialog = { _, _ ->
             clearDataDialog(getString(R.string.you_want_to_connect_to_a_different_server), false) {
                 serverAddressAdapter?.revertSelection()
             }
         },
-        urlWithoutProtocol,
+        isServerAlreadyConfigured = !urlWithoutProtocol.isNullOrEmpty(),
     )
-
-    serverAddressAdapter?.submitList(filteredList)
-
-    serverAddresses.adapter = serverAddressAdapter
-
-    if (urlWithoutProtocol != null) {
-        val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
-        if (position != -1) {
-            serverAddressAdapter?.setSelectedPosition(position)
-            binding.inputServerUrl.setText(urlWithoutProtocol)
-            binding.inputServerPassword.setText(prefData.getServerPin())
-        }
-    }
-
-    if (!prefData.getManualConfig()) {
-        serverAddresses.visibility = View.VISIBLE
-        if (storedUrl != null && !syncFailed) {
-            val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
+    serverAddresses.adapter = serverAddressAdapter  // set adapter BEFORE submitList
+    serverAddressAdapter?.submitList(filteredList) {
+        // runs AFTER list is ready
+        if (urlWithoutProtocol != null && !syncFailed) {
+            val position = filteredList.indexOfFirst {
+                it.url.replace(httpsPrefixRegex, "") == urlWithoutProtocol
+            }
             if (position != -1) {
                 serverAddressAdapter?.setSelectedPosition(position)
                 binding.inputServerUrl.setText(urlWithoutProtocol)
@@ -199,13 +206,6 @@ fun SyncActivity.setupServerListUi(binding: DialogServerUrlBinding, dialog: Mate
             }
         } else if (syncFailed) {
             serverAddressAdapter?.clearSelection()
-        }
-    } else if (storedUrl != null) {
-        val position = serverListAddresses.indexOfFirst { it.url.replace(Regex("^https?://"), "") == urlWithoutProtocol }
-        if (position != -1) {
-            serverAddressAdapter?.setSelectedPosition(position)
-            binding.inputServerUrl.setText(urlWithoutProtocol)
-            binding.inputServerPassword.setText(storedPin)
         }
     }
     serverUrl.isEnabled = false
@@ -238,7 +238,7 @@ fun SyncActivity.initServerDialog(binding: DialogServerUrlBinding) {
     serverPassword = binding.inputServerPassword
     serverAddresses = binding.serverUrls
     syncToServerText = binding.syncToServerText
-    binding.deviceName.setText(org.ole.planet.myplanet.utils.NetworkUtils.getDeviceName())
+    binding.deviceName.setText(NetworkUtils.getDeviceName())
 }
 
 fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
@@ -247,13 +247,6 @@ fun SyncActivity.setRadioProtocolListener(binding: DialogServerUrlBinding) {
             R.id.radio_http -> prefData.setServerProtocol(getString(R.string.http_protocol))
             R.id.radio_https -> prefData.setServerProtocol(getString(R.string.https_protocol))
         }
-    }
-}
-
-fun SyncActivity.setupFastSyncOption(binding: DialogServerUrlBinding) {
-    binding.fastSync.isChecked = prefData.getFastSync()
-    binding.fastSync.setOnCheckedChangeListener { _: CompoundButton?, checked: Boolean ->
-        prefData.setFastSync(checked)
     }
 }
 
@@ -329,12 +322,3 @@ fun SyncActivity.setupManualConfigEnabled(binding: DialogServerUrlBinding, dialo
     protocolSemantics()
 }
 
-private fun isLocalNetwork(url: String): Boolean {
-    val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
-    return host.startsWith("192.168.") ||
-            host.startsWith("10.") ||
-            host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")) ||
-            host == "localhost" ||
-            host == "127.0.0.1" ||
-            host.endsWith(".local")
-}

@@ -3,18 +3,23 @@ package org.ole.planet.myplanet.utils
 import android.util.Log
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.math.roundToInt
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 
 object SyncTimeLogger {
+    private val coreEntryPoint by lazy {
+        EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
+    }
+
     private val processTimes = ConcurrentHashMap<String, Long>()
     private val processItemCounts = ConcurrentHashMap<String, Int>()
     private val apiCallTimes = ConcurrentHashMap<String, MutableList<ApiCallLog>>()
@@ -72,20 +77,19 @@ object SyncTimeLogger {
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
-        val spm = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
-        MainApplication.applicationScope.launch(Dispatchers.IO) {
+        val dispatcherProvider = coreEntryPoint.dispatcherProvider()
+
+        MainApplication.applicationScope.launch(dispatcherProvider.io) {
+            val spm = coreEntryPoint.sharedPrefManager()
             MainApplication.createLog("sync summary", summary)
             val updateUrl = spm.getServerUrl()
-            val entryPoint = EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
-            val serverUrlMapper = entryPoint.serverUrlMapper()
+            val serverUrlMapper = coreEntryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(updateUrl)
 
             val primaryAvailable = MainApplication.isServerReachable(mapping.primaryUrl)
-            val alternativeAvailable =
-                mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+            val alternativeUrl = mapping.alternativeUrl
 
-            if (!primaryAvailable && alternativeAvailable) {
-                val alternativeUrl = mapping.alternativeUrl!!
+            if (!primaryAvailable && alternativeUrl != null && MainApplication.isServerReachable(alternativeUrl)) {
                 val uri = updateUrl.toUri()
                 val prefs = spm.rawPreferences
                 val editor = prefs.edit()
@@ -176,10 +180,19 @@ object SyncTimeLogger {
         Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
     }
 
-    private fun extractProcessName(endpoint: String): String {
-        // Extract database/collection name from endpoint
-        val parts = endpoint.split("/")
-        return parts.getOrNull(parts.size - 2) ?: "unknown"
+    internal fun extractProcessName(endpoint: String): String {
+        val segments = endpoint.split("/")
+
+        val lastValidSegment = segments.lastOrNull {
+            it.isNotEmpty() && !it.startsWith("?")
+        } ?: return "Unknown"
+
+        val withoutQuery = lastValidSegment.substringBefore("?")
+        if (withoutQuery.isEmpty()) return "Unknown"
+
+        return withoutQuery.replaceFirstChar {
+            if (it.isLowerCase()) it.titlecase(Locale.ROOT) else it.toString()
+        }
     }
 
     private fun shortenEndpoint(endpoint: String): String {
@@ -198,8 +211,8 @@ object SyncTimeLogger {
     }
 
     private fun formatTimestamp(timestamp: Long): String {
-        val sdf = java.text.SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-        return sdf.format(java.util.Date(timestamp))
+        val sdf = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
+        return sdf.format(Date(timestamp))
     }
 
     private fun generateSummary(): String {

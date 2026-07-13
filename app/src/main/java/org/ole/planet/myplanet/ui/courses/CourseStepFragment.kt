@@ -4,11 +4,16 @@ import android.os.Bundle
 import android.text.Spannable
 import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
+import android.view.ActionMode
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.withResumed
 import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -23,8 +28,10 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
+import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.CustomClickableSpan
 import org.ole.planet.myplanet.ui.exam.ExamTakingFragment
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -38,6 +45,8 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
+    @Inject
+    lateinit var configurationsRepository: ConfigurationsRepository
     @Inject
     lateinit var progressRepository: ProgressRepository
     @Inject
@@ -53,10 +62,10 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var stepSurvey: List<RealmStepExam>
     var user: RealmUser? = null
     private var stepNumber = 0
+    private var courseTitle: String? = null
     private var saveInProgress: Job? = null
     private var loadDataJob: Job? = null
     private var inlineResourceAdapter: InlineResourceAdapter? = null
-    private var pendingProgressSave = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -93,7 +102,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     }
 
     private suspend fun loadStepData(): CourseStepData {
-        return coursesRepository.getCourseStepData(stepId!!, user?.id)
+        return coursesRepository.getCourseStepData(stepId ?: "", user?.id)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -101,11 +110,12 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
             user = profileDbHandler.getUserModel()
             val data = loadStepData()
-            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)) {
+            if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 step = data.step
                 resources = data.resources
                 stepExams = data.stepExams
                 stepSurvey = data.stepSurvey
+                courseTitle = step.courseId?.let { coursesRepository.getCourseTitleById(it) }
 
                 fragmentCourseStepBinding.btnResources.text =
                     getString(R.string.resources_size, resources.size)
@@ -123,12 +133,16 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 )
                 fragmentCourseStepBinding.description.movementMethod =
                     LinkMovementMethod.getInstance()
+                fragmentCourseStepBinding.description.setTextIsSelectable(true)
+                fragmentCourseStepBinding.description.customSelectionActionModeCallback =
+                    createAiSelectionCallback()
 
                 if (!data.userHasCourse) {
                     fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
                     fragmentCourseStepBinding.btnTakeSurvey.visibility = View.GONE
                 }
 
+                fragmentCourseStepBinding.btnAskAi.visibility = View.VISIBLE
                 setListeners()
                 setupInlineResources()
                 autoDownloadResources()
@@ -153,10 +167,8 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                     }
                 }
                 if (data.userHasCourse) {
-                    if (isResumed) {
+                    viewLifecycleOwner.lifecycle.withResumed {
                         launchSaveCourseProgress()
-                    } else {
-                        pendingProgressSave = true
                     }
                 }
             }
@@ -173,7 +185,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter { library ->
+        inlineResourceAdapter = InlineResourceAdapter(viewLifecycleOwner.lifecycleScope, dispatcherProvider) { library ->
             openResource(library)
         }
         fragmentCourseStepBinding.rvInlineResources.apply {
@@ -255,14 +267,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        if (pendingProgressSave) {
-            pendingProgressSave = false
-            launchSaveCourseProgress()
-        }
-    }
-
     override fun setMenuVisibility(visible: Boolean) {
         super.setMenuVisibility(visible)
         if (!isAdded || !::step.isInitialized) return
@@ -289,7 +293,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 b.putInt("stepNum", stepNumber)
                 takeExam.arguments = b
                 homeItemClickListener?.openCallFragment(takeExam)
-                capturePhoto(dispatcherProvider.default, this)
+                capturePhoto(viewLifecycleOwner.lifecycleScope, this, dispatcherProvider)
             }
         }
 
@@ -299,6 +303,49 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
+
+        fragmentCourseStepBinding.btnAskAi.setOnClickListener {
+            openChatFragment()
+        }
+    }
+
+    private fun openChatFragment(selectedText: String = "") {
+        val chatFragment = ChatDetailFragment().apply {
+            arguments = Bundle().apply {
+                putString(ChatDetailFragment.ARG_COURSE_TITLE, courseTitle)
+                putString(ChatDetailFragment.ARG_STEP_TITLE, step.stepTitle)
+                putString(ChatDetailFragment.ARG_STEP_DESCRIPTION, step.description)
+                putInt(ChatDetailFragment.ARG_STEP_NUMBER, stepNumber)
+                putString(ChatDetailFragment.ARG_SELECTED_TEXT, selectedText)
+            }
+        }
+        homeItemClickListener?.openCallFragment(chatFragment)
+    }
+
+    private fun createAiSelectionCallback(): ActionMode.Callback = object : ActionMode.Callback {
+        override fun onCreateActionMode(mode: ActionMode, menu: Menu): Boolean {
+            menu.add(Menu.NONE, MENU_ITEM_ASK_AI, Menu.NONE, getString(R.string.ask_ai))
+            return true
+        }
+        override fun onPrepareActionMode(mode: ActionMode, menu: Menu): Boolean = false
+        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+            if (item.itemId == MENU_ITEM_ASK_AI) {
+                val tv = fragmentCourseStepBinding.description
+                val start = tv.selectionStart
+                val end = tv.selectionEnd
+                if (start >= 0 && end > start) {
+                    openChatFragment(tv.text.subSequence(start, end).toString())
+                    mode.finish()
+                    return true
+                }
+            }
+            return false
+        }
+        override fun onDestroyActionMode(mode: ActionMode) {}
+    }
+
+    private companion object {
+        const val MENU_ITEM_ASK_AI = 42
     }
 
     override fun onDownloadComplete() {
@@ -311,7 +358,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun onDestroyView() {
         super.onDestroyView()
         loadDataJob?.cancel()
-        pendingProgressSave = false
         CameraUtils.release()
     }
 }

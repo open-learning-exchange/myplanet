@@ -1,10 +1,7 @@
 package org.ole.planet.myplanet.ui.surveys
 
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -15,23 +12,16 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.repository.SurveysRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class SurveysViewModelTest {
 
     private lateinit var surveysRepository: SurveysRepository
-    private lateinit var syncManager: SyncManager
     private lateinit var userSessionManager: UserSessionManager
-    private lateinit var sharedPrefManager: SharedPrefManager
-    private lateinit var serverUrlMapper: ServerUrlMapper
     private lateinit var viewModel: SurveysViewModel
     private val testDispatcher = StandardTestDispatcher()
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
@@ -40,18 +30,11 @@ class SurveysViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         surveysRepository = mockk()
-        syncManager = mockk(relaxed = true)
         userSessionManager = mockk()
-        sharedPrefManager = mockk(relaxed = true)
-        serverUrlMapper = mockk(relaxed = true)
 
         viewModel = SurveysViewModel(
             surveysRepository,
-            syncManager,
-            userSessionManager,
-            sharedPrefManager,
-            serverUrlMapper,
-            testDispatcherProvider
+            userSessionManager
         )
     }
 
@@ -190,63 +173,5 @@ class SurveysViewModelTest {
         viewModel.search("The dog")
         assertEquals(1, viewModel.surveys.value.size)
         assertEquals("2", viewModel.surveys.value[0].id)
-    }
-
-    @Test
-    fun `test startExamSync when fastSync is false`() {
-        every { sharedPrefManager.getFastSync() } returns false
-        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns false
-
-        viewModel.startExamSync()
-
-        verify(exactly = 0) { syncManager.start(any(), any(), any()) }
-    }
-
-    @Test
-    fun `test startExamSync when isExamsSynced is true`() {
-        every { sharedPrefManager.getFastSync() } returns true
-        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns true
-
-        viewModel.startExamSync()
-
-        verify(exactly = 0) { syncManager.start(any(), any(), any()) }
-    }
-
-    @Test
-    fun `test startExamSync triggers sync and handles error state mapping`() = runTest {
-        every { sharedPrefManager.getFastSync() } returns true
-        every { sharedPrefManager.isSynced(SharedPrefManager.SyncKey.EXAMS) } returns false
-        every { sharedPrefManager.getServerUrl() } returns "http://test.com"
-        every { serverUrlMapper.processUrl(any()) } returns mockk()
-
-        stubLoadSurveys(emptyList())
-
-        // Mock serverUrlMapper.updateServerIfNecessary
-        coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers {
-            // execute callback directly if we want
-        }
-
-        viewModel.startExamSync()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val listenerSlot = slot<OnSyncListener>()
-        verify { syncManager.start(capture(listenerSlot), any(), any()) }
-
-        val listener = listenerSlot.captured
-
-        // Test onSyncStarted
-        listener.onSyncStarted()
-        assertEquals(true, viewModel.isLoading.value)
-
-        // Test onSyncFailed
-        listener.onSyncFailed("Network Error")
-        assertEquals(false, viewModel.isLoading.value)
-        assertEquals("Sync failed: Network Error", viewModel.errorMessage.value)
-
-        // Test onSyncComplete
-        listener.onSyncComplete()
-        verify { sharedPrefManager.setSynced(SharedPrefManager.SyncKey.EXAMS, true) }
-        testDispatcher.scheduler.advanceUntilIdle()
-        assertEquals(false, viewModel.isLoading.value)
     }
 }

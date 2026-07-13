@@ -32,7 +32,6 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.REQUEST_WRITE_PERMISSION" />
@@ -40,11 +39,9 @@
         android:name="android.permission.PACKAGE_USAGE_STATS"
         tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
-
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
-
     <application
         android:name=".MainApplication"
         android:allowBackup="true"
@@ -105,7 +102,6 @@
             android:name=".ui.sync.LoginActivity"
             android:exported="false"
             android:configChanges="screenSize|screenLayout|orientation|keyboardHidden|keyboard"/>
-
         <activity
             android:name=".ui.user.BecomeMemberActivity"
             android:windowSoftInputMode="adjustResize|stateHidden"
@@ -117,7 +113,7 @@
             android:name=".ui.health.AddHealthActivity"
             android:theme="@style/AppTheme" />
         <activity
-            android:name=".ui.health.AddExaminationActivity"
+            android:name=".ui.health.HealthExaminationActivity"
             android:theme="@style/AppTheme" />
         <activity android:name=".ui.maps.OfflineMapsActivity" />
         <activity
@@ -126,8 +122,6 @@
         <activity
             android:name=".ui.resources.AddResourceActivity"
             android:theme="@style/AppTheme" />
-        <activity android:name=".ui.viewer.AudioPlayerActivity"
-            android:configChanges="orientation|screenSize" />
         <activity
             android:name=".ui.feedback.FeedbackDetailActivity"
             android:theme="@style/AppTheme" />
@@ -137,20 +131,11 @@
             android:label="@string/title_activity_dashboard"
             android:windowSoftInputMode="adjustResize"
             android:theme="@style/FullscreenTheme" />
-        <activity android:name=".ui.viewer.PDFReaderActivity"
-            android:configChanges="orientation|screenSize" />
         <activity android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.VideoViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.ImageViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.TextFileViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.MarkdownViewerActivity"
-            android:configChanges="orientation|screenSize" />
-        <activity android:name=".ui.viewer.CSVViewerActivity"
-            android:configChanges="orientation|screenSize" />
+        <activity android:name=".ui.viewer.ResourceViewerActivity"
+            android:configChanges="orientation|screenSize"
+            android:exported="false" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
             android:theme="@style/AppTheme" />
@@ -172,7 +157,6 @@
             android:enabled="true"
             android:permission="android.permission.FOREGROUND_SERVICE"
             android:exported="false"/>
-
         <provider
             android:name="androidx.startup.InitializationProvider"
             android:authorities="${applicationId}.androidx-startup"
@@ -183,7 +167,6 @@
                 android:value="androidx.startup"
                 tools:node="remove" />
         </provider>
-
         <receiver android:name=".services.NotificationActionReceiver"
             android:exported="false">
             <intent-filter>

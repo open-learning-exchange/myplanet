@@ -5,12 +5,11 @@ import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = null) :
@@ -21,29 +20,41 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
                 old.name == new.name &&
                 old.userImage == new.userImage &&
                 old.joinDate == new.joinDate
+            },
+            getChangePayload = { old, new ->
+                val diffs = mutableListOf<String>()
+                if (old.name != new.name) diffs.add("name")
+                if (old.userImage != new.userImage) diffs.add("userImage")
+                if (old.joinDate != new.joinDate) diffs.add("joinDate")
+                if (diffs.isEmpty()) null else diffs
             }
         )
     ) {
 
     class ViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(user: RealmUser, clickListener: ((RealmUser) -> Unit)?) {
-            binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
-            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
-
-            if (!TextUtils.isEmpty(user.userImage)) {
-                Glide.with(binding.ivUser.context)
-                    .load(user.userImage)
-                    .diskCacheStrategy(DiskCacheStrategy.ALL)
-                    .circleCrop()
-                    .placeholder(R.drawable.profile)
-                    .error(R.drawable.profile)
-                    .into(binding.ivUser)
-            } else {
-                binding.ivUser.setImageResource(R.drawable.profile)
-            }
-
+            bindName(user)
+            bindDate(user)
+            bindImage(user)
             binding.root.setOnClickListener {
                 clickListener?.invoke(user)
+            }
+        }
+
+        fun bindName(user: RealmUser) {
+            binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
+        }
+
+        fun bindDate(user: RealmUser) {
+            binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
+        }
+
+        fun bindImage(user: RealmUser) {
+            if (!TextUtils.isEmpty(user.userImage)) {
+                val avatarSize = binding.ivUser.context.resources.getDimensionPixelSize(R.dimen._80dp)
+                ImageUtils.loadProfileImage(user.userImage, binding.ivUser, avatarSize)
+            } else {
+                binding.ivUser.setImageResource(R.drawable.profile)
             }
         }
     }
@@ -55,5 +66,23 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         holder.bind(getItem(position), clickListener)
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
+        val diffs = payloads.filterIsInstance<List<*>>().flatten()
+        if (diffs.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+        } else {
+            val user = getItem(position)
+            if ("name" in diffs) {
+                holder.bindName(user)
+            }
+            if ("userImage" in diffs) {
+                holder.bindImage(user)
+            }
+            if ("joinDate" in diffs) {
+                holder.bindDate(user)
+            }
+        }
     }
 }

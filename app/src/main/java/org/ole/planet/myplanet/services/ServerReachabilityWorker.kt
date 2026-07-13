@@ -14,7 +14,6 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
@@ -24,9 +23,12 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
+import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @HiltWorker
 class ServerReachabilityWorker @AssistedInject constructor(
@@ -35,7 +37,9 @@ class ServerReachabilityWorker @AssistedInject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val uploadManager: UploadManager,
     private val submissionsRepository: SubmissionsRepository,
-    private val serverUrlMapper: ServerUrlMapper
+    private val serverUrlMapper: ServerUrlMapper,
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) : CoroutineWorker(context, workerParams) {
 
     companion object {
@@ -60,7 +64,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
                 return Result.success()
             }
 
-            val isReachable = withContext(Dispatchers.IO) {
+            val isReachable = withContext(dispatcherProvider.io) {
                 isServerReachable(serverUrl)
             }
 
@@ -70,7 +74,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
             if (isReachable && isNetworkReconnection) {
                 val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
-                val currentTime = System.currentTimeMillis()
+                val currentTime = timeProvider.now()
                 val timeSinceLastNotification = currentTime - lastNotificationTime
                 if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                     showServerNotification()
@@ -93,7 +97,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
             val mapping = serverUrlMapper.processUrl(serverUrl)
 
             if (mapping.alternativeUrl != null) {
-                val alternativeReachable = withContext(Dispatchers.IO) {
+                val alternativeReachable = withContext(dispatcherProvider.io) {
                     isServerReachable(mapping.alternativeUrl)
                 }
 
@@ -104,7 +108,7 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
                     if (isNetworkReconnection) {
                         val lastNotificationTime = sharedPrefManager.getRawLong(LAST_NOTIFICATION_TIME_KEY)
-                        val currentTime = System.currentTimeMillis()
+                        val currentTime = timeProvider.now()
                         val timeSinceLastNotification = currentTime - lastNotificationTime
                         if (timeSinceLastNotification > NOTIFICATION_COOLDOWN_MS) {
                             showServerNotification()
@@ -186,12 +190,13 @@ class ServerReachabilityWorker @AssistedInject constructor(
     private suspend fun uploadSubmissions() {
         try {
             if (submissionsRepository.hasPendingOfflineSubmissions()) {
-                withContext(Dispatchers.IO) {
+                withContext(dispatcherProvider.io) {
                     uploadManager.uploadSubmissions()
                 }
             }
             uploadExamResultWrapper()
-            if (!MainApplication.isSyncRunning) {
+            HeavyTableSyncWorker.scheduleIfPending(applicationContext, sharedPrefManager)
+            if (!MainApplication.isSyncRunning.get()) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
         } catch (e: Exception) {

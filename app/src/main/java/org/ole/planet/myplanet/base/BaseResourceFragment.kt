@@ -7,12 +7,11 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -29,22 +28,19 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
@@ -68,16 +64,13 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var surveysRepository: SurveysRepository
     @Inject
-    lateinit var configurationsRepository: ConfigurationsRepository
-    @Inject
     lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var broadcastService: org.ole.planet.myplanet.services.BroadcastService
+    lateinit var broadcastService: BroadcastService
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
-    private var pendingSurveyDialog: AlertDialog? = null
 
     private fun isFragmentActive(): Boolean {
         return isAdded && activity != null &&
@@ -135,14 +128,14 @@ abstract class BaseResourceFragment : Fragment() {
                         if (!fileUrl.isNullOrEmpty() && fileUrl in pendingDownloadUrls) {
                             if (download.progress == 100) {
                                 pendingDownloadUrls.remove(fileUrl)
+                                onSingleResourceDownloaded(fileUrl)
                             }
                             setProgress(download.apply { completeAll = pendingDownloadUrls.isEmpty() })
                         }
                     }
                 } else {
                     pendingDownloadUrls.clear()
-                    prgDialog.dismiss()
-                    download?.message?.let { showError(prgDialog, it) }
+                    download?.message?.let { showError(prgDialog, it) } ?: prgDialog.dismiss()
                 }
             }
         }
@@ -160,38 +153,39 @@ abstract class BaseResourceFragment : Fragment() {
             convertView = inflater.inflate(R.layout.my_library_alertdialog, rootView, false)
 
             val alertDialogBuilder = AlertDialog.Builder(fragmentActivity, R.style.AlertDialogTheme)
+            val titleView = TextView(requireContext()).apply {
+                text = getString(R.string.download_suggestion)
+                setPadding(48, 40, 48, 0)
+                textSize = 18f
+                maxLines = 5
+                isSingleLine = false
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+            }
             alertDialogBuilder.setView(convertView)
-                .setTitle(R.string.download_suggestion)
+                .setCustomTitle(titleView)
+
+
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
-                            selectedItemsList?.let {
-                                addToLibrary(dbMyLibrary, ArrayList(it))
-                                val selectedLibraries = it.mapNotNull { index ->
-                                    dbMyLibrary.getOrNull(
-                                        index
-                                    ) }
-                                if (resourcesRepository.downloadResources(selectedLibraries)) {
-                                    trackDownloadUrls(selectedLibraries.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                    showProgressDialog()
-                                }
+                        val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
+                        selectedItemsList?.let {
+                            addToLibrary(dbMyLibrary, ArrayList(it))
+                            val selectedLibraries = it.mapNotNull { index -> dbMyLibrary.getOrNull(index) }
+                            if (resourcesRepository.downloadResources(selectedLibraries)) {
+                                val urls = selectedLibraries.mapNotNull { lib -> lib.resourceRemoteAddress }
+                                trackDownloadUrls(urls)
+                                showProgressDialog()
                             }
-                        } else {
-                            showNotConnectedToast()
                         }
                     }
                 }.setNeutralButton(R.string.download_all) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
-                        if (configurationsRepository.checkServerAvailability()) {
-                            addAllToLibrary(dbMyLibrary)
-                            val filtered = dbMyLibrary.filterNotNull()
-                            if (resourcesRepository.downloadResources(filtered)) {
-                                trackDownloadUrls(filtered.mapNotNull { lib -> lib?.resourceRemoteAddress })
-                                showProgressDialog()
-                            }
-                        } else {
-                            showNotConnectedToast()
+                        addAllToLibrary(dbMyLibrary)
+                        val filtered = dbMyLibrary.filterNotNull()
+                        if (resourcesRepository.downloadResources(filtered)) {
+                            val urls = filtered.mapNotNull { lib -> lib.resourceRemoteAddress }
+                            trackDownloadUrls(urls)
+                            showProgressDialog()
                         }
                     }
                 }.setNegativeButton(R.string.txt_cancel, null)
@@ -205,40 +199,6 @@ abstract class BaseResourceFragment : Fragment() {
                 dialog.show()
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = ((lv?.adapter as? CheckboxAdapter)?.selectedItemsList?.size
                     ?: 0) > 0
-            }
-        }
-    }
-
-    fun showPendingSurveyDialog() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
-            val list = submissionsRepository.getPendingSurveys(user?.id)
-            if (list.isEmpty()) return@launch
-            val exams = submissionsRepository.getExamMap(list)
-            val arrayAdapter = createSurveyAdapter(list, exams)
-            pendingSurveyDialog?.dismiss()
-            pendingSurveyDialog = AlertDialog.Builder(requireActivity()).setTitle("Pending Surveys")
-                .setAdapter(arrayAdapter) { _: DialogInterface?, i: Int ->
-                    SubmissionsAdapter.openSurvey(homeItemClickListener, list[i].id, true, false, "")
-                }.setPositiveButton(R.string.dismiss, null).create()
-            pendingSurveyDialog?.setOnDismissListener {
-                pendingSurveyDialog = null
-            }
-            pendingSurveyDialog?.show()
-        }
-    }
-
-    private fun createSurveyAdapter(
-        list: List<RealmSubmission>,
-        exams: Map<String?, RealmStepExam>
-    ): ArrayAdapter<RealmSubmission> {
-        return object : ArrayAdapter<RealmSubmission>(requireActivity(), android.R.layout.simple_list_item_1, list) {
-            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = convertView ?: LayoutInflater.from(activity)
-                    .inflate(android.R.layout.simple_list_item_1, parent, false)
-                val text = exams[list[position].parentId]?.name ?: getString(R.string.n_a)
-                (view as TextView).text = text
-                return view
             }
         }
     }
@@ -283,6 +243,8 @@ abstract class BaseResourceFragment : Fragment() {
             onDownloadComplete()
         }
     }
+
+    protected open fun onSingleResourceDownloaded(url: String) {}
 
     open fun onDownloadComplete() {
         prgDialog.dismiss()
@@ -399,8 +361,6 @@ abstract class BaseResourceFragment : Fragment() {
     override fun onDestroyView() {
         downloadSuggestionDialog?.dismiss()
         downloadSuggestionDialog = null
-        pendingSurveyDialog?.dismiss()
-        pendingSurveyDialog = null
         resourceNotFoundDialog?.dismiss()
         resourceNotFoundDialog = null
         convertView = null

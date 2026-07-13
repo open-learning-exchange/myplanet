@@ -4,15 +4,13 @@ import android.content.Context
 import io.mockk.MockKAnnotations
 import io.mockk.every
 import io.mockk.impl.annotations.MockK
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkStatic
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -23,6 +21,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.Utilities
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class RealmUserTest {
 
     @MockK
@@ -38,22 +37,19 @@ class RealmUserTest {
         MockKAnnotations.init(this)
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
-        mockkStatic(Utilities::class)
+        mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
-        every { Utilities.toast(any(), any(), any()) } returns Unit
         try {
             originalContext = MainApplication.context
         } catch (e: Exception) {
             // UninitializedPropertyAccessException if context was never set
         }
-        MainApplication.context = mockContext
+        MainApplication.testContext = mockContext
     }
 
     @After
     fun tearDown() {
-        if (originalContext != null) {
-            MainApplication.context = originalContext!!
-        }
+        MainApplication.testContext = originalContext
         Dispatchers.resetMain()
         unmockkAll()
     }

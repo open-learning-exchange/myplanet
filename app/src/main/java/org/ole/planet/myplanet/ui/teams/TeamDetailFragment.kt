@@ -5,33 +5,28 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
-import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CoursesPage
@@ -44,9 +39,8 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ReportsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ResourcesPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.SurveyPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
-import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
-import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
@@ -54,23 +48,14 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     @Inject
     lateinit var userSessionManager: UserSessionManager
     
-    @Inject
-    lateinit var syncManager: SyncManager
-
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
-    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
+    private val teamViewModel: TeamViewModel by viewModels()
 
     private var _binding: FragmentTeamDetailBinding? = null
     private val binding get() = _binding!!
     private var directTeamName: String? = null
     private var directTeamType: String? = null
     private var directTeamId: String? = null
-    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
     private val teamLastPage = mutableMapOf<String, String>()
-    private val serverUrl: String
-        get() = prefData.getServerUrl()
     private var pageConfigs: List<TeamPageConfig> = emptyList()
     private var loadTeamJob: Job? = null
 
@@ -109,7 +94,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startTeamSync()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
@@ -131,7 +115,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val user = userSessionManager.getUserModel()
             val resolvedTeam = when {
                 shouldQueryRealm(teamId) && teamId.isNotEmpty() -> {
-                    teamsRepository.getTeamByDocumentIdOrTeamId(teamId)
+                    teamsRepository.getTeamByIdOrTeamId(teamId)
                 }
 
                 else -> {
@@ -183,66 +167,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.viewPager2.adapter = null
     }
 
-    private fun startTeamSync() {
-        val isFastSync = prefData.getFastSync()
-        if (isFastSync && prefData.isSynced(SharedPrefManager.SyncKey.TEAMS)) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch {
-            updateServerIfNecessary(mapping)
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(requireContext().getString(R.string.syncing_team_data))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshTeamDetails()
-                        prefData.setSynced(SharedPrefManager.SyncKey.TEAMS, true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startTeamSync() }
-                            .show()
-                    }
-                }
-            }
-        }, "full", listOf("tasks", "meetups", "team_activities"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefData.rawPreferences) { url ->
-            isServerReachable(url)
-        }
-    }
-
     private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUser?, hasPendingRequest: Boolean) {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
@@ -278,39 +202,47 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             binding.viewPager2.id = View.generateViewId()
         }
 
-        binding.viewPager2.adapter = null
-        binding.viewPager2.adapter = TeamPagerAdapter(
-            this, pageConfigs, team?._id, this, this
-        )
-        binding.tabLayout.tabMode = com.google.android.material.tabs.TabLayout.MODE_SCROLLABLE
-        binding.tabLayout.isInlineLabel = true
+        val currentAdapter = binding.viewPager2.adapter as? TeamPagerAdapter
+        if (currentAdapter != null) {
+            currentAdapter.updatePages(pageConfigs)
+        } else {
+            binding.viewPager2.adapter = TeamPagerAdapter(
+                this, pageConfigs, team?._id, this, this
+            )
+            binding.tabLayout.tabMode = TabLayout.MODE_SCROLLABLE
+            binding.tabLayout.isInlineLabel = true
 
-        TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
-            val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
-            tab.text = title
-        }.attach()
+            TabLayoutMediator(binding.tabLayout, binding.viewPager2) { tab, position ->
+                val title = (binding.viewPager2.adapter as TeamPagerAdapter).getPageTitle(position)
+                tab.text = title
+            }.attach()
 
-        selectPage(restorePageId, false)
+            binding.viewPager2.registerOnPageChangeCallback(
+                object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(position: Int) {
+                        val adapter = binding.viewPager2.adapter as? TeamPagerAdapter
+                        val pageConfig = adapter?.getPageConfig(position) ?: pageConfigs.getOrNull(position)
+                        val pageId = pageConfig?.id
+                        team?._id?.let { teamId ->
+                            pageId?.let {
+                                teamLastPage[teamId] = it
+                            }
+                        }
 
-        binding.viewPager2.registerOnPageChangeCallback(
-            object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    val pageConfig = pageConfigs.getOrNull(position)
-                    val pageId = pageConfig?.id
-                    team?._id?.let { teamId ->
-                        pageId?.let {
-                            teamLastPage[teamId] = it
+                        val itemId = adapter?.getItemId(position) ?: position.toLong()
+                        val fragmentTag = "f$itemId"
+                        val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
+                        if (fragment is OnTeamPageListener) {
+                            MainApplication.listener = fragment
                         }
                     }
-
-                    val fragmentTag = "f$position"
-                    val fragment = childFragmentManager.findFragmentByTag(fragmentTag)
-                    if (fragment is OnTeamPageListener) {
-                        MainApplication.listener = fragment
-                    }
                 }
-            }
-        )
+            )
+        }
+
+        binding.viewPager2.post {
+            selectPage(restorePageId, false)
+        }
     }
 
     private fun setupNonMyTeamButtons(user: RealmUser?, hasPendingRequest: Boolean) {
@@ -343,7 +275,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
                     binding.btnLeave.text = getString(R.string.requested)
                     binding.btnLeave.isEnabled = false
-                    teamsRepository.syncTeamActivities()
+                    teamsSyncRepository.syncTeamActivities()
                 }
             }
         }
@@ -361,7 +293,8 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                     team?.let { currentTeam ->
                         user?.let { currentUser ->
                             viewLifecycleOwner.lifecycleScope.launch {
-                                teamsRepository.leaveTeam(currentTeam._id!!, currentUser.id)
+                                val teamId = currentTeam._id ?: return@launch
+                                teamsRepository.leaveTeam(teamId, currentUser.id)
                                 Utilities.toast(activity, getString(R.string.left_team))
                                 val lastPageId =
                                     currentTeam._id?.let { teamLastPage[it] } ?: arguments?.getString("navigateToPage")
@@ -383,9 +316,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             selectPage(targetPageId)
             MainApplication.showDownload = false
 
-            val delay = if (isAlreadyOnTargetPage) 50L else 300L
+            val delayMs = if (isAlreadyOnTargetPage) 50L else 300L
 
-            binding.root.postDelayed({
+            viewLifecycleOwner.lifecycleScope.launch {
+                delay(delayMs)
                 val pageListener = childFragmentManager.fragments.firstOrNull {
                     it is OnTeamPageListener && it.arguments?.getString("fragmentType") == targetPageId
                 } as? OnTeamPageListener
@@ -405,7 +339,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
                         }
                     }
                 }
-            }, delay)
+            }
         }
     }
 
@@ -418,7 +352,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
             val isMyTeam = requireArguments().getBoolean("isMyTeam", false)
 
             val updatedTeam = when {
-                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByDocumentIdOrTeamId(primaryTeamId)
+                primaryTeamId.isNotEmpty() -> teamsRepository.getTeamByIdOrTeamId(primaryTeamId)
                 fallbackTeamId.isNotEmpty() -> teamsRepository.getTeamById(fallbackTeamId)
                 else -> null
             }
@@ -506,16 +440,11 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "teams" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshTeamDetails()
-                    }
-                }
+        collectWhenStarted(teamViewModel.getTeamUpdateFlow()) { update ->
+            if (update.table == "teams" && update.shouldRefreshUI) {
+                refreshTeamDetails()
             }
         }
-        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun shouldQueryRealm(teamId: String): Boolean {
@@ -525,18 +454,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     override fun onDestroyView() {
         loadTeamJob?.cancel()
         loadTeamJob = null
-        if (::onRealtimeSyncListener.isInitialized) {
-            syncManagerInstance.removeListener(onRealtimeSyncListener)
-        }
         super.onDestroyView()
         _binding = null
     }
 
-    override fun onDestroy() {
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
-        super.onDestroy()
-    }
 
     companion object {
         fun newInstance(

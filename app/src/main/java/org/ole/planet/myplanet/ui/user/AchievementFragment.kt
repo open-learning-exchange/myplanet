@@ -1,69 +1,54 @@
 package org.ole.planet.myplanet.ui.user
 
 import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import android.text.TextUtils
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isGone
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.google.android.material.snackbar.Snackbar
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import java.time.Instant
-import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
-import org.ole.planet.myplanet.callback.OnBaseRealtimeSyncListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.TableDataUpdate
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.ui.references.ReferencesAdapter
-import org.ole.planet.myplanet.utils.DialogUtils
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
+import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class AchievementFragment : BaseContainerFragment() {
+
+    private val viewModel: AchievementViewModel by viewModels()
+
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
-    private var customProgressDialog: DialogUtils.CustomProgressDialog? = null
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-
-    @Inject
-    lateinit var syncManager: SyncManager
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
-    private lateinit var onRealtimeSyncListener: OnBaseRealtimeSyncListener
-    private val serverUrl: String
-        get() = prefData.getServerUrl()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        startAchievementSync()
     }
 
     override fun onAttach(context: Context) {
@@ -80,72 +65,8 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     override fun onDestroyView() {
-        if (::onRealtimeSyncListener.isInitialized) {
-            syncManagerInstance.removeListener(onRealtimeSyncListener)
-        }
         _binding = null
         super.onDestroyView()
-    }
-
-    private fun startAchievementSync() {
-        val isFastSync = prefData.getFastSync()
-        if (isFastSync && !prefData.isSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS)) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        lifecycleScope.launch(Dispatchers.IO) {
-            updateServerIfNecessary(mapping)
-            withContext(Dispatchers.Main) {
-                startSyncManager()
-            }
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded && !requireActivity().isFinishing) {
-                        customProgressDialog = DialogUtils.CustomProgressDialog(requireContext())
-                        customProgressDialog?.setText(getString(R.string.syncing_achievements))
-                        customProgressDialog?.show()
-                    }
-                }
-            }
-
-            override fun onSyncComplete() {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        refreshAchievementData()
-                        prefData.setSynced(SharedPrefManager.SyncKey.ACHIEVEMENTS, true)
-                    }
-                }
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (isAdded) {
-                        customProgressDialog?.dismiss()
-                        customProgressDialog = null
-                        Snackbar.make(binding.root, "Sync failed: ${msg ?: "Unknown error"}", Snackbar.LENGTH_LONG)
-                            .setAction("Retry") { startAchievementSync() }
-                            .show()
-                    }
-                }
-            }
-        }, "full", listOf("achievements"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefData.rawPreferences) { url ->
-            isServerReachable(url)
-        }
     }
 
     private fun refreshAchievementData() {
@@ -167,12 +88,12 @@ class AchievementFragment : BaseContainerFragment() {
         return userRepository.getAchievementData(uId, pCode)
     }
 
-
     private fun updateAchievementUI() {
         achievementData?.let {
             setupAchievementHeader(it)
             populateAchievements(it)
             setupReferences(it)
+            setupCv(it)
         }
     }
 
@@ -188,7 +109,6 @@ class AchievementFragment : BaseContainerFragment() {
     }
 
     private fun setupUserData() {
-
         if (!TextUtils.isEmpty(user?.userImage)) {
             Glide.with(requireActivity())
                 .load(user?.userImage)
@@ -208,18 +128,12 @@ class AchievementFragment : BaseContainerFragment() {
         binding.tvName.text = if (fullName.isBlank()) user?.name ?: "" else fullName
     }
 
-
     private fun setupRealtimeSync() {
-        onRealtimeSyncListener = object : OnBaseRealtimeSyncListener() {
-            override fun onTableDataUpdated(update: TableDataUpdate) {
-                if (update.table == "achievements" && update.shouldRefreshUI) {
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        refreshAchievementData()
-                    }
-                }
+        collectWhenStarted(viewModel.dataUpdateFlow) { update ->
+            if (update.table == "achievements" && update.shouldRefreshUI) {
+                refreshAchievementData()
             }
         }
-        syncManagerInstance.addListener(onRealtimeSyncListener)
     }
 
     private fun setupAchievementHeader(a: AchievementData) {
@@ -306,6 +220,26 @@ class AchievementFragment : BaseContainerFragment() {
         return btnBinding.root
     }
 
+    private fun setupCv(data: AchievementData) {
+        val cvFilename = data.resumeFileName
+        if (cvFilename.isEmpty()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        val cvFile = File(FileUtils.getOlePath(requireContext()) + "cv/$cvFilename")
+        if (!cvFile.exists()) {
+            binding.cvCard.visibility = View.GONE
+            return
+        }
+        binding.cvCard.visibility = View.VISIBLE
+        binding.btnViewCv.setOnClickListener {
+            val intent = Intent(requireContext(), ResourceViewerActivity::class.java)
+            intent.putExtra("TOUCHED_FILE", "cv/$cvFilename")
+            intent.putExtra("resourceType", ResourceViewerFragment.ResourceType.PDF.name)
+            startActivity(intent)
+        }
+    }
+
     private fun setupReferences(data: AchievementData) {
         binding.rvOtherInfo.layoutManager = LinearLayoutManager(requireContext())
         val hasReferences = data.references.isNotEmpty()
@@ -313,16 +247,11 @@ class AchievementFragment : BaseContainerFragment() {
         binding.tvReferencesHeader.visibility = if (hasReferences) View.GONE else View.VISIBLE
 
         if (binding.rvOtherInfo.adapter == null) {
-            binding.rvOtherInfo.adapter = ReferencesAdapter(data.references)
+            binding.rvOtherInfo.adapter = AchievementsAdapter(data.references)
         } else {
-            (binding.rvOtherInfo.adapter as ReferencesAdapter).submitList(data.references)
+            (binding.rvOtherInfo.adapter as AchievementsAdapter).submitJsonList(data.references)
         }
     }
 
 
-    override fun onDestroy() {
-        customProgressDialog?.dismiss()
-        customProgressDialog = null
-        super.onDestroy()
-    }
 }

@@ -2,13 +2,16 @@ package org.ole.planet.myplanet.services.retry
 
 import android.content.Context
 import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequest
 import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.PeriodicWorkRequest
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkRequest
@@ -39,20 +42,7 @@ class RetryQueueWorker @AssistedInject constructor(
         private const val BATCH_SIZE = 50
 
         fun schedule(context: Context) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
-            val workRequest = PeriodicWorkRequestBuilder<RetryQueueWorker>(
-                15, TimeUnit.MINUTES
-            )
-                .setConstraints(constraints)
-                .setBackoffCriteria(
-                    BackoffPolicy.EXPONENTIAL,
-                    WorkRequest.MIN_BACKOFF_MILLIS,
-                    TimeUnit.MILLISECONDS
-                )
-                .build()
+            val workRequest = createScheduleWorkRequest()
 
             WorkManager.getInstance(context)
                 .enqueueUniquePeriodicWork(
@@ -63,22 +53,45 @@ class RetryQueueWorker @AssistedInject constructor(
             Log.d(TAG, "Scheduled RetryQueueWorker")
         }
 
-        fun triggerImmediateRetry(context: Context) {
+        @VisibleForTesting
+        internal fun createScheduleWorkRequest(): PeriodicWorkRequest {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
 
-            val workRequest = OneTimeWorkRequestBuilder<RetryQueueWorker>()
+            return PeriodicWorkRequestBuilder<RetryQueueWorker>(
+                15, TimeUnit.MINUTES
+            )
                 .setConstraints(constraints)
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    WorkRequest.MIN_BACKOFF_MILLIS,
+                    TimeUnit.MILLISECONDS
+                )
                 .build()
+        }
+
+        fun triggerImmediateRetry(context: Context) {
+            val workRequest = createImmediateRetryWorkRequest()
 
             WorkManager.getInstance(context).enqueue(workRequest)
             Log.d(TAG, "Triggered immediate retry")
         }
+
+        @VisibleForTesting
+        internal fun createImmediateRetryWorkRequest(): OneTimeWorkRequest {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+
+            return OneTimeWorkRequestBuilder<RetryQueueWorker>()
+                .setConstraints(constraints)
+                .build()
+        }
     }
 
     override suspend fun doWork(): Result {
-        if (MainApplication.isSyncRunning) {
+        if (MainApplication.isSyncRunning.get()) {
             Log.d(TAG, "Sync is running, skipping retry processing")
             return Result.success()
         }
@@ -108,7 +121,7 @@ class RetryQueueWorker @AssistedInject constructor(
             withTimeout(5 * 60 * 1000L) {
                 pendingOperations.chunked(BATCH_SIZE).forEach { batch ->
                     // Check if sync started while we're processing
-                    if (MainApplication.isSyncRunning) {
+                    if (MainApplication.isSyncRunning.get()) {
                         Log.d(TAG, "Sync started, pausing retry processing")
                         return@withTimeout
                     }

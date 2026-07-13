@@ -12,9 +12,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.MainDispatcherRule
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewsViewModelTest {

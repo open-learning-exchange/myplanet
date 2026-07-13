@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.SharedPreferences
+import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -14,6 +15,8 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import io.realm.Sort
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.RequestBody
 import org.junit.After
@@ -25,11 +28,15 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
+import org.ole.planet.myplanet.model.CouchDBResponse
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import retrofit2.Response
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ChatRepositoryImplTest {
     private lateinit var chatRepository: ChatRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
@@ -41,7 +48,7 @@ class ChatRepositoryImplTest {
     @Before
     fun setup() {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
-        chatRepository = spyk(ChatRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher(), chatApiService, serverUrlMapper, sharedPrefManager), recordPrivateCalls = true)
+        chatRepository = spyk(ChatRepositoryImpl(databaseService, UnconfinedTestDispatcher(), chatApiService, serverUrlMapper, sharedPrefManager), recordPrivateCalls = true)
     }
 
     @After
@@ -61,7 +68,8 @@ class ChatRepositoryImplTest {
         coEvery { serverUrlMapper.updateServerIfNecessary(any(), any(), any()) } answers { }
         coEvery { chatApiService.fetchAiProviders() } returns mockResponse
 
-        val result = chatRepository.fetchAiProviders(serverUrl) { true }
+        chatRepository.reachabilityCheck = { true }
+        val result = chatRepository.fetchAiProviders(serverUrl)
 
         assertEquals(mockResponse, result)
         verify(exactly = 1) { serverUrlMapper.processUrl(serverUrl) }
@@ -131,40 +139,85 @@ class ChatRepositoryImplTest {
     }
 
     @Test
-    fun saveNewChat_executesTransaction() = runTest {
-        val chatObj = JsonObject()
-
-        coEvery { chatRepository.saveNewChat(any()) } answers { callOriginal() }
-
-        chatRepository.saveNewChat(chatObj)
-
-        coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-    }
-
-    @Test
-    fun continueConversation_executesTransaction() = runTest {
-        val id = "123"
-        val query = "hello"
-        val response = "hi"
-        val rev = "1-rev"
-
-        coEvery { chatRepository.continueConversation(any(), any(), any(), any()) } answers { callOriginal() }
-
-        chatRepository.continueConversation(id, query, response, rev)
-
-        coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
-    }
-
-    @Test
     fun insertChatHistoryList_executesTransaction() = runTest {
-        val chatObj1 = JsonObject()
-        val chatObj2 = JsonObject()
+        val chatObj1 = JsonObject().apply {
+            addProperty("_id", "1")
+            addProperty("_rev", "1-rev")
+            add("conversations", JsonArray())
+        }
+        val chatObj2 = JsonObject().apply {
+            addProperty("_id", "2")
+            addProperty("_rev", "2-rev")
+            add("conversations", JsonArray())
+        }
+
+        coEvery { databaseService.executeTransactionAsync(any()) } answers {
+            val op = arg<(Realm) -> Unit>(0)
+            op.invoke(mockRealm)
+        }
+
+        // Mock query logic to simulate existing chats
+        val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf<RealmChatHistory>().iterator()
+
+        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
 
         coEvery { chatRepository.insertChatHistoryList(any()) } answers { callOriginal() }
 
         chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2))
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any()) }
+        verify(exactly = 1) { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) }
+    }
+
+    @Test
+    fun insertChatHistoryFromSync_removesOrphanedConversationsAndInsertsBatch() = runTest {
+        val chatDoc = JsonObject().apply {
+            addProperty("_id", "chat123")
+            addProperty("_rev", "1-rev")
+            addProperty("title", "Test Chat")
+            add("conversations", JsonArray())
+        }
+        val wrapper = JsonObject().apply {
+            add("doc", chatDoc)
+        }
+        val docs = listOf(wrapper)
+
+        val mockQuery = mockk<RealmQuery<RealmChatHistory>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmChatHistory>>(relaxed = true)
+        val existingChat = mockk<RealmChatHistory>(relaxed = true)
+        val mockConversations = mockk<io.realm.RealmList<RealmConversation>>(relaxed = true)
+
+        every { existingChat.conversations } returns mockConversations
+        every { mockRealm.where(RealmChatHistory::class.java) } returns mockQuery
+        every { mockQuery.`in`(any<String>(), any<Array<String>>()) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockResults.iterator() } returns mutableListOf(existingChat).iterator()
+
+        coEvery { databaseService.executeTransactionAsync(any()) } answers {
+            val op = arg<(Realm) -> Unit>(0)
+            op.invoke(mockRealm)
+        }
+
+        every { mockRealm.insertOrUpdate(any<Collection<RealmChatHistory>>()) } returns Unit
+        coEvery { chatRepository.insertChatHistoryFromSync(any()) } answers { callOriginal() }
+
+        chatRepository.insertChatHistoryFromSync(docs)
+
+        // Verify that existing conversations are explicitly deleted
+        verify(exactly = 1) { mockConversations.deleteAllFromRealm() }
+
+        // Verify insertOrUpdate is called
+        val captureList = slot<Collection<RealmChatHistory>>()
+        verify(exactly = 1) { mockRealm.insertOrUpdate(capture(captureList)) }
+
+        val inserted = captureList.captured.first()
+        assertEquals("chat123", inserted._id)
+        assertEquals("Test Chat", inserted.title)
     }
 
     @Test
@@ -172,14 +225,15 @@ class ChatRepositoryImplTest {
         val query = "test query"
         val user = "testUser"
         val aiProvider = AiProvider("OpenAI", "GPT-4")
-        val mockResponse = Response.success(ChatResponse())
+        val couchDb = CouchDBResponse(ok = true, id = "test-id", rev = "test-rev")
+        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendNewChatRequest(query, user, aiProvider)
 
-        assertEquals(mockResponse, result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<RequestBody>()) }
+        assertEquals(ChatResult.Success("test chat", "test-id", "test-rev"), result)
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
     }
 
     @Test
@@ -189,13 +243,14 @@ class ChatRepositoryImplTest {
         val aiProvider = AiProvider("OpenAI", "GPT-4")
         val id = "chat-123"
         val rev = "1-rev"
-        val mockResponse = Response.success(ChatResponse())
+        val couchDb = CouchDBResponse(ok = true, id = id, rev = "2-rev")
+        val mockResponse = retrofit2.Response.success(ChatResponse(status = "Success", chat = "test chat", couchDBResponse = couchDb))
 
         coEvery { chatApiService.sendChatRequest(any()) } returns mockResponse
 
         val result = chatRepository.sendContinueChatRequest(message, user, aiProvider, id, rev)
 
-        assertEquals(mockResponse, result)
-        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<RequestBody>()) }
+        assertEquals(ChatResult.Success("test chat", id, "2-rev"), result)
+        coVerify(exactly = 1) { chatApiService.sendChatRequest(any<okhttp3.RequestBody>()) }
     }
 }

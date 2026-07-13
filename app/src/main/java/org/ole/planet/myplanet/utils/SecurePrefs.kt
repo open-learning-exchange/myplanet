@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.os.Build
 import android.util.Base64
+import android.util.Log
 import androidx.core.content.edit
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -11,7 +13,9 @@ import com.google.crypto.tink.KeyTemplate
 import com.google.crypto.tink.aead.AeadConfig
 import com.google.crypto.tink.aead.PredefinedAeadParameters
 import com.google.crypto.tink.integration.android.AndroidKeysetManager
+import java.io.File
 import java.security.GeneralSecurityException
+import java.security.KeyStore
 
 object SecurePrefs {
     private const val ENCRYPTED_PREFS_FILE_NAME = "secure_store_v2"
@@ -69,40 +73,43 @@ object SecurePrefs {
                 EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
 
-            val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
-            if (plainPrefs.all.isNotEmpty()) {
-                encryptedPrefs.edit(commit = true) {
-                    plainPrefs.all.forEach { (key, value) ->
-                        when (value) {
-                            is String -> putString(key, value)
-                            is Boolean -> putBoolean(key, value)
-                            is Int -> putInt(key, value)
-                            is Long -> putLong(key, value)
-                            is Float -> putFloat(key, value)
-                            is Set<*> -> {
-                                @Suppress("UNCHECKED_CAST")
-                                putStringSet(key, value as Set<String>)
+            val plainPrefsFile = File(context.applicationInfo.dataDir, "shared_prefs/$PLAIN_PREFS_FILE_NAME.xml")
+            if (plainPrefsFile.exists()) {
+                val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
+                if (plainPrefs.all.isNotEmpty()) {
+                    encryptedPrefs.edit(commit = true) {
+                        plainPrefs.all.forEach { (key, value) ->
+                            when (value) {
+                                is String -> putString(key, value)
+                                is Boolean -> putBoolean(key, value)
+                                is Int -> putInt(key, value)
+                                is Long -> putLong(key, value)
+                                is Float -> putFloat(key, value)
+                                is Set<*> -> {
+                                    @Suppress("UNCHECKED_CAST")
+                                    putStringSet(key, value as Set<String>)
+                                }
                             }
                         }
                     }
-                }
-                plainPrefs.edit(commit = true) { clear() }
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
-                    context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                    plainPrefs.edit(commit = true) { clear() }
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                    }
                 }
             }
             encryptedPrefs
         } catch (e: Exception) {
-            android.util.Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
+            Log.w("SecurePrefs", "Failed to create EncryptedSharedPreferences, clearing and retrying", e)
             try {
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(ENCRYPTED_PREFS_FILE_NAME)
                 }
-                val keyStore = java.security.KeyStore.getInstance("AndroidKeyStore")
+                val keyStore = KeyStore.getInstance("AndroidKeyStore")
                 keyStore.load(null)
                 keyStore.deleteEntry(MasterKey.DEFAULT_MASTER_KEY_ALIAS)
             } catch (cleanupEx: Exception) {
-                android.util.Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
+                Log.w("SecurePrefs", "Cleanup failed", cleanupEx)
             }
 
             try {

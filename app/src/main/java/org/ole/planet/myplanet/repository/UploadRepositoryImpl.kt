@@ -1,31 +1,37 @@
 package org.ole.planet.myplanet.repository
 
 import android.util.Log
+import com.google.gson.JsonObject
 import io.realm.RealmObject
+import java.lang.reflect.Field
+import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.services.upload.UploadConfig
-import org.ole.planet.myplanet.services.upload.UploadedItem
-import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.utils.UrlUtils
+import retrofit2.Response
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, dispatcherProvider.io), UploadRepository {
+    private val apiInterface: ApiInterface,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
 
-    override suspend fun <T : RealmObject> queryPending(config: UploadConfig<T>): List<T> {
+    override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
         return withRealmAsync { realm ->
             val query = realm.where(config.modelClass.java)
             val filteredQuery = config.queryBuilder(query)
             val results = filteredQuery.findAll()
-            results.map { realm.copyFromRealm(it) }
+            realm.copyFromRealm(results)
         }
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadConfig<T>, succeeded: List<UploadedItem>): List<UploadedItem> {
-        val failedLocally = mutableListOf<UploadedItem>()
+    override suspend fun <T : RealmObject> markUploaded(config: UploadUpdateContract<T>, succeeded: List<UploadedItemResult>): List<UploadedItemResult> {
+        val failedLocally = mutableListOf<UploadedItemResult>()
         executeTransaction { realm ->
             val localIds = succeeded.map { it.localId }
             val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
@@ -64,25 +70,52 @@ class UploadRepositoryImpl @Inject constructor(
         return failedLocally
     }
 
+    override suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+        return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
+    }
+
+    override suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+        return apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
+    }
+
+    override suspend fun fetchExistingDoc(url: String): Response<JsonObject> {
+        return apiInterface.getJsonObject(UrlUtils.header, url)
+    }
+
+    private class FieldCacheEntry(val field: Field?)
+
+    private val fieldCache = ConcurrentHashMap<Pair<Class<*>, String>, FieldCacheEntry>()
+
     private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
         try {
-            var clazz: Class<*>? = obj.javaClass
-            var field: java.lang.reflect.Field? = null
+            val cacheKey = Pair(obj.javaClass, fieldName)
+            var entry = fieldCache[cacheKey]
 
-            while (clazz != null && field == null) {
-                try {
-                    field = clazz.getDeclaredField(fieldName)
-                } catch (e: NoSuchFieldException) {
-                    clazz = clazz.superclass
+            if (entry == null) {
+                var clazz: Class<*>? = obj.javaClass
+                var field: Field? = null
+
+                while (clazz != null && field == null) {
+                    try {
+                        field = clazz.getDeclaredField(fieldName)
+                    } catch (e: NoSuchFieldException) {
+                        clazz = clazz.superclass
+                    }
                 }
-            }
 
-            if (field != null) {
-                field.isAccessible = true
-                field.set(obj, value)
-            } else {
+                if (field != null) {
+                    field.isAccessible = true
+                } else {
+                    Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
+                }
+
+                entry = FieldCacheEntry(field)
+                fieldCache[cacheKey] = entry
+            } else if (entry.field == null) {
                 Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
             }
+
+            entry.field?.set(obj, value)
         } catch (e: Exception) {
             Log.w("UploadRepositoryImpl", "Failed to set field $fieldName: ${e.message}")
         }

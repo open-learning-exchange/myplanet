@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import android.content.SharedPreferences
+import com.google.gson.Gson
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
@@ -10,25 +12,50 @@ import io.realm.RealmQuery
 import io.realm.RealmResults
 import java.util.logging.Level
 import java.util.logging.Logger
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 class LifeRepositoryImplTest {
 
     private lateinit var databaseService: DatabaseService
+    private lateinit var sharedPrefManager: SharedPrefManager
+    private lateinit var mockSharedPreferences: SharedPreferences
+    private lateinit var mockEditor: SharedPreferences.Editor
+    private lateinit var gson: Gson
     private lateinit var repository: LifeRepositoryImpl
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     @Before
     fun setUp() {
         Logger.getLogger("io.mockk").level = Level.OFF
         databaseService = mockk(relaxed = true)
-        repository = LifeRepositoryImpl(databaseService, kotlinx.coroutines.test.UnconfinedTestDispatcher())
+        sharedPrefManager = mockk(relaxed = true)
+        mockSharedPreferences = mockk(relaxed = true)
+        mockEditor = mockk(relaxed = true)
+        every { sharedPrefManager.rawPreferences } returns mockSharedPreferences
+        every { mockSharedPreferences.edit() } returns mockEditor
+        every { mockEditor.putString(any(), any()) } returns mockEditor
+        every { mockEditor.apply() } returns Unit
+
+        gson = Gson()
+        repository = LifeRepositoryImpl(
+            databaseService,
+            testDispatcher,
+            sharedPrefManager,
+            gson,
+            CoroutineScope(testDispatcher)
+        )
     }
+
 
     @Test
     fun getMyLifeByUserId_returnsSortedItems() = runTest {
@@ -272,5 +299,66 @@ class LifeRepositoryImplTest {
 
         coVerify(exactly = 1) { databaseService.executeTransactionAsync(any<Function1<Realm, Unit>>()) }
         io.mockk.verify(exactly = 0) { mockRealm.insertOrUpdate(any<List<RealmMyLife>>()) }
+    }
+
+    @Test
+    fun getMyLifeForDashboard_validJson() = runTest {
+        val userId = "123"
+        val expectedItems = listOf(
+            CachedMyLifeItem("img1", "Title 1", true, 1),
+            CachedMyLifeItem("img2", "Title 2", false, 2)
+        )
+        val json = Gson().toJson(expectedItems)
+
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns json
+
+        val mockRealm = mockk<Realm>(relaxed = true)
+        val mockQuery = mockk<RealmQuery<RealmMyLife>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmMyLife>>(relaxed = true)
+        every { mockRealm.where(RealmMyLife::class.java) } returns mockQuery
+        every { mockQuery.equalTo("userId", userId) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockRealm.copyFromRealm(mockResults) } returns emptyList()
+
+        val operationSlot = io.mockk.slot<(Realm) -> List<RealmMyLife>>()
+        coEvery { databaseService.withRealmAsync<List<RealmMyLife>>(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
+        }
+
+        val result = repository.getMyLifeForDashboard(userId, emptyList())
+
+        // Returns only visible item
+        assertEquals(1, result.size)
+        assertEquals("img1", result[0].imageId)
+        assertEquals("Title 1", result[0].title)
+        assertEquals(true, result[0].isVisible)
+        assertEquals(1, result[0].weight)
+    }
+
+    @Test
+    fun getMyLifeForDashboard_invalidJson() = runTest {
+        val userId = "789"
+        every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
+
+        val item1 = RealmMyLife().apply { weight = 2; this.userId = userId; this.isVisible = true }
+        val item2 = RealmMyLife().apply { weight = 1; this.userId = userId; this.isVisible = true }
+        val unsortedList = mutableListOf(item1, item2)
+
+        val mockRealm = mockk<Realm>(relaxed = true)
+        val mockQuery = mockk<RealmQuery<RealmMyLife>>(relaxed = true)
+        val mockResults = mockk<RealmResults<RealmMyLife>>(relaxed = true)
+
+        every { mockRealm.where(RealmMyLife::class.java) } returns mockQuery
+        every { mockQuery.equalTo("userId", userId) } returns mockQuery
+        every { mockQuery.findAll() } returns mockResults
+        every { mockRealm.copyFromRealm(mockResults) } returns unsortedList
+
+        val operationSlot = io.mockk.slot<(Realm) -> List<RealmMyLife>>()
+        coEvery { databaseService.withRealmAsync<List<RealmMyLife>>(capture(operationSlot)) } answers {
+            operationSlot.captured.invoke(mockRealm)
+        }
+
+        val result = repository.getMyLifeForDashboard(userId, emptyList())
+        assertEquals(2, result.size)
     }
 }

@@ -1,19 +1,26 @@
 package org.ole.planet.myplanet.ui.enterprises
 
+import android.app.DatePickerDialog
 import android.content.DialogInterface
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.DatePicker
+import android.widget.ImageView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import dagger.hilt.android.AndroidEntryPoint
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -22,23 +29,31 @@ import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.Transaction
+import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 
+@AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
+    private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
+    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
     private var transactions: List<Transaction> = emptyList()
     private var isAsc = false
-    private var transactionsJob: Job? = null
     private var currentStartDate: Long? = null
     private var currentEndDate: Long? = null
+    private lateinit var pickImageLauncher: ActivityResultLauncher<String>
+    private var selectedImageUri: Uri? = null
+    private var dialogImagePreview: ImageView? = null
+    private val fromCommunity: Boolean
+        get() = arguments?.getBoolean("fromCommunity", false) == true
 
     var listener =
-        android.app.DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
+        DatePickerDialog.OnDateSetListener { _: DatePicker?, year: Int, monthOfYear: Int, dayOfMonth: Int ->
             date = Calendar.getInstance()
             date?.set(Calendar.YEAR, year)
             date?.set(Calendar.MONTH, monthOfYear)
@@ -50,6 +65,15 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentFinanceBinding.inflate(inflater, container, false)
+        pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            if (uri != null) {
+                selectedImageUri = uri
+                dialogImagePreview?.let { preview ->
+                    preview.visibility = View.VISIBLE
+                    Glide.with(this).load(uri).into(preview)
+                }
+            }
+        }
         date = Calendar.getInstance()
         updateToDateState(false)
         binding.tvFromDateCalendar.setOnClickListener {
@@ -99,7 +123,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
         }
-        val datePickerDialog = android.app.DatePickerDialog(
+        val datePickerDialog = DatePickerDialog(
             requireContext(),
             { _, year, monthOfYear, dayOfMonth ->
                 val selectedDate = Calendar.getInstance().apply {
@@ -143,7 +167,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
 
     private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = SimpleDateFormat(pattern, Locale.getDefault())
+        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
         return dateFormat.format(this.time)
     }
 
@@ -156,8 +180,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val date = dateFormat.parse(dateString)
+            val date = dateFormatter.parse(dateString)
             if (date != null) {
                 Calendar.getInstance().apply {
                     time = date
@@ -182,10 +205,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-
-            val start = dateFormat.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
-            val end = dateFormat.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+            val start = dateFormatter.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
+            val end = dateFormatter.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
             currentStartDate = start
             currentEndDate = end
             observeTransactions()
@@ -200,15 +221,27 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        if (user?.isManager() == true || user?.isLeader() == true) {
-            binding.addTransaction.visibility = View.VISIBLE
-        } else {
-            binding.addTransaction.visibility = View.GONE
-        }
         binding.addTransaction.setOnClickListener { addTransaction() }
         financeAdapter = EnterprisesFinancesAdapter(requireActivity())
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = financeAdapter
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            launch {
+                isMemberFlow.collectLatest { isMember ->
+                    val canManage = if (fromCommunity) user?.isManager() == true else isMember
+                    binding.addTransaction.visibility = if (canManage) View.VISIBLE else View.GONE
+                }
+            }
+            launch {
+                viewModel.transactions.collectLatest { results ->
+                    transactions = results
+                    updatedFinanceList(results)
+                    showNoData(binding.tvNodata, transactions.size, "finances")
+                }
+            }
+        }
+
         observeTransactions()
     }
 
@@ -253,6 +286,9 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         Utilities.toast(activity, getString(R.string.amount_is_required))
                         return@setPositiveButton
                     }
+                    val imageUri = selectedImageUri
+                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                    val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                     viewLifecycleOwner.lifecycleScope.launch {
                         val capturedDate = date ?: return@launch
                         val result = teamsRepository.createTransaction(
@@ -263,6 +299,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                             date = capturedDate.timeInMillis,
                             parentCode = user?.parentCode,
                             planetCode = user?.planetCode,
+                            imageName = imageName,
+                            imageData = imageData,
                         )
                         if (result.isSuccess) {
                             Utilities.toast(activity, getString(R.string.transaction_added))
@@ -278,9 +316,14 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun setUpAlertUi(): View {
         addTransactionBinding = AddTransactionBinding.inflate(LayoutInflater.from(activity))
+        selectedImageUri = null
+        dialogImagePreview = addTransactionBinding.imagePreview
+        addTransactionBinding.btnAddImage.setOnClickListener {
+            pickImageLauncher.launch("image/*")
+        }
         addTransactionBinding.tvSelectDate.setOnClickListener {
             val d = date ?: Calendar.getInstance()
-            android.app.DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
+            DatePickerDialog(requireActivity(), listener, d[Calendar.YEAR], d[Calendar.MONTH], d[Calendar.DAY_OF_MONTH]).show()
         }
         return addTransactionBinding.root
     }
@@ -307,8 +350,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     }
 
     override fun onDestroyView() {
-        transactionsJob?.cancel()
-        transactionsJob = null
         transactions = emptyList()
         _binding = null
         super.onDestroyView()
@@ -319,18 +360,11 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         startDate: Long? = currentStartDate,
         endDate: Long? = currentEndDate,
     ) {
-        transactionsJob?.cancel()
-        transactionsJob = viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.getTeamTransactionsWithBalance(
-                teamId = teamId,
-                startDate = startDate,
-                endDate = endDate,
-                sortAscending = sortAscending,
-            ).collectLatest { results ->
-                transactions = results
-                updatedFinanceList(results)
-                showNoData(binding.tvNodata, transactions.size, "finances")
-            }
-        }
+        viewModel.getTeamTransactions(
+            teamId = teamId,
+            sortAscending = sortAscending,
+            startDate = startDate,
+            endDate = endDate
+        )
     }
 }

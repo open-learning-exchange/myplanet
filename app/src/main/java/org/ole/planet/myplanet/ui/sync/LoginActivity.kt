@@ -7,8 +7,6 @@ import android.graphics.drawable.AnimationDrawable
 import android.os.Build
 import android.os.Build.VERSION_CODES.TIRAMISU
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.ContextThemeWrapper
 import android.view.KeyEvent
 import android.view.LayoutInflater
@@ -19,18 +17,22 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
-import com.google.android.material.snackbar.Snackbar
 import androidx.core.content.ContextCompat
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
 import com.bumptech.glide.Glide
+import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
+import java.util.ArrayList
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -41,7 +43,6 @@ import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
-import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
@@ -51,6 +52,7 @@ import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UsersAdapter
 import org.ole.planet.myplanet.utils.AuthUtils
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -58,32 +60,56 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.textChanges
 
+@OptIn(FlowPreview::class)
 @AndroidEntryPoint
 class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     @Inject
-    lateinit var teamsRepository: TeamsRepository
+    override lateinit var dispatcherProvider: DispatcherProvider
     @Inject
     lateinit var loginSyncManager: LoginSyncManager
     @Inject
-    lateinit var sharedPrefManager: SharedPrefManager
+    override lateinit var sharedPrefManager: SharedPrefManager
 
     private lateinit var binding: ActivityLoginBinding
-    private lateinit var nameWatcher2: TextWatcher
-    private lateinit var passwordWatcher: TextWatcher
     private var guest = false
     var users: List<RealmUser>? = null
     private var mAdapter: UsersAdapter? = null
     private var exitSnackbar: Snackbar? = null
-    private var teamList = java.util.ArrayList<String?>()
+    private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
     private var cachedTeams: List<RealmMyTeam>? = null
+    private val loginViewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityLoginBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)
+
+        if (mAdapter == null) {
+            mAdapter = UsersAdapter(this@LoginActivity)
+            binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+            binding.recyclerView.adapter = mAdapter
+        }
+
+        collectLatestWhenStarted(loginViewModel.savedUsers) { savedUsers ->
+            mAdapter?.submitList(savedUsers.toMutableList())
+            val hasUsers = savedUsers.isNotEmpty()
+            binding.tvWelcome.setText(if (hasUsers) R.string.welcome_back else R.string.welcome_new)
+            binding.tvSubtitle.setText(if (hasUsers) R.string.sign_in_to_continue else R.string.sign_in_to_get_started)
+        }
+
+        collectLatestWhenStarted(loginViewModel.users) { realmUsers ->
+            users = realmUsers
+        }
+
+        collectLatestWhenStarted(loginViewModel.teams) { teams ->
+            cachedTeams = teams
+            setupTeamDropdown(teams)
+        }
 
         bindViews()
         setupAvailableSpace()
@@ -119,16 +145,18 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         btnLang = binding.btnLang
         inputName = binding.inputName
         inputPassword = binding.inputPassword
+        dotSync = binding.dotSync
+        txtSyncState = binding.txtSyncState
     }
 
     private fun setupAvailableSpace() {
         lifecycleScope.launch {
-            val storageText = withContext(Dispatchers.IO) {
+            val storageText = withContext(dispatcherProvider.io) {
                 FileUtils.availableOverTotalMemoryFormattedString(this@LoginActivity)
             }
             binding.tvAvailableSpace.text = buildString {
                 append(getString(R.string.available_space_colon))
-                append(" ")
+                append("\n")
                 append(storageText)
             }
         }
@@ -162,8 +190,10 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             binding.openCommunity.setOnClickListener {
                 HomeCommunityDialogFragment().show(supportFragmentManager, "")
             }
+            syncIcon.visibility = View.VISIBLE
         } else {
             binding.openCommunity.visibility = View.GONE
+            syncIcon.visibility = View.GONE
         }
         binding.btnFeedback.setOnClickListener {
             if (getUrl() != "/db") {
@@ -182,10 +212,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     private fun handleAutoLogin() {
         guest = intent.getBooleanExtra("guest", false)
 
-        val encryptedUsername = sharedPrefManager.getNewLoginUsername()
-        val username = if (encryptedUsername != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedUsername) else null
-        val encryptedPassword = sharedPrefManager.getNewLoginPassword()
-        val password = if (encryptedPassword != null) org.ole.planet.myplanet.utils.SecurePrefs.decryptString(this, encryptedPassword) else null
+        val username = sharedPrefManager.getNewLoginUsername()
+        val password = sharedPrefManager.getNewLoginPassword()
 
         if (guest && username != null) {
             resetGuestAsMember(username)
@@ -340,47 +368,40 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         setUpLanguageButton()
         if (NetworkUtils.isNetworkConnected) {
             lifecycleScope.launch {
-                val success = withContext(Dispatchers.IO) {
+                withContext(dispatcherProvider.io) {
                     communityRepository.syncCommunityDocs()
                 }
-                val message = if (success) getString(R.string.server_sync_successfully) else getString(R.string.server_sync_has_failed)
-                toast(this@LoginActivity, message)
             }
         }
-        nameWatcher2 = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-
-            override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-                val lowercaseText = s.toString().lowercase()
-                if (s.toString() != lowercaseText) {
+        binding.inputName.textChanges()
+            .onEach { s ->
+                val input = s?.toString() ?: ""
+                val lowercaseText = input.lowercase()
+                if (input != lowercaseText) {
                     binding.inputName.setText(lowercaseText)
                     binding.inputName.setSelection(lowercaseText.length)
                 }
             }
-
-            override fun afterTextChanged(s: Editable) {}
-        }
-        binding.inputName.addTextChangedListener(nameWatcher2)
+            .debounce(300)
+            .onEach { s ->
+                val input = s?.toString() ?: ""
+                if (input.isNotEmpty()) {
+                    binding.inputName.error = validateUsernameInput(input)
+                } else {
+                    binding.inputName.error = null
+                }
+                updateSignInButtonState()
+            }
+            .launchIn(lifecycleScope)
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
     }
 
     private fun setupFormValidation() {
-        binding.inputName.doAfterTextChanged { text ->
-            val input = text?.toString() ?: ""
-            if (input.isNotEmpty()) {
-                binding.inputName.error = validateUsernameInput(input)
-            } else {
-                binding.inputName.error = null
-            }
-            updateSignInButtonState()
-        }
-
-        passwordWatcher = object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
+        binding.inputPassword.textChanges()
+            .debounce(300)
+            .onEach { s ->
                 val input = s?.toString() ?: ""
                 if (input.isNotEmpty()) {
                     binding.inputPassword.error = validatePasswordInput(input)
@@ -389,8 +410,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
                 updateSignInButtonState()
             }
-        }
-        binding.inputPassword.addTextChangedListener(passwordWatcher)
+            .launchIn(lifecycleScope)
     }
 
     private fun validateUsernameInput(username: String): String? {
@@ -416,15 +436,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun loadTeamsAsync() {
-        if (cachedTeams != null) {
-            setupTeamDropdown(cachedTeams)
-            return
-        }
-        lifecycleScope.launch {
-            val teams = teamsRepository.getAllActiveTeams()
-            cachedTeams = teams
-            setupTeamDropdown(teams)
-        }
+        loginViewModel.loadTeamsAsync()
     }
 
     private fun setupTeamDropdown(teams: List<RealmMyTeam>?) {
@@ -542,25 +554,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     fun getTeamMembers() {
-        lifecycleScope.launch {
-            selectedTeamId = prefData.getSelectedTeamId().toString()
-            if (selectedTeamId?.isNotEmpty() == true) {
-                users = teamsRepository.getJoinedMembersAndSave(selectedTeamId!!)
-            }
-            setupAndPopulateRecyclerView()
-        }
+        selectedTeamId = prefData.getSelectedTeamId().toString()
+        val teamId = selectedTeamId
+        loginViewModel.getTeamMembers(teamId)
+        setupAndPopulateRecyclerView()
     }
 
-    private suspend fun setupAndPopulateRecyclerView() {
-        if (mAdapter == null) {
-            mAdapter = UsersAdapter(this@LoginActivity)
-            binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
-            binding.recyclerView.adapter = mAdapter
-        }
-
-        val savedUsers = withContext(Dispatchers.IO) { prefData.getSavedUsers().toMutableList() }
-        mAdapter?.submitList(savedUsers)
-
+    private fun setupAndPopulateRecyclerView() {
         binding.recyclerView.isNestedScrollingEnabled = true
         binding.recyclerView.scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
         binding.recyclerView.isVerticalScrollBarEnabled = true
@@ -577,11 +577,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         } else {
             if (user.source == "guest"){
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(user.name ?: "", settings)
+                    val model = userRepository.createGuestUser(user.name ?: "")
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                     } else {
-                        saveUserInfoPref(settings, "", model)
+                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                     }
                 }
@@ -601,8 +601,8 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
 
     private fun submitForm(name: String?, password: String?) {
-        lifecycleScope.launch(Dispatchers.Main) {
-            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password)
+        lifecycleScope.launch {
+            AuthUtils.login(this@LoginActivity, loginSyncManager, name, password, dispatcherProvider.io)
         }
     }
 
@@ -619,12 +619,12 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             positiveButton.setOnClickListener {
                 positiveButton.isEnabled = false
                 lifecycleScope.launch {
-                    val model = userRepository.createGuestUser(username, settings)
+                    val model = userRepository.createGuestUser(username)
                     if (model == null) {
                         toast(this@LoginActivity, getString(R.string.unable_to_login))
                         positiveButton.isEnabled = true
                     } else {
-                        saveUserInfoPref(settings, "", model)
+                        profileDbHandler.saveUserInfoPref("", model)
                         onLogin()
                         dialog.dismiss()
                     }
@@ -650,49 +650,17 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     fun saveUsers(name: String?, password: String?, source: String) {
         lifecycleScope.launch {
-            val encryptedPassword = if (password?.isNotEmpty() == true) {
-                SecurePrefs.encryptString(this@LoginActivity, password)
-            } else {
-                password
-            }
-            val existingUsers: MutableList<User> = ArrayList(prefData.getSavedUsers())
-            if (source == "guest") {
-                val newUser = User("", name, encryptedPassword, "", "guest")
-                var newUserIndex = -1
-                for (i in existingUsers.indices) {
-                    if (existingUsers[i].name == newUser.name?.trim { it <= ' ' }) {
-                        newUserIndex = i
-                        break
-                    }
-                }
-                if (newUserIndex != -1) {
-                    existingUsers[newUserIndex] = newUser
+            val encryptedPassword = withContext(dispatcherProvider.io) {
+                if (password?.isNotEmpty() == true) {
+                    SecurePrefs.encryptString(this@LoginActivity, password)
                 } else {
-                    existingUsers.add(newUser)
+                    password
                 }
-                prefData.setSavedUsers(existingUsers)
-            } else if (source == "member") {
-                val userModel = profileDbHandler.getUserModel()
-                var userProfile = userModel?.userImage
-                val userName: String? = userModel?.name
-                if (userProfile == null) {
-                    userProfile = ""
-                }
-                val newUser = User(userName, name, encryptedPassword, userProfile, "member")
-                var newUserIndex = -1
-                for (i in existingUsers.indices) {
-                    if (existingUsers[i].fullName == newUser.fullName?.trim { it <= ' ' }) {
-                        newUserIndex = i
-                        break
-                    }
-                }
-                if (newUserIndex != -1) {
-                    existingUsers[newUserIndex] = newUser
-                } else {
-                    existingUsers.add(newUser)
-                }
-                prefData.setSavedUsers(existingUsers)
             }
+            val userModel = profileDbHandler.getUserModel()
+            val userProfile = userModel?.userImage ?: ""
+            val userName = userModel?.name
+            loginViewModel.saveUsers(name, encryptedPassword, source, userProfile, userName)
         }
     }
 
@@ -711,28 +679,11 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     fun invalidateTeamsCacheAndReload() {
         cachedTeams = null
-        loadTeamsAsync()
+        loginViewModel.loadTeamsAsync(force = true)
     }
 
     private fun resetGuestAsMember(username: String?) {
-        val existingUsers = prefData.getSavedUsers().toMutableList()
-        var newUserExists = false
-        for ((_, name) in existingUsers) {
-            if (name == username) {
-                newUserExists = true
-                break
-            }
-        }
-        if (newUserExists) {
-            val iterator = existingUsers.iterator()
-            while (iterator.hasNext()) {
-                val (_, name) = iterator.next()
-                if (name == username) {
-                    iterator.remove()
-                }
-            }
-            prefData.setSavedUsers(existingUsers)
-        }
+        loginViewModel.resetGuestAsMember(username)
     }
 
     override fun onResume() {
@@ -742,11 +693,5 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        if (this::nameWatcher2.isInitialized) {
-            binding.inputName.removeTextChangedListener(nameWatcher2)
-        }
-        if (this::passwordWatcher.isInitialized) {
-            binding.inputPassword.removeTextChangedListener(passwordWatcher)
-        }
     }
 }

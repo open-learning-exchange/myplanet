@@ -35,6 +35,7 @@ object Constants {
     const val KEY_NOTIFICATION_SHOWN = "notification_shown"
     const val SELECTED_LANGUAGE = "app_language"
     const val ACTION_RETRY_EVENT = "ACTION_RETRY_EVENT"
+    const val NETWORK_TRAFFIC_TAG = 0x4F_4C_45 // "OLE"
 
     init {
         initClasses()
@@ -68,13 +69,11 @@ object Constants {
         classList["notifications"] = RealmNotification::class.java
     }
 
-    @JvmStatic
     fun showBetaFeature(s: String, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean("beta_function", false)
     }
 
-    @JvmStatic
     fun isBetaWifiFeatureEnabled(context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         val betaEnabled = preferences.getBoolean("beta_function", false)
@@ -82,15 +81,14 @@ object Constants {
         return betaEnabled && wifiSwitchEnabled
     }
 
-    @JvmStatic
     fun autoSynFeature(s: String?, context: Context): Boolean {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         return preferences.getBoolean(s, false)
     }
 
     class ShelfData(
-        @JvmField var key: String,
-        @JvmField var type: String,
-        @JvmField var categoryKey: String
+        var key: String,
+        var type: String,
+        var categoryKey: String
     )
 }

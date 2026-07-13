@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import androidx.core.content.res.ResourcesCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.github.mikephil.charting.components.Description
 import com.github.mikephil.charting.data.BarData
 import com.github.mikephil.charting.data.BarDataSet
 import com.github.mikephil.charting.data.BarEntry
@@ -19,8 +18,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
-import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class ActivitiesFragment : Fragment() {
@@ -29,7 +30,8 @@ class ActivitiesFragment : Fragment() {
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
-    lateinit var userRepository: UserRepository
+    lateinit var activitiesRepository: ActivitiesRepository
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentActivitiesBinding.inflate(inflater, container, false)
         return binding.root
@@ -43,30 +45,53 @@ class ActivitiesFragment : Fragment() {
         val startMillis = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userModel = userSessionManager.getUserModel()
-            val userId = userModel?.id ?: return@launch
-            val monthlyCounts = userRepository.getMonthlyLoginCounts(userId, startMillis, endMillis)
-            renderChart(monthlyCounts, daynightTextColor)
+            val userName = userSessionManager.getUserModel()?.name ?: return@launch
+            val loginsFlow = activitiesRepository.getOfflineLogins(userName)
+            collectLatestWhenStarted(loginsFlow) { logins ->
+                val monthlyCounts = computeMonthlyCounts(logins, startMillis, endMillis)
+                renderChart(monthlyCounts, daynightTextColor)
+            }
         }
     }
 
+    private fun computeMonthlyCounts(
+        logins: List<RealmOfflineActivity>,
+        startMillis: Long,
+        endMillis: Long
+    ): Map<Int, Int> {
+        val calendar = Calendar.getInstance()
+        return logins
+            .mapNotNull { it.loginTime }
+            .filter { it in startMillis..endMillis }
+            .map { loginTime ->
+                calendar.timeInMillis = loginTime
+                calendar.get(Calendar.MONTH)
+            }
+            .groupingBy { it }
+            .eachCount()
+            .toSortedMap()
+    }
+
     private fun renderChart(monthlyCounts: Map<Int, Int>, textColor: Int) {
+        if (monthlyCounts.isEmpty()) {
+            binding.chart.visibility = View.GONE
+            binding.emptyState.visibility = View.VISIBLE
+            return
+        }
+
+        binding.chart.visibility = View.VISIBLE
+        binding.emptyState.visibility = View.GONE
+
         val entries = monthlyCounts.entries
-            .sortedBy { it.key }
             .map { (month, count) -> BarEntry(month.toFloat(), count.toFloat()) }
 
         val label = getString(R.string.chart_label)
         val dataSet = BarDataSet(entries, label)
         val barData = BarData(dataSet)
 
-        val description = Description().apply {
-            text = getString(R.string.chart_description)
-            setTextColor(textColor)
-        }
-
         binding.chart.apply {
+            description.isEnabled = false
             data = barData
-            this.description = description
             xAxis.valueFormatter = object : ValueFormatter() {
                 override fun getFormattedValue(value: Float): String {
                     return getMonth(value.toInt())
@@ -76,7 +101,6 @@ class ActivitiesFragment : Fragment() {
             axisLeft.textColor = textColor
             axisRight.textColor = textColor
             legend.textColor = textColor
-            this.description.setPosition(850f, 830f)
             this.data.setValueTextColor(textColor)
             invalidate()
         }

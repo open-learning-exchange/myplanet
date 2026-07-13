@@ -9,7 +9,6 @@ import java.io.InputStream
 import java.io.OutputStream
 
 object MapTileUtils {
-    @JvmStatic
     fun copyAssets(context: Context) {
         val tiles = arrayOf("dhulikhel.mbtiles", "somalia.mbtiles")
         val assetManager = context.assets

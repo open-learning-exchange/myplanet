@@ -5,17 +5,19 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RealmRepository
-import org.ole.planet.myplanet.services.upload.UploadError
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class RetryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val timeProvider: TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher), RetryRepository {
 
     override suspend fun enqueue(
         uploadType: String,
-        error: UploadError,
+        failure: RetryFailure,
         payload: String,
         endpoint: String,
         httpMethod: String,
@@ -24,8 +26,8 @@ class RetryRepositoryImpl @Inject constructor(
         userId: String?
     ) {
         executeTransaction { realm ->
-            RealmRetryOperation.createFromUploadError(
-                realm, uploadType, error, payload, endpoint,
+            RealmRetryOperation.createFromRetryFailure(
+                realm, uploadType, failure, payload, endpoint,
                 httpMethod, dbId, modelClassName, userId
             )
         }
@@ -33,17 +35,17 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun updateAttempt(
         operationId: String,
-        error: UploadError
+        failure: RetryFailure
     ) {
         executeTransaction { realm ->
             realm.where(RealmRetryOperation::class.java)
                 .equalTo("id", operationId)
                 .findFirst()?.let { op ->
                     op.attemptCount += 1
-                    op.lastAttemptTime = System.currentTimeMillis()
+                    op.lastAttemptTime = timeProvider.now()
                     op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
-                    op.errorMessage = error.message
-                    op.httpCode = error.httpCode
+                    op.errorMessage = failure.message
+                    op.httpCode = failure.httpCode
 
                     if (op.attemptCount >= op.maxAttempts) {
                         op.status = RealmRetryOperation.STATUS_ABANDONED
@@ -68,7 +70,7 @@ class RetryRepositoryImpl @Inject constructor(
                 .equalTo("id", operationId)
                 .findFirst()?.let { op ->
                     op.status = RealmRetryOperation.STATUS_COMPLETED
-                    op.lastAttemptTime = System.currentTimeMillis()
+                    op.lastAttemptTime = timeProvider.now()
                 }
         }
     }
@@ -79,7 +81,7 @@ class RetryRepositoryImpl @Inject constructor(
                 .equalTo("id", operationId)
                 .findFirst()?.let { op ->
                     op.attemptCount += 1
-                    op.lastAttemptTime = System.currentTimeMillis()
+                    op.lastAttemptTime = timeProvider.now()
                     op.errorMessage = errorMessage
                     op.httpCode = httpCode
 
@@ -97,11 +99,11 @@ class RetryRepositoryImpl @Inject constructor(
         return withRealmAsync { realm ->
             val results = realm.where(RealmRetryOperation::class.java)
                 .equalTo("status", RealmRetryOperation.STATUS_PENDING)
-                .lessThanOrEqualTo("nextRetryTime", System.currentTimeMillis())
+                .lessThanOrEqualTo("nextRetryTime", timeProvider.now())
+                .rawPredicate("attemptCount < maxAttempts")
                 .findAll()
 
-            results.filter { it.attemptCount < it.maxAttempts }
-                .let { realm.copyFromRealm(it) }
+            realm.copyFromRealm(results)
         }
     }
 
@@ -117,7 +119,7 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun cleanup() {
         executeTransaction { realm ->
-            val cutoffTime = System.currentTimeMillis() - 24 * 60 * 60 * 1000L
+            val cutoffTime = timeProvider.now() - 24 * 60 * 60 * 1000L
             realm.where(RealmRetryOperation::class.java)
                 .equalTo("status", RealmRetryOperation.STATUS_COMPLETED)
                 .lessThan("lastAttemptTime", cutoffTime)
@@ -132,7 +134,7 @@ class RetryRepositoryImpl @Inject constructor(
                 .equalTo("status", RealmRetryOperation.STATUS_PENDING)
                 .findAll()
                 .forEach { op ->
-                    op.nextRetryTime = System.currentTimeMillis()
+                    op.nextRetryTime = timeProvider.now()
                 }
         }
     }
@@ -167,7 +169,7 @@ class RetryRepositoryImpl @Inject constructor(
                 .findAll()
                 .forEach { op ->
                     op.status = RealmRetryOperation.STATUS_PENDING
-                    op.nextRetryTime = System.currentTimeMillis() + 60_000 // Retry in 1 minute
+                    op.nextRetryTime = timeProvider.now() + 60_000 // Retry in 1 minute
                 }
         }
     }

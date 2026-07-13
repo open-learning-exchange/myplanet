@@ -4,6 +4,7 @@ import android.text.TextUtils
 import com.google.gson.JsonObject
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -16,6 +17,7 @@ open class RealmTeamTask : RealmObject() {
     var description: String? = null
     var link: String? = null
     var sync: String? = null
+    @Index
     var teamId: String? = null
     var isUpdated = false
     var assignee: String? = null
@@ -30,7 +32,6 @@ open class RealmTeamTask : RealmObject() {
     }
 
     companion object {
-        @JvmStatic
         fun insert(mRealm: Realm, obj: JsonObject?) {
             var task = mRealm.where(RealmTeamTask::class.java).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst()
             if (task == null) {
@@ -55,7 +56,6 @@ open class RealmTeamTask : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun serialize(task: RealmTeamTask, user: RealmUser?): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(task._id)) {

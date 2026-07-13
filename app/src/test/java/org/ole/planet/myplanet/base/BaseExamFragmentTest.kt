@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.base
 
-import android.text.Editable
+import android.content.Context
 import android.text.TextWatcher
 import android.view.View
 import android.widget.EditText
@@ -14,11 +14,9 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.editor.MarkwonEditor
 import io.noties.markwon.editor.MarkwonEditorTextWatcher
 import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmExamQuestion
 
 class BaseExamFragmentTest {
 
@@ -39,7 +37,7 @@ class BaseExamFragmentTest {
         val editor = mockk<MarkwonEditor>(relaxed = true)
         val markwonEditorTextWatcher = mockk<MarkwonEditorTextWatcher>(relaxed = true)
 
-        every { Markwon.create(any<android.content.Context>()) } returns markwon
+        every { Markwon.create(any<Context>()) } returns markwon
         every { MarkwonEditor.create(markwon) } returns editor
         every { MarkwonEditorTextWatcher.withProcess(editor) } returns markwonEditorTextWatcher
 

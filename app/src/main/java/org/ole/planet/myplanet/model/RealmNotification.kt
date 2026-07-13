@@ -1,8 +1,7 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.JsonObject
-import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
@@ -10,10 +9,12 @@ import java.util.UUID
 open class RealmNotification : RealmObject() {
     @PrimaryKey
     var id: String = UUID.randomUUID().toString()
+    @Index
     var userId: String = ""
     var message: String = ""
     var isRead: Boolean = false
     var createdAt: Date = Date()
+    @Index
     var type: String = ""
     var relatedId: String? = null
     var title: String? = null

@@ -7,12 +7,8 @@ import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
-import io.mockk.spyk
 import io.mockk.unmockkStatic
 import io.mockk.verify
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -27,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserSessionManagerTest {
@@ -54,7 +51,8 @@ class UserSessionManagerTest {
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
-            dispatcherProvider = dispatcherProvider
+            dispatcherProvider = dispatcherProvider,
+            timeProvider = TestTimeProvider()
         )
     }
 
@@ -78,7 +76,8 @@ class UserSessionManagerTest {
             applicationScope = testScope,
             userRepository = userRepository,
             activitiesRepository = activitiesRepository,
-            dispatcherProvider = dispatcherProvider
+            dispatcherProvider = dispatcherProvider,
+            timeProvider = TestTimeProvider()
         )
     }
 

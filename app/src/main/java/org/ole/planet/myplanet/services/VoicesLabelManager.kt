@@ -2,24 +2,27 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.view.View
+import android.widget.PopupMenu
+import androidx.appcompat.view.ContextThemeWrapper
 import fisk.chipcloud.ChipCloud
 import io.realm.RealmList
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 class VoicesLabelManager(
     private val context: Context,
-    private val voicesRepository: VoicesRepository,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val dispatcherProvider: DispatcherProvider,
+    private val addLabelFn: suspend (String, String) -> Unit,
+    private val removeLabelFn: suspend (String, String) -> Unit
 ) {
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: RealmNews?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
@@ -32,8 +35,8 @@ class VoicesLabelManager(
             val usedLabels = voice?.labels?.toSet() ?: emptySet()
             val availableLabels = Constants.LABELS.filterValues { it !in usedLabels }
 
-            val wrapper = androidx.appcompat.view.ContextThemeWrapper(context, R.style.CustomPopupMenu)
-            val menu = android.widget.PopupMenu(wrapper, binding.btnAddLabel)
+            val wrapper = ContextThemeWrapper(context, R.style.CustomPopupMenu)
+            val menu = PopupMenu(wrapper, binding.btnAddLabel)
             availableLabels.keys.forEach { labelName ->
                 menu.menu.add(labelName)
             }
@@ -43,8 +46,8 @@ class VoicesLabelManager(
                 if (selectedLabel != null && voiceId != null && voice.labels?.contains(selectedLabel) != true) {
                     scope.launch {
                         try {
-                            voicesRepository.addLabel(voiceId, selectedLabel)
-                            withContext(Dispatchers.Main) {
+                            addLabelFn(voiceId, selectedLabel)
+                            withContext(dispatcherProvider.main) {
                                 if (voice.labels == null) {
                                     voice.labels = RealmList()
                                 }
@@ -85,8 +88,8 @@ class VoicesLabelManager(
                     if (selectedLabel != null && voiceId != null) {
                         scope.launch {
                             try {
-                                voicesRepository.removeLabel(voiceId, selectedLabel)
-                                withContext(Dispatchers.Main) {
+                                removeLabelFn(voiceId, selectedLabel)
+                                withContext(dispatcherProvider.main) {
                                     voice.labels?.remove(selectedLabel)
                                     showChips(binding, voice, canManageLabels)
                                 }

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.exam
 import android.app.DatePickerDialog
 import android.content.DialogInterface
 import android.os.Bundle
+import android.os.SystemClock
 import android.text.TextUtils
 import android.util.Log
 import android.view.LayoutInflater
@@ -19,16 +20,15 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserSurveyProfile
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -119,14 +119,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     override fun onClick(view: View) {
         when (view.id) {
             R.id.btn_cancel -> {
-                syncStartTime = System.currentTimeMillis()
+                syncStartTime = SystemClock.elapsedRealtime()
                 Log.d("UserInformationFragment", "Cancel button clicked - Mini survey sync timer started at: $syncStartTime")
                 if (isAdded) {
                     dialog?.dismiss()
                 }
             }
             R.id.btn_submit -> {
-                syncStartTime = System.currentTimeMillis()
+                syncStartTime = SystemClock.elapsedRealtime()
                 Log.d("UserInformationFragment", "Submit button clicked - Mini survey sync timer started at: $syncStartTime")
                 submitForm()
             }
@@ -182,7 +182,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         }
     }
 
-    private fun createUserProfile(): org.ole.planet.myplanet.model.UserSurveyProfile? {
+    private fun createUserProfile(): UserSurveyProfile? {
         var fname = ""
         var lname = ""
         var mName = ""
@@ -229,8 +229,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         var birthDob = ""
         if (fragmentUserInformationBinding.llPhoneDob.isVisible) {
             phone = fragmentUserInformationBinding.etPhone.text.toString().trim()
-            if (!dob.isNullOrEmpty()) {
-                birthDob = dob!!
+            val capturedDob = dob
+            if (!capturedDob.isNullOrEmpty()) {
+                birthDob = capturedDob
             }
         }
 
@@ -247,7 +248,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             }
         }
 
-        return org.ole.planet.myplanet.model.UserSurveyProfile(
+        return UserSurveyProfile(
             fname = fname,
             lname = lname,
             mName = mName,
@@ -279,24 +280,20 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 submissionsRepository.markSubmissionComplete(submissionId, user)
                 Log.d("UserInformationFragment", "Submission marked complete, about to dismiss dialog")
 
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(
-                        MainApplication.context,
-                        getString(R.string.thank_you_for_taking_this_survey)
-                    )
-                    if (isAdded) {
-                        Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
-                        dialog?.dismiss()
-                    }
+                Utilities.toast(
+                    MainApplication.context,
+                    getString(R.string.thank_you_for_taking_this_survey)
+                )
+                if (isAdded) {
+                    Log.d("UserInformationFragment", "Dismissing dialog, this will trigger onDismiss()")
+                    dialog?.dismiss()
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
                 Log.e("UserInformationFragment", "Error in saveSubmission", e)
-                withContext(Dispatchers.Main) {
-                    Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
-                    if (isAdded) {
-                        dialog?.dismiss()
-                    }
+                Utilities.toast(MainApplication.context, "Error saving submission: ${e.message}")
+                if (isAdded) {
+                    dialog?.dismiss()
                 }
             }
         }
@@ -334,7 +331,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
         submissionUploadExecutor.execute {
             Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
             Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
-            val checkStartTime = System.currentTimeMillis()
+            val checkStartTime = SystemClock.elapsedRealtime()
 
             val primaryCheck = async {
                 try {
@@ -366,7 +363,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
 
             val primaryAvailable = primaryCheck.await()
             val alternativeAvailable = alternativeCheck.await()
-            val checkDuration = System.currentTimeMillis() - checkStartTime
+            val checkDuration = SystemClock.elapsedRealtime() - checkStartTime
             Log.d("UserInformationFragment", "Server checks completed in ${checkDuration}ms. Primary: $primaryAvailable, Alternative: $alternativeAvailable")
 
             if (primaryAvailable || alternativeAvailable) {
@@ -380,7 +377,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
                 }
                 uploadSubmissionsWithTiming(capturedSyncStartTime)
             } else {
-                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${System.currentTimeMillis() - capturedSyncStartTime}ms")
+                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${SystemClock.elapsedRealtime() - capturedSyncStartTime}ms")
             }
         }
     }

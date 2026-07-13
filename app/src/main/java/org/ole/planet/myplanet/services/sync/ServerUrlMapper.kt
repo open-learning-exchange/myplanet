@@ -24,8 +24,11 @@ class ServerUrlMapper @Inject constructor() {
     private fun extractBaseUrl(url: String): String? {
         return try {
             val uri = url.toUri()
-            val baseUrl = "${uri.scheme}://${uri.authority}"
-            baseUrl
+            val scheme = uri.scheme ?: return null
+            val host = uri.host ?: return null
+            val port = uri.port
+            val isDefaultPort = (scheme == "http" && port == 80) || (scheme == "https" && port == 443)
+            if (port != -1 && !isDefaultPort) "$scheme://$host:$port" else "$scheme://$host"
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -35,10 +38,9 @@ class ServerUrlMapper @Inject constructor() {
     fun processUrl(url: String): UrlMapping {
         val extractedUrl = extractBaseUrl(url)
         val alternativeUrl = extractedUrl?.let { baseUrl ->
-            val mappedUrl = serverMappings[baseUrl]
-            mappedUrl
+            serverMappings[baseUrl].also {
+            }
         }
-
         val result = UrlMapping(url, alternativeUrl, extractedUrl)
         return result
     }
@@ -84,12 +86,13 @@ class ServerUrlMapper @Inject constructor() {
     }
 
     suspend fun updateServerIfNecessary(
-        mapping: UrlMapping,
-        settings: SharedPreferences,
+        mapping: UrlMapping, settings: SharedPreferences,
         isServerReachable: suspend (String) -> Boolean
     ) {
         val primaryAvailable = isServerReachable(mapping.primaryUrl)
-        val alternativeAvailable = mapping.alternativeUrl?.let { isServerReachable(it) } == true
+        val alternativeAvailable = mapping.alternativeUrl?.let { altUrl ->
+            isServerReachable(altUrl)
+        } == true
 
         if (!primaryAvailable && alternativeAvailable) {
             mapping.alternativeUrl.let { alternativeUrl ->
@@ -103,8 +106,8 @@ class ServerUrlMapper @Inject constructor() {
         val defaultInfo = arrayOf("", "")
         val info = uri.userInfo?.split(":")?.dropLastWhile { it.isEmpty() }?.toTypedArray()
 
-        val result = if ((info?.size ?: 0) > 1) {
-            arrayOf(info!![0], info[1])
+        val result = if (info != null && info.size > 1) {
+            arrayOf(info[0], info[1])
         } else {
             defaultInfo
         }

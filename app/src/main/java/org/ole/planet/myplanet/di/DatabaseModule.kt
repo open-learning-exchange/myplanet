@@ -1,8 +1,6 @@
 package org.ole.planet.myplanet.di
 
 import android.content.Context
-import android.os.Handler
-import android.os.HandlerThread
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -10,7 +8,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.android.asCoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -28,10 +25,8 @@ object DatabaseModule {
     @Provides
     @Singleton
     @RealmDispatcher
-    fun provideRealmDispatcher(): CoroutineDispatcher {
-        // Realm async queries and change listeners require a thread with a Looper.
-        val handlerThread = HandlerThread("RealmQueryThread").also { it.start() }
-        return Handler(handlerThread.looper).asCoroutineDispatcher()
+    fun provideRealmDispatcher(provider: RealmDispatcherProvider): CoroutineDispatcher {
+        return provider
     }
 
     // Realm initialization is handled in DatabaseService

@@ -1,16 +1,30 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Base64
+import android.util.Log
+import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
-import dagger.hilt.android.EntryPointAccessors
-import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import java.net.URLEncoder
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
-    private fun spm(): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+    @Volatile
+    private var spmInstance: SharedPrefManager? = null
+
+    fun init(sharedPrefManager: SharedPrefManager) {
+        spmInstance = sharedPrefManager
+    }
+
+    private fun spm(): SharedPrefManager {
+        return spmInstance
+            ?: error("UrlUtils.init(SharedPrefManager) must be called before using UrlUtils")
+    }
+
+    @VisibleForTesting
+    internal fun resetForTesting() {
+        spmInstance = null
+    }
 
     val header: String
         get() {
@@ -34,7 +48,7 @@ object UrlUtils {
                     hostIp = uri.host ?: hostIp
                     scheme = uri.scheme ?: scheme
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.w("UrlUtils", "Failed to parse alternative URL '$alternativeUrl', falling back to host", e)
                 }
             }
 
@@ -83,9 +97,18 @@ object UrlUtils {
         if (userId.isNullOrBlank() || imageName.isBlank()) {
             return null
         }
-        val encodedUserId = java.net.URLEncoder.encode(userId, "UTF-8")
-        val encodedImageName = java.net.URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
+        val encodedUserId = URLEncoder.encode(userId, "UTF-8")
+        val encodedImageName = URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
         return "${getUrl()}/_users/$encodedUserId/$encodedImageName"
+    }
+
+    fun getCourseImageUrl(courseId: String?, imageName: String?): String? {
+        if (courseId.isNullOrBlank() || imageName.isNullOrBlank()) {
+            return null
+        }
+        val encodedCourseId = URLEncoder.encode(courseId, "UTF-8")
+        val encodedImageName = URLEncoder.encode(imageName, "UTF-8").replace("+", "%20")
+        return "${getUrl()}/courses/$encodedCourseId/$encodedImageName"
     }
 
     fun getUrl(): String {

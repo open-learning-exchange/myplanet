@@ -1,22 +1,25 @@
 package org.ole.planet.myplanet.ui.enterprises
 
 import android.content.Context
-import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.LayerDrawable
 import android.text.TextUtils
 import android.view.LayoutInflater
+import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
+import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EnterprisesFinancesAdapter(
@@ -38,8 +41,6 @@ class EnterprisesFinancesAdapter(
         val binding = holder.binding
         binding.date.text = item.date?.let { formatDate(it, "MMM dd, yyyy") } ?: ""
         binding.note.text = item.description
-        binding.debit.setTextColor(Color.BLACK)
-        binding.credit.setTextColor(Color.BLACK)
         if (TextUtils.equals(item.type?.lowercase(Locale.getDefault()), "debit")) {
             binding.debit.text = context.getString(R.string.number_placeholder, item.amount)
             binding.credit.text = context.getString(R.string.message_placeholder, " -")
@@ -48,7 +49,26 @@ class EnterprisesFinancesAdapter(
             binding.debit.text = context.getString(R.string.message_placeholder, " -")
         }
         binding.balance.text = item.balance.toString()
+        bindFinanceImage(binding, item)
         updateBackgroundColor(binding.llayout, position)
+    }
+
+    private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
+        val imageFile = RealmMyTeam.getAttachmentFile(context, item.id, item.imageName)
+        if (imageFile != null && imageFile.exists()) {
+            binding.financeImage.visibility = View.VISIBLE
+            Glide.with(context)
+                .load(imageFile)
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(binding.financeImage)
+            binding.financeImage.setOnClickListener {
+                ImageViewerUtils.showZoomableImage(context, imageFile.absolutePath)
+            }
+        } else {
+            binding.financeImage.visibility = View.GONE
+            binding.financeImage.setOnClickListener(null)
+        }
     }
 
     private fun updateBackgroundColor(layout: LinearLayout, position: Int) {

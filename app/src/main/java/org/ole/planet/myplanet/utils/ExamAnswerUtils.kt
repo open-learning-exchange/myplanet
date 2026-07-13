@@ -21,8 +21,9 @@ object ExamAnswerUtils {
             for (i in 0 until choices.size()) {
                 if (choices[i].isJsonObject) {
                     val obj = choices[i].asJsonObject
-                    if (obj.has("id") && obj.has("text")) {
-                        mutableMap[obj.get("id").asString] = obj.get("text").asString
+                    val choiceId = JsonUtils.getString("id", obj)
+                    if (choiceId.isNotEmpty() && obj.has("text")) {
+                        mutableMap[choiceId] = JsonUtils.getString("text", obj)
                     }
                 }
             }

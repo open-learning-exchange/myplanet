@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
+import io.realm.OrderedRealmCollectionChangeListener
 import io.realm.Realm
-import io.realm.RealmChangeListener
 import io.realm.RealmObject
 import io.realm.RealmQuery
 import io.realm.RealmResults
@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
@@ -38,6 +37,18 @@ open class RealmRepository(
             realm.queryList(clazz, builder)
         }
 
+    protected suspend fun <T : RealmObject> queryList(clazz: Class<T>, maxDepth: Int, builder: RealmQuery<T>.() -> Unit = {}): List<T> = withRealm(false) { realm ->
+        realm.queryList(clazz, maxDepth, builder)
+    }
+
+    protected suspend fun <T : RealmObject> findFirstCopy(
+        clazz: Class<T>,
+        builder: RealmQuery<T>.() -> Unit = {},
+    ): T? = withRealm { realm ->
+        realm.where(clazz).apply(builder).findFirst()?.let { realm.copyFromRealm(it) }
+    }
+
+
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -59,29 +70,40 @@ open class RealmRepository(
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
-        var listener: RealmChangeListener<RealmResults<T>>? = null
+        var listener: OrderedRealmCollectionChangeListener<RealmResults<T>>? = null
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
-                try {
-                    results?.let { res ->
-                        listener?.let { l ->
-                            if (res.isValid) {
-                                res.removeChangeListener(l)
-                            }
-                        }
+                val currentResults = results
+                val currentListener = listener
+                if (currentResults != null && currentListener != null && currentResults.isValid) {
+                    try {
+                        currentResults.removeChangeListener(currentListener)
+                    } catch (e: Exception) {
+                        RealmLog.error(e, "Error removing RealmChangeListener")
                     }
-                } catch (e: Exception) {
-                    RealmLog.error(e, "Error removing RealmChangeListener")
                 }
+
+                val currentRealm = realm
+                if (currentRealm != null && !currentRealm.isClosed) {
+                    try {
+                        currentRealm.close()
+                    } catch (e: Exception) {
+                        RealmLog.error(e, "Error closing Realm")
+                    }
+                }
+            }
+        }
+
+        fun emitResults(res: RealmResults<T>, errorMsg: String) {
+            if (!isClosed.get() && res.isValid && res.isLoaded) {
                 try {
-                    realm?.let { r ->
-                        if (!r.isClosed) {
-                            r.close()
-                        }
+                    val frozen = res.freeze()
+                    if (!isClosed.get()) {
+                        trySend(frozen)
                     }
                 } catch (e: Exception) {
-                    RealmLog.error(e, "Error closing Realm")
+                    RealmLog.error(e, errorMsg)
                 }
             }
         }
@@ -90,28 +112,12 @@ open class RealmRepository(
             realm = databaseService.createManagedRealmInstance()
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
-            if (initialResults.isValid && initialResults.isLoaded) {
-                try {
-                    val frozenInitial = initialResults.freeze()
-                    if (!isClosed.get()) {
-                        trySend(frozenInitial)
-                    }
-                } catch (e: Exception) {
-                    RealmLog.error(e, "Error sending initial results")
-                }
-            }
+            emitResults(initialResults, "Error sending initial results")
 
-            results = realm.where(clazz).apply(builder).findAllAsync()
-            listener = RealmChangeListener<RealmResults<T>> { changedResults ->
-                if (!isClosed.get() && changedResults.isLoaded && changedResults.isValid) {
-                    try {
-                        val frozenResults = changedResults.freeze()
-                        if (!isClosed.get()) {
-                            trySend(frozenResults)
-                        }
-                    } catch (e: Exception) {
-                        RealmLog.error(e, "Error sending changed results")
-                    }
+            results = initialResults
+            listener = OrderedRealmCollectionChangeListener<RealmResults<T>> { changedResults, changeSet ->
+                if (changeSet == null || changeSet.insertions.isNotEmpty() || changeSet.deletions.isNotEmpty() || changeSet.changes.isNotEmpty()) {
+                    emitResults(changedResults, "Error sending changed results")
                 }
             }
             results.addChangeListener(listener)
@@ -126,7 +132,11 @@ open class RealmRepository(
     }.flowOn(realmDispatcher)
         .conflate()
         .map { frozenResults ->
-            frozenResults.realm.copyFromRealm(frozenResults)
+            if (frozenResults.isEmpty()) {
+                emptyList()
+            } else {
+                frozenResults.realm.copyFromRealm(frozenResults)
+            }
         }
         .flowOn(databaseService.ioDispatcher)
 

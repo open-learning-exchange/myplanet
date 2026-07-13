@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.utils.TimeProvider
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -23,7 +24,8 @@ sealed class ReportEvent {
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository
+    private val teamsRepository: TeamsRepository,
+    private val timeProvider: TimeProvider
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
@@ -40,13 +42,16 @@ class EnterprisesViewModel @Inject constructor(
         endDate: Long,
         teamId: String,
         teamType: String?,
-        teamPlanetCode: String?
+        teamPlanetCode: String?,
+        imageName: String? = null,
+        imageData: ByteArray? = null
     ) {
         viewModelScope.launch {
             try {
+                val reportId = UUID.randomUUID().toString()
                 val doc = JsonObject().apply {
-                    addProperty("_id", UUID.randomUUID().toString())
-                    addProperty("createdDate", System.currentTimeMillis())
+                    addProperty("_id", reportId)
+                    addProperty("createdDate", timeProvider.now())
                     addProperty("description", description)
                     addProperty("beginningBalance", beginningBalance)
                     addProperty("sales", sales)
@@ -55,7 +60,7 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("otherExpenses", otherExpenses)
                     addProperty("startDate", startDate)
                     addProperty("endDate", endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
+                    addProperty("updatedDate", timeProvider.now())
                     addProperty("teamId", teamId)
                     addProperty("teamType", teamType)
                     addProperty("teamPlanetCode", teamPlanetCode)
@@ -63,6 +68,9 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("updated", true)
                 }
                 teamsRepository.addReport(doc)
+                if (imageName != null && imageData != null) {
+                    teamsRepository.attachTeamImage(reportId, imageName, imageData)
+                }
                 _reportEvent.emit(ReportEvent.ReportAdded)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to add report. Please try again."))
@@ -79,7 +87,9 @@ class EnterprisesViewModel @Inject constructor(
         wages: Int,
         otherExpenses: Int,
         startDate: Long,
-        endDate: Long
+        endDate: Long,
+        imageName: String? = null,
+        imageData: ByteArray? = null
     ) {
         viewModelScope.launch {
             try {
@@ -92,10 +102,13 @@ class EnterprisesViewModel @Inject constructor(
                     addProperty("otherExpenses", otherExpenses)
                     addProperty("startDate", startDate)
                     addProperty("endDate", endDate)
-                    addProperty("updatedDate", System.currentTimeMillis())
+                    addProperty("updatedDate", timeProvider.now())
                     addProperty("updated", true)
                 }
                 teamsRepository.updateReport(reportId, doc)
+                if (imageName != null && imageData != null) {
+                    teamsRepository.attachTeamImage(reportId, imageName, imageData)
+                }
                 _reportEvent.emit(ReportEvent.ReportUpdated)
             } catch (e: Exception) {
                 _reportEvent.emit(ReportEvent.Error("Failed to update report. Please try again."))

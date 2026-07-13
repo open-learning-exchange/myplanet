@@ -12,8 +12,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -23,6 +21,7 @@ import org.ole.planet.myplanet.databinding.RowJoinedUserBinding
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class MembersAdapter(
@@ -94,13 +93,8 @@ class MembersAdapter(
             R.string.last_visit,
             lastVisitDate
         )
-        Glide.with(binding.memberImage.context)
-            .load(member.userImage)
-            .diskCacheStrategy(DiskCacheStrategy.ALL)
-            .circleCrop()
-            .placeholder(R.drawable.profile)
-            .error(R.drawable.profile)
-            .into(binding.memberImage)
+        val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
+        ImageUtils.loadProfileImage(member.userImage, binding.memberImage, avatarSize)
 
         if (memberData.isLeader) {
             binding.tvIsLeader.visibility = View.VISIBLE
@@ -154,18 +148,7 @@ class MembersAdapter(
                 }
 
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                val adapter = object : ArrayAdapter<CharSequence>(
-                    context,
-                    android.R.layout.simple_list_item_1,
-                    overflowMenuOptions
-                ) {
-                    override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-                        val view = super.getView(position, convertView, parent) as TextView
-                        val color = ContextCompat.getColor(context, R.color.daynight_textColor)
-                        view.setTextColor(color)
-                        return view
-                    }
-                }
+                val adapter = MemberMenuAdapter(context, overflowMenuOptions.toList())
                 builder.setAdapter(adapter) { _, i ->
                     if (isOwnCard) {
                         when (i) {
@@ -191,4 +174,16 @@ class MembersAdapter(
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :
         RecyclerView.ViewHolder(binding.root)
+
+    private class MemberMenuAdapter(
+        context: Context,
+        items: List<CharSequence>
+    ) : ArrayAdapter<CharSequence>(context, android.R.layout.simple_list_item_1, items) {
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val view = super.getView(position, convertView, parent) as TextView
+            val color = ContextCompat.getColor(context, R.color.daynight_textColor)
+            view.setTextColor(color)
+            return view
+        }
+    }
 }

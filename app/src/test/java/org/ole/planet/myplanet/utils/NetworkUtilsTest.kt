@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.utils
 
 import android.content.Context
 import android.net.wifi.WifiManager
+import android.os.Build
+import android.provider.Settings
 import androidx.test.core.app.ApplicationProvider
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -17,6 +19,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
+import org.robolectric.util.ReflectionHelpers
 
 @HiltAndroidTest
 @RunWith(RobolectricTestRunner::class)
@@ -32,7 +35,7 @@ class NetworkUtilsTest {
         hiltRule.inject()
         // Initialize MainApplication.context which is required by NetworkUtils to avoid UninitializedPropertyAccessException
         // It is needed here because NetworkUtils gets system service from it directly
-        org.ole.planet.myplanet.MainApplication.context = ApplicationProvider.getApplicationContext()
+        org.ole.planet.myplanet.MainApplication.testContext = ApplicationProvider.getApplicationContext()
     }
 
     @Test
@@ -45,6 +48,40 @@ class NetworkUtilsTest {
 
         wifiManager.isWifiEnabled = false
         assertFalse(NetworkUtils.isWifiEnabled())
+    }
+
+    @Test
+    fun getUniqueIdentifier_returnsExpectedFormat() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            "test_android_id"
+        )
+
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "test_build_id")
+
+        val uniqueId = NetworkUtils.getUniqueIdentifier()
+
+        assertEquals("test_android_id_test_build_id", uniqueId)
+    }
+
+    @Test
+    fun getUniqueIdentifier_withNullAndroidId_returnsExpectedFormat() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        Settings.Secure.putString(
+            context.contentResolver,
+            Settings.Secure.ANDROID_ID,
+            null
+        )
+
+        ReflectionHelpers.setStaticField(Build::class.java, "ID", "test_build_id")
+
+        val uniqueId = NetworkUtils.getUniqueIdentifier()
+
+        assertEquals("null_test_build_id", uniqueId)
     }
 
     @Test
@@ -100,5 +137,45 @@ class NetworkUtilsTest {
     @Test
     fun extractProtocol_withHttpUrlWithoutDomain() {
         assertEquals("http://", NetworkUtils.extractProtocol("http://"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceInsideProtocol() {
+        assertNull(NetworkUtils.extractProtocol("http ://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceAfterProtocol() {
+        assertEquals("http://", NetworkUtils.extractProtocol("http:// example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withMultipleSpaces() {
+        assertNull(NetworkUtils.extractProtocol("h t t p://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withOnlySpaces() {
+        assertNull(NetworkUtils.extractProtocol("   "))
+    }
+
+    @Test
+    fun extractProtocol_withProtocolContainingNumbers() {
+        assertEquals("http2://", NetworkUtils.extractProtocol("http2://example.com"))
+    }
+
+    @Test
+    fun extractProtocol_withSpaceReturnedByUriParse() {
+        // android.net.Uri doesn't strictly follow all JVM URI rules.
+        // There are edge cases where scheme might be parsed containing a space
+        // depending on android framework version.
+        // We will mock this behaviour indirectly by testing what happens if scheme has a space.
+        // Since we can't easily force Uri.parse to return a space in scheme here without a custom mock
+        // that intercepts toUri(), we test strings that might potentially trigger it.
+        // The implementation checks: return if (scheme != null && !scheme.contains(" ")) "$scheme://" else null
+
+        // This is a proxy test, we test strings with spaces before colon in ways that android might parse it
+        // Or we test if it correctly handles null schemes when there are spaces.
+        assertNull(NetworkUtils.extractProtocol("my scheme://example.com"))
     }
 }

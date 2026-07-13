@@ -3,12 +3,14 @@ package org.ole.planet.myplanet.model
 import android.content.SharedPreferences
 import io.realm.Realm
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 
 open class RealmMyLife : RealmObject {
     @PrimaryKey
     var _id: String? = null
     var imageId: String? = null
+    @Index
     var userId: String? = null
     var title: String? = null
     var isVisible = false
@@ -29,7 +31,6 @@ open class RealmMyLife : RealmObject {
             return getMyLifeByUserId(mRealm, userId)
         }
 
-        @JvmStatic
         fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
             return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
                 .sort("weight")

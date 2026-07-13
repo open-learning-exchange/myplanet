@@ -4,19 +4,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
-import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class TeamActionResult {
@@ -28,7 +28,9 @@ sealed class TeamActionResult {
 @HiltViewModel
 class TeamViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val dispatcherProvider: DispatcherProvider,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
@@ -36,8 +38,11 @@ class TeamViewModel @Inject constructor(
     private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
     val taskList: StateFlow<List<RealmTeamTask>> = _taskList
 
+    fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
+
     fun loadTasks(teamId: String) {
-        viewModelScope.launch {
+        loadTaskJob?.cancel()
+        loadTaskJob = viewModelScope.launch {
             teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
                 _taskList.value = tasks
             }
@@ -49,7 +54,8 @@ class TeamViewModel @Inject constructor(
     private var currentUserId: String? = null
     private var currentFromDashboard: Boolean = false
     private var currentType: String? = null
-    private var loadJob: kotlinx.coroutines.Job? = null
+    private var loadJob: Job? = null
+    private var loadTaskJob: Job? = null
 
 
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
@@ -110,20 +116,16 @@ class TeamViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
-                teamsRepository.syncTeamActivities()
-            }
+            teamsRepository.requestToJoin(teamId, userId, userPlanetCode, teamType)
+            teamsSyncRepository.syncTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }
 
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                teamsRepository.leaveTeam(teamId, userId)
-                teamsRepository.syncTeamActivities()
-            }
+            teamsRepository.leaveTeam(teamId, userId)
+            teamsSyncRepository.syncTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
         }
     }

@@ -9,22 +9,23 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
+import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView.AdapterDataObserver
-import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlin.OptIn
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
@@ -35,11 +36,11 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
 import org.ole.planet.myplanet.ui.chat.ChatDetailFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
-import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
@@ -47,18 +48,18 @@ class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private val binding get() = _binding!!
     var user: RealmUser? = null
+    private val voicesViewModel: VoicesViewModel by viewModels()
     
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    private var filteredNewsList: List<RealmNews?> = listOf()
-    private var searchFilteredList: List<RealmNews?> = listOf()
-    private var labelFilteredList: List<RealmNews?> = listOf()
+    @Inject
+    lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var etSearch: EditText
-    private var selectedLabel: String = "All"
-    private val labelDisplayToValue = mutableMapOf<String, String>()
-    private var labelAdapter: ArrayAdapter<String>? = null
+
+    private var isSpinnerUpdating = false
+    private lateinit var labelSpinnerAdapter: ArrayAdapter<String>
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentVoicesBinding.inflate(inflater, container, false)
@@ -86,32 +87,53 @@ class VoicesFragment : BaseVoicesFragment() {
         }
 
         setupSearchTextListener()
-        setupLabelFilter()
-
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupLabelSpinner()
+
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             if (user?.id?.startsWith("guest") == true) {
                 binding.btnNewVoice.visibility = View.GONE
             }
 
+            voicesViewModel.observeCommunityNews(getUserIdentifier())
+
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                voicesRepository.getCommunityNews(getUserIdentifier()).collect { news ->
-                    val filtered = news.map { it as RealmNews? }
-                    val labels = collectAllLabels(filtered)
-                    val labelFiltered = applyLabelFilter(filtered)
-                    val searchFiltered =
-                        applySearchFilter(labelFiltered, etSearch.text.toString().trim())
-                    if (_binding != null) {
-                        filteredNewsList = filtered
-                        labelFilteredList = labelFiltered
-                        searchFilteredList = searchFiltered
-                        setupLabelFilter(labels)
-                        setData(searchFilteredList)
+                launch {
+                    voicesViewModel.filteredNews.collectLatest { searchFiltered ->
+                        if (_binding != null) {
+                            setData(searchFiltered)
+                        }
+                    }
+                }
+                launch {
+                    combine(
+                        voicesViewModel.labels,
+                        voicesViewModel.selectedLabel
+                    ) { labels, selected -> labels to selected }
+                        .collectLatest { (labels, selected) ->
+                            if (_binding != null) {
+                                updateLabelSpinner(labels, selected)
+                            }
+                        }
+                }
+                launch {
+                    voicesViewModel.createNewsSuccess.collectLatest { n ->
+                        binding.btnSubmit.isEnabled = true
+                        if (n != null) {
+                            binding.etMessage.setText(R.string.empty_text)
+                            binding.llAddNews.visibility = View.GONE
+                            binding.btnNewVoice.text = getString(R.string.new_voice)
+                            imageList.clear()
+                            llImage?.removeAllViews()
+                            scrollToTop()
+                        } else {
+                            Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
+                        }
                     }
                 }
             }
@@ -122,7 +144,6 @@ class VoicesFragment : BaseVoicesFragment() {
                 binding.tlMessage.error = getString(R.string.please_enter_message)
                 return@setOnClickListener
             }
-            binding.etMessage.setText(R.string.empty_text)
             val map = HashMap<String?, String>()
             map["message"] = message
             map["viewInId"] = "${user?.planetCode ?: ""}@${user?.parentCode ?: ""}"
@@ -130,26 +151,9 @@ class VoicesFragment : BaseVoicesFragment() {
             map["messageType"] = "sync"
             map["messagePlanetCode"] = user?.planetCode ?: ""
 
-            binding.llAddNews.visibility = View.GONE
-            binding.btnNewVoice.text = getString(R.string.new_voice)
             binding.btnSubmit.isEnabled = false
-            viewLifecycleOwner.lifecycleScope.launch {
-                try {
-                    val n = user?.let { it1 -> voicesRepository.createNews(map, it1, imageList) }
-                    imageList.clear()
-                    llImage?.removeAllViews()
-                    if (n != null) {
-                        n.sortDate = n.calculateSortDate()
-                        filteredNewsList = listOf(n) + filteredNewsList
-                        labelFilteredList = applyLabelFilter(filteredNewsList)
-                        searchFilteredList = applySearchFilter(labelFilteredList)
-                        setData(searchFilteredList)
-                    }
-                    scrollToTop()
-                } finally {
-                    binding.btnSubmit.isEnabled = true
-                }
-            }
+
+            user?.let { it1 -> voicesViewModel.createNews(map, it1, imageList.toList()) }
         }
 
         binding.addNewsImage.setOnClickListener {
@@ -170,7 +174,7 @@ class VoicesFragment : BaseVoicesFragment() {
     }
 
     private val currentEmptyStateSource: String
-        get() = if (etSearch.text.isNotEmpty() || selectedLabel != "All") "news_filtered" else "news"
+        get() = if (etSearch.text.isNotEmpty() || voicesViewModel.selectedLabel.value != "All") "news_filtered" else "news"
 
     override fun setData(list: List<RealmNews?>?) {
         if (!isAdded || list == null) return
@@ -179,11 +183,11 @@ class VoicesFragment : BaseVoicesFragment() {
             changeLayoutManager(resources.configuration.orientation, binding.rvNews)
             downloadResourcesForNews(list)
             val sortedList = sortNews(list)
-            setupVoicesAdapter(sortedList)
+            setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list)
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull())
         }
-        adapterNews?.let { showNoData(binding.tvMessage, it.itemCount, currentEmptyStateSource) }
+        showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
     }
 
     private fun downloadResourcesForNews(list: List<RealmNews?>) {
@@ -217,69 +221,60 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun setupVoicesAdapter(sortedList: List<RealmNews?>) {
-        val labelManager = VoicesLabelManager(requireActivity(), voicesRepository, viewLifecycleOwner.lifecycleScope)
+    private fun setupVoicesAdapter(sortedList: List<RealmNews>) {
+        val labelManager = VoicesLabelManager(
+            context = requireActivity(),
+            scope = viewLifecycleOwner.lifecycleScope,
+            dispatcherProvider = dispatcherProvider,
+            addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
+            removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+        )
         adapterNews = VoicesAdapter(
             context = requireActivity(),
             currentUser = user,
             parentNews = null,
             teamName = "",
             teamId = null,
-            userSessionManager = userSessionManager,
-            isTeamLeaderFn = { onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch {
-                    onResult(false)
-                }
-                return@VoicesAdapter { job.cancel() }
-            },
+            isTeamLeaderFn = { onResult -> onResult(false) },
             getUserFn = { userId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    val result = userRepository.getUserById(userId)
-                    withContext(Dispatchers.Main) { onResult(result) }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = voicesViewModel.getUserById(userId)
+                    onResult(result)
                 }
-                return@VoicesAdapter { job.cancel() }
             },
             getReplyCountFn = { newsId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    try {
-                        val result = voicesRepository.getReplyCount(newsId)
-                        withContext(Dispatchers.Main) { onResult(result) }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                val job = viewLifecycleOwner.lifecycleScope.launch {
+                    val result = voicesViewModel.getReplyCount(newsId)
+                    onResult(result)
                 }
                 return@VoicesAdapter { job.cancel() }
             },
-            deletePostFn = { newsId, onComplete ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    voicesRepository.deletePost(newsId, "")
-                    withContext(Dispatchers.Main) { onComplete() }
+            deletePostFn = { newsId ->
+                voicesViewModel.deletePost(newsId, "") {
+                    adapterNews?.removePost(newsId)
                 }
-                return@VoicesAdapter { job.cancel() }
             },
-            shareNewsFn = { newsId, userId, planetCode, parentCode, teamName, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    val result = voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
-                    withContext(Dispatchers.Main) { onResult(result) }
+            shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->
+                voicesViewModel.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName) { result ->
+                    VoicesAdapterHelper.handleShareNewsResult(requireContext(), result)
                 }
-                return@VoicesAdapter { job.cancel() }
             },
             getLibraryResourceFn = { resourceId, onResult ->
-                val job = viewLifecycleOwner.lifecycleScope.launch(Dispatchers.IO) {
-                    val result = voicesRepository.getLibraryResource(resourceId)
-                    withContext(Dispatchers.Main) { onResult(result) }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val result = voicesViewModel.getLibraryResource(resourceId)
+                    onResult(result)
                 }
-                return@VoicesAdapter { job.cancel() }
             },
-            launchCoroutine = { action ->
-                val job = viewLifecycleOwner.lifecycleScope.launch { action() }
-                return@VoicesAdapter { job.cancel() }
+            onEditAction = { action ->
+                viewLifecycleOwner.lifecycleScope.launch { action() }
             },
+            onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
             labelManager = labelManager,
             voicesRepository = voicesRepository,
-            userRepository = userRepository
+            userRepository = userRepository,
+            getCommunityLeadersFn = { sharedPrefManager.getCommunityLeaders() },
+            setRepliedNewsIdFn = { sharedPrefManager.setRepliedNewsId(it) }
         )
-        adapterNews?.sharedPrefManager = sharedPrefManager
         adapterNews?.setFromLogin(requireArguments().getBoolean("fromLogin"))
         adapterNews?.setListener(this)
         adapterNews?.registerAdapterDataObserver(observer)
@@ -344,145 +339,59 @@ class VoicesFragment : BaseVoicesFragment() {
             .debounce(300)
             .onEach { text ->
                 val searchQuery = text.toString().trim()
-                searchFilteredList = applySearchFilter(labelFilteredList, searchQuery)
-                setData(searchFilteredList)
+                voicesViewModel.updateSearchQuery(searchQuery)
                 scrollToTop()
             }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
-    
-    private fun applySearchFilter(list: List<RealmNews?>, queryParam: String? = null): List<RealmNews?> {
-        val query = queryParam ?: etSearch.text.toString().trim()
-        
-        if (query.isEmpty()) {
-            return list
+
+    private fun setupLabelSpinner() {
+        labelSpinnerAdapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, mutableListOf()) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent)
+                (view as? TextView)?.setTextColor(
+                    ContextCompat.getColor(requireContext(), R.color.daynight_textColor)
+                )
+                return view
+            }
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent)
+                (view as? TextView)?.apply {
+                    setTextColor(ContextCompat.getColor(requireContext(), R.color.daynight_textColor))
+                    setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+                }
+                return view
+            }
         }
-        
-        val filtered = list.filter { news ->
-            val message = news?.message?.trim() ?: ""
-            val matches = message.contains(query, ignoreCase = true)
-            matches
-        }
-        return filtered
-    }
-    
-    private fun setupLabelFilter(precomputedLabels: List<String>? = null) {
-        updateLabelSpinner(precomputedLabels)
+        labelSpinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.filterByLabel.adapter = labelSpinnerAdapter
+        binding.filterByLabel.backgroundTintList = ContextCompat.getColorStateList(requireContext(), R.color.daynight_textColor)
 
         binding.filterByLabel.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                selectedLabel = labelAdapter?.getItem(position) ?: "All"
-                labelFilteredList = applyLabelFilter(filteredNewsList)
-                searchFilteredList = applySearchFilter(labelFilteredList)
-                setData(searchFilteredList)
+            override fun onItemSelected(parent: AdapterView<*>, view: View?, pos: Int, id: Long) {
+                if (isSpinnerUpdating) return
+                val selected = labelSpinnerAdapter.getItem(pos) ?: return
+                voicesViewModel.updateSelectedLabel(selected)
                 scrollToTop()
             }
-            override fun onNothingSelected(parent: AdapterView<*>?) {}
+            override fun onNothingSelected(parent: AdapterView<*>) {}
         }
     }
-    
-    private fun updateLabelSpinner(precomputedLabels: List<String>? = null) {
+
+    private fun updateLabelSpinner(labels: List<String>, selectedLabel: String) {
         val binding = _binding ?: return
-        val labels = precomputedLabels ?: collectAllLabels(filteredNewsList)
-        val themedContext = androidx.appcompat.view.ContextThemeWrapper(requireContext(), R.style.ResourcePopupMenu)
-        val adapter = ArrayAdapter(themedContext, android.R.layout.simple_spinner_item, labels)
-        labelAdapter = adapter
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.filterByLabel.adapter = adapter
-
-        val position = labels.indexOf(selectedLabel)
-        if (position >= 0) {
-            binding.filterByLabel.setSelection(position)
-        } else {
-            selectedLabel = "All"
-            binding.filterByLabel.setSelection(0)
+        isSpinnerUpdating = true
+        labelSpinnerAdapter.clear()
+        labelSpinnerAdapter.addAll(labels)
+        val position = labels.indexOf(selectedLabel).coerceAtLeast(0)
+        binding.filterByLabel.setSelection(position)
+        binding.filterByLabel.post {
+            isSpinnerUpdating = false
         }
-    }
-    
-    private fun collectAllLabels(list: List<RealmNews?>): List<String> {
-        labelDisplayToValue.clear()
-
-        val allLabels = mutableSetOf<String>()
-        allLabels.add("All")
-
-        Constants.LABELS.forEach { (labelName, labelValue) ->
-            allLabels.add(labelName)
-            labelDisplayToValue[labelName] = labelValue
-        }
-
-        allLabels.add("Shared Chat")
-
-        list.forEach { news ->
-            if (!news?.viewIn.isNullOrEmpty()) {
-                try {
-                    val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                    if (ar.size() > 1) {
-                        val ob = ar[0].asJsonObject
-                        if (ob.has("name") && !ob.get("name").isJsonNull) {
-                            val sharedTeamName = ob.get("name").asString
-                            if (sharedTeamName.isNotEmpty()) {
-                                allLabels.add(sharedTeamName)
-                            }
-                        }
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-
-            news?.labels?.forEach { label ->
-                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
-                    ?: VoicesLabelManager.formatLabelValue(label)
-                allLabels.add(labelName)
-                labelDisplayToValue.putIfAbsent(labelName, label)
-            }
-        }
-
-        return allLabels.sorted()
-    }
-    
-    private fun applyLabelFilter(list: List<RealmNews?>): List<RealmNews?> {
-        if (selectedLabel == "All") {
-            return list
-        }
-        
-        return list.filter { news ->
-            when {
-                selectedLabel == "Shared Chat" -> {
-                    news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
-                }
-                labelDisplayToValue.containsKey(selectedLabel) -> {
-                    val labelValue = labelDisplayToValue[selectedLabel]
-                    news?.labels?.contains(labelValue) == true
-                }
-                else -> {
-                    extractSharedTeamName(news) == selectedLabel
-                }
-            }
-        }
-    }
-    
-    private fun extractSharedTeamName(news: RealmNews?): String {
-        if (!news?.viewIn.isNullOrEmpty()) {
-            try {
-                val ar = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
-                if (ar.size() > 1) {
-                    val ob = ar[0].asJsonObject
-                    if (ob.has("name") && !ob.get("name").isJsonNull) {
-                        return ob.get("name").asString
-                    }
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-        }
-        return ""
     }
 
     override fun onDestroyView() {
-        binding.filterByLabel.onItemSelectedListener = null
         adapterNews?.unregisterAdapterDataObserver(observer)
-        labelAdapter = null
         _binding = null
         super.onDestroyView()
     }

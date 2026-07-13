@@ -19,11 +19,15 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TeamsRepositoryImplTest {
@@ -31,14 +35,14 @@ class TeamsRepositoryImplTest {
     private lateinit var teamsRepository: TeamsRepositoryImpl
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
-    private val activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository = mockk(relaxed = true)
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val preferences: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
-    private val apiInterfaceMock = mockk<org.ole.planet.myplanet.data.api.ApiInterface>(relaxed = true)
+    private val apiInterfaceMock = mockk<ApiInterface>(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -52,7 +56,7 @@ class TeamsRepositoryImplTest {
         every { dispatcherProvider.unconfined } returns testDispatcher
 
         // Mock ServerUrlMapper behavior used in syncTeamActivities
-        val serverUrlMapping = mockk<org.ole.planet.myplanet.services.sync.ServerUrlMapper.UrlMapping>(relaxed = true)
+        val serverUrlMapping = mockk<ServerUrlMapper.UrlMapping>(relaxed = true)
         every { serverUrlMapping.primaryUrl } returns "http://primary.com"
         every { serverUrlMapping.alternativeUrl } returns null
         coEvery { serverUrlMapper.processUrl(any()) } returns serverUrlMapping
@@ -71,7 +75,9 @@ class TeamsRepositoryImplTest {
             sharedPrefManager,
             serverUrlMapper,
             dispatcherProvider,
-            mockUserRepository
+            mockUserRepository,
+            mockk(),
+            TestTimeProvider()
         )
     }
 
@@ -79,6 +85,35 @@ class TeamsRepositoryImplTest {
     fun tearDown() {
         Dispatchers.resetMain()
         unmockkAll()
+    }
+
+    @Test
+    fun `test refreshJoinedMembersForLogin uses getJoinedMembers and saves users`() = runTest(testDispatcher) {
+        val teamId = "test_team_id"
+        val mockUser = RealmUser().apply {
+            name = "Test User"
+            userImage = "http://example.com/image.png"
+        }
+        val mockTeamMembers = listOf(mockUser)
+
+        val spyRepository = io.mockk.spyk(teamsRepository)
+        coEvery { spyRepository.getJoinedMembers(teamId) } returns mockTeamMembers
+
+        val existingSavedUsers = emptyList<User>()
+        every { sharedPrefManager.getSavedUsers() } returns existingSavedUsers
+
+        every { sharedPrefManager.setSavedUsers(any()) } returns Unit
+
+        val result = spyRepository.refreshJoinedMembersForLogin(teamId)
+
+        org.junit.Assert.assertEquals(mockTeamMembers, result)
+
+        io.mockk.verify {
+            sharedPrefManager.getSavedUsers()
+            sharedPrefManager.setSavedUsers(match { list ->
+                list.size == 1 && list[0].name == "Test User" && list[0].image == "http://example.com/image.png" && list[0].source == "team"
+            })
+        }
     }
 
     @Test

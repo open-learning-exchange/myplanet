@@ -21,13 +21,23 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.DocumentResponse
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
+import org.ole.planet.myplanet.repository.CommunityRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
+import org.ole.planet.myplanet.repository.ProgressRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
+import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -43,20 +53,22 @@ class TransactionSyncManagerTest {
     private val feedbackRepository: FeedbackRepository = mockk()
     private val sharedPrefManager: SharedPrefManager = mockk()
     private val userRepository: UserRepository = mockk()
+    private val userSyncRepository: UserSyncRepository = mockk()
     private val activitiesRepository: ActivitiesRepository = mockk()
     private val teamsRepository: Lazy<TeamsRepository> = mockk()
+    private val teamsSyncRepository: Lazy<TeamsSyncRepository> = mockk()
 	private val notificationsRepository: NotificationsRepository = mockk()
-    private val tagsRepository: org.ole.planet.myplanet.repository.TagsRepository = mockk()
-    private val ratingsRepository: org.ole.planet.myplanet.repository.RatingsRepository = mockk()
-    private val submissionsRepository: org.ole.planet.myplanet.repository.SubmissionsRepository = mockk()
-    private val coursesRepository: org.ole.planet.myplanet.repository.CoursesRepository = mockk()
-    private val communityRepository: org.ole.planet.myplanet.repository.CommunityRepository = mockk()
-    private val healthRepository: org.ole.planet.myplanet.repository.HealthRepository = mockk()
-    private val progressRepository: org.ole.planet.myplanet.repository.ProgressRepository = mockk()
-    private val surveysRepository: org.ole.planet.myplanet.repository.SurveysRepository = mockk()
+    private val tagsRepository: TagsRepository = mockk()
+    private val ratingsRepository: RatingsRepository = mockk()
+    private val submissionsRepository: SubmissionsRepository = mockk()
+    private val coursesRepository: CoursesRepository = mockk()
+    private val communityRepository: CommunityRepository = mockk()
+    private val healthRepository: HealthRepository = mockk()
+    private val progressRepository: ProgressRepository = mockk()
+    private val surveysRepository: SurveysRepository = mockk()
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = mockk()
+    private val dispatcherProvider: DispatcherProvider = mockk()
 
     @Before
     fun setup() {
@@ -69,14 +81,17 @@ class TransactionSyncManagerTest {
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
             databaseService,
+            dispatcherProvider.io,
             context,
             voicesRepository,
             chatRepository,
             feedbackRepository,
             sharedPrefManager,
             userRepository,
+            userSyncRepository,
             activitiesRepository,
 			teamsRepository,
+            teamsSyncRepository,
 			notificationsRepository,
             tagsRepository,
             ratingsRepository,
@@ -100,6 +115,7 @@ class TransactionSyncManagerTest {
     fun authenticate_success_returnsTrue() = testScope.runTest {
         val mockResponse = mockk<Response<DocumentResponse>>()
         every { mockResponse.code() } returns 200
+        every { mockResponse.body() } returns mockk<DocumentResponse>()
         coEvery { apiInterface.getDocuments(any(), any()) } returns mockResponse
 
         val result = transactionSyncManager.authenticate()

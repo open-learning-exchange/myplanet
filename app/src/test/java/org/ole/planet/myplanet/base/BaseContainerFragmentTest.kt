@@ -28,7 +28,7 @@ class BaseContainerFragmentTest {
     @Test
     fun `setRatings should not crash when json is null`() {
         // Just verify it doesn't crash, as the logic checks for null
-        fragment.setRatings(null)
+        fragment.setRatings(null as JsonObject?)
     }
 
     @Test

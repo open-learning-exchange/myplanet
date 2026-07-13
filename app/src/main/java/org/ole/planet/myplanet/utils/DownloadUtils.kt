@@ -18,7 +18,7 @@ import java.util.regex.Pattern
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint
+import org.ole.planet.myplanet.di.DownloadResourceUpdateEntryPoint
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadService
@@ -30,7 +30,6 @@ object DownloadUtils {
     private const val WORKER_CHANNEL = "DownloadWorkerChannel"
     private val LINK_PATTERN = Pattern.compile("!\\[.*?]\\((.*?)\\)")
 
-    @JvmStatic
     fun createChannels(context: Context) {
         val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         if (manager.getNotificationChannel(DOWNLOAD_CHANNEL) == null) {
@@ -62,7 +61,6 @@ object DownloadUtils {
         }
     }
 
-    @JvmStatic
     fun buildInitialNotification(context: Context): Notification {
         createChannels(context)
         return NotificationCompat.Builder(context, DOWNLOAD_CHANNEL)
@@ -78,7 +76,6 @@ object DownloadUtils {
             .build()
     }
 
-    @JvmStatic
     fun buildProgressNotification(
         context: Context,
         current: Int,
@@ -108,7 +105,6 @@ object DownloadUtils {
         return builder.build()
     }
 
-    @JvmStatic
     fun buildCompletionNotification(
         context: Context,
         completed: Int,
@@ -132,7 +128,6 @@ object DownloadUtils {
             .setAutoCancel(true)
             .build()
     }
-    @JvmStatic
     fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
         return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
     }
@@ -148,11 +143,7 @@ object DownloadUtils {
             preferences.edit {
                 putStringSet(DownloadService.PRIORITY_DOWNLOADS_KEY, mergedPriority)
             }
-
-            val serviceRunning = isDownloadServiceRunning(ctx)
-            if (!serviceRunning) {
-                startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
-            }
+            startDownloadServiceSafely(ctx, DownloadService.PRIORITY_DOWNLOADS_KEY, false)
         }
     }
 
@@ -168,22 +159,8 @@ object DownloadUtils {
                 putStringSet(DownloadService.PENDING_DOWNLOADS_KEY, mergedUrls)
             }
 
-            val serviceRunning = isDownloadServiceRunning(ctx)
-            if (!serviceRunning) {
-                startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
-            }
+            startDownloadServiceSafely(ctx, DownloadService.PENDING_DOWNLOADS_KEY, fromSync)
         }
-    }
-
-    private fun isDownloadServiceRunning(context: Context): Boolean {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        @Suppress("DEPRECATION")
-        for (service in activityManager.getRunningServices(Integer.MAX_VALUE)) {
-            if (DownloadService::class.java.name == service.service.className) {
-                return true
-            }
-        }
-        return false
     }
 
     @RequiresApi(Build.VERSION_CODES.S)
@@ -272,7 +249,6 @@ object DownloadUtils {
         return links
     }
 
-    @JvmStatic
     fun updateResourceOfflineStatus(url: String) {
         MainApplication.applicationScope.launch {
             try {
@@ -286,7 +262,7 @@ object DownloadUtils {
     private val resourcesRepository: ResourcesRepository by lazy {
         val entryPoint = EntryPointAccessors.fromApplication(
             MainApplication.context,
-            RepositoryDependenciesEntryPoint::class.java
+            DownloadResourceUpdateEntryPoint::class.java
         )
         entryPoint.resourcesRepository()
     }

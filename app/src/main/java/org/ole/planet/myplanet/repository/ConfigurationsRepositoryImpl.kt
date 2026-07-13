@@ -7,8 +7,12 @@ import androidx.core.net.toUri
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -23,6 +27,7 @@ import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
+import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -33,6 +38,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.Sha256Utils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
@@ -42,10 +48,12 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationScope private val serviceScope: CoroutineScope,
     @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    private val databaseService: DatabaseService,
+    databaseService: DatabaseService,
     private val serverUrlMapper: ServerUrlMapper,
-    private val dispatcherProvider: DispatcherProvider
-) : ConfigurationsRepository {
+    private val dispatcherProvider: DispatcherProvider,
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val timeProvider: TimeProvider
+) : RealmRepository(databaseService, realmDispatcher), ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override suspend fun checkHealth(): String {
@@ -70,9 +78,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             } catch (t: Exception) {
                 t.printStackTrace()
                 when (t) {
-                    is java.net.UnknownHostException -> "Server not reachable"
-                    is java.net.SocketTimeoutException -> "Connection timeout"
-                    is java.net.ConnectException -> "Unable to connect to server"
+                    is UnknownHostException -> "Server not reachable"
+                    is SocketTimeoutException -> "Connection timeout"
+                    is ConnectException -> "Unable to connect to server"
                     is IOException -> "Network connection error"
                     else -> "Network error: ${t.localizedMessage ?: "Unknown error"}"
                 }
@@ -86,15 +94,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override fun checkVersion(callback: ConfigurationsRepository.CheckVersionCallback, spm: SharedPrefManager) {
         val baseUrl = UrlUtils.baseUrl(spm)
         if (baseUrl.isEmpty()) {
+            callback.onError(context.getString(R.string.server_url_not_configured), true)
             return
         }
 
-        serviceScope.launch {
-            withContext(dispatcherProvider.main) {
-                callback.onCheckingVersion()
-            }
+        serviceScope.launch(dispatcherProvider.io) {
+            callback.onCheckingVersion()
+
             val lastCheckTime = sharedPrefManager.rawPreferences.getLong("last_version_check_timestamp", 0)
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val twentyFourHoursInMillis = 24 * 60 * 60 * 1000
 
             if (currentTime - lastCheckTime < twentyFourHoursInMillis) {
@@ -113,16 +121,14 @@ class ConfigurationsRepositoryImpl @Inject constructor(
             }
 
             try {
-                val planetInfo = withContext(dispatcherProvider.io) { fetchVersionInfo(spm) }
+                val planetInfo = fetchVersionInfo(spm)
                 if (planetInfo == null) {
-                    withContext(dispatcherProvider.main) {
-                        callback.onError(context.getString(R.string.version_not_found), true)
-                    }
+                    callback.onError(context.getString(R.string.version_not_found), true)
                     return@launch
                 }
 
                 sharedPrefManager.rawPreferences.edit {
-                    putLong("last_version_check_timestamp", System.currentTimeMillis())
+                    putLong("last_version_check_timestamp", timeProvider.now())
                 }
                 sharedPrefManager.setLastWifiId(NetworkUtils.getCurrentNetworkId(context))
                 sharedPrefManager.setVersionDetail(JsonUtils.gson.toJson(planetInfo))
@@ -130,20 +136,16 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                 val rawApkVersion = fetchApkVersionString(spm)
                 val versionStr = JsonUtils.gson.fromJson(rawApkVersion, String::class.java)
                 if (versionStr.isNullOrEmpty()) {
-                    withContext(dispatcherProvider.main) {
-                        callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                    }
+                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
                     return@launch
                 }
 
                 val apkVersion = VersionUtils.parseApkVersionString(versionStr)
                     ?: run {
-                        withContext(dispatcherProvider.main) {
-                            callback.onError(
-                                context.getString(R.string.new_apk_version_required_but_not_found_on_server),
-                                false
-                            )
-                        }
+                        callback.onError(
+                            context.getString(R.string.new_apk_version_required_but_not_found_on_server),
+                            false
+                        )
                         return@launch
                     }
 
@@ -164,16 +166,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     override suspend fun checkServerAvailability(): Boolean {
         val updateUrl = sharedPrefManager.getServerUrl()
         serverAvailabilityCache[updateUrl]?.let { (available, timestamp) ->
-            if (System.currentTimeMillis() - timestamp < 30000) {
+            if (timeProvider.now() - timestamp < 30000) {
                 return available
             }
         }
 
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
-        withContext(dispatcherProvider.io) {
+        val result = withContext(dispatcherProvider.io) {
             val primaryReachable = checkServerAvailability(mapping.primaryUrl)
-            val alternativeReachable = mapping.alternativeUrl?.let { checkServerAvailability(it) } == true
+            val alternativeReachable = mapping.alternativeUrl?.let {
+                checkServerAvailability(it)
+            } == true
 
             if (!primaryReachable && alternativeReachable) {
                 mapping.alternativeUrl.let { alternativeUrl ->
@@ -188,21 +192,18 @@ class ConfigurationsRepositoryImpl @Inject constructor(
                         sharedPrefManager.rawPreferences
                     )
                 }
+                alternativeReachable
+            } else {
+                primaryReachable
             }
         }
 
-        return try {
-            val isAvailable = checkServerAvailability(UrlUtils.getUpdateUrl(sharedPrefManager))
-            serverAvailabilityCache[updateUrl] = Pair(isAvailable, System.currentTimeMillis())
-            isAvailable
-        } catch (e: Exception) {
-            serverAvailabilityCache[updateUrl] = Pair(false, System.currentTimeMillis())
-            false
-        }
+        serverAvailabilityCache[updateUrl] = Pair(result, timeProvider.now())
+        return result
     }
 
     override suspend fun clearAllData() {
-        databaseService.executeTransactionAsync { it.deleteAll() }
+        executeTransaction { it.deleteAll() }
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {
@@ -343,38 +344,28 @@ class ConfigurationsRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun processConfigurationDoc(doc: JsonObject) {
+    private suspend fun processConfigurationDoc(doc: JsonObject) = withContext(dispatcherProvider.io) {
         val parentCode = doc.getAsJsonPrimitive("parentCode").asString
-
-        withContext(dispatcherProvider.io) {
-            sharedPrefManager.setParentCode(parentCode)
-        }
+        sharedPrefManager.setParentCode(parentCode)
 
         if (doc.has("preferredLang")) {
             val preferredLang = doc.getAsJsonPrimitive("preferredLang").asString
             val languageCode = getLanguageCodeFromName(preferredLang)
             if (languageCode != null) {
-                withContext(dispatcherProvider.io) {
-                    LocaleUtils.setLocale(context, languageCode)
-                    sharedPrefManager.setPendingLanguageChange(languageCode)
-                }
+                LocaleUtils.setLocale(context, languageCode)
+                sharedPrefManager.setPendingLanguageChange(languageCode)
             }
         }
 
         if (doc.has("models")) {
             val modelsMap = doc.getAsJsonObject("models").entrySet()
                 .associate { it.key to it.value.asString }
-
-            withContext(dispatcherProvider.io) {
-                sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
-            }
+            sharedPrefManager.rawPreferences.edit { putString("ai_models", JsonUtils.gson.toJson(modelsMap)) }
         }
 
         if (doc.has("planetType")) {
             val planetType = doc.getAsJsonPrimitive("planetType").asString
-            withContext(dispatcherProvider.io) {
-                sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
-            }
+            sharedPrefManager.rawPreferences.edit { putString("planetType", planetType) }
         }
     }
 
@@ -440,33 +431,15 @@ class ConfigurationsRepositoryImpl @Inject constructor(
 
     private fun handleVersionEvaluation(info: MyPlanet, apkVersion: Int, callback: ConfigurationsRepository.CheckVersionCallback) {
         val currentVersion = VersionUtils.getVersionCode(context)
-        if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onUpdateAvailable(info, false)
-                }
-            }
-            return
-        }
-        if (apkVersion > currentVersion) {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
-                }
-            }
-            return
-        }
-        if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onUpdateAvailable(info, true)
-                }
-            }
-        } else {
-            serviceScope.launch {
-                withContext(dispatcherProvider.main) {
-                    callback.onError(context.getString(R.string.planet_is_up_to_date), false)
-                }
+        serviceScope.launch(dispatcherProvider.main) {
+            if (Constants.showBetaFeature(Constants.KEY_UPGRADE_MAX, context) && info.latestapkcode > currentVersion) {
+                callback.onUpdateAvailable(info, false)
+            } else if (apkVersion > currentVersion) {
+                callback.onUpdateAvailable(info, currentVersion >= info.minapkcode)
+            } else if (currentVersion < info.minapkcode && apkVersion < info.minapkcode) {
+                callback.onUpdateAvailable(info, true)
+            } else {
+                callback.onError(context.getString(R.string.planet_is_up_to_date), false)
             }
         }
     }

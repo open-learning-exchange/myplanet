@@ -15,11 +15,11 @@ interface FeedbackRepository {
         state: String? = null,
     ): RealmFeedback
     suspend fun getFeedback(userModel: RealmUser?): Flow<List<RealmFeedback>>
+    suspend fun getPendingFeedback(): List<RealmFeedback>
     suspend fun getFeedbackById(id: String?): RealmFeedback?
     suspend fun closeFeedback(id: String?)
     suspend fun addReply(id: String?, obj: JsonObject)
     suspend fun saveFeedback(feedback: RealmFeedback)
     suspend fun insertFromJson(jsonObject: JsonObject)
     suspend fun insertFeedbackList(jsonObjects: List<JsonObject>)
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
 }

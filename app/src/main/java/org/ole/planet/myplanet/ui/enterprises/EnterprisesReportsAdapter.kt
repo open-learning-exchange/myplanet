@@ -6,11 +6,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.ImageViewerUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class EnterprisesReportsAdapter(
@@ -56,6 +58,7 @@ class EnterprisesReportsAdapter(
                 tvReportDetails.text = context.getString(R.string.message_placeholder, it.description)
                 createUpdate.text = context.getString(R.string.report_date_details, TimeUtils.formatDate(it.createdDate, "MMM dd, yyyy"), TimeUtils.formatDate(it.updatedDate, "MMM dd, yyyy"))
             }
+            bindReportImage(binding, it)
         }
 
         binding.edit.setOnClickListener {
@@ -70,6 +73,24 @@ class EnterprisesReportsAdapter(
             if (adapterPosition != RecyclerView.NO_POSITION) {
                 getItem(adapterPosition)?.let { onDelete(it) }
             }
+        }
+    }
+
+    private fun bindReportImage(binding: ReportListItemBinding, report: RealmMyTeam) {
+        val imageFile = RealmMyTeam.getAttachmentFile(context, report._id, report.imageName)
+        if (imageFile != null && imageFile.exists()) {
+            binding.reportImage.visibility = View.VISIBLE
+            Glide.with(context)
+                .load(imageFile)
+                .placeholder(R.drawable.ic_loading)
+                .error(R.drawable.ic_loading)
+                .into(binding.reportImage)
+            binding.reportImage.setOnClickListener {
+                ImageViewerUtils.showZoomableImage(context, imageFile.absolutePath)
+            }
+        } else {
+            binding.reportImage.visibility = View.GONE
+            binding.reportImage.setOnClickListener(null)
         }
     }
 

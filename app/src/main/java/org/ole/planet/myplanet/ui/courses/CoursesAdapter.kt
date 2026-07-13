@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.courses
 
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MotionEvent
@@ -10,6 +11,7 @@ import android.widget.CheckBox
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -58,6 +60,17 @@ class CoursesAdapter(
         submitList(currentList.toList())
     }
 
+    override fun refreshWithDiff(id: String) {
+        val index = currentList.indexOfFirst { it.courseId == id }
+        if (index != -1) {
+            val bundle = Bundle()
+            bundle.putBoolean(RATING_PAYLOAD, true)
+            notifyItemChanged(index, bundle)
+            return
+        }
+        submitList(currentList.toList())
+    }
+
     private val externalFilesBaseUrl = "file://${FileUtils.getExternalFilesDir(context)}/ole/"
     private val selectedItems: MutableList<Course?> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
@@ -67,13 +80,25 @@ class CoursesAdapter(
     private val config: ChipCloudConfig
     private var isAscending = true
     private var isTitleAscending = false
-    private var areAllSelected = false
     private var tagsMap: Map<String, List<Tag>> = emptyMap()
+    private val courseIdToPosition = mutableMapOf<String, Int>()
+
+    override fun onCurrentListChanged(
+        previousList: MutableList<Course>,
+        currentList: MutableList<Course>
+    ) {
+        super.onCurrentListChanged(previousList, currentList)
+        courseIdToPosition.clear()
+        currentList.forEachIndexed { index, course ->
+            courseIdToPosition[course.courseId] = index
+        }
+    }
 
     companion object {
         private const val TAG_PAYLOAD = "payload_tags"
         private const val RATING_PAYLOAD = "payload_rating"
         private const val PROGRESS_PAYLOAD = "payload_progress"
+        private const val SELECTION_PAYLOAD = "payload_selection"
     }
 
     init {
@@ -106,8 +131,8 @@ class CoursesAdapter(
             if (courseId.isNullOrEmpty()) {
                 return@forEach
             }
-            val index = currentList.indexOfFirst { it.courseId == courseId }
-            if (index != -1) {
+            val index = courseIdToPosition[courseId]
+            if (index != null && index != -1) {
                 notifyItemChanged(index, TAG_PAYLOAD)
             }
         }
@@ -116,58 +141,6 @@ class CoursesAdapter(
     fun removeCourses(courseIds: List<String>) {
         val updated = currentList.filter { it.courseId !in courseIds }
         submitList(updated)
-    }
-
-    private fun dispatchPayloadByCourseId(courseId: String?, payload: Any) {
-        val index = currentList.indexOfFirst { it.courseId == courseId }
-        if (index != -1) {
-            notifyItemChanged(index, payload)
-        }
-    }
-
-    fun updateData(
-        newCourseList: List<Course>,
-        newMap: HashMap<String?, JsonObject>,
-        newProgressMap: HashMap<String?, JsonObject>?
-    ) {
-        val updatedCourseIds = mutableSetOf<String?>()
-
-        newMap.forEach { (courseId, newRating) ->
-            if (this.map[courseId] != newRating) {
-                updatedCourseIds.add(courseId)
-            }
-        }
-        this.map.keys.filterNot { newMap.containsKey(it) }.forEach { removedKey ->
-            updatedCourseIds.add(removedKey)
-        }
-
-        newProgressMap?.forEach { (courseId, newProgress) ->
-            if (this.progressMap?.get(courseId) != newProgress) {
-                updatedCourseIds.add(courseId)
-            }
-        }
-        this.progressMap?.keys?.filterNot { newProgressMap?.containsKey(it) == true }?.forEach { removedKey ->
-            updatedCourseIds.add(removedKey)
-        }
-
-        this.map.clear()
-        this.map.putAll(newMap)
-        this.progressMap = newProgressMap
-
-        submitList(newCourseList) {
-            val bundle = Bundle()
-            bundle.putBoolean(RATING_PAYLOAD, true)
-            bundle.putBoolean(PROGRESS_PAYLOAD, true)
-            updatedCourseIds.forEach { courseId ->
-                if (courseId.isNullOrEmpty()) {
-                    return@forEach
-                }
-                val index = currentList.indexOfFirst { it.courseId == courseId }
-                if (index != -1) {
-                    notifyItemChanged(index, bundle)
-                }
-            }
-        }
     }
 
     private fun sortCourseListByTitle(list: List<Course>): List<Course> {
@@ -212,7 +185,17 @@ class CoursesAdapter(
     }
 
     fun setProgressMap(progressMap: HashMap<String?, JsonObject>?) {
+        val oldMap = this.progressMap
+        if (oldMap == progressMap) return
         this.progressMap = progressMap
+        for (index in currentList.indices) {
+            val courseId = currentList[index].courseId
+            if (oldMap?.get(courseId) != progressMap?.get(courseId)) {
+                val bundle = Bundle()
+                bundle.putBoolean(PROGRESS_PAYLOAD, true)
+                notifyItemChanged(index, bundle)
+            }
+        }
     }
 
     fun setRatingMap(ratingMap: HashMap<String?, JsonObject>) {
@@ -236,11 +219,11 @@ class CoursesAdapter(
 
     fun areAllSelected(): Boolean {
         val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
-        areAllSelected = selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
-        return areAllSelected
+        return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
     }
 
     fun selectAllItems(selectAll: Boolean) {
+        val oldSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
         selectedItems.clear()
 
         if (selectAll) {
@@ -248,9 +231,13 @@ class CoursesAdapter(
             selectedItems.addAll(selectableCourses)
         }
 
+        val newSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
+
         currentList.forEachIndexed { index, course ->
-            if (isMyCourseLib || !course.isMyCourse) {
-                notifyItemChanged(index)
+            val wasSelected = oldSelectedIds.contains(course.courseId)
+            val isSelected = newSelectedIds.contains(course.courseId)
+            if (wasSelected != isSelected) {
+                notifyItemChanged(index, SELECTION_PAYLOAD)
             }
         }
 
@@ -268,13 +255,14 @@ class CoursesAdapter(
         }
 
         val hasTagPayload = payloads.any { it == TAG_PAYLOAD }
+        val hasSelectionPayload = payloads.any { it == SELECTION_PAYLOAD }
         val bundle = payloads.filterIsInstance<Bundle>().fold(Bundle()) { acc, b -> acc.apply { putAll(b) } }
         val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
         val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD)
 
-        if (hasTagPayload || hasRatingPayload || hasProgressPayload) {
+        if (hasTagPayload || hasRatingPayload || hasProgressPayload || hasSelectionPayload) {
             val course = getItem(position) ?: return
-            holder.bindPayloads(position, course, hasTagPayload, hasRatingPayload, hasProgressPayload)
+            holder.bindPayloads(position, course, hasTagPayload, hasRatingPayload, hasProgressPayload, hasSelectionPayload)
         } else {
             super.onBindViewHolder(holder, position, payloads)
         }
@@ -297,7 +285,7 @@ class CoursesAdapter(
 
     abstract inner class CoursesViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         abstract fun bind(position: Int, course: Course)
-        abstract fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean)
+        abstract fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean, hasSelectionPayload: Boolean)
 
         open fun onRecycled() {}
     }
@@ -354,13 +342,13 @@ class CoursesAdapter(
             displayTagCloud(position)
 
             if (!isGuest) setupRatingBar(course)
-            setupCheckbox(course, position, isGuest)
+            setupCheckbox(course, isGuest)
 
             updateRatingViews(position)
             updateProgressViews(position)
         }
 
-        override fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean) {
+        override fun bindPayloads(position: Int, course: Course, hasTagPayload: Boolean, hasRatingPayload: Boolean, hasProgressPayload: Boolean, hasSelectionPayload: Boolean) {
             if (hasTagPayload) {
                 renderTagCloud(rowCourseBinding.flexboxDrawable, tagsMap[course.courseId].orEmpty())
             }
@@ -369,6 +357,11 @@ class CoursesAdapter(
             }
             if (hasProgressPayload) {
                 updateProgressViews(position)
+            }
+            if (hasSelectionPayload) {
+                if (!isGuest && (isMyCourseLib || !course.isMyCourse)) {
+                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
+                }
             }
         }
 
@@ -443,12 +436,12 @@ class CoursesAdapter(
             }
         }
 
-        private fun setupCheckbox(course: Course, position: Int, isGuest: Boolean) {
+        private fun setupCheckbox(course: Course, isGuest: Boolean) {
             if (!isGuest) {
                 val showCheckbox = isMyCourseLib || !course.isMyCourse
                 if (showCheckbox) {
                     rowCourseBinding.checkbox.visibility = View.VISIBLE
-                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course)
+                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
                     rowCourseBinding.checkbox.setOnClickListener { view: View ->
                         rowCourseBinding.checkbox.contentDescription =
                             context.getString(R.string.select_res_course, course.courseTitle)
@@ -527,6 +520,19 @@ class CoursesAdapter(
             } else {
                 rowCourseBinding.courseProgress.visibility = View.GONE
             }
+            val badge = rowCourseBinding.statusBadge
+            val current = getInt("current", progress)
+            val max = getInt("max", progress)
+            val (statusText, statusColor) = when {
+                progress == null -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+                current >= max   -> Pair(context.getString(R.string.status_completed),   R.color.status_completed)
+                current > 0      -> Pair(context.getString(R.string.status_in_progress), R.color.status_in_progress)
+                else             -> Pair(context.getString(R.string.status_not_started), R.color.status_not_started)
+            }
+            badge.text = statusText
+            badge.visibility = View.VISIBLE
+            (badge.background as? GradientDrawable)
+                ?.setColor(ContextCompat.getColor(context, statusColor))
         }
 
         private fun setTextViewContent(textView: TextView?, content: String?, layout: View?, prefix: String) {

@@ -8,18 +8,14 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import io.mockk.every
-import io.mockk.slot
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
@@ -34,14 +30,12 @@ class FeedbackListViewModelTest {
     private lateinit var viewModel: FeedbackListViewModel
     private lateinit var feedbackRepository: FeedbackRepository
     private lateinit var userSessionManager: UserSessionManager
-    private lateinit var syncManager: SyncManager
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         feedbackRepository = mockk()
         userSessionManager = mockk()
-        syncManager = mockk()
 
         val user = mockk<RealmUser>()
         coEvery { userSessionManager.getUserModel() } returns user
@@ -50,8 +44,7 @@ class FeedbackListViewModelTest {
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
             userSessionManager = userSessionManager,
-            dispatcherProvider = dispatcherProvider,
-            syncManager = syncManager
+            dispatcherProvider = dispatcherProvider
         )
     }
 
@@ -75,8 +68,7 @@ class FeedbackListViewModelTest {
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
             userSessionManager = userSessionManager,
-            dispatcherProvider = dispatcherProvider,
-            syncManager = syncManager
+            dispatcherProvider = dispatcherProvider
         )
 
         advanceUntilIdle()
@@ -100,8 +92,7 @@ class FeedbackListViewModelTest {
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
             userSessionManager = userSessionManager,
-            dispatcherProvider = dispatcherProvider,
-            syncManager = syncManager
+            dispatcherProvider = dispatcherProvider
         )
         advanceUntilIdle()
         assertEquals(initialFeedback, viewModel.feedbackList.value)
@@ -116,26 +107,5 @@ class FeedbackListViewModelTest {
         assertEquals(updatedFeedback, viewModel.feedbackList.value)
         // Verify it was called twice: once in init, once in refreshFeedback
         coVerify(exactly = 2) { feedbackRepository.getFeedback(user) }
-    }
-
-    @Test
-    fun testStartFeedbackSyncUpdatesSyncStatus() {
-        val listenerSlot = slot<OnSyncListener>()
-        every { syncManager.start(capture(listenerSlot), "full", listOf("feedback")) } answers {
-            // Do nothing, just capture the listener
-        }
-
-        assertEquals(FeedbackListViewModel.SyncStatus.Idle, viewModel.syncStatus.value)
-
-        viewModel.startFeedbackSync()
-
-        listenerSlot.captured.onSyncStarted()
-        assertEquals(FeedbackListViewModel.SyncStatus.Syncing, viewModel.syncStatus.value)
-
-        listenerSlot.captured.onSyncComplete()
-        assertEquals(FeedbackListViewModel.SyncStatus.Success, viewModel.syncStatus.value)
-
-        listenerSlot.captured.onSyncFailed("Error message")
-        assertEquals(FeedbackListViewModel.SyncStatus.Error("Error message"), viewModel.syncStatus.value)
     }
 }

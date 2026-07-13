@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.base
 import android.Manifest
 import android.content.pm.PackageManager
 import androidx.core.app.NotificationManagerCompat
-
 import androidx.core.content.ContextCompat
 import io.mockk.every
 import io.mockk.mockk
@@ -14,7 +13,6 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-
 
 class BasePermissionActivityTest {
 

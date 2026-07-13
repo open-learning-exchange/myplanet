@@ -18,13 +18,20 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class TeamsTasksAdapter(
     private val context: Context,
-    var nonTeamMember: Boolean,
-    private val fetchAssigneeName: (String, (String?) -> Unit) -> (() -> Unit)
+    var nonTeamMember: Boolean
 ) : ListAdapter<RealmTeamTask, TeamsTasksViewHolder>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null
     fun setListener(listener: OnTaskCompletedListener?) {
         this.listener = listener
+    }
+
+    fun hasAssignee(id: String): Boolean = assigneeCache.containsKey(id)
+
+    fun getKnownAssigneeIds(): Set<String> = assigneeCache.keys.toSet()
+
+    fun updateAssignees(newAssignees: Map<String, String>) {
+        assigneeCache.putAll(newAssignees)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamsTasksViewHolder {
@@ -33,7 +40,6 @@ class TeamsTasksAdapter(
     }
 
     override fun onBindViewHolder(holder: TeamsTasksViewHolder, position: Int) {
-        holder.cancelAssigneeJob?.invoke()
         val it = getItem(position)
         val binding = holder.binding
         binding.checkbox.setOnCheckedChangeListener(null)
@@ -49,25 +55,38 @@ class TeamsTasksAdapter(
                 context.getString(R.string.completed_colon, formatDate(it.deadline))
             )
         }
-        holder.cancelAssigneeJob = showAssignee(binding, it)
+        showAssignee(binding, it)
         binding.icMore.setOnClickListener {
-            listener?.onClickMore(getItem(position))
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onClickMore(getItem(adapterPosition))
+            }
         }
         binding.editTask.setOnClickListener {
-            listener?.onEdit(getItem(position))
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onEdit(getItem(adapterPosition))
+            }
         }
         binding.deleteTask.setOnClickListener {
-            listener?.onDelete(getItem(position))
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                listener?.onDelete(getItem(adapterPosition))
+            }
         }
         holder.itemView.setOnClickListener {
-            val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
-                .setTitle(getItem(position).title)
-                .setMessage(getItem(position).description)
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }.create()
+            val adapterPosition = holder.bindingAdapterPosition
+            if (adapterPosition != RecyclerView.NO_POSITION) {
+                val item = getItem(adapterPosition)
+                val alertDialog = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(item.title)
+                    .setMessage(item.description)
+                    .setNegativeButton("Cancel") { dialog, _ ->
+                        dialog.dismiss()
+                    }.create()
 
-            alertDialog.show()
+                alertDialog.show()
+            }
         }
         if (nonTeamMember) {
             binding.editTask.visibility = View.GONE
@@ -82,31 +101,22 @@ class TeamsTasksAdapter(
         }
     }
 
-    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask): (() -> Unit)? {
+    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
         val assigneeId = realmTeamTask.assignee
         if (assigneeId.isNullOrEmpty()) {
             binding.assignee.setText(R.string.no_assignee)
-            return null
+            return
         }
 
-        assigneeCache[assigneeId]?.let {
-            binding.assignee.text = context.getString(R.string.assigned_to_colon, it)
-            return null
-        }
-
-        return fetchAssigneeName(assigneeId) { name ->
-            if (name != null) {
-                assigneeCache[assigneeId] = name
-                binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
-            } else {
-                binding.assignee.setText(R.string.no_assignee)
-            }
+        val name = assigneeCache[assigneeId]
+        if (name != null) {
+            binding.assignee.text = context.getString(R.string.assigned_to_colon, name)
+        } else {
+            binding.assignee.setText(R.string.no_assignee)
         }
     }
 
-    class TeamsTasksViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root) {
-        var cancelAssigneeJob: (() -> Unit)? = null
-    }
+    class TeamsTasksViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
         val DIFF_CALLBACK = DiffUtils.itemCallback<RealmTeamTask>(

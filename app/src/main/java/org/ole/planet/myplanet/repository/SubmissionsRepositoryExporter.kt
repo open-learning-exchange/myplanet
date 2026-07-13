@@ -14,14 +14,17 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class SubmissionsRepositoryExporter @Inject constructor(
+internal class SubmissionsRepositoryExporter @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
+    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val timeProvider: TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher) {
 
     companion object {
@@ -40,6 +43,7 @@ class SubmissionsRepositoryExporter @Inject constructor(
                 ?: return@withRealmAsync null
 
             val document = PdfDocument()
+            try {
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -99,20 +103,22 @@ class SubmissionsRepositoryExporter @Inject constructor(
 
                 document.finishPage(page)
 
-                val fileName = "submission_${submission.id}_${System.currentTimeMillis()}.pdf"
+                val fileName = "submission_${submission.id}_${timeProvider.now()}.pdf"
                 val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
                 val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
+                FileOutputStream(file).use { outputStream ->
+                    document.writeTo(outputStream)
+                }
 
                 file
-            } catch (e: Exception) {
+            } finally {
+                document.close()
+            }
+        } catch (e: Exception) {
                 e.printStackTrace()
                 null
             }
@@ -131,6 +137,7 @@ class SubmissionsRepositoryExporter @Inject constructor(
             if (submissions.isEmpty()) return@withRealmAsync null
 
             val document = PdfDocument()
+            try {
                 var pageNumber = 1
                 var pageInfo = PdfDocument.PageInfo.Builder(PAGE_WIDTH, PAGE_HEIGHT, pageNumber).create()
                 var page = document.startPage(pageInfo)
@@ -210,20 +217,22 @@ class SubmissionsRepositoryExporter @Inject constructor(
 
                 document.finishPage(page)
 
-                val fileName = "submissions_report_${System.currentTimeMillis()}.pdf"
+                val fileName = "submissions_report_${timeProvider.now()}.pdf"
                 val directory = File(context.getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS), "Submissions")
                 if (!directory.exists()) {
                     directory.mkdirs()
                 }
 
                 val file = File(directory, fileName)
-                val outputStream = FileOutputStream(file)
-                document.writeTo(outputStream)
-                document.close()
-                outputStream.close()
+                FileOutputStream(file).use { outputStream ->
+                    document.writeTo(outputStream)
+                }
 
                 file
-            } catch (e: Exception) {
+            } finally {
+                document.close()
+            }
+        } catch (e: Exception) {
                 e.printStackTrace()
                 null
             }
@@ -255,12 +264,14 @@ class SubmissionsRepositoryExporter @Inject constructor(
         return currentY
     }
 
-    private fun formatAnswer(answer: org.ole.planet.myplanet.model.RealmAnswer?): String {
+    private fun formatAnswer(answer: RealmAnswer?): String {
+        if (answer == null) return "No answer provided"
+        val value = answer.value
+        val choices = answer.valueChoices
         return when {
-            answer == null -> "No answer provided"
-            !answer.value.isNullOrEmpty() -> answer.value!!
-            answer.valueChoices != null && answer.valueChoices!!.isNotEmpty() -> {
-                answer.valueChoices!!.joinToString(", ") { choice ->
+            !value.isNullOrEmpty() -> value
+            !choices.isNullOrEmpty() -> {
+                choices.joinToString(", ") { choice ->
                     try {
                         val choiceObj = org.json.JSONObject(choice)
                         choiceObj.optString("text", choice)

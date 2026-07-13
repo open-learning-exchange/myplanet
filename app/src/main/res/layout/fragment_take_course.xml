@@ -12,19 +12,18 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center"
         android:visibility="gone" />
+
     <LinearLayout
         android:id="@+id/content_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
-
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:padding="8dp">
-
             <ImageView
                 android:id="@+id/backButton"
                 android:layout_width="wrap_content"
@@ -51,18 +50,15 @@
             app:cardCornerRadius="8dp"
             app:cardElevation="2dp"
             app:cardUseCompatPadding="true">
-
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:orientation="vertical">
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
                     android:background="@color/colorPrimary"
                     android:padding="8dp">
-
                     <TextView
                         android:id="@+id/tv_step"
                         android:layout_width="wrap_content"
@@ -81,6 +77,28 @@
                         android:background="@drawable/buttonyellow"
                         android:minHeight="@dimen/_40dp"
                         android:text="@string/remove" />
+                </LinearLayout>
+
+                <ProgressBar
+                    android:id="@+id/course_step_progress_bar"
+                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="4dp"
+                    android:progress="0"
+                    android:progressTint="@color/colorAccent" />
+
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPager2"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:background="@color/card_bg" />
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="?attr/actionBarSize"
+                    android:background="@color/colorPrimary"
+                    android:orientation="horizontal"
+                    android:padding="8dp">
 
                     <TextView
                         android:id="@+id/previous_step"
@@ -93,6 +111,10 @@
                         android:text="@string/previous"
                         android:textColor="@color/md_white_1000"
                         app:drawableLeftCompat="@drawable/ic_left_arrow" />
+                    <View
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1" />
                     <TextView
                         android:id="@+id/next_step"
                         android:layout_width="wrap_content"
@@ -118,13 +140,6 @@
                         android:textColor="@color/md_white_1000"
                         android:visibility="gone" />
                 </LinearLayout>
-
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/viewPager2"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:background="@color/card_bg" />
                 <LinearLayout
                     android:id="@+id/ll_progress"
                     android:layout_width="match_parent"
@@ -132,7 +147,6 @@
                     android:background="@color/colorPrimary"
                     android:padding="8dp"
                     android:visibility="gone">
-
                     <androidx.appcompat.widget.AppCompatSeekBar
                         android:id="@+id/course_progress"
                         style="@style/Seekbar"

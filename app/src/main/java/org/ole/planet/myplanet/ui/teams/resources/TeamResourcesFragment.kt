@@ -9,15 +9,14 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
-import androidx.lifecycle.Lifecycle
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
@@ -120,8 +119,8 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
                         }
                     viewLifecycleOwner.lifecycleScope.launch {
                         teamsRepository.addResourceLinks(teamId, selectedResources, user?.id)
-                        teamsRepository.syncTeamActivities()
                         showLibraryList()
+                        teamsSyncRepository.syncTeamActivities()
                     }
                 }
                 .setNeutralButton(R.string.create_new_resource) { _: DialogInterface?, _: Int ->
@@ -141,6 +140,14 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
             putInt("type", 0)
             putString("teamId", teamId)
         }
+        childFragmentManager.registerFragmentLifecycleCallbacks(object : FragmentManager.FragmentLifecycleCallbacks() {
+            override fun onFragmentDetached(fm: FragmentManager, f: Fragment) {
+                if (f === fragment) {
+                    fm.unregisterFragmentLifecycleCallbacks(this)
+                    showLibraryList()
+                }
+            }
+        }, false)
         fragment.show(childFragmentManager, "AddResourceFragment")
     }
 
@@ -179,9 +186,9 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         viewLifecycleOwner.lifecycleScope.launch {
             runCatching {
                 teamsRepository.removeResourceLink(teamId, resourceId)
-                teamsRepository.syncTeamActivities()
             }.onSuccess {
                 adapterLibrary.removeResourceAt(position)
+                teamsSyncRepository.syncTeamActivities()
             }.onFailure {
                 onResourceUpdateFailed(R.string.failed_to_remove_resource)
             }

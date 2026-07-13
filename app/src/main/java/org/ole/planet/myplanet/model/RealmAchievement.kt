@@ -8,6 +8,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import io.realm.RealmList
 import io.realm.RealmObject
+import io.realm.annotations.Ignore
 import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -28,11 +29,12 @@ open class RealmAchievement : RealmObject() {
     var username: String? = null
     var parentCode: String? = null
     var isUpdated: Boolean = false
+    var resumeFileName: String? = null
 
     val achievementsArray: JsonArray
         get() = parseStringListToJsonArray(achievements)
 
-    @io.realm.annotations.Ignore
+    @Ignore
     private var cachedReferencesArray: JsonArray? = null
 
     fun getReferencesArray(): JsonArray {
@@ -101,7 +103,6 @@ open class RealmAchievement : RealmObject() {
             return array
         }
 
-        @JvmStatic
         fun serialize(sub: RealmAchievement): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", sub._id)
@@ -118,10 +119,10 @@ open class RealmAchievement : RealmObject() {
             `object`.add("achievements", sub.achievementsArray)
             `object`.add("links", sub.linksArray)
             `object`.add("otherInfo", sub.otherInfoArray)
+            `object`.addProperty("resumeFileName", sub.resumeFileName ?: "")
             return `object`
         }
 
-        @JvmStatic
         fun createReference(name: String?, relation: EditText, phone: EditText, email: EditText): JsonObject {
             val ob = JsonObject()
             ob.addProperty("name", name)

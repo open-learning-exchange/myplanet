@@ -4,6 +4,9 @@ import android.content.Context
 import android.util.Base64
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.net.ConnectException
+import java.net.SocketTimeoutException
+import java.net.UnknownHostException
 import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,6 +18,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.UserRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.androidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -26,6 +30,7 @@ class LoginSyncManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
+    private val userSyncRepository: UserSyncRepository,
     private val apiInterface: ApiInterface,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
@@ -106,9 +111,9 @@ class LoginSyncManager @Inject constructor(
                     try {
                         t.printStackTrace()
                         val errorMsg = when (t) {
-                            is java.net.UnknownHostException -> "Server not reachable. Check your internet connection."
-                            is java.net.SocketTimeoutException -> "Connection timeout. Please try again."
-                            is java.net.ConnectException -> "Unable to connect to server."
+                            is UnknownHostException -> "Server not reachable. Check your internet connection."
+                            is SocketTimeoutException -> "Connection timeout. Please try again."
+                            is ConnectException -> "Unable to connect to server."
                             else -> "Network error: ${t.message ?: "Unknown error"}"
                         }
                         withContext(dispatcherProvider.main) { listener.onSyncFailed(errorMsg) }
@@ -176,7 +181,7 @@ class LoginSyncManager @Inject constructor(
             return
         }
 
-        userRepository.saveUser(jsonDoc, sharedPrefManager.rawPreferences)
+        userSyncRepository.saveUser(jsonDoc)
         withContext(dispatcherProvider.main) {
             listener.onSyncComplete()
         }

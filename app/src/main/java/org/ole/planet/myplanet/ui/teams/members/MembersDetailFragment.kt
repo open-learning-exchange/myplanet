@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.widget.AppCompatTextView
 import androidx.fragment.app.Fragment
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -62,7 +63,7 @@ class MembersDetailFragment : Fragment() {
                 && !value.isBlank()
         if (shouldShow) {
             when (view) {
-                is androidx.appcompat.widget.AppCompatTextView -> view.text = value
+                is AppCompatTextView -> view.text = value
             }
             view.visibility = View.VISIBLE
             (view.parent as? View)?.visibility = View.VISIBLE
@@ -74,7 +75,6 @@ class MembersDetailFragment : Fragment() {
 
 
     companion object {
-        @JvmStatic
         fun newInstance(
             name: String,
             email: String,

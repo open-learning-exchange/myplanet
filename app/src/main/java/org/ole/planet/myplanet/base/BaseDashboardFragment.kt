@@ -27,15 +27,12 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.services.CachedMyLifeItem
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnDashboardActionListener
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
@@ -48,15 +45,12 @@ import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
-import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DownloadUtils
-import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionListener,
-    OnSyncListener {
+open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
@@ -107,7 +101,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    override fun forceDownloadNewsImages() {
+    fun forceDownloadNewsImages() {
         Utilities.toast(activity, getString(R.string.please_select_starting_date))
         val now = Calendar.getInstance()
         val dpd = DatePickerDialog(requireActivity(), { _: DatePicker?, i: Int, i1: Int, i2: Int ->
@@ -118,17 +112,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }, now[Calendar.YEAR], now[Calendar.MONTH], now[Calendar.DAY_OF_MONTH])
         dpd.setTitle(getString(R.string.read_offline_news_from))
         dpd.show()
-    }
-
-    override fun downloadDictionary() {
-        val list = ArrayList<String>()
-        list.add(Constants.DICTIONARY_URL)
-        if (!FileUtils.checkFileExist(requireContext(), Constants.DICTIONARY_URL)) {
-            Utilities.toast(activity, getString(R.string.downloading_started_please_check_notification))
-            DownloadUtils.openDownloadService(activity, list, false)
-        } else {
-            Utilities.toast(activity, getString(R.string.file_already_exists))
-        }
     }
 
     private fun observeUiState() {
@@ -278,46 +261,11 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
 
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val userId = prefData.getUserId().ifEmpty { "--" }
-
-        val cached = prefData.getCachedMyLifeItems(userId)
-        if (cached != null) {
-            renderCachedMyLifeItems(flexboxLayout, cached.filter { it.isVisible })
-            updateMyLifeSurveyCount()
-
-            viewLifecycleOwner.lifecycleScope.launch {
-                val realmItems = lifeRepository.getMyLifeByUserId(userId, ensureLatest = false)
-                if (realmItems.isNotEmpty()) {
-                    prefData.cacheMyLifeItems(userId, realmItems)
-                }
-            }
-            return
-        }
-
-        val allForUser = lifeRepository.getMyLifeByUserId(userId, ensureLatest = false)
-        val visibleItems = if (allForUser.isEmpty()) {
-            lifeRepository.seedMyLifeIfEmpty(userId, getMyLifeListBase(userId))
-            val seeded = lifeRepository.getMyLifeByUserId(userId, ensureLatest = true)
-            prefData.cacheMyLifeItems(userId, seeded)
-            seeded.filter { it.isVisible }
-        } else {
-            prefData.cacheMyLifeItems(userId, allForUser)
-            allForUser.filter { it.isVisible }
-        }
-
+        val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         for ((itemCnt, items) in visibleItems.withIndex()) {
             flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
         }
         updateMyLifeSurveyCount()
-    }
-
-    private fun renderCachedMyLifeItems(flexboxLayout: FlexboxLayout, items: List<CachedMyLifeItem>) {
-        items.forEachIndexed { itemCnt, item ->
-            val realmMyLife = RealmMyLife(item.imageId, null, item.title).apply {
-                isVisible = item.isVisible
-                weight = item.weight
-            }
-            flexboxLayout.addView(getLayout(itemCnt, realmMyLife, 0), params)
-        }
     }
 
     private fun updateMyLifeSurveyCount() {
@@ -374,7 +322,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    override fun showResourceDownloadDialog() {
+    fun showResourceDownloadDialog() {
         viewLifecycleOwner.lifecycleScope.launch {
             val userId = prefData.getUserId().ifEmpty { "--" }
             val libraryList = viewModel.getLibraryListForUser(userId)
@@ -382,7 +330,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         }
     }
 
-    override fun showUserResourceDialog() {
+    fun showUserResourceDialog() {
         viewModel.loadUsers()
 
         val alertHealthListBinding = AlertHealthListBinding.inflate(LayoutInflater.from(activity))
@@ -431,7 +379,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnDashboardActionL
         dialog.show()
     }
 
-    override fun syncKeyId() {
+    fun syncKeyId() {
         if (model?.getRoleAsString()?.contains("health") == true) {
             transactionSyncManager.syncAllHealthData(prefData.rawPreferences, this)
         } else {

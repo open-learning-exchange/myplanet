@@ -19,7 +19,6 @@ open class RealmSubmitPhotos : RealmObject() {
     var uploaded = false
 
     companion object {
-        @JvmStatic
         fun serializeRealmSubmitPhotos(submit: RealmSubmitPhotos): JsonObject {
             val obj = JsonObject()
             obj.addProperty("id", submit.id)

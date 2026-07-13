@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
@@ -13,5 +14,6 @@ interface HealthRepository {
     suspend fun getUpdatedHealthForUser(userId: String): List<RealmHealthExamination>
     suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>)
     suspend fun updateExaminationUserId(id: String, userId: String)
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray)
+    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?>
 }

@@ -4,6 +4,7 @@ import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
+import androidx.activity.result.ActivityResultCallback
 import androidx.activity.result.ActivityResultCaller
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContract
@@ -49,6 +50,27 @@ class AudioRecorderTest {
     fun testSetAudioRecordListener() {
         val result = audioRecorder.setAudioRecordListener(mockListener)
         assertTrue(result === audioRecorder)
+    }
+
+    @Test
+    fun testForceStopWhenRecording() {
+        val mockMediaRecorder = mockk<MediaRecorder>(relaxed = true)
+
+        val field = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        field.isAccessible = true
+        field.set(audioRecorder, mockMediaRecorder)
+
+        audioRecorder.setAudioRecordListener(mockListener)
+        audioRecorder.forceStop()
+
+        verify { mockMediaRecorder.stop() }
+        verify { mockMediaRecorder.release() }
+        val fieldAfter = AudioRecorder::class.java.getDeclaredField("myAudioRecorder")
+        fieldAfter.isAccessible = true
+        val myAudioRecorder = fieldAfter.get(audioRecorder)
+        assertTrue(myAudioRecorder == null)
+        assertFalse(audioRecorder.isRecording())
+        verify { mockListener.onError("Recording stopped") }
     }
 
     @Test
@@ -106,7 +128,7 @@ class AudioRecorderTest {
         val mockLauncher = mockk<ActivityResultLauncher<String>>(relaxed = true)
 
         val contractSlot = slot<ActivityResultContract<String, Boolean>>()
-        val callbackSlot = slot<androidx.activity.result.ActivityResultCallback<Boolean>>()
+        val callbackSlot = slot<ActivityResultCallback<Boolean>>()
 
         every {
             mockCaller.registerForActivityResult(

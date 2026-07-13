@@ -11,12 +11,9 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
@@ -24,7 +21,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
@@ -32,7 +28,6 @@ import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -43,6 +38,9 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class BellDashboardFragment : BaseDashboardFragment() {
@@ -55,6 +53,9 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
+
+    @Inject
+    lateinit var timeProvider: TimeProvider
 
     companion object {
         private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
@@ -93,12 +94,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
 
     private fun setupNetworkStatusMonitoring() {
         networkStatusJob?.cancel()
-        networkStatusJob = viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.networkStatus.collect { status ->
-                    updateNetworkIndicator(status)
-                }
-            }
+        networkStatusJob = collectWhenStarted(viewModel.networkStatus) { status ->
+            updateNetworkIndicator(status)
         }
     }
 
@@ -151,7 +148,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun checkPendingSurveys() {
         viewLifecycleOwner.lifecycleScope.launch {
             val lastShown = surveysRepository.getLastSurveyDialogShown()
-            if (System.currentTimeMillis() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
+            if (timeProvider.now() - lastShown < SURVEY_DIALOG_INTERVAL_MS) return@launch
 
             val pendingSurveys = submissionsRepository.getUniquePendingSurveys(user?.id)
             if (pendingSurveys.isNotEmpty()) {
@@ -227,12 +224,8 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun observeSurveyReminders() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                surveysRepository.dueRemindersFlow().collect { ids ->
-                    handleDueReminders(ids)
-                }
-            }
+        collectWhenStarted(surveysRepository.dueRemindersFlow()) { ids ->
+            handleDueReminders(ids)
         }
     }
 
@@ -275,7 +268,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         recyclerView.layoutManager = LinearLayoutManager(requireActivity())
 
         viewLifecycleOwner.lifecycleScope.launch {
-            surveysRepository.setLastSurveyDialogShown(System.currentTimeMillis())
+            surveysRepository.setLastSurveyDialogShown(timeProvider.now())
         }
 
         surveyListDialog?.dismiss()
@@ -309,14 +302,10 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private fun observeCompletedCourses() {
         binding.cardProfileBell.progressBarBadges?.visibility = View.VISIBLE
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.completedCourses.collectLatest { courses ->
-                    if (courses.isNotEmpty()) {
-                        showBadges(courses)
-                        binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
-                    }
-                }
+        collectLatestWhenStarted(viewModel.completedCourses) { courses ->
+            if (courses.isNotEmpty()) {
+                showBadges(courses)
+                binding.cardProfileBell.progressBarBadges?.visibility = View.GONE
             }
         }
 
@@ -375,14 +364,14 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
         binding.homeCardLibrary.myLibraryImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(ResourcesFragment())
             }
         }
         binding.homeCardCourses.myCoursesImageButton.setOnClickListener {
             if (user?.id?.startsWith("guest") == true) {
-                guestDialog(requireContext(), profileDbHandler)
+                guestDialog(requireContext())
             } else {
                 homeItemClickListener?.openMyFragment(CoursesFragment())
             }

@@ -8,16 +8,20 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import io.realm.RealmObject
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
 abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), OnRatingChangeListener {
+    @Inject lateinit var dispatcherProvider: DispatcherProvider
     var subjects: MutableSet<String> = mutableSetOf()
     var languages: MutableSet<String> = mutableSetOf()
     var mediums: MutableSet<String> = mutableSetOf()
@@ -37,7 +41,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     abstract fun getLayout(): Int
 
-    abstract suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder>
+    abstract suspend fun getAdapter(): ListAdapter<*, *>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -160,9 +164,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
             if (view == null || !isAdded || requireActivity().isFinishing) return@launch
 
-            val newAdapter = getAdapter()
-            recyclerView.adapter = newAdapter
-            showNoData(tvMessage, newAdapter.itemCount, "")
+            postAddRefresh()
 
             errorOccurred?.let {
                 it.printStackTrace()
@@ -173,6 +175,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
             if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
+    }
+
+    protected open suspend fun postAddRefresh() {
+        val newAdapter = getAdapter()
+        recyclerView.adapter = newAdapter
+        showNoData(tvMessage, newAdapter.itemCount, "")
     }
 
     private fun setJoinInProgress(inProgress: Boolean) {
@@ -188,8 +196,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open suspend fun deleteSelected(deleteProgress: Boolean) {
-        selectedItems?.forEachIndexed { _, item ->
+    open fun deleteSelected(deleteProgress: Boolean) {
+        val snapshot = selectedItems?.toList() ?: return
+        for (item in snapshot) {
             val `object` = item as RealmObject
             deleteCourseProgress(deleteProgress, `object`)
             removeFromShelf(`object`)
@@ -201,26 +210,12 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         return selectedItems?.size ?: 0
     }
 
-    private suspend fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
+    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
         if (deleteProgress && `object` is RealmMyCourse) {
-            coursesRepository.deleteCourseProgress(`object`.courseId)
+            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                coursesRepository.deleteCourseProgress(`object`.courseId)
+            }
         }
-    }
-
-    fun applyFilter(libraries: List<RealmMyLibrary>): List<RealmMyLibrary> {
-        val newList: MutableList<RealmMyLibrary> = ArrayList()
-        for (l in libraries) {
-            if (isValidFilter(l)) newList.add(l)
-        }
-        return newList
-    }
-
-    private fun isValidFilter(l: RealmMyLibrary): Boolean {
-        val sub = subjects.isEmpty() || subjects.let { l.subject?.containsAll(it) } == true
-        val lev = levels.isEmpty() || l.level?.containsAll(levels) == true
-        val lan = languages.isEmpty() || languages.contains(l.language)
-        val med = mediums.isEmpty() || mediums.contains(l.mediaType)
-        return sub && lev && lan && med
     }
 
     override fun onDetach() {
@@ -268,11 +263,5 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             textView.setText(messageRes)
         }
 
-        fun showNoFilter(v: View?, count: Int) {
-            v ?: return
-            v.visibility = if (count == 0) View.VISIBLE else View.GONE
-            val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
-            textView.setText(R.string.no_course_matched_filter)
-        }
     }
 }

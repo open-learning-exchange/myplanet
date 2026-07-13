@@ -6,6 +6,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
 
 object ServerConfigUtils {
     fun getServerAddresses(context: Context): List<ServerAddress> {
@@ -63,6 +64,25 @@ object ServerConfigUtils {
         return pinMap[url] ?: ""
     }
 
+    private fun isLocalNetwork(url: String): Boolean {
+        val host = url.split(":").firstOrNull()?.split("/")?.firstOrNull() ?: url
+        return host.startsWith("192.168.") ||
+                host.startsWith("10.") ||
+                host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\..*")) ||
+                host == "localhost" ||
+                host == "127.0.0.1" ||
+                host.endsWith(".local")
+    }
+
+    fun getDefaultProtocol(url: String): String {
+        return if (
+            url == BuildConfig.PLANET_XELA_URL ||
+            url == BuildConfig.PLANET_SANPABLO_URL ||
+            url == BuildConfig.PLANET_URIUR_URL ||
+            isLocalNetwork(url)
+        ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
+    }
+
     fun saveAlternativeUrl(
         url: String,
         password: String,
@@ -70,7 +90,7 @@ object ServerConfigUtils {
     ): String {
         val uri = url.toUri()
         val (urlUser, urlPwd, couchdbURL) = if (url.contains("@")) {
-            val userinfo = org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity.getUserInfo(uri)
+            val userinfo = ProcessUserDataActivity.getUserInfo(uri)
             Triple(userinfo[0], userinfo[1], url)
         } else {
             val user = "satellite"

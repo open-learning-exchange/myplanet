@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
@@ -29,7 +30,9 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
-    lateinit var dispatcherProvider: DispatcherProvider
+    lateinit var teamsSyncRepository: TeamsSyncRepository
+    @Inject
+    open lateinit var dispatcherProvider: DispatcherProvider
     private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
     val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
@@ -79,7 +82,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun shouldQueryTeamFromRealm(): Boolean {
+    protected open fun shouldQueryTeamFromRealm(): Boolean {
         val hasDirectData = requireArguments().containsKey("teamName") &&
                 requireArguments().containsKey("teamType") &&
                 requireArguments().containsKey("teamId")

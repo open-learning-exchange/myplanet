@@ -3,9 +3,6 @@ package org.ole.planet.myplanet.services
 import android.content.Context
 import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -16,6 +13,8 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class UserSessionManager @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -23,7 +22,8 @@ class UserSessionManager @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val userRepository: UserRepository,
     private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val timeProvider: TimeProvider
 ) {
     private val fullName: String
 
@@ -37,6 +37,23 @@ class UserSessionManager @Inject constructor(
 
     suspend fun getUserModel(): RealmUser? {
         return userRepository.getUserModelSuspending()
+    }
+
+    suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {
+        withContext(dispatcherProvider.io) {
+            SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
+        }
+        sharedPrefManager.setUserId(user?.id ?: "")
+        sharedPrefManager.setUserName(user?.name ?: "")
+        sharedPrefManager.rawPreferences.edit().apply {
+            remove("password")
+            putString("firstName", user?.firstName)
+            putString("lastName", user?.lastName)
+            putString("middleName", user?.middleName)
+            user?.userAdmin?.let { putBoolean("isUserAdmin", it) }
+            putLong("lastLogin", timeProvider.now())
+            apply()
+        }
     }
 
     fun onLogin() {

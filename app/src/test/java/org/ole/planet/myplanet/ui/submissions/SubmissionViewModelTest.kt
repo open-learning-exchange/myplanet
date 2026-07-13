@@ -66,6 +66,7 @@ class SubmissionViewModelTest {
         val subList = listOf(s1, s2, s3)
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
         `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
@@ -77,9 +78,6 @@ class SubmissionViewModelTest {
         // Setup observers for StateFlow to be active
         val job = launch {
             viewModel.submissions.collect { }
-        }
-        val job2 = launch {
-            viewModel.submissionCounts.collect { }
         }
 
         advanceUntilIdle()
@@ -105,7 +103,6 @@ class SubmissionViewModelTest {
         assertEquals("3", subs[0].id)
 
         job.cancel()
-        job2.cancel()
     }
 
     @Test
@@ -121,6 +118,7 @@ class SubmissionViewModelTest {
         )
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
         `when`(submissionsRepository.getExamMap(subList)).thenReturn(examMap)
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
@@ -130,9 +128,6 @@ class SubmissionViewModelTest {
         viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
         val job = launch {
             viewModel.submissions.collect { }
-        }
-        val job2 = launch {
-            viewModel.submissionCounts.collect { }
         }
         advanceUntilIdle()
 
@@ -151,8 +146,8 @@ class SubmissionViewModelTest {
         subs = viewModel.submissions.value
         assertEquals(1, subs.size)
         assertEquals("2", subs[0].id) // s2 is the latest for p1 ("Math Exam")
+        assertEquals("Math Exam", subs[0].examTitle)
         job.cancel()
-        job2.cancel()
     }
 
     @Test
@@ -163,6 +158,7 @@ class SubmissionViewModelTest {
         val subList = listOf(s1, s2, s3)
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
         `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowOf(subList))
         `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
         `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
@@ -173,21 +169,54 @@ class SubmissionViewModelTest {
         val job = launch {
             viewModel.submissions.collect { }
         }
-        val job2 = launch {
-            viewModel.submissionCounts.collect { }
-        }
         advanceUntilIdle()
 
         viewModel.setFilter("exam", "")
         advanceUntilIdle()
 
-        val counts = viewModel.submissionCounts.value
-        assertEquals(2, counts.size)
-        // Key is the latest submission ID, Value is the count of submissions for that parentId
-        assertEquals(2, counts["2"])
-        assertEquals(1, counts["3"])
+        val subs = viewModel.submissions.value
+        assertEquals(2, subs.size)
+        assertEquals(2, subs.find { it.id == "2" }?.submissionCount)
+        assertEquals(1, subs.find { it.id == "3" }?.submissionCount)
 
         job.cancel()
-        job2.cancel()
+    }
+
+    @Test
+    fun testDistinctEmissions() = runTest(testDispatcher) {
+        val s1 = createSubmission("1", "p1", "exam", "complete", 100L)
+        val s1_dup = createSubmission("1", "p1", "exam", "complete", 100L)
+        val subList = listOf(s1)
+        val subListDup = listOf(s1_dup)
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableStateFlow(subList)
+
+        `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
+        `when`(userRepository.getUsersByIds(listOf("user1"))).thenReturn(emptyList())
+        `when`(submissionsRepository.getSubmissionsFlow("user1")).thenReturn(flowEmitter)
+        `when`(submissionsRepository.getExamMap(subList)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getExamMap(subListDup)).thenReturn(emptyMap())
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1)).thenReturn("John Doe")
+        `when`(submissionsRepository.getNormalizedSubmitterName(s1_dup)).thenReturn("John Doe")
+
+        viewModel = SubmissionViewModel(submissionsRepository, userRepository, testDispatcherProvider)
+
+        var emissions = 0
+        val job = launch {
+            viewModel.submissions.collect {
+                emissions++
+            }
+        }
+        advanceUntilIdle()
+
+        assertEquals(2, emissions) // Initial empty state + real emission
+
+        flowEmitter.value = subListDup
+        advanceUntilIdle()
+
+        // Equivalent list emission from repository is suppressed downstream
+        assertEquals(2, emissions)
+
+        job.cancel()
     }
 }

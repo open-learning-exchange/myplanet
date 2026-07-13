@@ -1,36 +1,23 @@
 package org.ole.planet.myplanet.ui.courses
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.HashMap
 import javax.inject.Inject
-import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.services.sync.SyncManager
-import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
-import org.ole.planet.myplanet.callback.OnSyncListener
-
-
-sealed class SyncStatus {
-    object Idle : SyncStatus()
-    object Syncing : SyncStatus()
-    object Success : SyncStatus()
-    data class Failed(val message: String?) : SyncStatus()
-}
 
 data class CoursesUiState(
     val courses: List<Course> = emptyList(),
@@ -42,62 +29,11 @@ data class CoursesUiState(
 @HiltViewModel
 class CoursesViewModel @Inject constructor(
     private val coursesRepository: CoursesRepository,
-    private val dispatcherProvider: DispatcherProvider,
-    private val syncManager: SyncManager,
-    private val serverUrlMapper: ServerUrlMapper,
-    private val prefManager: SharedPrefManager
+    private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
     private val _coursesState = MutableStateFlow(CoursesUiState())
-    val coursesState: StateFlow<CoursesUiState> = _coursesState
-
-    private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
-    val syncStatus: StateFlow<SyncStatus> = _syncStatus
-
-    fun resetSyncStatus() {
-        _syncStatus.value = SyncStatus.Idle
-    }
-
-    fun startCoursesSync() {
-        val isFastSync = prefManager.getFastSync()
-        if (isFastSync && !prefManager.isSynced(SharedPrefManager.SyncKey.COURSES)) {
-            checkServerAndStartSync()
-        }
-    }
-
-    private fun checkServerAndStartSync() {
-        val serverUrl = prefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-
-        viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
-                updateServerIfNecessary(mapping)
-            }
-            startSyncManager()
-        }
-    }
-
-    private fun startSyncManager() {
-        syncManager.start(object : OnSyncListener {
-            override fun onSyncStarted() {
-                _syncStatus.value = SyncStatus.Syncing
-            }
-
-            override fun onSyncComplete() {
-                _syncStatus.value = SyncStatus.Success
-            }
-
-            override fun onSyncFailed(msg: String?) {
-                _syncStatus.value = SyncStatus.Failed(msg)
-            }
-        }, "full", listOf("courses"))
-    }
-
-    private suspend fun updateServerIfNecessary(mapping: ServerUrlMapper.UrlMapping) {
-        serverUrlMapper.updateServerIfNecessary(mapping, prefManager.rawPreferences) { url ->
-            isServerReachable(url)
-        }
-    }
+    val coursesState: StateFlow<CoursesUiState> = _coursesState.asStateFlow()
 
     private fun processCourses(
         isMyCourseLib: Boolean,
@@ -107,7 +43,7 @@ class CoursesViewModel @Inject constructor(
         map: HashMap<String?, JsonObject>,
         progressMap: HashMap<String?, JsonObject>?,
         tagsMap: Map<String, List<Tag>>
-    ) {
+    ): CoursesUiState {
         val sortedCourseList = if (isMyCourseLib) {
             myCourses.forEach { it.isMyCourse = true }
             myCourses.sortedBy { it.courseTitle }
@@ -117,12 +53,12 @@ class CoursesViewModel @Inject constructor(
         }
 
         val mappedCourses = sortedCourseList.map { it.toCourse() }
-        _coursesState.value = CoursesUiState(mappedCourses, map, progressMap, tagsMap)
+        return CoursesUiState(mappedCourses, map, progressMap, tagsMap)
     }
 
     fun loadCourses(isMyCourseLib: Boolean, userId: String?) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
+            val newState = withContext(dispatcherProvider.io) {
                 try {
                     val allCourses = coursesRepository.getAllCourses()
                     val validCourses = allCourses.filter { !it.courseTitle.isNullOrBlank() }
@@ -133,52 +69,100 @@ class CoursesViewModel @Inject constructor(
                         emptyList()
                     }
 
+                    val allCourseIds = validCourses.mapNotNull { it.courseId }
+
                     val (map, progressMap) = coroutineScope {
                         val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                        val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
+                        val progressDeferred = async {
+                            if (isMyCourseLib) {
+                                coursesRepository.getCourseProgress(userId, allCourseIds)
+                            } else {
+                                null
+                            }
+                        }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
 
-                    val allCourseIds = validCourses.mapNotNull { it.courseId }
                     val tagsMap = coursesRepository.getCourseTagsBulk(allCourseIds)
                         .mapValues { entry -> entry.value.map { it.toTag() } }
 
                     processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    null
                 }
+            }
+            if (newState != null) {
+                _coursesState.value = newState
             }
         }
     }
 
-    fun filterCourses(isMyCourseLib: Boolean, userId: String?, searchText: String, selectedGrade: String, selectedSubject: String, tagNames: List<String>) {
+    suspend fun refreshCourseRatings(userId: String?) {
+        val map = withContext(dispatcherProvider.io) {
+            try {
+                coursesRepository.getCourseRatings(userId)
+            } catch (e: Exception) {
+                e.printStackTrace()
+                null
+            }
+        }
+        if (map != null) {
+            _coursesState.value = _coursesState.value.copy(map = map)
+        }
+    }
+
+    fun filterCourses(
+        isMyCourseLib: Boolean,
+        userId: String?,
+        searchText: String,
+        selectedGrade: String,
+        selectedSubject: String,
+        tagNames: List<String>,
+        progressFilter: String = ""
+    ) {
         viewModelScope.launch {
-            withContext(dispatcherProvider.io) {
+            val newState = withContext(dispatcherProvider.io) {
                 val filteredCourses = coursesRepository.filterCourses(searchText, selectedGrade, selectedSubject, tagNames)
                 val myCourses = filteredCourses.filter { it.userId?.contains(userId) == true }
+                val map = _coursesState.value.map
+                val progressMap = _coursesState.value.progressMap
+                val tagsMap = _coursesState.value.tagsMap
 
-                val (map, progressMap) = coroutineScope {
-                    val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
-                    val progressDeferred = async { coursesRepository.getCourseProgress(userId) }
-                    Pair(ratingsDeferred.await(), progressDeferred.await())
+                val progressFilteredCourses = if (progressFilter.isEmpty() || progressMap == null) {
+                    myCourses
+                } else {
+                    myCourses.filter { course ->
+                        val p = progressMap[course.courseId]
+                        val current = p?.get("current")?.asInt ?: 0
+                        val max = p?.get("max")?.asInt ?: 0
+                        when (progressFilter) {
+                            "Not Started" -> current == 0
+                            "In Progress" -> current > 0 && current < max
+                            "Completed"   -> max > 0 && current >= max
+                            else -> true
+                        }
+                    }
                 }
 
-                val tagsMap = _coursesState.value.tagsMap
-                processCourses(isMyCourseLib, userId, filteredCourses, myCourses, map, progressMap, tagsMap)
+                processCourses(isMyCourseLib, userId, filteredCourses, progressFilteredCourses, map, progressMap, tagsMap)
             }
+            _coursesState.value = newState
         }
     }
 
-    private fun RealmMyCourse.toCourse(): Course {
-        return Course(
-            courseId = this.courseId ?: "",
-            courseTitle = this.courseTitle ?: "",
-            description = this.description ?: "",
-            gradeLevel = this.gradeLevel ?: "",
-            subjectLevel = this.subjectLevel ?: "",
-            createdDate = this.createdDate,
-            numberOfSteps = this.getNumberOfSteps(),
-            isMyCourse = this.isMyCourse
-        )
+    fun removeCourses(courseIds: List<String>, userId: String, deleteProgress: Boolean, onComplete: () -> Unit) {
+        if (courseIds.isEmpty()) return
+        viewModelScope.launch {
+            withContext(dispatcherProvider.io) {
+                courseIds.forEach { courseId ->
+                    coursesRepository.removeCourseFromShelf(courseId, userId)
+                    if (deleteProgress) {
+                        coursesRepository.deleteCourseProgress(courseId)
+                    }
+                }
+            }
+            onComplete()
+        }
     }
 }

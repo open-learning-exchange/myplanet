@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.app.Activity
+import android.app.AlertDialog as AndroidAlertDialog
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -11,7 +12,6 @@ import android.view.View
 import androidx.appcompat.app.AlertDialog
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -19,12 +19,10 @@ import org.ole.planet.myplanet.databinding.DialogProgressBinding
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.services.DownloadService
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 
 object DialogUtils {
-    @JvmStatic
     fun getProgressDialog(context: Context): CustomProgressDialog {
         val prgDialog = CustomProgressDialog(context)
         prgDialog.setTitle(context.getString(R.string.downloading_file))
@@ -36,8 +34,8 @@ object DialogUtils {
         return prgDialog
     }
 
-    fun guestDialog(context: Context, profileDbHandler: UserSessionManager) {
-        val builder = android.app.AlertDialog.Builder(context, R.style.CustomAlertDialog)
+    fun guestDialog(context: Context) {
+        val builder = AndroidAlertDialog.Builder(context, R.style.CustomAlertDialog)
         builder.setTitle(context.getString(R.string.become_a_member))
         builder.setMessage(context.getString(R.string.to_access_this_feature_become_a_member))
         builder.setCancelable(false)
@@ -47,32 +45,27 @@ object DialogUtils {
         val dialog = builder.create()
         dialog.show()
 
-        val becomeMember = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
-        val cancel = dialog.getButton(android.app.AlertDialog.BUTTON_NEGATIVE)
+        val becomeMember = dialog.getButton(AndroidAlertDialog.BUTTON_POSITIVE)
+        val cancel = dialog.getButton(AndroidAlertDialog.BUTTON_NEGATIVE)
         becomeMember.contentDescription = context.getString(R.string.confirm_membership)
         cancel.contentDescription = context.getString(R.string.cancel)
 
         becomeMember.setOnClickListener {
             val guest = true
-            MainApplication.applicationScope.launch(Dispatchers.Main) {
-                val intent = Intent(context, BecomeMemberActivity::class.java)
-                intent.putExtra("username", profileDbHandler.getUserModel()?.name)
-                intent.putExtra("guest", guest)
-                context.startActivity(intent)
-            }
+            val intent = Intent(context, BecomeMemberActivity::class.java)
+            intent.putExtra("guest", guest)
+            context.startActivity(intent)
         }
         cancel.setOnClickListener {
             dialog.dismiss()
         }
     }
 
-    @JvmStatic
     fun showError(prgDialog: CustomProgressDialog?, message: String?) {
         prgDialog?.setTitle(message)
         prgDialog?.disableNegativeButton()
     }
 
-    @JvmStatic
     fun showWifiSettingDialog(context: Context) {
         if (!NetworkUtils.isWifiBluetoothEnabled()) return
         showDialog(context)
@@ -104,14 +97,12 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun showSnack(v: View?, s: String?) {
         if (v != null) {
             s?.let { Snackbar.make(v, it, Snackbar.LENGTH_LONG).show() }
         }
     }
 
-    @JvmStatic
     fun showAlert(context: Context?, title: String?, message: String?) {
         if (context is Activity && !context.isFinishing) {
             AlertDialog.Builder(context, R.style.AlertDialogTheme)
@@ -126,7 +117,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getDialog(
         context: Context,
         message: String,
@@ -141,7 +131,6 @@ object DialogUtils {
             .create()
     }
 
-    @JvmStatic
     fun getDialog(context: Context, title: String, v: View): AlertDialog {
         return AlertDialog.Builder(ContextThemeWrapper(context, R.style.CustomAlertDialog))
             .setTitle(title)
@@ -152,7 +141,6 @@ object DialogUtils {
             .create()
     }
 
-    @JvmStatic
     fun getUpdateDialog(
         context: Context,
         info: MyPlanet?,
@@ -173,7 +161,6 @@ object DialogUtils {
             }
     }
 
-    @JvmStatic
     fun startDownloadUpdate(
         context: Context,
         path: String,
@@ -198,7 +185,6 @@ object DialogUtils {
         }
     }
 
-    @JvmStatic
     fun getCustomProgressDialog(context: Context): CustomProgressDialog {
         return CustomProgressDialog(context)
     }
@@ -261,8 +247,12 @@ object DialogUtils {
         }
 
         fun setProgress(value: Int) {
-            setIndeterminate()
-            progressBar.progress = value
+            if (value < 0) {
+                progressBar.isIndeterminate = true
+            } else {
+                progressBar.isIndeterminate = false
+                progressBar.progress = value
+            }
         }
 
         fun setText(text: String) {
@@ -284,6 +274,32 @@ object DialogUtils {
 
         fun disableNegativeButton() {
             binding.buttonNegative.isEnabled = false
+        }
+
+        fun setSyncPhase(phase: String, phaseIndex: Int, totalPhases: Int, stepLabel: String) {
+            progressText.visibility = View.GONE
+            binding.syncPhaseLabel.text = phase
+            binding.syncPhaseLabel.visibility = View.VISIBLE
+            binding.syncItemCountRow.visibility = View.VISIBLE
+            binding.syncStepText.text = stepLabel
+            binding.syncItemProgressBar.visibility = View.GONE
+            binding.syncItemCountText.text = ""
+        }
+
+        fun setSyncItemProgress(done: Int, total: Int, countLabel: String) {
+            binding.syncItemProgressBar.visibility = View.VISIBLE
+            binding.syncItemCountRow.visibility = View.VISIBLE
+            binding.syncItemCountText.text = countLabel
+            if (total > 0) {
+                binding.syncItemProgressBar.progress = (done * 100 / total)
+            }
+        }
+
+        fun resetSyncProgress() {
+            binding.syncPhaseLabel.visibility = View.GONE
+            binding.syncItemProgressBar.visibility = View.GONE
+            binding.syncItemCountRow.visibility = View.GONE
+            progressBar.isIndeterminate = true
         }
     }
 }

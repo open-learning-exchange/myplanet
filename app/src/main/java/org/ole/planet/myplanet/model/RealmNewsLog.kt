@@ -20,7 +20,6 @@ open class RealmNewsLog : RealmObject() {
     var androidId: String? = null
 
     companion object {
-        @JvmStatic
         fun serialize(log: RealmNewsLog): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)

@@ -5,18 +5,25 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.view.doOnPreDraw
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.bumptech.glide.Glide
+import com.bumptech.glide.load.engine.DiskCacheStrategy
+import com.bumptech.glide.load.model.GlideUrl
+import com.bumptech.glide.load.model.LazyHeaders
+import com.bumptech.glide.signature.ObjectKey
 import dagger.hilt.android.AndroidEntryPoint
-import org.ole.planet.myplanet.utils.collectWhenStarted
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCourseDetailBinding
+import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.StepItem
-import org.ole.planet.myplanet.utils.MarkdownUtils.prependBaseUrlToImages
 import org.ole.planet.myplanet.utils.MarkdownUtils.setMarkdownText
+import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
@@ -25,6 +32,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private var id: String? = null
     private val viewModel: CourseDetailViewModel by viewModels()
     private var isRatingViewInitialized = false
+    private var stepsAdapter: CoursesStepsAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -55,10 +63,14 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
                 }
                 is CourseDetailUiState.Error -> {
                     context?.let { ctx ->
-                        android.widget.Toast.makeText(ctx, state.message, android.widget.Toast.LENGTH_LONG).show()
+                        Toast.makeText(ctx, state.message, Toast.LENGTH_LONG).show()
                     }
                 }
             }
+        }
+
+        collectWhenStarted(viewModel.stepItems) { steps ->
+            setStepsList(steps)
         }
     }
 
@@ -68,14 +80,9 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
         setTextViewVisibility(binding.method, course.method, binding.ltMethod)
         setTextViewVisibility(binding.gradeLevel, course.gradeLevel, binding.ltGradeLevel)
         setTextViewVisibility(binding.language, course.languageOfInstruction, binding.ltLanguage)
+        setCourseCover(course.courseId, course.coverFileName, course.courseRev)
 
-        val markdownContentWithLocalPaths = prependBaseUrlToImages(
-            course.description,
-            "file://" + MainApplication.context.getExternalFilesDir(null) + "/ole/",
-            600,
-            350
-        )
-        setMarkdownText(binding.description, markdownContentWithLocalPaths)
+        setMarkdownText(binding.description, state.markdownDescription)
 
         binding.noOfExams.text = context?.getString(
             R.string.number_placeholder,
@@ -84,13 +91,34 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
         setResourceButton(state.resources, binding.btnResources)
         setOpenResourceButton(state.downloadedResources, binding.btnOpen)
-        setStepsList(state.stepItems)
 
         if (!isRatingViewInitialized) {
             initRatingView("course", course.courseId, course.courseTitle, this@CourseDetailFragment)
             isRatingViewInitialized = true
         }
         setRatings(state.ratingSummary)
+    }
+
+    private fun setCourseCover(courseId: String?, coverFileName: String?, courseRev: String?) {
+        val coverFile = RealmMyCourse.getCoverImageFile(binding.courseCover.context, courseId, coverFileName)
+        val model: Any? = if (coverFile?.exists() == true) {
+            coverFile
+        } else {
+            UrlUtils.getCourseImageUrl(courseId, coverFileName)?.let { url ->
+                GlideUrl(url, LazyHeaders.Builder().addHeader("Authorization", UrlUtils.header).build())
+            }
+        }
+        if (model == null) {
+            binding.courseCover.visibility = View.GONE
+            return
+        }
+        binding.courseCover.visibility = View.VISIBLE
+        Glide.with(binding.courseCover.context)
+            .load(model)
+            .diskCacheStrategy(DiskCacheStrategy.ALL)
+            .signature(ObjectKey(courseRev ?: ""))
+            .error(R.drawable.ole_logo)
+            .into(binding.courseCover)
     }
 
     private fun setTextViewVisibility(textView: TextView, content: String?, layout: View) {
@@ -103,10 +131,14 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     }
 
     private fun setStepsList(steps: List<StepItem>) {
-        binding.stepsList.layoutManager = LinearLayoutManager(activity)
-        val adapter = CoursesStepsAdapter(requireActivity())
-        binding.stepsList.adapter = adapter
-        adapter.submitList(steps)
+        if (stepsAdapter == null) {
+            binding.stepsList.layoutManager = LinearLayoutManager(activity)
+            stepsAdapter = CoursesStepsAdapter(requireActivity()) { stepId ->
+                viewModel.toggleStepDescription(stepId)
+            }
+            binding.stepsList.adapter = stepsAdapter
+        }
+        stepsAdapter?.submitList(steps)
     }
 
     override fun onRatingChanged() {
@@ -124,6 +156,7 @@ class CourseDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
 
     override fun onDestroyView() {
         _binding = null
+        stepsAdapter = null
         super.onDestroyView()
     }
 }

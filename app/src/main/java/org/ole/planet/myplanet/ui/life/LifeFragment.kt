@@ -7,10 +7,10 @@ import android.view.ViewGroup
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.ItemTouchHelper
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -45,12 +45,12 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
         return view
     }
 
-    override suspend fun getAdapter(): RecyclerView.Adapter<out RecyclerView.ViewHolder> {
+    override suspend fun getAdapter(): ListAdapter<*, *> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
                 myLife._id?.let { id ->
                     viewLifecycleOwner.lifecycleScope.launch {
-                        withContext(Dispatchers.IO) {
+                        withContext(dispatcherProvider.io) {
                             lifeRepository.updateVisibility(isVisible, id)
                         }
                         if (!isVisible) {
@@ -64,7 +64,7 @@ class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
             },
             reorderCallback = { list ->
                 viewLifecycleOwner.lifecycleScope.launch {
-                    withContext(Dispatchers.IO) {
+                    withContext(dispatcherProvider.io) {
                         lifeRepository.updateMyLifeListOrder(list)
                     }
                 }

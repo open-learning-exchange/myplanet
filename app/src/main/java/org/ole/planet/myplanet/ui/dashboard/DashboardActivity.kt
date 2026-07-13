@@ -11,10 +11,14 @@ import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
+import android.os.SystemClock
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewTreeObserver
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
@@ -27,9 +31,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import com.google.android.material.navigation.NavigationBarView
 import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
@@ -45,7 +47,6 @@ import com.mikepenz.materialdrawer.model.interfaces.Nameable
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlin.math.ceil
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -62,6 +63,7 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.ui.chat.ChatHistoryFragment
 import org.ole.planet.myplanet.ui.community.CommunityTabFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -81,11 +83,13 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.JoinRequestsPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
-import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint  
 class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, NavigationBarView.OnItemSelectedListener, OnNotificationsListener {
@@ -101,10 +105,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val dashboardViewModel: DashboardViewModel by viewModels()
     private lateinit var tabSelectedListener: OnTabSelectedListener
     @Inject
+    override lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
     lateinit var userSessionManager: UserSessionManager
 
-    @Inject
-    lateinit var activitiesRepository: org.ole.planet.myplanet.repository.ActivitiesRepository
     @Inject
     override lateinit var resourcesRepository: ResourcesRepository
     private val challengeManager: ChallengePrompter by lazy {
@@ -115,7 +119,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var lastNotificationCheckTime = 0L
     private val notificationCheckThrottleMs = 5000L
     private var systemNotificationReceiver: BroadcastReceiver? = null
-    private var onGlobalLayoutListener: android.view.ViewTreeObserver.OnGlobalLayoutListener? = null
+    private var onGlobalLayoutListener: ViewTreeObserver.OnGlobalLayoutListener? = null
     private var exitSnackbar: Snackbar? = null
 
     override fun attachBaseContext(base: Context) {
@@ -129,7 +133,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
         val content: View = findViewById(android.R.id.content)
         content.viewTreeObserver.addOnPreDrawListener(
-            object : android.view.ViewTreeObserver.OnPreDrawListener {
+            object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
                     return if (isReady) {
                         content.viewTreeObserver.removeOnPreDrawListener(this)
@@ -154,13 +158,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             if (handleGuestAccess()) {
                 isReady = true
                 binding.root.invalidate()
+                unregisterSystemNotificationReceiver()
                 return@launch
             }
 
             initializeDashboard()
             isReady = true
             binding.root.invalidate()
-            notificationManager = withContext(Dispatchers.IO) {
+            notificationManager = withContext(dispatcherProvider.io) {
                 NotificationUtils.getInstance(this@DashboardActivity)
             }
         }
@@ -173,7 +178,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         setupDashboardDataObserver()
 
         binding.root.post {
-            setupSystemNotificationReceiver()
+            registerSystemNotificationReceiver()
             checkIfShouldShowNotifications()
 
             val validUrls = listOf(
@@ -197,66 +202,58 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun collectUiState() {
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch {
-                    dashboardViewModel.uiState.collect { state ->
-                        updateNotificationBadge(state.unreadNotifications) {
-                            openNotificationsList(user?.id ?: "")
-                        }
-                        if (state.newNotifications.isNotEmpty()) {
-                            state.newNotifications.forEach { notificationManager?.showNotification(it) }
-                            dashboardViewModel.clearNewNotifications()
-                        }
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.uiState) { state ->
+            updateNotificationBadge(state.unreadNotifications) {
+                openNotificationsList(user?.id ?: "")
+            }
+            if (state.newNotifications.isNotEmpty()) {
+                state.newNotifications.forEach { notificationManager?.showNotification(it) }
+                dashboardViewModel.clearNewNotifications()
+            }
+        }
 
-                launch {
-                    dashboardViewModel.surveyNavigationEvent.collect { surveyId ->
-                        SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.surveyNavigationEvent) { surveyId ->
+            SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
+        }
 
-                launch {
-                    dashboardViewModel.taskNavigationEvent.collect { teamData ->
-                        val f = TeamDetailFragment.newInstance(
-                            teamId = teamData.first,
-                            teamName = teamData.second,
-                            teamType = teamData.third,
-                            isMyTeam = true,
-                            navigateToPage = TasksPage
-                        )
-                        openCallFragment(f)
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.taskNavigationEvent) { teamData ->
+            val f = TeamDetailFragment.newInstance(
+                teamId = teamData.first,
+                teamName = teamData.second,
+                teamType = teamData.third,
+                isMyTeam = true,
+                navigateToPage = TasksPage
+            )
+            openCallFragment(f)
+        }
 
-                launch {
-                    dashboardViewModel.joinRequestNavigationEvent.collect { teamId ->
-                        if (teamId.isNotEmpty()) {
-                            val f = TeamDetailFragment()
-                            val b = Bundle()
-                            b.putString("id", teamId)
-                            b.putBoolean("isMyTeam", true)
-                            b.putString("navigateToPage", JoinRequestsPage.id)
-                            f.arguments = b
-                            openCallFragment(f)
-                        }
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.joinRequestNavigationEvent) { teamId ->
+            if (teamId.isNotEmpty()) {
+                val f = TeamDetailFragment()
+                val b = Bundle()
+                b.putString("id", teamId)
+                b.putBoolean("isMyTeam", true)
+                b.putString("navigateToPage", JoinRequestsPage.id)
+                f.arguments = b
+                openCallFragment(f)
+            }
+        }
 
-                launch {
-                    dashboardViewModel.challengeDialogEvent.collect { data ->
-                        challengeManager.showChallengeDialog(data)
-                    }
-                }
+        collectWhenStarted(dashboardViewModel.challengeDialogEvent) { data ->
+            challengeManager.showChallengeDialog(data)
+        }
+
+        collectWhenStarted(syncManager.syncStatus) { status ->
+            if (status is SyncManager.SyncStatus.Success) {
+                updateLastSyncStatus()
             }
         }
     }
 
     private fun initViews() {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         val insetsController = WindowCompat.getInsetsController(window, binding.root)
         insetsController.isAppearanceLightStatusBars = true
         insetsController.isAppearanceLightNavigationBars = true
@@ -276,7 +273,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         navigationView.labelVisibilityMode = NavigationBarView.LABEL_VISIBILITY_LABELED
         binding.appBarBell.bellToolbar.inflateMenu(R.menu.menu_bell_dashboard)
         tl = findViewById(R.id.tab_layout)
-        onGlobalLayoutListener = android.view.ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
+        onGlobalLayoutListener = ViewTreeObserver.OnGlobalLayoutListener { topBarVisible() }
         binding.root.viewTreeObserver.addOnGlobalLayoutListener(onGlobalLayoutListener)
         binding.appBarBell.ivSetting.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))
@@ -287,10 +284,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         try {
             val userProfileModel = user
             if (userProfileModel != null) {
-                var name: String? = userProfileModel.getFullName()
-                if (name.isNullOrBlank()) {
-                    name = userProfileModel.name
-                }
                 val communityName = prefData.getCommunityName()
                 binding.appBarBell.appTitleName.text = if (user?.planetCode == "") {
                     "${getString(R.string.planet)} $communityName"
@@ -409,7 +402,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         ChatHistoryFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 }
             }
             R.id.action_sync -> logSyncInSharedPrefs()
@@ -420,7 +413,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                         FeedbackListFragment::class.java.simpleName
                     )
                 } else {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 }
             }
             R.id.action_settings -> startActivity(Intent(this@DashboardActivity, SettingsActivity::class.java))
@@ -537,10 +530,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
 
-            lifecycleScope.launch {
-                delay(1000)
-                isFromNotificationAction = false
-            }
+            binding.root.post { isFromNotificationAction = false }
         }
     }
     
@@ -578,9 +568,19 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
+    private fun updateLastSyncStatus() {
+        val lastSyncMillis = prefData.getLastSync()
+        val statusText = if (lastSyncMillis <= 0L) {
+            getString(R.string.last_synced_colon) + getString(R.string.last_synced_never)
+        } else {
+            getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSyncMillis)
+        }
+        binding.dashboardLastSyncStatus.text = statusText
+    }
+
     private fun onRealmDataChange() {
         if (notificationsShownThisSession) {
-            val currentTime = System.currentTimeMillis()
+            val currentTime = SystemClock.elapsedRealtime()
             if (currentTime - lastNotificationCheckTime > notificationCheckThrottleMs) {
                 lastNotificationCheckTime = currentTime
                 lifecycleScope.launch { dashboardViewModel.checkAndCreateNewNotifications(user?.id, user?.isManager() == true) }
@@ -588,8 +588,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
 
-    private fun setupSystemNotificationReceiver() {
-        systemNotificationReceiver = object : BroadcastReceiver() {
+    private fun registerSystemNotificationReceiver() {
+        if (systemNotificationReceiver != null) return
+        val receiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val pendingResult = goAsync()
                 lifecycleScope.launch {
@@ -600,7 +601,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                 if (userId != null) {
                                     val fragment = supportFragmentManager.findFragmentById(R.id.fragment_container)
                                     if (fragment is NotificationsFragment) {
-                                        withContext(Dispatchers.Main) {
+                                        withContext(dispatcherProvider.main) {
                                             fragment.view?.post {
                                                 fragment.refreshNotificationsList()
                                             }
@@ -610,7 +611,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                                         refreshNotificationsWithRetry(userId)
                                     }
                                 } else {
-                                    android.util.Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
+                                    Log.w("DashboardActivity", "SystemNotificationReceiver: User ID is null")
                                 }
                             }
                         }
@@ -620,13 +621,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 }
             }
         }
-        
+
         val filter = IntentFilter("org.ole.planet.myplanet.NOTIFICATION_READ_FROM_SYSTEM")
-        if (Build.VERSION.SDK_INT >= 33) {
-            registerReceiver(systemNotificationReceiver, filter, RECEIVER_NOT_EXPORTED)
-        } else {
-            @Suppress("UnspecifiedRegisterReceiverFlag")
-            registerReceiver(systemNotificationReceiver, filter)
+        try {
+            if (Build.VERSION.SDK_INT >= 33) {
+                registerReceiver(receiver, filter, RECEIVER_NOT_EXPORTED)
+            } else {
+                @Suppress("UnspecifiedRegisterReceiverFlag")
+                registerReceiver(receiver, filter)
+            }
+            systemNotificationReceiver = receiver
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun unregisterSystemNotificationReceiver() {
+        val receiver = systemNotificationReceiver ?: return
+        systemNotificationReceiver = null
+        try {
+            unregisterReceiver(receiver)
+        } catch (e: IllegalArgumentException) {
+            e.printStackTrace()
         }
     }
 
@@ -684,8 +700,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         lifecycleScope.launch {
             val offlineVisits = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
-            if (user?.id?.startsWith("guest") == true && offlineVisits >= 3) {
-                showGuestDialog()
+            if (user?.id?.startsWith("guest") == true) {
+                when {
+                    offlineVisits >= 3 -> showGuestDialog()
+                    offlineVisits == 2 -> showVisitLimitWarning()
+                }
             }
         }
     }
@@ -705,10 +724,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             logout.contentDescription = getString(R.string.menu_logout)
             becomeMember.setOnClickListener {
                 lifecycleScope.launch {
-                    val guest = true
                     val intent = Intent(this@DashboardActivity, BecomeMemberActivity::class.java)
                     intent.putExtra("username", profileDbHandler.getUserModel()?.name)
-                    intent.putExtra("guest", guest)
+                    intent.putExtra("guest", true)
                     setResult(RESULT_OK, intent)
                     startActivity(intent)
                 }
@@ -717,6 +735,28 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 dialog.dismiss()
                 logout()
             }
+    }
+
+    private fun showVisitLimitWarning() {
+        // Clear any existing banner first
+        binding.bannerContainer.removeAllViews()
+        
+        // Inflate the banner layout
+        val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
+        
+        // Set up close button
+        val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
+        closeButton.setOnClickListener {
+            binding.bannerContainer.removeView(bannerView.parent as? View ?: bannerView)
+        }
+        
+        // Auto-dismiss after 10 seconds
+        lifecycleScope.launch {
+            delay(10000)
+            if (binding.bannerContainer.childCount > 0) {
+                binding.bannerContainer.removeAllViews()
+            }
+        }
     }
 
     private fun topBarVisible(){
@@ -778,12 +818,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
             val paddingVerticalDp = (paddingVerticalPx / density).toInt()
             val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
-            val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-            val statusBarHeight = if (resourceId > 0) {
-                resources.getDimensionPixelSize(resourceId)
-            } else {
-                ceil(25 * density).toInt()
-            }
+            val statusBarHeight = ViewCompat.getRootWindowInsets(binding.root)
+                ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
+                ?: ceil(25 * density).toInt()
 
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
@@ -811,12 +848,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
 
     private fun createDrawer() {
-        val resourceId = resources.getIdentifier("status_bar_height", "dimen", "android")
-        val statusBarHeight = if (resourceId > 0) {
-            resources.getDimensionPixelSize(resourceId)
-        } else {
-            ceil(25 * resources.displayMetrics.density).toInt()
-        }
+        val statusBarHeight = ViewCompat.getRootWindowInsets(binding.root)
+            ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
+            ?: ceil(25 * resources.displayMetrics.density).toInt()
 
         val headerHeight = 160 + (statusBarHeight / resources.displayMetrics.density).toInt()
         val dimenHolder = DimenHolder.fromDp(headerHeight)
@@ -851,7 +885,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             R.string.menu_community -> openCallFragment(CommunityTabFragment())
             R.string.txt_myLibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -863,7 +897,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             })
             R.string.txt_myCourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
@@ -904,14 +938,13 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             tabLayout.removeOnTabSelectedListener(tabSelectedListener)
         }
 
-        onGlobalLayoutListener?.let {
-            binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+        if (::binding.isInitialized) {
+            onGlobalLayoutListener?.let {
+                binding.root.viewTreeObserver.removeOnGlobalLayoutListener(it)
+            }
         }
 
-        systemNotificationReceiver?.let {
-            unregisterReceiver(it)
-            systemNotificationReceiver = null
-        }
+        unregisterSystemNotificationReceiver()
 
         super.onDestroy()
     }
@@ -992,14 +1025,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
             R.id.menu_mycourses -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(CoursesFragment())
                 }
             }
             R.id.menu_mylibrary -> {
                 if (user?.id?.startsWith("guest") == true) {
-                    guestDialog(this, userSessionManager)
+                    guestDialog(this)
                 } else {
                     openMyFragment(ResourcesFragment())
                 }
@@ -1011,7 +1044,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 openCallFragment(BellDashboardFragment())
             }
         }
-        item.isChecked = true
         return true
     }
 
@@ -1023,6 +1055,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     override fun onResume() {
         super.onResume()
         checkNotificationPermissionStatus()
+        updateLastSyncStatus()
     }
 
     override fun onNewIntent(intent: Intent?) {
@@ -1067,7 +1100,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     companion object {
         const val MESSAGE_PROGRESS = "message_progress"
-        @JvmStatic
         var isFromNotificationAction = false
     }
 }

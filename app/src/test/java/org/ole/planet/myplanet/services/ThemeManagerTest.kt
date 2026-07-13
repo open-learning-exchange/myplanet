@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.services
 
-import android.content.Context
+import android.os.Looper
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.android.testing.HiltTestApplication
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
@@ -20,16 +22,14 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.android.controller.ActivityController
-import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.LooperMode
-import org.robolectric.Shadows
-import android.os.Looper
 import org.robolectric.shadows.ShadowDialog
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], manifest = Config.NONE, application = dagger.hilt.android.testing.HiltTestApplication::class)
+@Config(sdk = [33], manifest = Config.NONE, application = HiltTestApplication::class)
 @LooperMode(LooperMode.Mode.PAUSED)
 class ThemeManagerTest {
     private lateinit var activityController: ActivityController<AppCompatActivity>
@@ -55,6 +55,7 @@ class ThemeManagerTest {
     @After
     fun tearDown() {
         activityController.pause().stop().destroy()
+        org.ole.planet.myplanet.services.ThemeManager.clearSharedPrefManager()
         unmockkAll()
     }
 
@@ -95,7 +96,7 @@ class ThemeManagerTest {
         Shadows.shadowOf(Looper.getMainLooper()).idle()
 
         // Use ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
-        val dialog = ShadowDialog.getLatestDialog() as androidx.appcompat.app.AlertDialog
+        val dialog = ShadowDialog.getLatestDialog() as AlertDialog
         assertNotNull(dialog)
         assertTrue(dialog.isShowing)
 

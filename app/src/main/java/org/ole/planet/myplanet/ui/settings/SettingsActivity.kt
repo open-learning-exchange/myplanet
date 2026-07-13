@@ -15,6 +15,8 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
@@ -26,34 +28,27 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ConfigurationsRepository
-import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.FreeSpaceWorker
-import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity.Companion.restartApp
 import org.ole.planet.myplanet.utils.DialogUtils
-import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class SettingsActivity : AppCompatActivity() {
@@ -90,106 +85,40 @@ class SettingsActivity : AppCompatActivity() {
 
     @AndroidEntryPoint
     class SettingFragment : PreferenceFragmentCompat() {
+        private val viewModel: SettingsViewModel by viewModels()
         @Inject
         lateinit var profileDbHandler: UserSessionManager
-    @Inject
-    lateinit var resourcesRepository: ResourcesRepository
-    @Inject
-    lateinit var resourceDownloadCoordinator: ResourceDownloadCoordinator
         @Inject
         @DefaultPreferences
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        @Inject
-        lateinit var retryQueue: RetryQueue
-        @Inject
-        lateinit var configurationsRepository: ConfigurationsRepository
         var user: RealmUser? = null
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
-        override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
-            val view = super.onCreateView(inflater, container, savedInstanceState)
-            view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
-            return view
-        }
 
-        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
-            requireContext().setTheme(R.style.PreferencesTheme)
-            setPreferencesFromResource(R.xml.pref, rootKey)
-            lifecycleScope.launch {
-                user = profileDbHandler.getUserModel()
+        override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            super.onViewCreated(view, savedInstanceState)
+            collectLatestWhenStarted(viewModel.clearDataEvent) {
+                restartApp()
             }
-            dialog = DialogUtils.getCustomProgressDialog(requireActivity())
-
-            setBetaToggleOn()
-            setAutoSyncToggleOn()
-            setImprovedSyncToggleOn()
-            val lp = findPreference<Preference>("app_language")
-            lp?.setOnPreferenceClickListener {
-                context?.let { it1 -> languageChanger(it1) }
-                true
+            collectLatestWhenStarted(viewModel.downloadCompleteEvent) { files ->
+                libraryList = files
+                val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
+                autoDownload?.isEnabled = true
             }
-
-            val darkMode = findPreference<Preference>("dark_mode")
-            darkMode?.setOnPreferenceClickListener {
-                ThemeManager.showThemeDialog(requireActivity())
-                true
-            }
-
-            // Show Available space under the "Freeup Space" preference.
-            val spacePreference = findPreference<Preference>("freeup_space")
-            if (spacePreference != null) {
-                spacePreference.summary = "${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
-            }
-
-            val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
-            autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { preference, newValue ->
-                val isChecked = newValue as Boolean
-                if (isChecked) {
-                    preference.isEnabled = false
-                    defaultPref.edit { putBoolean("beta_auto_download", true) }
-                    lifecycleScope.launch {
-                        try {
-                            val files = libraryList ?: resourcesRepository.getAllLibrariesToSync().also { libraryList = it }
-                            resourceDownloadCoordinator.startBackgroundDownload(downloadAllFiles(files))
-                        } finally {
-                            preference.isEnabled = true
-                        }
-                    }
+            collectLatestWhenStarted(viewModel.clearRetryQueueEvent) { cleared ->
+                if (cleared) {
+                    Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
                 } else {
-                    defaultPref.edit { putBoolean("beta_auto_download", false) }
+                    Utilities.toast(requireActivity(), "Cannot clear while processing")
                 }
-                true
             }
-
-            val fastSync = findPreference<SwitchPreference>("beta_fast_sync")
-            val isFastSync = sharedPrefManager.getFastSync()
-            fastSync?.isChecked = isFastSync
-            fastSync?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as Boolean
-                sharedPrefManager.setFastSync(isChecked)
-                true
-            }
-
-            clearDataButtonInit()
-            initRetryQueueDebug()
-        }
-
-        private fun initRetryQueueDebug() {
-            val retryQueuePref = findPreference<Preference>("debug_retry_queue")
-            retryQueuePref?.onPreferenceClickListener = OnPreferenceClickListener {
-                showRetryQueueDialog()
-                true
-            }
-        }
-
-        private fun showRetryQueueDialog() {
-            lifecycleScope.launch {
-                val pendingCount = retryQueue.getPendingCount()
-                val pendingOps = retryQueue.getPendingOperations()
-                val isProcessing = retryQueue.isCurrentlyProcessing()
+            collectLatestWhenStarted(viewModel.retryQueueDetailsEvent) { detailsData ->
+                val pendingCount = detailsData.pendingCount
+                val pendingOps = detailsData.pendingOps
+                val isProcessing = detailsData.isProcessing
 
                 val details = buildString {
                     if (isProcessing) {
@@ -216,51 +145,111 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
 
-                withContext(Dispatchers.Main) {
-                    val dialog = AlertDialog.Builder(requireActivity())
-                        .setTitle(R.string.retry_queue_status)
-                        .setMessage(details)
-                        .setPositiveButton(R.string.trigger_retry_now, null)
-                        .setNegativeButton(R.string.clear_retry_queue, null)
-                        .setNeutralButton(R.string.cancel, null)
-                        .create()
+                val retryDialog = AlertDialog.Builder(requireActivity())
+                    .setTitle(R.string.retry_queue_status)
+                    .setMessage(details)
+                    .setPositiveButton(R.string.trigger_retry_now, null)
+                    .setNegativeButton(R.string.clear_retry_queue, null)
+                    .setNeutralButton(R.string.cancel, null)
+                    .create()
 
-                    dialog.setOnShowListener {
-                        val retryButton = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-                        val clearButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
+                retryDialog.setOnShowListener {
+                    val retryButton = retryDialog.getButton(AlertDialog.BUTTON_POSITIVE)
+                    val clearButton = retryDialog.getButton(AlertDialog.BUTTON_NEGATIVE)
 
-                        // Disable buttons if processing
-                        retryButton.isEnabled = !isProcessing && pendingCount > 0
-                        clearButton.isEnabled = !isProcessing && pendingCount > 0
+                    // Disable buttons if processing
+                    retryButton.isEnabled = !isProcessing && pendingCount > 0
+                    clearButton.isEnabled = !isProcessing && pendingCount > 0
 
-                        retryButton.setOnClickListener {
-                            if (!retryQueue.isCurrentlyProcessing()) {
-                                RetryQueueWorker.triggerImmediateRetry(requireContext())
-                                Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
-                                dialog.dismiss()
-                            } else {
-                                Utilities.toast(requireActivity(), "Retry already in progress")
-                            }
-                        }
-
-                        clearButton.setOnClickListener {
-                            lifecycleScope.launch {
-                                val cleared = retryQueue.safeClearQueue()
-                                withContext(Dispatchers.Main) {
-                                    if (cleared) {
-                                        Utilities.toast(requireActivity(), getString(R.string.retry_queue_cleared))
-                                    } else {
-                                        Utilities.toast(requireActivity(), "Cannot clear while processing")
-                                    }
-                                    dialog.dismiss()
-                                }
-                            }
+                    retryButton.setOnClickListener {
+                        if (!viewModel.isCurrentlyProcessing()) {
+                            RetryQueueWorker.triggerImmediateRetry(requireContext())
+                            Utilities.toast(requireActivity(), getString(R.string.retry_triggered))
+                            retryDialog.dismiss()
+                        } else {
+                            Utilities.toast(requireActivity(), "Retry already in progress")
                         }
                     }
 
-                    dialog.show()
+                    clearButton.setOnClickListener {
+                        viewModel.clearRetryQueue()
+                        retryDialog.dismiss()
+                    }
                 }
+
+                retryDialog.show()
             }
+        }
+
+        override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+            val view = super.onCreateView(inflater, container, savedInstanceState)
+            view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
+            return view
+        }
+
+        override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+            requireContext().setTheme(R.style.PreferencesTheme)
+            setPreferencesFromResource(R.xml.pref, rootKey)
+            lifecycleScope.launch {
+                user = profileDbHandler.getUserModel()
+            }
+            dialog = DialogUtils.getCustomProgressDialog(requireActivity())
+
+            setBetaToggleOn()
+            setAutoSyncToggleOn()
+            val lp = findPreference<Preference>("app_language")
+            lp?.setOnPreferenceClickListener {
+                context?.let { it1 -> languageChanger(it1) }
+                true
+            }
+
+            val darkMode = findPreference<Preference>("dark_mode")
+            darkMode?.setOnPreferenceClickListener {
+                ThemeManager.showThemeDialog(requireActivity())
+                true
+            }
+
+            // Show Available space under the "Freeup Space" preference.
+            val spacePreference = findPreference<Preference>("freeup_space")
+            if (spacePreference != null) {
+                spacePreference.summary = "${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
+            }
+
+            val autoDownload = findPreference<SwitchPreference>("beta_auto_download")
+            autoDownload?.onPreferenceChangeListener = OnPreferenceChangeListener { preference, newValue ->
+                val isChecked = newValue as Boolean
+                if (isChecked) {
+                    preference.isEnabled = false
+                    defaultPref.edit { putBoolean("beta_auto_download", true) }
+                    viewModel.downloadFiles(libraryList)
+                } else {
+                    defaultPref.edit { putBoolean("beta_auto_download", false) }
+                }
+                true
+            }
+
+            clearDataButtonInit()
+            initRetryQueueDebug()
+            initStorageBreakdown()
+        }
+
+        private fun initStorageBreakdown() {
+            findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
+                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                true
+            }
+        }
+
+        private fun initRetryQueueDebug() {
+            val retryQueuePref = findPreference<Preference>("debug_retry_queue")
+            retryQueuePref?.onPreferenceClickListener = OnPreferenceClickListener {
+                showRetryQueueDialog()
+                true
+            }
+        }
+
+        private fun showRetryQueueDialog() {
+            viewModel.fetchRetryQueueDetails()
         }
 
         private fun clearDataButtonInit() {
@@ -269,13 +258,7 @@ class SettingsActivity : AppCompatActivity() {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
                     AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
                         .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            lifecycleScope.launch(Dispatchers.IO) {
-                                configurationsRepository.clearAllData()
-                                sharedPrefManager.clearPreferences()
-                                withContext(Dispatchers.Main) {
-                                    restartApp()
-                                }
-                            }
+                            viewModel.clearAllData()
                         }.setNegativeButton(R.string.no, null).show()
                     false
                 }
@@ -293,8 +276,10 @@ class SettingsActivity : AppCompatActivity() {
 
                             workManager.enqueue(freeSpaceWork)
 
-                            workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
-                                .observe(viewLifecycleOwner) { workInfo ->
+                            val liveData = workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
+                            liveData.observe(viewLifecycleOwner, object : Observer<WorkInfo?> {
+                                override fun onChanged(value: WorkInfo?) {
+                                    val workInfo = value
                                     if (workInfo != null) {
                                         when (workInfo.state) {
                                             WorkInfo.State.RUNNING -> {
@@ -322,8 +307,12 @@ class SettingsActivity : AppCompatActivity() {
                                                 // ENQUEUED or BLOCKED
                                             }
                                         }
+                                        if (workInfo.state.isFinished) {
+                                            liveData.removeObserver(this)
+                                        }
                                     }
                                 }
+                            })
 
                             dialog.setNegativeButton("Cancel") {
                                 workManager.cancelWorkById(freeSpaceWork.id)
@@ -363,18 +352,6 @@ class SettingsActivity : AppCompatActivity() {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
                 lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
-            }
-        }
-
-        private fun setImprovedSyncToggleOn() {
-            val improvedSyncPreference = findPreference<SwitchPreference>("beta_improved_sync")
-            improvedSyncPreference?.isChecked = sharedPrefManager.getUseImprovedSync()
-            improvedSyncPreference?.onPreferenceChangeListener = OnPreferenceChangeListener { _, newValue ->
-                val isChecked = newValue as? Boolean ?: return@OnPreferenceChangeListener false
-                sharedPrefManager.setUseImprovedSync(isChecked)
-                val state = if (isChecked) "enabled" else "disabled"
-                createLog("improved_sync_toggle", state)
-                true
             }
         }
 

@@ -10,21 +10,31 @@ import android.net.Uri
 import android.os.Build
 import android.os.Process
 import android.provider.Settings
+import android.util.Log
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
-import kotlinx.coroutines.Dispatchers
+import javax.inject.Inject
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
+    @Inject
+    open lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    open lateinit var dispatcherProvider: DispatcherProvider
+    @Inject
+    open lateinit var timeProvider: TimeProvider
+
     fun checkPermission(strPermission: String?): Boolean {
         val result = strPermission?.let { ContextCompat.checkSelfPermission(this, it) }
         return result == PackageManager.PERMISSION_GRANTED
@@ -48,7 +58,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             }
             mode = method.invoke(appOps, AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName) as Int
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "Error checking usages permission", e)
         }
 
         return if (mode == AppOpsManager.MODE_DEFAULT) {
@@ -115,7 +125,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             val packageInfo = packageManager.getPackageInfo(packageName, PackageManager.GET_PERMISSIONS)
             packageInfo.requestedPermissions?.contains(permission) == true
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "Error checking if permission is declared in manifest", e)
             false
         }
     }
@@ -343,7 +353,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for notification settings", e)
         }
     }
 
@@ -355,7 +365,7 @@ abstract class BasePermissionActivity : AppCompatActivity() {
             startActivity(intent)
         } catch (e: ActivityNotFoundException) {
             startActivity(Intent(Settings.ACTION_SETTINGS))
-            e.printStackTrace()
+            Log.e("BasePermissionActivity", "ActivityNotFoundException for app settings", e)
         }
     }
 
@@ -432,16 +442,16 @@ abstract class BasePermissionActivity : AppCompatActivity() {
 
     fun checkNotificationPermissionStatus() {
         lifecycleScope.launch {
-            val currentTime = System.currentTimeMillis()
-            val lastCheck = withContext(Dispatchers.IO) {
-                org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).getRawLong("last_notification_check", 0)
+            val currentTime = timeProvider.now()
+            val lastCheck = withContext(dispatcherProvider.io) {
+                sharedPrefManager.getRawLong("last_notification_check", 0)
             }
             if (currentTime - lastCheck > 24 * 60 * 60 * 1000) {
                 if (!NotificationManagerCompat.from(this@BasePermissionActivity).areNotificationsEnabled()) {
                     onNotificationPermissionChanged(false)
                 }
-                withContext(Dispatchers.IO) {
-                    org.ole.planet.myplanet.services.SharedPrefManager(this@BasePermissionActivity).setRawLong("last_notification_check", currentTime)
+                withContext(dispatcherProvider.io) {
+                    sharedPrefManager.setRawLong("last_notification_check", currentTime)
                 }
             }
         }
@@ -498,7 +508,6 @@ abstract class BasePermissionActivity : AppCompatActivity() {
         const val PERMISSION_REQUEST_CODE_NOTIFICATION = 112
         const val PERMISSION_REQUEST_CODE_MEDIA = 113
 
-        @JvmStatic
         fun hasInstallPermission(context: Context): Boolean {
             return !BuildConfig.LITE && context.packageManager.canRequestPackageInstalls()
         }

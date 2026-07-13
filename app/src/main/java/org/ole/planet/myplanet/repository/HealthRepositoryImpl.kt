@@ -1,24 +1,37 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.UrlUtils
 
 class HealthRepositoryImpl @Inject constructor(
+    private val apiInterface: ApiInterface,
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider
 ) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
-        val userCopy = findByField(RealmUser::class.java, "id", userId)
+        val userCopy = findByField(RealmUser::class.java, "_id", userId)
+            ?: findByField(RealmUser::class.java, "id", userId)
         val pojoCopy = findByField(RealmHealthExamination::class.java, "_id", userId)
             ?: findByField(RealmHealthExamination::class.java, "userId", userId)
 
@@ -84,18 +97,55 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: com.google.gson.JsonArray) {
-        val documentList = ArrayList<com.google.gson.JsonObject>(jsonArray.size())
+    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+        val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
-            jsonDoc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", jsonDoc)
+            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            org.ole.planet.myplanet.model.RealmHealthExamination.insert(realm, jsonDoc)
+        val examinations = documentList.map { jsonDoc ->
+            RealmHealthExamination.fromJson(jsonDoc)
         }
+        realm.insertOrUpdate(examinations)
     }
+
+    override suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?> {
+        val uploadedHealths = mutableMapOf<String, String?>()
+        val semaphore = Semaphore(5)
+        supervisorScope {
+            myHealths.map { pojo ->
+                async {
+                    semaphore.withPermit {
+                        try {
+                            val res = apiInterface.postDoc(
+                                UrlUtils.header,
+                                "application/json",
+                                "${UrlUtils.getUrl()}/health",
+                                serialize(pojo)
+                            )
+
+                            if (res.body() != null && res.body()?.has("id") == true) {
+                                val rev = res.body()?.get("rev")?.asString
+                                val id = pojo._id
+                                if (id != null) {
+                                    return@async id to rev
+                                }
+                            }
+                        } catch (e: Throwable) {
+                            e.printStackTrace()
+                        }
+                        null
+                    }
+                }
+            }.awaitAll().filterNotNull().forEach { (id, rev) ->
+                uploadedHealths[id] = rev
+            }
+        }
+        return uploadedHealths
+    }
+
 }

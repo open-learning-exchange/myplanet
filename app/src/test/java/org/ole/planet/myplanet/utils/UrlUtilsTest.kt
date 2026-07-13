@@ -1,8 +1,7 @@
 package org.ole.planet.myplanet.utils
 
-import android.content.Context
+import android.app.Application
 import android.net.Uri
-import dagger.hilt.android.EntryPointAccessors
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -13,33 +12,21 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentMatchers.any
-import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], application = android.app.Application::class)
+@Config(sdk = [33], application = Application::class)
 class UrlUtilsTest {
-
     private lateinit var mockSpm: SharedPrefManager
-    private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
     private lateinit var sharedPrefManager: SharedPrefManager
 
     @Before
     fun setUp() {
         mockSpm = mockk(relaxed = true)
-        mockEntryPoint = mockk()
-        every { mockEntryPoint.sharedPrefManager() } returns mockSpm
-
-        mockkStatic(EntryPointAccessors::class)
-        every { EntryPointAccessors.fromApplication(any(), CoreDependenciesEntryPoint::class.java) } returns mockEntryPoint
-
-        mockkObject(MainApplication.Companion)
-        val mockContext = mockk<Context>()
-        every { MainApplication.context } returns mockContext
+        UrlUtils.resetForTesting()
+        UrlUtils.init(mockSpm)
 
         mockkObject(UrlUtils)
         sharedPrefManager = mockk(relaxed = true)

@@ -7,25 +7,22 @@ import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.SystemClock
 import android.util.Log
 import androidx.core.content.edit
-import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
-import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
 import java.util.Date
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,58 +32,56 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.MainApplication.Companion.createLog
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.insert
-import org.ole.planet.myplanet.model.RealmMyCourse.Companion.insertMyCourses
-import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.model.RealmMyCourse.Companion.saveConcatenatedLinksToPrefs
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.insertMyLibrary
 import org.ole.planet.myplanet.model.Rows
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.CoursesRepository
+import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.JsonUtils.getInt
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonArray
 import org.ole.planet.myplanet.utils.JsonUtils.getJsonObject
 import org.ole.planet.myplanet.utils.JsonUtils.getString
+import org.ole.planet.myplanet.utils.JsonUtils.gson
 import org.ole.planet.myplanet.utils.NotificationUtils.cancel
 import org.ole.planet.myplanet.utils.NotificationUtils.create
 import org.ole.planet.myplanet.utils.SyncTimeLogger
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class SyncManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    private val databaseService: DatabaseService,
-    private val sharedPrefManager: org.ole.planet.myplanet.services.SharedPrefManager,
+    private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
-    private val improvedSyncManager: Lazy<ImprovedSyncManager>,
     private val transactionSyncManager: TransactionSyncManager,
     private val resourcesRepository: ResourcesRepository,
     private val loginSyncManager: LoginSyncManager,
     @param:ApplicationScope private val syncScope: CoroutineScope,
     private val activitiesRepository: ActivitiesRepository,
     private val dispatcherProvider: DispatcherProvider,
-    private val teamsRepository: org.ole.planet.myplanet.repository.TeamsRepository
+    private val timeProvider: TimeProvider,
+    private val teamsRepository: TeamsRepository,
+    private val teamsSyncRepository: TeamsSyncRepository,
+    private val coursesRepository: CoursesRepository,
+    private val eventsRepository: EventsRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
     private var backgroundSync: Job? = null
-    private var betaSync = false
     private val _syncStatus = MutableStateFlow<SyncStatus>(SyncStatus.Idle)
     val syncStatus: StateFlow<SyncStatus> = _syncStatus
-    private val initializationJob: Job by lazy {
-        syncScope.launch {
-            improvedSyncManager.get().initialize()
-        }
-    }
 
     fun start(listener: OnSyncListener?, type: String, syncTables: List<String>? = null) {
         this.listener = listener
@@ -94,27 +89,21 @@ class SyncManager @Inject constructor(
             _syncStatus.value = SyncStatus.Idle
             sharedPrefManager.removeKey("concatenated_links")
             listener?.onSyncStarted()
-            _syncStatus.value = SyncStatus.Syncing
-
-            // Use improved sync manager if beta sync is enabled
-            val useImproved = sharedPrefManager.getUseImprovedSync()
-            val isSyncRequest = type.equals("sync", ignoreCase = true)
-            if (useImproved && isSyncRequest) {
-                initializeAndStartImprovedSync(listener, syncTables)
-            } else {
-                if (useImproved && !isSyncRequest) {
-                    createLog("sync_manager_route", "legacy|reason=$type")
-                } else if (!useImproved) {
-                    createLog("sync_manager_route", "legacy")
-                }
-                authenticateAndSync(type, syncTables)
-            }
+            _syncStatus.value = SyncStatus.Syncing()
+            authenticateAndSync()
         }
     }
 
     sealed class SyncStatus {
         object Idle : SyncStatus()
-        object Syncing : SyncStatus()
+        data class Syncing(
+            val phase: String = "",
+            val phaseIndex: Int = 0,
+            val totalPhases: Int = 4,
+            val itemsDone: Int = 0,
+            val itemsTotal: Int = 0,
+            val countLabel: String = ""
+        ) : SyncStatus()
         data class Success(val message: String) : SyncStatus()
         data class Error(val message: String) : SyncStatus()
     }
@@ -123,49 +112,9 @@ class SyncManager @Inject constructor(
         _syncStatus.value = SyncStatus.Idle
     }
 
-    private fun initializeAndStartImprovedSync(listener: OnSyncListener?, syncTables: List<String>?) {
-        syncScope.launch {
-            try {
-                initializationJob.join()
-
-                val manager = improvedSyncManager.get()
-                val syncMode = if (sharedPrefManager.getFastSync()) {
-                    SyncMode.Fast
-                } else {
-                    SyncMode.Standard
-                }
-                createLog("sync_manager_route", "improved|mode=${syncMode.javaClass.simpleName}")
-                val wrappedListener = object : OnSyncListener {
-                    override fun onSyncStarted() {
-                        listener?.onSyncStarted()
-                    }
-                    override fun onSyncComplete() {
-                        isSyncing.set(false)
-                        listener?.onSyncComplete()
-                        this@SyncManager.listener = null
-                        _syncStatus.value = SyncStatus.Success("Sync completed")
-                    }
-                    override fun onSyncFailed(msg: String?) {
-                        isSyncing.set(false)
-                        listener?.onSyncFailed(msg)
-                        this@SyncManager.listener = null
-                        _syncStatus.value = SyncStatus.Error(msg ?: "Unknown error")
-                    }
-                }
-                manager.start(wrappedListener, syncMode, syncTables)
-            } catch (e: Exception) {
-                isSyncing.set(false)
-                listener?.onSyncFailed(e.message)
-                _syncStatus.value = SyncStatus.Error(e.message ?: "Unknown error")
-            }
-        }
-    }
+    fun isMainSyncActive(): Boolean = isSyncing.get()
 
     private fun destroy() {
-        if (betaSync) {
-            syncScope.cancel()
-            ThreadSafeRealmManager.closeThreadRealm()
-        }
         cancelBackgroundSync()
         cancel(context, 111)
         isSyncing.set(false)
@@ -175,10 +124,10 @@ class SyncManager @Inject constructor(
         _syncStatus.value = SyncStatus.Success("Sync completed")
     }
 
-    private fun authenticateAndSync(type: String, syncTables: List<String>?) {
+    private fun authenticateAndSync() {
         backgroundSync = syncScope.launch(dispatcherProvider.io) {
             if (transactionSyncManager.authenticate()) {
-                startSync(type, syncTables)
+                startFullSync()
             } else {
                 handleException(context.getString(R.string.invalid_configuration))
                 cleanupMainSync()
@@ -186,21 +135,12 @@ class SyncManager @Inject constructor(
         }
     }
 
-    private suspend fun startSync(type: String, syncTables: List<String>?) {
-        val isFastSync = sharedPrefManager.getFastSync()
-        if (!isFastSync || type == "upload") {
-            startFullSync()
-        } else {
-            startFastSync(syncTables)
-        }
-    }
-
     private suspend fun startFullSync() {
-        val syncStartTime = System.currentTimeMillis()
+        val syncStartTime = SystemClock.elapsedRealtime()
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -208,118 +148,46 @@ class SyncManager @Inject constructor(
 
             // Phase 1: Sync non-library tables in parallel
             // Note: teams, meetups, and courses base tables are synced here, then augmented by library sync
+            val parallelTables = listOf(
+                "tablet_users", "exams", "achievements",
+                "tags", "news", "feedback", "tasks",
+                "health", "certifications", "chat_history", "teams",
+                "meetups", "courses", "notifications"
+            )
+            val completedTables = AtomicInteger(0)
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_account_data), 1, 4,
+                0, parallelTables.size)
             coroutineScope {
-                val syncJobs = listOf(
+                val syncJobs = parallelTables.map { tableName ->
                     async {
-                        logger.startProcess("tablet_users_sync")
-                        transactionSyncManager.syncDb("tablet_users")
-                        logger.endProcess("tablet_users_sync")
-                    },
-                    async {
-                        logger.startProcess("exams_sync")
-                        transactionSyncManager.syncDb("exams")
-                        logger.endProcess("exams_sync")
-                    },
-                    async {
-                        logger.startProcess("ratings_sync")
-                        transactionSyncManager.syncDb("ratings")
-                        logger.endProcess("ratings_sync")
-                    },
-                    async {
-                        logger.startProcess("courses_progress_sync")
-                        transactionSyncManager.syncDb("courses_progress")
-                        logger.endProcess("courses_progress_sync")
-                    },
-                    async {
-                        logger.startProcess("achievements_sync")
-                        transactionSyncManager.syncDb("achievements")
-                        logger.endProcess("achievements_sync")
-                    },
-                    async {
-                        logger.startProcess("tags_sync")
-                        transactionSyncManager.syncDb("tags")
-                        logger.endProcess("tags_sync")
-                    },
-                    async {
-                        logger.startProcess("submissions_sync")
-                        transactionSyncManager.syncDb("submissions")
-                        logger.endProcess("submissions_sync")
-                    },
-                    async {
-                        logger.startProcess("news_sync")
-                        transactionSyncManager.syncDb("news")
-                        logger.endProcess("news_sync")
-                    },
-                    async {
-                        logger.startProcess("feedback_sync")
-                        transactionSyncManager.syncDb("feedback")
-                        logger.endProcess("feedback_sync")
-                    },
-                    async {
-                        logger.startProcess("tasks_sync")
-                        transactionSyncManager.syncDb("tasks")
-                        logger.endProcess("tasks_sync")
-                    },
-                    async {
-                        logger.startProcess("login_activities_sync")
-                        transactionSyncManager.syncDb("login_activities")
-                        logger.endProcess("login_activities_sync")
-                    },
-                    async {
-                        logger.startProcess("health_sync")
-                        transactionSyncManager.syncDb("health")
-                        logger.endProcess("health_sync")
-                    },
-                    async {
-                        logger.startProcess("certifications_sync")
-                        transactionSyncManager.syncDb("certifications")
-                        logger.endProcess("certifications_sync")
-                    },
-                    async {
-                        logger.startProcess("team_activities_sync")
-                        transactionSyncManager.syncDb("team_activities")
-                        logger.endProcess("team_activities_sync")
-                    },
-                    async {
-                        logger.startProcess("chat_history_sync")
-                        transactionSyncManager.syncDb("chat_history")
-                        logger.endProcess("chat_history_sync")
-                    },
-                    async {
-                        logger.startProcess("teams_sync")
-                        transactionSyncManager.syncDb("teams")
-                        logger.endProcess("teams_sync")
-                    },
-                    async {
-                        logger.startProcess("meetups_sync")
-                        transactionSyncManager.syncDb("meetups")
-                        logger.endProcess("meetups_sync")
-                    },
-                    async {
-                        logger.startProcess("courses_sync")
-                        transactionSyncManager.syncDb("courses")
-                        logger.endProcess("courses_sync")
-                    },
-                    async {
-                        logger.startProcess("notifications_sync")
-                        transactionSyncManager.syncDb("notifications")
-                        logger.endProcess("notifications_sync")
+                        logger.startProcess("${tableName}_sync")
+                        transactionSyncManager.syncDb(tableName)
+                        logger.endProcess("${tableName}_sync")
+                        val done = completedTables.incrementAndGet()
+                        _syncStatus.value = SyncStatus.Syncing(
+                            context.getString(R.string.sync_phase_account_data), 1, 4,
+                            done, parallelTables.size,
+                            context.getString(R.string.sync_table_progress, tableName, done, parallelTables.size)
+                        )
                     }
-                )
+                }
                 syncJobs.awaitAll()
             }
 
             // Phase 2: Sync resources base table (must run before library to establish base records)
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_resources), 2, 4)
             logger.startProcess("resource_sync")
             resourceTransactionSync()
             logger.endProcess("resource_sync")
 
             // Phase 3: Sync library (augments courses, resources, teams, meetups with shelf data)
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_library), 3, 4)
             logger.startProcess("library_sync")
             myLibraryTransactionSync()
             logger.endProcess("library_sync")
 
             // Phase 4: Admin and finalization
+            _syncStatus.value = SyncStatus.Syncing(context.getString(R.string.sync_phase_finalizing), 4, 4)
             logger.startProcess("admin_sync")
             loginSyncManager.syncAdmin()
             logger.endProcess("admin_sync")
@@ -334,229 +202,23 @@ class SyncManager @Inject constructor(
 
             logger.stopLogging()
 
-            val syncEndTime = System.currentTimeMillis()
+            HeavyTableSyncWorker.schedule(context)
+
+            val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(java.util.Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {
-            val syncEndTime = System.currentTimeMillis()
+            val syncEndTime = SystemClock.elapsedRealtime()
             val totalSyncTime = syncEndTime - syncStartTime
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
             Log.d("SyncPerf", "SYNC FAILED after ${totalSyncTime}ms")
             Log.d("SyncPerf", "Error: ${err.message}")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            err.printStackTrace()
-            handleException(err.message)
-        } finally {
-            destroy()
-        }
-    }
-
-    private suspend fun startFastSync(syncTables: List<String>? = null) {
-        try {
-            val logger = SyncTimeLogger
-            logger.startLogging()
-
-            initializeSync()
-            coroutineScope {
-                val syncJobs = mutableListOf<Deferred<Unit>>()
-                if (syncTables?.contains("tablet_users") != false) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tablet_users_sync")
-                            transactionSyncManager.syncDb("tablet_users")
-                            logger.endProcess("tablet_users_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("login_activities_sync")
-                            transactionSyncManager.syncDb("login_activities")
-                            logger.endProcess("login_activities_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tags_sync")
-                            transactionSyncManager.syncDb("tags")
-                            logger.endProcess("tags_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("teams_sync")
-                            transactionSyncManager.syncDb("teams")
-                            logger.endProcess("teams_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("news_sync")
-                            transactionSyncManager.syncDb("news")
-                            logger.endProcess("news_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("notifications_sync")
-                            transactionSyncManager.syncDb("notifications")
-                            logger.endProcess("notifications_sync")
-                        })
-                }
-
-                if (syncTables?.contains("resources") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("library_sync")
-                            myLibraryTransactionSync()
-                            logger.endProcess("library_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("resource_sync")
-                            resourceTransactionSync()
-                            logger.endProcess("resource_sync")
-                        })
-                }
-
-                if (syncTables?.contains("courses") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("library_sync")
-                            myLibraryTransactionSync()
-                            logger.endProcess("library_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("courses_sync")
-                            transactionSyncManager.syncDb("courses")
-                            logger.endProcess("courses_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("courses_progress_sync")
-                            transactionSyncManager.syncDb("courses_progress")
-                            logger.endProcess("courses_progress_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("ratings_sync")
-                            transactionSyncManager.syncDb("ratings")
-                            logger.endProcess("ratings_sync")
-                        })
-                }
-
-                if (syncTables?.contains("tasks") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("tasks_sync")
-                            transactionSyncManager.syncDb("tasks")
-                            logger.endProcess("tasks_sync")
-                        })
-                }
-
-                if (syncTables?.contains("meetups") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("meetups_sync")
-                            transactionSyncManager.syncDb("meetups")
-                            logger.endProcess("meetups_sync")
-                        })
-                }
-
-                if (syncTables?.contains("team_activities") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("team_activities_sync")
-                            transactionSyncManager.syncDb("team_activities")
-                            logger.endProcess("team_activities_sync")
-                        })
-                }
-
-                if (syncTables?.contains("chat_history") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("chat_history_sync")
-                            transactionSyncManager.syncDb("chat_history")
-                            logger.endProcess("chat_history_sync")
-                        })
-                }
-
-                if (syncTables?.contains("feedback") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("feedback_sync")
-                            transactionSyncManager.syncDb("feedback")
-                            logger.endProcess("feedback_sync")
-                        })
-                }
-
-                if (syncTables?.contains("achievements") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("achievements_sync")
-                            transactionSyncManager.syncDb("achievements")
-                            logger.endProcess("achievements_sync")
-                        })
-                }
-
-                if (syncTables?.contains("health") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("health_sync")
-                            transactionSyncManager.syncDb("health")
-                            logger.endProcess("health_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("certifications_sync")
-                            transactionSyncManager.syncDb("certifications")
-                            logger.endProcess("certifications_sync")
-                        })
-                }
-
-                if (syncTables?.contains("courses") == true || syncTables?.contains("exams") == true) {
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("exams_sync")
-                            transactionSyncManager.syncDb("exams")
-                            logger.endProcess("exams_sync")
-                        })
-
-                    syncJobs.add(
-                        async {
-                            logger.startProcess("submissions_sync")
-                            transactionSyncManager.syncDb("submissions")
-                            logger.endProcess("submissions_sync")
-                        })
-                }
-
-                syncJobs.awaitAll()
-            }
-
-            logger.startProcess("admin_sync")
-            loginSyncManager.syncAdmin()
-            logger.endProcess("admin_sync")
-
-            logger.startProcess("notification_reads_upload")
-            transactionSyncManager.syncNotificationReads()
-            logger.endProcess("notification_reads_upload")
-
-            logger.startProcess("on_synced")
-            activitiesRepository.recordSyncActivity(sharedPrefManager.rawPreferences.getString("userId", "") ?: "")
-            logger.endProcess("on_synced")
-
-            logger.stopLogging()
-        } catch (err: Exception) {
             err.printStackTrace()
             handleException(err.message)
         } finally {
@@ -602,7 +264,7 @@ class SyncManager @Inject constructor(
     }
 
     private suspend fun resourceTransactionSync() {
-        val resourceSyncStartTime = System.currentTimeMillis()
+        val resourceSyncStartTime = SystemClock.elapsedRealtime()
         Log.d("SyncPerf", "  ▶ Starting resource sync")
 
         val logger = SyncTimeLogger
@@ -615,47 +277,48 @@ class SyncManager @Inject constructor(
 
             // Get total count
             logger.startProcess("resource_get_total_count")
-            val countApiStartTime = System.currentTimeMillis()
+            val countApiStartTime = SystemClock.elapsedRealtime()
             ApiClient.executeWithRetryAndWrap {
                 apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?limit=0")
             }?.let { response ->
                 response.body()?.let { body ->
-                    if (body.has("total_rows")) {
-                        totalRows = body.get("total_rows").asInt
-                    }
+                    totalRows = getInt("total_rows", body)
                 }
             }
-            val countApiDuration = System.currentTimeMillis() - countApiStartTime
+            val countApiDuration = SystemClock.elapsedRealtime() - countApiStartTime
             logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs?limit=0", countApiDuration, true, totalRows)
             logger.endProcess("resource_get_total_count")
 
-            val batchSize = 100
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 100)
             var skip = 0
             var batchCount = 0
 
             Log.d("SyncPerf", "    Resources: Found $totalRows documents to sync")
-            logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: $batchSize")
+            logger.logDetail("resource_sync", "Total resources: $totalRows, batch size: ${batchSizer.currentSize} (adaptive)")
 
             while (skip < totalRows || (totalRows == 0 && skip == 0)) {
                 batchCount++
-                val batchStartTime = System.currentTimeMillis()
+                val batchSize = batchSizer.currentSize
+                val batchStartTime = SystemClock.elapsedRealtime()
 
                 try {
                     // Fetch batch of documents
-                    val batchApiStartTime = System.currentTimeMillis()
+                    val batchApiStartTime = SystemClock.elapsedRealtime()
                     var response: JsonObject? = null
                     ApiClient.executeWithRetryAndWrap {
                         apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/resources/_all_docs?include_docs=true&limit=$batchSize&skip=$skip")
                     }?.let {
                         response = it.body()
                     }
-                    val batchApiDuration = System.currentTimeMillis() - batchApiStartTime
+                    val batchApiDuration = SystemClock.elapsedRealtime() - batchApiStartTime
 
                     if (response == null) {
+                        batchSizer.recordFailure()
                         logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, false, 0)
                         skip += batchSize
                         continue
                     }
+                    batchSizer.recordSuccess(batchApiDuration)
 
                     val rows = getJsonArray("rows", response)
                     logger.logApiCall("${UrlUtils.getUrl()}/resources/_all_docs (batch $batchCount)", batchApiDuration, true, rows.size())
@@ -665,7 +328,7 @@ class SyncManager @Inject constructor(
                     }
 
                     // Parse documents
-                    val parseStartTime = System.currentTimeMillis()
+                    val parseStartTime = SystemClock.elapsedRealtime()
                     val batchDocuments = JsonArray()
                     val validDocuments = mutableListOf<Pair<JsonObject, String>>()
 
@@ -681,18 +344,17 @@ class SyncManager @Inject constructor(
                             }
                         }
                     }
-                    val parseDuration = System.currentTimeMillis() - parseStartTime
+                    val parseDuration = SystemClock.elapsedRealtime() - parseStartTime
                     if (parseDuration > 100) {
                         logger.logDetail("resource_sync", "Batch $batchCount: Parse took ${parseDuration}ms for ${rows.size()} docs")
                     }
 
                     if (validDocuments.isNotEmpty()) {
-                        val idsWeAreProcessing = validDocuments.map { it.second }
                         val docs = validDocuments.map { it.first }
 
-                        val realmInsertStartTime = System.currentTimeMillis()
+                        val realmInsertStartTime = SystemClock.elapsedRealtime()
                         val savedIds = resourcesRepository.batchInsertResources(docs)
-                        val realmInsertDuration = System.currentTimeMillis() - realmInsertStartTime
+                        val realmInsertDuration = SystemClock.elapsedRealtime() - realmInsertStartTime
                         logger.logRealmOperation("insert_chunks", "resources", realmInsertDuration, validDocuments.size)
 
                         if (savedIds.isNotEmpty()) {
@@ -703,19 +365,26 @@ class SyncManager @Inject constructor(
                     }
 
                     skip += rows.size()
+                    val resourcesDone = skip.coerceAtMost(totalRows)
+                    _syncStatus.value = SyncStatus.Syncing(
+                        context.getString(R.string.sync_phase_resources), 2, 4,
+                        resourcesDone, totalRows,
+                        context.getString(R.string.sync_items_of, resourcesDone, totalRows)
+                    )
 
-                    val batchEndTime = System.currentTimeMillis()
+                    val batchEndTime = SystemClock.elapsedRealtime()
                     val batchTime = batchEndTime - batchStartTime
                     if (batchCount % 10 == 0) {
                         Log.d("SyncPerf", "    Resources batch $batchCount: ${batchTime}ms - Progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
                         logger.logDetail("resource_sync", "Batch $batchCount progress: $skip/$totalRows (${(skip * 100 / totalRows.coerceAtLeast(1))}%)")
                         sharedPrefManager.rawPreferences.edit {
-                            putLong("ResourceLastSyncTime", System.currentTimeMillis())
+                            putLong("ResourceLastSyncTime", timeProvider.now())
                             putInt("ResourceSyncPosition", skip)
                         }
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
+                    batchSizer.recordFailure()
                     logger.logDetail("resource_sync", "Batch $batchCount failed: ${e.message}")
                     skip += batchSize
                 }
@@ -723,12 +392,12 @@ class SyncManager @Inject constructor(
 
             try {
                 logger.startProcess("resource_cleanup")
-                val cleanupStartTime = System.currentTimeMillis()
+                val cleanupStartTime = SystemClock.elapsedRealtime()
                 val validNewIds = newIds.filter { !it.isNullOrBlank() }
                 if (validNewIds.isNotEmpty() && validNewIds.size == newIds.size) {
                     resourcesRepository.removeDeletedResources(validNewIds)
                 }
-                val cleanupDuration = System.currentTimeMillis() - cleanupStartTime
+                val cleanupDuration = SystemClock.elapsedRealtime() - cleanupStartTime
                 logger.endProcess("resource_cleanup")
                 if (cleanupDuration > 100) {
                     logger.logRealmOperation("delete_cleanup", "resources", cleanupDuration, newIds.size - validNewIds.size)
@@ -739,7 +408,7 @@ class SyncManager @Inject constructor(
             }
             logger.endProcess("resource_sync_main", processedItems)
 
-            val resourceSyncEndTime = System.currentTimeMillis()
+            val resourceSyncEndTime = SystemClock.elapsedRealtime()
             val resourceSyncTime = resourceSyncEndTime - resourceSyncStartTime
             val minutes = resourceSyncTime / 60000
             val seconds = (resourceSyncTime % 60000) / 1000
@@ -747,7 +416,7 @@ class SyncManager @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
             logger.endProcess("resource_sync_main", processedItems)
-            val resourceSyncEndTime = System.currentTimeMillis()
+            val resourceSyncEndTime = SystemClock.elapsedRealtime()
             Log.d("SyncPerf", "  ✗ Resources sync failed after ${resourceSyncEndTime - resourceSyncStartTime}ms: ${e.message}")
         }
     }
@@ -795,7 +464,7 @@ class SyncManager @Inject constructor(
         val shelvesWithData = mutableListOf<String>()
         val shelfIds = shelfBatch.map { it.id }
         val keysObject = JsonObject().apply {
-            add("keys", Gson().fromJson(Gson().toJson(shelfIds), JsonArray::class.java))
+            add("keys", gson.fromJson(gson.toJson(shelfIds), JsonArray::class.java))
         }
 
         val response = ApiClient.executeWithRetryAndWrap {
@@ -833,7 +502,7 @@ class SyncManager @Inject constructor(
         val cacheValidityHours = 6
 
         val cacheTime = sharedPrefManager.getRawLong(cacheTimeKey, 0)
-        val now = System.currentTimeMillis()
+        val now = timeProvider.now()
 
         if (now - cacheTime < cacheValidityHours * 60 * 60 * 1000) {
             val cachedData = sharedPrefManager.getRawString(cacheKey, "")
@@ -849,12 +518,12 @@ class SyncManager @Inject constructor(
         val cacheTimeKey = "shelves_cache_time"
 
         sharedPrefManager.setRawString(cacheKey, shelves.joinToString(","))
-        sharedPrefManager.setRawLong(cacheTimeKey, System.currentTimeMillis())
+        sharedPrefManager.setRawLong(cacheTimeKey, timeProvider.now())
     }
 
     private suspend fun myLibraryTransactionSync() {
         val logger = SyncTimeLogger
-        val librarySyncStartTime = System.currentTimeMillis()
+        val librarySyncStartTime = SystemClock.elapsedRealtime()
         Log.d("SyncPerf", "  ▶ Starting library sync")
 
         logger.startProcess("library_sync_main")
@@ -862,9 +531,9 @@ class SyncManager @Inject constructor(
 
         try {
             logger.startProcess("library_get_shelves")
-            val shelvesStartTime = System.currentTimeMillis()
+            val shelvesStartTime = SystemClock.elapsedRealtime()
             val shelvesWithData = getShelvesWithDataBatchOptimized()
-            val shelvesDuration = System.currentTimeMillis() - shelvesStartTime
+            val shelvesDuration = SystemClock.elapsedRealtime() - shelvesStartTime
             logger.endProcess("library_get_shelves", shelvesWithData.size)
             Log.d("SyncPerf", "    Library: Found ${shelvesWithData.size} shelves with data in ${shelvesDuration}ms")
 
@@ -875,19 +544,25 @@ class SyncManager @Inject constructor(
             }
 
             logger.startProcess("library_process_shelves")
-            val processStartTime = System.currentTimeMillis()
 
+            val completedShelves = AtomicInteger(0)
             coroutineScope {
                 val semaphore = Semaphore(6)
                 val shelfJobs = shelvesWithData.mapIndexed { index, shelfId ->
                     async(dispatcherProvider.io) {
                         semaphore.withPermit {
-                            val shelfStartTime = System.currentTimeMillis()
+                            val shelfStartTime = SystemClock.elapsedRealtime()
                             val items = processShelfParallel(shelfId, apiInterface)
-                            val shelfDuration = System.currentTimeMillis() - shelfStartTime
+                            val shelfDuration = SystemClock.elapsedRealtime() - shelfStartTime
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")
                             }
+                            val completed = completedShelves.incrementAndGet()
+                            _syncStatus.value = SyncStatus.Syncing(
+                                context.getString(R.string.sync_phase_library), 3, 4,
+                                completed, shelvesWithData.size,
+                                context.getString(R.string.sync_shelves_progress, completed, shelvesWithData.size)
+                            )
                             items
                         }
                     }
@@ -896,18 +571,17 @@ class SyncManager @Inject constructor(
                 processedItems = shelfJobs.awaitAll().sum()
             }
 
-            val processDuration = System.currentTimeMillis() - processStartTime
             logger.endProcess("library_process_shelves", processedItems)
 
             saveConcatenatedLinksToPrefs(sharedPrefManager)
             logger.endProcess("library_sync_main", processedItems)
 
-            val totalDuration = System.currentTimeMillis() - librarySyncStartTime
+            val totalDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✓ Library sync completed: ${totalDuration}ms - $processedItems items from ${shelvesWithData.size} shelves")
         } catch (e: Exception) {
             e.printStackTrace()
             logger.endProcess("library_sync_main", processedItems)
-            val failDuration = System.currentTimeMillis() - librarySyncStartTime
+            val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
         }
     }
@@ -974,36 +648,40 @@ class SyncManager @Inject constructor(
 
             if (validIds.isEmpty()) return 0
 
-            val batchSize = 50
-            val totalBatches = (validIds.size + batchSize - 1) / batchSize
+            val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
+            var i = 0
+            var batchNum = 0
 
-            for (i in 0 until validIds.size step batchSize) {
-                val batchNum = (i / batchSize) + 1
-                val batchStartTime = System.currentTimeMillis()
+            while (i < validIds.size) {
+                batchNum++
+                val batchStartTime = SystemClock.elapsedRealtime()
 
-                val end = minOf(i + batchSize, validIds.size)
+                val end = minOf(i + batchSizer.currentSize, validIds.size)
                 val batch = validIds.subList(i, end)
+                i = end
 
                 val keysObject = JsonObject()
-                keysObject.add("keys", Gson().fromJson(Gson().toJson(batch), JsonArray::class.java))
+                keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
 
                 // API call
-                val apiStartTime = System.currentTimeMillis()
+                val apiStartTime = SystemClock.elapsedRealtime()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
                     apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
                 }?.let {
                     response = it.body()
                 }
-                val apiDuration = System.currentTimeMillis() - apiStartTime
+                val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
 
                 if (response == null) {
-                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum/$totalBatches)", apiDuration, false, 0)
+                    batchSizer.recordFailure()
+                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, false, 0)
                     continue
                 }
+                batchSizer.recordSuccess(apiDuration)
 
                 val responseRows = getJsonArray("rows", response)
-                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum/$totalBatches)", apiDuration, true, responseRows.size())
+                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
 
                 if (responseRows.size() == 0) continue
 
@@ -1017,35 +695,20 @@ class SyncManager @Inject constructor(
                 }
 
                 if (documentsToProcess.isNotEmpty()) {
-                    val realmStartTime = System.currentTimeMillis()
-                    // Batch insert documents in chunks to reduce transaction overhead
-                    val chunkSize = 50  // Increased from processing one batch at a time
-                    documentsToProcess.chunked(chunkSize).forEach { chunk ->
-                        safeRealmOperation { realm ->
-                            realm.executeTransaction { realmTx ->
-                                chunk.forEach { doc ->
-                                    try {
-                                        when (shelfData.type) {
-                                            "resources" -> insertMyLibrary(shelfId, doc, realmTx, sharedPrefManager)
-                                            "meetups" -> insert(realmTx, doc)
-                                            "courses" -> insertMyCourses(shelfId, doc, realmTx, sharedPrefManager, dagger.hilt.android.EntryPointAccessors.fromApplication(org.ole.planet.myplanet.MainApplication.context, org.ole.planet.myplanet.di.RepositoryDependenciesEntryPoint::class.java).surveysRepository())
-                                            "teams" -> teamsRepository.insertMyTeam(realmTx, doc)
-                                        }
-                                        processedCount++
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                    }
-                                }
-                            }
-                        }
+                    val realmStartTime = SystemClock.elapsedRealtime()
+                    when (shelfData.type) {
+                        "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
+                        "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
+                        "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
+                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
                     }
-                    val realmDuration = System.currentTimeMillis() - realmStartTime
+                    val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
                     logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
                 }
 
-                val batchDuration = System.currentTimeMillis() - batchStartTime
+                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 if (batchDuration > 1000) {
-                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum/$totalBatches: ${batchDuration}ms for ${documentsToProcess.size} docs")
+                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
                 }
             }
 
@@ -1055,9 +718,4 @@ class SyncManager @Inject constructor(
         }
         return processedCount
     }
-
-    private fun <T> safeRealmOperation(operation: (Realm) -> T): T? {
-        return ThreadSafeRealmManager.withRealm(databaseService, operation)
-    }
-
 }

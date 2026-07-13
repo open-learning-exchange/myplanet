@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.services
 import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
+import android.os.SystemClock
 import androidx.hilt.work.HiltWorker
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -10,15 +12,17 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.io.File
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody
 import okio.Buffer
 import okio.buffer
 import okio.sink
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.di.DownloadPreferences
 import org.ole.planet.myplanet.model.Download
+import org.ole.planet.myplanet.model.DownloadResult
+import org.ole.planet.myplanet.repository.DownloadRepository
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.FileUtils.getFileNameFromUrl
@@ -27,13 +31,14 @@ import org.ole.planet.myplanet.utils.UrlUtils
 @HiltWorker
 class DownloadWorker @AssistedInject constructor(
     @Assisted private val context: Context, @Assisted workerParams: WorkerParameters,
-    private val apiInterface: ApiInterface, private val broadcastService: BroadcastService
+    private val downloadRepository: DownloadRepository, private val broadcastService: BroadcastService,
+    private val dispatcherProvider: DispatcherProvider,
+    @DownloadPreferences private val preferences: SharedPreferences
 ) : CoroutineWorker(context, workerParams) {
 
     private val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    private val preferences = context.getSharedPreferences(DownloadService.PREFS_NAME, Context.MODE_PRIVATE)
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+    override suspend fun doWork(): Result = withContext(dispatcherProvider.io) {
         try {
             val urlsKey = inputData.getString("urls_key") ?: "url_list_key"
             val fromSync = inputData.getBoolean("fromSync", false)
@@ -75,15 +80,20 @@ class DownloadWorker @AssistedInject constructor(
     }
 
     private suspend fun downloadFile(url: String, index: Int, total: Int): Boolean {
+        if (FileUtils.checkFileExist(context, url)) {
+            DownloadUtils.updateResourceOfflineStatus(url)
+            return true
+        }
         return try {
-            val response = apiInterface.downloadFile(UrlUtils.header, url)
-            if (response.isSuccessful) {
-                response.body()?.let {
-                    downloadFileBody(it, url, index, total)
+            val response = downloadRepository.downloadFileResponse(url, UrlUtils.header)
+            when (response) {
+                is DownloadResult.Success -> {
+                    downloadFileBody(response.body, url, index, total)
                     true
-                } ?: false
-            } else {
-                false
+                }
+                is DownloadResult.Error -> {
+                    false
+                }
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -106,7 +116,7 @@ class DownloadWorker @AssistedInject constructor(
                     sink.write(buffer, read)
                     totalBytes += read
 
-                    val now = System.currentTimeMillis()
+                    val now = SystemClock.elapsedRealtime()
                     if (now - lastUpdateTime >= NOTIFICATION_UPDATE_INTERVAL_MS) {
                         val progress = if (fileSize > 0) {
                             (totalBytes * 100 / fileSize).toInt()

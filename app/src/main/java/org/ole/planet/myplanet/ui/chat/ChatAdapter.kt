@@ -6,11 +6,13 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.databinding.ItemAiResponseMessageBinding
+import org.ole.planet.myplanet.databinding.ItemChatLoadMoreBinding
 import org.ole.planet.myplanet.databinding.ItemUserMessageBinding
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -28,11 +30,18 @@ class ChatAdapter(
 ) {
     val animatedMessages = HashMap<Int, Boolean>()
     var lastAnimatedPosition: Int = -1
+    var onLoadMoreClick: (() -> Unit)? = null
 
     private var chatItemClickListener: OnChatItemClickListener? = null
 
     fun setOnChatItemClickListener(listener: OnChatItemClickListener) {
         this.chatItemClickListener = listener
+    }
+
+    class LoadMoreViewHolder(private val binding: ItemChatLoadMoreBinding) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(onClick: (() -> Unit)?) {
+            binding.btnLoadMore.setOnClickListener { onClick?.invoke() }
+        }
     }
 
     class QueryViewHolder(private val textUserMessageBinding: ItemUserMessageBinding, private val copyToClipboard: (String) -> Unit) : RecyclerView.ViewHolder(textUserMessageBinding.root) {
@@ -91,7 +100,7 @@ class ChatAdapter(
         Utilities.toast(
             context,
             context.getString(R.string.copied_to_clipboard),
-            android.widget.Toast.LENGTH_SHORT
+            Toast.LENGTH_SHORT
         )
     }
 
@@ -118,6 +127,22 @@ class ChatAdapter(
         submitList(emptyList())
     }
 
+    fun prependMessages(messages: List<ChatMessage>, hasLoadMoreAbove: Boolean) {
+        val current = currentList.toMutableList()
+        val shift = messages.size + if (hasLoadMoreAbove) 1 else 0
+        if (lastAnimatedPosition >= 0) lastAnimatedPosition += shift
+        val remapped = HashMap<Int, Boolean>(animatedMessages.size)
+        animatedMessages.forEach { (pos, v) -> remapped[pos + shift] = v }
+        animatedMessages.clear()
+        animatedMessages.putAll(remapped)
+        if (current.firstOrNull()?.viewType == ChatMessage.LOAD_MORE) current.removeAt(0)
+        val newList = mutableListOf<ChatMessage>()
+        if (hasLoadMoreAbove) newList.add(ChatMessage("", ChatMessage.LOAD_MORE))
+        newList.addAll(messages)
+        newList.addAll(current)
+        submitList(newList)
+    }
+
     private fun scrollToLastItem() {
         val lastPosition = itemCount - 1
         if (lastPosition >= 0) {
@@ -131,6 +156,10 @@ class ChatAdapter(
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         return when (viewType) {
+            ChatMessage.LOAD_MORE -> {
+                val loadMoreBinding = ItemChatLoadMoreBinding.inflate(LayoutInflater.from(context), parent, false)
+                LoadMoreViewHolder(loadMoreBinding)
+            }
             ChatMessage.QUERY -> {
                 val userMessageBinding = ItemUserMessageBinding.inflate(LayoutInflater.from(context), parent, false)
                 QueryViewHolder(userMessageBinding, this::copyToClipboard)
@@ -146,10 +175,8 @@ class ChatAdapter(
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         val chatItem = getItem(position)
         when (holder.itemViewType) {
-            ChatMessage.QUERY -> {
-                val queryViewHolder = holder as QueryViewHolder
-                queryViewHolder.bind(chatItem.message)
-            }
+            ChatMessage.LOAD_MORE -> (holder as LoadMoreViewHolder).bind(onLoadMoreClick)
+            ChatMessage.QUERY -> (holder as QueryViewHolder).bind(chatItem.message)
             ChatMessage.RESPONSE -> {
                 val responseViewHolder = holder as ResponseViewHolder
                 val shouldAnimate = (position == lastAnimatedPosition && !animatedMessages.containsKey(position))
@@ -159,8 +186,10 @@ class ChatAdapter(
             }
             else -> throw IllegalArgumentException("Invalid view type")
         }
-        holder.itemView.setOnClickListener {
-            chatItemClickListener?.onChatItemClick(position, chatItem)
+        if (holder.itemViewType != ChatMessage.LOAD_MORE) {
+            holder.itemView.setOnClickListener {
+                chatItemClickListener?.onChatItemClick(position, chatItem)
+            }
         }
     }
     override fun onViewRecycled(holder: RecyclerView.ViewHolder) {

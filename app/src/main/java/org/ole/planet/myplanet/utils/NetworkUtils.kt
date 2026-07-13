@@ -22,16 +22,27 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.services.SharedPrefManager
 
 object NetworkUtils {
-    private val coroutineScope: CoroutineScope
-        get() {
-            val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
-            return entryPoint.applicationScope()
-        }
+    private val coreEntryPoint: CoreDependenciesEntryPoint get() =
+        EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
 
-    private val connectivityManager: ConnectivityManager
-        get() = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
+    private val sharedPrefManager: SharedPrefManager by lazy {
+        val entryPoint = EntryPointAccessors.fromApplication(context, CoreDependenciesEntryPoint::class.java)
+        entryPoint.sharedPrefManager()
+    }
+
+    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
+    private val coroutineScope: CoroutineScope by lazy {
+        coreEntryPoint.applicationScope()
+    }
+
+    // Safe because NetworkUtils is only accessed after MainApplication.onCreate sets the context
+    private val connectivityManager: ConnectivityManager by lazy {
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
 
     private val _currentNetwork = MutableStateFlow(provideDefaultCurrentNetwork())
 
@@ -175,7 +186,7 @@ object NetworkUtils {
     }
 
     fun getCustomDeviceName(context: Context): String {
-        val spm = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+        val spm = coreEntryPoint.sharedPrefManager()
         return spm.getCustomDeviceName()
     }
 

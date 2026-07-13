@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
@@ -8,7 +9,8 @@ import io.realm.RealmList
 import io.realm.RealmObject
 import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.MainApplication.Companion.context
+import java.io.File
+import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
 open class RealmMyTeam : RealmObject() {
@@ -54,9 +56,21 @@ open class RealmMyTeam : RealmObject() {
     var startDate: Long = 0
     var endDate: Long = 0
     var updatedDate: Long = 0
+    var imageName: String? = null
 
     companion object {
-        @JvmStatic
+        fun getFirstAttachmentName(doc: JsonObject): String? {
+            val attachments = doc.getAsJsonObject("_attachments") ?: return null
+            return attachments.keySet().firstOrNull()
+        }
+
+        fun getAttachmentFile(context: Context, teamId: String?, imageName: String?): File? {
+            if (teamId.isNullOrBlank() || imageName.isNullOrBlank()) return null
+            return File(
+                "${getOlePath(context)}team_attachments/$teamId/$imageName"
+            )
+        }
+
         fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
             val hadLocalChanges = team.updated
 
@@ -95,6 +109,7 @@ open class RealmMyTeam : RealmObject() {
             team.startDate = JsonUtils.getLong("startDate", doc)
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
+            getFirstAttachmentName(doc)?.let { team.imageName = it }
 
             val localCourses = team.courses?.toList() ?: emptyList()
 
@@ -126,7 +141,6 @@ open class RealmMyTeam : RealmObject() {
             }
         }
 
-        @JvmStatic
         fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
             team.description = JsonUtils.getString("description", doc)
             team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
@@ -138,9 +152,9 @@ open class RealmMyTeam : RealmObject() {
             team.endDate = JsonUtils.getLong("endDate", doc)
             team.updatedDate = JsonUtils.getLong("updatedDate", doc)
             team.updated = JsonUtils.getBoolean("updated", doc)
+            getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 
-        @JvmStatic
         fun serialize(team: RealmMyTeam): JsonObject {
             val `object` = JsonObject()
 
@@ -207,8 +221,7 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
-        @JvmStatic
-        fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
+        fun serialize(team: RealmMyTeam, realm: Realm, coursesResourcesMap: Map<String, Map<String?, List<RealmMyLibrary>>>): JsonObject {
             val `object` = serialize(team)
 
             if (!team.courses.isNullOrEmpty()) {
@@ -226,7 +239,8 @@ open class RealmMyTeam : RealmObject() {
                     team.courses?.forEach { courseId ->
                         val course = courseMap[courseId]
                         if (course != null) {
-                            val courseJson = RealmMyCourse.serialize(course, realm)
+                            val courseResources = coursesResourcesMap[courseId] ?: emptyMap()
+                            val courseJson = RealmMyCourse.serialize(course, courseResources)
                             coursesArray.add(courseJson)
                         }
                     }

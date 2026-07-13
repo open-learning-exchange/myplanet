@@ -6,14 +6,14 @@ plugins {
     alias(libs.plugins.realm.android)
 }
 android {
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
-        versionCode = 5420
-        versionName = "0.54.20"
+        versionCode = 6060
+        versionName = "0.60.60"
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
@@ -24,6 +24,7 @@ android {
     }
     configurations.configureEach {
         resolutionStrategy.force "com.google.android.material:material:${libs.versions.material.get()}"
+        resolutionStrategy.force "org.jetbrains.kotlin:kotlin-metadata-jvm:${libs.versions.kotlin.get()}"
     }
     buildTypes {
         release {
@@ -146,16 +147,8 @@ android {
         it.buildConfigField 'String', 'PLANET_CAMBRIDGE_PIN', "\"${planetCambridgePin}\""
     }
 }
-realm {
-    syncEnabled = true
-}
 kapt {
     correctErrorTypes = true
-}
-kotlin {
-    compilerOptions {
-        freeCompilerArgs.add("-Xannotation-default-target=param-property")
-    }
 }
 dependencies {
     testImplementation(libs.test.junit)
@@ -230,4 +223,5 @@ dependencies {
     implementation(libs.android.gif.drawable)
     implementation(libs.tink.android)
     implementation(libs.webkit)
+    implementation(libs.pdfbox.android) { exclude group: 'org.bouncycastle' }
 }
