@@ -14,17 +14,11 @@ import io.realm.Realm
 import io.realm.RealmQuery
 import io.realm.RealmResults
 import kotlinx.coroutines.test.runTest
-import org.junit.Rule
 import org.junit.Assert.assertEquals
-import org.junit.Rule
 import org.junit.Assert.assertFalse
-import org.junit.Rule
 import org.junit.Assert.assertNotNull
-import org.junit.Rule
 import org.junit.Assert.assertNull
-import org.junit.Rule
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
