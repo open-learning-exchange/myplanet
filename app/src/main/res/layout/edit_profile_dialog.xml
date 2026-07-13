@@ -53,6 +53,7 @@
                 android:drawablePadding="12dp"
                 android:hint="@string/first_name"
                 android:inputType="text"
+                android:maxLength="20"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
                 android:textColor="@color/daynight_textColor" />
@@ -115,6 +116,7 @@
                 android:drawablePadding="12dp"
                 android:hint="@string/last_name"
                 android:inputType="text"
+                android:maxLength="20"
                 android:paddingStart="10dp"
                 android:paddingEnd="8dp"
                 android:textColor="@color/daynight_textColor" />
