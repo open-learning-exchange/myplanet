@@ -56,7 +56,7 @@ class UserRepositoryImplTest {
 
     private lateinit var repository: UserRepositoryImpl
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

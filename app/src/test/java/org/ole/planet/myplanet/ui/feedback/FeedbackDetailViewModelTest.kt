@@ -26,7 +26,7 @@ class FeedbackDetailViewModelTest {
     private lateinit var viewModel: FeedbackDetailViewModel
     private lateinit var feedbackRepository: FeedbackRepository
     private lateinit var dispatcherProvider: DispatcherProvider
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

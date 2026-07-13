@@ -47,7 +47,7 @@ class SubmissionsRepositoryImplTest {
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var exporter: SubmissionsRepositoryExporter
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     private lateinit var repository: SubmissionsRepositoryImpl
 

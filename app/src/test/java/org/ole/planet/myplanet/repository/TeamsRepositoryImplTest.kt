@@ -41,7 +41,7 @@ class TeamsRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val apiInterfaceMock = mockk<ApiInterface>(relaxed = true)
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

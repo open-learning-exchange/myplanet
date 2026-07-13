@@ -19,15 +19,15 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 class FeedbackListViewModelTest {
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     private lateinit var viewModel: FeedbackListViewModel
     private lateinit var feedbackRepository: FeedbackRepository
     private lateinit var userSessionManager: UserSessionManager
-    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+    private val dispatcherProvider get() = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {

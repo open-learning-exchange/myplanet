@@ -29,7 +29,7 @@ class RequestsViewModelTest {
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var testDispatcherProvider: TestDispatcherProvider
     private lateinit var viewModel: RequestsViewModel
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

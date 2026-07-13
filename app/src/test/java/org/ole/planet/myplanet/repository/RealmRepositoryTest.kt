@@ -46,7 +46,7 @@ class RealmRepositoryTest {
     private lateinit var databaseService: DatabaseService
     private lateinit var realm: Realm
     private lateinit var repository: TestRealmRepository
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

@@ -36,7 +36,7 @@ class LifeRepositoryImplTest {
     private lateinit var mockEditor: SharedPreferences.Editor
     private lateinit var gson: Gson
     private lateinit var repository: LifeRepositoryImpl
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setUp() {

@@ -18,7 +18,7 @@ class ResourcesViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
     private lateinit var viewModel: ResourcesViewModel
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

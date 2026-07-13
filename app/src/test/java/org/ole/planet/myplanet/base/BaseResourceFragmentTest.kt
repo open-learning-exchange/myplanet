@@ -40,7 +40,7 @@ class BaseResourceFragmentTest {
     private lateinit var mockPrgDialog: DialogUtils.CustomProgressDialog
     private lateinit var mockLifecycleOwner: LifecycleOwner
     private lateinit var mockActivity: FragmentActivity
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

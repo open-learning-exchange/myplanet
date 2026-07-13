@@ -33,7 +33,7 @@ class UploadRepositoryImplTest {
     private lateinit var databaseService: DatabaseService
     private lateinit var apiInterface: ApiInterface
     private lateinit var repository: UploadRepositoryImpl
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setUp() {

@@ -24,7 +24,7 @@ class CoursesRepositoryImplTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private val databaseService: DatabaseService = mockk(relaxed = true)
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)

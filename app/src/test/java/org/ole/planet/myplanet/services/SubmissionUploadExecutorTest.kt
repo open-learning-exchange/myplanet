@@ -43,7 +43,7 @@ class SubmissionUploadExecutorTest {
     val hiltRule = HiltAndroidRule(this)
 
     private val testScheduler = TestCoroutineScheduler()
-    private val ioDispatcher = mainDispatcherRule.testDispatcher
+    private val ioDispatcher get() = mainDispatcherRule.testDispatcher
 
     @BindValue
     @JvmField

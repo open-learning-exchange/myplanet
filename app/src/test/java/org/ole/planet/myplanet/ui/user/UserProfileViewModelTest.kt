@@ -20,17 +20,17 @@ import org.ole.planet.myplanet.utils.MainDispatcherRule
 
 class UserProfileViewModelTest {
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     private lateinit var userRepository: UserRepository
     private lateinit var userSessionManager: UserSessionManager
     private lateinit var activitiesRepository: ActivitiesRepository
     private lateinit var viewModel: UserProfileViewModel
 
-    private val dispatcherProvider = object : DispatcherProvider {
+    private val dispatcherProvider get() = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
         override val io: CoroutineDispatcher = testDispatcher
         override val default: CoroutineDispatcher = testDispatcher

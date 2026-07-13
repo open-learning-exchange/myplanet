@@ -33,7 +33,7 @@ class CourseDetailViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     private val coursesRepository: CoursesRepository = mockk()
     private val submissionsRepository: SubmissionsRepository = mockk()

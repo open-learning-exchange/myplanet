@@ -69,7 +69,7 @@ class TransactionSyncManagerTest {
     private val healthRepository: HealthRepository = mockk()
     private val progressRepository: ProgressRepository = mockk()
     private val surveysRepository: SurveysRepository = mockk()
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider: DispatcherProvider = mockk()
 

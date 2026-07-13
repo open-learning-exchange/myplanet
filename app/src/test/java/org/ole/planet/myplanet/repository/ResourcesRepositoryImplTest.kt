@@ -31,7 +31,7 @@ class ResourcesRepositoryImplTest {
     private val context: Context = mockk(relaxed = true)
     private lateinit var databaseService: DatabaseService
     private lateinit var mockRealm: Realm
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val settings: SharedPreferences = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)

@@ -28,7 +28,7 @@ class RetryRepositoryImplTest {
     val mainDispatcherRule = MainDispatcherRule()
     private lateinit var databaseService: DatabaseService
     private lateinit var repository: RetryRepositoryImpl
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
 
     @org.junit.After

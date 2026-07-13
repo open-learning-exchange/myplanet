@@ -28,7 +28,7 @@ class TeamViewModelTest {
     private val teamsRepository = mockk<TeamsRepository>()
     private val teamsSyncRepository = mockk<TeamsSyncRepository>()
     private val realtimeSyncManager: RealtimeSyncManager = mockk(relaxed = true)
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val testDispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before

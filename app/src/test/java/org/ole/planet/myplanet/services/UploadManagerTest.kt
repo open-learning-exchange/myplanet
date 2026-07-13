@@ -75,7 +75,7 @@ class UploadManagerTest {
     private lateinit var photoUploader: PhotoUploader
     private val achievementUploader: AchievementUploader = mockk(relaxed = true)
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
 
     @Before

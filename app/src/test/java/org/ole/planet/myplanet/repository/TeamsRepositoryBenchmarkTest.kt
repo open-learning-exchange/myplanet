@@ -42,7 +42,7 @@ class TeamsRepositoryBenchmarkTest {
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository> = mockk()
     private val realm: Realm = mockk(relaxed = true)
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

@@ -44,7 +44,7 @@ class HealthRepositoryImplTest {
     val mainDispatcherRule = MainDispatcherRule()
     private lateinit var repository: HealthRepositoryImpl
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val mockApiInterface: ApiInterface = mockk(relaxed = true)

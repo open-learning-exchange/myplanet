@@ -35,7 +35,7 @@ class ConfigurationsRepositoryImplTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var repository: ConfigurationsRepositoryImpl
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private val testScope = TestScope(testDispatcher)
 
     private val context: Context = mockk()

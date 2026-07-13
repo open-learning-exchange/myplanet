@@ -34,7 +34,7 @@ class ChatViewModelTest {
     private lateinit var userRepository: UserRepository
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var voicesRepository: VoicesRepository
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private lateinit var dispatcherProvider: TestDispatcherProvider
 
     @Before

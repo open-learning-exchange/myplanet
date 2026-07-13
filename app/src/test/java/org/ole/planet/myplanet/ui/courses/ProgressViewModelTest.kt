@@ -22,7 +22,7 @@ class ProgressViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
     private lateinit var viewModel: ProgressViewModel
     private val progressRepository: ProgressRepository = mockk()
     private val userSessionManager: UserSessionManager = mockk()

@@ -20,7 +20,7 @@ class EnterprisesFinancesViewModelTest {
 
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var viewModel: EnterprisesFinancesViewModel
-    private val testDispatcher = mainDispatcherRule.testDispatcher
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     @Before
     fun setup() {

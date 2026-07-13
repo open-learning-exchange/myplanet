@@ -16,15 +16,15 @@ import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 class TeamsVoicesViewModelTest {
 
-    private val testDispatcher = mainDispatcherRule.testDispatcher
-
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule()
+
+    private val testDispatcher get() = mainDispatcherRule.testDispatcher
 
     private lateinit var viewModel: TeamsVoicesViewModel
     private val voicesRepository: VoicesRepository = mockk(relaxed = true)
     private val teamsRepository: TeamsRepository = mockk(relaxed = true)
-    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
+    private val dispatcherProvider get() = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
