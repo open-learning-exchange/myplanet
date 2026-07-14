@@ -19,6 +19,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.model.AssignedSurvey
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -315,6 +316,22 @@ class SurveysRepositoryImpl @Inject constructor(
             equalTo("teamId", "")
             endGroup()
         }
+    }
+
+    override suspend fun getAssignedSurveys(userId: String): List<AssignedSurvey> {
+        val individual = getIndividualSurveys().map { AssignedSurvey(it, false, null) }
+
+        val teamIds = queryList(RealmMyTeam::class.java) {
+            equalTo("userId", userId)
+            equalTo("docType", "membership")
+            equalTo("isDeletePending", false)
+        }.mapNotNull { it.teamId }.distinct()
+
+        val team = teamIds.flatMap { teamId ->
+            getTeamOwnedSurveys(teamId).map { AssignedSurvey(it, true, teamId) }
+        }
+
+        return (individual + team).distinctBy { it.exam.id }
     }
 
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {

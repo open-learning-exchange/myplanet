@@ -277,6 +277,10 @@ class DashboardViewModel @Inject constructor(
         }
     }
 
+    suspend fun getAssignedSurveyCount(userId: String): Int = withContext(dispatcherProvider.io) {
+        surveysRepository.getAssignedSurveys(userId).size
+    }
+
     fun handleSurveyNavigation(surveyId: String) {
         viewModelScope.launch {
             val survey = withContext(dispatcherProvider.io) {

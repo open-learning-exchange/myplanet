@@ -8,6 +8,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.stateIn
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -26,6 +28,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 @HiltViewModel
 class SubmissionViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
+    private val surveysRepository: SurveysRepository,
     private val userRepository: UserRepository,
     private val dispatcherProvider: DispatcherProvider,
 ) : ViewModel() {
@@ -49,9 +52,45 @@ class SubmissionViewModel @Inject constructor(
         HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 
+    private val assignedSurveysFlow = userIdFlow.mapLatest { uid ->
+        surveysRepository.getAssignedSurveys(uid)
+    }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
+
+    private val assignedSurveyModels: Flow<List<SubmissionUiModel>> = combine(
+        assignedSurveysFlow, allSubmissionsFlow, userIdFlow, _query
+    ) { assigned, subs, uid, query ->
+        val mySurveySubs = subs.filter { it.userId == uid && it.type == "survey" }
+        val countByExam = mySurveySubs.groupingBy { it.parentId }.eachCount()
+        val latestByExam = mySurveySubs.groupBy { it.parentId }
+            .mapValues { entry -> entry.value.maxByOrNull { it.lastUpdateTime } }
+
+        var list = assigned.map { assignedSurvey ->
+            val exam = assignedSurvey.exam
+            val latest = latestByExam[exam.id]
+            SubmissionUiModel(
+                id = exam.id,
+                status = latest?.status,
+                startTime = latest?.startTime ?: 0L,
+                lastUpdateTime = latest?.lastUpdateTime ?: 0L,
+                parentId = exam.id,
+                userId = uid,
+                submitterName = "",
+                examTitle = exam.name ?: "",
+                submissionCount = countByExam[exam.id] ?: 0,
+                isTeam = assignedSurvey.isTeam,
+                teamId = assignedSurvey.teamId
+            )
+        }
+
+        if (query.isNotEmpty()) {
+            list = list.filter { it.examTitle.contains(query, ignoreCase = true) }
+        }
+
+        list.sortedByDescending { it.lastUpdateTime }
+    }.flowOn(dispatcherProvider.io)
+
     private val filteredSubmissionsRaw = combine(allSubmissionsFlow, _type, _query, exams, userIdFlow) { subs, type, query, examMap, uid ->
         var filtered = when (type) {
-            "survey" -> subs.filter { it.userId == uid && it.type == "survey" }
             "survey_submission" -> subs.filter {
                 it.userId == uid && it.type == "survey" && it.status != "pending"
             }
@@ -89,7 +128,7 @@ class SubmissionViewModel @Inject constructor(
         Triple(uniqueSubmissions, submissionCountMap, filtered)
     }.flowOn(dispatcherProvider.io).shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    val submissions: StateFlow<List<SubmissionUiModel>> = combine(filteredSubmissionsRaw, exams) { (uniqueSubmissions, submissionCountMap), examsMap ->
+    private val submissionBasedModels: Flow<List<SubmissionUiModel>> = combine(filteredSubmissionsRaw, exams) { (uniqueSubmissions, submissionCountMap), examsMap ->
         uniqueSubmissions.map { viewData ->
             val examTitle = examsMap[viewData.submission.parentId]?.name ?: "Submissions"
             val count = submissionCountMap[viewData.submission.id] ?: 1
@@ -105,8 +144,11 @@ class SubmissionViewModel @Inject constructor(
                 submissionCount = count
             )
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    }
 
+    val submissions: StateFlow<List<SubmissionUiModel>> = _type.flatMapLatest { type ->
+        if (type == "survey") assignedSurveyModels else submissionBasedModels
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     fun setFilter(type: String, query: String) {
         _type.value = type
