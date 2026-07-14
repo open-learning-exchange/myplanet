@@ -161,7 +161,7 @@ class VoicesRepositoryImplTest {
         every { mockRealmQuery.beginGroup() } returns mockRealmQuery
         every { mockRealmQuery.equalTo("viewableBy", "community", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
         every { mockRealmQuery.or() } returns mockRealmQuery
-        every { mockRealmQuery.contains("viewIn", "\"_id\":\"user1\"", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
+        every { mockRealmQuery.contains("viewIn", "user1", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
         every { mockRealmQuery.endGroup() } returns mockRealmQuery
         every { mockRealmQuery.sort("time", io.realm.Sort.DESCENDING) } returns mockRealmQuery
 
@@ -169,7 +169,7 @@ class VoicesRepositoryImplTest {
         every { mockRealmQuery.findAll() } returns realmResults
 
         // Return a mock list from copyFromRealm
-        every { mockRealm.copyFromRealm(realmResults as Iterable<RealmNews>) } returns listOf(news1, news2)
+        every { mockRealm.copyFromRealm(realmResults as Iterable<RealmNews>) } returns listOf(news1, news2, news3)
 
         val result = repoWithRealGson.getCommunityVisibleNews("user1")
 

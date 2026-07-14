@@ -59,15 +59,6 @@ class ProgressRepositoryImpl @Inject constructor(
         val courseIdsArray = courseIds.toTypedArray()
         val courseProgress = getCourseProgress(courseIds, userId)
 
-        val allSubmissions = queryList(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("type", "exam")
-        }
-
-        val submissionsByCourseId = allSubmissions.groupBy { submission ->
-            courseIds.find { courseId -> submission.parentId?.contains(courseId) == true }
-        }
-
         val allExams = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmStepExam::class.java) {
             `in`("courseId", courseIdsArray)
         }
@@ -80,7 +71,11 @@ class ProgressRepositoryImpl @Inject constructor(
             obj.add("progress", courseProgress[course.courseId])
 
             val submissions = course.courseId?.let { courseId ->
-                submissionsByCourseId[courseId] ?: emptyList()
+                queryList(RealmSubmission::class.java) {
+                    equalTo("userId", userId)
+                    equalTo("type", "exam")
+                    contains("parentId", courseId)
+                }
             }
 
             val exams = examsByCourseId[course.courseId] ?: emptyList()
