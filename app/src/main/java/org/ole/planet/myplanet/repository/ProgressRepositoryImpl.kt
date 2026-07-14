@@ -7,7 +7,7 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.withContext
+
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
@@ -17,13 +17,12 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.utils.DispatcherProvider
+
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
@@ -224,8 +223,8 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(dispatcherProvider.io) {
-        activitiesRepositoryLazy.get().hasUserCompletedSync(userId)
+    override suspend fun hasUserCompletedSync(userId: String): Boolean {
+        return activitiesRepositoryLazy.get().hasUserCompletedSync(userId)
     }
 
     private fun insertCourseProgress(

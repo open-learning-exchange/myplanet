@@ -1,0 +1,32 @@
+--- ./app/src/test/java/org/ole/planet/myplanet/repository/ProgressRepositoryImplTest.kt
++++ ./app/src/test/java/org/ole/planet/myplanet/repository/ProgressRepositoryImplTest.kt
+@@ -33,7 +33,6 @@
+ class ProgressRepositoryImplTest {
+
+     private lateinit var repository: ProgressRepositoryImpl
+-    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
+     private val testDispatcher = StandardTestDispatcher()
+     private val testScope = TestScope(testDispatcher)
+     private val databaseService: DatabaseService = mockk(relaxed = true)
+@@ -41,13 +40,11 @@
+
+     @Before
+     fun setUp() {
+-        every { dispatcherProvider.io } returns testDispatcher
+         mockCoursesRepository = mockk<CoursesRepository>()
+         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
+         repository = spyk(ProgressRepositoryImpl(
+             databaseService,
+             UnconfinedTestDispatcher(),
+-            dispatcherProvider,
+             { mockCoursesRepository },
+             { mockk(relaxed = true) }
+         ), recordPrivateCalls = true)
+@@ -316,7 +313,6 @@
+         val localRepository = ProgressRepositoryImpl(
+             databaseService,
+             UnconfinedTestDispatcher(),
+-            dispatcherProvider,
+             { mockCoursesRepository },
+             { activitiesRepo }
+         )
