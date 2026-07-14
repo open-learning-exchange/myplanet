@@ -8,7 +8,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
@@ -42,8 +44,10 @@ class TeamViewModel @Inject constructor(
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()
-        loadTaskJob = viewModelScope.launch {
-            teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+        loadTaskJob = viewModelScope.launch(dispatcherProvider.main) {
+            teamsRepository.getTasksByTeamId(teamId)
+                .flowOn(dispatcherProvider.io)
+                .collectLatest { tasks ->
                 _taskList.value = tasks
             }
         }
@@ -63,21 +67,27 @@ class TeamViewModel @Inject constructor(
         currentType = type
         currentUserId = userId
         loadJob?.cancel()
-        loadJob = viewModelScope.launch {
+        loadJob = viewModelScope.launch(dispatcherProvider.main) {
             when {
                 fromDashboard -> {
                     if (userId != null) {
-                        teamsRepository.getMyTeamDetailsFlow(userId).collectLatest { list ->
+                        teamsRepository.getMyTeamDetailsFlow(userId)
+                            .flowOn(dispatcherProvider.io)
+                            .collectLatest { list ->
                             applyFilters(list, currentSearchQuery)
                         }
                     }
                 }
                 type == "enterprise" -> {
-                    val teamList = teamsRepository.getShareableEnterpriseDetails(userId)
+                    val teamList = withContext(dispatcherProvider.io) {
+                        teamsRepository.getShareableEnterpriseDetails(userId)
+                    }
                     applyFilters(teamList, currentSearchQuery)
                 }
                 else -> {
-                    val teamList = teamsRepository.getTeamDetails(userId)
+                    val teamList = withContext(dispatcherProvider.io) {
+                        teamsRepository.getTeamDetails(userId)
+                    }
                     applyFilters(teamList, currentSearchQuery)
                 }
             }
