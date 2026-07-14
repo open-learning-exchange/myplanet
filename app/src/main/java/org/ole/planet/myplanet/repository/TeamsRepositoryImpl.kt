@@ -1255,11 +1255,12 @@ class TeamsRepositoryImpl @Inject constructor(
             MemberStats(member, visitCount, lastVisitTimestamp, isLeader)
         }
 
+        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
         return membersStats.map { stats ->
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(stats.member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
                 val date = Date(lastLogoutTimestamp)
-                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+                formatter.format(date)
             } else {
                 "No logout record found"
             }
