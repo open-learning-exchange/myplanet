@@ -138,6 +138,10 @@
         <activity
             android:name=".ui.settings.SettingsActivity"
             android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.surveys.PublicSurveyActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="org.ole.planet.myplanet.fileprovider"

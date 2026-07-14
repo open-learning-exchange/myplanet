@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.databinding.ActivityOnboardingBinding
 import org.ole.planet.myplanet.model.OnboardingItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import org.ole.planet.myplanet.ui.surveys.PublicSurveyActivity
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -72,7 +73,7 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun proceedWithLaunch() {
-        handleDeepLinkIntent(intent)
+        if (handleDeepLinkIntent(intent)) return
 
         if (prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
             startActivity(buildDashboardIntent())
@@ -206,7 +207,7 @@ class OnboardingActivity : AppCompatActivity() {
     }
 
     private fun routeDeepLinkIntoRunningApp() {
-        handleDeepLinkIntent(intent)
+        if (handleDeepLinkIntent(intent)) return
         val hasPendingSection = prefData.getRawString(DEEP_LINK_SECTION_KEY).isNotEmpty()
         if (hasPendingSection && prefData.isLoggedIn() && !Constants.autoSynFeature(Constants.KEY_AUTOSYNC_, applicationContext)) {
             startActivity(buildDashboardIntent())
@@ -290,12 +291,17 @@ class OnboardingActivity : AppCompatActivity() {
         }
     }
 
-    private fun handleDeepLinkIntent(intent: Intent) {
-        if (intent.action != Intent.ACTION_VIEW) return
-        val uri: Uri = intent.data ?: return
+    /**
+     * Handles a deep link. Returns true when the link was fully consumed by launching
+     * another activity (this activity is finishing) — callers must stop routing then.
+     */
+    private fun handleDeepLinkIntent(intent: Intent): Boolean {
+        if (intent.action != Intent.ACTION_VIEW) return false
+        val uri: Uri = intent.data ?: return false
+        if (maybeLaunchPublicSurvey(uri)) return true
         val (section, contentId) = when (uri.scheme) {
             "myplanet" -> {
-                val sec = uri.host ?: return
+                val sec = uri.host ?: return false
                 Pair(sec, uri.pathSegments.firstOrNull())
             }
             "http", "https" -> {
@@ -304,16 +310,31 @@ class OnboardingActivity : AppCompatActivity() {
                     Pair("surveys", segments.getOrNull(2))
                 } else {
                     val appIndex = segments.indexOf("app")
-                    val sec = segments.getOrNull(appIndex + 1) ?: return
+                    val sec = segments.getOrNull(appIndex + 1) ?: return false
                     val id = segments.getOrNull(appIndex + 2)
                     Pair(sec, id)
                 }
             }
-            else -> return
+            else -> return false
         }
         prefData.setRawString(DEEP_LINK_SECTION_KEY, section)
         if (contentId != null) prefData.setRawString(DEEP_LINK_ID_KEY, contentId)
         else prefData.removeKey(DEEP_LINK_ID_KEY)
+        return false
+    }
+
+    // publicAccess surveys are answerable without login via the server's public API
+    private fun maybeLaunchPublicSurvey(uri: Uri): Boolean {
+        if (uri.scheme != "http" && uri.scheme != "https") return false
+        val segments = uri.pathSegments
+        if (!segments.firstOrNull().equals("survey", ignoreCase = true)) return false
+        if (prefData.isLoggedIn()) return false
+        val teamId = segments.getOrNull(1) ?: return false
+        val surveyId = segments.getOrNull(2) ?: return false
+        val serverBase = "${uri.scheme}://${uri.encodedAuthority}"
+        startActivity(PublicSurveyActivity.newIntent(this, serverBase, teamId, surveyId))
+        finish()
+        return true
     }
 
     private fun buildDashboardIntent(): Intent {

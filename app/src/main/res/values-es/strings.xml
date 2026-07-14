@@ -1340,4 +1340,7 @@
     <string name="open_link_with">Abrir enlace con</string>
     <string name="just_once">Solo una vez</string>
     <string name="always">Siempre</string>
+    <string name="survey_load_failed">No se pudo cargar la encuesta. Inténtalo de nuevo.</string>
+    <string name="survey_submitted">Encuesta enviada. ¡Gracias!</string>
+    <string name="survey_submit_failed">No se pudo enviar la encuesta. Inténtalo de nuevo.</string>
 </resources>

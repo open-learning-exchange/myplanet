@@ -1341,4 +1341,7 @@
     <string name="open_link_with">Ouvrir le lien avec</string>
     <string name="just_once">Une seule fois</string>
     <string name="always">Toujours</string>
+    <string name="survey_load_failed">Impossible de charger l\'enquête. Veuillez réessayer.</string>
+    <string name="survey_submitted">Enquête envoyée. Merci !</string>
+    <string name="survey_submit_failed">Impossible d\'envoyer l\'enquête. Veuillez réessayer.</string>
 </resources>
