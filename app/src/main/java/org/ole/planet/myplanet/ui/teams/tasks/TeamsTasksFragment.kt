@@ -47,7 +47,16 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
     private var updateTasksJob: Job? = null
-    private var lastSubmittedSnapshot: List<Pair<String?, Boolean>> = emptyList()
+
+    private data class TaskSnapshot(
+        val id: String?,
+        val title: String?,
+        val description: String?,
+        val deadline: Long,
+        val completed: Boolean,
+        val assignee: String?
+    )
+    private var lastSubmittedSnapshot: List<TaskSnapshot> = emptyList()
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
     private val teamsTasksViewModel: TeamsTasksViewModel by viewModels()
@@ -301,7 +310,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                     else -> allTasks(tasksSnapshot)
                 }
 
-                val currentSnapshot = list.map { it.id to it.completed }
+                val currentSnapshot = list.map {
+                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.assignee)
+                }
                 if (currentSnapshot == lastSubmittedSnapshot) {
                     return@withContext Triple(null, null, currentSnapshot)
                 }
