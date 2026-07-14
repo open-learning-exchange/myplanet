@@ -70,7 +70,7 @@ interface UserRepository {
         payload: JsonObject
     )
 
-    suspend fun createMember(user: JsonObject): Pair<Boolean, String>
+    suspend fun createMember(user: org.ole.planet.myplanet.model.MemberInfo): Pair<Boolean, String>
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 

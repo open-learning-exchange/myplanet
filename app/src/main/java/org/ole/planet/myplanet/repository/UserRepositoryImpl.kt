@@ -595,8 +595,32 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun createMember(user: JsonObject): Pair<Boolean, String> {
-        return becomeMember(user)
+    override suspend fun createMember(user: org.ole.planet.myplanet.model.MemberInfo): Pair<Boolean, String> {
+        val obj = com.google.gson.JsonObject().apply {
+            addProperty("name", user.username)
+            addProperty("firstName", user.fName)
+            addProperty("lastName", user.lName)
+            addProperty("middleName", user.mName)
+            addProperty("password", user.password)
+            addProperty("isUserAdmin", false)
+            addProperty("joinDate", java.util.Calendar.getInstance().timeInMillis)
+            addProperty("email", user.email)
+            addProperty("planetCode", sharedPrefManager.getPlanetCode())
+            addProperty("parentCode", sharedPrefManager.getParentCode())
+            addProperty("language", user.language)
+            addProperty("level", user.level)
+            addProperty("phoneNumber", user.phoneNumber)
+            addProperty("birthDate", user.birthDate)
+            addProperty("gender", user.gender)
+            addProperty("type", "user")
+            addProperty("betaEnabled", false)
+            addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
+            addProperty("uniqueAndroidId", org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(org.ole.planet.myplanet.MainApplication.context))
+            addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(org.ole.planet.myplanet.MainApplication.context))
+            val roles = com.google.gson.JsonArray().apply { add("learner") }
+            add("roles", roles)
+        }
+        return becomeMember(obj)
     }
 
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {

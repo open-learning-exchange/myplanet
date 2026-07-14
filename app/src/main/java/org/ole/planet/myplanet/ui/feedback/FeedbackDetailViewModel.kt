@@ -42,9 +42,9 @@ class FeedbackDetailViewModel @Inject constructor(
         }
     }
 
-    fun addReply(id: String?, obj: JsonObject) {
+    fun addReply(id: String?, message: String, user: String?) {
         viewModelScope.launch(dispatcherProvider.io) {
-            feedbackRepository.addReply(id, obj)
+            feedbackRepository.addReply(id, message, user)
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
     }

@@ -237,12 +237,14 @@ class EventsRepositoryImplTest {
             transactionSlot.captured.invoke(mockRealm)
         }
 
-        val meetup = RealmMeetup()
-        every { mockRealm.copyToRealmOrUpdate(meetup) } returns meetup
+        val params = org.ole.planet.myplanet.ui.teams.MeetupCreationParams(
+            "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
+        )
+        every { mockRealm.copyToRealmOrUpdate(any<RealmMeetup>()) } returns RealmMeetup()
 
-        val result = repository.createMeetup(meetup)
+        val result = repository.createMeetup(params)
         assertTrue(result)
-        verify { mockRealm.copyToRealmOrUpdate(meetup) }
+        verify { mockRealm.copyToRealmOrUpdate(any<RealmMeetup>()) }
     }
 
     @Test
@@ -251,9 +253,11 @@ class EventsRepositoryImplTest {
         val transactionSlot = slot<Function1<Realm, Unit>>()
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } throws SilentException("Test Exception")
 
-        val meetup = RealmMeetup()
+        val params = org.ole.planet.myplanet.ui.teams.MeetupCreationParams(
+            "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
+        )
 
-        val result = repository.createMeetup(meetup)
+        val result = repository.createMeetup(params)
         assertFalse(result)
     }
 }

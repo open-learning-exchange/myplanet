@@ -112,9 +112,9 @@ interface TeamsRepository {
     suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>>
     suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>>
     suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String
-    suspend fun addReport(report: JsonObject)
+    suspend fun addReport(report: org.ole.planet.myplanet.model.FinanceReportParams)
     suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray)
-    suspend fun updateReport(reportId: String, payload: JsonObject)
+    suspend fun updateReport(reportId: String, payload: org.ole.planet.myplanet.model.FinanceReportParams)
     suspend fun archiveReport(reportId: String)
     suspend fun logTeamVisit(teamId: String, userName: String?, userPlanetCode: String?,
         userParentCode: String?, teamType: String?

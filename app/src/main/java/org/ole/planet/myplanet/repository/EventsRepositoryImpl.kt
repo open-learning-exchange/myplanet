@@ -112,7 +112,34 @@ class EventsRepositoryImpl @Inject constructor(
         return processedCount
     }
 
-    override suspend fun createMeetup(meetup: RealmMeetup): Boolean {
+    override suspend fun createMeetup(params: org.ole.planet.myplanet.ui.teams.MeetupCreationParams): Boolean {
+        val timeProvider = org.ole.planet.myplanet.utils.SystemTimeProvider()
+        val gson = com.google.gson.Gson()
+        val meetup = RealmMeetup().apply {
+            id = "${java.util.UUID.randomUUID()}"
+            title = params.title
+            meetupLink = params.meetupLink
+            description = params.description
+            meetupLocation = params.location
+            creator = params.userName
+            startDate = params.startMillis
+            endDate = params.endMillis
+            startTime = params.startTime
+            endTime = params.endTime
+            createdDate = timeProvider.now()
+            sourcePlanet = params.teamPlanetCode
+            val jo = com.google.gson.JsonObject()
+            jo.addProperty("type", "local")
+            jo.addProperty("planetCode", params.teamPlanetCode)
+            sync = gson.toJson(jo)
+            if (params.recurringText != null) {
+                recurring = params.recurringText
+            }
+            val ob = com.google.gson.JsonObject()
+            ob.addProperty("teams", params.teamId)
+            link = gson.toJson(ob)
+            teamId = params.teamId
+        }
         return try {
             executeTransaction { realm ->
                 realm.copyToRealmOrUpdate(meetup)
