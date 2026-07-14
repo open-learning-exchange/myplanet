@@ -163,7 +163,6 @@ class RealmStepExamTest {
         verify { mockRealmStepExam.noOfQuestions = 0 }
     }
 
-
     @Test
     fun testSerializeExam() {
         val exam = RealmStepExam().apply {

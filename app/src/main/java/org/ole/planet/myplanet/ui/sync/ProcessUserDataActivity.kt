@@ -255,7 +255,6 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         `in`.hideSoftInputFromWindow(view?.windowToken, 0)
     }
 
-
     fun alertDialogOkay(message: String?) {
         val builder1 = AlertDialog.Builder(this, R.style.AlertDialogTheme)
         builder1.setMessage(message)

@@ -46,7 +46,6 @@ class SettingsViewModel @Inject constructor(
     private val _downloadCompleteEvent = Channel<List<RealmMyLibrary>>(Channel.BUFFERED)
     val downloadCompleteEvent: Flow<List<RealmMyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
-
     fun isCurrentlyProcessing(): Boolean {
         return retryQueue.isCurrentlyProcessing()
     }

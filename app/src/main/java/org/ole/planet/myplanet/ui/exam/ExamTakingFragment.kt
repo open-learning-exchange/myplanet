@@ -203,7 +203,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             }
         }
 
-
         examTakingTextWatcher = object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
@@ -236,7 +235,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         val currentQuestion = questions?.get(currentIndex) ?: return
         val questionId = currentQuestion.id ?: return
         val answerData = answerCache.getOrPut(questionId) { AnswerData() }
-
 
         when (currentQuestion.type) {
             "select", "ratingScale" -> {
@@ -657,7 +655,6 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
             e.printStackTrace()
         }
     }
-
 
     private suspend fun updateAnsDb(): Boolean {
         val questionsSize = questions?.size ?: 0

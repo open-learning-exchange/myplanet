@@ -38,7 +38,6 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
     private val _isMemberFlow = MutableStateFlow(false)
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         teamId = requireArguments().getString("id", "")

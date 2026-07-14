@@ -107,7 +107,6 @@ class SubmissionViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-
     fun setFilter(type: String, query: String) {
         _type.value = type
         _query.value = query

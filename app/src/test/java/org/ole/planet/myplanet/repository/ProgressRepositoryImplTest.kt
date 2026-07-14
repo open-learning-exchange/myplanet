@@ -470,8 +470,6 @@ class ProgressRepositoryImplTest {
         assertEquals(true, mockProgress.passed) // Should preserve local true despite remote false
     }
 
-
-
     @Test
     fun testGetCompletedCourses_nullSteps() = testScope.runTest {
         val myCourses = listOf(

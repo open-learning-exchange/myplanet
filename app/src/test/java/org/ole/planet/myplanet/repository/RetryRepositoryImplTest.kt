@@ -53,8 +53,6 @@ class RetryRepositoryImplTest {
         val op = mockk<RealmRetryOperation>(relaxed = true)
         every { realm.createObject(RealmRetryOperation::class.java, any()) } returns op
 
-
-
         repository.enqueue(
             "testUploadType", retryFailure, "testPayload", "testEndpoint",
             "POST", "testDbId", "TestClass", "testUserId"

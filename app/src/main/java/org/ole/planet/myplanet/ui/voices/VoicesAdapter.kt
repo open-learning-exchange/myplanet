@@ -195,7 +195,6 @@ class VoicesAdapter(
         return VoicesViewHolder(binding)
     }
 
-
     @SuppressLint("SetTextI18n")
     @RequiresApi(Build.VERSION_CODES.UPSIDE_DOWN_CAKE)
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
@@ -302,8 +301,6 @@ class VoicesAdapter(
             safeNotifyItemChanged(index, PAYLOAD_REPLY_COUNT)
         }
     }
-
-
 
     private fun resetViews(holder: VoicesViewHolder) {
         with(holder.binding) {
@@ -776,7 +773,6 @@ class VoicesAdapter(
             }
         }
     }
-
 
     private fun loadGlideImage(file: File, target: ImageView, size: Int) {
         val request = Glide.with(target.context)

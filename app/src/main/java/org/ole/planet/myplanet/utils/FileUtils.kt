@@ -150,7 +150,6 @@ object FileUtils {
         }
     }
 
-
     fun getRealPathFromURI(context: Context, contentUri: Uri?): String? {
         var cursor: Cursor? = null
         return try {

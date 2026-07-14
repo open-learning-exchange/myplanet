@@ -324,8 +324,6 @@ class TeamFragment : Fragment() {
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
-
-
     private fun listContentDescription(conditionApplied: Boolean) {
         if (conditionApplied) {
             binding.rvTeamList.contentDescription = getString(R.string.enterprise_list)

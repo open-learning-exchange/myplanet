@@ -458,7 +458,6 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         _binding = null
     }
 
-
     companion object {
         fun newInstance(
             teamId: String,

@@ -57,7 +57,6 @@ class TeamViewModel @Inject constructor(
     private var loadJob: Job? = null
     private var loadTaskJob: Job? = null
 
-
     fun loadTeams(fromDashboard: Boolean, type: String?, userId: String?) {
         currentFromDashboard = fromDashboard
         currentType = type

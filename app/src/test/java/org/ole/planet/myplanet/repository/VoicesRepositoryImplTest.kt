@@ -121,7 +121,6 @@ class VoicesRepositoryImplTest {
         io.mockk.verify { dispatcherProvider.default }
     }
 
-
     @Test
     fun `getCommunityVisibleNews filters correctly based on viewableBy and viewIn`() = testScope.runTest {
         val mockRealm = mockk<io.realm.Realm>(relaxed = true)

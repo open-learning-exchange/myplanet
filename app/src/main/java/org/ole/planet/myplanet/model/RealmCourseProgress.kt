@@ -36,6 +36,5 @@ open class RealmCourseProgress : RealmObject() {
             return `object`
         }
 
-
     }
 }

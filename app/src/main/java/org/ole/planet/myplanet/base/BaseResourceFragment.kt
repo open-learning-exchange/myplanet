@@ -164,7 +164,6 @@ abstract class BaseResourceFragment : Fragment() {
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)
 
-
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
@@ -282,7 +281,6 @@ abstract class BaseResourceFragment : Fragment() {
             }
         }
     }
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

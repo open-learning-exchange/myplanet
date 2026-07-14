@@ -1,51 +1,85 @@
-# clutter
-.DS_Store
-Thumbs.db
-
-# IntelliJ files/folder
-.idea
-*.iml
-
-# Signing folder
-.signing
-
-# Application files
-*.apk
-*.ap_
-*.aab
-
-# ART/Dalvik VM files
-*.dex
-
-# Java class files
+```
+# Compiled and build artifacts
 *.class
+*.o
+*.obj
+*.out
+*.pyc
+__pycache__/
+*.pyo
+*.pyd
+*.so
+*.dll
+*.exe
+*.a
+*.lib
+*.dylib
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.zst
+*.gz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
 
-# Generated folders
-bin
-gen
-out
+# Dependencies
+node_modules/
+venv/
+.venv/
+.env
+.env.local
+.env.*
+target/
+.gradle/
+.mypy_cache/
+.pytest_cache/
+.coverage
+coverage/
+htmlcov/
 
-# Gradle files/folders
-.gradle
-build
-app/build
-app/release
-.kotlin
+# Build directories
+build/
+dist/
+out/
+bin/
+obj/
+tmp/
+temp/
 
-# Local configuration
-local.properties
-
-# Eclipse Proguard folder
-proguard
-
-# Log files
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
 *.log
+Thumbs.db
+.DS_Store
 
-# Android Studio Navigation editor temp folder
-.navigation
-
-# Android Studio captures folder
-captures
-
-# version.xml out of build.gradle
-app/src/main/res/values/versions.xml
+# Android/Kotlin specific
+*.apk
+*.aar
+*.dex
+local.properties
+.gradle/
+captures/
+.externalNativeBuild/
+.cxx/
+.databinding/
+```

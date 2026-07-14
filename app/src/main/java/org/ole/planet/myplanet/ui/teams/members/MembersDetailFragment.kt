@@ -73,7 +73,6 @@ class MembersDetailFragment : Fragment() {
         }
     }
 
-
     companion object {
         fun newInstance(
             name: String,

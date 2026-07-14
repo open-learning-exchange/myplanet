@@ -8,9 +8,9 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import io.mockk.verify
 import io.mockk.verifyOrder
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Test
@@ -18,8 +18,8 @@ import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ConfigurationsRepository.ConfigurationResult
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 class SyncConfigurationCoordinatorTest {
 

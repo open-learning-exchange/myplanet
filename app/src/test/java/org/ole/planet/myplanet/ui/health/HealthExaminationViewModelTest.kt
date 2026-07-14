@@ -68,8 +68,6 @@ class HealthExaminationViewModelTest {
 
         val finalState = states.last()
 
-
-
         assertFalse(finalState.isLoading)
         assertEquals(mockUser, finalState.user)
         assertEquals(mockPojo, finalState.pojo)

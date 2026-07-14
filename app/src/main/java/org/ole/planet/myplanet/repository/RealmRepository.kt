@@ -48,7 +48,6 @@ open class RealmRepository(
         realm.where(clazz).apply(builder).findFirst()?.let { realm.copyFromRealm(it) }
     }
 
-
     protected suspend fun <T : RealmObject> count(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
@@ -202,7 +201,6 @@ open class RealmRepository(
     protected suspend fun <T> withRealmAsync(operation: (Realm) -> T): T {
         return withRealm(false, operation)
     }
-
 
     protected suspend fun executeTransaction(transaction: (Realm) -> Unit) {
         databaseService.executeTransactionAsync(transaction)

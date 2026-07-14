@@ -239,7 +239,6 @@ class ActivitiesRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun recordSyncUserChallengeAction(userId: String) {
         executeTransaction { realm ->
             val action = realm.createObject(

@@ -1,14 +1,12 @@
 package org.ole.planet.myplanet.utils
 
+import io.mockk.mockk
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import io.mockk.mockk
 
 class ResourceSearchUtilsTest {
-
 
     @Test
     fun testSearchLocalModels() {

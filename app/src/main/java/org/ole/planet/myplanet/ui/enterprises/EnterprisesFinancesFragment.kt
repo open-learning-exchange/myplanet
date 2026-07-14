@@ -96,7 +96,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             }
         }
 
-
         binding.llDate.setOnClickListener {
             binding.imgDate.rotation += 180
             val newSort = !isAsc
@@ -165,7 +164,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         datePickerDialog.show()
     }
 
-
     private fun Calendar.formatToString(pattern: String): String {
         val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
         return dateFormat.format(this.time)
@@ -193,7 +191,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         }
     }
 
-
     private fun filterIfBothDatesSelected() {
         val fromDate = binding.tvFromDateCalendar.text.toString()
         val toDate = binding.etToDate.text.toString()
@@ -201,7 +198,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             filterDataByDateRange(fromDate, toDate)
         }
     }
-
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
@@ -217,7 +213,6 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             e.printStackTrace()
         }
     }
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)

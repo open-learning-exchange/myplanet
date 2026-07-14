@@ -694,7 +694,6 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
@@ -1371,7 +1370,6 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
     }
-
 
     override suspend fun uploadShelfData(user: RealmUser) {
         try {

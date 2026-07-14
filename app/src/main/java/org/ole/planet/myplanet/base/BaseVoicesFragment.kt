@@ -118,7 +118,6 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }
 
-
     fun changeLayoutManager(orientation: Int, recyclerView: RecyclerView) {
         activity?.let { act ->
             if (orientation == Configuration.ORIENTATION_LANDSCAPE) {

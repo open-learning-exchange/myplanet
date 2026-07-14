@@ -622,7 +622,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-
     private fun additionalSetup() {
         val bottomSheet = binding.cardFilter
         filter.setOnClickListener {

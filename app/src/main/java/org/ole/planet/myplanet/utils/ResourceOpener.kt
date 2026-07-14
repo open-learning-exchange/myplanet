@@ -51,7 +51,6 @@ object ResourceOpener {
         activity.startActivity(intent)
     }
 
-
     fun getResourceTypeIcon(localAddress: String?): Int {
         val mimeType = Utilities.getMimeType(localAddress)
         return when {

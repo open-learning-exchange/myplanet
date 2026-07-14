@@ -41,7 +41,6 @@ object UrlUtils {
             val isAlternativeUrl = spm.isAlternativeUrl()
             val alternativeUrl = spm.getProcessedAlternativeUrl()
 
-
             if (isAlternativeUrl && !alternativeUrl.isNullOrEmpty()) {
                 try {
                     val uri = alternativeUrl.toUri()

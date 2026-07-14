@@ -184,8 +184,6 @@ class RealmExamQuestionTest {
         assertEquals("choice d", correctChoiceQ2?.get(1))
     }
 
-
-
     @Test
     fun testSerializeQuestions_withRealData() {
         val questions = JsonArray()

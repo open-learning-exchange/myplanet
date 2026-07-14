@@ -51,7 +51,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -241,7 +240,6 @@ class TeamsRepositoryImpl @Inject constructor(
             equalTo("type", "enterprise")
         }
     }
-
 
     private suspend fun mapToTeamDetails(teams: List<RealmMyTeam>, userId: String?): List<TeamDetails> {
         val validTeams = teams.filter { !it._id.isNullOrBlank() && it.status != "archived" }
@@ -458,8 +456,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-
-
     override suspend fun getTeamLabelInfo(teamId: String): TeamLabelInfo? {
         val team = findByField(RealmMyTeam::class.java, "_id", teamId) ?: return null
         return TeamLabelInfo(
@@ -493,7 +489,6 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-
     override suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String> {
         if (ids.isEmpty()) return emptyMap()
         val teams = queryList(RealmMyTeam::class.java) {
@@ -506,8 +501,6 @@ class TeamsRepositoryImpl @Inject constructor(
         val request = findByField(RealmMyTeam::class.java, "_id", requestId)
         return if (request?.docType == "request") request.teamId else null
     }
-
-
 
     override suspend fun getTeamTransactionsWithBalance(
         teamId: String,
@@ -1033,7 +1026,6 @@ class TeamsRepositoryImpl @Inject constructor(
         save(log)
     }
 
-
     override suspend fun updateTeam(
         teamId: String,
         name: String,
@@ -1142,7 +1134,6 @@ class TeamsRepositoryImpl @Inject constructor(
             isNotEmpty("resourceId")
         }.mapNotNull { it.resourceId }
     }
-
 
     override suspend fun getTeamType(teamId: String): String? {
         if (teamId.isBlank()) return null
@@ -1388,7 +1379,6 @@ class TeamsRepositoryImpl @Inject constructor(
         val allLibraryItems = resourcesRepositoryLazy.get().getPublicLibraryItems()
         return allLibraryItems.filter { it._id !in existingIds }
     }
-
 
     override suspend fun insertTeamLog(json: JsonObject) {
         executeTransaction { realm ->

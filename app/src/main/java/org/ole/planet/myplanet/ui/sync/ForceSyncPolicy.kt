@@ -4,6 +4,7 @@ import java.util.concurrent.TimeUnit
 
 object ForceSyncPolicy {
 
+
     const val WEEKLY_MAX_DAYS = 7
     const val MONTHLY_MAX_DAYS = 30
 

@@ -84,8 +84,6 @@ class BasePermissionActivityTest {
         unmockkStatic(NotificationManagerCompat::class)
     }
 
-
-
     @Test
     fun `handleFilePermissionsResult grants media permissions correctly`() {
         val permissions = arrayOf(Manifest.permission.READ_MEDIA_IMAGES)

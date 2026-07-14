@@ -27,7 +27,6 @@ class ANRWatchdog(
     private val mainHandler = Handler(Looper.getMainLooper())
     private val tickUpdater = Runnable { updateTick() }
 
-
     private fun updateTick() {
         tick = SystemClock.elapsedRealtime()
     }

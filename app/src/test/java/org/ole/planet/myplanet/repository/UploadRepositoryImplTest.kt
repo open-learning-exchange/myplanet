@@ -52,7 +52,6 @@ class UploadRepositoryImplTest {
         io.mockk.unmockkAll()
     }
 
-
     @Test
     fun `queryPending returns list from copyFromRealm`() = runTest {
         val realm = mockk<Realm>(relaxed = true)
@@ -87,7 +86,6 @@ class UploadRepositoryImplTest {
         assertEquals(expectedList, actualList)
         verify(exactly = 1) { realm.copyFromRealm(results) }
     }
-
 
     @Test
     fun `postUpload calls postDoc on ApiInterface`() = runTest {

@@ -148,7 +148,6 @@ class WebViewActivity : AppCompatActivity() {
         }
     }
 
-
     private fun setWebClient() {
         val assetLoader = setupAssetLoader()
         activityWebViewBinding.contentWebView.wv.webViewClient = createWebViewClient(assetLoader)

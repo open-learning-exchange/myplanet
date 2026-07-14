@@ -59,7 +59,6 @@ class UserRepositoryBulkInsertTest {
             jsonArray.add(jObj)
         }
 
-
         val list = mutableListOf<JsonObject>()
         for (j in jsonArray) {
             list.add(j.asJsonObject)

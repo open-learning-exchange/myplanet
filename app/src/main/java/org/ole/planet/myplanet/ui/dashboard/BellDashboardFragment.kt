@@ -317,7 +317,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-
     private fun showBadges(completedCourses: List<CourseCompletion>) {
         binding.cardProfileBell.llBadges.removeAllViews()
         completedCourses.forEachIndexed { index, course ->

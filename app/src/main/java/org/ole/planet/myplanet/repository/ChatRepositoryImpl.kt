@@ -167,7 +167,6 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
-
     private fun insertChatsBatchInternal(realm: io.realm.Realm, chats: List<JsonObject>) {
         if (chats.isEmpty()) return
 

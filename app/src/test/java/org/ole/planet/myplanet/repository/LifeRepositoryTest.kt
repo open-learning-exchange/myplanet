@@ -44,7 +44,6 @@ class LifeRepositoryTest {
         )
     }
 
-
     @Test
     fun updateVisibility_itemNotFound_doesNothing() = runTest {
         val myLifeId = "missing123"

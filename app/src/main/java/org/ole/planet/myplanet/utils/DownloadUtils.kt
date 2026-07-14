@@ -267,5 +267,4 @@ object DownloadUtils {
         entryPoint.resourcesRepository()
     }
 
-
 }

@@ -97,7 +97,6 @@ class SettingsActivity : AppCompatActivity() {
         private var libraryList: List<RealmMyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
-
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
             super.onViewCreated(view, savedInstanceState)
             collectLatestWhenStarted(viewModel.clearDataEvent) {

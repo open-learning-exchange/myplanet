@@ -4,8 +4,6 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import org.ole.planet.myplanet.utils.Utilities
-import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +22,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -121,7 +120,6 @@ class ChatViewModel @Inject constructor(
             PrecomputedChat(chat, title, queries, responses)
         }
     }
-
 
     fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
         if (query.isBlank()) {
