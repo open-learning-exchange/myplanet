@@ -181,7 +181,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             registerSystemNotificationReceiver()
             checkIfShouldShowNotifications()
 
-            val validUrls = ServerConfigUtils.getTrustedServerUrls()
+            val validUrls = ServerConfigUtils.getChallengeServerUrls()
             val isGuest = user?.id?.startsWith("guest") == true
             dashboardViewModel.evaluateChallengeDialog(
                 user?.id,

@@ -80,6 +80,7 @@ object ServerConfigUtils {
             url == BuildConfig.PLANET_XELA_URL ||
             url == BuildConfig.PLANET_SANPABLO_URL ||
             url == BuildConfig.PLANET_URIUR_URL ||
+            url == BuildConfig.PLANET_EMBAKASI_URL ||
             isLocalNetwork(url)
         ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
     }
@@ -152,9 +153,14 @@ object ServerConfigUtils {
         )
     }
 
-    fun getTrustedServerUrls(): List<String> {
-        return getTrustedServerHosts().map { host ->
-            getDefaultProtocol(host) + host
-        }
+    fun getChallengeServerUrls(): List<String> {
+        return listOfNotNull(
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
+        )
     }
 }
