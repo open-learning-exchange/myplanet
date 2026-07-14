@@ -18,7 +18,12 @@ class AndroidDecrypter {
             val clean = plainText.toByteArray()
             val ivSize = 16
             val ivBytes = ByteArray(ivSize)
-            iv?.let { hexStringToByteArray(it) }?.let { System.arraycopy(it, 0, ivBytes, 0, ivBytes.size) }
+            if (iv != null) {
+                val decodedIv = hexStringToByteArray(iv)
+                System.arraycopy(decodedIv, 0, ivBytes, 0, minOf(decodedIv.size, ivBytes.size))
+            } else {
+                SecureRandom().nextBytes(ivBytes)
+            }
             val ivParameterSpec = IvParameterSpec(ivBytes)
             val keyBytes = ByteArray(32)
             key?.let { hexStringToByteArray(it) }?.let { System.arraycopy(it, 0, keyBytes, 0, keyBytes.size) }
@@ -53,24 +58,33 @@ class AndroidDecrypter {
 
         fun decrypt(encrypted: String?, key: String?, initVector: String?): String? {
             try {
-                if (encrypted == null || key == null || initVector == null) {
+                if (encrypted == null || key == null) {
                     return null
                 }
-                val ivBytes = hexStringToByteArray(initVector)
+                val encryptedBytes = hexStringToByteArray(encrypted)
+                val ivBytes: ByteArray
+                val actualEncryptedBytes: ByteArray
+
+                if (initVector == null) {
+                    if (encryptedBytes.size < 16) return null
+                    ivBytes = encryptedBytes.sliceArray(0 until 16)
+                    actualEncryptedBytes = encryptedBytes.sliceArray(16 until encryptedBytes.size)
+                } else {
+                    val providedIvBytes = hexStringToByteArray(initVector)
+                    if (encryptedBytes.size >= providedIvBytes.size && providedIvBytes.contentEquals(encryptedBytes.sliceArray(0 until providedIvBytes.size))) {
+                        ivBytes = providedIvBytes
+                        actualEncryptedBytes = encryptedBytes.sliceArray(providedIvBytes.size until encryptedBytes.size)
+                    } else {
+                        ivBytes = providedIvBytes
+                        actualEncryptedBytes = encryptedBytes
+                    }
+                }
+
                 val iv = IvParameterSpec(ivBytes)
                 val skeySpec = SecretKeySpec(hexStringToByteArray(key), "AES")
 
                 val cipher = Cipher.getInstance("AES/CBC/PKCS5PADDING")
                 cipher.init(Cipher.DECRYPT_MODE, skeySpec, iv)
-                val encryptedBytes = hexStringToByteArray(encrypted)
-                // Invariant: New-format encrypted data prepends the IV to the ciphertext.
-                // We check if the payload starts with the provided IV to decide whether to strip it.
-                // This maintains backward compatibility with legacy data containing only the ciphertext.
-                val actualEncryptedBytes = if (encryptedBytes.size >= ivBytes.size && ivBytes.contentEquals(encryptedBytes.sliceArray(0 until ivBytes.size))) {
-                    encryptedBytes.sliceArray(ivBytes.size until encryptedBytes.size)
-                } else {
-                    encryptedBytes
-                }
                 val original = cipher.doFinal(actualEncryptedBytes)
                 return String(original)
             } catch (ex: Exception) {

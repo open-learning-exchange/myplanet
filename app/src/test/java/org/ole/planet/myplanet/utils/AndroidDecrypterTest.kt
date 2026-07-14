@@ -56,8 +56,9 @@ class AndroidDecrypterTest {
         // Decrypt() returns null if the passed key is null, so we must explicitly pass
         // the equivalent all-zero hex strings to round-trip this.
         val zeroKey = "00".repeat(32)
-        val zeroIv = "00".repeat(16)
-        val decrypted = AndroidDecrypter.decrypt(encrypted, zeroKey, zeroIv)
+
+        // Pass null for initVector so decrypt automatically extracts the randomly generated prepended IV.
+        val decrypted = AndroidDecrypter.decrypt(encrypted, zeroKey, null)
         assertEquals(plainText, decrypted)
     }
 
