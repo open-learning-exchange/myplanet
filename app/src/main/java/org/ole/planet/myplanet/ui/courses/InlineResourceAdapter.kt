@@ -79,10 +79,6 @@ class InlineResourceAdapter(
             cancelPreviousPreviews()
             previewJob = job
         }
-
-        fun cancelScope() {
-            scope.cancel()
-        }
     }
 
     override fun onCurrentListChanged(previousList: MutableList<RealmMyLibrary>, currentList: MutableList<RealmMyLibrary>) {
@@ -113,7 +109,6 @@ class InlineResourceAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         holder.cancelPreviousPreviews()
-        holder.cancelScope()
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
