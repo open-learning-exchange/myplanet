@@ -10,13 +10,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 
 class ANRWatchdog(
     private val timeout: Long = DEFAULT_ANR_TIMEOUT,
     private val listener: ANRListener? = null,
     private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
 ) {
-    private var scope: CoroutineScope? = null
     private var job: Job? = null
     companion object {
         private const val DEFAULT_ANR_TIMEOUT = 5000L
@@ -45,8 +45,7 @@ class ANRWatchdog(
         tick = SystemClock.elapsedRealtime()
         mainHandler.post(tickUpdater)
 
-        scope = CoroutineScope(dispatcherProvider.default)
-        job = scope?.launch {
+        job = MainApplication.applicationScope.launch(dispatcherProvider.default) {
             while (isWatching && isActive) {
                 val lastTick = tick
                 val currentTime = SystemClock.elapsedRealtime()
@@ -87,7 +86,5 @@ class ANRWatchdog(
         mainHandler.removeCallbacks(tickUpdater)
         job?.cancel()
         job = null
-        scope?.cancel()
-        scope = null
     }
 }
