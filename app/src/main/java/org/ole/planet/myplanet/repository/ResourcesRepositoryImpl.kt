@@ -76,6 +76,48 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getResourceById(id: String): RealmMyLibrary? {
+        return withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("id", id)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun updateLocalResource(
+        resourceId: String,
+        title: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        subjects: io.realm.RealmList<String>?,
+        levels: io.realm.RealmList<String>?
+    ): Result<Unit> {
+        return runCatching {
+            executeTransaction { realm ->
+                val resource = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("id", resourceId)
+                    .findFirst()
+                if (resource == null) return@executeTransaction
+
+                resource.title = title
+                resource.titleNormal = Utilities.normalizeText(title)
+                resource.author = author
+                resource.year = year
+                resource.description = description
+                resource.publisher = publisher
+                resource.linkToLicense = linkToLicense
+                resource.subject?.clear()
+                subjects?.forEach { resource.subject?.add(it) }
+                resource.level?.clear()
+                levels?.forEach { resource.level?.add(it) }
+            }
+        }
+    }
+
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
         return findByField(RealmMyLibrary::class.java, "id", id, true)
     }

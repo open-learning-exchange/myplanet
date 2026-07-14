@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
+import io.realm.RealmList
 
 data class LibraryWithMetadata(
     val library: RealmMyLibrary,
@@ -65,6 +66,18 @@ interface ResourcesRepository {
         levels: Set<String>,
         mediums: Set<String>
     )
+    suspend fun getResourceById(id: String): RealmMyLibrary?
+    suspend fun updateLocalResource(
+        resourceId: String,
+        title: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        subjects: RealmList<String>?,
+        levels: RealmList<String>?
+    ): Result<Unit>
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean
     suspend fun getAllLibrariesToSync(): List<RealmMyLibrary>

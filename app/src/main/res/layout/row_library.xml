@@ -77,6 +77,17 @@
                 android:layout_gravity="center"
                 android:src="@drawable/ic_download"
                 android:layout_margin="@dimen/padding_small" />
+            <ImageButton
+                android:id="@+id/btn_edit_resource"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_margin="@dimen/padding_small"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/edit"
+                android:src="@drawable/ic_edit"
+                android:visibility="gone" />
+
             <LinearLayout
                 android:id="@+id/ll_rating"
                 android:layout_width="wrap_content"
