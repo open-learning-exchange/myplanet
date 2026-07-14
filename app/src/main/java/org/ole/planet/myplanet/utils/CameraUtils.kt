@@ -181,7 +181,7 @@ object CameraUtils {
                         captureSession = session
                         try {
                             captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
-                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, mainHandler)
+                            captureSession?.setRepeatingRequest(captureRequestBuilder.build(), null, null)
                         } catch (e: CameraAccessException) {
                             e.printStackTrace()
                         }

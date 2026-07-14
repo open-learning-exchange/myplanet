@@ -4,9 +4,11 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
-import android.os.Handler
 import android.os.Looper
 import android.util.Patterns
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.core.graphics.toColorInt
@@ -42,7 +44,7 @@ object Utilities {
         if (Looper.myLooper() == Looper.getMainLooper()) {
             showToastIfValid(context, message, duration)
         } else {
-            Handler(Looper.getMainLooper()).post {
+            CoroutineScope(Dispatchers.Main).launch {
                 showToastIfValid(context, message, duration)
             }
         }
