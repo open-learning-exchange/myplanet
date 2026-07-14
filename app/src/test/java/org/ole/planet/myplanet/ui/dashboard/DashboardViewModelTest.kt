@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
@@ -92,6 +93,7 @@ class DashboardViewModelTest {
 
         coEvery { userRepository.getUserById(userId) } returns user
         coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
@@ -130,6 +132,7 @@ class DashboardViewModelTest {
 
         coEvery { userRepository.getUserById(userId) } returns user
         coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // Library throws CancellationException, simulating its job being cancelled
@@ -158,6 +161,7 @@ class DashboardViewModelTest {
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getUserById(userId) } returns user
         coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)
 
         viewModel.loadUserContent(userId)
 

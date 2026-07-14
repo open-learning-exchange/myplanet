@@ -158,20 +158,11 @@ class DashboardViewModel @Inject constructor(
 
         profileJob?.cancel()
         profileJob = viewModelScope.launch(dispatcherProvider.main) {
-            val (fullName, offlineLogins) = withContext(dispatcherProvider.io) {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-
-                val count = if (userName != null) {
-                    activitiesRepository.getOfflineLoginCount(userName)
-                } else {
-                    0
-                }
-                Pair(fullName, count)
+            val profile = withContext(dispatcherProvider.io) {
+                userRepository.getDashboardProfile(userId)
             }
 
-            _uiState.update { it.copy(fullName = fullName, offlineLogins = offlineLogins) }
+            _uiState.update { it.copy(fullName = profile.fullName, offlineLogins = profile.offlineLogins) }
         }
     }
 
