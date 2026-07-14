@@ -82,13 +82,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
-            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
+            }
+            startPostponedEnterTransition()
+            requireActivity().reportFullyDrawn()
+
+            if (isMyCourseLib && courseLib == null && !isSurvey) {
                 val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
                 val libraryList = resourcesRepository.getLibraryListForUser(userId)
                 showDownloadDialog(libraryList)
             }
-            startPostponedEnterTransition()
-            requireActivity().reportFullyDrawn()
         }
     }
 
