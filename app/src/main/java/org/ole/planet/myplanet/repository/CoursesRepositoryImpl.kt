@@ -616,16 +616,25 @@ class CoursesRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
+
+        val ids = documentList.map { JsonUtils.getString("_id", it) }.toTypedArray()
+        val existingCertifications = realm.where(RealmCertification::class.java)
+            .`in`("_id", ids)
+            .findAll()
+            .associateBy { it._id }
+            .toMutableMap()
+
         documentList.forEach { jsonDoc ->
-            insertCertification(realm, jsonDoc)
+            insertCertification(realm, jsonDoc, existingCertifications)
         }
     }
 
-    private fun insertCertification(realm: Realm, doc: JsonObject) {
+    private fun insertCertification(realm: Realm, doc: JsonObject, existingCertifications: MutableMap<String?, RealmCertification>) {
         val id = JsonUtils.getString("_id", doc)
-        var certification = realm.where(RealmCertification::class.java).equalTo("_id", id).findFirst()
+        var certification = existingCertifications[id]
         if (certification == null) {
             certification = realm.createObject(RealmCertification::class.java, id)
+            existingCertifications[id] = certification
         }
         certification?.name = JsonUtils.getString("name", doc)
         certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", doc))
