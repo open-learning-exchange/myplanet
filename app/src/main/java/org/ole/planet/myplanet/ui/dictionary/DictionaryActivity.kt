@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.core.text.HtmlCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
@@ -114,7 +115,7 @@ class DictionaryActivity : BaseActivity() {
                 }
                 JsonUtils.gson.fromJson(data, JsonArray::class.java)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("DictionaryActivity", "Error loading dictionary", e)
                 null
             }
             json?.let { jsonArray ->
