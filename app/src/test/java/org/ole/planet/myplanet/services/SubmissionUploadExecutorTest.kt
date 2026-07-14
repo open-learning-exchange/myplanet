@@ -7,12 +7,15 @@ import dagger.hilt.android.testing.HiltTestApplication
 import dagger.hilt.android.testing.UninstallModules
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import javax.inject.Inject
 import kotlin.coroutines.ContinuationInterceptor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestCoroutineScheduler
@@ -59,6 +62,8 @@ class SubmissionUploadExecutorTest {
 
     @Before
     fun init() {
+        mockkObject(org.ole.planet.myplanet.MainApplication)
+        every { org.ole.planet.myplanet.MainApplication.applicationScope } returns CoroutineScope(SupervisorJob() + dispatcherProvider.io)
         hiltRule.inject()
     }
 
