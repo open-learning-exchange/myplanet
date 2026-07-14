@@ -16,9 +16,12 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.ExistingWorkPolicy
+import kotlinx.coroutines.cancel
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -203,18 +206,19 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             workRequest
         )
 
-        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
-        liveData.observe(this, object : Observer<WorkInfo?> {
-            override fun onChanged(value: WorkInfo?) {
-                if (value != null && value.state.isFinished) {
-                    liveData.removeObserver(this)
-                    if (value.state == WorkInfo.State.SUCCEEDED) {
-                        val successMessage = value.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
-                        onSuccess(successMessage)
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                workManager.getWorkInfoByIdFlow(workRequest.id).collect { value ->
+                    if (value != null && value.state.isFinished) {
+                        kotlinx.coroutines.currentCoroutineContext().cancel()
+                        if (value.state == WorkInfo.State.SUCCEEDED) {
+                            val successMessage = value.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
+                            onSuccess(successMessage)
+                        }
                     }
                 }
             }
-        })
+        }
     }
 
     private fun uploadBulkData() {
@@ -232,22 +236,23 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
             workRequest
         )
 
-        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
-        liveData.observe(this, object : Observer<WorkInfo?> {
-            override fun onChanged(value: WorkInfo?) {
-                if (value != null && value.state.isFinished) {
-                    liveData.removeObserver(this)
-                    lifecycleScope.launch(dispatcherProvider.main) {
-                        if (!isFinishing && !isDestroyed) {
-                            customProgressDialog.dismiss()
-                            if (value.state == WorkInfo.State.SUCCEEDED) {
-                                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                workManager.getWorkInfoByIdFlow(workRequest.id).collect { value ->
+                    if (value != null && value.state.isFinished) {
+                        kotlinx.coroutines.currentCoroutineContext().cancel()
+                        lifecycleScope.launch(dispatcherProvider.main) {
+                            if (!isFinishing && !isDestroyed) {
+                                customProgressDialog.dismiss()
+                                if (value.state == WorkInfo.State.SUCCEEDED) {
+                                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         }
                     }
                 }
             }
-        })
+        }
     }
 
     protected fun hideKeyboard(view: View?) {
