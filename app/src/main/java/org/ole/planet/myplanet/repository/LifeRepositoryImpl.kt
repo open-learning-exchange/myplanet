@@ -60,6 +60,13 @@ class LifeRepositoryImpl @Inject constructor(
         }.sortedBy { it.weight }
     }
 
+    override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<RealmMyLife> {
+        return queryList(RealmMyLife::class.java, ensureLatest) {
+            equalTo("userId", userId)
+            equalTo("isVisible", true)
+        }.sortedBy { it.weight }
+    }
+
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<RealmMyLife>): List<RealmMyLife> {
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
         if (json != null) {
@@ -90,10 +97,10 @@ class LifeRepositoryImpl @Inject constructor(
             seedMyLifeIfEmpty(userId, seedBase)
             val seeded = getMyLifeByUserId(userId, ensureLatest = true)
             cacheMyLifeItems(userId, seeded)
-            seeded.filter { it.isVisible }
+            getVisibleMyLifeByUserId(userId, ensureLatest = true)
         } else {
             cacheMyLifeItems(userId, allForUser)
-            allForUser.filter { it.isVisible }
+            getVisibleMyLifeByUserId(userId, ensureLatest = false)
         }
         return visibleItems
     }

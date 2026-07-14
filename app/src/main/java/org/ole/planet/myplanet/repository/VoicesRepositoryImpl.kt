@@ -106,17 +106,15 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
-        val allNews = queryList(RealmNews::class.java) {
+        return queryList(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
+            beginGroup()
+            equalTo("viewableBy", "community", Case.INSENSITIVE)
+            or()
+            contains("viewIn", "\"_id\":\"$userIdentifier\"", Case.INSENSITIVE)
+            endGroup()
             sort("time", Sort.DESCENDING)
-        }
-        if (allNews.isEmpty()) {
-            return emptyList()
-        }
-
-        return allNews.filter { news ->
-            isVisibleToUser(news, userIdentifier)
         }
     }
 
@@ -191,6 +189,11 @@ class VoicesRepositoryImpl @Inject constructor(
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
+            beginGroup()
+            equalTo("viewableBy", "community", Case.INSENSITIVE)
+            or()
+            contains("viewIn", "\"_id\":\"$userIdentifier\"", Case.INSENSITIVE)
+            endGroup()
             sort("time", Sort.DESCENDING)
         }
         .flowOn(realmDispatcher) // Realm async queries require a Looper thread.
@@ -198,9 +201,7 @@ class VoicesRepositoryImpl @Inject constructor(
         return allNewsFlow.map { allNews ->
             // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
             // It is safe to process them on a background thread.
-            allNews.filter { news ->
-                isVisibleToUser(news, userIdentifier)
-            }.map { news ->
+            allNews.map { news ->
                 news.sortDate = news.calculateSortDate()
                 news
             }
@@ -355,10 +356,10 @@ class VoicesRepositoryImpl @Inject constructor(
             val query = realm.where(RealmNews::class.java)
                 .greaterThanOrEqualTo("time", startTime)
                 .lessThanOrEqualTo("time", endTime)
+                .contains("viewIn", "\"section\":\"community\"", Case.INSENSITIVE)
             if (userId != null) query.equalTo("userId", userId)
             val results = query.findAll()
-            results.filter { isCommunitySection(it) }
-                .map { getDateFromTimestamp(it.time) }
+            results.map { getDateFromTimestamp(it.time) }
                 .distinct()
         }
     }
