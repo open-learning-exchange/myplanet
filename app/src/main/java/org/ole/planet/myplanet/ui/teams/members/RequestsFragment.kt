@@ -72,7 +72,7 @@ class RequestsFragment : BaseMemberFragment() {
     override val list: List<RealmUser>
         get() = emptyList()
 
-    override val adapter: RecyclerView.Adapter<*> by lazy {
+    override val adapter: androidx.recyclerview.widget.ListAdapter<*, *> by lazy {
         RequestsAdapter(
             requireActivity(),
             currentUser,
