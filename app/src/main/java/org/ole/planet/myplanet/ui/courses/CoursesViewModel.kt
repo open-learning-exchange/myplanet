@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.ui.courses
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.gson.JsonObject
@@ -88,7 +89,7 @@ class CoursesViewModel @Inject constructor(
 
                     processCourses(isMyCourseLib, userId, validCourses, myCourses, map, progressMap, tagsMap)
                 } catch (e: Exception) {
-                    e.printStackTrace()
+                    Log.e("CoursesViewModel", "Error loading courses", e)
                     null
                 }
             }
@@ -103,7 +104,7 @@ class CoursesViewModel @Inject constructor(
             try {
                 coursesRepository.getCourseRatings(userId)
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("CoursesViewModel", "Error refreshing course ratings", e)
                 null
             }
         }
