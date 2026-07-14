@@ -1,0 +1,212 @@
+We need to refactor `ResourcesFragment.onViewCreated` where it has:
+
+```kotlin
+        collectWhenStarted(viewModel.downloadComplete) { completed ->
+            if (completed) {
+                refreshResourcesData()
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                        val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra("download", Download::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra("download")
+                        }
+                        if (download?.completeAll == true) {
+                            viewModel.notifyDownloadComplete()
+                        }
+                    }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+            setupGuestUserRestrictions()
+
+            val userId = userModel?.id
+            if (userId != null) {
+                viewModel.observeOpenedResourceIds(userId)
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                        }
+                    }
+                }
+            }
+        }
+```
+
+Wait! "Move opened-resource collection ownership fully into the view lifecycle and cancel redundant refresh work."
+If I change `ResourcesViewModel`:
+```kotlin
+    fun getOpenedResourceIds(userId: String): Flow<Set<String>> {
+        return resourcesRepository.observeOpenedResourceIds(userId)
+    }
+```
+Wait, we need to collect it.
+```kotlin
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+            setupGuestUserRestrictions()
+            val userId = userModel?.id
+
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.downloadComplete.collect { completed ->
+                        if (completed) {
+                            refreshResourcesData()
+                        }
+                    }
+                }
+                launch {
+                    broadcastService.events.collect { intent ->
+                        // ...
+                    }
+                }
+                if (userId != null) {
+                    launch {
+                        viewModel.getOpenedResourceIds(userId).collectLatest { openedResourceIds ->
+                            if (::adapterLibrary.isInitialized) {
+                                adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+```
+Wait, `downloadComplete` is using `.collectWhenStarted`, which is basically just `viewLifecycleOwner.lifecycleScope.launch { viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { ... } }`.
+By writing them as 3 parallel `launch { ... }` blocks inside a `viewLifecycleOwner.repeatOnLifecycle`, we consolidate the download-complete, broadcast, and opened-resource observation into ONE view-lifecycle-aware setup.
+
+Let's check `ResourcesViewModel.kt`:
+```kotlin
+<<<<<<< SEARCH
+    private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
+    val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
+
+    private var observeOpenedResourcesJob: Job? = null
+
+    fun notifyDownloadComplete() {
+        _downloadComplete.value = true
+        _downloadComplete.value = false
+    }
+
+    fun observeOpenedResourceIds(userId: String) {
+        observeOpenedResourcesJob?.cancel()
+        observeOpenedResourcesJob = viewModelScope.launch {
+            resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                _openedResourceIds.value = ids
+            }
+        }
+    }
+=======
+    fun notifyDownloadComplete() {
+        _downloadComplete.value = true
+        _downloadComplete.value = false
+    }
+
+    fun getOpenedResourceIds(userId: String): kotlinx.coroutines.flow.Flow<Set<String>> {
+        return resourcesRepository.observeOpenedResourceIds(userId)
+    }
+>>>>>>> REPLACE
+```
+Wait! I need to ensure `Flow<Set<String>>` is correctly imported. It is `import kotlinx.coroutines.flow.Flow` which might not be imported. Oh, let's just use `kotlinx.coroutines.flow.Flow` or see if it's imported.
+`import kotlinx.coroutines.flow.Flow` is NOT in `ResourcesViewModel.kt`. So we should just add it. Wait, `StateFlow` is imported from `kotlinx.coroutines.flow.StateFlow`. I can add `Flow` to imports.
+
+Wait, the prompt says "cancel redundant refresh work." Could this refer to something else? "Move opened-resource collection ownership fully into the view lifecycle and cancel redundant refresh work."
+Ah, "cancel redundant refresh work" refers to how `observeOpenedResourcesJob?.cancel()` was redundantly managing its own job within the ViewModel. By returning a `Flow` and letting the view handle collection via `repeatOnLifecycle` (which automatically cancels the job when the view stops), the manual redundant job cancellation in the ViewModel (`observeOpenedResourcesJob?.cancel()`) is no longer needed.
+Yes, that makes sense.
+
+Let's verify `ResourcesFragment.kt` changes.
+```kotlin
+<<<<<<< SEARCH
+        collectWhenStarted(viewModel.downloadComplete) { completed ->
+            if (completed) {
+                refreshResourcesData()
+            }
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.events.collect { intent ->
+                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                        val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            intent.getParcelableExtra("download", Download::class.java)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            intent.getParcelableExtra("download")
+                        }
+                        if (download?.completeAll == true) {
+                            viewModel.notifyDownloadComplete()
+                        }
+                    }
+                }
+            }
+        }
+        lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+            setupGuestUserRestrictions()
+
+            val userId = userModel?.id
+            if (userId != null) {
+                viewModel.observeOpenedResourceIds(userId)
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
+                        if (::adapterLibrary.isInitialized) {
+                            adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                        }
+                    }
+                }
+            }
+        }
+=======
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+            setupGuestUserRestrictions()
+
+            val userId = userModel?.id
+
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.downloadComplete.collect { completed ->
+                        if (completed) {
+                            refreshResourcesData()
+                        }
+                    }
+                }
+
+                launch {
+                    broadcastService.events.collect { intent ->
+                        if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
+                            val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                intent.getParcelableExtra("download", Download::class.java)
+                            } else {
+                                @Suppress("DEPRECATION")
+                                intent.getParcelableExtra("download")
+                            }
+                            if (download?.completeAll == true) {
+                                viewModel.notifyDownloadComplete()
+                            }
+                        }
+                    }
+                }
+
+                if (userId != null) {
+                    launch {
+                        viewModel.getOpenedResourceIds(userId).collectLatest { openedResourceIds ->
+                            if (::adapterLibrary.isInitialized) {
+                                adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+>>>>>>> REPLACE
+```
+Notice `lifecycleScope.launch` was previously used for userModel fetch and then nested `viewLifecycleOwner.repeatOnLifecycle`. Now the whole thing is inside `viewLifecycleOwner.lifecycleScope.launch`, and `userModel = profileDbHandler.getUserModel()` runs before `repeatOnLifecycle`.
+Wait, previously `userModel = profileDbHandler.getUserModel()` was executed in `lifecycleScope.launch`, not `viewLifecycleOwner.lifecycleScope.launch`. Since `profileDbHandler` operations could suspend? Actually, is `profileDbHandler.getUserModel()` a suspend function? Let's check `BaseRecyclerFragment`.

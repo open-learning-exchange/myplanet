@@ -1,0 +1,18 @@
+Ah, `profileDbHandler.getUserModel()` is a suspend function in `UserProfileDbHandler`.
+
+Wait, in `ResourcesFragment.onViewCreated` we had:
+```kotlin
+        lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+            setupGuestUserRestrictions()
+
+            val userId = userModel?.id
+            if (userId != null) {
+                viewModel.observeOpenedResourceIds(userId)
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.openedResourceIds.collectLatest { openedResourceIds ->
+...
+```
+Replacing `lifecycleScope.launch` with `viewLifecycleOwner.lifecycleScope.launch` is correct for fragments. And `repeatOnLifecycle(Lifecycle.State.STARTED)` suspends execution of the block until the lifecycle is at least STARTED, and it cancels the block when it drops below STARTED. By launching new coroutines inside the block, we get parallel execution.
+
+Let's check if there are any other `ResourcesViewModel` usages of `openedResourceIds` or `observeOpenedResourceIds`.

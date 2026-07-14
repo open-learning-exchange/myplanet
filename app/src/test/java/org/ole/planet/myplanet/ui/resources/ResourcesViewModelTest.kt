@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.ui.resources
+import kotlinx.coroutines.flow.first
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -79,15 +80,15 @@ class ResourcesViewModelTest {
     }
 
     @Test
-    fun `observeOpenedResourceIds updates openedResourceIds state flow`() = runTest {
+    fun `getOpenedResourceIds returns flow from repository`() = runTest {
         val userId = "user123"
         val mockFlow = kotlinx.coroutines.flow.flowOf(setOf("res1", "res2"))
         coEvery { resourcesRepository.observeOpenedResourceIds(userId) } returns mockFlow
 
-        viewModel.observeOpenedResourceIds(userId)
+        val flow = viewModel.getOpenedResourceIds(userId)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(setOf("res1", "res2"), viewModel.openedResourceIds.value)
+        assertEquals(setOf("res1", "res2"), kotlinx.coroutines.flow.first(flow))
     }
 
     @Test

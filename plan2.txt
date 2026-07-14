@@ -1,0 +1,71 @@
+Currently `ResourcesViewModel.kt` has:
+```kotlin
+    private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
+    val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
+
+    private var observeOpenedResourcesJob: Job? = null
+
+    fun observeOpenedResourceIds(userId: String) {
+        observeOpenedResourcesJob?.cancel()
+        observeOpenedResourcesJob = viewModelScope.launch {
+            resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                _openedResourceIds.value = ids
+            }
+        }
+    }
+```
+If we change it to:
+```kotlin
+    fun getOpenedResourceIds(userId: String): Flow<Set<String>> {
+        return resourcesRepository.observeOpenedResourceIds(userId)
+    }
+```
+And in `ResourcesFragment.kt`:
+```kotlin
+        viewLifecycleOwner.lifecycleScope.launch {
+            userModel = profileDbHandler.getUserModel()
+            setupGuestUserRestrictions()
+
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.downloadComplete.collectLatest { completed ->
+                        if (completed) {
+                            refreshResourcesData()
+                        }
+                    }
+                }
+
+                launch {
+                    broadcastService.events.collect { intent ->
+                        // ...
+                    }
+                }
+
+                val userId = userModel?.id
+                if (userId != null) {
+                    launch {
+                        viewModel.getOpenedResourceIds(userId).collectLatest { openedResourceIds ->
+                            if (::adapterLibrary.isInitialized) {
+                                adapterLibrary.setOpenedResourceIds(openedResourceIds)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+```
+Wait, the prompt says "Consolidate download-complete, broadcast, and opened-resource observation into one view-lifecycle-aware setup." and "Move opened-resource collection ownership fully into the view lifecycle and cancel redundant refresh work."
+
+Wait, what is "cancel redundant refresh work."?
+Ah, `ResourcesFragment` calls:
+```kotlin
+    private fun refreshResourcesData() {
+        if (!isAdded || requireActivity().isFinishing) return
+        val binding = _binding ?: return
+
+        refreshJob?.cancel()
+        refreshJob = lifecycleScope.launch {
+...
+```
+Wait, it doesn't mean canceling refreshJob? It means in ViewModel, `observeOpenedResourcesJob?.cancel()` is removed because we don't store it in the ViewModel anymore. We let the view lifecycle cancel it.
+Wait, let's look at `collectWhenStarted(viewModel.downloadComplete)`. It uses `collectWhenStarted` from `org.ole.planet.myplanet.utils`.

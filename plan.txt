@@ -1,0 +1,21 @@
+1. In ResourcesFragment.kt, consolidate the three `lifecycleScope` / `viewLifecycleOwner.lifecycleScope` observers into one `viewLifecycleOwner.lifecycleScope.launch` block.
+2. The `broadcastService.events.collect` is already inside a `viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED)`.
+3. The `viewModel.downloadComplete` is using `collectWhenStarted`, which is our custom wrapper around `repeatOnLifecycle`.
+4. The `userModel` fetch and `viewModel.observeOpenedResourceIds(userId)` + `viewModel.openedResourceIds.collectLatest` are in separate `lifecycleScope` blocks.
+5. In `ResourcesViewModel.kt`, change `observeOpenedResourceIds` to return a `Flow<Set<String>>` rather than modifying `MutableStateFlow` and running its own Job? Or just keep it as `StateFlow` and collect it in the Fragment. Wait, the prompt says "Move opened-resource collection ownership fully into the view lifecycle and cancel redundant refresh work." Wait, let's see.
+
+Wait, if we move `userModel = profileDbHandler.getUserModel()` and `setupGuestUserRestrictions()` to the single `viewLifecycleOwner.lifecycleScope.launch`, we can launch all collectors inside `repeatOnLifecycle`.
+Wait, "cancel redundant refresh work" - where is redundant refresh work? `ResourcesViewModel.kt` does:
+```kotlin
+    fun observeOpenedResourceIds(userId: String) {
+        observeOpenedResourcesJob?.cancel()
+        observeOpenedResourcesJob = viewModelScope.launch {
+            resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                _openedResourceIds.value = ids
+            }
+        }
+    }
+```
+If we remove `observeOpenedResourceIds` and just expose the Flow directly from ViewModel? No, `openedResourceIds` requires `userId`. We could just expose a function `fun observeOpenedResourceIds(userId: String): Flow<Set<String>>` that returns `resourcesRepository.observeOpenedResourceIds(userId)`.
+
+Let's read `ResourcesViewModel.kt` again.

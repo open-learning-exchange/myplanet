@@ -1,0 +1,27 @@
+Okay, here's the plan.
+
+1.  **Refactor `ResourcesViewModel.kt`**:
+    *   Remove `_openedResourceIds` (`MutableStateFlow`), `openedResourceIds` (`StateFlow`), and `observeOpenedResourcesJob` (`Job?`).
+    *   Change `observeOpenedResourceIds(userId: String)` to `getOpenedResourceIds(userId: String): Flow<Set<String>>` which returns `resourcesRepository.observeOpenedResourceIds(userId)`.
+    *   Add the `Flow` import since it is not explicitly imported (only `MutableStateFlow` and `StateFlow` are). Wait, `Flow` is already imported? No, let's look at `ResourcesViewModel.kt` again. Oh wait, it has:
+        `import kotlinx.coroutines.flow.MutableStateFlow`
+        `import kotlinx.coroutines.flow.StateFlow`
+        `import kotlinx.coroutines.flow.asStateFlow`
+        `import kotlinx.coroutines.flow.collectLatest`
+        So we need to add `import kotlinx.coroutines.flow.Flow` at the top.
+
+2.  **Refactor `ResourcesFragment.kt`**:
+    *   In `onViewCreated`, consolidate the observation into a single `viewLifecycleOwner.lifecycleScope.launch` block.
+    *   Call `userModel = profileDbHandler.getUserModel()` and `setupGuestUserRestrictions()` first.
+    *   Use `viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { ... }` inside this block.
+    *   Inside `repeatOnLifecycle`, launch three concurrent child coroutines:
+        1.  `launch { viewModel.downloadComplete.collect { ... refreshResourcesData() ... } }`
+        2.  `launch { broadcastService.events.collect { intent -> ... } }`
+        3.  `if (userId != null) { launch { viewModel.getOpenedResourceIds(userId).collectLatest { ... } } }`
+    *   Remove the old redundant `collectWhenStarted` wrapper import for `downloadComplete`.
+
+3.  **Update `ResourcesViewModelTest.kt`**:
+    *   Update `observeOpenedResourceIds updates openedResourceIds state flow` to `getOpenedResourceIds returns flow from repository`.
+    *   Test that calling `getOpenedResourceIds(userId)` returns the flow properly by collecting its first item (or just verifying the return type if we mock it).
+
+4.  **Complete pre-commit steps to ensure proper testing, verification, review, and reflection are done.**
