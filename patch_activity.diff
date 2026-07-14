@@ -1,0 +1,19 @@
+--- ./app/src/main/java/org/ole/planet/myplanet/ui/sync/ProcessUserDataActivity.kt
++++ ./app/src/main/java/org/ole/planet/myplanet/ui/sync/ProcessUserDataActivity.kt
+@@ -197,16 +197,7 @@
+
+     private fun uploadLoginData() {
+-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
+-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
+-            .build()
+-        val workManager = WorkManager.getInstance(this)
+-        workManager.enqueueUniqueWork(
+-            "UploadUserData_Login",
+-            ExistingWorkPolicy.REPLACE,
+-            workRequest
+-        )
+-
+-        val liveData = workManager.getWorkInfoByIdLiveData(workRequest.id)
++        val liveData = syncWorkRepository.uploadLoginData()
+         liveData.observe(this, object : Observer<WorkInfo?> {
+             override fun onChanged(value: WorkInfo?) {

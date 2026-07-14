@@ -198,13 +198,14 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     private fun uploadLoginData() {
         val liveData = syncWorkRepository.uploadLoginData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
-                if (value is SyncUiState.Success) {
+        liveData.observe(this, object : Observer<WorkInfo?> {
+            override fun onChanged(value: WorkInfo?) {
+                if (value != null && value.state.isFinished) {
                     liveData.removeObserver(this)
-                    onSuccess(value.message)
-                } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
+                    if (value.state == WorkInfo.State.SUCCEEDED) {
+                        val successMessage = value.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
+                        onSuccess(successMessage)
+                    }
                 }
             }
         })
@@ -216,7 +217,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
         val liveData = syncWorkRepository.uploadBulkData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
+        liveData.observe(this, object : Observer<SyncUiState> {
             override fun onChanged(value: SyncUiState) {
                 if (value is SyncUiState.Success) {
                     liveData.removeObserver(this)

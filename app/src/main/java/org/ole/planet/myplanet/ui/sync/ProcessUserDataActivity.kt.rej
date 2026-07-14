@@ -1,0 +1,24 @@
+--- ./app/src/main/java/org/ole/planet/myplanet/ui/sync/ProcessUserDataActivity.kt
++++ ./app/src/main/java/org/ole/planet/myplanet/ui/sync/ProcessUserDataActivity.kt
+@@ -196,8 +196,8 @@
+
+     private fun uploadLoginData() {
+         val liveData = syncWorkRepository.uploadLoginData()
+-        liveData.observe(this, object : Observer<SyncUiState> {
+-            override fun onChanged(value: SyncUiState) {
++        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
++            override fun onChanged(value: SyncUiState) {
+                 if (value is SyncUiState.Success) {
+                     liveData.removeObserver(this)
+                     onSuccess(value.message)
+@@ -211,8 +211,8 @@
+     private fun uploadBulkData() {
+         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
+         customProgressDialog.show()
+
+         val liveData = syncWorkRepository.uploadBulkData()
+-        liveData.observe(this, object : Observer<SyncUiState> {
+-            override fun onChanged(value: SyncUiState) {
++        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
++            override fun onChanged(value: SyncUiState) {
+                 if (value is SyncUiState.Success) {

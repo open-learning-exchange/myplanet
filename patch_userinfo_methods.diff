@@ -1,0 +1,81 @@
+--- ./app/src/main/java/org/ole/planet/myplanet/ui/exam/UserInformationFragment.kt
++++ ./app/src/main/java/org/ole/planet/myplanet/ui/exam/UserInformationFragment.kt
+@@ -299,63 +299,6 @@
+         }
+     }
+
+-    private fun checkAvailableServer() {
+-        Log.d("UserInformationFragment", "checkAvailableServer started, syncStartTime: $syncStartTime")
+-        val updateUrl = sharedPrefManager.getServerUrl()
+-        Log.d("UserInformationFragment", "Server URL: $updateUrl")
+-        val mapping = serverUrlMapper.processUrl(updateUrl)
+-
+-        // Capture syncStartTime before launching coroutine to preserve it across lifecycle changes
+-        val capturedSyncStartTime = syncStartTime
+-
+-        // Use ApplicationScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
+-        submissionUploadExecutor.execute {
+-            Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
+-            Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
+-            val checkStartTime = SystemClock.elapsedRealtime()
+-
+-            val primaryCheck = async {
+-                try {
+-                    Log.d("UserInformationFragment", "Checking primary URL: ${mapping.primaryUrl}")
+-                    val result = withTimeoutOrNull(15000) {
+-                        MainApplication.isServerReachable(mapping.primaryUrl)
+-                    } ?: false
+-                    Log.d("UserInformationFragment", "Primary check result: $result")
+-                    result
+-                } catch (e: Exception) {
+-                    Log.e("UserInformationFragment", "Primary check failed", e)
+-                    false
+-                }
+-            }
+-
+-            val alternativeCheck = async {
+-                try {
+-                    Log.d("UserInformationFragment", "Checking alternative URL: ${mapping.alternativeUrl}")
+-                    val result = withTimeoutOrNull(15000) {
+-                        mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
+-                    } ?: false
+-                    Log.d("UserInformationFragment", "Alternative check result: $result")
+-                    result
+-                } catch (e: Exception) {
+-                    Log.e("UserInformationFragment", "Alternative check failed", e)
+-                    false
+-                }
+-            }
+-
+-            val primaryAvailable = primaryCheck.await()
+-            val alternativeAvailable = alternativeCheck.await()
+-            val checkDuration = SystemClock.elapsedRealtime() - checkStartTime
+-            Log.d("UserInformationFragment", "Server checks completed in ${checkDuration}ms. Primary: $primaryAvailable, Alternative: $alternativeAvailable")
+-
+-            if (primaryAvailable || alternativeAvailable) {
+-                Log.d("UserInformationFragment", "Server is reachable, proceeding with upload")
+-                if (!primaryAvailable) {
+-                    mapping.alternativeUrl?.let { alternativeUrl ->
+-                        val uri = updateUrl.toUri()
+-                        val editor = sharedPrefManager.rawPreferences.edit()
+-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
+-                    }
+-                }
+-                uploadSubmissionsWithTiming(capturedSyncStartTime)
+-            } else {
+-                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${SystemClock.elapsedRealtime() - capturedSyncStartTime}ms")
+-            }
+-        }
+-    }
+-
+-    private suspend fun uploadSubmissionsWithTiming(capturedSyncStartTime: Long) {
+-        try {
+-            Log.d("UserInformationFragment", "About to call uploadSubmissions with capturedSyncStartTime: $capturedSyncStartTime")
+-            uploadManager.uploadAdoptedSurveys()
+-            uploadManager.uploadSubmissions(capturedSyncStartTime)
+-        } catch (e: Exception) {
+-            Log.e("UserInformationFragment", "Error during upload", e)
+-            e.printStackTrace()
+-        }
+-    }
+-
