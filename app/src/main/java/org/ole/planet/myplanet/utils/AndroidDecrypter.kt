@@ -113,7 +113,7 @@ class AndroidDecrypter {
             val secretKey: SecretKey
             try {
                 keyGenerator = KeyGenerator.getInstance("AES")
-                keyGenerator.init(256)
+                keyGenerator.init(256, SecureRandom())
                 secretKey = keyGenerator.generateKey()
                 val binary = secretKey.encoded
                 return bytesToHex(binary)
