@@ -74,7 +74,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         if (courseId.isBlank()) return null
-        return findByField(RealmMyCourse::class.java, "_id", courseId)
+        return findByField(RealmMyCourse::class.java, "courseId", courseId)
     }
 
     override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
@@ -86,7 +86,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
         if (courseIds.isEmpty()) return emptyList()
         return queryList(RealmMyCourse::class.java) {
-            `in`("_id", courseIds.toTypedArray())
+            `in`("courseId", courseIds.toTypedArray())
         }
     }
 

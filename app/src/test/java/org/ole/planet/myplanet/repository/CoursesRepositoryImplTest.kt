@@ -153,13 +153,13 @@ class CoursesRepositoryImplTest {
         val mockData = mockk<RealmResults<RealmMyCourse>>(relaxed = true)
         val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
         every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
-        every { mockQuery.`in`("_id", arrayOf("id1", "id2")) } returns mockQuery
+        every { mockQuery.`in`("courseId", arrayOf("id1", "id2")) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
         val courses = listOf(mockk<RealmMyCourse>(), mockk<RealmMyCourse>())
         every { mockRealm.copyFromRealm(mockData as Iterable<RealmMyCourse>) } returns courses
 
         val result = repository.getCoursesByIds(listOf("id1", "id2"))
         assertEquals(2, result.size)
-        verify { mockQuery.`in`("_id", arrayOf("id1", "id2")) }
+        verify { mockQuery.`in`("courseId", arrayOf("id1", "id2")) }
     }
 }
