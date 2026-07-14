@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTaskItem
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksAdapter.TeamsTasksViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 class TeamsTasksAdapter(
     private val context: Context,
     var nonTeamMember: Boolean
-) : ListAdapter<RealmTeamTask, TeamsTasksViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<TeamTaskItem, TeamsTasksViewHolder>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null
     fun setListener(listener: OnTaskCompletedListener?) {
@@ -59,19 +59,19 @@ class TeamsTasksAdapter(
         binding.icMore.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                listener?.onClickMore(getItem(adapterPosition))
+                listener?.onClickMore(getItem(adapterPosition).id)
             }
         }
         binding.editTask.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                listener?.onEdit(getItem(adapterPosition))
+                listener?.onEdit(getItem(adapterPosition).id)
             }
         }
         binding.deleteTask.setOnClickListener {
             val adapterPosition = holder.bindingAdapterPosition
             if (adapterPosition != RecyclerView.NO_POSITION) {
-                listener?.onDelete(getItem(adapterPosition))
+                listener?.onDelete(getItem(adapterPosition).id)
             }
         }
         holder.itemView.setOnClickListener {
@@ -96,12 +96,12 @@ class TeamsTasksAdapter(
             binding.checkbox.isFocusable = false
         } else {
             binding.checkbox.setOnCheckedChangeListener { _: CompoundButton?, b: Boolean ->
-                listener?.onCheckChange(it, b)
+                listener?.onCheckChange(it.id, b)
             }
         }
     }
 
-    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
+    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: TeamTaskItem) {
         val assigneeId = realmTeamTask.assignee
         if (assigneeId.isNullOrEmpty()) {
             binding.assignee.setText(R.string.no_assignee)
@@ -119,7 +119,7 @@ class TeamsTasksAdapter(
     class TeamsTasksViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmTeamTask>(
+        val DIFF_CALLBACK = DiffUtils.itemCallback<TeamTaskItem>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.title == new.title &&

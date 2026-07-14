@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
+class CoursesFragment : BaseRecyclerFragment<String>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     private lateinit var adapterCourses: CoursesAdapter
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
@@ -81,9 +81,9 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
     override fun deleteSelected(deleteProgress: Boolean) {
         val userId = userModel?.id ?: return
-        val snapshot = selectedItems?.filterNotNull() ?: return
+        val snapshot = selectedItems ?: return
         if (snapshot.isEmpty()) return
-        val courseIds = snapshot.mapNotNull { it.courseId }
+        val courseIds = snapshot.toList()
         viewModel.removeCourses(courseIds, userId, deleteProgress) {
             if (isAdded) {
                 selectedItems?.clear()
@@ -211,13 +211,13 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             isMyCourseLib = isMyCourseLib,
             isGuest = userModel?.isGuest() ?: true,
             onRemoveConfirmed = {
-                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                val courseIds = selectedItems ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
                 adapterCourses.removeCourses(courseIds)
             },
             onArchiveConfirmed = {
-                val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
+                val courseIds = selectedItems ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
                 adapterCourses.removeCourses(courseIds)
@@ -311,26 +311,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun onSelectedListChange(list: MutableList<Course?>) {
+    override fun onSelectedListChange(list: MutableList<String>) {
         selectionJob?.cancel()
         selectionJob = viewLifecycleOwner.lifecycleScope.launch {
-            val realmCourses = list.mapNotNull { course ->
-                course?.let {
-                    var rc = coursesRepository.getCourseById(it.courseId)
-                    if (rc == null) {
-                        rc = RealmMyCourse()
-                        rc.courseId = it.courseId
-                        rc.courseTitle = it.courseTitle
-                        rc.isMyCourse = it.isMyCourse
-                    }
-                    rc
-                }
-            }.toMutableList<RealmMyCourse?>()
 
             withContext(dispatcherProvider.main) {
-                selectedItems = realmCourses
+                selectedItems = list
                 if (::selectionController.isInitialized && ::adapterCourses.isInitialized) {
-                    selectionController.onSelectionChanged(realmCourses.size, adapterCourses.areAllSelected())
+                    selectionController.onSelectionChanged(list.size, adapterCourses.areAllSelected())
                 }
             }
         }
@@ -365,10 +353,10 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
             append(getString(R.string.success_you_have_added_the_following_courses))
             val itemsSize = selectedItems?.size ?: 0
             if (itemsSize <= 5) {
-                selectedItems?.forEach { item -> append(" - ").append(item?.courseTitle).append(" \n") }
+                selectedItems?.mapNotNull { id -> adapterCourses.currentList.find { it.courseId == id }?.courseTitle }?.forEach { title -> append(" - ").append(title).append(" \n") }
             } else {
                 for (i in 0..4) {
-                    append(" - ").append(selectedItems?.get(i)?.courseTitle).append(" \n")
+                    val t = selectedItems?.mapNotNull { id -> adapterCourses.currentList.find { it.courseId == id }?.courseTitle }; append(" - ").append(t?.getOrNull(i)).append(" \n")
                 }
                 append(getString(R.string.and)).append(itemsSize - 5)
                     .append(getString(R.string.more_course_s))

@@ -5,6 +5,6 @@ import org.ole.planet.myplanet.model.Tag
 
 interface OnCourseItemSelectedListener {
     @JvmSuppressWildcards
-    fun onSelectedListChange(list: MutableList<Course?>)
+    fun onSelectedListChange(list: MutableList<String>)
     fun onTagClicked(tag: Tag)
 }

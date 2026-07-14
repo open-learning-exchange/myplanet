@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.model.TeamTaskItem
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -35,8 +36,8 @@ class TeamViewModel @Inject constructor(
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
 
-    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
-    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
+    private val _taskList = MutableStateFlow<List<TeamTaskItem>>(emptyList())
+    val taskList: StateFlow<List<TeamTaskItem>> = _taskList
 
     fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
 
@@ -44,7 +45,7 @@ class TeamViewModel @Inject constructor(
         loadTaskJob?.cancel()
         loadTaskJob = viewModelScope.launch {
             teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
-                _taskList.value = tasks
+                _taskList.value = tasks.map { org.ole.planet.myplanet.model.TeamTaskItem(it.id ?: "", it.title ?: "", it.description ?: "", it.deadline, it.completed, it.assignee) }
             }
         }
     }

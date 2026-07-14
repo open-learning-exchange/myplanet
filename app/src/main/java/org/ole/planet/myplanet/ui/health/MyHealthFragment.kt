@@ -328,7 +328,8 @@ class MyHealthFragment : Fragment() {
                         isNestedScrollingEnabled = false
                         adapter = healthAdapter
                     }
-                    healthAdapter.submitList(list)
+                    val uiList = list.map { it1 -> org.ole.planet.myplanet.model.HealthExaminationItem(it1._id ?: "", it1.temperature, it1.pulse, it1.bp ?: "", it1.height, it1.weight, it1.vision ?: "", it1.hearing ?: "", it1.date, currentUser?.let { it2 -> it1.getEncryptedDataAsJson(it2) }, parseConditions(it1), currentUser?.let { it2 -> org.ole.planet.myplanet.utils.JsonUtils.getString("createdBy", it1.getEncryptedDataAsJson(it2)) } ?: "", userMap[currentUser?.let { it2 -> org.ole.planet.myplanet.utils.JsonUtils.getString("createdBy", it1.getEncryptedDataAsJson(it2)) }]?.getFullName() ?: "") }
+                    healthAdapter.submitList(uiList)
                     binding.rvRecords.post {
                         val lastPosition = list.size - 1
                         if (lastPosition >= 0) {
@@ -378,4 +379,16 @@ class MyHealthFragment : Fragment() {
         super.onDestroyView()
     }
 
+
+    private fun parseConditions(realmExamination: org.ole.planet.myplanet.model.RealmHealthExamination?): String {
+        val conditionsMap = org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(realmExamination?.conditions, com.google.gson.JsonObject::class.java) ?: return ""
+        val keys = conditionsMap.keySet()
+        val conditions = StringBuilder()
+        for (key in keys) {
+            if (conditionsMap.get(key)?.asBoolean == true) {
+                conditions.append("$key, ")
+            }
+        }
+        return conditions.toString()
+    }
 }

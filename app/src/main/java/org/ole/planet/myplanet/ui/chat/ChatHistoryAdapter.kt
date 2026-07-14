@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.ChatHistoryItem
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
@@ -30,12 +30,12 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
-    chatHistoryList: List<RealmChatHistory>,
+    chatHistoryList: List<ChatHistoryItem>,
     private var currentUser: RealmUser?,
     private var newsList: List<RealmNews>,
     private var shareTargets: ChatShareTargets,
-    private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
-) : ListAdapter<RealmChatHistory, ChatHistoryAdapter.ViewHolderChat>(
+    private val onShareChat: (HashMap<String?, String>, ChatHistoryItem) -> Unit,
+) : ListAdapter<ChatHistoryItem, ChatHistoryAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             val oldId = oldItem._id
@@ -44,7 +44,7 @@ class ChatHistoryAdapter(
         },
         areContentsTheSame = { oldItem, newItem ->
             oldItem._rev == newItem._rev &&
-                oldItem.lastUsed == newItem.lastUsed &&
+
                 oldItem.title == newItem.title &&
                 oldItem.conversations?.firstOrNull()?.query ==
                 newItem.conversations?.firstOrNull()?.query
@@ -87,7 +87,7 @@ class ChatHistoryAdapter(
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
-    fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
+    fun updateChatHistory(newChatHistory: List<ChatHistoryItem>) {
         submitList(newChatHistory)
     }
 
@@ -124,7 +124,7 @@ class ChatHistoryAdapter(
         bindShareChat(holder, item)
     }
 
-    private fun bindShareChat(holder: ViewHolderChat, item: RealmChatHistory) {
+    private fun bindShareChat(holder: ViewHolderChat, item: ChatHistoryItem) {
         holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
 
         holder.rowChatHistoryBinding.shareChat.setOnClickListener {
@@ -187,7 +187,7 @@ class ChatHistoryAdapter(
         return cachedSharedViewInIds[chatId] ?: emptySet()
     }
 
-    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory, sharedIds: Set<String> = emptySet()) {
+    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: ChatHistoryItem, sharedIds: Set<String> = emptySet()) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 
@@ -216,7 +216,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(team: TeamSummary? = null, section: String, chatHistory: RealmChatHistory) {
+    private fun showEditTextAndShareButton(team: TeamSummary? = null, section: String, chatHistory: ChatHistoryItem) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
@@ -226,7 +226,7 @@ class ChatHistoryAdapter(
             serializedMap["_id"] = chatHistory._id ?: ""
             serializedMap["_rev"] = chatHistory._rev ?: ""
             serializedMap["title"] = "${chatHistory.title}".trim()
-            serializedMap["user"] = chatHistory.user ?: ""
+            serializedMap["user"] = ""
             serializedMap["aiProvider"] = chatHistory.aiProvider ?: ""
             serializedMap["createdDate"] = "${Date().time}"
             serializedMap["updatedDate"] = "${Date().time}"

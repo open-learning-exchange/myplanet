@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTaskItem
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
@@ -82,7 +82,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         return binding.root
     }
 
-    private fun showTaskAlert(t: RealmTeamTask?) {
+    private fun showTaskAlert(t: TeamTaskItem?) {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
         var selectedAssignee: RealmUser? = null
@@ -202,7 +202,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
     }
 
-    private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
+    private fun createOrUpdateTask(task: String, desc: String, teamTask: TeamTaskItem?, assigneeId: String? = null) {
         viewLifecycleOwner.lifecycleScope.launch {
             val deadlineMillis = teamsTasksViewModel.getDeadlineMillis()
 
@@ -267,15 +267,15 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    private fun allTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
+    private fun allTasks(): List<TeamTaskItem> {
+        return teamViewModel.taskList.value.sortedWith(compareBy<TeamTaskItem> { it.completed }.thenByDescending { it.deadline })
     }
 
-    private fun completedTasks(): List<RealmTeamTask> {
+    private fun completedTasks(): List<TeamTaskItem> {
         return teamViewModel.taskList.value.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
-    private fun myTasks(): List<RealmTeamTask> {
+    private fun myTasks(): List<TeamTaskItem> {
         return teamViewModel.taskList.value.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
@@ -292,8 +292,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         updateTasksJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
             val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
 
-            val (taskList, fetchedNames) = withContext(dispatcherProvider.io) {
-                val list = when (currentTab) {
+            val (finalList, fetchedNames) = withContext(dispatcherProvider.io) {
+                val list: List<TeamTaskItem> = when (currentTab) {
                     R.id.btn_my -> myTasks()
                     R.id.btn_completed -> completedTasks()
                     else -> allTasks()
@@ -317,33 +317,35 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 adapterTask.updateAssignees(fetchedNames)
             }
 
-            adapterTask.submitList(taskList)
+            adapterTask.submitList(finalList)
             binding.rvTask.scrollToPosition(0)
-            showNoData(binding.tvNodata, taskList.size, "tasks")
+            showNoData(binding.tvNodata, finalList.size, "tasks")
         }
     }
 
-    override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
-        val taskId = realmTeamTask?.id ?: return
+    override fun onCheckChange(id: String, completed: Boolean) {
+
         viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.setTaskCompletion(taskId, completed)
+            teamsRepository.setTaskCompletion(id, completed)
         }
     }
 
-    override fun onEdit(task: RealmTeamTask?) {
-        showTaskAlert(task)
+    override fun onEdit(id: String) {
+        val uiTask = teamViewModel.taskList.value.find { it.id == id }
+        showTaskAlert(uiTask)
     }
 
-    override fun onDelete(task: RealmTeamTask?) {
-        val taskId = task?.id ?: return
+    override fun onDelete(id: String) {
+
         viewLifecycleOwner.lifecycleScope.launch {
-            teamsRepository.deleteTask(taskId)
+            teamsRepository.deleteTask(id)
             Utilities.toast(activity, getString(R.string.task_deleted_successfully))
         }
     }
 
-    override fun onClickMore(realmTeamTask: RealmTeamTask?) {
-        if (realmTeamTask?.completed == true) {
+    override fun onClickMore(id: String) {
+        val uiTask = teamViewModel.taskList.value.find { it.id == id }
+        if (uiTask?.completed == true) {
             Toast.makeText(context, R.string.cannot_assign_completed_task, Toast.LENGTH_SHORT).show()
             return
         }
@@ -376,7 +378,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                         Toast.makeText(context, R.string.no_member_selected, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton
                     }
-                    val taskId = realmTeamTask?.id
+                    val taskId = id
                     if (taskId.isNullOrBlank()) {
                         Toast.makeText(context, R.string.no_tasks, Toast.LENGTH_SHORT).show()
                         return@setPositiveButton

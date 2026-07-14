@@ -13,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.ChatHistoryItem
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
@@ -48,14 +49,14 @@ class ChatViewModel @Inject constructor(
     internal var allConversations: List<RealmConversation> = emptyList()
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
-    private var allChats: List<RealmChatHistory> = emptyList()
+    private var allChats: List<ChatHistoryItem> = emptyList()
     private var precomputedChats: List<PrecomputedChat> = emptyList()
 
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
 
-    private val _filteredChats = MutableStateFlow<List<RealmChatHistory>>(emptyList())
-    val filteredChats: StateFlow<List<RealmChatHistory>> = _filteredChats.asStateFlow()
+    private val _filteredChats = MutableStateFlow<List<ChatHistoryItem>>(emptyList())
+    val filteredChats: StateFlow<List<ChatHistoryItem>> = _filteredChats.asStateFlow()
 
     private var cachedUser: RealmUser? = null
     private var cachedShareTargets: ChatShareTargets? = null
@@ -92,8 +93,9 @@ class ChatViewModel @Inject constructor(
             val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
 
             withContext(dispatcherProvider.default) {
-                allChats = sortChats(chatHistory)
-                precomputedChats = buildPrecomputedChats(allChats)
+                val sorted = sortChats(chatHistory)
+                allChats = sorted.map { ChatHistoryItem(it._id ?: "", it._rev, it.title, it.aiProvider, it.conversations?.toList()) }
+                precomputedChats = buildPrecomputedChats(sorted)
             }
             val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
             _screenData.value = data
@@ -139,15 +141,15 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
+    private fun fullConvoSearch(s: String, isQuestion: Boolean): List<ChatHistoryItem> {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(s)
-        val inTitleStartQuery = mutableListOf<RealmChatHistory>()
-        val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
+        val inTitleStartQuery = mutableListOf<ChatHistoryItem>()
+        val inTitleContainsQuery = mutableListOf<ChatHistoryItem>()
+        val startsWithQuery = mutableListOf<ChatHistoryItem>()
+        val containsQuery = mutableListOf<ChatHistoryItem>()
 
         for (pChat in precomputedChats) {
             val conversations = pChat.chat.conversations
@@ -160,10 +162,10 @@ class ChatViewModel @Inject constructor(
                     }
                     if (conversation == null) continue
                     if (conversation.startsWith(normalizedQuery, ignoreCase = true)) {
-                        if (i == 0) inTitleStartQuery.add(pChat.chat) else startsWithQuery.add(pChat.chat)
+                        if (i == 0) inTitleStartQuery.add(allChats.find { it._id == pChat.chat._id }!!) else startsWithQuery.add(allChats.find { it._id == pChat.chat._id }!!)
                         break
                     } else if (normalizedQueryParts.all { conversation.contains(it, ignoreCase = true) }) {
-                        if (i == 0) inTitleContainsQuery.add(pChat.chat) else containsQuery.add(pChat.chat)
+                        if (i == 0) inTitleContainsQuery.add(allChats.find { it._id == pChat.chat._id }!!) else containsQuery.add(allChats.find { it._id == pChat.chat._id }!!)
                         break
                     }
                 }
@@ -172,21 +174,21 @@ class ChatViewModel @Inject constructor(
         return inTitleStartQuery + inTitleContainsQuery + startsWithQuery + containsQuery
     }
 
-    private fun searchByTitle(s: String): List<RealmChatHistory> {
+    private fun searchByTitle(s: String): List<ChatHistoryItem> {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmChatHistory>()
-        val containsQuery = mutableListOf<RealmChatHistory>()
+        val startsWithQuery = mutableListOf<ChatHistoryItem>()
+        val containsQuery = mutableListOf<ChatHistoryItem>()
 
         for (pChat in precomputedChats) {
             title = pChat.normalizedTitle
             if (title == null) continue
             if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                startsWithQuery.add(pChat.chat)
+                startsWithQuery.add(allChats.find { it._id == pChat.chat._id }!!)
             } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                containsQuery.add(pChat.chat)
+                containsQuery.add(allChats.find { it._id == pChat.chat._id }!!)
             }
         }
         return startsWithQuery + containsQuery

@@ -16,7 +16,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
-import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.HealthExaminationItem
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -27,13 +27,13 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(
     private val context: Context,
-    private var mh: RealmHealthExamination,
+    private var mh: org.ole.planet.myplanet.model.RealmHealthExamination,
     private var userModel: RealmUser?,
     private var userMap: Map<String, RealmUser>
-) : ListAdapter<RealmHealthExamination, HealthExaminationViewHolder>(diffCallback) {
+) : ListAdapter<HealthExaminationItem, HealthExaminationViewHolder>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
 
-    fun updateData(mh: RealmHealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
+    fun updateData(mh: org.ole.planet.myplanet.model.RealmHealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap
@@ -53,14 +53,11 @@ class HealthExaminationAdapter(
         val formattedDate = item.let { formatDate(it.date, "MMM dd, yyyy") }
         binding.txtDate.text = formattedDate
         binding.txtDate.tag = formattedDate
-        val encrypted = userModel?.let { it1 -> item.getEncryptedDataAsJson(it1) }
+        val encrypted = item.encryptedData
 
-        val createdBy = getString("createdBy", encrypted)
+        val createdBy = item.createdBy
         if (!TextUtils.isEmpty(createdBy) && !TextUtils.equals(createdBy, userModel?.id)) {
-            val name = displayNameCache.getOrPut(createdBy) {
-                val model = userMap[createdBy]
-                model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
-            }
+            val name = item.createdByName ?: createdBy
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
             holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
         } else {
@@ -115,16 +112,8 @@ class HealthExaminationAdapter(
         dialog.show()
     }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: RealmHealthExamination?) {
-        val conditionsMap = JsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
-        val keys = conditionsMap.keySet()
-        val conditions = StringBuilder()
-        for (key in keys) {
-            if (conditionsMap[key].asBoolean) {
-                conditions.append("$key, ")
-            }
-        }
-        tvCondition.text = conditions
+    private fun showConditions(tvCondition: TextView, realmExamination: HealthExaminationItem?) {
+        tvCondition.text = realmExamination?.conditions ?: ""
     }
 
     private fun showEncryptedData(tvOtherNotes: TextView, encrypted: JsonObject) {
@@ -139,7 +128,7 @@ class HealthExaminationAdapter(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-        private val diffCallback = DiffUtils.itemCallback<RealmHealthExamination>(
+        private val diffCallback = DiffUtils.itemCallback<HealthExaminationItem>(
             { oldItem, newItem -> oldItem._id == newItem._id },
             { oldItem, newItem -> oldItem == newItem }
         )

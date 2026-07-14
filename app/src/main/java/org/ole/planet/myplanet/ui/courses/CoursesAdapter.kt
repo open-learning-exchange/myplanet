@@ -72,7 +72,7 @@ class CoursesAdapter(
     }
 
     private val externalFilesBaseUrl = "file://${FileUtils.getExternalFilesDir(context)}/ole/"
-    private val selectedItems: MutableList<Course?> = ArrayList()
+    private val selectedItems: MutableList<String> = ArrayList()
     private var listener: OnCourseItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var progressMap: HashMap<String?, JsonObject>? = null
@@ -218,20 +218,20 @@ class CoursesAdapter(
     }
 
     fun areAllSelected(): Boolean {
-        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
+        val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }.mapNotNull { it.courseId }
         return selectedItems.size == selectableCourses.size && selectableCourses.isNotEmpty()
     }
 
     fun selectAllItems(selectAll: Boolean) {
-        val oldSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
+        val oldSelectedIds = selectedItems.toSet()
         selectedItems.clear()
 
         if (selectAll) {
-            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }
+            val selectableCourses = currentList.filter { isMyCourseLib || !it.isMyCourse }.mapNotNull { it.courseId }
             selectedItems.addAll(selectableCourses)
         }
 
-        val newSelectedIds = selectedItems.mapNotNull { it?.courseId }.toSet()
+        val newSelectedIds = selectedItems.toSet()
 
         currentList.forEachIndexed { index, course ->
             val wasSelected = oldSelectedIds.contains(course.courseId)
@@ -360,7 +360,7 @@ class CoursesAdapter(
             }
             if (hasSelectionPayload) {
                 if (!isGuest && (isMyCourseLib || !course.isMyCourse)) {
-                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
+                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course.courseId)
                 }
             }
         }
@@ -441,13 +441,19 @@ class CoursesAdapter(
                 val showCheckbox = isMyCourseLib || !course.isMyCourse
                 if (showCheckbox) {
                     rowCourseBinding.checkbox.visibility = View.VISIBLE
-                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
+                    rowCourseBinding.checkbox.isChecked = selectedItems.contains(course.courseId)
                     rowCourseBinding.checkbox.setOnClickListener { view: View ->
                         rowCourseBinding.checkbox.contentDescription =
                             context.getString(R.string.select_res_course, course.courseTitle)
                         val adapterPosition = bindingAdapterPosition
                         if (adapterPosition != RecyclerView.NO_POSITION) {
-                            SelectionUtils.handleCheck((view as CheckBox).isChecked, adapterPosition, selectedItems, currentList)
+                            val isChecked = (view as CheckBox).isChecked
+                            val item = currentList[adapterPosition].courseId
+                            if (isChecked) {
+                                selectedItems.add(item)
+                            } else {
+                                selectedItems.remove(item)
+                            }
                             listener?.onSelectedListChange(selectedItems)
                         }
                     }
