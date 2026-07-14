@@ -199,11 +199,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.language = request.language
             this.mediaType = request.mediaType
             this.resourceType = request.resourceType
-            this.subject = request.subjects
+            this.subject = request.subjects?.let { io.realm.RealmList(*it.toTypedArray()) } ?: io.realm.RealmList()
             this.setUserId(io.realm.RealmList())
-            this.level = request.levels
+            this.level = request.levels?.let { io.realm.RealmList(*it.toTypedArray()) } ?: io.realm.RealmList()
             this.createdDate = Calendar.getInstance().timeInMillis
-            this.resourceFor = request.resourceFor
+            this.resourceFor = request.resourceFor?.let { io.realm.RealmList(*it.toTypedArray()) } ?: io.realm.RealmList()
             this.resourceLocalAddress = request.resourceUrl
             this.resourceOffline = true
             this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
