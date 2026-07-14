@@ -152,7 +152,7 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     onEditAction = { action ->
                         lifecycleScope.launch { action() }
                     },
-                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(lifecycleScope, dispatcherProvider),
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(dispatcherProvider),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
                     userRepository = userRepository,

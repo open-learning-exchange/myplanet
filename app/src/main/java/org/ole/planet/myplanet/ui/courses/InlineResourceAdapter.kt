@@ -21,6 +21,8 @@ import java.io.File
 import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -34,7 +36,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private val parentScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
@@ -65,8 +66,9 @@ class InlineResourceAdapter(
         }
     }
 
-    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(val binding: ItemInlineResourceBinding, dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
+        val scope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
@@ -76,6 +78,10 @@ class InlineResourceAdapter(
         fun setPreviewJob(job: Job) {
             cancelPreviousPreviews()
             previewJob = job
+        }
+
+        fun cancelScope() {
+            scope.cancel()
         }
     }
 
@@ -90,7 +96,7 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding)
+        return ViewHolder(binding, dispatcherProvider)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
@@ -107,6 +113,7 @@ class InlineResourceAdapter(
     override fun onViewRecycled(holder: ViewHolder) {
         super.onViewRecycled(holder)
         holder.cancelPreviousPreviews()
+        holder.cancelScope()
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
@@ -178,7 +185,7 @@ class InlineResourceAdapter(
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                 else -> {
-                    holder.setPreviewJob(parentScope.launch(dispatcherProvider.main) {
+                    holder.setPreviewJob(holder.scope.launch {
                         when {
                             mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                             mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
