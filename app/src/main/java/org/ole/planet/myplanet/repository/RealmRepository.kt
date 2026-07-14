@@ -66,11 +66,13 @@ open class RealmRepository(
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow<RealmResults<T>> {
+    ): Flow<List<T>> = callbackFlow<List<T>> {
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
         var listener: OrderedRealmCollectionChangeListener<RealmResults<T>>? = null
+
+        var lastPrimaryKeys: List<Any>? = null
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
@@ -95,12 +97,38 @@ open class RealmRepository(
             }
         }
 
-        fun emitResults(res: RealmResults<T>, errorMsg: String) {
+        fun emitResults(res: RealmResults<T>, errorMsg: String, hasContentChanges: Boolean) {
             if (!isClosed.get() && res.isValid && res.isLoaded) {
                 try {
                     val frozen = res.freeze()
                     if (!isClosed.get()) {
-                        trySend(frozen)
+                        val detachedList = if (frozen.isEmpty()) {
+                            emptyList()
+                        } else {
+                            frozen.realm.copyFromRealm(frozen)
+                        }
+
+                        val pkField = frozen.realm.schema.get(clazz.simpleName)?.primaryKey
+                        val currentPrimaryKeys = if (pkField != null && detachedList.isNotEmpty()) {
+                            try {
+                                val field = detachedList.first().javaClass.getDeclaredField(pkField)
+                                field.isAccessible = true
+                                detachedList.map { field.get(it) }
+                            } catch (e: Exception) { null }
+                        } else if (detachedList.isNotEmpty()) {
+                            val idField = try { detachedList.first().javaClass.getDeclaredField("id") } catch(e: Exception) { null }
+                                ?: try { detachedList.first().javaClass.getDeclaredField("_id") } catch(e: Exception) { null }
+                            if (idField != null) {
+                                idField.isAccessible = true
+                                detachedList.map { idField.get(it) }
+                            } else null
+                        } else emptyList()
+
+                        val isDuplicate = !hasContentChanges && lastPrimaryKeys != null && currentPrimaryKeys != null && currentPrimaryKeys == lastPrimaryKeys
+                        if (!isDuplicate) {
+                            lastPrimaryKeys = currentPrimaryKeys
+                            trySend(detachedList)
+                        }
                     }
                 } catch (e: Exception) {
                     RealmLog.error(e, errorMsg)
@@ -112,12 +140,13 @@ open class RealmRepository(
             realm = databaseService.createManagedRealmInstance()
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
-            emitResults(initialResults, "Error sending initial results")
+            emitResults(initialResults, "Error sending initial results", false)
 
             results = initialResults
             listener = OrderedRealmCollectionChangeListener<RealmResults<T>> { changedResults, changeSet ->
                 if (changeSet == null || changeSet.insertions.isNotEmpty() || changeSet.deletions.isNotEmpty() || changeSet.changes.isNotEmpty()) {
-                    emitResults(changedResults, "Error sending changed results")
+                    val hasContentChanges = changeSet != null && changeSet.changes.isNotEmpty()
+                    emitResults(changedResults, "Error sending changed results", hasContentChanges)
                 }
             }
             results.addChangeListener(listener)
@@ -131,14 +160,6 @@ open class RealmRepository(
         }
     }.flowOn(realmDispatcher)
         .conflate()
-        .map { frozenResults ->
-            if (frozenResults.isEmpty()) {
-                emptyList()
-            } else {
-                frozenResults.realm.copyFromRealm(frozenResults)
-            }
-        }
-        .flowOn(databaseService.ioDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
