@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
@@ -35,7 +34,6 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
@@ -45,6 +43,9 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedChangeListener {
     @Inject
     lateinit var userSessionManager: UserSessionManager
+
+    @Inject
+    lateinit var healthRepository: org.ole.planet.myplanet.repository.HealthRepository
 
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
@@ -58,6 +59,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
     private var examination: RealmHealthExamination? = null
+    private var conditionsMap: Map<String, Boolean> = emptyMap()
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
@@ -103,9 +105,12 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                     health = state.health
                     examination = state.examination
 
-                    initExamination()
-                    validateFields()
-                    btnSave.isEnabled = true
+                    lifecycleScope.launch {
+                        conditionsMap = healthRepository.getExaminationConditions(examination)
+                        initExamination()
+                        validateFields()
+                        btnSave.isEnabled = true
+                    }
                 }
             }
         }
@@ -198,9 +203,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
-            val conditions = JsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
-            for (s in conditions.keySet()) {
-                if (!mainList.contains(s) && getBoolean(s, conditions)) {
+            for ((s, value) in conditionsMap) {
+                if (!mainList.contains(s) && value) {
                     chipCloud.addChip(s)
                     chipCloud.setDeleteListener { _: Int, s1: String? ->
                         customDiag?.remove(Constants.LABELS[s1])
@@ -220,8 +224,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
 
             if (examination != null) {
-                val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
-                c.isChecked = getBoolean(s, conditions)
+                c.isChecked = conditionsMap[s] ?: false
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
             c.text = s
