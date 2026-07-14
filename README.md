@@ -1,5 +1,7 @@
 # ![ole_logo](https://github.com/user-attachments/assets/088e6283-42bb-4e6c-b6ed-67f32f341c44) myPlanet
 
+> An offline-first mobile learning app that brings educational resources to anyone, anywhere.
+
 [![license: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
 [![Get myPlanet on Google Play Store](https://img.shields.io/endpoint?url=https%3A%2F%2Fplay.cuzi.workers.dev%2Fplay%3Fi%3Dorg.ole.planet.myplanet%26gl%3DUS%26hl%3Den%26l%3Drelease%26m%3D%24version&logo=google-play&logoColor=green&color=green)](https://play.google.com/store/apps/details?id=org.ole.planet.myplanet)
 [![latest development release](https://img.shields.io/github/v/release/open-learning-exchange/myplanet)](https://github.com/open-learning-exchange/myplanet/releases/latest)
@@ -17,9 +19,9 @@
 
 - **Offline Access** - Download educational materials and access them without an internet connection.
 - **Content Synchronization** - Sync with the Planet server to get the latest educational content.
-- **AI Chatbot**: Provides an AI-powered chatbot to assist users with navigating the app, finding resources, and answering questions.
-- **Teams and Enterprises**: Collaborate with other users, complete tasks and courses, and download resources to work on together.
-- **Multilingual Support**: Supports English, Arabic, Spanish, French, Nepali, and Somali
+- **AI Chatbot** - Provides AI-powered assistance to help users navigate the app, find resources, and get answers to questions.
+- **Teams and Enterprises** - Collaborate with other users, complete tasks and courses, and download resources to work on together.
+- **Multilingual Support** - Available in English, Arabic, Spanish, French, Nepali, and Somali.
 
 ## About myPlanet
 

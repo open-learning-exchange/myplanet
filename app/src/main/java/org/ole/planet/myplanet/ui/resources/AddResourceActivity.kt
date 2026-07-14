@@ -128,6 +128,12 @@ class AddResourceActivity : AppCompatActivity() {
                 view.setTextColor(if (position == 0) hintColor else textColor)
                 return view
             }
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent) as TextView
+                view.isSingleLine = false
+                view.maxLines = 2
+                return view
+            }
         }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinner.adapter = adapter

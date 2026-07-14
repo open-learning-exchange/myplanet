@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import android.text.Spannable
-import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
 import android.view.ActionMode
 import android.view.LayoutInflater
@@ -124,18 +123,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,
                     "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-                    600,
-                    350
+                    600, 350
                 )
+
+                fragmentCourseStepBinding.description.setTextIsSelectable(true)
+                fragmentCourseStepBinding.description.customSelectionActionModeCallback = createAiSelectionCallback()
                 setMarkdownText(
                     fragmentCourseStepBinding.description,
                     markdownContentWithLocalPaths
                 )
-                fragmentCourseStepBinding.description.movementMethod =
-                    LinkMovementMethod.getInstance()
-                fragmentCourseStepBinding.description.setTextIsSelectable(true)
-                fragmentCourseStepBinding.description.customSelectionActionModeCallback =
-                    createAiSelectionCallback()
 
                 if (!data.userHasCourse) {
                     fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
@@ -303,7 +299,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
-
         fragmentCourseStepBinding.btnAskAi.setOnClickListener {
             openChatFragment()
         }
@@ -333,7 +328,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val tv = fragmentCourseStepBinding.description
                 val start = tv.selectionStart
                 val end = tv.selectionEnd
-                if (start >= 0 && end > start) {
+                if (start in 0..<end) {
                     openChatFragment(tv.text.subSequence(start, end).toString())
                     mode.finish()
                     return true
