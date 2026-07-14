@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -56,7 +57,9 @@ class VoicesViewModel @Inject constructor(
         _selectedLabel
     ) { news, query, label ->
         filterNews(news, query, label)
-    }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+    }
+    .flowOn(dispatcherProvider.default)
+    .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
