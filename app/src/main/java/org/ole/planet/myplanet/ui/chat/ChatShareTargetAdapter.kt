@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.R
 
 class ChatShareTargetAdapter(
     private val onItemClick: (ChatShareTargetItem) -> Unit
-) : ListAdapter<ChatShareTargetItem, RecyclerView.ViewHolder>(DiffCallback) {
+) : ListAdapter<ChatShareTargetItem, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
 
     override fun getItemViewType(position: Int): Int {
         return if (getItem(position).isGroup) VIEW_TYPE_GROUP else VIEW_TYPE_CHILD
@@ -70,7 +70,7 @@ class ChatShareTargetAdapter(
         private const val VIEW_TYPE_GROUP = 0
         private const val VIEW_TYPE_CHILD = 1
 
-        private val DiffCallback = object : DiffUtil.ItemCallback<ChatShareTargetItem>() {
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ChatShareTargetItem>() {
             override fun areItemsTheSame(oldItem: ChatShareTargetItem, newItem: ChatShareTargetItem): Boolean {
                 return oldItem.title == newItem.title && oldItem.isGroup == newItem.isGroup
             }
