@@ -111,7 +111,14 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     scope = lifecycleScope,
                     dispatcherProvider = dispatcherProvider,
                     addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
-                    removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
+                    removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) },
+                    onLabelChanged = { news ->
+                        val currentList = newsAdapter.currentList
+                        val index = currentList.indexOfFirst { it.id == news.id }
+                        if (index != -1) {
+                            newsAdapter.notifyItemChanged(index)
+                        }
+                    }
                 )
                 newsAdapter = VoicesAdapter(
                     context = this@ReplyActivity,

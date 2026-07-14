@@ -22,7 +22,8 @@ class VoicesLabelManager(
     private val scope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val addLabelFn: suspend (String, String) -> Unit,
-    private val removeLabelFn: suspend (String, String) -> Unit
+    private val removeLabelFn: suspend (String, String) -> Unit,
+    private val onLabelChanged: (RealmNews) -> Unit = {}
 ) {
     fun setupAddLabelMenu(binding: RowNewsBinding, voice: RealmNews?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
@@ -48,12 +49,8 @@ class VoicesLabelManager(
                         try {
                             addLabelFn(voiceId, selectedLabel)
                             withContext(dispatcherProvider.main) {
-                                if (voice.labels == null) {
-                                    voice.labels = RealmList()
-                                }
-                                voice.labels?.add(selectedLabel)
                                 Utilities.toast(context, context.getString(R.string.label_added))
-                                showChips(binding, voice, canManageLabels)
+                                voice.let { onLabelChanged(it) }
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -90,8 +87,7 @@ class VoicesLabelManager(
                             try {
                                 removeLabelFn(voiceId, selectedLabel)
                                 withContext(dispatcherProvider.main) {
-                                    voice.labels?.remove(selectedLabel)
-                                    showChips(binding, voice, canManageLabels)
+                                    onLabelChanged(voice)
                                 }
                             } catch (e: Exception) {
                                 e.printStackTrace()
