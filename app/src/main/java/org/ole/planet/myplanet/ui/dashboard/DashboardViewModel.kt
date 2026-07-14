@@ -71,7 +71,6 @@ class DashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
