@@ -354,10 +354,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val allExams = mutableListOf<RealmStepExam>()
             if (stepIds.isNotEmpty()) {
                 val query = realm.where(RealmStepExam::class.java)
-                stepIds.chunked(1000).forEachIndexed { index, chunk ->
-                    if (index > 0) query.or()
-                    query.`in`("stepId", chunk.toTypedArray())
-                }
+                query.`in`("stepId", stepIds.toTypedArray())
                 allExams.addAll(query.findAll())
             }
             val examsByStepId = allExams.groupBy { it.stepId }
@@ -365,10 +362,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val examIds = allExams.mapNotNull { it.id }
             val questionsByExamId = if (examIds.isNotEmpty()) {
                 val query = realm.where(RealmExamQuestion::class.java)
-                examIds.chunked(1000).forEachIndexed { index, chunk ->
-                    if (index > 0) query.or()
-                    query.`in`("examId", chunk.toTypedArray())
-                }
+                query.`in`("examId", examIds.toTypedArray())
                 val allQuestions = query.findAll()
                 allQuestions.groupBy { it.examId ?: "" }
                     .filterKeys { it.isNotEmpty() }
@@ -398,12 +392,8 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val submissionIds = relevantSubmissions.mapNotNull { it.id }
             val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
                 val query = realm.where(RealmAnswer::class.java)
-                submissionIds.chunked(1000).forEachIndexed { index, chunk ->
-                    if (index > 0) query.or()
-                    query.`in`("submissionId", chunk.toTypedArray())
-                }
+                query.`in`("submissionId", submissionIds.toTypedArray())
                 val allAnswers = query.findAll()
                 allAnswers.groupBy { it.submissionId ?: "" }
                     .filterKeys { it.isNotEmpty() }
