@@ -45,11 +45,11 @@ open class FileUploader(
         }
     }
 
-    fun uploadAttachment(id: String, rev: String, personal: RealmSubmitPhotos, listener: OnSuccessListener) {
-        val f = personal.photoLocation?.let { File(it) }
-        val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
+    fun uploadAttachment(localPath: String?, destinationFormat: String, id: String, rev: String, listener: OnSuccessListener) {
+        val f = localPath?.let { File(it) }
+        val name = FileUtils.getFileNameFromUrl(localPath)
         if (f != null) {
-            uploadDoc(UploadDocParams(id, rev, "%s/submissions/%s/%s", f, name, listener))
+            uploadDoc(UploadDocParams(id, rev, destinationFormat, f, name, listener))
         }
     }
 
