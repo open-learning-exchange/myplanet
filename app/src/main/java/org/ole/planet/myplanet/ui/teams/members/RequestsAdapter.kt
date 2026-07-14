@@ -17,7 +17,11 @@ class RequestsAdapter(
     companion object {
         val MWC_DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem.name == newItem.name }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.name == newItem.name &&
+                oldItem.email == newItem.email &&
+                oldItem.id == newItem.id
+            }
         )
     }
     private var teamId: String? = null
