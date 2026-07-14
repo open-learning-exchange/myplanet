@@ -9,7 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Module
@@ -24,8 +24,8 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    @RealmDispatcher
-    fun provideRealmDispatcher(provider: RealmDispatcherProvider): CoroutineDispatcher {
+    @LegacyRealmDispatcher
+    fun provideRealmDispatcher(provider: LegacyRealmDispatcherProvider): CoroutineDispatcher {
         return provider
     }
 

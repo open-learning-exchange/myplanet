@@ -7,16 +7,16 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val apiInterface: ApiInterface
-) : RealmRepository(databaseService, realmDispatcher), CommunityRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
         executeTransaction { realm ->

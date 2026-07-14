@@ -10,7 +10,7 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -18,8 +18,8 @@ import retrofit2.Response
 class UploadRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher
+) : RealmRepository(databaseService, legacyRealmDispatcher), UploadRepository {
 
     override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
         return withRealmAsync { realm ->

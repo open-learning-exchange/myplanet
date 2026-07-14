@@ -43,7 +43,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
-import org.ole.planet.myplanet.di.RealmDispatcherProvider
+import org.ole.planet.myplanet.di.LegacyRealmDispatcherProvider
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
@@ -75,7 +75,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
-    lateinit var realmDispatcherProvider: RealmDispatcherProvider
+    lateinit var realmDispatcherProvider: LegacyRealmDispatcherProvider
 
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider

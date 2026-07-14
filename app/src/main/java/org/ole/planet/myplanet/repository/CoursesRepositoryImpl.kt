@@ -14,7 +14,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -40,14 +40,14 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
     private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java, maxDepth = 0) {

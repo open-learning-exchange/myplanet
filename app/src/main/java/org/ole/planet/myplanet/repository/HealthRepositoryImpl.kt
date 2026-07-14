@@ -13,7 +13,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -26,9 +26,9 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
         val userCopy = findByField(RealmUser::class.java, "_id", userId)
             ?: findByField(RealmUser::class.java, "id", userId)

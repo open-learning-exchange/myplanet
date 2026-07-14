@@ -9,7 +9,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.android.asCoroutineDispatcher
 
 @Singleton
-class RealmDispatcherProvider @Inject constructor() : CoroutineDispatcher() {
+class LegacyRealmDispatcherProvider @Inject constructor() : CoroutineDispatcher() {
     private var handlerThread: HandlerThread? = null
     private var _dispatcher: CoroutineDispatcher? = null
 

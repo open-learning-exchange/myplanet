@@ -140,7 +140,7 @@ object ServiceModule {
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
         databaseService: DatabaseService,
-        @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+        @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
         @ApplicationContext context: Context,
         voicesRepository: VoicesRepository,
         chatRepository: ChatRepository,
@@ -163,6 +163,6 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, realmDispatcher, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, databaseService, legacyRealmDispatcher, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
     }
 }

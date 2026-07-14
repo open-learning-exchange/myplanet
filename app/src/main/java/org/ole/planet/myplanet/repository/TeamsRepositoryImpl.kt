@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -56,7 +56,7 @@ import org.ole.planet.myplanet.utils.UrlUtils
 class TeamsRepositoryImpl @Inject constructor(
     private val activitiesRepository: ActivitiesRepository,
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
     private val uploadManager: UploadManager,
     private val gson: Gson,
@@ -67,7 +67,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val timeProvider: TimeProvider,
-) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
             notEqualTo("status", "archived")

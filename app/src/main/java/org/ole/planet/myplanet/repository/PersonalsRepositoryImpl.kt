@@ -10,17 +10,17 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class PersonalsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context
-) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
         return count(RealmMyPersonal::class.java) {

@@ -36,7 +36,7 @@ class TagsRepositoryImplTest {
             val operation = firstArg<(Realm) -> List<RealmTag>>()
             operation(mockRealm)
         }
-        repository = TagsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
+        repository = TagsRepositoryImpl(databaseService)
     }
 
     private fun mockQueryResults(vararg results: List<RealmTag>): RealmQuery<RealmTag> {

@@ -43,7 +43,7 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         databaseService = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
+        repository = EventsRepositoryImpl(databaseService)
     }
 
     @Test

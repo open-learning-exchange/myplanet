@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
@@ -54,7 +54,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     @param:AppPreferences private val settings: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
     private val apiInterface: ApiInterface,
@@ -66,7 +66,7 @@ class UserRepositoryImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
-) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getUserById(userId: String): RealmUser? {
         return findByField(RealmUser::class.java, "id", userId)
     }

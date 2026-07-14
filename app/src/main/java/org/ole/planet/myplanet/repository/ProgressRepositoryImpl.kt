@@ -9,7 +9,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -22,11 +22,11 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
-) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
         val courseIdsArray = courseIds.toTypedArray()
         val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {

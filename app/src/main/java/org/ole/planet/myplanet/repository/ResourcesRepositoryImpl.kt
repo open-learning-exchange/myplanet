@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -35,14 +35,14 @@ import org.ole.planet.myplanet.utils.Utilities
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>
-) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), ResourcesRepository {
 
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
         return queryList(RealmMyLibrary::class.java)

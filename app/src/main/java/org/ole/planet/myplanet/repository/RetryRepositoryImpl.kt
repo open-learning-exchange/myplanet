@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RealmRepository
@@ -11,9 +11,9 @@ import org.ole.planet.myplanet.utils.TimeProvider
 
 class RetryRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val timeProvider: TimeProvider
-) : RealmRepository(databaseService, realmDispatcher), RetryRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), RetryRepository {
 
     override suspend fun enqueue(
         uploadType: String,

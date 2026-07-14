@@ -3,16 +3,13 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class TagsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), TagsRepository {
+    databaseService: DatabaseService
+) : RealmRepository(databaseService), TagsRepository {
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
         return queryList(RealmTag::class.java) {

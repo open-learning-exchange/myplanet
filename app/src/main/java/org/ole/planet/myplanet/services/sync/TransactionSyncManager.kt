@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
@@ -62,7 +62,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
     private val chatRepository: ChatRepository,
@@ -84,7 +84,7 @@ class TransactionSyncManager @Inject constructor(
     private val surveysRepository: SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher) {
+) : RealmRepository(databaseService, legacyRealmDispatcher) {
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"

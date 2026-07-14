@@ -12,7 +12,7 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
@@ -26,11 +26,11 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), ChatRepository {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->

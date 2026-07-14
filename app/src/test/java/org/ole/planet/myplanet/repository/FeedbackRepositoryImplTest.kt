@@ -40,7 +40,7 @@ class FeedbackRepositoryImplTest {
 
         repository = FeedbackRepositoryImpl(
             databaseService = databaseService,
-            realmDispatcher = Dispatchers.Unconfined,
+            legacyRealmDispatcher = Dispatchers.Unconfined,
             gson = gson
         )
     }

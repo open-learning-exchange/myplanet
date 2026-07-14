@@ -9,16 +9,16 @@ import javax.inject.Inject
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val gson: Gson,
-) : RealmRepository(databaseService, realmDispatcher), RatingsRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), RatingsRepository {
 
     override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
         val ratings = queryList(RealmRating::class.java) {

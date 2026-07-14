@@ -18,7 +18,7 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -39,12 +39,12 @@ import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
     private val timeProvider: TimeProvider,
-) : RealmRepository(databaseService, realmDispatcher), SurveysRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), SurveysRepository {
 
     private val reminderPrefs: SharedPreferences by lazy { context.getSharedPreferences(PREF_SURVEY_REMINDERS, Context.MODE_PRIVATE) }
 

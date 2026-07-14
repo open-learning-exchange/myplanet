@@ -13,7 +13,7 @@ import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.utils.TimeUtils
 
 internal class SubmissionsRepositoryExporter @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val timeProvider: TimeProvider
-) : RealmRepository(databaseService, realmDispatcher) {
+) : RealmRepository(databaseService, legacyRealmDispatcher) {
 
     companion object {
         private const val PAGE_WIDTH = 595

@@ -20,9 +20,12 @@ import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
 
 open class RealmRepository(
-    protected val databaseService: DatabaseService,
-    protected val realmDispatcher: CoroutineDispatcher
+    protected val databaseService: DatabaseService
 ) {
+    constructor(databaseService: DatabaseService, legacyRealmDispatcher: CoroutineDispatcher) : this(databaseService)
+
+    protected val realmDispatcher: CoroutineDispatcher
+        get() = databaseService.realmDispatcher
     protected suspend fun <T : RealmObject> queryList(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},

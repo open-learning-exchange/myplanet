@@ -23,10 +23,10 @@ class RealmDispatcherInjectionTest {
     val hiltRule = HiltAndroidRule(this)
 
     @Inject
-    lateinit var realmDispatcherProvider: RealmDispatcherProvider
+    lateinit var realmDispatcherProvider: LegacyRealmDispatcherProvider
 
     @Inject
-    @RealmDispatcher
+    @LegacyRealmDispatcher
     lateinit var injectedDispatcher: CoroutineDispatcher
 
     @Before
@@ -35,7 +35,7 @@ class RealmDispatcherInjectionTest {
     }
 
     @Test
-    fun testRealmDispatcherProviderInjection() {
+    fun testLegacyRealmDispatcherProviderInjection() {
         assertNotNull(realmDispatcherProvider)
         assertNotNull(injectedDispatcher)
 

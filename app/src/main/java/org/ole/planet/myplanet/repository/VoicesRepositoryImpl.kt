@@ -20,7 +20,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.findCopyByField
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
@@ -34,12 +34,12 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class VoicesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepositoryLazy: dagger.Lazy<UserRepository>
-) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {

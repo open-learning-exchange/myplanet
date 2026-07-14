@@ -19,7 +19,7 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.RealmCourseActivity
@@ -38,14 +38,14 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
     private val timeProvider: TimeProvider
-) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return queryList(RealmOfflineActivity::class.java) {
             equalTo("userId", userId)

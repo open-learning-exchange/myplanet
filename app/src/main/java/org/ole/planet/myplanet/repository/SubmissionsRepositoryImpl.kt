@@ -18,7 +18,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.QuestionAnswer
@@ -39,13 +39,13 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter
-) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
         return exporter.generateSubmissionPdf(context, submissionId)

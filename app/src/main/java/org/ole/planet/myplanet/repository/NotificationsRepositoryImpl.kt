@@ -8,7 +8,7 @@ import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
@@ -24,11 +24,11 @@ private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
         databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val userRepository: Lazy<UserRepository>,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val timeProvider: TimeProvider
-) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
     }

@@ -10,7 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.di.LegacyRealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -23,11 +23,11 @@ data class CachedMyLifeItem(
 
 class LifeRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    @LegacyRealmDispatcher legacyRealmDispatcher: CoroutineDispatcher,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     @ApplicationScope private val appScope: CoroutineScope
-) : RealmRepository(databaseService, realmDispatcher), LifeRepository {
+) : RealmRepository(databaseService, legacyRealmDispatcher), LifeRepository {
 
     private val MY_LIFE_CACHE_PREFIX = "myLifeCache_"
 
