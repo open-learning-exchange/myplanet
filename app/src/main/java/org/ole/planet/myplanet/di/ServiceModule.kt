@@ -14,7 +14,6 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -63,7 +62,7 @@ object ServiceModule {
     @Singleton
     @ApplicationScope
     fun provideApplicationScope(dispatcherProvider: DispatcherProvider): CoroutineScope {
-        return CoroutineScope(MainApplication.applicationScope.coroutineContext + dispatcherProvider.io)
+        return CoroutineScope(SupervisorJob() + dispatcherProvider.io)
     }
 
     @Provides
