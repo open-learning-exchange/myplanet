@@ -61,6 +61,7 @@ import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
+import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.services.ThemeManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -180,14 +181,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             registerSystemNotificationReceiver()
             checkIfShouldShowNotifications()
 
-            val validUrls = listOf(
-                "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-                "http://${BuildConfig.PLANET_XELA_URL}",
-                "http://${BuildConfig.PLANET_URIUR_URL}",
-                "http://${BuildConfig.PLANET_SANPABLO_URL}",
-                "http://${BuildConfig.PLANET_EMBAKASI_URL}",
-                "https://${BuildConfig.PLANET_VI_URL}"
-            )
+            val validUrls = ServerConfigUtils.getTrustedServerUrls()
             val isGuest = user?.id?.startsWith("guest") == true
             dashboardViewModel.evaluateChallengeDialog(
                 user?.id,
