@@ -6,7 +6,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.RealmObject
 import java.io.IOException
-import java.lang.reflect.Field
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton

@@ -3,14 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.util.Log
 import com.google.gson.JsonObject
 import io.realm.RealmObject
-import java.lang.reflect.Field
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.utils.RealmUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -55,8 +54,8 @@ class UploadRepositoryImpl @Inject constructor(
                     val item = itemsById[uploadedItem.localId]
 
                     item?.let {
-                        org.ole.planet.myplanet.utils.RealmUtils.setRealmField(it, "_id", uploadedItem.remoteId)
-                        org.ole.planet.myplanet.utils.RealmUtils.setRealmField(it, "_rev", uploadedItem.remoteRev)
+                        RealmUtils.setRealmField(it, "_id", uploadedItem.remoteId)
+                        RealmUtils.setRealmField(it, "_rev", uploadedItem.remoteRev)
                         config.additionalUpdates?.invoke(realm, it, uploadedItem)
                     } ?: run {
                         failedLocally.add(uploadedItem)
