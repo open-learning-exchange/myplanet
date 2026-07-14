@@ -1,14 +1,14 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
 import io.realm.Sort
 import java.io.File
-import java.text.Normalizer
+import org.ole.planet.myplanet.utils.ResourceSearchUtils
+import org.ole.planet.myplanet.utils.Utilities
 import java.util.Calendar
 import java.util.Locale
 import java.util.UUID
@@ -69,26 +69,12 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
-            val normalizedQuery = normalizeText(query)
-
+            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
             normalizedQueryParts.forEach { part ->
                 queryObj.contains("titleNormal", part, Case.INSENSITIVE)
             }
-
             val data = queryObj.findAll()
-            val startsWithQuery = mutableListOf<RealmMyLibrary>()
-            val containsQuery = mutableListOf<RealmMyLibrary>()
-
-            for (item in data) {
-                val title = item.titleNormal ?: item.title?.let { normalizeText(it) } ?: continue
-                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
-                    startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
-                    containsQuery.add(item)
-                }
-            }
-            realm.copyFromRealm(startsWithQuery + containsQuery)
+            return@withRealm realm.copyFromRealm(ResourceSearchUtils.searchList(data, query) { it.titleNormal ?: it.title?.let { t -> Utilities.normalizeText(t) } })
         }
     }
 
@@ -203,7 +189,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = RealmMyLibrary().apply {
             this.id = id
             this.title = title
-            this.titleNormal = normalizeText(title)
+            this.titleNormal = Utilities.normalizeText(title)
             this.addedBy = request.addedBy
             this.author = request.author
             this.resourceId = id
@@ -633,17 +619,6 @@ class ResourcesRepositoryImpl @Inject constructor(
                 .equalTo("resourceOffline", true)
                 .findAll()
             results.forEach { it.resourceOffline = false }
-        }
-    }
-
-    companion object {
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
-        @VisibleForTesting
-        internal fun normalizeText(str: String): String {
-            return Normalizer.normalize(str, Normalizer.Form.NFD)
-                .replace(DIACRITICS_REGEX, "")
-                .lowercase(Locale.ROOT)
         }
     }
 }

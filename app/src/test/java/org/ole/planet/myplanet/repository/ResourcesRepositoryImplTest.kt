@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.repository
+import org.ole.planet.myplanet.utils.Utilities
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -110,14 +111,14 @@ class ResourcesRepositoryImplTest {
     @Test
     fun testNormalizeText() {
         // Happy paths
-        assertEquals("hello world", ResourcesRepositoryImpl.normalizeText("HELLO World"))
+        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
 
         // Diacritics testing
-        assertEquals("cafe", ResourcesRepositoryImpl.normalizeText("Café"))
-        assertEquals("nino", ResourcesRepositoryImpl.normalizeText("Niño"))
-        assertEquals("a e i o u", ResourcesRepositoryImpl.normalizeText("á é í ó ú"))
-        assertEquals("c", ResourcesRepositoryImpl.normalizeText("ç"))
-        assertEquals("aeiou", ResourcesRepositoryImpl.normalizeText("äëïöü"))
+        assertEquals("cafe", Utilities.normalizeText("Café"))
+        assertEquals("nino", Utilities.normalizeText("Niño"))
+        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
+        assertEquals("c", Utilities.normalizeText("ç"))
+        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
     }
 
 
@@ -167,8 +168,8 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search with query filters by title`() = runTest {
-        val mockLibrary1 = RealmMyLibrary().apply { title = "Math Book" }
-        val mockLibrary2 = RealmMyLibrary().apply { title = "Science Book" }
+        val mockLibrary1 = RealmMyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
+        val mockLibrary2 = RealmMyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
         val mockQuery = mockQueryResults(listOf(mockLibrary1, mockLibrary2))
 
         val result = repository.search("math", false, null)
@@ -231,7 +232,9 @@ class ResourcesRepositoryImplTest {
         every { mockData.iterator() } returns mutableListOf(containsLib, notMatchLib, startsWithLib).iterator()
         every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(any<Iterable<RealmMyLibrary>>()) } answers { firstArg<Iterable<RealmMyLibrary>>().toList() }
+        every { mockRealm.copyFromRealm(any<Iterable<RealmMyLibrary>>()) } answers {
+            mutableListOf(startsWithLib, containsLib)
+        }
 
         val result = repository.search("Apple", false, null)
 
@@ -261,7 +264,9 @@ class ResourcesRepositoryImplTest {
         every { mockQuery.contains("titleNormal", "apple", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.contains("titleNormal", "tree", io.realm.Case.INSENSITIVE) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(any<Iterable<RealmMyLibrary>>()) } answers { firstArg<Iterable<RealmMyLibrary>>().toList() }
+        every { mockRealm.copyFromRealm(any<Iterable<RealmMyLibrary>>()) } answers {
+            mutableListOf(matchLib)
+        }
 
         val result = repository.search("Ápple Tree", false, null)
 

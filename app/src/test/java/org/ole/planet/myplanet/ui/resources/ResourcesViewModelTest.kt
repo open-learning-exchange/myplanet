@@ -8,12 +8,20 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import io.mockk.coEvery
+import io.mockk.every
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.utils.TestDispatcherProvider
+import com.google.gson.JsonObject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
@@ -21,12 +29,14 @@ class ResourcesViewModelTest {
     private lateinit var viewModel: ResourcesViewModel
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
+    private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         viewModel = ResourcesViewModel(
-            resourcesRepository
+            resourcesRepository,
+            dispatcherProvider
         )
     }
 
@@ -80,5 +90,28 @@ class ResourcesViewModelTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(setOf("res1", "res2"), viewModel.openedResourceIds.value)
+    }
+
+    @Test
+    fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
+        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true) {
+            every { id } returns "lib1"
+            every { title } returns "Library 1"
+            every { isResourceOffline() } returns true
+        }
+        val mockRating = mockk<JsonObject>(relaxed = true)
+        val mockTag = mockk<RealmTag>(relaxed = true) {
+            every { id } returns "tag1"
+            every { name } returns "Tag 1"
+        }
+
+        coEvery { resourcesRepository.getEnrichedLibraries(any(), any()) } returns listOf(
+            LibraryWithMetadata(mockLibrary, mockRating, listOf(mockTag))
+        )
+
+        val result = viewModel.getLibraryListModels(true, "modelId")
+
+        assertEquals(1, result.size)
+        assertEquals("lib1", result[0].library.id)
     }
 }
