@@ -227,14 +227,7 @@ class VoicesFragment : BaseVoicesFragment() {
             scope = viewLifecycleOwner.lifecycleScope,
             dispatcherProvider = dispatcherProvider,
             addLabelFn = { newsId, label -> voicesViewModel.addLabel(newsId, label) },
-            removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) },
-            onLabelChanged = { news ->
-                val currentList = adapterNews?.currentList ?: emptyList()
-                val index = currentList.indexOfFirst { it.id == news.id }
-                if (index != -1) {
-                    adapterNews?.notifyItemChanged(index)
-                }
-            }
+            removeLabelFn = { newsId, label -> voicesViewModel.removeLabel(newsId, label) }
         )
         adapterNews = VoicesAdapter(
             context = requireActivity(),

@@ -186,20 +186,12 @@ class TeamsVoicesFragment : BaseTeamFragment() {
     private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
-            var adapterRef: org.ole.planet.myplanet.ui.voices.VoicesAdapter? = null
             val labelManager = VoicesLabelManager(
                 context = requireActivity(),
                 scope = viewLifecycleOwner.lifecycleScope,
                 dispatcherProvider = dispatcherProvider,
                 addLabelFn = { newsId, label -> viewModel.addLabel(newsId, label) },
-                removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) },
-                onLabelChanged = { news ->
-                    val currentList = adapterRef?.currentList ?: emptyList()
-                    val index = currentList.indexOfFirst { it.id == news.id }
-                    if (index != -1) {
-                        adapterRef?.notifyItemChanged(index)
-                    }
-                }
+                removeLabelFn = { newsId, label -> viewModel.removeLabel(newsId, label) }
             )
             val effectiveTeamName = getEffectiveTeamName()
             val adapterNews = activity?.let {
@@ -265,7 +257,6 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             }
             adapterNews?.setListener(this)
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
-            adapterRef = adapterNews
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
             showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
