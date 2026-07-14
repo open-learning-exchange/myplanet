@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -53,20 +55,20 @@ class VoicesViewModel @Inject constructor(
         _searchQuery,
         _selectedLabel
     ) { news, query, label ->
-        withContext(dispatcherProvider.default) {
-            val labelFiltered = filterByLabel(news, label)
-            applySearchFilter(labelFiltered, query)
-        }
+        filterNews(news, query, label)
     }.stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
 
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch(dispatcherProvider.io) {
-            voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
-                val filtered = newsList.map { it as RealmNews? }
-                _baseNewsList.value = filtered
-                _labels.value = collectLabels(filtered)
-            }
+            voicesRepository.getCommunityNews(userIdentifier)
+                .conflate()
+                .distinctUntilChanged()
+                .collect { newsList ->
+                    val filtered = newsList.map { it as RealmNews? }
+                    _baseNewsList.value = filtered
+                    _labels.value = collectLabels(filtered)
+                }
         }
     }
 
@@ -89,11 +91,46 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
-    private fun applySearchFilter(list: List<RealmNews?>, query: String): List<RealmNews?> {
-        if (query.isEmpty()) return list
+    private fun filterNews(
+        list: List<RealmNews?>,
+        query: String,
+        selectedLabel: String
+    ): List<RealmNews?> {
+        val labelFiltered = if (selectedLabel == "All") {
+            list
+        } else {
+            val labelDisplayToValue = mutableMapOf<String, String>()
+            Constants.LABELS.forEach { (labelName, labelValue) ->
+                labelDisplayToValue[labelName] = labelValue
+            }
+            list.forEach { news ->
+                news?.labels?.forEach { label ->
+                    val labelName = Constants.LABELS.entries.find { it.value == label }?.key
+                        ?: VoicesLabelManager.formatLabelValue(label)
+                    labelDisplayToValue.putIfAbsent(labelName, label)
+                }
+            }
+
+            list.filter { news ->
+                when {
+                    selectedLabel == "Shared Chat" -> {
+                        news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
+                    }
+                    labelDisplayToValue.containsKey(selectedLabel) -> {
+                        val labelValue = labelDisplayToValue[selectedLabel]
+                        news?.labels?.contains(labelValue) == true
+                    }
+                    else -> {
+                        JsonUtils.extractSharedTeamName(news) == selectedLabel
+                    }
+                }
+            }
+        }
+
+        if (query.isEmpty()) return labelFiltered
 
         val lowerQuery = query.trim().lowercase()
-        return list.filter { news ->
+        return labelFiltered.filter { news ->
             news?.message?.contains(lowerQuery, ignoreCase = true) == true ||
             news?.userName?.contains(lowerQuery, ignoreCase = true) == true ||
             news?.newsTitle?.contains(lowerQuery, ignoreCase = true) == true
@@ -173,37 +210,4 @@ class VoicesViewModel @Inject constructor(
         allLabels.sorted()
     }
 
-    private fun filterByLabel(
-        newsList: List<RealmNews?>,
-        selectedLabel: String
-    ): List<RealmNews?> {
-        if (selectedLabel == "All") return newsList
-
-        val labelDisplayToValue = mutableMapOf<String, String>()
-        Constants.LABELS.forEach { (labelName, labelValue) ->
-            labelDisplayToValue[labelName] = labelValue
-        }
-        newsList.forEach { news ->
-            news?.labels?.forEach { label ->
-                val labelName = Constants.LABELS.entries.find { it.value == label }?.key
-                    ?: VoicesLabelManager.formatLabelValue(label)
-                labelDisplayToValue.putIfAbsent(labelName, label)
-            }
-        }
-
-        return newsList.filter { news ->
-            when {
-                selectedLabel == "Shared Chat" -> {
-                    news?.chat == true || news?.viewableBy.equals("community", ignoreCase = true)
-                }
-                labelDisplayToValue.containsKey(selectedLabel) -> {
-                    val labelValue = labelDisplayToValue[selectedLabel]
-                    news?.labels?.contains(labelValue) == true
-                }
-                else -> {
-                    JsonUtils.extractSharedTeamName(news) == selectedLabel
-                }
-            }
-        }
-    }
 }

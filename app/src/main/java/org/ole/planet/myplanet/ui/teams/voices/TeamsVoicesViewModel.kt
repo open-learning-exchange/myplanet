@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
@@ -58,9 +60,12 @@ class TeamsVoicesViewModel @Inject constructor(
     fun observeDiscussions(teamId: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch(dispatcherProvider.io) {
-            voicesRepository.getDiscussionsByTeamIdFlow(teamId).collect {
-                _discussions.value = it
-            }
+            voicesRepository.getDiscussionsByTeamIdFlow(teamId)
+                .conflate()
+                .distinctUntilChanged()
+                .collect {
+                    _discussions.value = it
+                }
         }
     }
 
