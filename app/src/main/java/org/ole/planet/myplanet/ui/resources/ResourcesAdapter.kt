@@ -124,8 +124,8 @@ class ResourcesAdapter(
             holder.itemView.setOnClickListener {
                 openLibrary(model)
             }
-            val isResourceOpened = model.isOpened
-            val isOffline = library.isOffline || model.isLocallyOffline
+            val isResourceOpened = openedResourceIds.contains(model.item.id) || model.isOpened
+            val isOffline = library.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
             holder.rowLibraryBinding.ivDownloaded.visibility =
                 if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
