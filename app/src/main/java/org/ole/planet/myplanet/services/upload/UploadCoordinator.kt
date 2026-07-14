@@ -312,30 +312,6 @@ class UploadCoordinator @Inject constructor(
         )
     }
 
-    private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
-        try {
-            var clazz: Class<*>? = obj.javaClass
-            var field: Field? = null
-
-            while (clazz != null && field == null) {
-                try {
-                    field = clazz.getDeclaredField(fieldName)
-                } catch (e: NoSuchFieldException) {
-                    clazz = clazz.superclass
-                }
-            }
-
-            if (field != null) {
-                field.isAccessible = true
-                field.set(obj, value)
-            } else {
-                Log.w(TAG, "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to set field $fieldName: ${e.message}")
-        }
-    }
-
 }
 
 private data class PreparedUpload<T : RealmObject>(
