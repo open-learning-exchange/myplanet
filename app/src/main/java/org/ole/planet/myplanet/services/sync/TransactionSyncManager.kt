@@ -247,6 +247,9 @@ class TransactionSyncManager @Inject constructor(
                     "courses_progress" -> timedBatchInsert(table, arr.size()) {
                         progressRepository.insertCourseProgressFromSync(extractDocs(arr))
                     }
+                    "ratings" -> timedBatchInsert(table, arr.size()) {
+                        ratingsRepository.insertRatingsFromSync(extractDocs(arr))
+                    }
                     else -> {
                         // Use async transaction to avoid blocking (ANR-safe)
                         executeTransaction { mRealm: Realm ->
@@ -255,7 +258,6 @@ class TransactionSyncManager @Inject constructor(
                                 "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
                                 "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                                 "tags" -> tagsRepository.bulkInsertFromSync(mRealm, arr)
-                                "ratings" -> ratingsRepository.bulkInsertFromSync(mRealm, arr)
                                 "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
                                 "courses" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
                                 "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)
