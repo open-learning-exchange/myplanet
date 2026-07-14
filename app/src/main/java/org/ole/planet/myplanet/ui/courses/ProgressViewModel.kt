@@ -23,7 +23,7 @@ class ProgressViewModel @Inject constructor(
     val courseData: StateFlow<JsonArray?> = _courseData
 
     fun loadCourseData() {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val user = userSessionManager.getUserModel()
             _courseData.value = progressRepository.fetchCourseData(user?.id)
         }

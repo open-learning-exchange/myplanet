@@ -61,7 +61,7 @@ class VoicesViewModel @Inject constructor(
 
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
-        observeJob = viewModelScope.launch(dispatcherProvider.io) {
+        observeJob = viewModelScope.launch {
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
                 val filtered = newsList.map { it as RealmNews? }
                 _baseNewsList.value = filtered
@@ -79,7 +79,7 @@ class VoicesViewModel @Inject constructor(
     }
 
     fun createNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
                 val news = voicesRepository.createNews(map, user, imageList)
                 _createNewsSuccess.send(news)

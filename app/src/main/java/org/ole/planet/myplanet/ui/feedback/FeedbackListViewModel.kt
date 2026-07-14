@@ -33,7 +33,7 @@ class FeedbackListViewModel @Inject constructor(
 
     private fun loadFeedback() {
         fetchJob?.cancel()
-        fetchJob = viewModelScope.launch(dispatcherProvider.io) {
+        fetchJob = viewModelScope.launch {
             val user = userSessionManager.getUserModel()
             feedbackRepository.getFeedback(user).collectLatest { feedback ->
                 _feedbackList.value = feedback

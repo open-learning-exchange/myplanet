@@ -36,7 +36,7 @@ class RequestsViewModel @Inject constructor(
     val successAction = _successAction.asSharedFlow()
 
     fun fetchMembers(teamId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMembers(teamId).size
             val user = userSessionManager.getUserModel()
@@ -55,7 +55,7 @@ class RequestsViewModel @Inject constructor(
         )
         _uiState.value = optimisticState
 
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val userId = user.id ?: run { _uiState.value = originalState; return@launch }
             val result = teamsRepository.respondToMemberRequest(teamId, userId, isAccepted)
             if (result.isSuccess) {

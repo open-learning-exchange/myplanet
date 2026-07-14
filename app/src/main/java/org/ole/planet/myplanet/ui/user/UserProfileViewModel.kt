@@ -35,7 +35,7 @@ class UserProfileViewModel @Inject constructor(
     val updateState: StateFlow<ProfileUpdateState> = _updateState.asStateFlow()
 
     fun loadCurrentUserProfile() {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val userId = userRepository.getActiveUserIdSuspending()
             if (userId.isBlank()) return@launch
             _userModel.value = userRepository.getUserByAnyId(userId)
@@ -57,7 +57,7 @@ class UserProfileViewModel @Inject constructor(
         gender: String?,
         dob: String?,
     ) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val userId = userRepository.getActiveUserIdSuspending()
             if (userId.isBlank()) {
                 _updateState.value = ProfileUpdateState.Error("Invalid user id")
@@ -89,7 +89,7 @@ class UserProfileViewModel @Inject constructor(
     }
 
     fun updateCurrentUserProfileImage(imagePath: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val userId = userRepository.getActiveUserIdSuspending()
             if (userId.isBlank()) {
                 _updateState.value = ProfileUpdateState.Error("Invalid user id")
@@ -126,7 +126,7 @@ class UserProfileViewModel @Inject constructor(
     val maxOpenedResource: StateFlow<String> = _maxOpenedResource.asStateFlow()
 
     init {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val fullName = userSessionManager.getUserModel()?.name ?: ""
             val result = activitiesRepository.getMostOpenedResource(fullName, UserSessionManager.KEY_RESOURCE_OPEN)
             _maxOpenedResource.value = if (result == null) "" else "${result.first} opened ${result.second} times"
@@ -138,7 +138,7 @@ class UserProfileViewModel @Inject constructor(
     }
 
     fun getOfflineVisits() {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val user = userSessionManager.getUserModel()
             _offlineVisits.value = user?.id?.let { activitiesRepository.getOfflineVisitCount(it) } ?: 0
         }

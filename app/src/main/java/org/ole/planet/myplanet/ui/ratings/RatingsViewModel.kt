@@ -50,7 +50,7 @@ class RatingsViewModel @Inject constructor(
     }
 
     fun loadRatingData(type: String, itemId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
                 _ratingState.value = RatingUiState.Loading
 
@@ -80,7 +80,7 @@ class RatingsViewModel @Inject constructor(
         rating: Float,
         comment: String
     ) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
                 _submitState.value = SubmitState.Submitting
 

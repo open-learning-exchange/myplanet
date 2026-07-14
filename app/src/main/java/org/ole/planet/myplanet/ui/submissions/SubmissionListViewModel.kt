@@ -32,7 +32,7 @@ class SubmissionListViewModel @Inject constructor(
     val exportFile: SharedFlow<File?> = _exportFile.asSharedFlow()
 
     fun generateSubmissionPdf(submissionId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             _exportProgress.value = true
             val file = submissionsRepository.generateSubmissionPdf(submissionId)
             _exportFile.emit(file)
@@ -41,7 +41,7 @@ class SubmissionListViewModel @Inject constructor(
     }
 
     fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             _exportProgress.value = true
             val file = submissionsRepository.generateMultipleSubmissionsPdf(submissionIds, examTitle)
             _exportFile.emit(file)
@@ -50,7 +50,7 @@ class SubmissionListViewModel @Inject constructor(
     }
 
     fun loadSubmissions(parentId: String?, userId: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val items = submissionsRepository.getSubmissionItems(parentId, userId)
             _submissions.value = items
         }

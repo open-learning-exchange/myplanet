@@ -57,7 +57,7 @@ class NotificationsViewModel @Inject constructor(
 
     fun loadNotifications(userId: String, filter: String, isAdmin: Boolean = false) {
         currentFilter = filter
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val payloadNotifications = notificationsRepository.getNotifications(userId, filter, isAdmin)
 
             val taskIds = payloadNotifications
@@ -114,7 +114,7 @@ class NotificationsViewModel @Inject constructor(
     fun markSelectedAsRead() {
         val ids = _selectedIds.value
         if (ids.isEmpty()) return
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(ids)
             if (markedIds.isNotEmpty()) {
                 val wasUnreadCount = _notifications.value.count { it.id in markedIds && !it.isRead }
@@ -136,7 +136,7 @@ class NotificationsViewModel @Inject constructor(
     fun deleteSelected() {
         val ids = _selectedIds.value
         if (ids.isEmpty()) return
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val deletedIds = notificationsRepository.deleteNotifications(ids)
             if (deletedIds.isNotEmpty()) {
                 val wasUnreadCount = _notifications.value.count { it.id in deletedIds && !it.isRead }
@@ -148,7 +148,7 @@ class NotificationsViewModel @Inject constructor(
     }
 
     fun markAsRead(notificationId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val markedIds = notificationsRepository.markNotificationsAsRead(setOf(notificationId))
             if (markedIds.contains(notificationId)) {
                 var wasUnread = false
@@ -175,7 +175,7 @@ class NotificationsViewModel @Inject constructor(
     }
 
     fun markAllAsRead(userId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val markedIds = notificationsRepository.markAllUnreadAsRead(userId)
             if (markedIds.isNotEmpty()) {
                 _notifications.update { currentList ->

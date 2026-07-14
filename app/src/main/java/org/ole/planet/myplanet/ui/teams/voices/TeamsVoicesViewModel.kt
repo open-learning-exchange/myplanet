@@ -43,7 +43,7 @@ class TeamsVoicesViewModel @Inject constructor(
     private var observeJob: Job? = null
 
     fun loadTeam(teamId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val teamResult = teamsRepository.getTeamByIdOrTeamId(teamId)
             _teamPolicy.value = Pair(teamResult, teamResult?.toVoicePostingPolicy())
         }
@@ -57,7 +57,7 @@ class TeamsVoicesViewModel @Inject constructor(
 
     fun observeDiscussions(teamId: String) {
         observeJob?.cancel()
-        observeJob = viewModelScope.launch(dispatcherProvider.io) {
+        observeJob = viewModelScope.launch {
             voicesRepository.getDiscussionsByTeamIdFlow(teamId).collect {
                 _discussions.value = it
             }
@@ -65,7 +65,7 @@ class TeamsVoicesViewModel @Inject constructor(
     }
 
     fun createTeamNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val success = voicesRepository.createTeamNews(map, user, imageList)
             _createNewsSuccess.send(success)
         }
