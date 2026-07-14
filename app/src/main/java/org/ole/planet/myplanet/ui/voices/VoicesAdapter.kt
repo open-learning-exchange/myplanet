@@ -102,6 +102,26 @@ class VoicesAdapter(
         const val PAYLOAD_EDIT_ACTION = "PAYLOAD_EDIT_ACTION"
     }
 
+    private data class RowState(
+        val canEdit: Boolean,
+        val canDelete: Boolean,
+        val canReply: Boolean,
+        val canAddLabel: Boolean,
+        val canShare: Boolean,
+        val isCurrentUserNull: Boolean
+    )
+
+    private fun getRowState(news: RealmNews?): RowState {
+        return RowState(
+            canEdit = canEdit(news),
+            canDelete = canDelete(news),
+            canReply = canReply(),
+            canAddLabel = canAddLabel(news),
+            canShare = canShare(news),
+            isCurrentUserNull = currentUser == null
+        )
+    }
+
     private var originalList: List<RealmNews> = emptyList()
 
     override fun submitList(list: List<RealmNews>?) {
@@ -159,15 +179,29 @@ class VoicesAdapter(
         }
         isTeamLeaderFn { isLeader ->
             val changed = _isTeamLeader != isLeader
-            _isTeamLeader = isLeader
-            if (changed && itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_TEAM_LEADER_CHANGED)
+            if (changed) {
+                val oldStates = (0 until itemCount).map { getRowState(getItem(it)) }
+                _isTeamLeader = isLeader
+                if (itemCount > 0) {
+                    for (i in 0 until itemCount) {
+                        if (oldStates[i] != getRowState(getItem(i))) {
+                            notifyItemChanged(i, PAYLOAD_TEAM_LEADER_CHANGED)
+                        }
+                    }
+                }
+            }
         }
     }
 
     fun setCurrentUser(user: RealmUser?) {
         if (currentUser !== user) {
+            val oldStates = (0 until itemCount).map { getRowState(getItem(it)) }
             currentUser = user
-            if (itemCount > 0) notifyItemRangeChanged(0, itemCount, PAYLOAD_CURRENT_USER_CHANGED)
+            for (i in 0 until itemCount) {
+                if (oldStates[i] != getRowState(getItem(i))) {
+                    notifyItemChanged(i, PAYLOAD_CURRENT_USER_CHANGED)
+                }
+            }
         }
     }
 
@@ -181,8 +215,13 @@ class VoicesAdapter(
 
     fun setNonTeamMember(nonTeamMember: Boolean) {
         if (this.nonTeamMember != nonTeamMember) {
+            val oldStates = (0 until itemCount).map { getRowState(getItem(it)) }
             this.nonTeamMember = nonTeamMember
-            notifyItemRangeChanged(0, itemCount, PAYLOAD_NON_TEAM_MEMBER_CHANGED)
+            for (i in 0 until itemCount) {
+                if (oldStates[i] != getRowState(getItem(i))) {
+                    notifyItemChanged(i, PAYLOAD_NON_TEAM_MEMBER_CHANGED)
+                }
+            }
         }
     }
 
