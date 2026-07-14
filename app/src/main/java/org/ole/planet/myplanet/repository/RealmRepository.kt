@@ -12,6 +12,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
@@ -66,13 +67,11 @@ open class RealmRepository(
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
         builder: RealmQuery<T>.() -> Unit = {},
-    ): Flow<List<T>> = callbackFlow<List<T>> {
+    ): Flow<List<T>> = callbackFlow<RealmResults<T>> {
         val isClosed = AtomicBoolean(false)
         var realm: Realm? = null
         var results: RealmResults<T>? = null
         var listener: OrderedRealmCollectionChangeListener<RealmResults<T>>? = null
-
-        var lastPrimaryKeys: List<Any>? = null
 
         fun safeCloseRealm() {
             if (isClosed.compareAndSet(false, true)) {
@@ -97,38 +96,12 @@ open class RealmRepository(
             }
         }
 
-        fun emitResults(res: RealmResults<T>, errorMsg: String, hasContentChanges: Boolean) {
+        fun emitResults(res: RealmResults<T>, errorMsg: String) {
             if (!isClosed.get() && res.isValid && res.isLoaded) {
                 try {
                     val frozen = res.freeze()
                     if (!isClosed.get()) {
-                        val detachedList = if (frozen.isEmpty()) {
-                            emptyList()
-                        } else {
-                            frozen.realm.copyFromRealm(frozen)
-                        }
-
-                        val pkField = frozen.realm.schema.get(clazz.simpleName)?.primaryKey
-                        val currentPrimaryKeys = if (pkField != null && detachedList.isNotEmpty()) {
-                            try {
-                                val field = detachedList.first().javaClass.getDeclaredField(pkField)
-                                field.isAccessible = true
-                                detachedList.map { field.get(it) }
-                            } catch (e: Exception) { null }
-                        } else if (detachedList.isNotEmpty()) {
-                            val idField = try { detachedList.first().javaClass.getDeclaredField("id") } catch(e: Exception) { null }
-                                ?: try { detachedList.first().javaClass.getDeclaredField("_id") } catch(e: Exception) { null }
-                            if (idField != null) {
-                                idField.isAccessible = true
-                                detachedList.map { idField.get(it) }
-                            } else null
-                        } else emptyList()
-
-                        val isDuplicate = !hasContentChanges && lastPrimaryKeys != null && currentPrimaryKeys != null && currentPrimaryKeys == lastPrimaryKeys
-                        if (!isDuplicate) {
-                            lastPrimaryKeys = currentPrimaryKeys
-                            trySend(detachedList)
-                        }
+                        trySend(frozen)
                     }
                 } catch (e: Exception) {
                     RealmLog.error(e, errorMsg)
@@ -140,13 +113,12 @@ open class RealmRepository(
             realm = databaseService.createManagedRealmInstance()
 
             val initialResults = realm.where(clazz).apply(builder).findAll()
-            emitResults(initialResults, "Error sending initial results", false)
+            emitResults(initialResults, "Error sending initial results")
 
             results = initialResults
             listener = OrderedRealmCollectionChangeListener<RealmResults<T>> { changedResults, changeSet ->
                 if (changeSet == null || changeSet.insertions.isNotEmpty() || changeSet.deletions.isNotEmpty() || changeSet.changes.isNotEmpty()) {
-                    val hasContentChanges = changeSet != null && changeSet.changes.isNotEmpty()
-                    emitResults(changedResults, "Error sending changed results", hasContentChanges)
+                    emitResults(changedResults, "Error sending changed results")
                 }
             }
             results.addChangeListener(listener)
@@ -158,8 +130,16 @@ open class RealmRepository(
             safeCloseRealm()
             throw e
         }
-    }.flowOn(realmDispatcher)
-        .conflate()
+    }.conflate()
+        .map { frozenResults ->
+            if (frozenResults.isEmpty()) {
+                emptyList()
+            } else {
+                frozenResults.realm.copyFromRealm(frozenResults)
+            }
+        }
+        .distinctUntilChanged()
+        .flowOn(realmDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
