@@ -19,6 +19,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -79,6 +80,16 @@ class WebViewActivity : AppCompatActivity() {
 
         activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
         setWebClient()
+
+        onBackPressedDispatcher.addCallback(this) {
+            val webView = activityWebViewBinding.contentWebView.wv
+            if (webView.canGoBack()) {
+                webView.goBack()
+            } else {
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+            }
+        }
 
         if (resourceId != null) {
             val directory = File(getExternalFilesDir(null), "ole/$resourceId")
