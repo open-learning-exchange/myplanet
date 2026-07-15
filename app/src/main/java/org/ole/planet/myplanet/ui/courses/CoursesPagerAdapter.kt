@@ -15,9 +15,13 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
         private const val COURSE_DETAIL_ID = 0L
     }
 
+    private sealed interface StepItem
+    private object HeaderItem : StepItem
+    private data class StepEntry(val id: String) : StepItem
+
     fun submitList(newSteps: List<String>) {
-        val oldWithHeader = listOf("HEADER_SENTINEL") + steps
-        val newWithHeader = listOf("HEADER_SENTINEL") + newSteps
+        val oldWithHeader: List<StepItem> = listOf(HeaderItem) + steps.map(::StepEntry)
+        val newWithHeader: List<StepItem> = listOf(HeaderItem) + newSteps.map(::StepEntry)
 
         val diffResult = DiffUtils.calculateDiff(
             oldWithHeader,
