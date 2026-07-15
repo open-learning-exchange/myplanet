@@ -20,6 +20,9 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.BuildConfig
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
+import org.ole.planet.myplanet.utils.SecurePrefs
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest=Config.NONE, application=android.app.Application::class)
@@ -29,7 +32,9 @@ class ServerUrlMapperTest {
 
     @Before
     fun setUp() {
-        serverUrlMapper = ServerUrlMapper()
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        SecurePrefs.warmUp(context)
+        serverUrlMapper = ServerUrlMapper(context)
     }
 
     @After
@@ -88,11 +93,11 @@ class ServerUrlMapperTest {
         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
 
         verify { editor.putString("url_user", "user") }
-        verify { editor.putString("url_pwd", "pass") }
+        verify { editor.putString(eq("url_pwd"), match { it.startsWith("enc:") }) }
         verify { editor.putString("url_Scheme", "http") }
         verify { editor.putString("url_Host", "primary.com") }
-        verify { editor.putString("alternativeUrl", url) }
-        verify { editor.putString("processedAlternativeUrl", alternativeUrl) }
+        verify { editor.putString(eq("alternativeUrl"), match { it.startsWith("enc:") }) }
+        verify { editor.putString(eq("processedAlternativeUrl"), match { it.startsWith("enc:") }) }
         verify { editor.putBoolean("isAlternativeUrl", true) }
         verify { editor.apply() }
     }
@@ -119,11 +124,11 @@ class ServerUrlMapperTest {
         serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, url, settings)
 
         verify { editor.putString("url_user", "satellite") }
-        verify { editor.putString("url_pwd", "1234") }
+        verify { editor.putString(eq("url_pwd"), match { it.startsWith("enc:") }) }
         verify { editor.putString("url_Scheme", "http") }
         verify { editor.putString("url_Host", "primary.com") }
-        verify { editor.putString("alternativeUrl", url) }
-        verify { editor.putString("processedAlternativeUrl", "https://satellite:1234@alternative.com:443") }
+        verify { editor.putString(eq("alternativeUrl"), match { it.startsWith("enc:") }) }
+        verify { editor.putString(eq("processedAlternativeUrl"), match { it.startsWith("enc:") }) }
         verify { editor.putBoolean("isAlternativeUrl", true) }
         verify { editor.apply() }
     }
@@ -153,7 +158,7 @@ class ServerUrlMapperTest {
         serverUrlMapper.updateServerIfNecessary(mapping, settings, isServerReachable)
 
         verify { settings.edit() }
-        verify { editor.putString("processedAlternativeUrl", "https://satellite:1234@alternative.com:443") }
+        verify { editor.putString(eq("processedAlternativeUrl"), match { it.startsWith("enc:") }) }
     }
 
     @Test

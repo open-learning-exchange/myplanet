@@ -143,11 +143,37 @@ class SharedPrefManager @Inject constructor(
         }
     }
 
+    private fun getSecurePref(key: String, default: String = ""): String {
+        val value = pref.getString(key, default) ?: default
+        if (value.startsWith("enc:")) {
+            return try {
+                org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, value.substring(4)) ?: ""
+            } catch (e: Exception) {
+                ""
+            }
+        }
+        if (value.isNotEmpty() && value != default) {
+            setSecurePref(key, value)
+        }
+        return value
+    }
+
+    private fun setSecurePref(key: String, value: String) {
+        pref.edit {
+            try {
+                val enc = org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, value)
+                putString(key, "enc:$enc")
+            } catch (e: Exception) {
+                remove(key)
+            }
+        }
+    }
+
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
 
-    fun getServerPin(): String = pref.getString(SERVER_PIN, "") ?: ""
-    fun setServerPin(pin: String) = pref.edit { putString(SERVER_PIN, pin) }
+    fun getServerPin(): String = getSecurePref(SERVER_PIN, "")
+    fun setServerPin(pin: String) = setSecurePref(SERVER_PIN, pin)
 
     fun getServerProtocol(): String = pref.getString(SERVER_PROTOCOL, "") ?: ""
     fun setServerProtocol(protocol: String) = pref.edit { putString(SERVER_PROTOCOL, protocol) }
@@ -158,14 +184,14 @@ class SharedPrefManager @Inject constructor(
     fun getConfigurationId(): String? = pref.getString(CONFIGURATION_ID, null)
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
-    fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
+    fun getCouchdbUrl(): String = getSecurePref(COUCHDB_URL, "")
+    fun setCouchdbUrl(url: String) = setSecurePref(COUCHDB_URL, url)
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
     fun setUrlUser(user: String) = pref.edit { putString(URL_USER, user) }
 
-    fun getUrlPwd(): String = pref.getString(URL_PWD, "") ?: ""
-    fun setUrlPwd(pwd: String) = pref.edit { putString(URL_PWD, pwd) }
+    fun getUrlPwd(): String = getSecurePref(URL_PWD, "")
+    fun setUrlPwd(pwd: String) = setSecurePref(URL_PWD, pwd)
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
     fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
@@ -173,11 +199,11 @@ class SharedPrefManager @Inject constructor(
     fun getUrlHost(): String = pref.getString(URL_HOST, "") ?: ""
     fun setUrlHost(host: String) = pref.edit { putString(URL_HOST, host) }
 
-    fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
-    fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
+    fun getAlternativeUrl(): String = getSecurePref(ALTERNATIVE_URL, "")
+    fun setAlternativeUrl(url: String) = setSecurePref(ALTERNATIVE_URL, url)
 
-    fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
-    fun setProcessedAlternativeUrl(url: String) = pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+    fun getProcessedAlternativeUrl(): String = getSecurePref(PROCESSED_ALTERNATIVE_URL, "")
+    fun setProcessedAlternativeUrl(url: String) = setSecurePref(PROCESSED_ALTERNATIVE_URL, url)
 
     fun isAlternativeUrl(): Boolean = pref.getBoolean(IS_ALTERNATIVE_URL, false)
     fun setIsAlternativeUrl(value: Boolean) = pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }

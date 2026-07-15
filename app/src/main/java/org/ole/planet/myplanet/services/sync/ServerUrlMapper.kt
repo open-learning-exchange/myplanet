@@ -5,10 +5,15 @@ import android.net.Uri
 import androidx.core.net.toUri
 import javax.inject.Inject
 import javax.inject.Singleton
+import dagger.hilt.android.qualifiers.ApplicationContext
+import android.content.Context
+import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.BuildConfig
 
 @Singleton
-class ServerUrlMapper @Inject constructor() {
+class ServerUrlMapper @Inject constructor(
+    @ApplicationContext private val context: Context
+) {
     private val serverMappings = mapOf(
         "http://${BuildConfig.PLANET_SANPABLO_URL}" to "https://${BuildConfig.PLANET_SANPABLO_CLONE_URL}",
         "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
@@ -55,7 +60,24 @@ class ServerUrlMapper @Inject constructor() {
             urlPwd = userinfo[1]
         } else {
             urlUser = "satellite"
-            urlPwd = settings.getString("serverPin", "") ?: ""
+                        val pinValue = settings.getString("serverPin", "") ?: ""
+            urlPwd = if (pinValue.startsWith("enc:")) {
+                try {
+                    SecurePrefs.decryptString(context, pinValue.substring(4)) ?: ""
+                } catch (e: Exception) {
+                    ""
+                }
+            } else {
+                if (pinValue.isNotEmpty()) {
+                    try {
+                        val encPin = SecurePrefs.encryptString(context, pinValue)
+                        settings.edit().putString("serverPin", "enc:$encPin").apply()
+                    } catch (e: Exception) {
+                        settings.edit().remove("serverPin").apply()
+                    }
+                }
+                pinValue
+            }
         }
 
         val altUri = alternativeUrl.toUri()
@@ -75,12 +97,31 @@ class ServerUrlMapper @Inject constructor() {
 
         editor.apply {
             putString("url_user", urlUser)
-            putString("url_pwd", urlPwd)
             putString("url_Scheme", uri.scheme)
             putString("url_Host", uri.host)
-            putString("alternativeUrl", url)
-            putString("processedAlternativeUrl", couchdbURL)
             putBoolean("isAlternativeUrl", true)
+
+            try {
+                val encPwd = SecurePrefs.encryptString(context, urlPwd)
+                putString("url_pwd", "enc:$encPwd")
+            } catch (e: Exception) {
+                remove("url_pwd")
+            }
+
+            try {
+                val encAltUrl = SecurePrefs.encryptString(context, url)
+                putString("alternativeUrl", "enc:$encAltUrl")
+            } catch (e: Exception) {
+                remove("alternativeUrl")
+            }
+
+            try {
+                val encProcAltUrl = SecurePrefs.encryptString(context, couchdbURL)
+                putString("processedAlternativeUrl", "enc:$encProcAltUrl")
+            } catch (e: Exception) {
+                remove("processedAlternativeUrl")
+            }
+
             apply()
         }
     }
