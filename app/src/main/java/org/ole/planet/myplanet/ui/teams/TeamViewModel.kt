@@ -44,7 +44,7 @@ class TeamViewModel @Inject constructor(
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()
-        loadTaskJob = viewModelScope.launch(dispatcherProvider.main) {
+        loadTaskJob = viewModelScope.launch {
             teamsRepository.getTasksByTeamId(teamId)
                 .flowOn(dispatcherProvider.io)
                 .collectLatest { tasks ->
@@ -67,7 +67,7 @@ class TeamViewModel @Inject constructor(
         currentType = type
         currentUserId = userId
         loadJob?.cancel()
-        loadJob = viewModelScope.launch(dispatcherProvider.main) {
+        loadJob = viewModelScope.launch {
             when {
                 fromDashboard -> {
                     if (userId != null) {
