@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.model.RealmUser
 class EventsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val timeProvider: org.ole.planet.myplanet.utils.TimeProvider
 ) : RealmRepository(databaseService, realmDispatcher), EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup> {
@@ -112,8 +113,7 @@ class EventsRepositoryImpl @Inject constructor(
         return processedCount
     }
 
-    override suspend fun createMeetup(params: org.ole.planet.myplanet.ui.teams.MeetupCreationParams): Boolean {
-        val timeProvider = org.ole.planet.myplanet.utils.SystemTimeProvider()
+    override suspend fun createMeetup(params: org.ole.planet.myplanet.model.MeetupCreationParams): Boolean {
         val gson = com.google.gson.Gson()
         val meetup = RealmMeetup().apply {
             id = "${java.util.UUID.randomUUID()}"

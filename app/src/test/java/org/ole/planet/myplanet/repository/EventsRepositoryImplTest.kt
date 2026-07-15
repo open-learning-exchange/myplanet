@@ -43,7 +43,8 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         databaseService = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
+        val timeProvider = org.ole.planet.myplanet.utils.SystemTimeProvider()
+        repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher(), timeProvider)
     }
 
     @Test
@@ -237,7 +238,7 @@ class EventsRepositoryImplTest {
             transactionSlot.captured.invoke(mockRealm)
         }
 
-        val params = org.ole.planet.myplanet.ui.teams.MeetupCreationParams(
+        val params = org.ole.planet.myplanet.model.MeetupCreationParams(
             "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
         )
         every { mockRealm.copyToRealmOrUpdate(any<RealmMeetup>()) } returns RealmMeetup()
@@ -253,7 +254,7 @@ class EventsRepositoryImplTest {
         val transactionSlot = slot<Function1<Realm, Unit>>()
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } throws SilentException("Test Exception")
 
-        val params = org.ole.planet.myplanet.ui.teams.MeetupCreationParams(
+        val params = org.ole.planet.myplanet.model.MeetupCreationParams(
             "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
         )
 

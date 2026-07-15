@@ -161,7 +161,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val startTime = if (startTimeText == defaultPlaceholder) "" else startTimeText
         val endTime = if (endTimeText == defaultPlaceholder) "" else endTimeText
 
-        val params = MeetupCreationParams(
+        val params = org.ole.planet.myplanet.model.MeetupCreationParams(
             title = title,
             meetupLink = link,
             description = description,

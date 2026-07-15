@@ -5,7 +5,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUser
 
 interface EventsRepository {
-    suspend fun createMeetup(params: org.ole.planet.myplanet.ui.teams.MeetupCreationParams): Boolean
+    suspend fun createMeetup(params: org.ole.planet.myplanet.model.MeetupCreationParams): Boolean
     suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup>
     suspend fun getMeetupById(meetupId: String): RealmMeetup?
     suspend fun getMeetupByLocalId(id: String): RealmMeetup?

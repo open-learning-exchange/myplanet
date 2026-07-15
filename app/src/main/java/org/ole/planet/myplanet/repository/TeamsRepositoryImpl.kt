@@ -608,7 +608,6 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun addReport(report: org.ole.planet.myplanet.model.FinanceReportParams) {
-        val timeProvider = org.ole.planet.myplanet.utils.SystemTimeProvider()
         val reportId = java.util.UUID.randomUUID().toString()
         val doc = com.google.gson.JsonObject().apply {
             addProperty("_id", reportId)
@@ -655,7 +654,6 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun updateReport(reportId: String, payload: org.ole.planet.myplanet.model.FinanceReportParams) {
         if (reportId.isBlank()) return
-        val systemTimeProvider = org.ole.planet.myplanet.utils.SystemTimeProvider()
         val doc = com.google.gson.JsonObject().apply {
             addProperty("description", payload.description)
             addProperty("beginningBalance", payload.beginningBalance)
@@ -665,14 +663,14 @@ class TeamsRepositoryImpl @Inject constructor(
             addProperty("otherExpenses", payload.otherExpenses)
             addProperty("startDate", payload.startDate)
             addProperty("endDate", payload.endDate)
-            addProperty("updatedDate", systemTimeProvider.now())
+            addProperty("updatedDate", timeProvider.now())
             addProperty("updated", true)
         }
         update(RealmMyTeam::class.java, "_id", reportId) { report ->
             RealmMyTeam.populateReportFields(doc, report)
             report.updated = true
             if (report.updatedDate == 0L) {
-                report.updatedDate = systemTimeProvider.now()
+                report.updatedDate = timeProvider.now()
             }
         }
         if (payload.imageName != null && payload.imageData != null) {

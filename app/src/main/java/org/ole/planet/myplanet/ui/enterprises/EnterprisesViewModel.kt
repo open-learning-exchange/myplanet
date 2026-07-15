@@ -2,9 +2,7 @@ package org.ole.planet.myplanet.ui.enterprises
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -13,7 +11,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
-import org.ole.planet.myplanet.utils.TimeProvider
 
 sealed class ReportEvent {
     object ReportAdded : ReportEvent()
@@ -24,8 +21,7 @@ sealed class ReportEvent {
 
 @HiltViewModel
 class EnterprisesViewModel @Inject constructor(
-    private val teamsRepository: TeamsRepository,
-    private val timeProvider: TimeProvider
+    private val teamsRepository: TeamsRepository
 ) : ViewModel() {
 
     private val _reportEvent = MutableSharedFlow<ReportEvent>()
