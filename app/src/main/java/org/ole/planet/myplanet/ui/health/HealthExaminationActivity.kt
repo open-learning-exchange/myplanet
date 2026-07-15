@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.model.RealmExamination
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
@@ -45,7 +46,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     lateinit var userSessionManager: UserSessionManager
 
     @Inject
-    lateinit var healthRepository: org.ole.planet.myplanet.repository.HealthRepository
+    lateinit var healthRepository: HealthRepository
 
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
