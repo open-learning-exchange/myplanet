@@ -56,7 +56,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         val completed: Boolean,
         val assignee: String?
     )
-    private var lastSubmittedSnapshot: List<TaskSnapshot> = emptyList()
+    private var lastSubmittedSnapshot: List<TaskSnapshot>? = null
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
     private val teamsTasksViewModel: TeamsTasksViewModel by viewModels()
@@ -245,6 +245,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        lastSubmittedSnapshot = null
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value)
         adapterTask.setListener(this)
