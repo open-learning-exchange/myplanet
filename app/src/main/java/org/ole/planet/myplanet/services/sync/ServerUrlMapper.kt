@@ -79,12 +79,27 @@ class ServerUrlMapper @Inject constructor(
         }
 
         editor.apply {
-            putString("url_user", SecurePrefs.encryptString(context, urlUser))
-            putString("url_pwd", SecurePrefs.encryptString(context, urlPwd))
+            try {
+                putString("url_user", "enc1:" + SecurePrefs.encryptString(context, urlUser))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
+            try {
+                putString("url_pwd", "enc1:" + SecurePrefs.encryptString(context, urlPwd))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+
             putString("url_Scheme", uri.scheme)
             putString("url_Host", uri.host)
             putString("alternativeUrl", url)
-            putString("processedAlternativeUrl", couchdbURL)
+
+            try {
+                putString("processedAlternativeUrl", "enc1:" + SecurePrefs.encryptString(context, couchdbURL))
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
             putBoolean("isAlternativeUrl", true)
             apply()
         }

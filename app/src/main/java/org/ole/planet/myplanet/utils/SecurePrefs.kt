@@ -171,6 +171,9 @@ object SecurePrefs {
 
     private fun decrypt(aead: Aead, encryptedText: String): String? {
         return try {
+            if (encryptedText.startsWith("enc1:")) {
+                return decrypt(aead, encryptedText.substring(5))
+            }
             val bytes = Base64.decode(encryptedText, Base64.DEFAULT)
             val decrypted = aead.decrypt(bytes, null)
             String(decrypted, Charsets.UTF_8)

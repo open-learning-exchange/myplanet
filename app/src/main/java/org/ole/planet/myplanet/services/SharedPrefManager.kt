@@ -146,8 +146,21 @@ class SharedPrefManager @Inject constructor(
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
 
-    fun getServerPin(): String = pref.getString(SERVER_PIN, "") ?: ""
-    fun setServerPin(pin: String) = pref.edit { putString(SERVER_PIN, pin) }
+    fun getServerPin(): String {
+        val encrypted = pref.getString(SERVER_PIN, null)
+        if (encrypted != null) {
+            val decrypted = try { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted) } catch (e: Exception) { null }
+            if (decrypted != null) return decrypted
+            if (encrypted.startsWith("enc1:")) return ""
+            setServerPin(encrypted)
+            return encrypted
+        }
+        return ""
+    }
+    fun setServerPin(pin: String) = pref.edit {
+        val enc = try { "enc1:" + org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, pin) } catch (e: Exception) { return@edit }
+        putString(SERVER_PIN, enc)
+    }
 
     fun getServerProtocol(): String = pref.getString(SERVER_PROTOCOL, "") ?: ""
     fun setServerProtocol(protocol: String) = pref.edit { putString(SERVER_PROTOCOL, protocol) }
@@ -158,34 +171,53 @@ class SharedPrefManager @Inject constructor(
     fun getConfigurationId(): String? = pref.getString(CONFIGURATION_ID, null)
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
-    fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
+    fun getCouchdbUrl(): String {
+        val encrypted = pref.getString(COUCHDB_URL, null)
+        if (encrypted != null) {
+            val decrypted = try { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted) } catch (e: Exception) { null }
+            if (decrypted != null) return decrypted
+            if (encrypted.startsWith("enc1:")) return ""
+            setCouchdbUrl(encrypted)
+            return encrypted
+        }
+        return ""
+    }
+    fun setCouchdbUrl(url: String) = pref.edit {
+        val enc = try { "enc1:" + org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, url) } catch (e: Exception) { return@edit }
+        putString(COUCHDB_URL, enc)
+    }
 
     fun getUrlUser(): String {
         val encrypted = pref.getString(URL_USER, null)
         if (encrypted != null) {
-            val decrypted = org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted)
+            val decrypted = try { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted) } catch (e: Exception) { null }
             if (decrypted != null) return decrypted
-            // Fallback for unencrypted legacy value
+            if (encrypted.startsWith("enc1:")) return ""
             setUrlUser(encrypted)
             return encrypted
         }
         return ""
     }
-    fun setUrlUser(user: String) = pref.edit { putString(URL_USER, org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, user)) }
+    fun setUrlUser(user: String) = pref.edit {
+        val enc = try { "enc1:" + org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, user) } catch (e: Exception) { return@edit }
+        putString(URL_USER, enc)
+    }
 
     fun getUrlPwd(): String {
         val encrypted = pref.getString(URL_PWD, null)
         if (encrypted != null) {
-            val decrypted = org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted)
+            val decrypted = try { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted) } catch (e: Exception) { null }
             if (decrypted != null) return decrypted
-            // Fallback for unencrypted legacy value
+            if (encrypted.startsWith("enc1:")) return ""
             setUrlPwd(encrypted)
             return encrypted
         }
         return ""
     }
-    fun setUrlPwd(pwd: String) = pref.edit { putString(URL_PWD, org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, pwd)) }
+    fun setUrlPwd(pwd: String) = pref.edit {
+        val enc = try { "enc1:" + org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, pwd) } catch (e: Exception) { return@edit }
+        putString(URL_PWD, enc)
+    }
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
     fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
@@ -196,8 +228,21 @@ class SharedPrefManager @Inject constructor(
     fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
     fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
 
-    fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
-    fun setProcessedAlternativeUrl(url: String) = pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+    fun getProcessedAlternativeUrl(): String {
+        val encrypted = pref.getString(PROCESSED_ALTERNATIVE_URL, null)
+        if (encrypted != null) {
+            val decrypted = try { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(context, encrypted) } catch (e: Exception) { null }
+            if (decrypted != null) return decrypted
+            if (encrypted.startsWith("enc1:")) return ""
+            setProcessedAlternativeUrl(encrypted)
+            return encrypted
+        }
+        return ""
+    }
+    fun setProcessedAlternativeUrl(url: String) = pref.edit {
+        val enc = try { "enc1:" + org.ole.planet.myplanet.utils.SecurePrefs.encryptString(context, url) } catch (e: Exception) { return@edit }
+        putString(PROCESSED_ALTERNATIVE_URL, enc)
+    }
 
     fun isAlternativeUrl(): Boolean = pref.getBoolean(IS_ALTERNATIVE_URL, false)
     fun setIsAlternativeUrl(value: Boolean) = pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }

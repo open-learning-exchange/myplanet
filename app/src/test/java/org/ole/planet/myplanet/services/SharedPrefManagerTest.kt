@@ -205,6 +205,13 @@ class SharedPrefManagerTest {
         mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
         every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_user") } returns "encrypted_user"
         every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_user") } returns "test_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_user") } returns "test_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_user") } returns "test_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pass") } returns "encrypted_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_pass") } returns "test_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_user") } returns "test_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pass") } returns "encrypted_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_pass") } returns "test_pass"
 
         // Set
         sharedPrefManager.setNewLoginUsername("test_user")
@@ -226,6 +233,8 @@ class SharedPrefManagerTest {
         mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
         every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pass") } returns "encrypted_pass"
         every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_pass") } returns "test_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_pass") } returns "test_pass"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_pass") } returns "test_pass"
 
         // Set
         sharedPrefManager.setNewLoginPassword("test_pass")
@@ -246,15 +255,66 @@ class SharedPrefManagerTest {
     fun testGetAndSetUrlUser() {
         mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
         every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_url_user") } returns "encrypted_url_user"
-        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_url_user") } returns "test_url_user"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_url_user") } returns "test_url_user"
 
         // Set
         sharedPrefManager.setUrlUser("test_url_user")
-        verify { mockEditor.putString("url_user", "encrypted_url_user") }
+        verify { mockEditor.putString("url_user", "enc1:encrypted_url_user") }
 
         // Get
-        every { mockSharedPreferences.getString("url_user", null) } returns "encrypted_url_user"
+        every { mockSharedPreferences.getString("url_user", null) } returns "enc1:encrypted_url_user"
         assertEquals("test_url_user", sharedPrefManager.getUrlUser())
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testGetAndSetServerPin() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_pin") } returns "encrypted_pin"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_pin") } returns "test_pin"
+
+        // Set
+        sharedPrefManager.setServerPin("test_pin")
+        verify { mockEditor.putString("serverPin", "enc1:encrypted_pin") }
+
+        // Get
+        every { mockSharedPreferences.getString("serverPin", null) } returns "enc1:encrypted_pin"
+        assertEquals("test_pin", sharedPrefManager.getServerPin())
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testGetAndSetCouchdbUrl() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_db") } returns "encrypted_db"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_db") } returns "test_db"
+
+        // Set
+        sharedPrefManager.setCouchdbUrl("test_db")
+        verify { mockEditor.putString("couchdbURL", "enc1:encrypted_db") }
+
+        // Get
+        every { mockSharedPreferences.getString("couchdbURL", null) } returns "enc1:encrypted_db"
+        assertEquals("test_db", sharedPrefManager.getCouchdbUrl())
+
+        unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+    }
+
+    @Test
+    fun testGetAndSetProcessedAlternativeUrl() {
+        mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
+        every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_alt") } returns "encrypted_alt"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_alt") } returns "test_alt"
+
+        // Set
+        sharedPrefManager.setProcessedAlternativeUrl("test_alt")
+        verify { mockEditor.putString("processedAlternativeUrl", "enc1:encrypted_alt") }
+
+        // Get
+        every { mockSharedPreferences.getString("processedAlternativeUrl", null) } returns "enc1:encrypted_alt"
+        assertEquals("test_alt", sharedPrefManager.getProcessedAlternativeUrl())
 
         unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
     }
@@ -263,14 +323,14 @@ class SharedPrefManagerTest {
     fun testGetAndSetUrlPwd() {
         mockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
         every { org.ole.planet.myplanet.utils.SecurePrefs.encryptString(any(), "test_url_pwd") } returns "encrypted_url_pwd"
-        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "encrypted_url_pwd") } returns "test_url_pwd"
+        every { org.ole.planet.myplanet.utils.SecurePrefs.decryptString(any(), "enc1:encrypted_url_pwd") } returns "test_url_pwd"
 
         // Set
         sharedPrefManager.setUrlPwd("test_url_pwd")
-        verify { mockEditor.putString("url_pwd", "encrypted_url_pwd") }
+        verify { mockEditor.putString("url_pwd", "enc1:encrypted_url_pwd") }
 
         // Get
-        every { mockSharedPreferences.getString("url_pwd", null) } returns "encrypted_url_pwd"
+        every { mockSharedPreferences.getString("url_pwd", null) } returns "enc1:encrypted_url_pwd"
         assertEquals("test_url_pwd", sharedPrefManager.getUrlPwd())
 
         unmockkObject(org.ole.planet.myplanet.utils.SecurePrefs)
