@@ -79,7 +79,6 @@ interface UserRepository {
         userId: String,
         currentUser: RealmUser
     ): HealthRecord?
-    suspend fun getUserModelSuspending(): RealmUser?
     suspend fun getUserModel(): RealmUser?
     suspend fun getUserProfile(): RealmUser?
     suspend fun getUserImageUrl(): String?

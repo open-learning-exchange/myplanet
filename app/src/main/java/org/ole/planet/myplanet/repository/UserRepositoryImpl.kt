@@ -572,10 +572,6 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserModel(): RealmUser? {
-        return getUserModelSuspending()
-    }
-
-    override suspend fun getUserModelSuspending(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
@@ -875,7 +871,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getActiveUserIdSuspending(): String {
-        return getUserModelSuspending()?.id ?: ""
+        return getUserModel()?.id ?: ""
     }
 
     override suspend fun getHealthRecordsAndAssociatedUsers(
