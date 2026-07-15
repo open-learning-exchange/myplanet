@@ -2,13 +2,13 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
 import android.content.Context
+import dagger.hilt.android.qualifiers.ApplicationContext
+import org.ole.planet.myplanet.utils.SecurePrefs
 import android.net.Uri
 import androidx.core.net.toUri
-import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.BuildConfig
-import org.ole.planet.myplanet.utils.SecurePrefs
 
 @Singleton
 class ServerUrlMapper @Inject constructor(
@@ -84,12 +84,25 @@ class ServerUrlMapper @Inject constructor(
                 val encrypted = SecurePrefs.encryptString(context, urlPwd)
                 putString("url_pwd", "enc:$encrypted")
             } catch (e: Exception) {
-                // Do not fallback to plaintext
+                e.printStackTrace()
+                remove("url_pwd")
             }
             putString("url_Scheme", uri.scheme)
             putString("url_Host", uri.host)
-            putString("alternativeUrl", url)
-            putString("processedAlternativeUrl", couchdbURL)
+            try {
+                val encrypted = SecurePrefs.encryptString(context, url)
+                putString("alternativeUrl", "enc:$encrypted")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                remove("alternativeUrl")
+            }
+            try {
+                val encrypted = SecurePrefs.encryptString(context, couchdbURL)
+                putString("processedAlternativeUrl", "enc:$encrypted")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                remove("processedAlternativeUrl")
+            }
             putBoolean("isAlternativeUrl", true)
             apply()
         }

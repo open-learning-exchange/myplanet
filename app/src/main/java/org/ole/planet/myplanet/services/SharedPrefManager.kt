@@ -28,6 +28,39 @@ class SharedPrefManager @Inject constructor(
 ) {
     private var pref: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
+    private fun getSecureString(key: String): String {
+        val stored = pref.getString(key, "")
+        if (stored.isNullOrEmpty()) {
+            return ""
+        }
+        if (stored.startsWith("enc:")) {
+            return try {
+                val ciphertext = stored.substring(4)
+                SecurePrefs.decryptString(context, ciphertext) ?: ""
+            } catch (e: Exception) {
+                e.printStackTrace()
+                ""
+            }
+        } else {
+            // Legacy plaintext migration
+            setSecureString(key, stored)
+            return stored
+        }
+    }
+
+    private fun setSecureString(key: String, value: String) {
+        pref.edit {
+            try {
+                val encrypted = SecurePrefs.encryptString(context, value)
+                putString(key, "enc:$encrypted")
+            } catch (e: Exception) {
+                e.printStackTrace()
+                remove(key)
+            }
+        }
+    }
+
+
     val rawPreferences: SharedPreferences get() = pref
 
     companion object {
@@ -139,8 +172,8 @@ class SharedPrefManager @Inject constructor(
     fun getServerUrl(): String = pref.getString(SERVER_URL, "") ?: ""
     fun setServerUrl(url: String) = pref.edit { putString(SERVER_URL, url) }
 
-    fun getServerPin(): String = pref.getString(SERVER_PIN, "") ?: ""
-    fun setServerPin(pin: String) = pref.edit { putString(SERVER_PIN, pin) }
+    fun getServerPin(): String = getSecureString(SERVER_PIN)
+    fun setServerPin(pin: String) = setSecureString(SERVER_PIN, pin)
 
     fun getServerProtocol(): String = pref.getString(SERVER_PROTOCOL, "") ?: ""
     fun setServerProtocol(protocol: String) = pref.edit { putString(SERVER_PROTOCOL, protocol) }
@@ -151,38 +184,14 @@ class SharedPrefManager @Inject constructor(
     fun getConfigurationId(): String? = pref.getString(CONFIGURATION_ID, null)
     fun setConfigurationId(id: String) = pref.edit { putString(CONFIGURATION_ID, id) }
 
-    fun getCouchdbUrl(): String = pref.getString(COUCHDB_URL, "") ?: ""
-    fun setCouchdbUrl(url: String) = pref.edit { putString(COUCHDB_URL, url) }
+    fun getCouchdbUrl(): String = getSecureString(COUCHDB_URL)
+    fun setCouchdbUrl(url: String) = setSecureString(COUCHDB_URL, url)
 
     fun getUrlUser(): String = pref.getString(URL_USER, "") ?: ""
     fun setUrlUser(user: String) = pref.edit { putString(URL_USER, user) }
 
-    fun getUrlPwd(): String {
-        val stored = pref.getString(URL_PWD, "")
-        return if (stored.isNullOrEmpty()) {
-            ""
-        } else if (stored.startsWith("enc:")) {
-            try {
-                val ciphertext = stored.substring(4)
-                val decrypted = SecurePrefs.decryptString(context, ciphertext)
-                decrypted ?: ""
-            } catch (e: Exception) {
-                ""
-            }
-        } else {
-            // Legacy plaintext migration
-            stored.also { setUrlPwd(it) }
-        }
-    }
-    fun setUrlPwd(pwd: String) = pref.edit {
-        try {
-            val encrypted = SecurePrefs.encryptString(context, pwd)
-            putString(URL_PWD, "enc:$encrypted")
-        } catch (e: Exception) {
-            // We should NOT fallback to plaintext on exception if we want to fix the security issue securely.
-            // But we don't want to crash.
-        }
-    }
+    fun getUrlPwd(): String = getSecureString(URL_PWD)
+    fun setUrlPwd(pwd: String) = setSecureString(URL_PWD, pwd)
 
     fun getUrlScheme(): String = pref.getString(URL_SCHEME, "") ?: ""
     fun setUrlScheme(scheme: String) = pref.edit { putString(URL_SCHEME, scheme) }
@@ -193,11 +202,11 @@ class SharedPrefManager @Inject constructor(
     fun getUrlPort(): Int = pref.getInt(URL_PORT, 443)
     fun setUrlPort(port: Int) = pref.edit { putInt(URL_PORT, port) }
 
-    fun getAlternativeUrl(): String = pref.getString(ALTERNATIVE_URL, "") ?: ""
-    fun setAlternativeUrl(url: String) = pref.edit { putString(ALTERNATIVE_URL, url) }
+    fun getAlternativeUrl(): String = getSecureString(ALTERNATIVE_URL)
+    fun setAlternativeUrl(url: String) = setSecureString(ALTERNATIVE_URL, url)
 
-    fun getProcessedAlternativeUrl(): String = pref.getString(PROCESSED_ALTERNATIVE_URL, "") ?: ""
-    fun setProcessedAlternativeUrl(url: String) = pref.edit { putString(PROCESSED_ALTERNATIVE_URL, url) }
+    fun getProcessedAlternativeUrl(): String = getSecureString(PROCESSED_ALTERNATIVE_URL)
+    fun setProcessedAlternativeUrl(url: String) = setSecureString(PROCESSED_ALTERNATIVE_URL, url)
 
     fun isAlternativeUrl(): Boolean = pref.getBoolean(IS_ALTERNATIVE_URL, false)
     fun setIsAlternativeUrl(value: Boolean) = pref.edit { putBoolean(IS_ALTERNATIVE_URL, value) }
