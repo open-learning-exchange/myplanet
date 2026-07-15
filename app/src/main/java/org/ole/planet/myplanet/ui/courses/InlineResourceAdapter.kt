@@ -22,7 +22,6 @@ import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -68,6 +67,7 @@ class InlineResourceAdapter(
 
     class ViewHolder(val binding: ItemInlineResourceBinding, dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
+        // Scope intentionally left alive across recycles (only previewJob is cancelled) so reused holders can still launch previews
         val scope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
         fun cancelPreviousPreviews() {
