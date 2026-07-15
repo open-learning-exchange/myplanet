@@ -37,25 +37,23 @@ class VoicesRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val userRepositoryLazy: dagger.Lazy<UserRepository>
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
-        return withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .findAll()
-                .mapNotNull { news ->
-                    if (news.userId?.startsWith("guest") == true) null
-                    else NewsUploadData(
-                        id = news.id,
-                        _id = news._id,
-                        message = news.message,
-                        imageUrls = news.imageUrls?.toList() ?: emptyList(),
-                        newsJson = serializeNews(news)
-                    )
-                }
-        }
+        return queryList(RealmNews::class.java)
+            .mapNotNull { news ->
+                if (news.userId?.startsWith("guest") == true) null
+                else NewsUploadData(
+                    id = news.id,
+                    _id = news._id,
+                    message = news.message,
+                    imageUrls = news.imageUrls?.toList() ?: emptyList(),
+                    newsJson = serializeNews(news)
+                )
+            }
     }
 
     override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {
@@ -83,6 +81,10 @@ class VoicesRepositoryImpl @Inject constructor(
                 }
             }
         }
+    }
+
+    override suspend fun getUserById(userId: String): RealmUser? {
+        return userRepositoryLazy.get().getUserById(userId)
     }
 
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {

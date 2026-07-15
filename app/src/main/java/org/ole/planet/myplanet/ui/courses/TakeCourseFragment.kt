@@ -20,7 +20,6 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
@@ -56,6 +55,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private var lastPositionBeforeExam = -1
     private var pendingJoinDialog = false
     private var courseDetailContentReady = false
+    private var coursesPagerAdapter: CoursesPagerAdapter? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -111,12 +111,16 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
             position = if (lastPositionBeforeExam > 0) lastPositionBeforeExam else if (currentStep > 0) currentStep else 0
             lastPositionBeforeExam = -1
             setNavigationButtons()
-            binding.viewPager2.adapter =
-                CoursesPagerAdapter(
+
+            if (coursesPagerAdapter == null) {
+                coursesPagerAdapter = CoursesPagerAdapter(
                     this@TakeCourseFragment,
-                    courseId,
-                    steps.mapNotNull { it?.id }.toTypedArray()
+                    courseId
                 )
+                binding.viewPager2.adapter = coursesPagerAdapter
+            }
+            coursesPagerAdapter?.submitList(steps.mapNotNull { it?.id })
+
             binding.viewPager2.isUserInputEnabled = false
             binding.viewPager2.setCurrentItem(position, false)
             binding.viewPager2.registerOnPageChangeCallback(object :
@@ -217,13 +221,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                     addRemoveCourse()
                 }
 
-                pendingJoinDialog = true
-                maybeShowJoinDialog()
-                viewLifecycleOwner.lifecycleScope.launch {
-                    delay(JOIN_DIALOG_FALLBACK_MS)
-                    courseDetailContentReady = true
-                    maybeShowJoinDialog()
-                }
+                joinDialog?.show()
             } else {
                 binding.btnRemove.visibility = View.GONE
             }
@@ -443,6 +441,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
         joinDialog?.dismiss()
         joinDialog = null
         _binding = null
+        coursesPagerAdapter = null
         super.onDestroyView()
     }
 

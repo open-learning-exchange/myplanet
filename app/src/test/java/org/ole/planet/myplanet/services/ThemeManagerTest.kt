@@ -55,6 +55,7 @@ class ThemeManagerTest {
     @After
     fun tearDown() {
         activityController.pause().stop().destroy()
+        org.ole.planet.myplanet.services.ThemeManager.clearSharedPrefManager()
         unmockkAll()
     }
 

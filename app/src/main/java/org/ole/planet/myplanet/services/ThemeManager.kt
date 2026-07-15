@@ -11,8 +11,19 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.utils.ThemeMode
 
 object ThemeManager {
-    private fun getSpm(context: Context): SharedPrefManager =
-        EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java).sharedPrefManager()
+    private var sharedPrefManager: SharedPrefManager? = null
+
+    @androidx.annotation.VisibleForTesting
+    fun clearSharedPrefManager() {
+        sharedPrefManager = null
+    }
+
+    private fun getSpm(context: Context): SharedPrefManager {
+        return sharedPrefManager ?: EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            CoreDependenciesEntryPoint::class.java
+        ).sharedPrefManager().also { sharedPrefManager = it }
+    }
 
     fun showThemeDialog(context: Context) {
         val options = arrayOf(

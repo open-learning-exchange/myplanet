@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -179,14 +180,31 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
 
         filterController = CourseFilterController(
             rootView = requireView(),
-            scope = viewLifecycleOwner.lifecycleScope,
-            onFilterChanged = { state ->
-                viewModel.filterCourses(isMyCourseLib, model?.id, state.searchText, state.grade,
-                    state.subject, state.tagNames, state.progressFilter)
-            },
             onScrollToTop = { scrollToTop() }
         )
         filterController.setup()
+
+        var lastState: FilterState? = null
+        var isFirstEmission = true
+        collectLatestWhenStarted(filterController.filterState) { state ->
+            if (isFirstEmission) {
+                isFirstEmission = false
+                if (!state.isActive) {
+                    lastState = state
+                    return@collectLatestWhenStarted
+                }
+            }
+            if (state == lastState) return@collectLatestWhenStarted
+
+            if (lastState != null && state.searchText != lastState?.searchText && state.copy(searchText = "") == lastState?.copy(searchText = "")) {
+                delay(300)
+            }
+            lastState = state
+            viewModel.filterCourses(
+                isMyCourseLib, model?.id, state.searchText, state.grade,
+                state.subject, state.tagNames, state.progressFilter
+            )
+        }
 
         selectionController = CourseSelectionController(
             rootView = requireView(),
@@ -283,7 +301,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     private fun checkList() {
         if (!::adapterCourses.isInitialized || !::filterController.isInitialized || !::selectionController.isInitialized) return
         val isEmpty = adapterCourses.currentList.isEmpty()
-        filterController.setListVisible(!isEmpty)
+        filterController.setListVisible(!isEmpty || filterController.filterApplied())
         val hasSelectableItems = isMyCourseLib || adapterCourses.currentList.any { !it.isMyCourse }
         selectionController.onListChanged(isEmpty, hasSelectableItems)
     }

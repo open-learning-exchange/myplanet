@@ -221,7 +221,7 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
-        fun serialize(team: RealmMyTeam, realm: Realm): JsonObject {
+        fun serialize(team: RealmMyTeam, realm: Realm, coursesResourcesMap: Map<String, Map<String?, List<RealmMyLibrary>>>): JsonObject {
             val `object` = serialize(team)
 
             if (!team.courses.isNullOrEmpty()) {
@@ -239,7 +239,8 @@ open class RealmMyTeam : RealmObject() {
                     team.courses?.forEach { courseId ->
                         val course = courseMap[courseId]
                         if (course != null) {
-                            val courseJson = RealmMyCourse.serialize(course, realm)
+                            val courseResources = coursesResourcesMap[courseId] ?: emptyMap()
+                            val courseJson = RealmMyCourse.serialize(course, courseResources)
                             coursesArray.add(courseJson)
                         }
                     }
