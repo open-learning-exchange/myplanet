@@ -12,6 +12,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
@@ -65,6 +66,7 @@ open class RealmRepository(
 
     protected fun <T : RealmObject> queryListFlow(
         clazz: Class<T>,
+        keySelector: ((T) -> Any?)? = null,
         builder: RealmQuery<T>.() -> Unit = {},
     ): Flow<List<T>> = callbackFlow<RealmResults<T>> {
         val isClosed = AtomicBoolean(false)
@@ -129,8 +131,7 @@ open class RealmRepository(
             safeCloseRealm()
             throw e
         }
-    }.flowOn(realmDispatcher)
-        .conflate()
+    }.conflate()
         .map { frozenResults ->
             if (frozenResults.isEmpty()) {
                 emptyList()
@@ -138,7 +139,14 @@ open class RealmRepository(
                 frozenResults.realm.copyFromRealm(frozenResults)
             }
         }
-        .flowOn(databaseService.ioDispatcher)
+        .distinctUntilChanged { old, new ->
+            if (keySelector != null && old.size == new.size) {
+                old.map(keySelector) == new.map(keySelector)
+            } else {
+                false
+            }
+        }
+        .flowOn(realmDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,

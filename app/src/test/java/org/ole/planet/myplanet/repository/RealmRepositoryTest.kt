@@ -17,6 +17,7 @@ import java.util.logging.Logger
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -245,6 +246,54 @@ class RealmRepositoryTest {
         assertEquals(1, emittedLists.size)
         assertEquals(emptyList<TestRealmObject>(), emittedLists[0])
         verify(exactly = 0) { frozenRealmInitial.copyFromRealm(any<RealmResults<TestRealmObject>>()) }
+        job.cancel()
+    }
+
+    @Test
+    fun `queryListFlow identical consecutive emissions are dropped by distinctUntilChanged`() = runTest {
+        val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
+        val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenInitial = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenRealmInitial = mockk<Realm>(relaxed = true)
+
+        val obj1 = TestRealmObject()
+        val copiedList = listOf(obj1)
+
+        every { realm.where(TestRealmObject::class.java) } returns realmQuery
+        every { realmQuery.findAll() } returns initialResults
+
+        every { initialResults.isValid } returns true
+        every { initialResults.isLoaded } returns true
+        every { initialResults.freeze() } returns frozenInitial
+        every { frozenInitial.isEmpty() } returns false
+        every { frozenInitial.realm } returns frozenRealmInitial
+        every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns copiedList
+
+        val listenerSlot = slot<OrderedRealmCollectionChangeListener<RealmResults<TestRealmObject>>>()
+        every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
+
+        val emittedLists = mutableListOf<List<TestRealmObject>>()
+        val flow = repository.javaClass.superclass.getDeclaredMethod("queryListFlow", Class::class.java, kotlin.jvm.functions.Function1::class.java, kotlin.jvm.functions.Function1::class.java).apply { isAccessible = true }
+
+        val flowInstance = flow.invoke(repository, TestRealmObject::class.java, { t: TestRealmObject -> t.toString() }, {}) as Flow<List<TestRealmObject>>
+
+        val job = launch(testDispatcher) {
+            flowInstance.collect {
+                emittedLists.add(it)
+            }
+        }
+
+        // Wait for initial emission
+        advanceUntilIdle()
+        assertEquals(1, emittedLists.size)
+
+        // Trigger an identical change
+        listenerSlot.captured.onChange(initialResults, null)
+        advanceUntilIdle()
+
+        // Should not have emitted a second time due to distinctUntilChanged with keySelector
+        assertEquals(1, emittedLists.size)
+
         job.cancel()
     }
 }
