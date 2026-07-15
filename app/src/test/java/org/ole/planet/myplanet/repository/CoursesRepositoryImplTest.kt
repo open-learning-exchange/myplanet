@@ -17,6 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
@@ -57,12 +58,12 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun testNormalizeText() {
-        assertEquals("hello world", repository.normalizeText("HELLO World"))
-        assertEquals("cafe", repository.normalizeText("Café"))
-        assertEquals("nino", repository.normalizeText("Niño"))
-        assertEquals("a e i o u", repository.normalizeText("á é í ó ú"))
-        assertEquals("c", repository.normalizeText("ç"))
-        assertEquals("aeiou", repository.normalizeText("äëïöü"))
+        assertEquals("hello world", Utilities.normalizeText("HELLO World"))
+        assertEquals("cafe", Utilities.normalizeText("Café"))
+        assertEquals("nino", Utilities.normalizeText("Niño"))
+        assertEquals("a e i o u", Utilities.normalizeText("á é í ó ú"))
+        assertEquals("c", Utilities.normalizeText("ç"))
+        assertEquals("aeiou", Utilities.normalizeText("äëïöü"))
     }
 
     @Test

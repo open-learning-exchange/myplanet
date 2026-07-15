@@ -6,10 +6,8 @@ import com.google.gson.JsonObject
 import io.realm.Case
 import io.realm.Realm
 import io.realm.RealmList
-import java.text.Normalizer
 import java.util.Calendar
 import java.util.HashMap
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
@@ -38,6 +36,7 @@ import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 class CoursesRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -183,19 +182,6 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    internal fun normalizeText(str: String): String {
-        val lowercased = str.lowercase(Locale.ROOT)
-        val normalized = Normalizer.normalize(lowercased, Normalizer.Form.NFD)
-        val sb = StringBuilder(normalized.length)
-        for (i in 0 until normalized.length) {
-            val c = normalized[i]
-            // NON_SPACING_MARK matches Unicode category Mn (Combining Diacritical Marks)
-            if (Character.getType(c) != Character.NON_SPACING_MARK.toInt()) {
-                sb.append(c)
-            }
-        }
-        return sb.toString()
-    }
 
     internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
         for (part in parts) {
@@ -215,16 +201,16 @@ class CoursesRepositoryImpl @Inject constructor(
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
             queryParts.forEach { part ->
-                queryObj.contains("courseTitleNormal", normalizeText(part), Case.INSENSITIVE)
+                queryObj.contains("courseTitleNormal", Utilities.normalizeText(part), Case.INSENSITIVE)
             }
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
+            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
             val data = queryObj.findAll()
-            val normalizedQuery = normalizeText(query)
+            val normalizedQuery = Utilities.normalizeText(query)
             val startsWithQuery = mutableListOf<RealmMyCourse>()
             val containsQuery = mutableListOf<RealmMyCourse>()
 
             for (item in data) {
-                val title = item.courseTitleNormal ?: item.courseTitle?.let { normalizeText(it) } ?: continue
+                val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
 
                 if (title.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
@@ -656,7 +642,7 @@ class CoursesRepositoryImpl @Inject constructor(
         myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc)
         val title = JsonUtils.getString("courseTitle", doc)
         myMyCoursesDB?.courseTitle = title
-        myMyCoursesDB?.courseTitleNormal = title.let { normalizeText(it) }
+        myMyCoursesDB?.courseTitleNormal = title.let { Utilities.normalizeText(it) }
         myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", doc)
         val description = JsonUtils.getString("description", doc)
         myMyCoursesDB?.description = description
