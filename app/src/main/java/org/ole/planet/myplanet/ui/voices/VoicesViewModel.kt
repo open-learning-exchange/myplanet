@@ -12,8 +12,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -64,14 +62,11 @@ class VoicesViewModel @Inject constructor(
     fun observeCommunityNews(userIdentifier: String) {
         observeJob?.cancel()
         observeJob = viewModelScope.launch(dispatcherProvider.io) {
-            voicesRepository.getCommunityNews(userIdentifier)
-                .conflate()
-                .distinctUntilChanged()
-                .collect { newsList ->
-                    val filtered = newsList.map { it as RealmNews? }
-                    _baseNewsList.value = filtered
-                    _labels.value = collectLabels(filtered)
-                }
+            voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
+                val filtered = newsList.map { it as RealmNews? }
+                _baseNewsList.value = filtered
+                _labels.value = collectLabels(filtered)
+            }
         }
     }
 
