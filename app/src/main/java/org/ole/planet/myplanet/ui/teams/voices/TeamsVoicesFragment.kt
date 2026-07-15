@@ -287,5 +287,4 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         _binding = null
         super.onDestroyView()
     }
-
 }
