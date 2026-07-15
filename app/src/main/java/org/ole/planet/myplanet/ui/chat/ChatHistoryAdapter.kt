@@ -56,6 +56,7 @@ class ChatHistoryAdapter(
     private var chatTitle: String? = ""
     private lateinit var shareTargetAdapter: ChatShareTargetAdapter
     private var cachedSharedViewInIds: Map<String, Set<String>> = emptyMap()
+    private val daynightGreyColor by lazy { ContextCompat.getColor(context, R.color.daynight_grey) }
 
     init {
         submitList(chatHistoryList)
@@ -174,8 +175,7 @@ class ChatHistoryAdapter(
             }
             dialog = builder.create()
 
-            val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
-            dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
+            dialog.window?.setBackgroundDrawable(daynightGreyColor.toDrawable())
 
             dialog.show()
         }
@@ -211,8 +211,7 @@ class ChatHistoryAdapter(
             dialog?.dismiss()
         }
         dialog = builder.create()
-        val backgroundColor = ContextCompat.getColor(context, R.color.daynight_grey)
-        dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
+        dialog.window?.setBackgroundDrawable(daynightGreyColor.toDrawable())
         dialog.show()
     }
 
