@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.repository
-import org.ole.planet.myplanet.utils.Utilities
 
 import io.mockk.every
 import io.mockk.mockk
@@ -18,6 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
