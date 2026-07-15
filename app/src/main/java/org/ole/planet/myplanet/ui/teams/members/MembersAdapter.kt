@@ -29,6 +29,7 @@ class MembersAdapter(
     private var currentUserId: String?,
     private val actionListener: OnMemberActionListener
 ) : ListAdapter<JoinedMemberData, MembersAdapter.MembersViewHolder>(DIFF_CALLBACK) {
+    private val avatarSize: Int by lazy { context.resources.getDimensionPixelSize(R.dimen._40dp) }
     private var isLoggedInUserTeamLeader: Boolean = false
     private val dateFormatter = DateTimeFormatter.ofPattern(TimeUtils.DATE_FORMAT).withZone(ZoneId.systemDefault())
 
@@ -93,7 +94,6 @@ class MembersAdapter(
             R.string.last_visit,
             lastVisitDate
         )
-        val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
         ImageUtils.loadProfileImage(member.userImage, binding.memberImage, avatarSize)
 
         if (memberData.isLeader) {
