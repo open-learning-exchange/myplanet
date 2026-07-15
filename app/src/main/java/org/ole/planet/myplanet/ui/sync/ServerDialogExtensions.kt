@@ -75,7 +75,10 @@ fun SyncActivity.onChangeServerUrl() {
         val config = ServerConfigUtils.getCommunityConfig(selected, getString(R.string.https_protocol))
         serverUrl.setText(config.localDomain)
         protocolCheckIn.check(R.id.radio_https)
-        prefData.getServerProtocol().ifEmpty { config.protocol }
+        val currentProtocol = prefData.getServerProtocol()
+        if (currentProtocol.isEmpty()) {
+            prefData.setServerProtocol(config.protocol)
+        }
         serverPassword.setText(config.pin)
         serverPassword.isEnabled = config.isPinEnabled
     }
