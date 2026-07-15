@@ -115,6 +115,16 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteLocalTeamRecords(teamIds: List<String>) {
+        if (teamIds.isEmpty()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .`in`("_id", teamIds.toTypedArray())
+                .findAll()
+                .deleteAllFromRealm()
+        }
+    }
+
     override suspend fun markTeamUploaded(teamId: String?, rev: String) {
         if (teamId.isNullOrBlank()) return
         executeTransaction { realm ->
@@ -124,6 +134,21 @@ class TeamsRepositoryImpl @Inject constructor(
                     team._rev = rev
                     team.updated = false
                 }
+        }
+    }
+
+    override suspend fun markTeamsUploaded(uploadedTeams: Map<String, String>) {
+        if (uploadedTeams.isEmpty()) return
+        executeTransaction { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .`in`("_id", uploadedTeams.keys.toTypedArray())
+                .findAll()
+            for (team in teams) {
+                uploadedTeams[team._id]?.let { rev ->
+                    team._rev = rev
+                    team.updated = false
+                }
+            }
         }
     }
 
