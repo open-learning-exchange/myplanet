@@ -649,7 +649,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                         val canReachServer = MainApplication.isServerReachable(serverUrl)
                         if (canReachServer) {
                             withContext(dispatcherProvider.main) {
-                                syncWorkRepository.uploadLoginData()
+                                startUpload("login")
                             }
                             transactionSyncManager.syncDb("login_activities")
                         }

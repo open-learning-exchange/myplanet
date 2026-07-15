@@ -54,6 +54,7 @@ class SyncWorkRepository @Inject constructor(
                 SyncUiState.Success(message)
             }
             WorkInfo.State.FAILED -> SyncUiState.Error("Upload failed")
+            WorkInfo.State.CANCELLED -> SyncUiState.Error("Upload cancelled")
             WorkInfo.State.RUNNING -> SyncUiState.Loading
             else -> SyncUiState.Idle
         }

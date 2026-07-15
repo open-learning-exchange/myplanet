@@ -303,13 +303,14 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             return
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
+            submissionsSyncCoordinator.checkAvailableServer(syncStartTime)
+
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             val activity = requireActivity()
             if (activity is androidx.appcompat.app.AppCompatActivity) {
                 FragmentNavigator.popBackStack(activity.supportFragmentManager)
             }
         }
-            submissionsSyncCoordinator.checkAvailableServer(syncStartTime)
     }
 
     private fun showDatePickerDialog() {
