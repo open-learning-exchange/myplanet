@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.ui.surveys
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import org.ole.planet.myplanet.utils.Utilities
 import java.util.Locale
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,6 +14,7 @@ import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.Utilities
 
 private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
 
