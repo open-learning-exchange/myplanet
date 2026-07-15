@@ -32,8 +32,13 @@ class ServerUrlMapperTest {
 
     @Before
     fun setUp() {
+        // Mocking for Robolectric KeyStore issue
         val context = ApplicationProvider.getApplicationContext<Context>()
-        SecurePrefs.warmUp(context)
+        try {
+            SecurePrefs.warmUp(context)
+        } catch (e: Exception) {
+            // Ignore keystore init issue in tests
+        }
         serverUrlMapper = ServerUrlMapper(context)
     }
 
@@ -111,6 +116,10 @@ class ServerUrlMapperTest {
         every { editor.putBoolean(any(), any()) } returns editor
         every { editor.apply() } just Runs
         every { settings.getString("serverPin", "") } returns "1234"
+        every { settings.edit() } returns editor
+        every { editor.remove(any()) } returns editor
+        every { editor.putString(any(), any()) } returns editor
+        // removed editorEdit mocking
 
         val uri = mockk<Uri>()
         every { uri.userInfo } returns null
@@ -143,6 +152,10 @@ class ServerUrlMapperTest {
         every { editor.putBoolean(any(), any()) } returns editor
         every { editor.apply() } just Runs
         every { settings.getString("serverPin", "") } returns "1234"
+        every { settings.edit() } returns editor
+        every { editor.remove(any()) } returns editor
+        every { editor.putString(any(), any()) } returns editor
+        // removed editorEdit mocking
 
         val mapping = ServerUrlMapper.UrlMapping(
             primaryUrl = "http://primary.com",
