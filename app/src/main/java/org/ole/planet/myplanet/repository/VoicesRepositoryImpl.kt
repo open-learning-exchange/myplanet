@@ -109,11 +109,6 @@ class VoicesRepositoryImpl @Inject constructor(
         val allNews = queryList(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
-            beginGroup()
-            equalTo("viewableBy", "community", Case.INSENSITIVE)
-            or()
-            contains("viewIn", userIdentifier, Case.INSENSITIVE)
-            endGroup()
             sort("time", Sort.DESCENDING)
         }
         if (allNews.isEmpty()) {
@@ -196,11 +191,6 @@ class VoicesRepositoryImpl @Inject constructor(
         val allNewsFlow = queryListFlow(RealmNews::class.java) {
             isEmpty("replyTo")
             equalTo("docType", "message", Case.INSENSITIVE)
-            beginGroup()
-            equalTo("viewableBy", "community", Case.INSENSITIVE)
-            or()
-            contains("viewIn", userIdentifier, Case.INSENSITIVE)
-            endGroup()
             sort("time", Sort.DESCENDING)
         }
         .flowOn(realmDispatcher) // Realm async queries require a Looper thread.
@@ -365,7 +355,6 @@ class VoicesRepositoryImpl @Inject constructor(
             val query = realm.where(RealmNews::class.java)
                 .greaterThanOrEqualTo("time", startTime)
                 .lessThanOrEqualTo("time", endTime)
-                .contains("viewIn", "community", Case.INSENSITIVE)
             if (userId != null) query.equalTo("userId", userId)
             val results = query.findAll()
             results.filter { isCommunitySection(it) }

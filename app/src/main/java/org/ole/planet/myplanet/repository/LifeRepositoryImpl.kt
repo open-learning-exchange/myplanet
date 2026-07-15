@@ -93,14 +93,16 @@ class LifeRepositoryImpl @Inject constructor(
         }
 
         val allForUser = getMyLifeByUserId(userId, ensureLatest = false)
-        if (allForUser.isEmpty()) {
+        val visibleItems = if (allForUser.isEmpty()) {
             seedMyLifeIfEmpty(userId, seedBase)
             val seeded = getMyLifeByUserId(userId, ensureLatest = true)
             cacheMyLifeItems(userId, seeded)
+            seeded.filter { it.isVisible }
         } else {
             cacheMyLifeItems(userId, allForUser)
+            allForUser.filter { it.isVisible }
         }
-        return getVisibleMyLifeByUserId(userId, ensureLatest = false)
+        return visibleItems
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {

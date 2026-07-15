@@ -158,11 +158,6 @@ class VoicesRepositoryImplTest {
         every { mockRealm.where(RealmNews::class.java) } returns mockRealmQuery
         every { mockRealmQuery.isEmpty("replyTo") } returns mockRealmQuery
         every { mockRealmQuery.equalTo("docType", "message", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.beginGroup() } returns mockRealmQuery
-        every { mockRealmQuery.equalTo("viewableBy", "community", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.or() } returns mockRealmQuery
-        every { mockRealmQuery.contains("viewIn", "user1", io.realm.Case.INSENSITIVE) } returns mockRealmQuery
-        every { mockRealmQuery.endGroup() } returns mockRealmQuery
         every { mockRealmQuery.sort("time", io.realm.Sort.DESCENDING) } returns mockRealmQuery
 
         val realmResults = mockk<io.realm.RealmResults<RealmNews>>()
