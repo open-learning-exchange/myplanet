@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.repository
-import org.ole.planet.myplanet.utils.Utilities
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -23,6 +22,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryImplTest {

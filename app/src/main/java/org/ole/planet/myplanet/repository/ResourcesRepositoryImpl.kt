@@ -7,10 +7,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
 import io.realm.Sort
 import java.io.File
-import org.ole.planet.myplanet.utils.ResourceSearchUtils
-import org.ole.planet.myplanet.utils.Utilities
 import java.util.Calendar
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -31,7 +28,9 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.ResourceSearchUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
