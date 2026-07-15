@@ -92,13 +92,16 @@ class TagsRepositoryImpl @Inject constructor(
         val parentTagsById = allParentTags.associateBy { it.id }
 
         val tagsByLinkId = mutableMapOf<String, MutableList<RealmTag>>()
+        val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
         links.forEach { link ->
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
-                        if (list.none { it.id == parentTag.id }) {
-                            list.add(parentTag)
+                        val set = tagsSetByLinkId.getOrPut(linkId) { mutableSetOf() }
+                        parentTag.id?.let { id ->
+                            if (set.add(id)) {
+                                tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
+                            }
                         }
                     }
                 }

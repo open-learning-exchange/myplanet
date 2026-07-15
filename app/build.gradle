@@ -12,8 +12,13 @@ android {
         applicationId "org.ole.planet.myplanet"
         minSdk = 26
         targetSdk = 36
+<<<<<<< perf-optimize-get-tags-children-11871158804803675446
         versionCode = 6090
         versionName = "0.60.90"
+=======
+        versionCode = 6089
+        versionName = "0.60.89"
+>>>>>>> master
         ndkVersion = '26.3.11579264'
         vectorDrawables.useSupportLibrary = true
     }
