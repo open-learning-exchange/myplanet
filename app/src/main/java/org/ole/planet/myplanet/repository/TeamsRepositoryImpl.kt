@@ -51,7 +51,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -116,6 +115,16 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteLocalTeamRecords(teamIds: List<String>) {
+        if (teamIds.isEmpty()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .`in`("_id", teamIds.toTypedArray())
+                .findAll()
+                .deleteAllFromRealm()
+        }
+    }
+
     override suspend fun markTeamUploaded(teamId: String?, rev: String) {
         if (teamId.isNullOrBlank()) return
         executeTransaction { realm ->
@@ -125,6 +134,21 @@ class TeamsRepositoryImpl @Inject constructor(
                     team._rev = rev
                     team.updated = false
                 }
+        }
+    }
+
+    override suspend fun markTeamsUploaded(uploadedTeams: Map<String, String>) {
+        if (uploadedTeams.isEmpty()) return
+        executeTransaction { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .`in`("_id", uploadedTeams.keys.toTypedArray())
+                .findAll()
+            for (team in teams) {
+                uploadedTeams[team._id]?.let { rev ->
+                    team._rev = rev
+                    team.updated = false
+                }
+            }
         }
     }
 
@@ -1256,11 +1280,12 @@ class TeamsRepositoryImpl @Inject constructor(
             MemberStats(member, visitCount, lastVisitTimestamp, isLeader)
         }
 
+        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
         return membersStats.map { stats ->
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(stats.member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
                 val date = Date(lastLogoutTimestamp)
-                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+                formatter.format(date)
             } else {
                 "No logout record found"
             }
