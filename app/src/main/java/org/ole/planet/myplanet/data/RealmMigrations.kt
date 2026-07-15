@@ -166,6 +166,33 @@ class RealmMigrations : RealmMigration {
                     obj.setString("courseTitleNormal", sb.toString())
                 }
             }
+            schema.get("RealmMyLibrary")
+                ?.addField("titleNormal", String::class.java)
+                ?.addIndex("titleNormal")
+                ?.transform { obj ->
+                    val title = obj.getString("title")
+                    if (title != null) {
+                        val normalized = Normalizer.normalize(title, Normalizer.Form.NFD)
+                            .replace(Regex("\\p{InCombiningDiacriticalMarks}+"), "")
+                            .lowercase(Locale.ROOT)
+                        obj.setString("titleNormal", normalized)
+                    }
+                }
+            version++
+        }
+
+        // Version 16 shipped without schema changes relative to 15.
+        if (version == 15L) {
+            version++
+        }
+
+        if (version == 16L) {
+            schema.get("RealmMyPersonal")
+                ?.addIndex("userId")
+            schema.get("RealmNews")
+                ?.addIndex("replyTo")
+            schema.get("RealmSubmission")
+                ?.addIndex("parentId")
             version++
         }
     }
