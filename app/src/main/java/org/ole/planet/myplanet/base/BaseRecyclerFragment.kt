@@ -198,24 +198,27 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     open fun deleteSelected(deleteProgress: Boolean) {
         val snapshot = selectedItems?.toList() ?: return
+        val courseIdsToDelete = mutableListOf<String>()
         for (item in snapshot) {
             val `object` = item as RealmObject
-            deleteCourseProgress(deleteProgress, `object`)
+            if (deleteProgress && `object` is RealmMyCourse) {
+                `object`.courseId?.let { courseIdsToDelete.add(it) }
+            }
             removeFromShelf(`object`)
+        }
+
+        if (courseIdsToDelete.isNotEmpty()) {
+            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                for (courseId in courseIdsToDelete) {
+                    coursesRepository.deleteCourseProgress(courseId)
+                }
+            }
         }
         selectedItems?.clear()
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
-    }
-
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                coursesRepository.deleteCourseProgress(`object`.courseId)
-            }
-        }
     }
 
     override fun onDetach() {
