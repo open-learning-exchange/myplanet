@@ -12,7 +12,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 sealed class ProfileUpdateState {
     object Idle : ProfileUpdateState()
@@ -24,8 +23,7 @@ sealed class ProfileUpdateState {
 class UserProfileViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val userSessionManager: UserSessionManager,
-    private val activitiesRepository: ActivitiesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val activitiesRepository: ActivitiesRepository
 ) : ViewModel() {
 
     private val _userModel = MutableStateFlow<RealmUser?>(null)

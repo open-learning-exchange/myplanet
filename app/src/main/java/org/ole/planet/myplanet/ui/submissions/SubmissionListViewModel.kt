@@ -14,12 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class SubmissionListViewModel @Inject constructor(
-    private val submissionsRepository: SubmissionsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val submissionsRepository: SubmissionsRepository
 ) : ViewModel() {
 
     private val _submissions = MutableStateFlow<List<SubmissionItem>>(emptyList())

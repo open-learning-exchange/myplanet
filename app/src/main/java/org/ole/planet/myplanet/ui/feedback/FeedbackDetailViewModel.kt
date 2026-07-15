@@ -14,12 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class FeedbackDetailViewModel @Inject constructor(
-    private val feedbackRepository: FeedbackRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val feedbackRepository: FeedbackRepository
 ) : ViewModel() {
 
     private val _feedback = MutableStateFlow<RealmFeedback?>(null)

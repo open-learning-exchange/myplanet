@@ -21,13 +21,11 @@ import org.ole.planet.myplanet.model.NotificationListItem
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.repository.NotificationsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class NotificationsViewModel @Inject constructor(
     private val notificationsRepository: NotificationsRepository,
-    @ApplicationContext private val context: Context,
-    private val dispatcherProvider: DispatcherProvider
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _notifications = MutableStateFlow<List<Notification>>(emptyList())

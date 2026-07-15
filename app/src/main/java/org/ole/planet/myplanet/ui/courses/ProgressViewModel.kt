@@ -10,13 +10,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ProgressViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
-    private val userSessionManager: UserSessionManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val _courseData = MutableStateFlow<JsonArray?>(null)

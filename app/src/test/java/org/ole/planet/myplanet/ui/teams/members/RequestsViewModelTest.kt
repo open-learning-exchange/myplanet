@@ -26,8 +26,7 @@ class RequestsViewModelTest {
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var teamsSyncRepository: TeamsSyncRepository
     private lateinit var userSessionManager: UserSessionManager
-    private lateinit var testDispatcherProvider: TestDispatcherProvider
-    private lateinit var viewModel: RequestsViewModel
+        private lateinit var viewModel: RequestsViewModel
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -36,8 +35,7 @@ class RequestsViewModelTest {
         teamsRepository = mockk()
         teamsSyncRepository = mockk()
         userSessionManager = mockk()
-        testDispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager, testDispatcherProvider)
+                viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
     }
 
     @After

@@ -41,7 +41,7 @@ class FeedbackDetailViewModelTest {
             every { default } returns testDispatcher
             every { unconfined } returns testDispatcher
         }
-        viewModel = FeedbackDetailViewModel(feedbackRepository, dispatcherProvider)
+        viewModel = FeedbackDetailViewModel(feedbackRepository)
     }
 
     @After

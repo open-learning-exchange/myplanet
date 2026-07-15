@@ -13,13 +13,11 @@ import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.UserRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class RatingsViewModel @Inject constructor(
     private val ratingsRepository: RatingsRepository,
-    private val userRepository: UserRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val _ratingState = MutableStateFlow<RatingUiState>(RatingUiState.Loading)
