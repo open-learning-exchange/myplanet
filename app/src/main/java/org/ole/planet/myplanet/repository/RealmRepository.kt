@@ -12,7 +12,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
@@ -130,7 +129,8 @@ open class RealmRepository(
             safeCloseRealm()
             throw e
         }
-    }.conflate()
+    }.flowOn(realmDispatcher)
+        .conflate()
         .map { frozenResults ->
             if (frozenResults.isEmpty()) {
                 emptyList()
@@ -138,8 +138,7 @@ open class RealmRepository(
                 frozenResults.realm.copyFromRealm(frozenResults)
             }
         }
-        .distinctUntilChanged()
-        .flowOn(realmDispatcher)
+        .flowOn(databaseService.ioDispatcher)
 
     protected suspend fun <T : RealmObject, V : Any> findByField(
         clazz: Class<T>,
