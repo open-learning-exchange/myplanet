@@ -51,7 +51,6 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.TimeProvider
-import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class TeamsRepositoryImpl @Inject constructor(
@@ -1281,11 +1280,12 @@ class TeamsRepositoryImpl @Inject constructor(
             MemberStats(member, visitCount, lastVisitTimestamp, isLeader)
         }
 
+        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
         return membersStats.map { stats ->
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(stats.member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
                 val date = Date(lastLogoutTimestamp)
-                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+                formatter.format(date)
             } else {
                 "No logout record found"
             }

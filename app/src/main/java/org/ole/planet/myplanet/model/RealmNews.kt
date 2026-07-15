@@ -27,6 +27,7 @@ open class RealmNews : RealmObject() {
     var viewableBy: String? = null
     var viewableId: String? = null
     var avatar: String? = null
+    @Index
     var replyTo: String? = null
     var userName: String? = null
     var messagePlanetCode: String? = null
