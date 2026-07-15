@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
+    private var shouldScrollToTopNextUpdate = false
     private val binding get() = _binding!!
 
     private val viewModel: TeamsVoicesViewModel by viewModels()
@@ -139,6 +140,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             binding.etMessage.text?.clear()
                             imageList.clear()
                             llImage?.removeAllViews()
+                            shouldScrollToTopNextUpdate = true
                             binding.llAddNews.visibility = View.GONE
                             binding.tlMessage.error = null
                             binding.addMessage.text = getString(R.string.add_message)
@@ -259,12 +261,18 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
+            shouldScrollToTopNextUpdate = false
             showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 adapter.setCurrentUser(user)
                 realmNewsList?.let {
-                    adapter.submitList(it.filterNotNull())
+                    adapter.submitList(it.filterNotNull()){
+                        if (shouldScrollToTopNextUpdate) {
+                            binding.rvDiscussion.scrollToPosition(0)
+                            shouldScrollToTopNextUpdate = false
+                        }
+                    }
                     showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")
                 }
             }
@@ -279,5 +287,4 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         _binding = null
         super.onDestroyView()
     }
-
 }

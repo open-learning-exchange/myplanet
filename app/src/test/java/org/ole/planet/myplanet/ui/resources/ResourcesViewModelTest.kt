@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.ui.resources
 
+import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -8,20 +10,16 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
-import io.mockk.coEvery
-import io.mockk.every
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
-import com.google.gson.JsonObject
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesViewModelTest {
