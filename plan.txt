@@ -1,0 +1,25 @@
+Let's address the feedback:
+1. `SyncManager.kt`:
+  - Add `import org.ole.planet.myplanet.repository.UserSyncRepository`
+  - Change `private val userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository` to `private val userSyncRepository: UserSyncRepository`
+2. `UserRepositoryImpl.kt`:
+  - `checkShelfBatchForDataOptimized` uses fully-qualified names.
+  - Replace `com.google.gson.Gson().fromJson(com.google.gson.Gson().toJson(shelfIds), JsonArray::class.java)` with `JsonUtils.gson.fromJson(JsonUtils.gson.toJson(shelfIds), JsonArray::class.java)`
+  - Replace `org.ole.planet.myplanet.data.api.ApiClient` with `ApiClient`
+  - Replace `org.ole.planet.myplanet.utils.UrlUtils` with `UrlUtils`
+  - Replace `org.ole.planet.myplanet.utils.JsonUtils` with `JsonUtils`
+  - Add `import org.ole.planet.myplanet.data.api.ApiClient` (or verify it's already there)
+  - Add `import org.ole.planet.myplanet.utils.UrlUtils` (or verify it's already there)
+  - Add `import org.ole.planet.myplanet.utils.JsonUtils` (or verify it's already there)
+3. `RatingsRepository.kt`:
+  - Remove `import com.google.gson.JsonArray`
+4. `RatingsRepositoryImpl.kt`:
+  - Remove `import com.google.gson.JsonArray`
+
+Let's make a plan.
+1. `replace_with_git_merge_diff` on `SyncManager.kt`
+2. `replace_with_git_merge_diff` on `UserRepositoryImpl.kt`
+3. `replace_with_git_merge_diff` on `RatingsRepository.kt`
+4. `replace_with_git_merge_diff` on `RatingsRepositoryImpl.kt`
+5. run pre-commit tests.
+6. submit.

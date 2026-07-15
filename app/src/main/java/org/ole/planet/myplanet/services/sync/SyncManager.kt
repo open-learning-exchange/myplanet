@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -75,7 +76,7 @@ class SyncManager @Inject constructor(
     private val teamsSyncRepository: TeamsSyncRepository,
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsRepository,
-    private val userSyncRepository: org.ole.planet.myplanet.repository.UserSyncRepository
+    private val userSyncRepository: UserSyncRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
