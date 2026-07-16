@@ -39,17 +39,17 @@ class LoginViewModel @Inject constructor(
         if (!force && _teams.value.isNotEmpty()) {
             return
         }
-        viewModelScope.launch { // Launch on main to safely emit Realm objects
+        viewModelScope.launch(dispatcherProvider.io) {
             val teamsList = teamsRepository.getAllActiveTeams()
-            _teams.value = teamsList
+            _teams.value = teamsList.toList()
         }
     }
 
     fun getTeamMembers(teamId: String?) {
-        viewModelScope.launch { // Launch on main to safely emit Realm objects
+        viewModelScope.launch(dispatcherProvider.io) {
             if (!teamId.isNullOrEmpty()) {
                 val teamMembers = teamsRepository.refreshJoinedMembersForLogin(teamId)
-                _users.value = teamMembers
+                _users.value = teamMembers.toList()
                 loadSavedUsers() // Refresh saved users after joining team
             } else {
                 _users.value = emptyList()

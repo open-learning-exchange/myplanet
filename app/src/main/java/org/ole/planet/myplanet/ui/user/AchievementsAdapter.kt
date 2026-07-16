@@ -80,7 +80,7 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         private const val PHONE_PAYLOAD = "payload_phone"
         private const val EMAIL_PAYLOAD = "payload_email"
 
-        val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             areItemsTheSame = { oldItem, newItem ->
                 // We use name and relationship as the unique identity.
                 oldItem.name == newItem.name && oldItem.relationship == newItem.relationship
