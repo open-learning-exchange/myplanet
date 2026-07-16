@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
@@ -222,5 +223,93 @@ class TagsRepositoryImplTest {
         mockQueryResults(listOf(linkWithoutTagId))
         val bulkResultEmptyTags = repository.getTagsForResources(listOf("res1"))
         assertTrue(bulkResultEmptyTags.isEmpty())
+    }
+
+    @Test
+    fun `bulkInsertFromSync ignores design docs and inserts parsed tags`() {
+        val jsonArray = com.google.gson.JsonArray()
+
+        // Valid doc
+        val validDocObj = com.google.gson.JsonObject().apply {
+            addProperty("_id", "tag_123")
+            addProperty("name", "Test Tag")
+        }
+        val validDoc = com.google.gson.JsonObject().apply {
+            add("doc", validDocObj)
+        }
+        jsonArray.add(validDoc)
+
+        // Design doc
+        val designDocObj = com.google.gson.JsonObject().apply {
+            addProperty("_id", "_design/tags")
+        }
+        val designDoc = com.google.gson.JsonObject().apply {
+            add("doc", designDocObj)
+        }
+        jsonArray.add(designDoc)
+
+        repository.bulkInsertFromSync(mockRealm, jsonArray)
+
+        verify {
+            mockRealm.insertOrUpdate(match<Collection<RealmTag>> { list ->
+                list.size == 1 && list.first().id == "tag_123" && list.first().name == "Test Tag"
+            })
+        }
+    }
+
+    @Test
+    fun `insert parses json objects and inserts tags`() = runTest {
+        val documentList = listOf(
+            com.google.gson.JsonObject().apply {
+                addProperty("_id", "tag_1")
+                addProperty("name", "Tag One")
+                val attachedToArray = com.google.gson.JsonArray().apply {
+                    add("parent1")
+                    add("parent2")
+                }
+                add("attachedTo", attachedToArray)
+            },
+            com.google.gson.JsonObject().apply {
+                addProperty("_id", "tag_2")
+                addProperty("name", "Tag Two")
+                addProperty("attachedTo", "parent3")
+            }
+        )
+
+        // Set up the mock to execute the transaction immediately
+        coEvery { databaseService.executeTransactionAsync(any()) } answers {
+            val transaction = firstArg<(Realm) -> Unit>()
+            transaction(mockRealm)
+        }
+
+        repository.insert(documentList)
+
+        coVerify { databaseService.executeTransactionAsync(any()) }
+
+        verify {
+            mockRealm.insertOrUpdate(match<Collection<RealmTag>> { list ->
+                if (list.size != 2) return@match false
+                val tag1 = list.find { it.id == "tag_1" }
+                val tag2 = list.find { it.id == "tag_2" }
+
+                tag1?.name == "Tag One" &&
+                tag1.attachedTo?.size == 2 &&
+                tag1.attachedTo?.contains("parent1") == true &&
+                tag1.attachedTo?.contains("parent2") == true &&
+                tag1.isAttached == true &&
+
+                tag2?.name == "Tag Two" &&
+                tag2.attachedTo?.size == 1 &&
+                tag2.attachedTo?.contains("parent3") == true &&
+                tag2.isAttached == true
+            })
+        }
+    }
+
+    @Test
+    fun `insert with empty list does nothing`() = runTest {
+        repository.insert(emptyList())
+
+        coVerify(exactly = 0) { databaseService.executeTransactionAsync(any()) }
     }
 }

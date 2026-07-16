@@ -31,7 +31,7 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
         )
     ) {
 
-    class ViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
         fun bind(user: RealmUser, clickListener: ((RealmUser) -> Unit)?) {
             bindName(user)
             bindDate(user)
@@ -51,7 +51,6 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
 
         fun bindImage(user: RealmUser) {
             if (!TextUtils.isEmpty(user.userImage)) {
-                val avatarSize = binding.ivUser.context.resources.getDimensionPixelSize(R.dimen._80dp)
                 ImageUtils.loadProfileImage(user.userImage, binding.ivUser, avatarSize)
             } else {
                 binding.ivUser.setImageResource(R.drawable.profile)
@@ -59,9 +58,14 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
         }
     }
 
+    private var avatarSize = 0
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (avatarSize == 0) {
+            avatarSize = parent.context.resources.getDimensionPixelSize(R.dimen._80dp)
+        }
         val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding)
+        return ViewHolder(binding, avatarSize)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
