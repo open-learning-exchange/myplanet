@@ -274,6 +274,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
                     viewModel,
                     viewLifecycleOwner
                 ) {
+                    parentFragmentManager.setFragmentResult("resource_added", Bundle())
                     dismiss()
                 }
             }
