@@ -538,7 +538,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             } else {
                 r.where(RealmSubmission::class.java)
                     .equalTo("status", "pending")
-                    .findAll().lastOrNull()
+                    .sort("startTime", Sort.DESCENDING)
+                    .findFirst()
             }
 
             val realmQuestion = r.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
@@ -635,7 +636,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             realm.where(RealmSubmission::class.java)
                 .equalTo("status", "pending")
                 .equalTo("userId", userId)
-                .findAll().lastOrNull()?.let { realm.copyFromRealm(it) }
+                .sort("startTime", Sort.DESCENDING)
+                .findFirst()?.let { realm.copyFromRealm(it) }
         }
     }
 
