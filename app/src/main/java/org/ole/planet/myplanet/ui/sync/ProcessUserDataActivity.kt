@@ -16,11 +16,13 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
-import androidx.lifecycle.Lifecycle
+import org.ole.planet.myplanet.repository.SyncUiState
+import org.ole.planet.myplanet.repository.SyncRepository
+
+
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.work.ExistingWorkPolicy
-import kotlinx.coroutines.cancel
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -48,6 +50,9 @@ import org.ole.planet.myplanet.utils.FileUtils.installApk
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
+    @Inject
+    lateinit var syncRepository: SyncRepository
+
 
     @Inject
     lateinit var prefData: SharedPrefManager
@@ -195,63 +200,38 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
-            .build()
-        val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Login",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
+        val liveData = syncRepository.uploadLoginData()
 
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                workManager.getWorkInfoByIdFlow(workRequest.id).collect { value ->
-                    if (value != null && value.state.isFinished) {
-                        kotlinx.coroutines.currentCoroutineContext().cancel()
-                        if (value.state == WorkInfo.State.SUCCEEDED) {
-                            val successMessage = value.outputData.getString(UserDataWorker.KEY_SUCCESS_MESSAGE)
-                            onSuccess(successMessage)
-                        }
-                    }
+        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
+            override fun onChanged(value: SyncUiState) {
+                if (value is SyncUiState.Success) {
+                    liveData.removeObserver(this)
+                    onSuccess(value.message)
+                } else if (value is SyncUiState.Error) {
+                    liveData.removeObserver(this)
                 }
             }
-        }
+        })
     }
 
     private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
-            .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
-            .build()
+        val liveData = syncRepository.uploadBulkData()
 
-        val workManager = WorkManager.getInstance(this)
-        workManager.enqueueUniqueWork(
-            "UploadUserData_Bulk",
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                workManager.getWorkInfoByIdFlow(workRequest.id).collect { value ->
-                    if (value != null && value.state.isFinished) {
-                        kotlinx.coroutines.currentCoroutineContext().cancel()
-                        lifecycleScope.launch(dispatcherProvider.main) {
-                            if (!isFinishing && !isDestroyed) {
-                                customProgressDialog.dismiss()
-                                if (value.state == WorkInfo.State.SUCCEEDED) {
-                                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                                }
-                            }
-                        }
-                    }
+        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
+            override fun onChanged(value: SyncUiState) {
+                if (value is SyncUiState.Success) {
+                    liveData.removeObserver(this)
+                    safelyDismissDialog()
+                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                } else if (value is SyncUiState.Error) {
+                    liveData.removeObserver(this)
+                    safelyDismissDialog()
                 }
             }
-        }
+        })
     }
 
     protected fun hideKeyboard(view: View?) {
