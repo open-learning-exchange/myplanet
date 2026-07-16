@@ -303,4 +303,49 @@ class RealmRepositoryTest {
         assertEquals(1, emittedLists.size)
         job.cancel()
     }
+
+    @Test
+    fun `queryListFlow emits when non-primary-key field changes but primary keys match`() = runTest {
+        val realmQuery = mockk<RealmQuery<TestRealmObject>>(relaxed = true)
+        val initialResults = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenInitial = mockk<RealmResults<TestRealmObject>>(relaxed = true)
+        val frozenRealmInitial = mockk<Realm>(relaxed = true)
+
+        val listenerSlot = slot<OrderedRealmCollectionChangeListener<RealmResults<TestRealmObject>>>()
+
+        every { realm.where(TestRealmObject::class.java) } returns realmQuery
+        every { realmQuery.findAll() } returns initialResults
+
+        every { initialResults.isValid } returns true
+        every { initialResults.isLoaded } returns true
+        every { initialResults.freeze() } returns frozenInitial
+
+        every { frozenInitial.realm } returns frozenRealmInitial
+        every { frozenInitial.isEmpty() } returns false
+        every { frozenInitial.size } returns 1
+        every { frozenInitial[0] } returns TestRealmObject()
+
+        every { frozenRealmInitial.copyFromRealm(frozenInitial) } returns listOf(TestRealmObject())
+
+        every { initialResults.addChangeListener(capture(listenerSlot)) } just Runs
+
+        val emittedLists = mutableListOf<List<TestRealmObject>>()
+
+        val job = launch(testDispatcher) {
+            repository.queryFlow().collect {
+                emittedLists.add(it)
+            }
+        }
+        advanceUntilIdle()
+        assertEquals(1, emittedLists.size)
+
+        val changeSet = mockk<io.realm.OrderedCollectionChangeSet>(relaxed = true)
+        every { changeSet.changes } returns intArrayOf(0)
+        every { changeSet.insertions } returns intArrayOf()
+        every { changeSet.deletions } returns intArrayOf()
+        listenerSlot.captured.onChange(initialResults, changeSet)
+        advanceUntilIdle()
+        assertEquals(2, emittedLists.size)
+        job.cancel()
+    }
 }

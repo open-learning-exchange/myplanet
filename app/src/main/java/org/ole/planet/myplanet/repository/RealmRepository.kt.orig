@@ -145,10 +145,8 @@ open class RealmRepository(
                 if (pkField == null) return@distinctUntilChanged false
 
                 for (i in 0 until old.size) {
-                    val oldItem = old[i] ?: continue
-                    val newItem = new[i] ?: continue
-                    val oldObj = io.realm.DynamicRealmObject(oldItem)
-                    val newObj = io.realm.DynamicRealmObject(newItem)
+                    val oldObj = io.realm.DynamicRealmObject(old[i])
+                    val newObj = io.realm.DynamicRealmObject(new[i])
                     if (oldObj.get<Any>(pkField) != newObj.get<Any>(pkField)) return@distinctUntilChanged false
                 }
                 true
