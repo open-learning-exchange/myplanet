@@ -116,6 +116,16 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun deleteLocalTeamRecords(teamIds: List<String>) {
+        if (teamIds.isEmpty()) return
+        executeTransaction { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .`in`("_id", teamIds.toTypedArray())
+                .findAll()
+                .deleteAllFromRealm()
+        }
+    }
+
     override suspend fun markTeamUploaded(teamId: String?, rev: String) {
         if (teamId.isNullOrBlank()) return
         executeTransaction { realm ->
@@ -125,6 +135,21 @@ class TeamsRepositoryImpl @Inject constructor(
                     team._rev = rev
                     team.updated = false
                 }
+        }
+    }
+
+    override suspend fun markTeamsUploaded(uploadedTeams: Map<String, String>) {
+        if (uploadedTeams.isEmpty()) return
+        executeTransaction { realm ->
+            val teams = realm.where(RealmMyTeam::class.java)
+                .`in`("_id", uploadedTeams.keys.toTypedArray())
+                .findAll()
+            for (team in teams) {
+                uploadedTeams[team._id]?.let { rev ->
+                    team._rev = rev
+                    team.updated = false
+                }
+            }
         }
     }
 
@@ -204,14 +229,21 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getShareableTeams(userId: String?): List<RealmMyTeam> {
-        val all = queryList(RealmMyTeam::class.java) {
+        if (userId.isNullOrBlank()) {
+            return queryList(RealmMyTeam::class.java) {
+                isEmpty("teamId")
+                notEqualTo("status", "archived")
+                equalTo("type", "team")
+            }
+        }
+        val memberIds = getMemberTeamIds(userId)
+        if (memberIds.isEmpty()) return emptyList()
+        return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
             notEqualTo("status", "archived")
             equalTo("type", "team")
+            `in`("_id", memberIds.toTypedArray())
         }
-        if (userId.isNullOrBlank()) return all
-        val memberIds = getMemberTeamIds(userId)
-        return all.filter { it._id != null && it._id in memberIds }
     }
 
     override suspend fun getTeamSummaries(userId: String?): List<TeamSummary> {
@@ -327,12 +359,20 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {
-        val all = getShareableEnterprises()
         val filtered = if (userId.isNullOrBlank()) {
-            all
+            getShareableEnterprises()
         } else {
             val memberIds = getMemberTeamIds(userId)
-            all.filter { it._id != null && it._id in memberIds }
+            if (memberIds.isEmpty()) {
+                emptyList()
+            } else {
+                queryList(RealmMyTeam::class.java) {
+                    isEmpty("teamId")
+                    notEqualTo("status", "archived")
+                    equalTo("type", "enterprise")
+                    `in`("_id", memberIds.toTypedArray())
+                }
+            }
         }
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
         return filtered.mapNotNull { team ->
@@ -1292,11 +1332,12 @@ class TeamsRepositoryImpl @Inject constructor(
             MemberStats(member, visitCount, lastVisitTimestamp, isLeader)
         }
 
+        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
         return membersStats.map { stats ->
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(stats.member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
                 val date = Date(lastLogoutTimestamp)
-                SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault()).format(date)
+                formatter.format(date)
             } else {
                 "No logout record found"
             }

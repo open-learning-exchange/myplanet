@@ -6,14 +6,12 @@ import android.os.Bundle
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
@@ -22,12 +20,9 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
-import org.ole.planet.myplanet.databinding.RowFeedbackReplyBinding
 import org.ole.planet.myplanet.model.FeedbackReply
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
-import org.ole.planet.myplanet.ui.feedback.FeedbackDetailActivity.FeedbackReplyAdapter.ReplyViewHolder
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
@@ -69,7 +64,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                         activityFeedbackDetailBinding.tvDate.text = getFormattedDateWithTime(it.openTime)
                         activityFeedbackDetailBinding.tvMessage.text =
                             if (TextUtils.isEmpty(it.message)) "N/A" else it.message
-                        replyAdapter = FeedbackReplyAdapter(applicationContext)
+                        replyAdapter = FeedbackReplyAdapter(this@FeedbackDetailActivity)
                         activityFeedbackDetailBinding.rvFeedbackReply.adapter = replyAdapter
                         replyAdapter?.submitList(it.messageList)
                         updateForClosed()
@@ -131,30 +126,5 @@ class FeedbackDetailActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) finish()
         return super.onOptionsItemSelected(item)
-    }
-
-    inner class FeedbackReplyAdapter(var context: Context) : ListAdapter<FeedbackReply, ReplyViewHolder>(DIFF_CALLBACK) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReplyViewHolder {
-            val rowFeedbackReplyBinding = RowFeedbackReplyBinding.inflate(layoutInflater, parent, false)
-            return ReplyViewHolder(rowFeedbackReplyBinding)
-        }
-
-        override fun onBindViewHolder(holder: ReplyViewHolder, position: Int) {
-            val feedbackReply = getItem(position)
-            holder.binding.tvDate.text = feedbackReply.date.let {
-                getFormattedDateWithTime(it.toLong())
-            }
-            holder.binding.tvUser.text = feedbackReply.user
-            holder.binding.tvMessage.text = feedbackReply.message
-        }
-
-        inner class ReplyViewHolder(val binding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(binding.root)
-    }
-
-    companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
-            areItemsTheSame = { oldItem, newItem -> oldItem.date == newItem.date && oldItem.user == newItem.user },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
-        )
     }
 }

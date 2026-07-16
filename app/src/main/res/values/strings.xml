@@ -1333,5 +1333,9 @@
         <item>In Progress</item>
         <item>Completed</item>
     </string-array>
+    <string name="edit_resource">Edit Resource</string>
+    <string name="save_changes">Save Changes</string>
+    <string name="resource_updated">Resource updated</string>
+    <string name="failed_to_update_resource">Failed to update resource</string>
 
 </resources>
