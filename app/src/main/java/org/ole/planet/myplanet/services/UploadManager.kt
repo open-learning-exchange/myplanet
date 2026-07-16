@@ -282,6 +282,9 @@ class UploadManager @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             teamsToUpload.processInBatches { batch ->
+                val deletedIds = mutableListOf<String>()
+                val uploadedTeams = mutableMapOf<String, String>()
+
                 batch.forEach { teamData ->
                     try {
                         if (teamData.isDeletePending) {
@@ -291,7 +294,7 @@ class UploadManager @Inject constructor(
                                 "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
                             )
                             if (response.isSuccessful) {
-                                teamsSyncRepository.get().deleteLocalTeamRecord(id)
+                                deletedIds.add(id)
                             }
                         } else {
                             val response = apiInterface.postDoc(
@@ -302,26 +305,33 @@ class UploadManager @Inject constructor(
                             val `object` = response.body()
 
                             if (`object` != null) {
-                                val rev = getString("rev", `object`)
-                                teamsSyncRepository.get().markTeamUploaded(teamData.teamId, rev)
+                                var rev = getString("rev", `object`)
                                 if (!teamData.imageName.isNullOrEmpty() && teamData.teamId != null && rev.isNotEmpty()) {
-                                    uploadTeamImageAttachment(teamData.teamId, rev, teamData.imageName)
+                                    rev = uploadTeamImageAttachment(teamData.teamId, rev, teamData.imageName)
                                 }
+                                teamData.teamId?.let { uploadedTeams[it] = rev }
                             }
                         }
                     } catch (e: IOException) {
                         Log.e(TAG, "Exception in UploadManager", e)
                     }
                 }
+
+                if (deletedIds.isNotEmpty()) {
+                    teamsSyncRepository.get().deleteLocalTeamRecords(deletedIds)
+                }
+                if (uploadedTeams.isNotEmpty()) {
+                    teamsSyncRepository.get().markTeamsUploaded(uploadedTeams)
+                }
             }
         }
     }
 
-    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String) {
+    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String): String {
         val imageFile = RealmMyTeam
-            .getAttachmentFile(context, teamId, imageName) ?: return
-        if (!imageFile.exists()) return
-        try {
+            .getAttachmentFile(context, teamId, imageName) ?: return rev
+        if (!imageFile.exists()) return rev
+        return try {
             val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
             val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
@@ -329,10 +339,13 @@ class UploadManager @Inject constructor(
             val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
             val newRev = response.body()?.get("rev")?.asString
             if (!newRev.isNullOrEmpty()) {
-                teamsSyncRepository.get().markTeamUploaded(teamId, newRev)
+                newRev
+            } else {
+                rev
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload team image attachment", e)
+            rev
         }
     }
 

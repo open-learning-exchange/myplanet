@@ -71,7 +71,6 @@ class DashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
@@ -158,20 +157,11 @@ class DashboardViewModel @Inject constructor(
 
         profileJob?.cancel()
         profileJob = viewModelScope.launch(dispatcherProvider.main) {
-            val (fullName, offlineLogins) = withContext(dispatcherProvider.io) {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-
-                val count = if (userName != null) {
-                    activitiesRepository.getOfflineLoginCount(userName)
-                } else {
-                    0
-                }
-                Pair(fullName, count)
+            val profile = withContext(dispatcherProvider.io) {
+                userRepository.getDashboardProfile(userId)
             }
 
-            _uiState.update { it.copy(fullName = fullName, offlineLogins = offlineLogins) }
+            _uiState.update { it.copy(fullName = profile.fullName, offlineLogins = profile.offlineLogins) }
         }
     }
 
