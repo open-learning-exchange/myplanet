@@ -16,10 +16,14 @@ import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -30,7 +34,8 @@ class ChatViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val teamsRepository: TeamsRepository,
     private val voicesRepository: VoicesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
     private data class PrecomputedChat(
         val chat: RealmChatHistory,
@@ -50,6 +55,19 @@ class ChatViewModel @Inject constructor(
     internal var loadedCount = 0
     private var allChats: List<RealmChatHistory> = emptyList()
     private var precomputedChats: List<PrecomputedChat> = emptyList()
+
+    private val _refreshChatSignal = MutableSharedFlow<Unit>()
+    val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            realtimeSyncManager.dataUpdateFlow.collect { update ->
+                if (update.table == "chats" && update.shouldRefreshUI) {
+                    _refreshChatSignal.emit(Unit)
+                }
+            }
+        }
+    }
 
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()

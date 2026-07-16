@@ -129,7 +129,13 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(requireActivity(), user?.isGuest() == true, emptySet())
+        adapterLibrary = ResourcesAdapter(
+            requireActivity(),
+            user?.isGuest() == true,
+            emptySet(),
+            currentUserName = user?.name,
+            onEditClick = { model -> openEditResource(model) }
+        )
 
         val filteredList = applyFilterModels(filterLocalLibraryByTag(allResourceModels, etSearch.text?.toString()?.trim().orEmpty(), searchTags))
         adapterLibrary.setLibraryList(filteredList)
@@ -222,6 +228,15 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
             tvAddToLib.visibility = View.GONE
             selectAll.visibility = View.GONE
         }
+    }
+
+    private fun openEditResource(model: ResourceListModel) {
+        val intent = android.content.Intent(requireContext(), AddResourceActivity::class.java).apply {
+            putExtra("resource_id", model.library.id)
+            putExtra("resource_local_url", model.library.resourceLocalAddress)
+            putExtra("is_edit_mode", true)
+        }
+        startActivity(intent)
     }
 
     private fun setupEventListeners() {

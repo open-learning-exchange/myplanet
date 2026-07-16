@@ -26,7 +26,7 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         if (currentConfig == null || currentConfig.realmDirectory.name == Realm.DEFAULT_REALM_NAME) {
             val config = RealmConfiguration.Builder()
                 .name(Realm.DEFAULT_REALM_NAME)
-                .schemaVersion(16)
+                .schemaVersion(17)
                 .migration(RealmMigrations())
                 .compactOnLaunch()
                 .build()
