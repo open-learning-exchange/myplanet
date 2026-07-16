@@ -1412,6 +1412,41 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
+        val shelvesWithData = mutableListOf<String>()
+        val keysObject = JsonObject().apply {
+            add("keys", com.google.gson.Gson().fromJson(com.google.gson.Gson().toJson(shelfIds), JsonArray::class.java))
+        }
+
+        val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
+            apiInterface.findDocs(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
+        }?.body()
+
+        response?.let { responseBody ->
+            val rows = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("rows", responseBody)
+            for (i in 0 until rows.size()) {
+                val row = rows[i].asJsonObject
+                if (row.has("doc")) {
+                    val doc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", row)
+                    val shelfId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+
+                    if (hasShelfDataUltraFast(doc)) {
+                        shelvesWithData.add(shelfId)
+                    }
+                }
+            }
+        }
+        return shelvesWithData
+    }
+
+    private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
+        return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
+            shelfDoc.has(key) && shelfDoc.get(key).let { element ->
+                element.isJsonArray && element.asJsonArray.size() > 0
+            }
+        }
+    }
+
     private suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
         return withRealm { realm ->
             val myMeetups = getMyMeetUpIds(realm, userId)
