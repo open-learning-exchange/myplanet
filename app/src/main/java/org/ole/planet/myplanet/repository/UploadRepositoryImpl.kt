@@ -3,14 +3,13 @@ package org.ole.planet.myplanet.repository
 import android.util.Log
 import com.google.gson.JsonObject
 import io.realm.RealmObject
-import java.lang.reflect.Field
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.utils.RealmUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -55,8 +54,8 @@ class UploadRepositoryImpl @Inject constructor(
                     val item = itemsById[uploadedItem.localId]
 
                     item?.let {
-                        setRealmField(it, "_id", uploadedItem.remoteId)
-                        setRealmField(it, "_rev", uploadedItem.remoteRev)
+                        RealmUtils.setRealmField(it, "_id", uploadedItem.remoteId)
+                        RealmUtils.setRealmField(it, "_rev", uploadedItem.remoteRev)
                         config.additionalUpdates?.invoke(realm, it, uploadedItem)
                     } ?: run {
                         failedLocally.add(uploadedItem)
@@ -80,44 +79,5 @@ class UploadRepositoryImpl @Inject constructor(
 
     override suspend fun fetchExistingDoc(url: String): Response<JsonObject> {
         return apiInterface.getJsonObject(UrlUtils.header, url)
-    }
-
-    private class FieldCacheEntry(val field: Field?)
-
-    private val fieldCache = ConcurrentHashMap<Pair<Class<*>, String>, FieldCacheEntry>()
-
-    private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
-        try {
-            val cacheKey = Pair(obj.javaClass, fieldName)
-            var entry = fieldCache[cacheKey]
-
-            if (entry == null) {
-                var clazz: Class<*>? = obj.javaClass
-                var field: Field? = null
-
-                while (clazz != null && field == null) {
-                    try {
-                        field = clazz.getDeclaredField(fieldName)
-                    } catch (e: NoSuchFieldException) {
-                        clazz = clazz.superclass
-                    }
-                }
-
-                if (field != null) {
-                    field.isAccessible = true
-                } else {
-                    Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
-                }
-
-                entry = FieldCacheEntry(field)
-                fieldCache[cacheKey] = entry
-            } else if (entry.field == null) {
-                Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
-            }
-
-            entry.field?.set(obj, value)
-        } catch (e: Exception) {
-            Log.w("UploadRepositoryImpl", "Failed to set field $fieldName: ${e.message}")
-        }
     }
 }

@@ -223,7 +223,7 @@ class InlineResourceAdapter(
 
     private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedBitmap = bitmapCache.get(cacheKey)
         val bitmap = if (cachedBitmap != null) {
             cachedBitmap
@@ -256,7 +256,7 @@ class InlineResourceAdapter(
     private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedDuration = textCache[cacheKey]
         val durationText = if (cachedDuration != null) {
             cachedDuration
@@ -280,7 +280,7 @@ class InlineResourceAdapter(
 
     private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedPreview = textCache[cacheKey]
         val preview = if (cachedPreview != null) {
             cachedPreview
@@ -312,7 +312,7 @@ class InlineResourceAdapter(
 
     private suspend fun showTextPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedText = textCache[cacheKey]
         val text = if (cachedText != null) {
             cachedText
@@ -330,4 +330,6 @@ class InlineResourceAdapter(
             holder.binding.tvTextPreview.text = text
         }
     }
+
+    private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
 }
