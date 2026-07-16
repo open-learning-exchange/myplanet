@@ -7,10 +7,10 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class ChatShareTargetAdapter(
     private val onItemClick: (ChatShareTargetItem) -> Unit
@@ -70,14 +70,13 @@ class ChatShareTargetAdapter(
         private const val VIEW_TYPE_GROUP = 0
         private const val VIEW_TYPE_CHILD = 1
 
-        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<ChatShareTargetItem>() {
-            override fun areItemsTheSame(oldItem: ChatShareTargetItem, newItem: ChatShareTargetItem): Boolean {
-                return oldItem.title == newItem.title && oldItem.isGroup == newItem.isGroup
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<ChatShareTargetItem>(
+            areItemsTheSame = { oldItem, newItem ->
+                oldItem.title == newItem.title && oldItem.isGroup == newItem.isGroup
+            },
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem == newItem
             }
-
-            override fun areContentsTheSame(oldItem: ChatShareTargetItem, newItem: ChatShareTargetItem): Boolean {
-                return oldItem == newItem
-            }
-        }
+        )
     }
 }
