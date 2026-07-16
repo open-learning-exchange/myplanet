@@ -210,18 +210,12 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
+    override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
+        if (documentList.isEmpty()) return
+        executeTransaction { realm ->
+            documentList.forEach { jsonDoc ->
+                RealmRating.insert(realm, jsonDoc)
             }
-        }
-        documentList.forEach { jsonDoc ->
-            RealmRating.insert(realm, jsonDoc)
         }
     }
 }

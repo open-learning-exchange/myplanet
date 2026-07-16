@@ -21,6 +21,7 @@ import java.io.File
 import java.io.FileReader
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
@@ -34,7 +35,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private val parentScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val onResourceClick: (RealmMyLibrary) -> Unit
 ) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
@@ -65,8 +65,10 @@ class InlineResourceAdapter(
         }
     }
 
-    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(val binding: ItemInlineResourceBinding, dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
+        // Scope intentionally left alive across recycles (only previewJob is cancelled) so reused holders can still launch previews
+        val scope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
@@ -90,7 +92,7 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding)
+        return ViewHolder(binding, dispatcherProvider)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
@@ -178,7 +180,7 @@ class InlineResourceAdapter(
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                 else -> {
-                    holder.setPreviewJob(parentScope.launch(dispatcherProvider.main) {
+                    holder.setPreviewJob(holder.scope.launch {
                         when {
                             mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                             mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
@@ -223,7 +225,7 @@ class InlineResourceAdapter(
 
     private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedBitmap = bitmapCache.get(cacheKey)
         val bitmap = if (cachedBitmap != null) {
             cachedBitmap
@@ -256,7 +258,7 @@ class InlineResourceAdapter(
     private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedDuration = textCache[cacheKey]
         val durationText = if (cachedDuration != null) {
             cachedDuration
@@ -280,7 +282,7 @@ class InlineResourceAdapter(
 
     private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedPreview = textCache[cacheKey]
         val preview = if (cachedPreview != null) {
             cachedPreview
@@ -312,7 +314,7 @@ class InlineResourceAdapter(
 
     private suspend fun showTextPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedText = textCache[cacheKey]
         val text = if (cachedText != null) {
             cachedText
@@ -330,4 +332,6 @@ class InlineResourceAdapter(
             holder.binding.tvTextPreview.text = text
         }
     }
+
+    private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
 }

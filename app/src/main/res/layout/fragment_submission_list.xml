@@ -3,7 +3,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="16dp"
+    android:background="@color/secondary_bg">
 
     <TextView
         android:id="@+id/tv_title"
@@ -11,7 +12,7 @@
         android:layout_height="wrap_content"
         android:textSize="20sp"
         android:textStyle="bold"
-        android:textColor="@color/hint_color"
+        android:textColor="@color/daynight_textColor"
         android:paddingBottom="16dp" />
     <FrameLayout
         android:layout_width="match_parent"

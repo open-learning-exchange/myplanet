@@ -23,6 +23,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
@@ -279,6 +280,45 @@ class HealthRepositoryImplTest {
         advanceUntilIdle()
 
         assertEquals("new_user", examination.userId)
+    }
+
+    @Test
+    fun getExaminationConditions_returns_empty_map_for_null_examination() = testScope.runTest {
+        val result = repository.getExaminationConditions(null)
+        advanceUntilIdle()
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun getExaminationConditions_returns_map_for_valid_json() = testScope.runTest {
+        mockkObject(JsonUtils)
+        val examination = RealmHealthExamination()
+        examination.conditions = "{\"Fever\": true, \"Cough\": false}"
+
+        val jsonObject = JsonObject()
+        jsonObject.addProperty("Fever", true)
+        jsonObject.addProperty("Cough", false)
+
+        every { JsonUtils.getBoolean("Fever", jsonObject) } returns true
+        every { JsonUtils.getBoolean("Cough", jsonObject) } returns false
+
+        val result = repository.getExaminationConditions(examination)
+        advanceUntilIdle()
+
+        assertEquals(2, result.size)
+        assertEquals(true, result["Fever"])
+        assertEquals(false, result["Cough"])
+    }
+
+    @Test
+    fun getExaminationConditions_returns_empty_map_for_malformed_json() = testScope.runTest {
+        val examination = RealmHealthExamination()
+        examination.conditions = "malformed json"
+
+        val result = repository.getExaminationConditions(examination)
+        advanceUntilIdle()
+
+        assertTrue(result.isEmpty())
     }
 
     @Test
