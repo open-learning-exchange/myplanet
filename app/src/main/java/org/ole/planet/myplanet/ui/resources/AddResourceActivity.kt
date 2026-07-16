@@ -19,7 +19,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmList
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.launch
@@ -45,9 +44,9 @@ class AddResourceActivity : AppCompatActivity() {
     lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityAddResourceBinding
     var userModel: RealmUser? = null
-    var subjects: RealmList<String>? = null
-    var levels: RealmList<String>? = null
-    private var resourceFor: RealmList<String>? = null
+    var subjects: MutableList<String>? = null
+    var levels: MutableList<String>? = null
+    private var resourceFor: MutableList<String>? = null
     private var resourceUrl: String? = null
     private var teamId: String? = null
 
@@ -65,9 +64,9 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         resourceUrl = intent.getStringExtra("resource_local_url")
         teamId = intent.getStringExtra("teamId")
-        levels = RealmList()
-        subjects = RealmList()
-        resourceFor = RealmList()
+        levels = mutableListOf()
+        subjects = mutableListOf()
+        resourceFor = mutableListOf()
         val resourceId = intent.getStringExtra("resource_id")
         val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
         initializeViews()
