@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.model
 import android.content.Context
 import com.google.gson.JsonObject
 import io.realm.RealmObject
+import io.realm.annotations.Index
 import io.realm.annotations.PrimaryKey
 import java.util.Date
 import org.ole.planet.myplanet.utils.FileUtils
@@ -17,6 +18,7 @@ open class RealmMyPersonal : RealmObject() {
     var title: String? = null
     var description: String? = null
     var date: Long = 0
+    @Index
     var userId: String? = null
     var userName: String? = null
     var path: String? = null
