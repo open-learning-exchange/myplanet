@@ -87,7 +87,6 @@
                 android:contentDescription="@string/edit"
                 android:src="@drawable/ic_edit"
                 android:visibility="gone" />
-
             <LinearLayout
                 android:id="@+id/ll_rating"
                 android:layout_width="wrap_content"
