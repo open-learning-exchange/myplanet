@@ -56,7 +56,6 @@ class ChatHistoryFragment : Fragment() {
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -250,10 +249,8 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
-            if (update.table == "chats" && update.shouldRefreshUI) {
-                refreshChatHistory()
-            }
+        collectWhenStarted(sharedViewModel.refreshChatSignal) {
+            refreshChatHistory()
         }
     }
 

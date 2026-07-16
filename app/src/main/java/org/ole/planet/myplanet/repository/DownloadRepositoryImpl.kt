@@ -16,6 +16,10 @@ class DownloadRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : DownloadRepository {
 
+    companion object {
+        private val URL_REGEX = Regex("url=([^}]*)")
+    }
+
     override suspend fun downloadFileResponse(url: String, authHeader: String): DownloadResult = withContext(dispatcherProvider.io) {
         try {
             val response = apiInterface.downloadFile(authHeader, url)
@@ -42,8 +46,7 @@ class DownloadRepositoryImpl @Inject constructor(
                 if (response.code() == 404) {
                     try {
                         val responseString = response.toString()
-                        val regex = Regex("url=([^}]*)")
-                        val matchResult = regex.find(responseString)
+                        val matchResult = URL_REGEX.find(responseString)
                         val extractedUrl = matchResult?.groupValues?.get(1)
                         createLog("File Not Found", "$extractedUrl")
                     } catch (e: Exception) {

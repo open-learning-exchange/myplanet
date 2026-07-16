@@ -157,7 +157,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     }
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
             areItemsTheSame = { oldItem, newItem -> oldItem.date == newItem.date && oldItem.user == newItem.user },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
