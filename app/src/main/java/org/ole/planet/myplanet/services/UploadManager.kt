@@ -89,7 +89,7 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: OnSuccessListener?) {
         scope.launch {
-            val model = userRepository.getUserModelSuspending() ?: run {
+            val model = userRepository.getUserModel() ?: run {
                 notifyListener(listener, "Cannot upload activities: user model is null")
                 return@launch
             }
@@ -173,7 +173,7 @@ class UploadManager @Inject constructor(
     }
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
-            val user = userRepository.getUserModelSuspending()
+            val user = userRepository.getUserModel()
             val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
@@ -350,7 +350,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
-        val model = userRepository.getUserModelSuspending() ?: run {
+        val model = userRepository.getUserModel() ?: run {
             notifyListener(listener, "Cannot upload user activities: user model is null")
             return
         }
@@ -385,7 +385,7 @@ class UploadManager @Inject constructor(
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
         // standard UploadCoordinator pattern, so we handle it with custom logic but still use
         // the coordinator for the core upload/update flow where possible.
-        val user = userRepository.getUserModelSuspending()
+        val user = userRepository.getUserModel()
         val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {

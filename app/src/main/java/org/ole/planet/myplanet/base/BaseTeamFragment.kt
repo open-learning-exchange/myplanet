@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
@@ -44,7 +45,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             loadTeamDetails()
         }
     }
