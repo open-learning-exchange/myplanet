@@ -22,7 +22,7 @@ class TeamsAdapter(
     private val onEditTeamClick: (TeamDetails) -> Unit,
     private val onLeaveTeamClick: (TeamDetails) -> Unit,
     private val onRequestToJoinClick: (TeamDetails) -> Unit
-) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
+) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(DIFF_CALLBACK) {
     private var type: String? = ""
     private val dateCache = mutableMapOf<Long, String>()
 
@@ -140,7 +140,7 @@ class TeamsAdapter(
     class TeamsViewHolder(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val TeamDiffCallback = DiffUtils.itemCallback<TeamDetails>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<TeamDetails>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )

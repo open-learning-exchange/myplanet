@@ -341,6 +341,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private suspend fun setupAnrWatchdog() {
         withContext(dispatcherProvider.default) {
             anrWatchdog = ANRWatchdog(
+                scope = applicationScope,
                 timeout = 5000L,
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {

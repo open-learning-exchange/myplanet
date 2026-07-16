@@ -9,7 +9,9 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 interface TeamsSyncRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
     suspend fun markTeamUploaded(teamId: String?, rev: String)
+    suspend fun markTeamsUploaded(uploadedTeams: Map<String, String>)
     suspend fun deleteLocalTeamRecord(teamId: String?)
+    suspend fun deleteLocalTeamRecords(teamIds: List<String>)
     suspend fun syncTeamActivities()
     suspend fun insertTeamLog(json: JsonObject)
     suspend fun insertTeamLogs(logs: List<JsonObject>)

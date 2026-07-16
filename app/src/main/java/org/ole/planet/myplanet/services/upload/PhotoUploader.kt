@@ -65,7 +65,7 @@ class PhotoUploader @Inject constructor(
                     photos.forEach { photo ->
                         val uploadInfo = successfulUploads.find { it.photoId == photo.id }
                         if (uploadInfo != null) {
-                            uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
+                            uploadAttachment(photo.photoLocation, "%s/submissions/%s/%s", uploadInfo.id, uploadInfo.rev, listener)
                         }
                     }
                 }

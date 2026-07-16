@@ -32,6 +32,9 @@ class HealthExaminationAdapter(
     private var userMap: Map<String, RealmUser>
 ) : ListAdapter<RealmHealthExamination, HealthExaminationViewHolder>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
+    private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
+    private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
+    private val colorMultiSelectGrey by lazy { ContextCompat.getColor(context, R.color.multi_select_grey) }
 
     fun updateData(mh: RealmHealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
         this.mh = mh
@@ -62,10 +65,10 @@ class HealthExaminationAdapter(
                 model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             }
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
+            holder.itemView.setBackgroundColor(colorGrey50)
         } else {
             binding.txtDate.text = context.getString(R.string.self_examination, binding.txtDate.text)
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
+            holder.itemView.setBackgroundColor(colorGreen50)
         }
 
         binding.txtPulse.text = item.let { checkEmptyInt(it.pulse) }
@@ -103,8 +106,7 @@ class HealthExaminationAdapter(
             .setTitle(binding.txtDate.tag as? CharSequence ?: binding.txtDate.text)
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
-        val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
-        dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
+        dialog.window?.setBackgroundDrawable(colorMultiSelectGrey.toDrawable())
         if (realmExamination != null) {
             dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, HealthExaminationActivity::class.java)
