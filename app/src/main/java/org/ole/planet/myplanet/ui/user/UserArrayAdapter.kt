@@ -23,10 +23,14 @@ class UserArrayAdapter(
 ) {
 
     var selectedUser: RealmUser? = null
+    private var avatarSize = 0
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (avatarSize == 0) {
+            avatarSize = parent.context.resources.getDimensionPixelSize(R.dimen._80dp)
+        }
         val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return ViewHolder(binding)
     }
@@ -53,7 +57,6 @@ class UserArrayAdapter(
         holder.binding.txtJoined.text = context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
 
         if (!TextUtils.isEmpty(user.userImage)) {
-            val avatarSize = context.resources.getDimensionPixelSize(R.dimen._80dp)
             ImageUtils.loadProfileImage(user.userImage, holder.binding.ivUser, avatarSize)
         } else {
             holder.binding.ivUser.setImageResource(R.drawable.profile)
