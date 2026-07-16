@@ -12,7 +12,7 @@ object DiffUtils {
             override fun areItemsTheSame(oldItem: T, newItem: T) = areItemsTheSame(oldItem, newItem)
             override fun areContentsTheSame(oldItem: T, newItem: T) = areContentsTheSame(oldItem, newItem)
             override fun getChangePayload(oldItem: T, newItem: T): Any? {
-                return getChangePayload?.invoke(oldItem, newItem)
+                return getChangePayload?.invoke(oldItem, newItem) ?: super.getChangePayload(oldItem, newItem)
             }
         }
     }
@@ -34,7 +34,7 @@ object DiffUtils {
                 areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
 
             override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? {
-                return getChangePayload?.invoke(oldList[oldItemPosition], newList[newItemPosition])
+                return getChangePayload?.invoke(oldList[oldItemPosition], newList[newItemPosition]) ?: super.getChangePayload(oldItemPosition, newItemPosition)
             }
         }
         return RecyclerDiffUtil.calculateDiff(callback)
