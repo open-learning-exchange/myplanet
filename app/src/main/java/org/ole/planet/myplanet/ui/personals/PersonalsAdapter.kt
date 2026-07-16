@@ -18,7 +18,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.IntentUtils.openAudioFile
 import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDate
 
-class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPersonal, PersonalsViewHolder>(DiffCallback) {
+class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPersonal, PersonalsViewHolder>(DIFF_CALLBACK) {
     private var listener: OnPersonalSelectedListener? = null
 
     fun setListener(listener: OnPersonalSelectedListener?) {
@@ -88,7 +88,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<RealmMyPerson
     class PersonalsViewHolder(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val DiffCallback =
+        private val DIFF_CALLBACK =
             DiffUtils.itemCallback<RealmMyPersonal>(
                 areItemsTheSame = { old, new -> old._id == new._id },
                 areContentsTheSame = { old, new ->

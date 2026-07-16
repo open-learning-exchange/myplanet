@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -56,7 +55,6 @@ class ChatHistoryFragment : Fragment() {
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -250,10 +248,8 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
-            if (update.table == "chats" && update.shouldRefreshUI) {
-                refreshChatHistory()
-            }
+        collectWhenStarted(sharedViewModel.refreshChatSignal) {
+            refreshChatHistory()
         }
     }
 

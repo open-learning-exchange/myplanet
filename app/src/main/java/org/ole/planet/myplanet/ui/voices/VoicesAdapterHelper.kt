@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.ui.voices
 
 import android.content.Context
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -10,9 +12,10 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesAdapterHelper {
-    fun createOnAnimateTyping(coroutineScope: CoroutineScope, dispatcherProvider: DispatcherProvider): (String, (String) -> Unit, () -> Unit) -> (() -> Unit) {
+    fun createOnAnimateTyping(dispatcherProvider: DispatcherProvider): (String, (String) -> Unit, () -> Unit) -> (() -> Unit) {
         return { response, onUpdate, onComplete ->
-            val job = coroutineScope.launch(dispatcherProvider.main) {
+            val scope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+            val job = scope.launch {
                 var currentIndex = 0
                 while (currentIndex < response.length) {
                     if (!isActive) return@launch
@@ -22,7 +25,7 @@ object VoicesAdapterHelper {
                 }
                 onComplete()
             }
-            val cancelJob: () -> Unit = { job.cancel() }
+            val cancelJob: () -> Unit = { scope.cancel() }
             cancelJob
         }
     }
