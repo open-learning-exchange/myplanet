@@ -13,11 +13,15 @@ class RequestsAdapter(
     private val context: Context,
     private var currentUser: RealmUser,
     private val onAction: (RealmUser, Boolean) -> Unit
-) : ListAdapter<RealmUser, RequestsAdapter.ViewHolderUser>(MWC_DIFF_CALLBACK) {
+) : ListAdapter<RealmUser, RequestsAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     companion object {
-        val MWC_DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
+        internal val DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
-            areContentsTheSame = { oldItem, newItem -> oldItem.name == newItem.name }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.name == newItem.name &&
+                oldItem.email == newItem.email &&
+                oldItem.id == newItem.id
+            }
         )
     }
     private var teamId: String? = null

@@ -39,6 +39,7 @@ class CourseFilterController(
     private lateinit var tvSelected: TextView
     val searchTags: MutableList<RealmTag> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
+    private var spinnerListener: AdapterView.OnItemSelectedListener? = null
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
@@ -65,7 +66,7 @@ class CourseFilterController(
         spnProgress.adapter = progressAdapter
         spnSubject.adapter = subjectAdapter
 
-        val spinnerListener = object : AdapterView.OnItemSelectedListener {
+        spinnerListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, i: Int, l: Long) {
                 if (view == null) return
                 _filterState.value = currentState()
@@ -159,5 +160,9 @@ class CourseFilterController(
     fun detach() {
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
+        spnGrade.onItemSelectedListener = null
+        spnSubject.onItemSelectedListener = null
+        spnProgress.onItemSelectedListener = null
+        spinnerListener = null
     }
 }
