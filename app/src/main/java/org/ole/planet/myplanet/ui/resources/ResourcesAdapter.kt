@@ -29,7 +29,9 @@ import org.ole.planet.myplanet.utils.Utilities.getCloudConfig
 class ResourcesAdapter(
     private val context: Context,
     private val isGuest: Boolean,
-    private var openedResourceIds: Set<String>
+    private var openedResourceIds: Set<String>,
+    private val currentUserName: String? = null,
+    private val onEditClick: ((ResourceListModel) -> Unit)? = null
 ) : ListAdapter<ResourceListModel, RecyclerView.ViewHolder>(ITEM_CALLBACK) {
 
     private val selectedItemIds = mutableSetOf<String>()
@@ -154,6 +156,16 @@ class ResourcesAdapter(
                 }
             } else {
                 holder.rowLibraryBinding.checkbox.visibility = View.GONE
+            }
+            val isOwnResource = !currentUserName.isNullOrBlank() &&
+                    model.library.addedBy == currentUserName &&
+                    !isGuest
+
+            holder.rowLibraryBinding.btnEditResource.visibility =
+                if (isOwnResource) View.VISIBLE else View.GONE
+
+            holder.rowLibraryBinding.btnEditResource.setOnClickListener {
+                onEditClick?.invoke(model)
             }
         }
     }

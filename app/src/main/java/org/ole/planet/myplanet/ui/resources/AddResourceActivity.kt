@@ -67,7 +67,16 @@ class AddResourceActivity : AppCompatActivity() {
         levels = mutableListOf()
         subjects = mutableListOf()
         resourceFor = mutableListOf()
+        val resourceId = intent.getStringExtra("resource_id")
+        val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
         initializeViews()
+        if (isEditMode && resourceId != null) {
+            supportActionBar?.title = getString(R.string.edit_resource)
+            binding.btnSubmit.text = getString(R.string.save_changes)
+            lifecycleScope.launch {
+                prefillFields(resourceId)
+            }
+        }
         setupPrivateResourceCheckbox()
         lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
@@ -103,7 +112,8 @@ class AddResourceActivity : AppCompatActivity() {
                 binding.tlTitle.error = null
             } else {
                 val title = binding.etTitle.text.toString().trim()
-                if (title.isNotEmpty()) {
+                val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
+                if (title.isNotEmpty() && !isEditMode) {
                     lifecycleScope.launch {
                         if (resourcesRepository.resourceTitleExists(title)) {
                             binding.tlTitle.error = getString(R.string.resource_title_already_exists)
@@ -145,11 +155,56 @@ class AddResourceActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun prefillFields(resourceId: String) {
+        val resource = resourcesRepository.getResourceById(resourceId) ?: return
+        binding.etTitle.setText(resource.title)
+        binding.etAuthor.setText(resource.author)
+        binding.etYear.setText(resource.year)
+        binding.etDescription.setText(resource.description)
+        binding.etPublisher.setText(resource.publisher)
+        binding.etLinkToLicense.setText(resource.linkToLicense)
+
+        resource.subject?.forEach { subjects?.add(it) }
+        resource.level?.forEach { levels?.add(it) }
+
+        binding.tvSubject.text = resource.subject?.joinToString(", ")
+            ?.takeIf { it.isNotEmpty() } ?: getString(R.string.subject)
+        binding.tvLevels.text = resource.level?.joinToString(", ")
+            ?.takeIf { it.isNotEmpty() } ?: getString(R.string.levels)
+    }
+
     private fun saveResource() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
-        val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
+        val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
+        val resourceId = intent.getStringExtra("resource_id")
+        binding.btnSubmit.isEnabled = false
 
+        if (isEditMode && resourceId != null) {
+            lifecycleScope.launch {
+                val result = resourcesRepository.updateLocalResource(
+                    resourceId = resourceId,
+                    title = title,
+                    author = binding.etAuthor.text.toString().trim(),
+                    year = binding.etYear.text.toString().trim(),
+                    description = binding.etDescription.text.toString().trim(),
+                    publisher = binding.etPublisher.text.toString().trim(),
+                    linkToLicense = binding.etLinkToLicense.text.toString().trim(),
+                    subjects = subjects,
+                    levels = levels
+                )
+                if (result.isSuccess) {
+                    toast(this@AddResourceActivity, getString(R.string.resource_updated))
+                    finish()
+                } else {
+                    toast(this@AddResourceActivity, getString(R.string.failed_to_update_resource))
+                    binding.btnSubmit.isEnabled = true
+                }
+            }
+            return
+        }
+
+        val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
         val request = LocalResourceRequest(
             title = title,
             addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' },
@@ -170,10 +225,8 @@ class AddResourceActivity : AppCompatActivity() {
             isPrivateTeamResource = isPrivateTeamResource,
             teamId = teamId
         )
-        binding.btnSubmit.isEnabled = false
         lifecycleScope.launch {
             val result = resourcesRepository.saveLocalResource(request)
-
             if (result.isSuccess) {
                 val message = if (isPrivateTeamResource) {
                     getString(R.string.resource_added_to_team)
