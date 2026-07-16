@@ -24,8 +24,10 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
+import kotlinx.coroutines.flow.MutableSharedFlow
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -38,6 +40,8 @@ class ChatViewModelTest {
     private lateinit var voicesRepository: VoicesRepository
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var dispatcherProvider: TestDispatcherProvider
+    private lateinit var realtimeSyncManager: RealtimeSyncManager
+    private val dataUpdateFlow = MutableSharedFlow<org.ole.planet.myplanet.model.TableDataUpdate>()
 
     @Before
     fun setup() {
@@ -47,7 +51,9 @@ class ChatViewModelTest {
         teamsRepository = mockk(relaxed = true)
         voicesRepository = mockk(relaxed = true)
         dispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider)
+        realtimeSyncManager = mockk(relaxed = true)
+        io.mockk.every { realtimeSyncManager.dataUpdateFlow } returns dataUpdateFlow
+        viewModel = ChatViewModel(chatRepository, userRepository, teamsRepository, voicesRepository, dispatcherProvider, realtimeSyncManager)
     }
 
     @After
@@ -70,6 +76,20 @@ class ChatViewModelTest {
     fun `shouldFetchAiProviders returns false after setAiProviders`() {
         viewModel.setAiProviders(mapOf("openai" to true))
         assertFalse(viewModel.shouldFetchAiProviders())
+    }
+
+    @Test
+    fun `refreshChatSignal emits when RealtimeSyncManager emits chats update`() = runTest {
+        val signals = mutableListOf<Unit>()
+        val job = launch(testDispatcher) {
+            viewModel.refreshChatSignal.collect { signals.add(it) }
+        }
+
+        dataUpdateFlow.emit(org.ole.planet.myplanet.model.TableDataUpdate("chats", 0, 1))
+        testScheduler.advanceUntilIdle()
+
+        assertEquals(1, signals.size)
+        job.cancel()
     }
 
     @Test

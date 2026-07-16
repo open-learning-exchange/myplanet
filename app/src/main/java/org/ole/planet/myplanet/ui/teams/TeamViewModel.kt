@@ -135,8 +135,10 @@ class TeamViewModel @Inject constructor(
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
             teamsRepository.leaveTeam(teamId, userId)
-            teamsSyncRepository.syncTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
+        }
+        viewModelScope.launch {
+            teamsSyncRepository.syncTeamActivities()
         }
     }
 
