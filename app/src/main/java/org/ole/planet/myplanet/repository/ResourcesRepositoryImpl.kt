@@ -109,8 +109,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         description: String,
         publisher: String,
         linkToLicense: String,
-        subjects: io.realm.RealmList<String>?,
-        levels: io.realm.RealmList<String>?
+        subjects: List<String>?,
+        levels: List<String>?
     ): Result<Unit> {
         return runCatching {
             executeTransaction { realm ->

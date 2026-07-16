@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmTag
-import io.realm.RealmList
 
 data class LibraryWithMetadata(
     val library: RealmMyLibrary,
@@ -75,8 +74,8 @@ interface ResourcesRepository {
         description: String,
         publisher: String,
         linkToLicense: String,
-        subjects: RealmList<String>?,
-        levels: RealmList<String>?
+        subjects: List<String>?,
+        levels: List<String>?
     ): Result<Unit>
     suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean
     suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean
