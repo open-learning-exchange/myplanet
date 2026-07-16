@@ -85,9 +85,8 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
         if (courseIds.isEmpty()) return emptyList()
-        return withRealm { realm ->
-            val courses = realm.where(RealmMyCourse::class.java).`in`("courseId", courseIds.toTypedArray()).findAll()
-            realm.copyFromRealm(courses)
+        return queryList(RealmMyCourse::class.java) {
+            `in`("courseId", courseIds.toTypedArray())
         }
     }
 
@@ -193,33 +192,32 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun search(query: String): List<RealmMyCourse> {
-        return withRealm { realm ->
-            val queryObj = realm.where(RealmMyCourse::class.java)
-            if (query.isEmpty()) {
-                return@withRealm realm.copyFromRealm(queryObj.findAll())
-            }
-
-            val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            queryParts.forEach { part ->
-                queryObj.contains("courseTitleNormal", Utilities.normalizeText(part), Case.INSENSITIVE)
-            }
-            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-            val data = queryObj.findAll()
-            val normalizedQuery = Utilities.normalizeText(query)
-            val startsWithQuery = mutableListOf<RealmMyCourse>()
-            val containsQuery = mutableListOf<RealmMyCourse>()
-
-            for (item in data) {
-                val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
-
-                if (title.startsWith(normalizedQuery)) {
-                    startsWithQuery.add(item)
-                } else if (matchesAllParts(title, normalizedQueryParts)) {
-                    containsQuery.add(item)
-                }
-            }
-            realm.copyFromRealm(startsWithQuery + containsQuery)
+        if (query.isEmpty()) {
+            return queryList(RealmMyCourse::class.java)
         }
+
+        val queryParts = query.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(query)
+
+        val data = queryList(RealmMyCourse::class.java) {
+            queryParts.forEach { part ->
+                contains("courseTitleNormal", Utilities.normalizeText(part), Case.INSENSITIVE)
+            }
+        }
+        val startsWithQuery = mutableListOf<RealmMyCourse>()
+        val containsQuery = mutableListOf<RealmMyCourse>()
+
+        for (item in data) {
+            val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
+
+            if (title.startsWith(normalizedQuery)) {
+                startsWithQuery.add(item)
+            } else if (matchesAllParts(title, normalizedQueryParts)) {
+                containsQuery.add(item)
+            }
+        }
+        return startsWithQuery + containsQuery
     }
 
     override suspend fun filterCourses(
