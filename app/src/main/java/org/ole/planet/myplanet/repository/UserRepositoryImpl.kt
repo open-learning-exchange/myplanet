@@ -112,14 +112,18 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun mapToLightweightUser(managedUser: RealmUser): RealmUser {
+        return RealmUser().apply {
+            this.id = managedUser.id
+            this.name = managedUser.name
+            this.planetCode = managedUser.planetCode
+        }
+    }
+
     override suspend fun getUsersForHealthSync(): List<RealmUser> {
         return withRealm { realm ->
             realm.where(RealmUser::class.java).isNotEmpty("_id").findAll().map { managedUser ->
-                RealmUser().apply {
-                    this.id = managedUser.id
-                    this.name = managedUser.name
-                    this.planetCode = managedUser.planetCode
-                }
+                mapToLightweightUser(managedUser)
             }
         }
     }
@@ -134,15 +138,18 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun buildGuestUserJson(username: String): JsonObject {
+        return JsonObject().apply {
+            addProperty("_id", "guest_$username")
+            addProperty("name", username)
+            addProperty("firstName", username)
+            add("roles", JsonArray().apply { add("guest") })
+        }
+    }
+
     override suspend fun createGuestUser(username: String): RealmUser? {
         return withRealm { realm ->
-            val `object` = JsonObject()
-            `object`.addProperty("_id", "guest_$username")
-            `object`.addProperty("name", username)
-            `object`.addProperty("firstName", username)
-            val rolesArray = JsonArray()
-            rolesArray.add("guest")
-            `object`.add("roles", rolesArray)
+            val `object` = buildGuestUserJson(username)
             val startedTransaction = !realm.isInTransaction
             if (startedTransaction) realm.beginTransaction()
             val user = populateUser(`object`, realm)
