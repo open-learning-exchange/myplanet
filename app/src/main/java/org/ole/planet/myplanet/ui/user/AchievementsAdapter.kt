@@ -52,7 +52,7 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
     class AchievementsViewHolder(val binding: RowOtherInfoBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             { oldItem, newItem -> oldItem == newItem },
             { oldItem, newItem -> oldItem == newItem }
         )
