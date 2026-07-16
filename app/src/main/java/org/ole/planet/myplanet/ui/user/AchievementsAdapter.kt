@@ -49,12 +49,50 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         holder.binding.tvRefEmail.text = row.email
     }
 
+    override fun onBindViewHolder(holder: AchievementsViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isEmpty()) {
+            super.onBindViewHolder(holder, position, payloads)
+            return
+        }
+
+        val row = getItem(position)
+        val flatPayloads = payloads.flatMap { if (it is List<*>) it else listOf(it) }
+        val payloadSet = flatPayloads.filterIsInstance<String>().toSet()
+
+        // If there are payloads we didn't handle, default to full bind
+        val handledPayloads = setOf(PHONE_PAYLOAD, EMAIL_PAYLOAD)
+        if (payloadSet.subtract(handledPayloads).isNotEmpty() || flatPayloads.any { it !is String }) {
+            super.onBindViewHolder(holder, position, payloads)
+            return
+        }
+
+        if (payloadSet.contains(PHONE_PAYLOAD)) {
+            holder.binding.tvRefPhone.text = row.phone
+        }
+        if (payloadSet.contains(EMAIL_PAYLOAD)) {
+            holder.binding.tvRefEmail.text = row.email
+        }
+    }
+
     class AchievementsViewHolder(val binding: RowOtherInfoBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        private const val PHONE_PAYLOAD = "payload_phone"
+        private const val EMAIL_PAYLOAD = "payload_email"
+
         private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
-            { oldItem, newItem -> oldItem == newItem },
-            { oldItem, newItem -> oldItem == newItem }
+            areItemsTheSame = { oldItem, newItem ->
+                // We use name and relationship as the unique identity.
+                oldItem.name == newItem.name && oldItem.relationship == newItem.relationship
+            },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem },
+            getChangePayload = { oldItem, newItem ->
+                val payloads = mutableListOf<String>()
+                // Name and relationship are the identity so they shouldn't change for the "same" item
+                if (oldItem.phone != newItem.phone) payloads.add(PHONE_PAYLOAD)
+                if (oldItem.email != newItem.email) payloads.add(EMAIL_PAYLOAD)
+                if (payloads.isNotEmpty()) payloads else null
+            }
         )
     }
 }
