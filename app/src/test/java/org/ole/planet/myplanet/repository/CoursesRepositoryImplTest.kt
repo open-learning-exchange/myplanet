@@ -80,7 +80,7 @@ class CoursesRepositoryImplTest {
         val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
         every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
         every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(mockData) } returns emptyList()
+        every { mockRealm.copyFromRealm(mockData as Iterable<RealmMyCourse>) } returns emptyList()
 
         val result = repository.search("")
         assertEquals(0, result.size)
@@ -146,5 +146,20 @@ class CoursesRepositoryImplTest {
         verify { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) }
         assertEquals(1, result.size)
         assertEquals(matchCourse, result[0])
+    }
+
+    @Test
+    fun `getCoursesByIds returns correct courses`() = runTest {
+        val mockData = mockk<RealmResults<RealmMyCourse>>(relaxed = true)
+        val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
+        every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
+        every { mockQuery.`in`("courseId", arrayOf("id1", "id2")) } returns mockQuery
+        every { mockQuery.findAll() } returns mockData
+        val courses = listOf(mockk<RealmMyCourse>(), mockk<RealmMyCourse>())
+        every { mockRealm.copyFromRealm(mockData as Iterable<RealmMyCourse>) } returns courses
+
+        val result = repository.getCoursesByIds(listOf("id1", "id2"))
+        assertEquals(2, result.size)
+        verify { mockQuery.`in`("courseId", arrayOf("id1", "id2")) }
     }
 }

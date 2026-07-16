@@ -11,7 +11,6 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -45,11 +44,11 @@ open class FileUploader(
         }
     }
 
-    fun uploadAttachment(id: String, rev: String, personal: RealmSubmitPhotos, listener: OnSuccessListener) {
-        val f = personal.photoLocation?.let { File(it) }
-        val name = FileUtils.getFileNameFromUrl(personal.photoLocation)
+    fun uploadAttachment(localPath: String?, destinationFormat: String, id: String, rev: String, listener: OnSuccessListener) {
+        val f = localPath?.let { File(it) }
+        val name = FileUtils.getFileNameFromUrl(localPath)
         if (f != null) {
-            uploadDoc(UploadDocParams(id, rev, "%s/submissions/%s/%s", f, name, listener))
+            uploadDoc(UploadDocParams(id, rev, destinationFormat, f, name, listener))
         }
     }
 
