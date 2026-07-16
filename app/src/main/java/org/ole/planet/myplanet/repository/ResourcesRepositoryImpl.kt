@@ -5,6 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
 import java.util.Calendar
@@ -199,11 +200,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.language = request.language
             this.mediaType = request.mediaType
             this.resourceType = request.resourceType
-            this.subject = request.subjects?.let { io.realm.RealmList(*it.toTypedArray()) } ?: io.realm.RealmList()
-            this.setUserId(io.realm.RealmList())
-            this.level = request.levels?.let { io.realm.RealmList(*it.toTypedArray()) } ?: io.realm.RealmList()
+            this.subject = request.subjects?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
+            this.setUserId(RealmList())
+            this.level = request.levels?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.createdDate = Calendar.getInstance().timeInMillis
-            this.resourceFor = request.resourceFor?.let { io.realm.RealmList(*it.toTypedArray()) } ?: io.realm.RealmList()
+            this.resourceFor = request.resourceFor?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.resourceLocalAddress = request.resourceUrl
             this.resourceOffline = true
             this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
