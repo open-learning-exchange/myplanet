@@ -923,6 +923,7 @@
     <string name="ob_desc4_3">🎯 Personalized: Tailor your learning path.</string>
     <string name="ob_desc4_4">📚 Interactive: Engage with videos, books, games.</string>
     <string name="ob_desc4_5">Begin your limitless learning journey with myPlanet!</string>
+    <string name="onboarding_server_prep_hint">Before you sign in, you\'ll need your Planet server address and PIN. Ask your community administrator if you don\'t have them yet.</string>
     <string name="recycler_chat_label">conversations</string>
     <string name="completed_course">completed course</string>
     <string name="menu">side menu</string>

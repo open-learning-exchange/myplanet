@@ -923,6 +923,7 @@
     <string name="ob_desc4_3">🎯 Personalizado: Adapta tu camino de aprendizaje.</string>
     <string name="ob_desc4_4">📚 Interactivo: Involúcrate con vídeos, libros, juegos.</string>
     <string name="ob_desc4_5">¡Comienza tu viaje de aprendizaje ilimitado con myPlanet!</string>
+    <string name="onboarding_server_prep_hint">Antes de iniciar sesión, necesitarás la dirección del servidor de Planet y el PIN. Pregunta a tu administrador comunitario si aún no los tienes.</string>
     <string name="recycler_chat_label">conversaciones</string>
     <string name="completed_course">curso completado</string>
     <string name="menu">menú lateral</string>
