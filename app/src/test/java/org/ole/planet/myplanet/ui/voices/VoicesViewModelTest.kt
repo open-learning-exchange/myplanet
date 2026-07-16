@@ -88,4 +88,53 @@ class VoicesViewModelTest {
         assertEquals(1, result.size)
         assertEquals(news2, result[0])
     }
+
+    @Test
+    fun `test simultaneous query and label filtering`() = runTest {
+        val news1 = mockk<RealmNews>(relaxed = true) {
+            coEvery { message } returns "Apple"
+            coEvery { labels } returns io.realm.RealmList("Fruit")
+        }
+        val news2 = mockk<RealmNews>(relaxed = true) {
+            coEvery { message } returns "Banana"
+            coEvery { labels } returns io.realm.RealmList("Fruit")
+        }
+        val news3 = mockk<RealmNews>(relaxed = true) {
+            coEvery { message } returns "Carrot"
+            coEvery { labels } returns io.realm.RealmList("Vegetable")
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(news1, news2, news3))
+
+        var result: List<RealmNews?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect {
+                result = it
+            }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        // Set both states
+        viewModel.updateSelectedLabel("Fruit")
+        viewModel.updateSearchQuery("apple")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(news1, result[0])
+
+        // Change query but keep label
+        viewModel.updateSearchQuery("banana")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(news2, result[0])
+
+        // Query for item with different label
+        viewModel.updateSearchQuery("carrot")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
+    }
 }
