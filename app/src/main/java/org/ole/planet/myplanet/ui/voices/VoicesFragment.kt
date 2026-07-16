@@ -274,7 +274,7 @@ class VoicesFragment : BaseVoicesFragment() {
             onEditAction = { action ->
                 viewLifecycleOwner.lifecycleScope.launch { action() }
             },
-            onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
+            onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(dispatcherProvider),
             labelManager = labelManager,
             voicesRepository = voicesRepository,
             userRepository = userRepository,

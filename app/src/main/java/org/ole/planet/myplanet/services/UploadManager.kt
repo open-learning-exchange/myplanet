@@ -96,7 +96,7 @@ class UploadManager @Inject constructor(
 
     fun uploadActivities(listener: OnSuccessListener?) {
         scope.launch {
-            val model = userRepository.getUserModelSuspending() ?: run {
+            val model = userRepository.getUserModel() ?: run {
                 notifyListener(listener, "Cannot upload activities: user model is null")
                 return@launch
             }
@@ -180,7 +180,7 @@ class UploadManager @Inject constructor(
     }
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
-            val user = userRepository.getUserModelSuspending()
+            val user = userRepository.getUserModel()
             val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
@@ -385,7 +385,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
-        val model = userRepository.getUserModelSuspending() ?: run {
+        val model = userRepository.getUserModel() ?: run {
             notifyListener(listener, "Cannot upload user activities: user model is null")
             return
         }
@@ -422,7 +422,7 @@ class UploadManager @Inject constructor(
         // orchestration stays custom here — but the actual doc-level network calls and retry-queueing
         // now reuse the same UploadRepository/RetryQueue primitives UploadCoordinator uses, instead of
         // reimplementing them.
-        val user = userRepository.getUserModelSuspending()
+        val user = userRepository.getUserModel()
         val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {

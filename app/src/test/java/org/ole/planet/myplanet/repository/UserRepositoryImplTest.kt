@@ -52,6 +52,8 @@ class UserRepositoryImplTest {
     private lateinit var configurationsRepository: ConfigurationsRepository
     private lateinit var appScope: CoroutineScope
     private lateinit var dispatcherProvider: DispatcherProvider
+    private lateinit var activitiesRepository: ActivitiesRepository
+    private lateinit var activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 
     private lateinit var repository: UserRepositoryImpl
 
@@ -76,6 +78,10 @@ class UserRepositoryImplTest {
         configurationsRepository = mockk(relaxed = true)
         appScope = TestScope(testDispatcher)
 
+        activitiesRepository = mockk(relaxed = true)
+        activitiesRepositoryLazy = mockk(relaxed = true)
+        every { activitiesRepositoryLazy.get() } returns activitiesRepository
+
         dispatcherProvider = mockk(relaxed = true)
         every { dispatcherProvider.io } returns testDispatcher
         every { dispatcherProvider.main } returns testDispatcher
@@ -95,7 +101,7 @@ class UserRepositoryImplTest {
             configurationsRepository,
             appScope,
             dispatcherProvider,
-            mockk(relaxed = true)
+            activitiesRepositoryLazy
         )
     }
 
@@ -103,6 +109,44 @@ class UserRepositoryImplTest {
     fun tearDown() {
         unmockkObject(UrlUtils)
         unmockkStatic(Log::class)
+    }
+
+    @Test
+    fun `getDashboardProfile uses user name if fullName is blank`() = runTest(testDispatcher) {
+        val user = RealmUser().apply { name = "john"; firstName = "  "; lastName = "  " }
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserById("123") } returns user
+        coEvery { activitiesRepository.getOfflineLoginCount("john") } returns 5
+
+        val result = spiedRepo.getDashboardProfile("123")
+
+        assertEquals("john", result.fullName)
+        assertEquals(5, result.offlineLogins)
+    }
+
+    @Test
+    fun `getDashboardProfile handles null user`() = runTest(testDispatcher) {
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserById("123") } returns null
+
+        val result = spiedRepo.getDashboardProfile("123")
+
+        assertEquals(null, result.fullName)
+        assertEquals(0, result.offlineLogins)
+        io.mockk.coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
+    }
+
+    @Test
+    fun `getDashboardProfile handles null user name`() = runTest(testDispatcher) {
+        val user = RealmUser().apply { name = null; firstName = "John"; lastName = "Doe" }
+        val spiedRepo = spyk(repository)
+        coEvery { spiedRepo.getUserById("123") } returns user
+
+        val result = spiedRepo.getDashboardProfile("123")
+
+        assertEquals("John Doe", result.fullName)
+        assertEquals(0, result.offlineLogins)
+        io.mockk.coVerify(exactly = 0) { activitiesRepository.getOfflineLoginCount(any()) }
     }
 
     @Test

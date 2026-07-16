@@ -83,9 +83,10 @@ object ServiceModule {
         teamsRepository: TeamsRepository,
         teamsSyncRepository: TeamsSyncRepository,
         coursesRepository: CoursesRepository,
-        eventsRepository: EventsRepository
+        eventsRepository: EventsRepository,
+        userSyncRepository: UserSyncRepository
     ): SyncManager {
-        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
+        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository, userSyncRepository)
     }
 
     @Provides
