@@ -111,13 +111,6 @@ class RealmRepositoryTest {
             }
         }
 
-        // wait for first emission
-        advanceUntilIdle()
-
-        // Setup the distinct check to fail by simulating diff pk or catching error so it emits
-        every { frozenInitial.size } returns 1
-        every { frozenUpdated.size } returns 2
-
         // At this point initial results should be emitted
         assertEquals(1, emittedLists.size)
         assertEquals(copiedInitialList, emittedLists[0])

@@ -12,7 +12,6 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.conflate
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
@@ -132,28 +131,6 @@ open class RealmRepository(
         }
     }.flowOn(realmDispatcher)
         .conflate()
-        .distinctUntilChanged { old, new ->
-            if (old.size != new.size) return@distinctUntilChanged false
-            if (old.isEmpty() && new.isEmpty()) return@distinctUntilChanged true
-            try {
-                val oldRealm = old.realm
-                val newRealm = new.realm
-                if (oldRealm.isClosed || newRealm.isClosed) return@distinctUntilChanged false
-
-                val schema = newRealm.schema.get(clazz.simpleName)
-                val pkField = schema?.primaryKey
-                if (pkField == null) return@distinctUntilChanged false
-
-                for (i in 0 until old.size) {
-                    val oldObj = io.realm.DynamicRealmObject(old[i])
-                    val newObj = io.realm.DynamicRealmObject(new[i])
-                    if (oldObj.get<Any>(pkField) != newObj.get<Any>(pkField)) return@distinctUntilChanged false
-                }
-                true
-            } catch (e: Exception) {
-                false
-            }
-        }
         .map { frozenResults ->
             if (frozenResults.isEmpty()) {
                 emptyList()

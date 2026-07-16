@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class ProgressRepositoryImplTest {
 
     private lateinit var repository: ProgressRepositoryImpl
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
@@ -40,11 +41,13 @@ class ProgressRepositoryImplTest {
 
     @Before
     fun setUp() {
+        every { dispatcherProvider.io } returns testDispatcher
         mockCoursesRepository = mockk<CoursesRepository>()
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
         repository = spyk(ProgressRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
+            dispatcherProvider,
             { mockCoursesRepository },
             { mockk(relaxed = true) }
         ), recordPrivateCalls = true)
@@ -314,6 +317,7 @@ class ProgressRepositoryImplTest {
         val localRepository = ProgressRepositoryImpl(
             databaseService,
             UnconfinedTestDispatcher(),
+            dispatcherProvider,
             { mockCoursesRepository },
             { activitiesRepo }
         )
