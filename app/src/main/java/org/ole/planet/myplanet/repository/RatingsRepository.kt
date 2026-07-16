@@ -18,7 +18,7 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun insertRatingsFromSync(documentList: List<JsonObject>)
 }
 
 data class RatingEntry(

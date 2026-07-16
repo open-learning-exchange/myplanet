@@ -45,6 +45,7 @@ import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -74,7 +75,8 @@ class SyncManager @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
     private val coursesRepository: CoursesRepository,
-    private val eventsRepository: EventsRepository
+    private val eventsRepository: EventsRepository,
+    private val userSyncRepository: UserSyncRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -446,7 +448,7 @@ class SyncManager @Inject constructor(
             val checkJobs = allShelves.chunked(25).map { shelfBatch ->
                 async(dispatcherProvider.io) {
                     semaphore.withPermit {
-                        checkShelfBatchForDataOptimized(shelfBatch, apiInterface)
+                        checkShelfBatchForDataOptimized(shelfBatch)
                     }
                 }
             }
@@ -460,40 +462,8 @@ class SyncManager @Inject constructor(
         return shelvesWithData
     }
 
-    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>, apiInterface: ApiInterface): List<String> {
-        val shelvesWithData = mutableListOf<String>()
-        val shelfIds = shelfBatch.map { it.id }
-        val keysObject = JsonObject().apply {
-            add("keys", gson.fromJson(gson.toJson(shelfIds), JsonArray::class.java))
-        }
-
-        val response = ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
-        }?.body()
-
-        response?.let { responseBody ->
-            val rows = getJsonArray("rows", responseBody)
-            for (i in 0 until rows.size()) {
-                val row = rows[i].asJsonObject
-                if (row.has("doc")) {
-                    val doc = getJsonObject("doc", row)
-                    val shelfId = getString("_id", doc)
-
-                    if (hasShelfDataUltraFast(doc)) {
-                        shelvesWithData.add(shelfId)
-                    }
-                }
-            }
-        }
-        return shelvesWithData
-    }
-
-    private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
-        return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
-            shelfDoc.has(key) && shelfDoc.get(key).let { element ->
-                element.isJsonArray && element.asJsonArray.size() > 0
-            }
-        }
+    private suspend fun checkShelfBatchForDataOptimized(shelfBatch: List<Rows>): List<String> {
+        return userSyncRepository.checkShelfBatchForDataOptimized(shelfBatch.mapNotNull { it.id })
     }
 
     private fun getCachedShelvesWithData(): List<String> {

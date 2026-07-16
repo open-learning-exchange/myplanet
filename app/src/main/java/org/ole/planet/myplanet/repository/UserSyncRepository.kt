@@ -15,4 +15,5 @@ interface UserSyncRepository {
     fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
     suspend fun insertUsersFromSync(docs: List<JsonObject>)
     suspend fun uploadShelfData(user: RealmUser)
+    suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String>
 }
