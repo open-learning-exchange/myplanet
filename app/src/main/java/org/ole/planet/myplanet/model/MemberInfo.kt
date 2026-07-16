@@ -13,4 +13,4 @@ data class MemberInfo(
     val phoneNumber: String,
     val birthDate: String,
     val gender: String?
-)
+}
