@@ -15,7 +15,7 @@ class RequestsAdapter(
     private val onAction: (RealmUser, Boolean) -> Unit
 ) : ListAdapter<RealmUser, RequestsAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
+        internal val DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.name == newItem.name &&

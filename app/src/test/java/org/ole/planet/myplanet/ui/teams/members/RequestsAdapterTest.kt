@@ -39,7 +39,7 @@ class RequestsAdapterTest {
             email = "john@example.com"
         }
 
-        val callback = RequestsAdapter.MWC_DIFF_CALLBACK
+        val callback = RequestsAdapter.DIFF_CALLBACK
 
         assertTrue(callback.areContentsTheSame(oldUser, newUserSame))
         assertFalse(callback.areContentsTheSame(oldUser, newUserDifferentName))
