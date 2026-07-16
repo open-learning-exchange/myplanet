@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
+import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -607,9 +608,9 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addReport(report: org.ole.planet.myplanet.model.FinanceReportParams) {
-        val reportId = java.util.UUID.randomUUID().toString()
-        val doc = com.google.gson.JsonObject().apply {
+    override suspend fun addReport(report: FinanceReportParams) {
+        val reportId = UUID.randomUUID().toString()
+        val doc = JsonObject().apply {
             addProperty("_id", reportId)
             addProperty("createdDate", timeProvider.now())
             addProperty("description", report.description)
@@ -652,9 +653,9 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateReport(reportId: String, payload: org.ole.planet.myplanet.model.FinanceReportParams) {
+    override suspend fun updateReport(reportId: String, payload: FinanceReportParams) {
         if (reportId.isBlank()) return
-        val doc = com.google.gson.JsonObject().apply {
+        val doc = JsonObject().apply {
             addProperty("description", payload.description)
             addProperty("beginningBalance", payload.beginningBalance)
             addProperty("sales", payload.sales)

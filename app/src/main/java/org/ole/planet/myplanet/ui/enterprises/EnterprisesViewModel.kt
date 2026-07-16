@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
 
@@ -44,7 +45,7 @@ class EnterprisesViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val params = org.ole.planet.myplanet.model.FinanceReportParams(
+                val params = FinanceReportParams(
                     description, beginningBalance, sales, otherIncome, wages,
                     otherExpenses, startDate, endDate, teamId, teamType, teamPlanetCode,
                     imageName, imageData
@@ -72,7 +73,7 @@ class EnterprisesViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             try {
-                val params = org.ole.planet.myplanet.model.FinanceReportParams(
+                val params = FinanceReportParams(
                     description, beginningBalance, sales, otherIncome, wages,
                     otherExpenses, startDate, endDate, "", null, null,
                     imageName, imageData

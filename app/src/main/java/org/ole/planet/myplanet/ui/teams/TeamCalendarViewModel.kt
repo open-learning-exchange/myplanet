@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.repository.EventsRepository
 
@@ -32,7 +33,7 @@ class TeamCalendarViewModel @Inject constructor(
         }
     }
 
-    fun createMeetup(params: org.ole.planet.myplanet.model.MeetupCreationParams) {
+    fun createMeetup(params: MeetupCreationParams) {
         viewModelScope.launch {
             val success = eventsRepository.createMeetup(params)
             if (success) {

@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
+import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.events.EventsAdapter
@@ -161,7 +162,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         val startTime = if (startTimeText == defaultPlaceholder) "" else startTimeText
         val endTime = if (endTimeText == defaultPlaceholder) "" else endTimeText
 
-        val params = org.ole.planet.myplanet.model.MeetupCreationParams(
+        val params = MeetupCreationParams(
             title = title,
             meetupLink = link,
             description = description,

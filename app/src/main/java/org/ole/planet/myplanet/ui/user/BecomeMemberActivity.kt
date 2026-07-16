@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
@@ -66,8 +67,8 @@ class BecomeMemberActivity : BaseActivity() {
         dpd.show()
     }
 
-    private fun collectMemberInfo(): org.ole.planet.myplanet.model.MemberInfo {
-        val info = org.ole.planet.myplanet.model.MemberInfo(
+    private fun collectMemberInfo(): MemberInfo {
+        val info = MemberInfo(
             activityBecomeMemberBinding.etUsername.text.toString(),
             activityBecomeMemberBinding.etPassword.text.toString(),
             activityBecomeMemberBinding.etRePassword.text.toString(),
@@ -84,7 +85,7 @@ class BecomeMemberActivity : BaseActivity() {
         return info
     }
 
-    private fun validateMemberInfo(info: org.ole.planet.myplanet.model.MemberInfo): Boolean {
+    private fun validateMemberInfo(info: MemberInfo): Boolean {
         return when {
             info.password.isEmpty() -> {
                 activityBecomeMemberBinding.etPassword.error = getString(R.string.please_enter_a_password)
@@ -106,7 +107,7 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
-    private fun addMember(info: org.ole.planet.myplanet.model.MemberInfo) {
+    private fun addMember(info: MemberInfo) {
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()

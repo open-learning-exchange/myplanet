@@ -23,6 +23,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -31,6 +32,7 @@ import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
@@ -46,11 +48,13 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -595,15 +599,15 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun createMember(user: org.ole.planet.myplanet.model.MemberInfo): Pair<Boolean, String> {
-        val obj = com.google.gson.JsonObject().apply {
+    override suspend fun createMember(user: MemberInfo): Pair<Boolean, String> {
+        val obj = JsonObject().apply {
             addProperty("name", user.username)
             addProperty("firstName", user.fName)
             addProperty("lastName", user.lName)
             addProperty("middleName", user.mName)
             addProperty("password", user.password)
             addProperty("isUserAdmin", false)
-            addProperty("joinDate", java.util.Calendar.getInstance().timeInMillis)
+            addProperty("joinDate", Calendar.getInstance().timeInMillis)
             addProperty("email", user.email)
             addProperty("planetCode", sharedPrefManager.getPlanetCode())
             addProperty("parentCode", sharedPrefManager.getParentCode())
@@ -614,10 +618,10 @@ class UserRepositoryImpl @Inject constructor(
             addProperty("gender", user.gender)
             addProperty("type", "user")
             addProperty("betaEnabled", false)
-            addProperty("androidId", org.ole.planet.myplanet.utils.NetworkUtils.getUniqueIdentifier())
-            addProperty("uniqueAndroidId", org.ole.planet.myplanet.utils.VersionUtils.getAndroidId(org.ole.planet.myplanet.MainApplication.context))
-            addProperty("customDeviceName", org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName(org.ole.planet.myplanet.MainApplication.context))
-            val roles = com.google.gson.JsonArray().apply { add("learner") }
+            addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+            addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            val roles = JsonArray().apply { add("learner") }
             add("roles", roles)
         }
         return becomeMember(obj)
