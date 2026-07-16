@@ -50,7 +50,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getCommunityNews_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        coEvery { repository["queryListFlow"](RealmNews::class.java, any(), any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
 
         val flow = repository.getCommunityNews("testUser")
         val result = flow.toList()
@@ -112,7 +112,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getDiscussionsByTeamIdFlow_uses_dispatcherProvider_default() = testScope.runTest {
-        coEvery { repository["queryListFlow"](RealmNews::class.java, any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
+        coEvery { repository["queryListFlow"](RealmNews::class.java, any(), any<Function1<*, *>>()) } returns kotlinx.coroutines.flow.flowOf(emptyList<RealmNews>())
 
         val flow = repository.getDiscussionsByTeamIdFlow("testTeam")
         val result = flow.toList()
