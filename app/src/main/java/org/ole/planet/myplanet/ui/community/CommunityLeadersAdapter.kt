@@ -22,7 +22,8 @@ internal class CommunityLeadersAdapter(
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.firstName == newItem.firstName &&
                     oldItem.lastName == newItem.lastName &&
-                    oldItem.email == newItem.email
+                    oldItem.email == newItem.email &&
+                    oldItem.name == newItem.name
             }
         )
     ) {

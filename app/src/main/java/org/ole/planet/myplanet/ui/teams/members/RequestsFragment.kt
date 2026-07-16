@@ -9,6 +9,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -72,7 +73,7 @@ class RequestsFragment : BaseMemberFragment() {
     override val list: List<RealmUser>
         get() = emptyList()
 
-    override val adapter: RecyclerView.Adapter<*> by lazy {
+    override val adapter: ListAdapter<*, *> by lazy {
         RequestsAdapter(
             requireActivity(),
             currentUser,
