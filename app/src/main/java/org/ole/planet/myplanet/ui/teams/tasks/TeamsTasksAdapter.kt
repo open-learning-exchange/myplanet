@@ -119,7 +119,7 @@ class TeamsTasksAdapter(
     class TeamsTasksViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val DIFF_CALLBACK = DiffUtils.itemCallback<RealmTeamTask>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmTeamTask>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.title == new.title &&
