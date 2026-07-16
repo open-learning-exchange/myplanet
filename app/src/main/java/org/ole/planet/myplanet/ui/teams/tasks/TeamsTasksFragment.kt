@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
-import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
@@ -48,6 +47,16 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
     private var datePicker: TextView? = null
     private var currentTab = R.id.btn_all
     private var updateTasksJob: Job? = null
+
+    private data class TaskSnapshot(
+        val id: String?,
+        val title: String?,
+        val description: String?,
+        val deadline: Long,
+        val completed: Boolean,
+        val assignee: String?
+    )
+    private var lastSubmittedSnapshot: List<TaskSnapshot>? = null
 
     private val teamViewModel: TeamViewModel by viewModels({ requireParentFragment() })
     private val teamsTasksViewModel: TeamsTasksViewModel by viewModels()
@@ -236,6 +245,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        lastSubmittedSnapshot = null
         binding.rvTask.layoutManager = LinearLayoutManager(activity)
         adapterTask = TeamsTasksAdapter(requireContext(), !isMemberFlow.value)
         adapterTask.setListener(this)
@@ -268,16 +278,16 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    private fun allTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
+    private fun allTasks(tasks: List<RealmTeamTask>): List<RealmTeamTask> {
+        return tasks.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
     }
 
-    private fun completedTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.filter { it.completed }.sortedByDescending { it.deadline }
+    private fun completedTasks(tasks: List<RealmTeamTask>): List<RealmTeamTask> {
+        return tasks.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
-    private fun myTasks(): List<RealmTeamTask> {
-        return teamViewModel.taskList.value.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
+    private fun myTasks(tasks: List<RealmTeamTask>): List<RealmTeamTask> {
+        return tasks.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
     override fun onNewsItemClick(news: RealmNews?) {}
@@ -292,12 +302,20 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         updateTasksJob?.cancel()
         updateTasksJob = viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.main) {
             val knownAssigneeIds = adapterTask.getKnownAssigneeIds()
+            val tasksSnapshot = teamViewModel.taskList.value.toList()
 
-            val (taskList, fetchedNames) = withContext(dispatcherProvider.io) {
+            val (taskList, fetchedNames, currentSnapshot) = withContext(dispatcherProvider.io) {
                 val list = when (currentTab) {
-                    R.id.btn_my -> myTasks()
-                    R.id.btn_completed -> completedTasks()
-                    else -> allTasks()
+                    R.id.btn_my -> myTasks(tasksSnapshot)
+                    R.id.btn_completed -> completedTasks(tasksSnapshot)
+                    else -> allTasks(tasksSnapshot)
+                }
+
+                val currentSnapshot = list.map {
+                    TaskSnapshot(it.id, it.title, it.description, it.deadline, it.completed, it.assignee)
+                }
+                if (currentSnapshot == lastSubmittedSnapshot) {
+                    return@withContext Triple(null, null, currentSnapshot)
                 }
 
                 val assigneesToFetch = list.mapNotNull { it.assignee }
@@ -311,8 +329,11 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 } else {
                     emptyMap()
                 }
-                Pair(list, names)
+                Triple(list, names, currentSnapshot)
             }
+
+            if (taskList == null || fetchedNames == null) return@launch
+            lastSubmittedSnapshot = currentSnapshot
 
             if (fetchedNames.isNotEmpty()) {
                 adapterTask.updateAssignees(fetchedNames)
