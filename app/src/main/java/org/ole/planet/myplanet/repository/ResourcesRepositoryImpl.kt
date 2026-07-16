@@ -5,6 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
 import java.util.Calendar
@@ -88,6 +89,48 @@ class ResourcesRepositoryImpl @Inject constructor(
                 }
             }
             return@withRealm realm.copyFromRealm(startsWithQuery + containsQuery)
+        }
+    }
+
+    override suspend fun getResourceById(id: String): RealmMyLibrary? {
+        return withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("id", id)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun updateLocalResource(
+        resourceId: String,
+        title: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        subjects: List<String>?,
+        levels: List<String>?
+    ): Result<Unit> {
+        return runCatching {
+            executeTransaction { realm ->
+                val resource = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("id", resourceId)
+                    .findFirst()
+                if (resource == null) return@executeTransaction
+
+                resource.title = title
+                resource.titleNormal = Utilities.normalizeText(title)
+                resource.author = author
+                resource.year = year
+                resource.description = description
+                resource.publisher = publisher
+                resource.linkToLicense = linkToLicense
+                resource.subject?.clear()
+                subjects?.forEach { resource.subject?.add(it) }
+                resource.level?.clear()
+                levels?.forEach { resource.level?.add(it) }
+            }
         }
     }
 
@@ -214,11 +257,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.language = request.language
             this.mediaType = request.mediaType
             this.resourceType = request.resourceType
-            this.subject = request.subjects
-            this.setUserId(io.realm.RealmList())
-            this.level = request.levels
+            this.subject = request.subjects?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
+            this.setUserId(RealmList())
+            this.level = request.levels?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.createdDate = Calendar.getInstance().timeInMillis
-            this.resourceFor = request.resourceFor
+            this.resourceFor = request.resourceFor?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.resourceLocalAddress = request.resourceUrl
             this.resourceOffline = true
             this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }

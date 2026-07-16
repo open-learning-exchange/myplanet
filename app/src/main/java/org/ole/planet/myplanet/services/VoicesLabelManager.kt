@@ -48,12 +48,7 @@ class VoicesLabelManager(
                         try {
                             addLabelFn(voiceId, selectedLabel)
                             withContext(dispatcherProvider.main) {
-                                if (voice.labels == null) {
-                                    voice.labels = RealmList()
-                                }
-                                voice.labels?.add(selectedLabel)
                                 Utilities.toast(context, context.getString(R.string.label_added))
-                                showChips(binding, voice, canManageLabels)
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
@@ -89,10 +84,6 @@ class VoicesLabelManager(
                         scope.launch {
                             try {
                                 removeLabelFn(voiceId, selectedLabel)
-                                withContext(dispatcherProvider.main) {
-                                    voice.labels?.remove(selectedLabel)
-                                    showChips(binding, voice, canManageLabels)
-                                }
                             } catch (e: Exception) {
                                 e.printStackTrace()
                             }

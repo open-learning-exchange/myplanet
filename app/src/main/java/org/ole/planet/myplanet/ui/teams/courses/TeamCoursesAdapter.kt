@@ -17,7 +17,7 @@ class TeamCoursesAdapter(
     private val context: Context,
     private val canRemove: Boolean,
     private val onRemove: (RealmMyCourse) -> Unit = {}
-) : ListAdapter<RealmMyCourse, TeamCoursesAdapter.ViewHolder>(DiffCallback) {
+) : ListAdapter<RealmMyCourse, TeamCoursesAdapter.ViewHolder>(DIFF_CALLBACK) {
     private var listener: OnHomeItemClickListener? = null
 
     init {
@@ -55,7 +55,7 @@ class TeamCoursesAdapter(
     class ViewHolder(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val DiffCallback = DiffUtils.itemCallback<RealmMyCourse>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMyCourse>(
             { oldItem, newItem -> oldItem.id == newItem.id },
             { oldItem, newItem ->
                 oldItem.courseTitle == newItem.courseTitle &&

@@ -41,16 +41,28 @@ class LifeRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateMyLifeListOrder(list: List<RealmMyLife>) {
+        var hasChanges = false
+        val userId = list.firstOrNull()?.userId
+
         executeTransaction { realm ->
             val ids = list.mapNotNull { it._id }.toTypedArray()
             if (ids.isEmpty()) return@executeTransaction
+
+            val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
+
             val managedLives = realm.where(RealmMyLife::class.java).`in`("_id", ids).findAll()
             managedLives.forEach { managedLife ->
-                val index = list.indexOfFirst { it._id == managedLife._id }
-                if (index != -1) {
+                val index = idToIndex[managedLife._id]
+                if (index != null && managedLife.weight != index) {
                     managedLife.weight = index
+                    hasChanges = true
                 }
             }
+        }
+
+        if (hasChanges && userId != null) {
+            val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
+            cacheMyLifeItems(userId, updatedLives)
         }
     }
 

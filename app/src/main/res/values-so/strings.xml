@@ -1333,5 +1333,9 @@
         <item>Socda</item>
         <item>Dhammaystiran</item>
     </string-array>
+    <string name="edit_resource">Wax ka beddel kheyraadka</string>
+    <string name="save_changes">Kaydi isbedelada</string>
+    <string name="resource_updated">Kheyraadka waa la cusboonaysiiyay</string>
+    <string name="failed_to_update_resource">Cusbooneysiin kheyraadka waxay ku guuldareysatay</string>
 
 </resources>
