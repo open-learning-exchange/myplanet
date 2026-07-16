@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AchievementData
+import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -67,6 +68,19 @@ class UserRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
+    override suspend fun getDashboardProfile(userId: String): DashboardProfile {
+        val user = getUserById(userId)
+        val userName = user?.name
+        val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+
+        val count = if (userName != null) {
+            activitiesRepositoryLazy.get().getOfflineLoginCount(userName)
+        } else {
+            0
+        }
+        return DashboardProfile(fullName, count)
+    }
+
     override suspend fun getUserById(userId: String): RealmUser? {
         return findByField(RealmUser::class.java, "id", userId)
     }
