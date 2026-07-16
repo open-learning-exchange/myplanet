@@ -51,9 +51,7 @@ class ResourcesAdapter(
     companion object {
         private const val SELECTION_PAYLOAD = "SELECTION_PAYLOAD"
         private const val RATING_PAYLOAD = "RATING_PAYLOAD"
-        private const val OPENED_RESOURCE_PAYLOAD = "OPENED_RESOURCE_PAYLOAD"
         private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
-        private const val OFFLINE_STATUS_PAYLOAD = "OFFLINE_STATUS_PAYLOAD"
 
         private val ITEM_CALLBACK = DiffUtils.itemCallback<ResourceListModel>(
             areItemsTheSame = { oldItem, newItem ->
@@ -64,11 +62,8 @@ class ResourcesAdapter(
             },
             getChangePayload = { oldItem, newItem ->
                 val payloads = mutableListOf<String>()
-                if (oldItem.isOpened != newItem.isOpened) {
-                    payloads.add(OPENED_RESOURCE_PAYLOAD)
-                }
-                if (oldItem.item.isOffline != newItem.item.isOffline || oldItem.isLocallyOffline != newItem.isLocallyOffline) {
-                    payloads.add(OFFLINE_STATUS_PAYLOAD)
+                if (oldItem.isOpened != newItem.isOpened || oldItem.item.isOffline != newItem.item.isOffline || oldItem.isLocallyOffline != newItem.isLocallyOffline) {
+                    payloads.add(SELECTION_PAYLOAD)
                 }
                 payloads.ifEmpty { null }
             }
@@ -79,10 +74,11 @@ class ResourcesAdapter(
 
     fun markItemAsOffline(id: String) {
         if (locallyOfflineIds.add(id)) {
-            val newList = currentList.map {
-                if (it.item.id == id) it.copy(isLocallyOffline = true) else it
+            currentList.forEachIndexed { index, model ->
+                if (model.item.id == id) {
+                    notifyItemChanged(index, SELECTION_PAYLOAD)
+                }
             }
-            submitList(newList)
         }
     }
 
@@ -128,8 +124,8 @@ class ResourcesAdapter(
             holder.itemView.setOnClickListener {
                 openLibrary(model)
             }
-            val isResourceOpened = model.isOpened
-            val isOffline = library.isOffline || model.isLocallyOffline
+            val isResourceOpened = openedResourceIds.contains(model.item.id) || model.isOpened
+            val isOffline = library.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
             holder.rowLibraryBinding.ivDownloaded.visibility =
                 if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
@@ -212,15 +208,13 @@ class ResourcesAdapter(
             }
             if (flatPayloads.contains(SELECTION_PAYLOAD)) {
                 holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
-                handled = true
-            }
-            if (flatPayloads.contains(OPENED_RESOURCE_PAYLOAD) || flatPayloads.contains(OFFLINE_STATUS_PAYLOAD)) {
-                val isResourceOpened = model.isOpened
-                val isOffline = library.isOffline || model.isLocallyOffline
+                val isResourceOpened = openedResourceIds.contains(model.item.id)
+                val isOffline = library.isOffline || locallyOfflineIds.contains(model.item.id)
                 holder.rowLibraryBinding.ivDownloaded.visibility =
                     if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
                 handled = true
             }
+
             if (flatPayloads.contains(TAGS_PAYLOAD)) {
                 displayTagCloud(holder, position)
                 handled = true
@@ -233,10 +227,16 @@ class ResourcesAdapter(
         }
     }
 
-    fun setOpenedResourceIds(openedResourceIds: Set<String>) {
-        this.openedResourceIds = openedResourceIds
-        val newList = currentList.map { it.copy(isOpened = openedResourceIds.contains(it.item.id)) }
-        submitList(newList)
+    fun setOpenedResourceIds(newOpenedResourceIds: Set<String>) {
+        val oldOpenedResourceIds = this.openedResourceIds
+        this.openedResourceIds = newOpenedResourceIds
+        currentList.forEachIndexed { index, model ->
+            val wasOpened = oldOpenedResourceIds.contains(model.item.id)
+            val isOpened = newOpenedResourceIds.contains(model.item.id)
+            if (wasOpened != isOpened) {
+                notifyItemChanged(index, SELECTION_PAYLOAD)
+            }
+        }
     }
 
     private fun displayTagCloud(holder: ResourcesViewHolder, position: Int) {
