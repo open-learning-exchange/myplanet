@@ -1337,5 +1337,9 @@
         <item>En cours</item>
         <item>Terminé</item>
     </string-array>
+    <string name="edit_resource">Modifier la ressource</string>
+    <string name="save_changes">Enregistrer les modifications</string>
+    <string name="resource_updated">Ressource mise à jour</string>
+    <string name="failed_to_update_resource">Échec de la mise à jour de la ressource</string>
 
 </resources>
