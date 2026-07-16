@@ -350,7 +350,7 @@ class RatingsRepositoryImplTest {
     }
 
     @Test
-    fun `bulkInsertFromSync processes JSON array properly`() {
+    fun `bulkInsertFromSync processes JSON array properly`() = runTest {
         mockkObject(RealmRating.Companion)
         every { RealmRating.insert(any(), any()) } returns Unit
 
@@ -367,7 +367,8 @@ class RatingsRepositoryImplTest {
             })
         }
 
-        repository.bulkInsertFromSync(mockRealm, jsonArray)
+        val docs = jsonArray.map { it.asJsonObject.getAsJsonObject("doc") }.filter { !it.get("_id").asString.startsWith("_design") }
+        repository.insertRatingsFromSync(docs)
 
         verify(exactly = 1) { RealmRating.insert(mockRealm, any()) }
 
