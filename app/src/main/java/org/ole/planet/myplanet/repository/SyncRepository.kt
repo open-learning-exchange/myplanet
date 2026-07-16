@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.sync
+package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import androidx.lifecycle.LiveData
@@ -14,7 +14,7 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.services.UserDataWorker
 
 @Singleton
-class SyncWorkRepository @Inject constructor(
+class SyncRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
     fun uploadLoginData(): LiveData<SyncUiState> {

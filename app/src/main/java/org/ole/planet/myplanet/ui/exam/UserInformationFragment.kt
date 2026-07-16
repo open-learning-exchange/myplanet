@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
-import org.ole.planet.myplanet.ui.sync.SubmissionsSyncCoordinator
+import org.ole.planet.myplanet.services.SubmissionsUploader
 
 @AndroidEntryPoint
 class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
@@ -52,7 +52,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
-    lateinit var submissionsSyncCoordinator: SubmissionsSyncCoordinator
+    lateinit var submissionsUploader: SubmissionsUploader
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -303,7 +303,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             return
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
-            submissionsSyncCoordinator.checkAvailableServer(syncStartTime)
+            submissionsUploader.checkAvailableServer(syncStartTime)
 
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
             val activity = requireActivity()
