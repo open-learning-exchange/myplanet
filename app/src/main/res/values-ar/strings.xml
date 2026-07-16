@@ -1349,5 +1349,9 @@
         <item>قيد التقدم</item>
         <item>مكتمل</item>
     </string-array>
+    <string name="edit_resource">تعديل المورد</string>
+    <string name="save_changes">حفظ التغييرات</string>
+    <string name="resource_updated">تم تحديث المورد</string>
+    <string name="failed_to_update_resource">فشل تحديث المورد</string>
 
 </resources>
