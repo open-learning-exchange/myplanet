@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.ui.teams
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
+import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
@@ -29,17 +29,12 @@ class TeamPagerAdapter(
 ) : FragmentStateAdapter(parentFragment) {
 
     fun updatePages(newPages: List<TeamPageConfig>) {
-        val diffCallback = object : DiffUtil.Callback() {
-            override fun getOldListSize(): Int = pages.size
-            override fun getNewListSize(): Int = newPages.size
-            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                return pages[oldItemPosition].id == newPages[newItemPosition].id
-            }
-            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                return pages[oldItemPosition] == newPages[newItemPosition]
-            }
-        }
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtils.calculateDiff(
+            pages,
+            newPages,
+            areItemsTheSame = { a, b -> a.id == b.id },
+            areContentsTheSame = { a, b -> a == b }
+        )
         pages = newPages.toList()
         diffResult.dispatchUpdatesTo(this)
     }
