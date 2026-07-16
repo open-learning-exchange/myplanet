@@ -74,7 +74,7 @@ class TeamFragment : Fragment() {
         return binding.root
     }
 
-     fun createTeamAlert(team: TeamDetails?) {
+    fun createTeamAlert(team: TeamDetails?) {
         alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupTeamAlertUI(team)
 
@@ -128,19 +128,19 @@ class TeamFragment : Fragment() {
                 Utilities.toast(activity, getString(R.string.name_is_required))
                 alertCreateTeamBinding.etName.error = getString(R.string.please_enter_a_name)
             } else -> {
-                val failureMessage = getString(R.string.request_failed_please_retry)
-                val userModel = currentUser ?: run {
-                    Utilities.toast(activity, failureMessage)
-                    return
-                }
-                viewLifecycleOwner.lifecycleScope.launch {
-                    if (team == null) {
-                        createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
-                    } else {
-                        updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
-                    }
+            val failureMessage = getString(R.string.request_failed_please_retry)
+            val userModel = currentUser ?: run {
+                Utilities.toast(activity, failureMessage)
+                return
+            }
+            viewLifecycleOwner.lifecycleScope.launch {
+                if (team == null) {
+                    createNewTeam(name, description, services, rules, selectedTeamType, userModel, dialog, failureMessage)
+                } else {
+                    updateExistingTeam(team, name, description, services, rules, userModel, dialog, failureMessage)
                 }
             }
+        }
         }
     }
 
