@@ -26,14 +26,23 @@ class TagsRepositoryImpl @Inject constructor(
         val parentTags = getTags(dbType)
         val allTags = queryList(RealmTag::class.java)
         val childMap = mutableMapOf<String, MutableList<RealmTag>>()
-        val seenParents = HashSet<String>()
 
-        allTags.forEach { t ->
-            seenParents.clear()
-            t.attachedTo?.forEach { parentId ->
-                if (seenParents.add(parentId)) {
-                    val list = childMap.getOrPut(parentId) { mutableListOf() }
-                    list.add(t)
+        for (t in allTags) {
+            val attached = t.attachedTo
+            if (attached.isNullOrEmpty()) continue
+
+            val attachedSize = attached.size
+            for (i in 0 until attachedSize) {
+                val parentId = attached[i]
+                if (parentId != null) {
+                    var list = childMap[parentId]
+                    if (list == null) {
+                        list = ArrayList()
+                        childMap[parentId] = list
+                    }
+                    if (list.isEmpty() || list.last() !== t) {
+                        list.add(t)
+                    }
                 }
             }
         }
@@ -83,13 +92,16 @@ class TagsRepositoryImpl @Inject constructor(
         val parentTagsById = allParentTags.associateBy { it.id }
 
         val tagsByLinkId = mutableMapOf<String, MutableList<RealmTag>>()
+        val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
         links.forEach { link ->
             link.linkId?.let { linkId ->
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
-                        val list = tagsByLinkId.getOrPut(linkId) { mutableListOf() }
-                        if (list.none { it.id == parentTag.id }) {
-                            list.add(parentTag)
+                        val set = tagsSetByLinkId.getOrPut(linkId) { mutableSetOf() }
+                        parentTag.id?.let { id ->
+                            if (set.add(id)) {
+                                tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
+                            }
                         }
                     }
                 }
