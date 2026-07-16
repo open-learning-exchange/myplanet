@@ -46,10 +46,11 @@ import org.ole.planet.myplanet.utils.textChanges
 @AndroidEntryPoint
 class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
+    private var shouldScrollToTopNextUpdate = false
     private val binding get() = _binding!!
     var user: RealmUser? = null
     private val voicesViewModel: VoicesViewModel by viewModels()
-    
+
     @Inject
     lateinit var userSessionManager: UserSessionManager
     @Inject
@@ -130,7 +131,7 @@ class VoicesFragment : BaseVoicesFragment() {
                             binding.btnNewVoice.text = getString(R.string.new_voice)
                             imageList.clear()
                             llImage?.removeAllViews()
-                            scrollToTop()
+                            shouldScrollToTopNextUpdate = true
                         } else {
                             Utilities.toast(requireContext(), getString(R.string.error, "Failed to create news"))
                         }
@@ -185,7 +186,12 @@ class VoicesFragment : BaseVoicesFragment() {
             val sortedList = sortNews(list)
             setupVoicesAdapter(sortedList.filterNotNull())
         } else {
-            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull())
+            (binding.rvNews.adapter as? VoicesAdapter)?.submitList(list.filterNotNull()) {
+                if (shouldScrollToTopNextUpdate) {
+                    scrollToTop()
+                    shouldScrollToTopNextUpdate = false
+                }
+            }
         }
         showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
     }

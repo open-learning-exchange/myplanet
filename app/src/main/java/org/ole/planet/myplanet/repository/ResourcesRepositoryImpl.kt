@@ -5,6 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
 import java.util.Calendar
@@ -68,11 +69,26 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            queryParts.forEach { part ->
-                queryObj.contains("titleNormal", Utilities.normalizeText(part), Case.INSENSITIVE)
+            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+            val normalizedQuery = Utilities.normalizeText(query)
+
+            normalizedQueryParts.forEach { part ->
+                queryObj.contains("titleNormal", part)
             }
             val data = queryObj.findAll()
-            return@withRealm realm.copyFromRealm(ResourceSearchUtils.searchList(data, query) { it.title })
+
+            val startsWithQuery = mutableListOf<RealmMyLibrary>()
+            val containsQuery = mutableListOf<RealmMyLibrary>()
+
+            for (item in data) {
+                val titleNormal = item.titleNormal ?: continue
+                if (titleNormal.startsWith(normalizedQuery)) {
+                    startsWithQuery.add(item)
+                } else if (normalizedQueryParts.all { titleNormal.contains(it) }) {
+                    containsQuery.add(item)
+                }
+            }
+            return@withRealm realm.copyFromRealm(startsWithQuery + containsQuery)
         }
     }
 
@@ -199,11 +215,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.language = request.language
             this.mediaType = request.mediaType
             this.resourceType = request.resourceType
-            this.subject = request.subjects
-            this.setUserId(io.realm.RealmList())
-            this.level = request.levels
+            this.subject = request.subjects?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
+            this.setUserId(RealmList())
+            this.level = request.levels?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.createdDate = Calendar.getInstance().timeInMillis
-            this.resourceFor = request.resourceFor
+            this.resourceFor = request.resourceFor?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.resourceLocalAddress = request.resourceUrl
             this.resourceOffline = true
             this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
