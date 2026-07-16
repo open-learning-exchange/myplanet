@@ -228,14 +228,21 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getShareableTeams(userId: String?): List<RealmMyTeam> {
-        val all = queryList(RealmMyTeam::class.java) {
+        if (userId.isNullOrBlank()) {
+            return queryList(RealmMyTeam::class.java) {
+                isEmpty("teamId")
+                notEqualTo("status", "archived")
+                equalTo("type", "team")
+            }
+        }
+        val memberIds = getMemberTeamIds(userId)
+        if (memberIds.isEmpty()) return emptyList()
+        return queryList(RealmMyTeam::class.java) {
             isEmpty("teamId")
             notEqualTo("status", "archived")
             equalTo("type", "team")
+            `in`("_id", memberIds.toTypedArray())
         }
-        if (userId.isNullOrBlank()) return all
-        val memberIds = getMemberTeamIds(userId)
-        return all.filter { it._id != null && it._id in memberIds }
     }
 
     override suspend fun getTeamSummaries(userId: String?): List<TeamSummary> {
@@ -351,12 +358,20 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getShareableEnterpriseSummaries(userId: String?): List<TeamSummary> {
-        val all = getShareableEnterprises()
         val filtered = if (userId.isNullOrBlank()) {
-            all
+            getShareableEnterprises()
         } else {
             val memberIds = getMemberTeamIds(userId)
-            all.filter { it._id != null && it._id in memberIds }
+            if (memberIds.isEmpty()) {
+                emptyList()
+            } else {
+                queryList(RealmMyTeam::class.java) {
+                    isEmpty("teamId")
+                    notEqualTo("status", "archived")
+                    equalTo("type", "enterprise")
+                    `in`("_id", memberIds.toTypedArray())
+                }
+            }
         }
         // Delegation to Realm-returning method is intentional and solely for type isolation at the boundary.
         return filtered.mapNotNull { team ->
