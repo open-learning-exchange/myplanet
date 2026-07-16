@@ -13,6 +13,7 @@ open class RealmSubmission : RealmObject() {
     var _id: String? = null
     @Index
     var _rev: String? = null
+    @Index
     var parentId: String? = null
     @Index
     var type: String? = null
