@@ -226,14 +226,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    private val addResourceLauncher = registerForActivityResult(
-        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == android.app.Activity.RESULT_OK) {
-            refreshResourcesData()
-        }
-    }
-
     private fun setupGuestUserRestrictions() {
         if(userModel?.isGuest() == true){
             tvAddToLib.visibility = View.GONE
