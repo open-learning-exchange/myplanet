@@ -113,6 +113,23 @@ class HealthRepositoryImpl @Inject constructor(
         realm.insertOrUpdate(examinations)
     }
 
+    override suspend fun getExaminationConditions(examination: RealmHealthExamination?): Map<String, Boolean> {
+        return withContext(dispatcherProvider.default) {
+            val result = mutableMapOf<String, Boolean>()
+            if (examination != null && !examination.conditions.isNullOrEmpty()) {
+                try {
+                    val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
+                    for (key in conditions.keySet()) {
+                        result[key] = JsonUtils.getBoolean(key, conditions)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
+            result
+        }
+    }
+
     override suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?> {
         val uploadedHealths = mutableMapOf<String, String?>()
         val semaphore = Semaphore(5)

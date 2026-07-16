@@ -32,6 +32,8 @@ import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.ui.dashboard.DashboardItem
+import org.ole.planet.myplanet.ui.dashboard.ItemType
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
@@ -206,7 +208,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         setCountText(filteredCourses.size, RealmMyCourse::class.java, requireView())
         val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
         for ((itemCnt, items) in filteredCourses.withIndex()) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
+            val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, dashboardItem)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
         }
@@ -263,7 +266,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         for ((itemCnt, items) in visibleItems.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, 0), params)
+            val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
+            flexboxLayout.addView(getLayout(itemCnt, dashboardItem, 0), params)
         }
         updateMyLifeSurveyCount()
     }
