@@ -86,7 +86,7 @@ class VoicesAdapter(
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
-                        oldItem.sharedBy == newItem.sharedBy
+                        oldItem.sharedBy == newItem.sharedBy && oldItem.labels?.toList() == newItem.labels?.toList()
             } catch (e: Exception) {
                 false
             }
