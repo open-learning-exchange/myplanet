@@ -13,4 +13,4 @@ data class MeetupCreationParams(
     val startMillis: Long,
     val endMillis: Long,
     val teamId: String
-)
+}
