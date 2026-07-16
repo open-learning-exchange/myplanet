@@ -14,4 +14,4 @@ data class FinanceReportParams(
     val teamPlanetCode: String?,
     val imageName: String? = null,
     val imageData: ByteArray? = null
-}
+)
