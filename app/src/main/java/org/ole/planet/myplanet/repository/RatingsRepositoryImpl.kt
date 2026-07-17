@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
@@ -12,7 +11,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.utils.JsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
