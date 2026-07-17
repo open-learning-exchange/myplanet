@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @ExperimentalCoroutinesApi
 class RequestsViewModelTest {

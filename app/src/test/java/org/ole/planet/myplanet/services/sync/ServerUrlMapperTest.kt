@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services.sync
 
 import android.content.SharedPreferences
 import android.net.Uri
-import androidx.core.net.toUri
 import io.mockk.Runs
 import io.mockk.every
 import io.mockk.just
