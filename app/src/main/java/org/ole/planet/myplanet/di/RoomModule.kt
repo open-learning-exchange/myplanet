@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
+import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -52,5 +53,10 @@ object RoomModule {
     @Provides
     fun provideCommunityDao(database: AppDatabase): CommunityDao {
         return database.communityDao()
+    }
+
+    @Provides
+    fun provideApkLogDao(database: AppDatabase): ApkLogDao {
+        return database.apkLogDao()
     }
 }

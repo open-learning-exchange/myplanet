@@ -1,15 +1,20 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.Ignore
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-open class RealmApkLog : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmApkLog` model. Crash/ANR/error logs are written via
+ * [org.ole.planet.myplanet.data.room.dao.ApkLogDao] and uploaded through the Room upload path
+ * (`UploadConfigs.CrashLog`). A row with a null `_rev` is considered pending upload.
+ */
+@Entity(tableName = "apk_log")
+open class RealmApkLog {
     @PrimaryKey
-    var id: String? = null
+    var id: String = ""
     var userId: String? = null
     var type: String? = null
     var _rev: String? = null
@@ -21,7 +26,6 @@ open class RealmApkLog : RealmObject() {
     var time: String? = null
 
     companion object {
-        @Ignore
         const val ERROR_TYPE_CRASH = "crash"
 
         fun serialize(log: RealmApkLog, context: Context): JsonObject {

@@ -86,8 +86,16 @@ wired through `di/RoomModule`.
       `@Transaction replaceAll`; `CommunityRepositoryImpl` keeps `RealmRepository` only for the
       still-Realm `RealmMeetup` insert, using `CommunityDao` for community rows). First proven
       *coexistence-within-one-repo* template. Dropped a Realm-only `isValid` check in the sync UI.
-- [ ] Re-architect `RealmRepository`, upload framework, sync.
-- [ ] Remaining 33 model domains.
+- [x] **Upload framework made Room-capable**: added `RoomUploadConfig<T: Any>` + a parallel
+      `UploadCoordinator.uploadRoom()` path (DB-agnostic: `fetchPendingItems` + DAO `markUploaded`),
+      relaxed `UploadSerializer`/`PreparedUpload` to `T: Any`. The 16 Realm `UploadConfig`s are
+      untouched. **Finding:** the sync side (`TransactionSyncManager`) already delegates to each
+      repo's `insert()`, so synced-only domains need no framework change — only uploaded ones did.
+- [x] **ApkLog** migrated through the new path (`RealmApkLog` now a Room `@Entity`, `ApkLogDao`,
+      `CrashLog` is a `RoomUploadConfig`, `MainApplication.saveLogToRealm` + crash-log sweep write
+      via the DAO, `uploadCrashLog()` uses `uploadRoom`). First uploadable model on Room.
+- [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 
