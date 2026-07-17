@@ -1,7 +1,9 @@
 package org.ole.planet.myplanet.repository
 
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -11,12 +13,14 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -165,5 +169,30 @@ class CoursesRepositoryImplTest {
         val result = repository.getCoursesByIds(listOf("id1", "id2"))
         assertEquals(2, result.size)
         verify { mockQuery.`in`("courseId", arrayOf("id1", "id2")) }
+    }
+
+    @Test
+    fun `saveSearchActivity writes course search activity to Room`() = runTest {
+        val savedActivity = slot<RealmSearchActivity>()
+
+        repository.saveSearchActivity(
+            searchText = "algebra",
+            userName = "learner",
+            planetCode = "planet",
+            parentCode = "parent",
+            tags = emptyList(),
+            grade = "6",
+            subject = "math"
+        )
+
+        coVerify { searchActivityDao.insert(capture(savedActivity)) }
+        assertNotNull(savedActivity.captured.id)
+        assertEquals("learner", savedActivity.captured.user)
+        assertEquals("planet", savedActivity.captured.createdOn)
+        assertEquals("parent", savedActivity.captured.parentCode)
+        assertEquals("algebra", savedActivity.captured.text)
+        assertEquals("courses", savedActivity.captured.type)
+        assertTrue(savedActivity.captured.filter.contains("doc.gradeLevel"))
+        assertTrue(savedActivity.captured.filter.contains("doc.subjectLevel"))
     }
 }

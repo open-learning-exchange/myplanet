@@ -4,8 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import dagger.Lazy
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -16,12 +18,14 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -273,5 +277,32 @@ class ResourcesRepositoryImplTest {
         verify { mockQuery.contains("titleNormal", "tree") }
         assertEquals(1, result.size)
         assertEquals(matchLib, result[0])
+    }
+
+    @Test
+    fun `saveSearchActivity writes resource search activity to Room`() = runTest {
+        val savedActivity = slot<RealmSearchActivity>()
+
+        repository.saveSearchActivity(
+            userName = "learner",
+            searchText = "physics",
+            planetCode = "planet",
+            parentCode = "parent",
+            tags = emptyList(),
+            subjects = setOf("science"),
+            languages = setOf("en"),
+            levels = setOf("beginner"),
+            mediums = setOf("video")
+        )
+
+        coVerify { searchActivityDao.insert(capture(savedActivity)) }
+        assertNotNull(savedActivity.captured.id)
+        assertEquals("learner", savedActivity.captured.user)
+        assertEquals("planet", savedActivity.captured.createdOn)
+        assertEquals("parent", savedActivity.captured.parentCode)
+        assertEquals("physics", savedActivity.captured.text)
+        assertEquals("resources", savedActivity.captured.type)
+        assertTrue(savedActivity.captured.filter.contains("science"))
+        assertTrue(savedActivity.captured.filter.contains("video"))
     }
 }
