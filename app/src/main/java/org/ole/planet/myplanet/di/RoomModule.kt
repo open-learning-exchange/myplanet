@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
+import org.ole.planet.myplanet.data.room.dao.RetryDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -40,5 +41,10 @@ object RoomModule {
     @Provides
     fun providePersonalDao(database: AppDatabase): PersonalDao {
         return database.personalDao()
+    }
+
+    @Provides
+    fun provideRetryDao(database: AppDatabase): RetryDao {
+        return database.retryDao()
     }
 }

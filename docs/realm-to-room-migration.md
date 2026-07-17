@@ -79,8 +79,11 @@ wired through `di/RoomModule`.
 - [x] **Personals** domain migrated end-to-end (`RealmMyPersonal` now a Room `@Entity` with
       `@JvmField` on `id`/`_id` to avoid Room's ambiguous-accessor error, `PersonalDao` with a
       reactive `Flow` query, `PersonalsRepositoryImpl` off `RealmRepository`, test ported).
+- [x] **Retry** domain migrated end-to-end (`RealmRetryOperation` now a Room `@Entity`;
+      Realm-based `createFromRetryFailure` factory replaced with a pure one; `RetryDao` with
+      status-filtered queries/updates; `RetryRepositoryImpl` off `RealmRepository`; test ported).
 - [ ] Re-architect `RealmRepository`, upload framework, sync.
-- [ ] Remaining 35 model domains.
+- [ ] Remaining 34 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

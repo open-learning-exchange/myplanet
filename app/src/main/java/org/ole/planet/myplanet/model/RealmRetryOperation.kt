@@ -1,19 +1,25 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import java.util.UUID
 
-open class RealmRetryOperation : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmRetryOperation` model. Persistence goes through
+ * [org.ole.planet.myplanet.data.room.dao.RetryDao]; the class name is kept because the retry
+ * worker/queue and settings screen use it as a plain data holder.
+ */
+@Entity(
+    tableName = "retry_operation",
+    indices = [Index("uploadType"), Index("itemId"), Index("status")]
+)
+open class RealmRetryOperation {
     @PrimaryKey
     var id: String = ""
 
-    @Index
     var uploadType: String = ""
 
-    @Index
     var itemId: String = ""
 
     var serializedPayload: String = ""
@@ -21,7 +27,6 @@ open class RealmRetryOperation : RealmObject() {
     var httpMethod: String = "POST"
     var dbId: String? = null
 
-    @Index
     var status: String = STATUS_PENDING
 
     var attemptCount: Int = 0
@@ -48,7 +53,6 @@ open class RealmRetryOperation : RealmObject() {
         private const val MAX_DELAY_MS = 30 * 60 * 1000L
 
         fun createFromRetryFailure(
-            realm: Realm,
             uploadType: String,
             failure: RetryFailure,
             payload: String,
@@ -58,26 +62,24 @@ open class RealmRetryOperation : RealmObject() {
             modelClassName: String,
             userId: String?
         ): RealmRetryOperation {
-            val operation = realm.createObject(
-                RealmRetryOperation::class.java,
-                UUID.randomUUID().toString()
-            )
-            operation.uploadType = uploadType
-            operation.itemId = failure.itemId
-            operation.serializedPayload = payload
-            operation.endpoint = endpoint
-            operation.httpMethod = httpMethod
-            operation.dbId = dbId
-            operation.status = STATUS_PENDING
-            operation.attemptCount = 1
-            operation.createdTime = System.currentTimeMillis()
-            operation.lastAttemptTime = System.currentTimeMillis()
-            operation.nextRetryTime = calculateNextRetryTime(1)
-            operation.errorMessage = failure.message
-            operation.httpCode = failure.httpCode
-            operation.modelClassName = modelClassName
-            operation.userId = userId
-            return operation
+            return RealmRetryOperation().apply {
+                id = UUID.randomUUID().toString()
+                this.uploadType = uploadType
+                itemId = failure.itemId
+                serializedPayload = payload
+                this.endpoint = endpoint
+                this.httpMethod = httpMethod
+                this.dbId = dbId
+                status = STATUS_PENDING
+                attemptCount = 1
+                createdTime = System.currentTimeMillis()
+                lastAttemptTime = System.currentTimeMillis()
+                nextRetryTime = calculateNextRetryTime(1)
+                errorMessage = failure.message
+                httpCode = failure.httpCode
+                this.modelClassName = modelClassName
+                this.userId = userId
+            }
         }
 
         fun calculateNextRetryTime(attemptCount: Int): Long {
