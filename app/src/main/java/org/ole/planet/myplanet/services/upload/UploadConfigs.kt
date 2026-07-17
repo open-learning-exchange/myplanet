@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -49,7 +50,8 @@ class UploadConfigs @Inject constructor(
     private val apkLogDao: ApkLogDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseActivityDao: CourseActivityDao,
-    private val resourceActivityDao: ResourceActivityDao
+    private val resourceActivityDao: ResourceActivityDao,
+    private val submitPhotosDao: SubmitPhotosDao
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -216,14 +218,16 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-    val SubmitPhotos = UploadConfig(
-        modelClass = RealmSubmitPhotos::class,
+    val SubmitPhotos = RoomUploadConfig(
         endpoint = "submissions",
-        queryBuilder = { query -> query.equalTo("uploaded", false) },
+        modelClassName = "RealmSubmitPhotos",
+        fetchPendingItems = { submitPhotosDao.getUnuploaded() },
         serializer = UploadSerializer.Simple(RealmSubmitPhotos::serializeRealmSubmitPhotos),
         idExtractor = { it.id },
-        additionalUpdates = { _, photo, _ ->
-            photo.uploaded = true
+        markUploaded = { results ->
+            results.filter { result ->
+                submitPhotosDao.markUploaded(result.localId, result.remoteRev, result.remoteId) == 0
+            }
         }
     )
 
