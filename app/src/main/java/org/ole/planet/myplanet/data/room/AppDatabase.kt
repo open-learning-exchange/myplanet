@@ -5,6 +5,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
+import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -13,6 +14,7 @@ import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
@@ -37,6 +39,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmApkLog::class,
         RealmUserChallengeActions::class,
         RealmTeamNotification::class,
+        RealmCertification::class,
     ],
     version = 1,
     exportSchema = false,
@@ -51,4 +54,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun apkLogDao(): ApkLogDao
     abstract fun userChallengeActionsDao(): UserChallengeActionsDao
     abstract fun teamNotificationDao(): TeamNotificationDao
+    abstract fun certificationDao(): CertificationDao
 }

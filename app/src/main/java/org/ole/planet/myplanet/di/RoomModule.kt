@@ -11,6 +11,7 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
+import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -71,5 +72,10 @@ object RoomModule {
     @Provides
     fun provideTeamNotificationDao(database: AppDatabase): TeamNotificationDao {
         return database.teamNotificationDao()
+    }
+
+    @Provides
+    fun provideCertificationDao(database: AppDatabase): CertificationDao {
+        return database.certificationDao()
     }
 }

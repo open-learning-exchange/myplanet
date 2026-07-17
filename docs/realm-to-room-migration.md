@@ -102,6 +102,11 @@ wired through `di/RoomModule`.
 - [x] **TeamNotification** migrated (single-id Room `@Entity`, `TeamNotificationDao`; converted
       3 sites across `NotificationsRepositoryImpl` + `VoicesRepositoryImpl`, both kept on
       `RealmRepository` for their other models; test constructors updated).
+- [x] **Certification** migrated (`RealmCertification` Room `@Entity`, `CertificationDao` with a
+      LIKE-based `countByCourseId`; `isCourseCertified` + the sync bulk-insert converted). First
+      proven **sync-bulk-insert** conversion: the per-table `insert` moves from the shared Realm
+      `executeTransaction` dispatch in `TransactionSyncManager` to the outer suspend `when` +
+      a DAO upsert. Template for the remaining synced models.
 - [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

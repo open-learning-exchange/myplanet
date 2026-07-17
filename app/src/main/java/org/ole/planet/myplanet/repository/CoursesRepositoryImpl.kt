@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -46,7 +47,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
-    private val sharedPrefManager: SharedPrefManager
+    private val sharedPrefManager: SharedPrefManager,
+    private val certificationDao: CertificationDao
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -477,9 +479,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun isCourseCertified(courseId: String): Boolean {
         if (courseId.isBlank()) return false
-        return count(RealmCertification::class.java) {
-            contains("courseIds", courseId)
-        } > 0
+        return certificationDao.countByCourseId(courseId) > 0
     }
 
     override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean) {
@@ -605,40 +605,21 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
-    override fun bulkInsertCertificationsFromSync(realm: Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
+    override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
+        val certifications = ArrayList<RealmCertification>(jsonArray.size())
         for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
             val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-            }
+            if (id.startsWith("_design")) continue
+            certifications.add(
+                RealmCertification().apply {
+                    _id = id
+                    name = JsonUtils.getString("name", jsonDoc)
+                    setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))
+                }
+            )
         }
-
-        val ids = documentList.map { JsonUtils.getString("_id", it) }.filterNotNull()
-        val existingCertifications = mutableMapOf<String?, RealmCertification>()
-        ids.chunked(900).forEach { chunk ->
-            val results = realm.where(RealmCertification::class.java)
-                .`in`("_id", chunk.toTypedArray())
-                .findAll()
-            existingCertifications.putAll(results.associateBy { it._id })
-        }
-
-        documentList.forEach { jsonDoc ->
-            insertCertification(realm, jsonDoc, existingCertifications)
-        }
-    }
-
-    private fun insertCertification(realm: Realm, doc: JsonObject, existingCertifications: MutableMap<String?, RealmCertification>) {
-        val id = JsonUtils.getString("_id", doc)
-        var certification = existingCertifications[id]
-        if (certification == null) {
-            certification = realm.createObject(RealmCertification::class.java, id)
-            existingCertifications[id] = certification
-        }
-        certification?.name = JsonUtils.getString("name", doc)
-        certification?.setCourseIds(JsonUtils.getJsonArray("courseIds", doc))
+        certificationDao.upsertAll(certifications)
     }
 
     private fun insertMyCourse(shelfId: String, doc: JsonObject, realmTx: Realm, spm: SharedPrefManager) {
