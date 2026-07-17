@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
 @Module
@@ -100,12 +100,7 @@ object RoomModule {
     }
 
     @Provides
-    fun provideTagDao(database: AppDatabase): TagDao {
-        return database.tagDao()
-    }
-
-    @Provides
-    fun provideMeetupDao(database: AppDatabase): MeetupDao {
-        return database.meetupDao()
+    fun provideSearchActivityDao(database: AppDatabase): SearchActivityDao {
+        return database.searchActivityDao()
     }
 }

@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.model.RealmApkLog
@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 
@@ -53,8 +53,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmChatHistory::class,
         RealmFeedback::class,
         RealmRating::class,
-        RealmTag::class,
-        RealmMeetup::class,
+        RealmSearchActivity::class,
     ],
     version = 1,
     exportSchema = false,
@@ -73,6 +72,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
     abstract fun feedbackDao(): FeedbackDao
     abstract fun ratingDao(): RatingDao
-    abstract fun tagDao(): TagDao
-    abstract fun meetupDao(): MeetupDao
+    abstract fun searchActivityDao(): SearchActivityDao
 }

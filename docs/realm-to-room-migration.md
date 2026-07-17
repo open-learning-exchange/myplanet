@@ -126,29 +126,11 @@ wired through `di/RoomModule`.
       `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
       `RoomUploadConfig`. Repo aggregation moved from Realm `average()`/`RealmResults` to
       in-memory over DAO lists. Repo test + model test + UploadManager test updated.
-- [x] **Tag** migrated (synced-only). `RealmTag` Room `@Entity` (@JvmField id/_id; `attachedTo`
-      `RealmList<String>` → `List<String>?` via `Converters`; `@Index` on name/tagId/db; kept the
-      `toTag()`/`getTagsArray` POJO helpers); `TagDao` (parent-tag filter, by-db-and-linkId(s),
-      by-ids, by-names, by-db-and-tagIds, upsert); `TagsRepositoryImpl` off `RealmRepository`
-      entirely (child aggregation, linked-tag resolution, and sync `insert` all via the DAO).
-      Sync `"tags"` dispatch moved to the outer suspend `when` (drop `bulkInsertFromSync`).
-      `CoursesRepositoryImpl.filterCourses` now resolves tag→course links via `TagDao` before the
-      Realm course query (injects `tagDao`). First proven **`RealmList<String>` → JSON `List`**
-      mapping. Repo test rewritten to mock `TagDao`; `CoursesRepositoryImplTest` constructor updated.
-- [x] **Meetup** migrated (synced + uploaded, cross-repo). `RealmMeetup` Room `@Entity`
-      (non-null PK `id`; `@Index` on meetupId/teamId/userId; all-scalar fields, no converters);
-      the Realm `insert`/`insertList`/`getMyMeetUpIds(realm,…)` companions replaced with pure
-      `fromJson(...)` + `getMyMeetUpIds(List)`. `MeetupDao` (by-team/meetupId/id/user, members,
-      by-meetupIds, pending-uploads, upsert). `EventsRepositoryImpl` off the generic Realm API
-      (keeps `RealmRepository` only to resolve `RealmUser` members, which is still Realm);
-      `CommunityRepositoryImpl` now fully off `RealmRepository` (sync insert merges via the DAO);
-      `UserRepositoryImpl.getShelfData` fetches meetup ids via `MeetupDao` before its Realm block.
-      `Meetups` upload config → `RoomUploadConfig` (markUploaded sets meetupId/rev + clears
-      `updated` via the repo); `UploadManager.uploadMeetups` uses `uploadRoom`. Model + repo +
-      upload-manager + user-repo constructor tests updated. Also fixed a latent Tag-migration
-      fallout: `ResourcesViewModelTest` can no longer mockk `RealmTag.id` (now a `@JvmField`), so
-      it uses a real instance.
-- [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **SearchActivity** migrated (uploaded-only local activity log). `RealmSearchActivity` is now
+      a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload
+      acknowledgements; course/resource search logging now writes through the DAO; upload config
+      uses `RoomUploadConfig`.
+- [ ] Migrate the remaining 14 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
