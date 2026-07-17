@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
+import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -39,7 +40,8 @@ class VoicesRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
-    private val userRepositoryLazy: dagger.Lazy<UserRepository>
+    private val userRepositoryLazy: dagger.Lazy<UserRepository>,
+    private val teamNotificationDao: TeamNotificationDao
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -261,18 +263,18 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateTeamNotification(teamId: String, count: Int) {
-        executeTransaction { it ->
-            var notification = it.where(RealmTeamNotification::class.java)
-                .equalTo("type", "chat")
-                .equalTo("parentId", teamId)
-                .findFirst()
-
-            if (notification == null) {
-                notification = it.createObject(RealmTeamNotification::class.java, UUID.randomUUID().toString())
-                notification.parentId = teamId
-                notification.type = "chat"
+        val existing = teamNotificationDao.findByParentAndType(teamId, "chat")
+        if (existing != null) {
+            existing.lastCount = count
+            teamNotificationDao.update(existing)
+        } else {
+            val notification = RealmTeamNotification().apply {
+                id = UUID.randomUUID().toString()
+                parentId = teamId
+                type = "chat"
+                lastCount = count
             }
-            notification.lastCount = count
+            teamNotificationDao.insert(notification)
         }
     }
 
