@@ -45,17 +45,17 @@ class RealmFeedbackTest {
     fun testSetMessagesString() {
         val feedback = RealmFeedback()
         val messageString = "[{\"message\":\"Test message\"}]"
-        feedback.setMessages(messageString)
+        feedback.messages = messageString
         assertEquals(messageString, feedback.messages)
     }
 
     @Test
     fun testMessageListEmpty() {
         val feedback = RealmFeedback()
-        feedback.setMessages("")
+        feedback.messages = ""
         assertNull(feedback.messageList)
 
-        feedback.setMessages(null as String?)
+        feedback.messages = null
         assertNull(feedback.messageList)
     }
 
@@ -69,7 +69,7 @@ class RealmFeedbackTest {
               {"message": "msg2", "user": "user2", "time": "time2"}
             ]
         """.trimIndent()
-        feedback.setMessages(messageString)
+        feedback.messages = messageString
 
         val list = feedback.messageList
         assertEquals(2, list?.size)
@@ -84,10 +84,10 @@ class RealmFeedbackTest {
     @Test
     fun testMessageEmpty() {
         val feedback = RealmFeedback()
-        feedback.setMessages("")
+        feedback.messages = ""
         assertEquals("", feedback.message)
 
-        feedback.setMessages(null as String?)
+        feedback.messages = null
         assertEquals("", feedback.message)
     }
 
@@ -100,7 +100,7 @@ class RealmFeedbackTest {
               {"message": "Second message", "user": "user1", "time": "time1"}
             ]
         """.trimIndent()
-        feedback.setMessages(messageString)
+        feedback.messages = messageString
         assertEquals("First message", feedback.message)
     }
 
@@ -122,7 +122,7 @@ class RealmFeedbackTest {
             _rev = "rev123"
         }
         val messageString = "[{\"message\":\"Test message\"}]"
-        feedback.setMessages(messageString)
+        feedback.messages = messageString
 
         val serialized = RealmFeedback.serializeFeedback(feedback)
 
@@ -149,7 +149,7 @@ class RealmFeedbackTest {
     fun testSerializeFeedbackWithInvalidMessagesException() {
         val feedback = RealmFeedback()
 
-        feedback.setMessages("invalid json")
+        feedback.messages = "invalid json"
 
         mockkStatic(JsonParser::class)
         every { JsonParser.parseString(any()) } throws object : Exception("Test exception") {

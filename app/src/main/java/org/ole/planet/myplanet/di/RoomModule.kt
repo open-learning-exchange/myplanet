@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
@@ -83,5 +84,10 @@ object RoomModule {
     @Provides
     fun provideChatDao(database: AppDatabase): ChatDao {
         return database.chatDao()
+    }
+
+    @Provides
+    fun provideFeedbackDao(database: AppDatabase): FeedbackDao {
+        return database.feedbackDao()
     }
 }

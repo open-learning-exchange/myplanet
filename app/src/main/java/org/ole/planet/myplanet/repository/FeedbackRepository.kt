@@ -22,4 +22,5 @@ interface FeedbackRepository {
     suspend fun saveFeedback(feedback: RealmFeedback)
     suspend fun insertFromJson(jsonObject: JsonObject)
     suspend fun insertFeedbackList(jsonObjects: List<JsonObject>)
+    suspend fun markFeedbackUploaded(id: String): Boolean
 }

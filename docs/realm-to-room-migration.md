@@ -114,6 +114,12 @@ wired through `di/RoomModule`.
       value-object child lists. (Child types that ARE queried independently — courseSteps,
       answers, attachments, examQuestions — will instead need their own tables.) Both Chat test
       files ported to mock `ChatDao`.
+- [x] **Feedback** migrated (both uploaded AND synced). `RealmFeedback` Room `@Entity`
+      (@JvmField id/_id; messages JSON string; @Ignore on computed messageList/message);
+      `FeedbackDao` with two reactive `Flow` queries; `FeedbackRepositoryImpl` off
+      `RealmRepository`; `Feedback` upload config -> `RoomUploadConfig` (markUploaded sets
+      isUploaded via DAO). Sync path unchanged (already suspend/outer). Model test +
+      repo test + UploadManager test updated.
 - [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

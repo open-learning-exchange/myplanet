@@ -9,6 +9,7 @@ import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
@@ -18,6 +19,7 @@ import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRetryOperation
@@ -43,6 +45,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmTeamNotification::class,
         RealmCertification::class,
         RealmChatHistory::class,
+        RealmFeedback::class,
     ],
     version = 1,
     exportSchema = false,
@@ -59,4 +62,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun teamNotificationDao(): TeamNotificationDao
     abstract fun certificationDao(): CertificationDao
     abstract fun chatDao(): ChatDao
+    abstract fun feedbackDao(): FeedbackDao
 }
