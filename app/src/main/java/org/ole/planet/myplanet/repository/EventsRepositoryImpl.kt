@@ -6,23 +6,23 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.queryList
+import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class EventsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val meetupDao: MeetupDao
 ) : RealmRepository(databaseService, realmDispatcher), EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup> {
-        return queryList(RealmMeetup::class.java) {
-            equalTo("teamId", teamId)
-        }
+        return meetupDao.getByTeamId(teamId)
     }
 
     override suspend fun updateMeetup(
@@ -32,18 +32,18 @@ class EventsRepositoryImpl @Inject constructor(
         recurring: String
     ): Boolean {
         return try {
-            update(RealmMeetup::class.java, "id", meetupId) { meetup ->
-                meetup.title = title
-                meetup.description = description
-                meetup.startDate = startDate
-                meetup.endDate = endDate
-                meetup.startTime = startTime
-                meetup.endTime = endTime
-                meetup.meetupLocation = meetupLocation
-                meetup.meetupLink = meetupLink
-                meetup.recurring = recurring
-                meetup.updated = true
-            }
+            val meetup = meetupDao.getById(meetupId) ?: return false
+            meetup.title = title
+            meetup.description = description
+            meetup.startDate = startDate
+            meetup.endDate = endDate
+            meetup.startTime = startTime
+            meetup.endTime = endTime
+            meetup.meetupLocation = meetupLocation
+            meetup.meetupLink = meetupLink
+            meetup.recurring = recurring
+            meetup.updated = true
+            meetupDao.upsert(meetup)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -55,34 +55,30 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) {
             return null
         }
-        return findByField(RealmMeetup::class.java, "meetupId", meetupId)
+        return meetupDao.getByMeetupId(meetupId)
     }
 
     override suspend fun getMeetupByLocalId(id: String): RealmMeetup? {
         if (id.isBlank()) return null
-        return findByField(RealmMeetup::class.java, "id", id)
+        return meetupDao.getById(id)
     }
 
     override suspend fun getJoinedMembers(meetupId: String): List<RealmUser> {
         if (meetupId.isBlank()) {
             return emptyList()
         }
+        val memberIds = meetupDao.getMembersByMeetupId(meetupId)
+            .mapNotNull { member -> member.userId?.takeUnless { it.isBlank() } }
+            .distinct()
+        if (memberIds.isEmpty()) {
+            return emptyList()
+        }
+        // RealmUser is still on Realm, so resolve members through the Realm store.
         return withRealmAsync { realm ->
-            val meetupMembers = realm.queryList(RealmMeetup::class.java) {
-                equalTo("meetupId", meetupId)
-                isNotEmpty("userId")
-            }
-            val memberIds = meetupMembers.mapNotNull { member ->
-                member.userId?.takeUnless { it.isBlank() }
-            }.distinct()
-            if (memberIds.isEmpty()) {
-                emptyList()
-            } else {
-                val users = realm.where(RealmUser::class.java)
-                    .`in`("id", memberIds.toTypedArray())
-                    .findAll()
-                realm.copyFromRealm(users)
-            }
+            val users = realm.where(RealmUser::class.java)
+                .`in`("id", memberIds.toTypedArray())
+                .findAll()
+            realm.copyFromRealm(users)
         }
     }
 
@@ -91,30 +87,38 @@ class EventsRepositoryImpl @Inject constructor(
             return null
         }
 
-        update(RealmMeetup::class.java, "meetupId", meetupId) { meetup ->
-            val isJoined = !meetup.userId.isNullOrEmpty()
-            if (isJoined || !currentUserId.isNullOrEmpty()) {
-                meetup.userId = if (isJoined) "" else currentUserId
-            }
+        val meetup = meetupDao.getByMeetupId(meetupId) ?: return null
+        val isJoined = !meetup.userId.isNullOrEmpty()
+        if (isJoined || !currentUserId.isNullOrEmpty()) {
+            meetup.userId = if (isJoined) "" else currentUserId
+            meetupDao.upsert(meetup)
         }
         return getMeetupById(meetupId)
     }
 
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
-        var processedCount = 0
-        try {
-            executeTransaction { realm ->
-                try {
-                    RealmMeetup.insertList(realm, "", documents)
-                    processedCount = documents.size
-                } catch (e: Exception) {
-                    e.printStackTrace()
+        if (documents.isEmpty()) return 0
+        return try {
+            val ids = documents.map { JsonUtils.getString("_id", it) }
+            val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
+
+            val meetupsToInsert = documents.mapNotNull { meetupDoc ->
+                val id = JsonUtils.getString("_id", meetupDoc)
+                val existing = existingByMeetupId[id]
+                if (existing?.updated == true) {
+                    null
+                } else {
+                    RealmMeetup.fromJson(meetupDoc, "", existing)
                 }
             }
+            if (meetupsToInsert.isNotEmpty()) {
+                meetupDao.upsertAll(meetupsToInsert)
+            }
+            documents.size
         } catch (e: Exception) {
             e.printStackTrace()
+            0
         }
-        return processedCount
     }
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
@@ -145,13 +149,29 @@ class EventsRepositoryImpl @Inject constructor(
             teamId = params.teamId
         }
         return try {
-            executeTransaction { realm ->
-                realm.copyToRealmOrUpdate(meetup)
-            }
+            meetupDao.upsert(meetup)
             true
         } catch (e: Exception) {
             e.printStackTrace()
             false
         }
+    }
+
+    override suspend fun getMeetupIdsForUser(userId: String?): List<String> {
+        if (userId.isNullOrBlank()) return emptyList()
+        return meetupDao.getByUserId(userId).mapNotNull { it.meetupId }
+    }
+
+    override suspend fun getPendingMeetupUploads(): List<RealmMeetup> {
+        return meetupDao.getPendingUploads()
+    }
+
+    override suspend fun markMeetupUploaded(localId: String, remoteId: String, remoteRev: String): Boolean {
+        val meetup = meetupDao.getById(localId) ?: return false
+        meetup.meetupId = remoteId
+        meetup.meetupIdRev = remoteRev
+        meetup.updated = false
+        meetupDao.upsert(meetup)
+        return true
     }
 }

@@ -3,23 +3,18 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val apiInterface: ApiInterface,
-    private val communityDao: CommunityDao
-) : RealmRepository(databaseService, realmDispatcher), CommunityRepository {
-    // Still extends RealmRepository for insertMeetupsFromSync (RealmMeetup remains on Realm);
-    // RealmCommunity itself is now stored in Room via communityDao.
+    private val communityDao: CommunityDao,
+    private val meetupDao: MeetupDao
+) : CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
         val communities = mutableListOf<RealmCommunity>()
@@ -62,8 +57,21 @@ class CommunityRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
-        executeTransaction { realm ->
-            RealmMeetup.insertList(realm, "", docs)
+        if (docs.isEmpty()) return
+        val ids = docs.map { JsonUtils.getString("_id", it) }
+        val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
+
+        val meetupsToInsert = docs.mapNotNull { meetupDoc ->
+            val id = JsonUtils.getString("_id", meetupDoc)
+            val existing = existingByMeetupId[id]
+            if (existing?.updated == true) {
+                null
+            } else {
+                RealmMeetup.fromJson(meetupDoc, "", existing)
+            }
+        }
+        if (meetupsToInsert.isNotEmpty()) {
+            meetupDao.upsertAll(meetupsToInsert)
         }
     }
 }

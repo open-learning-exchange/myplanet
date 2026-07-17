@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -43,6 +44,7 @@ class UploadConfigs @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val feedbackRepository: FeedbackRepository,
     private val ratingsRepository: RatingsRepository,
+    private val eventsRepository: EventsRepository,
     private val apkLogDao: ApkLogDao
 ) {
     val NewsActivities = UploadConfig(
@@ -126,25 +128,18 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it._id }
     )
 
-    val Meetups = UploadConfig(
-        modelClass = RealmMeetup::class,
+    // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
+    val Meetups = RoomUploadConfig(
         endpoint = "meetups",
-        queryBuilder = { query ->
-            query.beginGroup()
-                .isNull("meetupId").or().isEmpty("meetupId")
-                .endGroup()
-                .or()
-                .beginGroup()
-                .equalTo("updated", true)
-                .endGroup()
-        },
+        modelClassName = "RealmMeetup",
+        fetchPendingItems = { eventsRepository.getPendingMeetupUploads() },
         serializer = UploadSerializer.Simple(RealmMeetup::serialize),
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
-        additionalUpdates = { _, meetup, uploadedItem ->
-            meetup.meetupId = uploadedItem.remoteId
-            meetup.meetupIdRev = uploadedItem.remoteRev
-            meetup.updated = false
+        markUploaded = { results ->
+            results.filter { result ->
+                !eventsRepository.markMeetupUploaded(result.localId, result.remoteId, result.remoteRev)
+            }
         }
     )
 

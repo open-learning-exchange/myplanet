@@ -5,14 +5,8 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.MockKAnnotations
 import io.mockk.every
-import io.mockk.impl.annotations.MockK
 import io.mockk.mockk
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -26,9 +20,6 @@ import org.robolectric.annotation.Config
 @Config(application = Application::class)
 class RealmMeetupTest {
 
-    @MockK
-    lateinit var mockRealm: Realm
-
     @Before
     fun setup() {
         MockKAnnotations.init(this)
@@ -40,7 +31,7 @@ class RealmMeetupTest {
     }
 
     @Test
-    fun `insert with new meetup creates and sets properties`() {
+    fun `fromJson with new meetup creates and sets properties`() {
         val userId = "user123"
         val meetupDoc = JsonObject().apply {
             addProperty("_id", "meetup1")
@@ -66,39 +57,30 @@ class RealmMeetupTest {
             add("link", linkObj)
         }
 
-        val mockQuery = mockk<RealmQuery<RealmMeetup>>()
-        every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
-        every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
-        every { mockQuery.findFirst() } returns null
-        every { mockRealm.insertOrUpdate(any<RealmMeetup>()) } returns Unit
+        val meetup = RealmMeetup.fromJson(meetupDoc, userId, null)
 
-        RealmMeetup.insert(userId, meetupDoc, mockRealm)
-
-        verify {
-            mockRealm.insertOrUpdate(withArg<RealmMeetup> {
-                assertEquals("meetup1", it.meetupId)
-                assertEquals(userId, it.userId)
-                assertEquals("rev1", it.meetupIdRev)
-                assertEquals("Test Meetup", it.title)
-                assertEquals("Test Description", it.description)
-                assertEquals(1600000000000, it.startDate)
-                assertEquals(1600003600000, it.endDate)
-                assertEquals("weekly", it.recurring)
-                assertEquals("10:00", it.startTime)
-                assertEquals("11:00", it.endTime)
-                assertEquals("tech", it.category)
-                assertEquals("Room 1", it.meetupLocation)
-                assertEquals("http://meetup.com", it.meetupLink)
-                assertEquals("creator1", it.creator)
-                assertEquals("""["Monday"]""", it.day)
-                assertEquals("""{"teams":"team1"}""", it.link)
-                assertEquals("team1", it.teamId)
-            })
-        }
+        assertEquals("meetup1", meetup.id)
+        assertEquals("meetup1", meetup.meetupId)
+        assertEquals(userId, meetup.userId)
+        assertEquals("rev1", meetup.meetupIdRev)
+        assertEquals("Test Meetup", meetup.title)
+        assertEquals("Test Description", meetup.description)
+        assertEquals(1600000000000, meetup.startDate)
+        assertEquals(1600003600000, meetup.endDate)
+        assertEquals("weekly", meetup.recurring)
+        assertEquals("10:00", meetup.startTime)
+        assertEquals("11:00", meetup.endTime)
+        assertEquals("tech", meetup.category)
+        assertEquals("Room 1", meetup.meetupLocation)
+        assertEquals("http://meetup.com", meetup.meetupLink)
+        assertEquals("creator1", meetup.creator)
+        assertEquals("""["Monday"]""", meetup.day)
+        assertEquals("""{"teams":"team1"}""", meetup.link)
+        assertEquals("team1", meetup.teamId)
     }
 
     @Test
-    fun `insert with existing meetup updates properties`() {
+    fun `fromJson with existing meetup preserves local fields`() {
         val userId = "user123"
         val meetupDoc = JsonObject().apply {
             addProperty("_id", "meetup1")
@@ -106,67 +88,37 @@ class RealmMeetupTest {
             addProperty("title", "Updated Meetup")
         }
 
-        val mockQuery = mockk<RealmQuery<RealmMeetup>>()
-        every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
-        every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
-
         val existingMeetup = RealmMeetup()
         existingMeetup.createdDate = 12345L
         existingMeetup.sync = "synced"
-        every { mockQuery.findFirst() } returns existingMeetup
-        every { mockRealm.insertOrUpdate(any<RealmMeetup>()) } returns Unit
 
-        RealmMeetup.insert(userId, meetupDoc, mockRealm)
+        val meetup = RealmMeetup.fromJson(meetupDoc, userId, existingMeetup)
 
-        verify {
-            mockRealm.insertOrUpdate(withArg<RealmMeetup> {
-                assertEquals("meetup1", it.meetupId)
-                assertEquals(userId, it.userId)
-                assertEquals("rev2", it.meetupIdRev)
-                assertEquals("Updated Meetup", it.title)
-                assertEquals(12345L, it.createdDate)
-                assertEquals("synced", it.sync)
-            })
-        }
+        assertEquals("meetup1", meetup.meetupId)
+        assertEquals(userId, meetup.userId)
+        assertEquals("rev2", meetup.meetupIdRev)
+        assertEquals("Updated Meetup", meetup.title)
+        assertEquals(12345L, meetup.createdDate)
+        assertEquals("synced", meetup.sync)
     }
 
     @Test
-    fun `insert without userId uses empty string`() {
+    fun `fromJson without userId uses empty string`() {
         val meetupDoc = JsonObject().apply {
             addProperty("_id", "meetup1")
         }
 
-        val mockQuery = mockk<RealmQuery<RealmMeetup>>()
-        every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
-        every { mockQuery.equalTo("meetupId", "meetup1") } returns mockQuery
-        every { mockQuery.findFirst() } returns null
-        every { mockRealm.insertOrUpdate(any<RealmMeetup>()) } returns Unit
+        val meetup = RealmMeetup.fromJson(meetupDoc, "", null)
 
-        RealmMeetup.insert(mockRealm, meetupDoc)
-
-        verify {
-            mockRealm.insertOrUpdate(withArg<RealmMeetup> {
-                assertEquals("", it.userId)
-            })
-        }
+        assertEquals("", meetup.userId)
     }
 
     @Test
     fun `getMyMeetUpIds returns json array of ids`() {
-        val userId = "user123"
+        val meetup1 = RealmMeetup().apply { meetupId = "id1" }
+        val meetup2 = RealmMeetup().apply { meetupId = "id2" }
 
-        val mockQuery = mockk<RealmQuery<RealmMeetup>>()
-        every { mockRealm.where(RealmMeetup::class.java) } returns mockQuery
-        every { mockQuery.isNotEmpty("userId") } returns mockQuery
-        every { mockQuery.equalTo("userId", userId, Case.INSENSITIVE) } returns mockQuery
-
-        val meetup1 = mockk<RealmMeetup> { every { meetupId } returns "id1" }
-        val meetup2 = mockk<RealmMeetup> { every { meetupId } returns "id2" }
-        val mockResults = mockk<RealmResults<RealmMeetup>>()
-        every { mockResults.iterator() } returns mutableListOf(meetup1, meetup2).iterator()
-        every { mockQuery.findAll() } returns mockResults
-
-        val result = RealmMeetup.getMyMeetUpIds(mockRealm, userId)
+        val result = RealmMeetup.getMyMeetUpIds(listOf(meetup1, meetup2))
 
         assertEquals(2, result.size())
         assertEquals("id1", result[0].asString)
@@ -174,8 +126,8 @@ class RealmMeetupTest {
     }
 
     @Test
-    fun `getMyMeetUpIds with null realm returns empty array`() {
-        val result = RealmMeetup.getMyMeetUpIds(null, "user123")
+    fun `getMyMeetUpIds with empty list returns empty array`() {
+        val result = RealmMeetup.getMyMeetUpIds(emptyList())
         assertEquals(0, result.size())
     }
 

@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
+import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
@@ -101,5 +102,10 @@ object RoomModule {
     @Provides
     fun provideTagDao(database: AppDatabase): TagDao {
         return database.tagDao()
+    }
+
+    @Provides
+    fun provideMeetupDao(database: AppDatabase): MeetupDao {
+        return database.meetupDao()
     }
 }

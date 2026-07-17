@@ -36,7 +36,8 @@ import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
+import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -70,7 +71,8 @@ class UserRepositoryImpl @Inject constructor(
     private val configurationsRepository: ConfigurationsRepository,
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
+    private val meetupDao: MeetupDao
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
@@ -1476,8 +1478,13 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getShelfData(userId: String?, jsonDoc: JsonObject?, myLibs: JsonArray, myCourseIds: JsonArray): JsonObject {
+        val userMeetups = if (userId.isNullOrBlank()) {
+            emptyList()
+        } else {
+            meetupDao.getByUserId(userId)
+        }
+        val myMeetups = RealmMeetup.getMyMeetUpIds(userMeetups)
         return withRealm { realm ->
-            val myMeetups = getMyMeetUpIds(realm, userId)
             val removedResources = listOf(*removedIds(realm, "resources", userId))
             val removedCourses = listOf(*removedIds(realm, "courses", userId))
             val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)

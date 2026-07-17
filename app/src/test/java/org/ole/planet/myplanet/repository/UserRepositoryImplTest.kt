@@ -101,7 +101,8 @@ class UserRepositoryImplTest {
             configurationsRepository,
             appScope,
             dispatcherProvider,
-            activitiesRepositoryLazy
+            activitiesRepositoryLazy,
+            mockk(relaxed = true)
         )
     }
 
