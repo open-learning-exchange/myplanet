@@ -137,7 +137,6 @@ class UploadManagerTest {
         coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CrashLog) }
     }
 
-
     @Test
     fun `uploadSearchActivity delegates to Room uploadCoordinator`() = testScope.runTest {
         coEvery { uploadCoordinator.uploadRoom<RealmSearchActivity>(any()) } returns UploadResult.Success(1, emptyList())

@@ -98,7 +98,11 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                searchActivityDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+                searchActivityDao.markUploaded(
+                    localId = result.localId,
+                    remoteId = result.remoteId,
+                    rev = result.remoteRev
+                ) == 0
             }
         }
     )

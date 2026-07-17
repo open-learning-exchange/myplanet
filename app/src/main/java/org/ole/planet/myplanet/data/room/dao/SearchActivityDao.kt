@@ -15,6 +15,6 @@ interface SearchActivityDao {
     suspend fun insert(activity: RealmSearchActivity)
 
     /** Returns the number of rows updated (0 means the local row was gone). */
-    @Query("UPDATE search_activity SET _id = :id, _rev = :rev WHERE id = :localId")
-    suspend fun markUploaded(localId: String, id: String, rev: String): Int
+    @Query("UPDATE search_activity SET _id = :remoteId, _rev = :rev WHERE id = :localId")
+    suspend fun markUploaded(localId: String, remoteId: String, rev: String): Int
 }
