@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonParser
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
@@ -191,9 +192,10 @@ class CoursesRepositoryImplTest {
         assertEquals("parent", savedActivity.captured.parentCode)
         assertEquals("algebra", savedActivity.captured.text)
         assertEquals("courses", savedActivity.captured.type)
-        assertTrue(savedActivity.captured.filter.contains("doc.gradeLevel"))
-        assertTrue(savedActivity.captured.filter.contains("6"))
-        assertTrue(savedActivity.captured.filter.contains("doc.subjectLevel"))
-        assertTrue(savedActivity.captured.filter.contains("math"))
+
+        val filter = JsonParser.parseString(savedActivity.captured.filter).asJsonObject
+        assertEquals("6", filter["doc.gradeLevel"].asString)
+        assertEquals("math", filter["doc.subjectLevel"].asString)
+        assertTrue(filter.getAsJsonArray("tags").isEmpty)
     }
 }

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -301,9 +302,12 @@ class ResourcesRepositoryImplTest {
         assertEquals("parent", savedActivity.captured.parentCode)
         assertEquals("physics", savedActivity.captured.text)
         assertEquals("resources", savedActivity.captured.type)
-        assertTrue(savedActivity.captured.filter.contains("science"))
-        assertTrue(savedActivity.captured.filter.contains("en"))
-        assertTrue(savedActivity.captured.filter.contains("beginner"))
-        assertTrue(savedActivity.captured.filter.contains("video"))
+
+        val filter = JsonParser.parseString(savedActivity.captured.filter).asJsonObject
+        assertEquals(listOf("science"), filter.getAsJsonArray("subjects").map { it.asString })
+        assertEquals(listOf("en"), filter.getAsJsonArray("language").map { it.asString })
+        assertEquals(listOf("beginner"), filter.getAsJsonArray("level").map { it.asString })
+        assertEquals(listOf("video"), filter.getAsJsonArray("mediaType").map { it.asString })
+        assertTrue(filter.getAsJsonArray("tags").isEmpty)
     }
 }
