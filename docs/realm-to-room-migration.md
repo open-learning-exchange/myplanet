@@ -70,9 +70,14 @@ wired through `di/RoomModule`.
 - [x] Room deps added (coexisting with Realm).
 - [x] Foundation: `Converters`, `AppDatabase`, `RoomModule`.
 - [x] **Dictionary** domain migrated end-to-end (`DictionaryEntity`, `DictionaryDao`,
-      `DictionaryActivity`). First proven template.
+      `DictionaryActivity`). First proven template (raw-Realm activity).
+- [x] Realm transition config: `DatabaseService` now uses `deleteRealmIfMigrationNeeded()` so a
+      model leaving the Realm schema recreates the Realm file instead of crashing (drop-and-resync).
+- [x] **Life** domain migrated end-to-end (`RealmMyLife` is now a Room `@Entity`, `MyLifeDao`,
+      `LifeRepositoryImpl` off `RealmRepository`, both Life test files ported). First proven
+      *repository* template (in-place model conversion, class name kept so UI is untouched).
 - [ ] Re-architect `RealmRepository`, upload framework, sync.
-- [ ] Remaining 37 model domains.
+- [ ] Remaining 36 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

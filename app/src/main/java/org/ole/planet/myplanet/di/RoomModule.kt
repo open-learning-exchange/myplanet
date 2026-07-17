@@ -10,6 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -28,5 +29,10 @@ object RoomModule {
     @Provides
     fun provideDictionaryDao(database: AppDatabase): DictionaryDao {
         return database.dictionaryDao()
+    }
+
+    @Provides
+    fun provideMyLifeDao(database: AppDatabase): MyLifeDao {
+        return database.myLifeDao()
     }
 }

@@ -1,40 +1,33 @@
 package org.ole.planet.myplanet.model
 
-import android.content.SharedPreferences
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-open class RealmMyLife : RealmObject {
+/**
+ * Room replacement for the former Realm `RealmMyLife` model.
+ *
+ * The class name is kept so the UI (which uses it purely as a detached data holder) is unaffected
+ * by the migration. Persistence now goes through [org.ole.planet.myplanet.data.room.dao.MyLifeDao].
+ */
+@Entity(tableName = "my_life", indices = [Index("userId")])
+class RealmMyLife {
     @PrimaryKey
-    var _id: String? = null
+    var _id: String = ""
     var imageId: String? = null
-    @Index
     var userId: String? = null
     var title: String? = null
-    var isVisible = false
-    var weight = 0
+    var isVisible: Boolean = false
+    var weight: Int = 0
 
+    constructor()
+
+    @Ignore
     constructor(imageId: String?, userId: String?, title: String?) {
         this.imageId = imageId
         this.userId = userId
         this.title = title
         isVisible = true
-    }
-
-    constructor()
-
-    companion object {
-        fun getMyLifeByUserId(mRealm: Realm, settings: SharedPreferences?): List<RealmMyLife> {
-            val userId = settings?.getString("userId", "--")
-            return getMyLifeByUserId(mRealm, userId)
-        }
-
-        fun getMyLifeByUserId(mRealm: Realm, userId: String?): List<RealmMyLife> {
-            return mRealm.where(RealmMyLife::class.java).equalTo("userId", userId).findAll()
-                .sort("weight")
-        }
-
     }
 }
