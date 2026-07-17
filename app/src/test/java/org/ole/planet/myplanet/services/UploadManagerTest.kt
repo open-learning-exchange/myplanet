@@ -162,47 +162,47 @@ class UploadManagerTest {
 
     @Test
     fun `uploadFeedback delegates to uploadCoordinator and returns true on Success`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<RealmFeedback>(any()) } returns UploadResult.Success(1, emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(result)
     }
 
     @Test
     fun `uploadFeedback returns true on Empty`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.Empty
+        coEvery { uploadCoordinator.uploadRoom<RealmFeedback>(any()) } returns UploadResult.Empty
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(result)
     }
 
     @Test
     fun `uploadFeedback returns false on Failure`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.Failure(emptyList())
+        coEvery { uploadCoordinator.uploadRoom<RealmFeedback>(any()) } returns UploadResult.Failure(emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(!result)
     }
 
     @Test
     fun `uploadFeedback returns true on PartialSuccess with no failures`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), emptyList())
+        coEvery { uploadCoordinator.uploadRoom<RealmFeedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), emptyList())
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(result)
     }
 
     @Test
     fun `uploadFeedback returns false on PartialSuccess with failures`() = testScope.runTest {
         val mockError = UploadError("id", Exception(), false)
-        coEvery { uploadCoordinator.upload<RealmFeedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), listOf(mockError))
+        coEvery { uploadCoordinator.uploadRoom<RealmFeedback>(any()) } returns UploadResult.PartialSuccess(emptyList(), listOf(mockError))
         val result = uploadManager.uploadFeedback()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Feedback) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Feedback) }
         assert(!result)
     }
 

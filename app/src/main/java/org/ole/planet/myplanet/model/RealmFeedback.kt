@@ -1,18 +1,29 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
 import java.io.StringReader
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmFeedback : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmFeedback` model. Uploaded (Room upload path) and
+ * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.FeedbackDao]. The replies
+ * are stored as a JSON array string in [messages]; the derived [messageList]/[message] views are
+ * ignored by Room.
+ */
+@Entity(tableName = "feedback")
+open class RealmFeedback {
+    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var title: String? = null
     var source: String? = null
@@ -25,14 +36,15 @@ open class RealmFeedback : RealmObject() {
     var isUploaded = false
     var _rev: String? = null
     var messages: String? = null
-        private set
     var item: String? = null
     var parentCode: String? = null
     var state: String? = null
+
     fun setMessages(messages: JsonArray?) {
         this.messages = JsonUtils.gson.toJson(messages)
     }
 
+    @get:Ignore
     val messageList: List<FeedbackReply>?
         get() {
             if (TextUtils.isEmpty(messages)) return null
@@ -58,6 +70,7 @@ open class RealmFeedback : RealmObject() {
             return feedbackReplies
         }
 
+    @get:Ignore
     val message: String
         get() {
             if (TextUtils.isEmpty(messages)) return ""
@@ -73,10 +86,6 @@ open class RealmFeedback : RealmObject() {
             }
             return ""
         }
-
-    fun setMessages(messages: String?) {
-        this.messages = messages
-    }
 
     companion object {
         fun serializeFeedback(feedback: RealmFeedback): JsonObject {
@@ -102,6 +111,5 @@ open class RealmFeedback : RealmObject() {
             }
             return `object`
         }
-
     }
 }

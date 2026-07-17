@@ -159,14 +159,16 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id }
     )
 
-    val Feedback = UploadConfig(
-        modelClass = RealmFeedback::class,
+    // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
+    val Feedback = RoomUploadConfig(
         endpoint = "feedback",
+        modelClassName = "RealmFeedback",
         fetchPendingItems = { feedbackRepository.getPendingFeedback() },
         serializer = UploadSerializer.Simple(RealmFeedback::serializeFeedback),
         idExtractor = { it.id },
-        additionalUpdates = { _, feedback, _ ->
-            feedback.isUploaded = true
+        markUploaded = { results ->
+            // Mark each uploaded feedback; rows that no longer exist are reported as failures.
+            results.filter { result -> !feedbackRepository.markFeedbackUploaded(result.localId) }
         }
     )
 

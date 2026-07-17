@@ -164,7 +164,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadFeedback(): Boolean {
-        return when (val result = uploadCoordinator.upload(uploadConfigs.Feedback)) {
+        return when (val result = uploadCoordinator.uploadRoom(uploadConfigs.Feedback)) {
             is UploadResult.Success -> true
             is UploadResult.PartialSuccess -> result.failed.isEmpty()
             is UploadResult.Failure -> false
