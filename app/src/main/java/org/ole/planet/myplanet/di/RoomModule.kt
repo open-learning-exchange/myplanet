@@ -10,6 +10,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
+import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -58,5 +59,11 @@ object RoomModule {
     @Provides
     fun provideApkLogDao(database: AppDatabase): ApkLogDao {
         return database.apkLogDao()
+    }
+
+
+    @Provides
+    fun provideUserChallengeActionsDao(database: AppDatabase): UserChallengeActionsDao {
+        return database.userChallengeActionsDao()
     }
 }
