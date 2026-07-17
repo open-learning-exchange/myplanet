@@ -18,7 +18,7 @@ class TeamsSelectionAdapter(
 ) : ListAdapter<TeamSummary, TeamsSelectionAdapter.TeamSelectionViewHolder>(
         DiffUtils.itemCallback<TeamSummary>(
             { old, new -> old._id == new._id },
-            { old, new -> old.name == new.name }
+            { old, new -> old.name == new.name && old._id == new._id }
         )
     ) {
     inner class TeamSelectionViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

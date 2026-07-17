@@ -58,10 +58,8 @@ import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
-import org.ole.planet.myplanet.databinding.RowStatBinding
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -173,7 +171,7 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
-        binding.rvStat.adapter = StatsAdapter()
+        binding.rvStat.adapter = StatsAdapter(requireContext())
     }
 
     private fun observeUserProfile() {
@@ -468,40 +466,6 @@ class UserProfileFragment : Fragment() {
         (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
     }
 
-    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(
-        DiffUtils.itemCallback<Pair<String, String?>>(
-            { oldItem, newItem -> oldItem.first == newItem.first },
-            { oldItem, newItem -> oldItem == newItem }
-        )
-    ) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-            val rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-            return ViewHolderRowStat(rowStatBinding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-            val item = getItem(position)
-            holder.rowStatBinding.tvTitle.text = item.first
-            holder.rowStatBinding.tvTitle.visibility = View.VISIBLE
-            holder.rowStatBinding.tvDescription.text = item.second
-            if (holder.bindingAdapterPosition % 2 == 0) {
-                holder.rowStatBinding.root.setBackgroundColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        R.color.user_profile_background
-                    )
-                )
-            } else {
-                holder.rowStatBinding.root.setBackgroundColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.transparent
-                    )
-                )
-            }
-        }
-    }
-
     private fun searchForPhoto() {
         val options = arrayOf(getString(R.string.capture_image), getString(R.string.select_gallery))
         val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
@@ -550,8 +514,6 @@ class UserProfileFragment : Fragment() {
         val path = uri?.toString()
         viewModel.updateCurrentUserProfileImage(path)
     }
-
-    inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 
     override fun onDestroyView() {
         editProfileDialog?.dismiss()

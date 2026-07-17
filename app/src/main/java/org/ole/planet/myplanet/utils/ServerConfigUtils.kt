@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -79,6 +80,7 @@ object ServerConfigUtils {
             url == BuildConfig.PLANET_XELA_URL ||
             url == BuildConfig.PLANET_SANPABLO_URL ||
             url == BuildConfig.PLANET_URIUR_URL ||
+            url == BuildConfig.PLANET_EMBAKASI_URL ||
             isLocalNetwork(url)
         ) Constants.HTTP_PROTOCOL else Constants.HTTPS_PROTOCOL
     }
@@ -115,5 +117,50 @@ object ServerConfigUtils {
         sharedPrefManager.setIsAlternativeUrl(true)
 
         return couchdbURL
+    }
+
+    data class CommunityConfig(
+        val localDomain: String,
+        val protocol: String,
+        val pin: String,
+        val isPinEnabled: Boolean
+    )
+
+    fun getCommunityConfig(selected: RealmCommunity, httpsProtocol: String): CommunityConfig {
+        val domain = selected.localDomain
+        val protocol = httpsProtocol
+        val pin = if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else ""
+        val isPinEnabled = selected.weight != 0
+        return CommunityConfig(domain, protocol, pin, isPinEnabled)
+    }
+
+    fun getTrustedServerHosts(): List<String> {
+        return listOfNotNull(
+            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
+            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
+        )
+    }
+
+    fun getChallengeServerUrls(): List<String> {
+        return listOfNotNull(
+            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" },
+            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() }?.let { "http://$it" },
+            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() }?.let { "https://$it" }
+        )
     }
 }

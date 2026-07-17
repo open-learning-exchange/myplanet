@@ -44,10 +44,10 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
 class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpdateListener {
-    
+
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    
+
     private val teamViewModel: TeamViewModel by viewModels()
 
     private var _binding: FragmentTeamDetailBinding? = null

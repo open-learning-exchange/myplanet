@@ -29,21 +29,27 @@ class SubmissionListViewModel @Inject constructor(
     private val _exportFile = MutableSharedFlow<File?>()
     val exportFile: SharedFlow<File?> = _exportFile.asSharedFlow()
 
-    fun generateSubmissionPdf(submissionId: String) {
+    private fun launchExport(action: suspend () -> File?) {
         viewModelScope.launch {
-            _exportProgress.value = true
-            val file = submissionsRepository.generateSubmissionPdf(submissionId)
-            _exportFile.emit(file)
-            _exportProgress.value = false
+            try {
+                _exportProgress.value = true
+                val file = action()
+                _exportFile.emit(file)
+            } finally {
+                _exportProgress.value = false
+            }
+        }
+    }
+
+    fun generateSubmissionPdf(submissionId: String) {
+        launchExport {
+            submissionsRepository.generateSubmissionPdf(submissionId)
         }
     }
 
     fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String) {
-        viewModelScope.launch {
-            _exportProgress.value = true
-            val file = submissionsRepository.generateMultipleSubmissionsPdf(submissionIds, examTitle)
-            _exportFile.emit(file)
-            _exportProgress.value = false
+        launchExport {
+            submissionsRepository.generateMultipleSubmissionsPdf(submissionIds, examTitle)
         }
     }
 

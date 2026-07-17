@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
 import org.ole.planet.myplanet.callback.OnSecurityDataListener
 import org.ole.planet.myplanet.databinding.ActivityBecomeMemberBinding
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.utils.DialogUtils.CustomProgressDialog
@@ -46,20 +47,6 @@ class BecomeMemberActivity : BaseActivity() {
     private var rePasswordWatcher: TextWatcher? = null
     private var emailWatcher: TextWatcher? = null
 
-    private data class MemberInfo(
-        val username: String,
-        var password: String,
-        val rePassword: String,
-        val fName: String,
-        val lName: String,
-        val mName: String,
-        val email: String,
-        val language: String,
-        val level: String,
-        val phoneNumber: String,
-        val birthDate: String,
-        val gender: String?
-    )
 
     private fun selectedGender(): String? = when {
         activityBecomeMemberBinding.male.isChecked -> "male"
@@ -120,43 +107,17 @@ class BecomeMemberActivity : BaseActivity() {
         }
     }
 
-    private fun buildMemberJson(info: MemberInfo) = JsonObject().apply {
-        addProperty("name", info.username)
-        addProperty("firstName", info.fName)
-        addProperty("lastName", info.lName)
-        addProperty("middleName", info.mName)
-        addProperty("password", info.password)
-        addProperty("isUserAdmin", false)
-        addProperty("joinDate", Calendar.getInstance().timeInMillis)
-        addProperty("email", info.email)
-        addProperty("planetCode", prefData.getPlanetCode())
-        addProperty("parentCode", prefData.getParentCode())
-        addProperty("language", info.language)
-        addProperty("level", info.level)
-        addProperty("phoneNumber", info.phoneNumber)
-        addProperty("birthDate", info.birthDate)
-        addProperty("gender", info.gender)
-        addProperty("type", "user")
-        addProperty("betaEnabled", false)
-        addProperty("androidId", NetworkUtils.getUniqueIdentifier())
-        addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
-        addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
-        val roles = JsonArray().apply { add("learner") }
-        add("roles", roles)
-    }
-
     private fun addMember(info: MemberInfo) {
-        val obj = buildMemberJson(info)
         val customProgressDialog = CustomProgressDialog(this).apply {
             setText(getString(R.string.creating_member_account))
             show()
         }
 
         lifecycleScope.launch {
-            val result = userRepository.createMember(obj)
+            val result = userRepository.createMember(info)
             withContext(dispatcherProvider.main) {
                 if (result.first) {
-                    val userName = obj["name"].asString
+                    val userName = info.username
                     val securityCallback = object : OnSecurityDataListener {
                         override fun onSecurityDataUpdated() {
                             customProgressDialog.dismiss()

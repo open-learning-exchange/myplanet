@@ -85,8 +85,13 @@ class FeedbackRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addReply(id: String?, obj: JsonObject) {
+    override suspend fun addReply(id: String?, message: String, user: String?) {
         id?.let {
+            val obj = JsonObject().apply {
+                addProperty("message", message)
+                addProperty("time", Date().time.toString())
+                addProperty("user", user ?: "")
+            }
             update(RealmFeedback::class.java, "id", it) { feedback ->
                 val msgArray = gson.fromJson(feedback.messages, JsonArray::class.java)
                 msgArray.add(obj)

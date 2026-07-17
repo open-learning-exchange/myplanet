@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.feedback
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -40,9 +39,9 @@ class FeedbackDetailViewModel @Inject constructor(
         }
     }
 
-    fun addReply(id: String?, obj: JsonObject) {
+    fun addReply(id: String?, message: String, user: String?) {
         viewModelScope.launch {
-            feedbackRepository.addReply(id, obj)
+            feedbackRepository.addReply(id, message, user)
             _feedback.value = feedbackRepository.getFeedbackById(id)
         }
     }

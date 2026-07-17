@@ -65,12 +65,16 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
+    private suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val pendingCount = retryQueue.getPendingCount()
+        val pendingOps = retryQueue.getPendingOperations()
+        val isProcessing = retryQueue.isCurrentlyProcessing()
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
+    }
+
     fun fetchRetryQueueDetails() {
         viewModelScope.launch {
-            val pendingCount = retryQueue.getPendingCount()
-            val pendingOps = retryQueue.getPendingOperations()
-            val isProcessing = retryQueue.isCurrentlyProcessing()
-            _retryQueueDetailsEvent.send(RetryQueueDetails(pendingCount, pendingOps, isProcessing))
+            _retryQueueDetailsEvent.send(getRetryQueueSnapshot())
         }
     }
 
