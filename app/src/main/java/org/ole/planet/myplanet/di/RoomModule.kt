@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -101,5 +102,10 @@ object RoomModule {
     @Provides
     fun provideSearchActivityDao(database: AppDatabase): SearchActivityDao {
         return database.searchActivityDao()
+    }
+
+    @Provides
+    fun provideCourseActivityDao(database: AppDatabase): CourseActivityDao {
+        return database.courseActivityDao()
     }
 }

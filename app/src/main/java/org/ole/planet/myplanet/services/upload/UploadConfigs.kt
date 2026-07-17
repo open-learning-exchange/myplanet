@@ -5,6 +5,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
@@ -45,7 +46,8 @@ class UploadConfigs @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val ratingsRepository: RatingsRepository,
     private val apkLogDao: ApkLogDao,
-    private val searchActivityDao: SearchActivityDao
+    private val searchActivityDao: SearchActivityDao,
+    private val courseActivityDao: CourseActivityDao
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -127,14 +129,21 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it._id }
     )
 
-    val CourseActivities = UploadConfig(
-        modelClass = RealmCourseActivity::class,
+    val CourseActivities = RoomUploadConfig(
         endpoint = "course_activities",
-        queryBuilder = { query ->
-            query.isNull("_rev").notEqualTo("type", "sync")
-        },
+        modelClassName = "RealmCourseActivity",
+        fetchPendingItems = { courseActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple(RealmCourseActivity::serializeSerialize),
-        idExtractor = { it._id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                courseActivityDao.markUploaded(
+                    localId = result.localId,
+                    remoteId = result.remoteId,
+                    rev = result.remoteRev
+                ) == 0
+            }
+        }
     )
 
     val Meetups = UploadConfig(

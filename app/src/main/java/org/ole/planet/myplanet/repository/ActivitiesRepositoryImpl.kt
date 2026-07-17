@@ -19,6 +19,8 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -27,7 +29,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -46,7 +47,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
     private val timeProvider: TimeProvider,
-    private val userChallengeActionsDao: UserChallengeActionsDao
+    private val userChallengeActionsDao: UserChallengeActionsDao,
+    private val courseActivityDao: CourseActivityDao
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return queryList(RealmOfflineActivity::class.java) {
@@ -93,19 +95,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-            activity.type = "visit"
-            activity.title = title
-            activity.courseId = courseId
-            activity.time = Date().time
-            activity.user = userId
+        courseActivityDao.insert(
+            RealmCourseActivity().apply {
+                id = UUID.randomUUID().toString()
+                type = "visit"
+                this.title = title
+                this.courseId = courseId
+                time = Date().time
+                this.user = userId
 
-            if (user != null) {
-                activity.parentCode = parentCode
-                activity.createdOn = createdOn
+                if (user != null) {
+                    this.parentCode = parentCode
+                    this.createdOn = createdOn
+                }
             }
-        }
+        )
     }
 
     override suspend fun logLogin(

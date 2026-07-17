@@ -130,7 +130,11 @@ wired through `di/RoomModule`.
       a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload
       acknowledgements; course/resource search logging now writes through the DAO; upload config
       uses `RoomUploadConfig`.
-- [ ] Migrate the remaining 14 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **CourseActivity** migrated (uploaded-only course visit log). `RealmCourseActivity` is now
+      a Room `@Entity`; `CourseActivityDao` owns visit inserts, pending upload lookup, and upload
+      acknowledgements; course visit logging writes through the DAO; upload config uses
+      `RoomUploadConfig`.
+- [ ] Migrate the remaining 13 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

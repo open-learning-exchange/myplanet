@@ -551,7 +551,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(uploadConfigs.CourseActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
