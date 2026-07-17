@@ -17,6 +17,7 @@ open class RealmSearchActivity(
     @PrimaryKey
     @JvmField
     var id: String = "",
+    @JvmField
     var _id: String = "",
     var _rev: String = "",
     var text: String = "",
