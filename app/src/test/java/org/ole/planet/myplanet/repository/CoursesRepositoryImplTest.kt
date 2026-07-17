@@ -52,7 +52,8 @@ class CoursesRepositoryImplTest {
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
-            sharedPrefManager
+            sharedPrefManager,
+            mockk(relaxed = true)
         )
     }
 

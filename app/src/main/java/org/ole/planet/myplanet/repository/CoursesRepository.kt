@@ -61,5 +61,5 @@ interface CoursesRepository {
     suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
-    fun bulkInsertCertificationsFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun insertCertificationsFromSync(jsonArray: JsonArray)
 }
