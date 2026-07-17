@@ -39,8 +39,10 @@ import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.UploadConfig
@@ -60,6 +62,8 @@ class UploadManagerTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val uploadCoordinator: UploadCoordinator = mockk(relaxed = true)
+    private val uploadRepository: UploadRepository = mockk(relaxed = true)
+    private val retryQueue: RetryQueue = mockk(relaxed = true)
     private val personalsRepository: PersonalsRepository = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val chatRepository: ChatRepository = mockk(relaxed = true)
@@ -97,6 +101,8 @@ class UploadManagerTest {
                 sharedPrefManager,
                 gson,
                 uploadCoordinator,
+                uploadRepository,
+                retryQueue,
                 personalsRepository,
                 userRepository,
                 chatRepository,
