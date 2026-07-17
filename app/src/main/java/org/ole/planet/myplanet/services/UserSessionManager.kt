@@ -36,7 +36,7 @@ class UserSessionManager @Inject constructor(
     }
 
     suspend fun getUserModel(): RealmUser? {
-        return userRepository.getUserModelSuspending()
+        return userRepository.getUserModel()
     }
 
     suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {

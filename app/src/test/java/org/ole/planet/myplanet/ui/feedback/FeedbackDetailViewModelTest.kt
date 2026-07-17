@@ -65,16 +65,17 @@ class FeedbackDetailViewModelTest {
     @Test
     fun testAddReply() = runTest(testDispatcher) {
         val feedbackId = "123"
-        val mockObj = JsonObject()
+        val mockMessage = "Test message"
+        val mockUser = "testuser"
         val mockFeedback = mockk<RealmFeedback>()
-        coEvery { feedbackRepository.addReply(feedbackId, mockObj) } returns Unit
+        coEvery { feedbackRepository.addReply(feedbackId, mockMessage, mockUser) } returns Unit
         coEvery { feedbackRepository.getFeedbackById(feedbackId) } returns mockFeedback
 
-        viewModel.addReply(feedbackId, mockObj)
+        viewModel.addReply(feedbackId, mockMessage, mockUser)
         advanceUntilIdle()
 
         assertEquals(mockFeedback, viewModel.feedback.value)
-        coVerify(exactly = 1) { feedbackRepository.addReply(feedbackId, mockObj) }
+        coVerify(exactly = 1) { feedbackRepository.addReply(feedbackId, mockMessage, mockUser) }
         coVerify(exactly = 1) { feedbackRepository.getFeedbackById(feedbackId) }
     }
 
