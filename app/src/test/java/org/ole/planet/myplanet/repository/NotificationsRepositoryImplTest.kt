@@ -37,7 +37,7 @@ class NotificationsRepositoryImplTest {
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository,
-            TestTimeProvider()
+            TestTimeProvider(), mockk(relaxed = true)
         )
     }
 

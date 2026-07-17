@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -65,5 +66,10 @@ object RoomModule {
     @Provides
     fun provideUserChallengeActionsDao(database: AppDatabase): UserChallengeActionsDao {
         return database.userChallengeActionsDao()
+    }
+
+    @Provides
+    fun provideTeamNotificationDao(database: AppDatabase): TeamNotificationDao {
+        return database.teamNotificationDao()
     }
 }

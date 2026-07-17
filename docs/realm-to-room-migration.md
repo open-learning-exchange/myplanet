@@ -99,6 +99,9 @@ wired through `di/RoomModule`.
 - [x] **ApkLog** migrated through the new path (`RealmApkLog` now a Room `@Entity`, `ApkLogDao`,
       `CrashLog` is a `RoomUploadConfig`, `MainApplication.saveLogToRealm` + crash-log sweep write
       via the DAO, `uploadCrashLog()` uses `uploadRoom`). First uploadable model on Room.
+- [x] **TeamNotification** migrated (single-id Room `@Entity`, `TeamNotificationDao`; converted
+      3 sites across `NotificationsRepositoryImpl` + `VoicesRepositoryImpl`, both kept on
+      `RealmRepository` for their other models; test constructors updated).
 - [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

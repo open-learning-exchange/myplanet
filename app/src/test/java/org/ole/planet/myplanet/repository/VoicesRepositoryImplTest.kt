@@ -44,7 +44,8 @@ class VoicesRepositoryImplTest {
             dispatcherProvider,
             gson,
             sharedPrefManager,
-            dagger.Lazy { userRepository }
+            dagger.Lazy { userRepository },
+            mockk(relaxed = true)
         ), recordPrivateCalls = true)
     }
 
@@ -74,7 +75,8 @@ class VoicesRepositoryImplTest {
             dispatcherProvider,
             realGson,
             sharedPrefManager,
-            dagger.Lazy { userRepository }
+            dagger.Lazy { userRepository },
+            mockk(relaxed = true)
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
@@ -134,7 +136,8 @@ class VoicesRepositoryImplTest {
             dispatcherProvider,
             realGson,
             sharedPrefManager,
-            dagger.Lazy { userRepository }
+            dagger.Lazy { userRepository },
+            mockk(relaxed = true)
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
@@ -185,7 +188,8 @@ class VoicesRepositoryImplTest {
             dispatcherProvider,
             realGson,
             sharedPrefManager,
-            dagger.Lazy { userRepository }
+            dagger.Lazy { userRepository },
+            mockk(relaxed = true)
         ), recordPrivateCalls = true)
 
         coEvery { databaseService.withRealmAsync<Any>(any()) } answers {

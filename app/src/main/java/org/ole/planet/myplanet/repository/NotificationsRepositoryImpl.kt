@@ -13,6 +13,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
@@ -27,7 +28,8 @@ class NotificationsRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userRepository: Lazy<UserRepository>,
     private val teamsRepository: Lazy<TeamsRepository>,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val teamNotificationDao: TeamNotificationDao
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
@@ -347,12 +349,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         val tomorrow = Calendar.getInstance()
         tomorrow.add(Calendar.DAY_OF_YEAR, 1)
 
-        val notification = withRealm { realm ->
-            realm.where(RealmTeamNotification::class.java)
-                .equalTo("parentId", teamId)
-                .equalTo("type", "chat")
-                .findFirst()?.let { realm.copyFromRealm(it) }
-        }
+        val notification = teamNotificationDao.findByParentAndType(teamId, "chat")
 
         val chatCount = count(RealmNews::class.java) {
             equalTo("viewableBy", "teams")
@@ -378,10 +375,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         val notificationMap = mutableMapOf<String, TeamNotificationInfo>()
 
         // 1. Fetch all relevant notifications in a single query
-        val notificationsResult = queryList(RealmTeamNotification::class.java) {
-            equalTo("type", "chat")
-            `in`("parentId", teamIds.toTypedArray())
-        }
+        val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
         val notificationsById = mutableMapOf<String, RealmTeamNotification>()
         notificationsResult.forEach {
             it.parentId?.let { parentId ->
