@@ -93,12 +93,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
                     getString(R.string.kindly_enter_reply_message)
             } else {
                 val message = activityFeedbackDetailBinding.feedbackReplyEditText.text.toString().trim { it <= ' ' }
-                val obj = JsonObject().apply {
-                    addProperty("message", message)
-                    addProperty("time", Date().time.toString())
-                    addProperty("user", feedback?.owner ?: "")
-                }
-                viewModel.addReply(feedbackId, obj)
+                viewModel.addReply(feedbackId, message, feedback?.owner)
                 activityFeedbackDetailBinding.feedbackReplyEditText.setText(R.string.empty_text)
                 activityFeedbackDetailBinding.feedbackReplyEditText.clearFocus()
             }

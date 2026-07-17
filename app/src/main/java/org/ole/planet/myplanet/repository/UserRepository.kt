@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.DashboardProfile
@@ -72,7 +73,7 @@ interface UserRepository {
         payload: JsonObject
     )
 
-    suspend fun createMember(user: JsonObject): Pair<Boolean, String>
+    suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
