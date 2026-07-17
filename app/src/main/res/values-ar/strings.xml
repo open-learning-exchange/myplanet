@@ -927,6 +927,7 @@
     <string name="ob_desc4_3">🎯 مخصص: اصنع مسار تعلمك الشخصي.</string>
     <string name="ob_desc4_4">📚 تفاعلي: تفاعل مع الفيديوهات والكتب والألعاب.</string>
     <string name="ob_desc4_5">ابدأ رحلتك التعليمية اللا حدود مع myPlanet!</string>
+    <string name="onboarding_server_prep_hint">قبل تسجيل الدخول، ستحتاج إلى عنوان خادم Planet ورقم التعريف الشخصي (PIN). اسأل مسؤول مجتمعك إذا لم تكن تملكهما بعد.</string>
     <string name="recycler_chat_label">محادثات</string>
     <string name="completed_course">دورة مكتملة</string>
     <string name="menu">القائمة الجانبية</string>
