@@ -6,6 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
@@ -51,16 +52,20 @@ class UploadConfigs @Inject constructor(
     private val searchActivityDao: SearchActivityDao,
     private val courseActivityDao: CourseActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
-    private val submitPhotosDao: SubmitPhotosDao
+    private val submitPhotosDao: SubmitPhotosDao,
+    private val newsLogDao: NewsLogDao
 ) {
-    val NewsActivities = UploadConfig(
-        modelClass = RealmNewsLog::class,
+    val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
-        queryBuilder = { query ->
-            query.isNull("_id").or().isEmpty("_id")
-        },
+        modelClassName = "RealmNewsLog",
+        fetchPendingItems = { newsLogDao.getPendingUploads() },
         serializer = UploadSerializer.Simple(RealmNewsLog::serialize),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                newsLogDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
     val CourseProgress = UploadConfig(

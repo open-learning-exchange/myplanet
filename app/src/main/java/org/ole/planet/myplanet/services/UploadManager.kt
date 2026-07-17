@@ -85,7 +85,7 @@ class UploadManager @Inject constructor(
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(uploadConfigs.NewsActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
     }
 
     private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {

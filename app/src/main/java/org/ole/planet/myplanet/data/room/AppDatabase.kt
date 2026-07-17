@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -61,6 +63,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmCourseActivity::class,
         RealmResourceActivity::class,
         RealmSubmitPhotos::class,
+        RealmNewsLog::class,
     ],
     version = 1,
     exportSchema = false,
@@ -83,4 +86,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun courseActivityDao(): CourseActivityDao
     abstract fun resourceActivityDao(): ResourceActivityDao
     abstract fun submitPhotosDao(): SubmitPhotosDao
+    abstract fun newsLogDao(): NewsLogDao
 }

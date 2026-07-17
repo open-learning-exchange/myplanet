@@ -142,7 +142,10 @@ wired through `di/RoomModule`.
       Room `@Entity`; `SubmitPhotosDao` owns photo inserts, pending lookup, id lookups, and
       upload acknowledgements; repository/photo uploader paths use the DAO, and the legacy upload
       config is Room-capable.
-- [ ] Migrate the remaining 11 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **NewsLog** migrated (uploaded-only activity log). `RealmNewsLog` is now a Room
+      `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
+      config uses `RoomUploadConfig`.
+- [ ] Migrate the remaining 10 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
