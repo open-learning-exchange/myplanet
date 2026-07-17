@@ -9,13 +9,16 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 
 class UploadConfigsTest {
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val courseActivityDao: CourseActivityDao = mockk(relaxed = true)
     private val uploadConfigs = UploadConfigs(
         voicesRepository = mockk(relaxed = true),
         submissionsRepository = mockk(relaxed = true),
@@ -27,7 +30,8 @@ class UploadConfigsTest {
         feedbackRepository = mockk(relaxed = true),
         ratingsRepository = mockk(relaxed = true),
         apkLogDao = mockk<ApkLogDao>(relaxed = true),
-        searchActivityDao = searchActivityDao
+        searchActivityDao = searchActivityDao,
+        courseActivityDao = courseActivityDao
     )
 
     @Test
@@ -75,5 +79,43 @@ class UploadConfigsTest {
         val failures = uploadConfigs.SearchActivity.markUploaded(listOf(result))
 
         assertEquals(listOf(result), failures)
+    }
+
+    @Test
+    fun `CourseActivities config fetches pending Room rows from DAO`() = runTest {
+        val pending = listOf(RealmCourseActivity().apply { id = "course-local-1" })
+        coEvery { courseActivityDao.getPendingUploads() } returns pending
+
+        val result = uploadConfigs.CourseActivities.fetchPendingItems()
+
+        assertEquals(pending, result)
+    }
+
+    @Test
+    fun `CourseActivities config marks successful uploads with remote id and rev`() = runTest {
+        val result = UploadedItemResult(
+            localId = "course-local-1",
+            remoteId = "course-remote-1",
+            remoteRev = "1-rev",
+            response = mockk(relaxed = true)
+        )
+        coEvery {
+            courseActivityDao.markUploaded(
+                localId = "course-local-1",
+                remoteId = "course-remote-1",
+                rev = "1-rev"
+            )
+        } returns 1
+
+        val failures = uploadConfigs.CourseActivities.markUploaded(listOf(result))
+
+        assertTrue(failures.isEmpty())
+        coVerify {
+            courseActivityDao.markUploaded(
+                localId = "course-local-1",
+                remoteId = "course-remote-1",
+                rev = "1-rev"
+            )
+        }
     }
 }
