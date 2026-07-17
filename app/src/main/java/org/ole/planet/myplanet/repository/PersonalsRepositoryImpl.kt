@@ -5,28 +5,22 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class PersonalsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val personalDao: PersonalDao,
     private val apiInterface: ApiInterface,
     @ApplicationContext private val context: Context
-) : RealmRepository(databaseService, realmDispatcher), PersonalsRepository {
+) : PersonalsRepository {
 
     override suspend fun personalTitleExists(title: String, userId: String?): Boolean {
-        return count(RealmMyPersonal::class.java) {
-            equalTo("title", title, io.realm.Case.INSENSITIVE)
-            if (!userId.isNullOrBlank()) equalTo("userId", userId)
-        } > 0
+        return personalDao.countByTitle(title, userId) > 0
     }
 
     override suspend fun savePersonalResource(
@@ -46,41 +40,42 @@ class PersonalsRepositoryImpl @Inject constructor(
             this.date = Date().time
             this.description = description
         }
-        save(personal)
+        personalDao.insert(personal)
     }
 
     override suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
-
-        return queryListFlow(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
-        }
+        return personalDao.getByUserIdFlow(userId)
     }
 
     override suspend fun deletePersonalResource(id: String) {
-        delete(RealmMyPersonal::class.java, "_id", id)
-        delete(RealmMyPersonal::class.java, "id", id)
+        personalDao.deleteByDocId(id)
+        personalDao.deleteById(id)
     }
 
     override suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit) {
-        update(RealmMyPersonal::class.java, "_id", id, updater)
-        update(RealmMyPersonal::class.java, "id", id, updater)
-    }
-
-    override suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal> {
-        return queryList(RealmMyPersonal::class.java) {
-            equalTo("userId", userId)
-            equalTo("isUploaded", false)
+        personalDao.findByDocId(id)?.let { personal ->
+            updater(personal)
+            personalDao.update(personal)
+        }
+        personalDao.findById(id)?.let { personal ->
+            updater(personal)
+            personalDao.update(personal)
         }
     }
 
+    override suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal> {
+        return personalDao.getPendingUploads(userId)
+    }
+
     override suspend fun updatePersonalAfterSync(id: String, newId: String, rev: String) {
-        update(RealmMyPersonal::class.java, "id", id) { personal ->
+        personalDao.findById(id)?.let { personal ->
             personal.isUploaded = true
             personal._id = newId
             personal._rev = rev
+            personalDao.update(personal)
         }
     }
 
@@ -95,7 +90,7 @@ class PersonalsRepositoryImpl @Inject constructor(
             val rev = getString("rev", `object`)
             val id = getString("id", `object`)
 
-            personal.id?.let { personalId ->
+            personal.id.let { personalId ->
                 updatePersonalAfterSync(personalId, id, rev)
             }
 

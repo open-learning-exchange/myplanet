@@ -5,8 +5,10 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.RealmMyPersonal
 
 /**
  * Room database that is progressively replacing the legacy Realm store.
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyLife
     entities = [
         DictionaryEntity::class,
         RealmMyLife::class,
+        RealmMyPersonal::class,
     ],
     version = 1,
     exportSchema = false,
@@ -27,4 +30,5 @@ import org.ole.planet.myplanet.model.RealmMyLife
 abstract class AppDatabase : RoomDatabase() {
     abstract fun dictionaryDao(): DictionaryDao
     abstract fun myLifeDao(): MyLifeDao
+    abstract fun personalDao(): PersonalDao
 }
