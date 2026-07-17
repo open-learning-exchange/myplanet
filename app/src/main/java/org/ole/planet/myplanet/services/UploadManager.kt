@@ -85,7 +85,7 @@ class UploadManager @Inject constructor(
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(uploadConfigs.NewsActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
     }
 
     private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
@@ -538,7 +538,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(uploadConfigs.SearchActivity)
+        uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
@@ -547,11 +547,11 @@ class UploadManager @Inject constructor(
         } else {
             uploadConfigs.ResourceActivities
         }
-        uploadCoordinator.upload(config)
+        uploadCoordinator.uploadRoom(config)
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(uploadConfigs.CourseActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {

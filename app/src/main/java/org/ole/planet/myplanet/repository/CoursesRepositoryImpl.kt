@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -50,7 +51,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
-    private val tagDao: TagDao
+    private val tagDao: TagDao,
+    private val searchActivityDao: SearchActivityDao
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -271,24 +273,23 @@ class CoursesRepositoryImpl @Inject constructor(
         grade: String,
         subject: String
     ) {
-        executeTransaction { realm ->
-            val activity = realm.createObject(
-                RealmSearchActivity::class.java,
-                UUID.randomUUID().toString()
-            )
-            activity.user = userName
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = planetCode
-            activity.parentCode = parentCode
-            activity.text = searchText
-            activity.type = "courses"
-            val filter = JsonObject()
-
-            filter.add("tags", RealmTag.getTagsArray(tags))
-            filter.addProperty("doc.gradeLevel", grade)
-            filter.addProperty("doc.subjectLevel", subject)
-            activity.filter = JsonUtils.gson.toJson(filter)
+        val filter = JsonObject().apply {
+            add("tags", RealmTag.getTagsArray(tags))
+            addProperty("doc.gradeLevel", grade)
+            addProperty("doc.subjectLevel", subject)
         }
+        searchActivityDao.insert(
+            RealmSearchActivity(
+                id = UUID.randomUUID().toString(),
+                user = userName,
+                time = Calendar.getInstance().timeInMillis,
+                createdOn = planetCode,
+                parentCode = parentCode,
+                text = searchText,
+                type = "courses",
+                filter = JsonUtils.gson.toJson(filter)
+            )
+        )
     }
 
     override suspend fun joinCourse(courseId: String, userId: String): Result<Unit> {

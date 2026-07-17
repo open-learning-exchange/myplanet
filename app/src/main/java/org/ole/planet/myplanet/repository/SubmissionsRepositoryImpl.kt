@@ -18,6 +18,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -44,7 +45,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val exporter: SubmissionsRepositoryExporter
+    private val exporter: SubmissionsRepositoryExporter,
+    private val submitPhotosDao: SubmitPhotosDao
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -439,18 +441,19 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         memberId: String?,
         photoPath: String?
     ) {
-        executeTransaction { realm ->
-            val id = UUID.randomUUID().toString()
-            val submit = realm.createObject(RealmSubmitPhotos::class.java, id)
-            submit.submissionId = submissionId
-            submit.examId = examId
-            submit.courseId = courseId
-            submit.memberId = memberId
-            submit.date = Date().toString()
-            submit.uniqueId = NetworkUtils.getUniqueIdentifier()
-            submit.photoLocation = photoPath
-            submit.uploaded = false
-        }
+        submitPhotosDao.insert(
+            RealmSubmitPhotos().apply {
+                id = UUID.randomUUID().toString()
+                this.submissionId = submissionId
+                this.examId = examId
+                this.courseId = courseId
+                this.memberId = memberId
+                date = Date().toString()
+                uniqueId = NetworkUtils.getUniqueIdentifier()
+                photoLocation = photoPath
+                uploaded = false
+            }
+        )
     }
 
     override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): RealmSubmission? {
@@ -657,34 +660,18 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
-        return withRealm { realm ->
-            val data = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
-            if (data.isEmpty()) {
-                emptyList()
-            } else {
-                data.map { photo ->
-                    Pair(photo.id, RealmSubmitPhotos.serializeRealmSubmitPhotos(photo))
-                }
-            }
+        return submitPhotosDao.getUnuploaded().map { photo ->
+            Pair(photo.id, RealmSubmitPhotos.serializeRealmSubmitPhotos(photo))
         }
     }
 
     override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
-        update(RealmSubmitPhotos::class.java, "id", photoId ?: "") { sub ->
-            sub.uploaded = true
-            sub._rev = rev
-            sub._id = id
-        }
+        photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
     override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
-        return withRealm { realm ->
-            val results = realm.where(RealmSubmitPhotos::class.java)
-                .`in`("id", ids)
-                .findAll()
-            realm.copyFromRealm(results)
-        }
+        return submitPhotosDao.getByIds(ids)
     }
 
     override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {

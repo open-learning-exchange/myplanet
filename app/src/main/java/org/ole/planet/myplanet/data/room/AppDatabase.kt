@@ -8,13 +8,18 @@ import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
@@ -22,12 +27,17 @@ import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RealmResourceActivity
+import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
@@ -55,6 +65,11 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmRating::class,
         RealmTag::class,
         RealmMeetup::class,
+        RealmSearchActivity::class,
+        RealmCourseActivity::class,
+        RealmResourceActivity::class,
+        RealmSubmitPhotos::class,
+        RealmNewsLog::class,
     ],
     version = 1,
     exportSchema = false,
@@ -75,4 +90,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun ratingDao(): RatingDao
     abstract fun tagDao(): TagDao
     abstract fun meetupDao(): MeetupDao
+    abstract fun searchActivityDao(): SearchActivityDao
+    abstract fun courseActivityDao(): CourseActivityDao
+    abstract fun resourceActivityDao(): ResourceActivityDao
+    abstract fun submitPhotosDao(): SubmitPhotosDao
+    abstract fun newsLogDao(): NewsLogDao
 }

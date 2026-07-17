@@ -14,13 +14,18 @@ import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
@@ -107,5 +112,30 @@ object RoomModule {
     @Provides
     fun provideMeetupDao(database: AppDatabase): MeetupDao {
         return database.meetupDao()
+    }
+
+    @Provides
+    fun provideSearchActivityDao(database: AppDatabase): SearchActivityDao {
+        return database.searchActivityDao()
+    }
+
+    @Provides
+    fun provideCourseActivityDao(database: AppDatabase): CourseActivityDao {
+        return database.courseActivityDao()
+    }
+
+    @Provides
+    fun provideResourceActivityDao(database: AppDatabase): ResourceActivityDao {
+        return database.resourceActivityDao()
+    }
+
+    @Provides
+    fun provideSubmitPhotosDao(database: AppDatabase): SubmitPhotosDao {
+        return database.submitPhotosDao()
+    }
+
+    @Provides
+    fun provideNewsLogDao(database: AppDatabase): NewsLogDao {
+        return database.newsLogDao()
     }
 }

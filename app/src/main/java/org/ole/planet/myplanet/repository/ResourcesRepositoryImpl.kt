@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmRemovedLog
@@ -40,6 +42,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
     private val tagsRepository: TagsRepository,
+    private val searchActivityDao: SearchActivityDao,
+    private val resourceActivityDao: ResourceActivityDao,
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
@@ -379,16 +383,18 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
         val filterPayload = JsonUtils.gson.toJson(filter)
 
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmSearchActivity::class.java, UUID.randomUUID().toString())
-            activity.user = userName
-            activity.time = Calendar.getInstance().timeInMillis
-            activity.createdOn = planetCode
-            activity.parentCode = parentCode
-            activity.text = searchText
-            activity.type = "resources"
-            activity.filter = filterPayload
-        }
+        searchActivityDao.insert(
+            RealmSearchActivity(
+                id = UUID.randomUUID().toString(),
+                user = userName,
+                time = Calendar.getInstance().timeInMillis,
+                createdOn = planetCode,
+                parentCode = parentCode,
+                text = searchText,
+                type = "resources",
+                filter = filterPayload
+            )
+        )
     }
 
     private fun getJsonArrayFromList(list: Set<String>): JsonArray {
@@ -458,10 +464,8 @@ class ResourcesRepositoryImpl @Inject constructor(
         val user = findByField(RealmUser::class.java, "id", userId)
         val userName = user?.name ?: return flowOf(emptySet())
 
-        return queryListFlow(RealmResourceActivity::class.java) {
-            equalTo("user", userName)
-            equalTo("type", "resource_opened")
-        }.map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
+        return resourceActivityDao.observeByUserAndType(userName, "resource_opened")
+            .map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
     }
 
     override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {

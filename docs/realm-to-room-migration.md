@@ -148,7 +148,26 @@ wired through `di/RoomModule`.
       upload-manager + user-repo constructor tests updated. Also fixed a latent Tag-migration
       fallout: `ResourcesViewModelTest` can no longer mockk `RealmTag.id` (now a `@JvmField`), so
       it uses a real instance.
-- [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **SearchActivity** migrated (uploaded-only local activity log). `RealmSearchActivity` is now
+      a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload
+      acknowledgements; course/resource search logging now writes through the DAO; upload config
+      uses `RoomUploadConfig`.
+- [x] **CourseActivity** migrated (uploaded-only course visit log). `RealmCourseActivity` is now
+      a Room `@Entity`; `CourseActivityDao` owns visit inserts, pending upload lookup, and upload
+      acknowledgements; course visit logging writes through the DAO; upload config uses
+      `RoomUploadConfig`.
+- [x] **ResourceActivity** migrated (uploaded + local read paths). `RealmResourceActivity` is
+      now a Room `@Entity`; `ResourceActivityDao` owns resource-open/sync inserts, counts,
+      most-opened lookups, opened-resource observation, pending upload lookup, and upload
+      acknowledgements; both regular and sync upload configs use `RoomUploadConfig`.
+- [x] **SubmitPhotos** migrated (uploaded photo submissions). `RealmSubmitPhotos` is now a
+      Room `@Entity`; `SubmitPhotosDao` owns photo inserts, pending lookup, id lookups, and
+      upload acknowledgements; repository/photo uploader paths use the DAO, and the legacy upload
+      config is Room-capable.
+- [x] **NewsLog** migrated (uploaded-only activity log). `RealmNewsLog` is now a Room
+      `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
+      config uses `RoomUploadConfig`.
+- [ ] Migrate the remaining ~10 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
