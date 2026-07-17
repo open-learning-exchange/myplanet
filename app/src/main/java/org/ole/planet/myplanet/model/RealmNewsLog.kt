@@ -1,18 +1,22 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-open class RealmNewsLog : RealmObject() {
+@Entity(
+    tableName = "news_log",
+    indices = [Index("_id"), Index("_rev")]
+)
+open class RealmNewsLog {
     @PrimaryKey
-    var id: String? = null
-    @Index
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
-    @Index
     var _rev: String? = null
     var type: String? = null
     var time: Long? = null

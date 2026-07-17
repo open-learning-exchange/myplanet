@@ -10,10 +10,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -22,6 +24,7 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 class UploadConfigsTest {
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val courseActivityDao: CourseActivityDao = mockk(relaxed = true)
+    private val newsLogDao: NewsLogDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
     private val uploadConfigs = UploadConfigs(
@@ -38,7 +41,8 @@ class UploadConfigsTest {
         searchActivityDao = searchActivityDao,
         courseActivityDao = courseActivityDao,
         resourceActivityDao = resourceActivityDao,
-        submitPhotosDao = submitPhotosDao
+        submitPhotosDao = submitPhotosDao,
+        newsLogDao = newsLogDao
     )
 
     @Test
@@ -141,6 +145,16 @@ class UploadConfigsTest {
         coEvery { resourceActivityDao.getPendingSyncUploads() } returns pending
 
         val result = uploadConfigs.ResourceActivitiesSync.fetchPendingItems()
+
+        assertEquals(pending, result)
+    }
+
+    @Test
+    fun `NewsActivities config fetches pending Room rows from DAO`() = runTest {
+        val pending = listOf(RealmNewsLog().apply { id = "news-local-1" })
+        coEvery { newsLogDao.getPendingUploads() } returns pending
+
+        val result = uploadConfigs.NewsActivities.fetchPendingItems()
 
         assertEquals(pending, result)
     }

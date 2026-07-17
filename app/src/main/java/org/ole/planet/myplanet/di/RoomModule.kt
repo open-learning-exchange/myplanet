@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
@@ -120,5 +121,10 @@ object RoomModule {
     @Provides
     fun provideSubmitPhotosDao(database: AppDatabase): SubmitPhotosDao {
         return database.submitPhotosDao()
+    }
+
+    @Provides
+    fun provideNewsLogDao(database: AppDatabase): NewsLogDao {
+        return database.newsLogDao()
     }
 }
