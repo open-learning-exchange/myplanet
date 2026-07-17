@@ -126,7 +126,11 @@ wired through `di/RoomModule`.
       `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
       `RoomUploadConfig`. Repo aggregation moved from Realm `average()`/`RealmResults` to
       in-memory over DAO lists. Repo test + model test + UploadManager test updated.
-- [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **SearchActivity** migrated (uploaded-only local activity log). `RealmSearchActivity` is now
+      a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload
+      acknowledgements; course/resource search logging now writes through the DAO; upload config
+      uses `RoomUploadConfig`.
+- [ ] Migrate the remaining 14 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

@@ -5,6 +5,7 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -43,7 +44,8 @@ class UploadConfigs @Inject constructor(
     private val surveysRepository: SurveysRepository,
     private val feedbackRepository: FeedbackRepository,
     private val ratingsRepository: RatingsRepository,
-    private val apkLogDao: ApkLogDao
+    private val apkLogDao: ApkLogDao,
+    private val searchActivityDao: SearchActivityDao
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -88,12 +90,17 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id }
     )
 
-    val SearchActivity = UploadConfig(
-        modelClass = RealmSearchActivity::class,
+    val SearchActivity = RoomUploadConfig(
         endpoint = "search_activities",
-        queryBuilder = { query -> query.isEmpty("_rev") },
+        modelClassName = "RealmSearchActivity",
+        fetchPendingItems = { searchActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple { it.serialize() },
-        idExtractor = { it._id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                searchActivityDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
     val ResourceActivities = UploadConfig(

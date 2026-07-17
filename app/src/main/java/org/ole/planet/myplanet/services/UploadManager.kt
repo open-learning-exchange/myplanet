@@ -538,7 +538,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(uploadConfigs.SearchActivity)
+        uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
