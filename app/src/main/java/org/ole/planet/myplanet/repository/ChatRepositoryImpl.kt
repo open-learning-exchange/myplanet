@@ -3,16 +3,12 @@ package org.ole.planet.myplanet.repository
 import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.Sort
 import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ChatApiService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
@@ -25,12 +21,11 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val chatDao: ChatDao,
     private val chatApiService: ChatApiService,
     private val serverUrlMapper: ServerUrlMapper,
     private val sharedPrefManager: SharedPrefManager
-) : RealmRepository(databaseService, realmDispatcher), ChatRepository {
+) : ChatRepository {
 
     @VisibleForTesting
     internal var reachabilityCheck: suspend (String) -> Boolean = { url ->
@@ -118,71 +113,44 @@ class ChatRepositoryImpl @Inject constructor(
         if (userName.isNullOrEmpty()) {
             return emptyList()
         }
-        return queryList(RealmChatHistory::class.java) {
-            equalTo("user", userName)
-            sort("id", Sort.DESCENDING)
-        }
+        return chatDao.getByUser(userName)
     }
 
     override suspend fun getLatestRev(id: String): String? {
-        return withRealm { realm ->
-            realm.where(RealmChatHistory::class.java)
-                .equalTo("_id", id)
-                .findAll()
-                .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
-                ?._rev
-        }
+        return chatDao.getByDocId(id)
+            .maxByOrNull { rev -> rev._rev?.split("-")?.get(0)?.toIntOrNull() ?: 0 }
+            ?._rev
     }
 
     private suspend fun saveNewChat(chat: JsonObject) {
-        executeTransaction { realm ->
-            insertChatsBatchInternal(realm, listOf(chat))
-        }
+        insertChatsBatchInternal(listOf(chat))
     }
 
     private suspend fun continueConversation(id: String, query: String, response: String, rev: String) {
-        executeTransaction { realm ->
-            addConversation(realm, id, query, response, rev)
-        }
+        addConversation(id, query, response, rev)
     }
 
     override suspend fun insertChatHistoryList(chats: List<JsonObject>) {
-        executeTransaction { realm ->
-            insertChatsBatchInternal(realm, chats)
-        }
+        insertChatsBatchInternal(chats)
     }
 
     override suspend fun insertChatHistoryFromSync(docs: List<JsonObject>) {
-        executeTransaction { realm ->
-            val unwrappedDocs = mutableListOf<JsonObject>()
-            for (j in docs) {
-                var jsonDoc = j
-                jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-                val id = JsonUtils.getString("_id", jsonDoc)
-                if (!id.startsWith("_design")) {
-                    unwrappedDocs.add(jsonDoc)
-                }
+        val unwrappedDocs = mutableListOf<JsonObject>()
+        for (j in docs) {
+            val jsonDoc = JsonUtils.getJsonObject("doc", j)
+            val id = JsonUtils.getString("_id", jsonDoc)
+            if (!id.startsWith("_design")) {
+                unwrappedDocs.add(jsonDoc)
             }
-            insertChatsBatchInternal(realm, unwrappedDocs)
         }
+        insertChatsBatchInternal(unwrappedDocs)
     }
 
-
-    private fun insertChatsBatchInternal(realm: io.realm.Realm, chats: List<JsonObject>) {
+    private suspend fun insertChatsBatchInternal(chats: List<JsonObject>) {
         if (chats.isEmpty()) return
-
-        val chatIds = chats.mapNotNull { JsonUtils.getString("_id", it) }.toTypedArray()
-
-        // Find existing chats to delete orphaned conversations
-        val existingChats = realm.where(RealmChatHistory::class.java)
-            .`in`("_id", chatIds)
-            .findAll()
-
-        existingChats.forEach { chat ->
-            chat.conversations?.deleteAllFromRealm()
-        }
-
-        val unmanagedChats = chats.map { json ->
+        // @Insert(REPLACE) upserts by primary key, replacing the whole row (including the embedded
+        // conversations JSON), which subsumes the old "delete orphaned conversations" step.
+        val entities = chats.map { json ->
             val chatHistoryId = JsonUtils.getString("_id", json)
             RealmChatHistory().apply {
                 id = chatHistoryId
@@ -194,34 +162,28 @@ class ChatRepositoryImpl @Inject constructor(
                 user = JsonUtils.getString("user", json)
                 aiProvider = JsonUtils.getString("aiProvider", json)
                 val conversationsArray = JsonUtils.getJsonArray("conversations", json)
-                val unmanagedConversations = conversationsArray.map {
+                conversations = conversationsArray.map {
                     JsonUtils.gson.fromJson(it, RealmConversation::class.java)
-                }
-                conversations = io.realm.RealmList<RealmConversation>().apply {
-                    addAll(unmanagedConversations)
                 }
                 lastUsed = Date().time
             }
         }
-
-        realm.insertOrUpdate(unmanagedChats)
+        chatDao.upsertAll(entities)
     }
 
-    private fun addConversation(realm: io.realm.Realm, chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
-        val chatHistory = realm.where(RealmChatHistory::class.java).equalTo("_id", chatHistoryId).findFirst()
-        if (chatHistory != null) {
-            if (chatHistory.conversations == null) {
-                chatHistory.conversations = io.realm.RealmList()
-            }
-            val conversation = realm.createObject(RealmConversation::class.java)
-            conversation.query = query
-            conversation.response = response
-            chatHistory.conversations?.add(conversation)
-            chatHistory.updatedDate = "${Date().time}"
-            chatHistory.lastUsed = Date().time
-            if (!newRev.isNullOrEmpty()) {
-                chatHistory._rev = newRev
-            }
+    private suspend fun addConversation(chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
+        if (chatHistoryId == null) return
+        val chatHistory = chatDao.findByDocId(chatHistoryId) ?: return
+        val conversation = RealmConversation().apply {
+            this.query = query
+            this.response = response
         }
+        chatHistory.conversations = (chatHistory.conversations ?: emptyList()) + conversation
+        chatHistory.updatedDate = "${Date().time}"
+        chatHistory.lastUsed = Date().time
+        if (!newRev.isNullOrEmpty()) {
+            chatHistory._rev = newRev
+        }
+        chatDao.update(chatHistory)
     }
 }

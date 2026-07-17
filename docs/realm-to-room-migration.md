@@ -107,6 +107,13 @@ wired through `di/RoomModule`.
       proven **sync-bulk-insert** conversion: the per-table `insert` moves from the shared Realm
       `executeTransaction` dispatch in `TransactionSyncManager` to the outer suspend `when` +
       a DAO upsert. Template for the remaining synced models.
+- [x] **Chat** migrated (`RealmChatHistory` Room `@Entity`, `ChatDao`; `ChatRepositoryImpl` off
+      `RealmRepository` entirely). First proven **nested-relationship** pattern: `RealmConversation`
+      (no independent identity, never queried alone) becomes a plain class stored as an embedded
+      JSON `List<RealmConversation>` via a `Converters` type converter — the right mapping for
+      value-object child lists. (Child types that ARE queried independently — courseSteps,
+      answers, attachments, examQuestions — will instead need their own tables.) Both Chat test
+      files ported to mock `ChatDao`.
 - [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

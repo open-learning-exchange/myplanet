@@ -1,12 +1,20 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 
-open class RealmChatHistory : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmChatHistory` model. The nested conversation list is
+ * stored as embedded JSON (see [org.ole.planet.myplanet.data.room.Converters]); persistence goes
+ * through [org.ole.planet.myplanet.data.room.dao.ChatDao].
+ */
+@Entity(tableName = "chat_history")
+open class RealmChatHistory {
+    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var _rev: String? = null
     var user: String? = null
@@ -15,5 +23,5 @@ open class RealmChatHistory : RealmObject() {
     var createdDate: String? = null
     var updatedDate: String? = null
     var lastUsed: Long = 0
-    var conversations: RealmList<RealmConversation>? = null
+    var conversations: List<RealmConversation>? = null
 }
