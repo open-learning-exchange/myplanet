@@ -71,7 +71,7 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
 
 fun SyncActivity.onChangeServerUrl() {
     val selected = spnCloud.selectedItem
-    if (selected is RealmCommunity && selected.isValid) {
+    if (selected is RealmCommunity) {
         val config = ServerConfigUtils.getCommunityConfig(selected, getString(R.string.https_protocol))
         serverUrl.setText(config.localDomain)
         protocolCheckIn.check(R.id.radio_https)

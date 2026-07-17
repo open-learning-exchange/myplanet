@@ -3,11 +3,13 @@ package org.ole.planet.myplanet.data.room
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
+import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRetryOperation
@@ -25,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmRetryOperation
         RealmMyLife::class,
         RealmMyPersonal::class,
         RealmRetryOperation::class,
+        RealmCommunity::class,
     ],
     version = 1,
     exportSchema = false,
@@ -35,4 +38,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun myLifeDao(): MyLifeDao
     abstract fun personalDao(): PersonalDao
     abstract fun retryDao(): RetryDao
+    abstract fun communityDao(): CommunityDao
 }
