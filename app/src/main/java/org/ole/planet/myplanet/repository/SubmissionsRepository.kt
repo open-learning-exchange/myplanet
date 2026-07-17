@@ -46,7 +46,6 @@ interface SubmissionsRepository {
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
     suspend fun createExamSubmission(request: CreateExamSubmissionRequest): RealmSubmission?
     suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean
-    suspend fun getLastPendingSubmission(userId: String?): RealmSubmission?
     suspend fun updateSubmissionStatus(submissionId: String?, status: String)
     suspend fun getExamByStepId(stepId: String): RealmStepExam?
     suspend fun getExamById(id: String): RealmStepExam?

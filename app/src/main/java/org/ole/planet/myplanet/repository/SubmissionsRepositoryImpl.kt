@@ -631,16 +631,6 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
-    override suspend fun getLastPendingSubmission(userId: String?): RealmSubmission? {
-        return withRealm { realm ->
-            realm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .equalTo("userId", userId)
-                .sort("startTime", Sort.DESCENDING)
-                .findFirst()?.let { realm.copyFromRealm(it) }
-        }
-    }
-
     override suspend fun updateSubmissionStatus(submissionId: String?, status: String) {
         if (submissionId.isNullOrEmpty()) return
         update(RealmSubmission::class.java, "id", submissionId) { submission ->
