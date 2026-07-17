@@ -126,6 +126,15 @@ wired through `di/RoomModule`.
       `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
       `RoomUploadConfig`. Repo aggregation moved from Realm `average()`/`RealmResults` to
       in-memory over DAO lists. Repo test + model test + UploadManager test updated.
+- [x] **Tag** migrated (synced-only). `RealmTag` Room `@Entity` (@JvmField id/_id; `attachedTo`
+      `RealmList<String>` → `List<String>?` via `Converters`; `@Index` on name/tagId/db; kept the
+      `toTag()`/`getTagsArray` POJO helpers); `TagDao` (parent-tag filter, by-db-and-linkId(s),
+      by-ids, by-names, by-db-and-tagIds, upsert); `TagsRepositoryImpl` off `RealmRepository`
+      entirely (child aggregation, linked-tag resolution, and sync `insert` all via the DAO).
+      Sync `"tags"` dispatch moved to the outer suspend `when` (drop `bulkInsertFromSync`).
+      `CoursesRepositoryImpl.filterCourses` now resolves tag→course links via `TagDao` before the
+      Realm course query (injects `tagDao`). First proven **`RealmList<String>` → JSON `List`**
+      mapping. Repo test rewritten to mock `TagDao`; `CoursesRepositoryImplTest` constructor updated.
 - [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

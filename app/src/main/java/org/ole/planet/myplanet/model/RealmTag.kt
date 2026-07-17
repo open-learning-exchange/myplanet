@@ -1,34 +1,32 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
-import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmTag : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmTag` model. Synced (read-only from the server).
+ * `attachedTo` (formerly `RealmList<String>`) is a plain `List<String>` stored as JSON via the
+ * shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
+ * [org.ole.planet.myplanet.data.room.dao.TagDao].
+ */
+@Entity(tableName = "tag", indices = [Index("name"), Index("tagId"), Index("db")])
+open class RealmTag {
+    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var _rev: String? = null
-    @Index
     var name: String? = null
     var linkId: String? = null
-    @Index
     var tagId: String? = null
-    var attachedTo: RealmList<String>? = null
+    var attachedTo: List<String>? = null
     var docType: String? = null
-    @Index
     var db: String? = null
     var isAttached = false
-    private fun setAttachedTo(attachedTo: JsonArray) {
-        this.attachedTo = RealmList()
-        for (i in 0 until attachedTo.size()) {
-            this.attachedTo?.add(JsonUtils.getString(attachedTo, i))
-        }
-        isAttached = (this.attachedTo?.size ?: 0) > 0
-    }
 
     override fun toString(): String {
         return name.orEmpty()

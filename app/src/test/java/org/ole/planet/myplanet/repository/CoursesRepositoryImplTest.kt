@@ -53,6 +53,7 @@ class CoursesRepositoryImplTest {
             tagsRepository,
             ratingsRepository,
             sharedPrefManager,
+            mockk(relaxed = true),
             mockk(relaxed = true)
         )
     }

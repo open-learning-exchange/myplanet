@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
+import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -48,7 +49,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val tagsRepository: TagsRepository,
     private val ratingsRepository: RatingsRepository,
     private val sharedPrefManager: SharedPrefManager,
-    private val certificationDao: CertificationDao
+    private val certificationDao: CertificationDao,
+    private val tagDao: TagDao
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -228,21 +230,18 @@ class CoursesRepositoryImpl @Inject constructor(
         subjectLevel: String,
         tagNames: List<String>
     ): List<RealmMyCourse> {
-        return withRealm { realm ->
-            val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-                val matchingTagIds = realm.where(RealmTag::class.java)
-                    .`in`("name", tagNames.toTypedArray())
-                    .findAll()
-                    .mapNotNull { it.id }
-                realm.where(RealmTag::class.java)
-                    .equalTo("db", "courses")
-                    .`in`("tagId", matchingTagIds.toTypedArray())
-                    .findAll()
-                    .mapNotNull { it.linkId }
+        val courseIdsWithTags = if (tagNames.isNotEmpty()) {
+            val matchingTagIds = tagDao.getByNames(tagNames).map { it.id }
+            if (matchingTagIds.isEmpty()) {
+                emptyList()
             } else {
-                null
+                tagDao.getByDbAndTagIds("courses", matchingTagIds).mapNotNull { it.linkId }
             }
+        } else {
+            null
+        }
 
+        return withRealm { realm ->
             var query = realm.where(RealmMyCourse::class.java)
             if (searchText.isNotEmpty()) {
                 query = query.contains("courseTitle", searchText, io.realm.Case.INSENSITIVE)

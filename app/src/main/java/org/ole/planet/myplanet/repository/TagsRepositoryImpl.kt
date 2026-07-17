@@ -1,45 +1,31 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class TagsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), TagsRepository {
+    private val tagDao: TagDao,
+) : TagsRepository {
 
     override suspend fun getTags(dbType: String?): List<RealmTag> {
-        return queryList(RealmTag::class.java) {
-            dbType?.let { equalTo("db", it) }
-            isNotEmpty("name")
-            equalTo("isAttached", false)
-        }
+        return tagDao.getParentTags(dbType)
     }
 
     override suspend fun getTagsWithChildren(dbType: String?): Map<RealmTag, List<RealmTag>> {
         val parentTags = getTags(dbType)
-        val allTags = queryList(RealmTag::class.java)
+        val allTags = tagDao.getAll()
         val childMap = mutableMapOf<String, MutableList<RealmTag>>()
 
         for (t in allTags) {
             val attached = t.attachedTo
             if (attached.isNullOrEmpty()) continue
 
-            val attachedSize = attached.size
-            for (i in 0 until attachedSize) {
-                val parentId = attached[i]
+            for (parentId in attached) {
                 if (parentId != null) {
-                    var list = childMap[parentId]
-                    if (list == null) {
-                        list = ArrayList()
-                        childMap[parentId] = list
-                    }
+                    val list = childMap.getOrPut(parentId) { ArrayList() }
                     if (list.isEmpty() || list.last() !== t) {
                         list.add(t)
                     }
@@ -73,10 +59,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val links = queryList(RealmTag::class.java) {
-            equalTo("db", db)
-            `in`("linkId", linkIds.toTypedArray())
-        }
+        val links = tagDao.getByDbAndLinkIds(db, linkIds)
         if (links.isEmpty()) {
             return emptyMap()
         }
@@ -86,10 +69,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val allParentTags = queryList(RealmTag::class.java) {
-            `in`("id", allTagIds.toTypedArray())
-        }
-        val parentTagsById = allParentTags.associateBy { it.id }
+        val parentTagsById = tagDao.getByIds(allTagIds).associateBy { it.id }
 
         val tagsByLinkId = mutableMapOf<String, MutableList<RealmTag>>()
         val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
@@ -98,10 +78,8 @@ class TagsRepositoryImpl @Inject constructor(
                 link.tagId?.let { tagId ->
                     parentTagsById[tagId]?.let { parentTag ->
                         val set = tagsSetByLinkId.getOrPut(linkId) { mutableSetOf() }
-                        parentTag.id?.let { id ->
-                            if (set.add(id)) {
-                                tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
-                            }
+                        if (set.add(parentTag.id)) {
+                            tagsByLinkId.getOrPut(linkId) { mutableListOf() }.add(parentTag)
                         }
                     }
                 }
@@ -112,10 +90,7 @@ class TagsRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
-        val links = queryList(RealmTag::class.java) {
-            equalTo("db", db)
-            equalTo("linkId", linkId)
-        }
+        val links = tagDao.getByDbAndLinkId(db, linkId)
         if (links.isEmpty()) {
             return emptyList()
         }
@@ -124,9 +99,7 @@ class TagsRepositoryImpl @Inject constructor(
             return emptyList()
         }
 
-        val parents = queryList(RealmTag::class.java) {
-            `in`("id", tagIds.toTypedArray())
-        }
+        val parents = tagDao.getByIds(tagIds)
         if (parents.isEmpty()) {
             return emptyList()
         }
@@ -135,28 +108,13 @@ class TagsRepositoryImpl @Inject constructor(
         return tagIds.mapNotNull { parentsById[it] }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val tagsToInsert = ArrayList<RealmTag>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                tagsToInsert.add(createUnmanagedTag(jsonDoc))
-            }
-        }
-        if (tagsToInsert.isNotEmpty()) {
-            realm.insertOrUpdate(tagsToInsert)
-        }
-    }
-
     override suspend fun insert(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
-        executeTransaction { realm ->
-            val tagsToInsert = documentList.map { createUnmanagedTag(it) }
-            if (tagsToInsert.isNotEmpty()) {
-                realm.insertOrUpdate(tagsToInsert)
-            }
+        val tagsToInsert = documentList
+            .filter { !JsonUtils.getString("_id", it).startsWith("_design") }
+            .map { createUnmanagedTag(it) }
+        if (tagsToInsert.isNotEmpty()) {
+            tagDao.upsertAll(tagsToInsert)
         }
     }
 
@@ -171,17 +129,17 @@ class TagsRepositoryImpl @Inject constructor(
         tag.tagId = JsonUtils.getString("tagId", act)
         tag.linkId = JsonUtils.getString("linkId", act)
         val el = act["attachedTo"]
+        val attachedTo = ArrayList<String>()
         if (el != null && el.isJsonArray) {
-            val attachedTo = JsonUtils.getJsonArray("attachedTo", act)
-            tag.attachedTo = io.realm.RealmList()
-            for (i in 0 until attachedTo.size()) {
-                tag.attachedTo?.add(JsonUtils.getString(attachedTo, i))
+            val arr = JsonUtils.getJsonArray("attachedTo", act)
+            for (i in 0 until arr.size()) {
+                attachedTo.add(JsonUtils.getString(arr, i))
             }
         } else {
-            tag.attachedTo = io.realm.RealmList()
-            tag.attachedTo?.add(JsonUtils.getString("attachedTo", act))
+            attachedTo.add(JsonUtils.getString("attachedTo", act))
         }
-        tag.isAttached = (tag.attachedTo?.size ?: 0) > 0
+        tag.attachedTo = attachedTo
+        tag.isAttached = attachedTo.size > 0
         return tag
     }
 }
