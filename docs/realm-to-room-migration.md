@@ -91,6 +91,11 @@ wired through `di/RoomModule`.
       relaxed `UploadSerializer`/`PreparedUpload` to `T: Any`. The 16 Realm `UploadConfig`s are
       untouched. **Finding:** the sync side (`TransactionSyncManager`) already delegates to each
       repo's `insert()`, so synced-only domains need no framework change — only uploaded ones did.
+- [x] **UserChallengeActions** migrated (single-`id` Room `@Entity`, `UserChallengeActionsDao`,
+      2 sites in `ActivitiesRepositoryImpl` off the generic Realm API; repo keeps `RealmRepository`
+      for its other models). NB: transient KSP `"Dao could not be resolved"` failures during this
+      work were **corrupted incremental/daemon build state** from rapid iterative builds, not a
+      real blocker — `./gradlew --stop` + a clean build clears them.
 - [x] **ApkLog** migrated through the new path (`RealmApkLog` now a Room `@Entity`, `ApkLogDao`,
       `CrashLog` is a `RoomUploadConfig`, `MainApplication.saveLogToRealm` + crash-log sweep write
       via the DAO, `uploadCrashLog()` uses `uploadRoom`). First uploadable model on Room.

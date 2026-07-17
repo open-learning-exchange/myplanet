@@ -4,6 +4,7 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
+import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
@@ -15,6 +16,7 @@ import org.ole.planet.myplanet.model.RealmCommunity
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RealmUserChallengeActions
 
 /**
  * Room database that is progressively replacing the legacy Realm store.
@@ -31,6 +33,7 @@ import org.ole.planet.myplanet.model.RealmRetryOperation
         RealmRetryOperation::class,
         RealmCommunity::class,
         RealmApkLog::class,
+        RealmUserChallengeActions::class,
     ],
     version = 1,
     exportSchema = false,
@@ -43,4 +46,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun retryDao(): RetryDao
     abstract fun communityDao(): CommunityDao
     abstract fun apkLogDao(): ApkLogDao
+    abstract fun userChallengeActionsDao(): UserChallengeActionsDao
 }

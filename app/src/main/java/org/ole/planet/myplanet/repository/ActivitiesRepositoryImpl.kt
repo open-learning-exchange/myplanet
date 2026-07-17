@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -44,7 +45,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
-    private val timeProvider: TimeProvider
+    private val timeProvider: TimeProvider,
+    private val userChallengeActionsDao: UserChallengeActionsDao
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return queryList(RealmOfflineActivity::class.java) {
@@ -241,16 +243,14 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
 
     override suspend fun recordSyncUserChallengeAction(userId: String) {
-        executeTransaction { realm ->
-            val action = realm.createObject(
-                RealmUserChallengeActions::class.java,
-                UUID.randomUUID().toString()
-            )
-            action.userId = userId
-            action.actionType = "sync"
-            action.resourceId = null
-            action.time = timeProvider.now()
+        val action = RealmUserChallengeActions().apply {
+            id = UUID.randomUUID().toString()
+            this.userId = userId
+            actionType = "sync"
+            resourceId = null
+            time = timeProvider.now()
         }
+        userChallengeActionsDao.insert(action)
     }
 
     override suspend fun recordSyncActivity(userId: String) {
@@ -329,12 +329,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return hasUserCompletedSync(userId)
     }
 
-    override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(realmDispatcher) {
-        if (userId.isEmpty()) return@withContext false
-        count(RealmUserChallengeActions::class.java) {
-            equalTo("userId", userId)
-            equalTo("actionType", "sync")
-        } > 0
+    override suspend fun hasUserCompletedSync(userId: String): Boolean {
+        if (userId.isEmpty()) return false
+        return userChallengeActionsDao.countByUserAndType(userId, "sync") > 0
     }
 
     private fun serializeLoginActivities(activity: RealmOfflineActivity, context: Context): JsonObject {
