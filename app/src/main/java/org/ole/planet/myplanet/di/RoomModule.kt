@@ -11,6 +11,7 @@ import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.PersonalDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -34,5 +35,10 @@ object RoomModule {
     @Provides
     fun provideMyLifeDao(database: AppDatabase): MyLifeDao {
         return database.myLifeDao()
+    }
+
+    @Provides
+    fun providePersonalDao(database: AppDatabase): PersonalDao {
+        return database.personalDao()
     }
 }

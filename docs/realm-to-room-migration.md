@@ -76,8 +76,11 @@ wired through `di/RoomModule`.
 - [x] **Life** domain migrated end-to-end (`RealmMyLife` is now a Room `@Entity`, `MyLifeDao`,
       `LifeRepositoryImpl` off `RealmRepository`, both Life test files ported). First proven
       *repository* template (in-place model conversion, class name kept so UI is untouched).
+- [x] **Personals** domain migrated end-to-end (`RealmMyPersonal` now a Room `@Entity` with
+      `@JvmField` on `id`/`_id` to avoid Room's ambiguous-accessor error, `PersonalDao` with a
+      reactive `Flow` query, `PersonalsRepositoryImpl` off `RealmRepository`, test ported).
 - [ ] Re-architect `RealmRepository`, upload framework, sync.
-- [ ] Remaining 36 model domains.
+- [ ] Remaining 35 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 
