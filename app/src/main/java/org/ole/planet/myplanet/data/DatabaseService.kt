@@ -27,7 +27,12 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
             val config = RealmConfiguration.Builder()
                 .name(Realm.DEFAULT_REALM_NAME)
                 .schemaVersion(17)
-                .migration(RealmMigrations())
+                // Realm -> Room migration transition: as each model is converted to a Room entity
+                // it leaves the Realm schema. Rather than hand-writing a Realm migration to drop
+                // each removed table, the (drop-and-resync) strategy recreates the Realm file on any
+                // schema mismatch; Room data is repopulated from the server. Realm is removed
+                // entirely once every domain is migrated.
+                .deleteRealmIfMigrationNeeded()
                 .compactOnLaunch()
                 .build()
             Realm.setDefaultConfiguration(config)
