@@ -17,4 +17,7 @@ interface EventsRepository {
                              startDate: Long, endDate: Long, startTime: String,
                              endTime: String, meetupLocation: String, meetupLink: String,
                              recurring: String): Boolean
+    suspend fun getMeetupIdsForUser(userId: String?): List<String>
+    suspend fun getPendingMeetupUploads(): List<RealmMeetup>
+    suspend fun markMeetupUploaded(localId: String, remoteId: String, remoteRev: String): Boolean
 }

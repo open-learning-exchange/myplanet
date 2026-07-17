@@ -98,9 +98,11 @@ class ResourcesViewModelTest {
             every { isResourceOffline() } returns true
         }
         val mockRating = mockk<JsonObject>(relaxed = true)
-        val mockTag = mockk<RealmTag>(relaxed = true) {
-            every { id } returns "tag1"
-            every { name } returns "Tag 1"
+        // RealmTag is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
+        // cannot be stubbed with mockk `every { id }`; use a real instance instead.
+        val mockTag = RealmTag().apply {
+            id = "tag1"
+            name = "Tag 1"
         }
 
         coEvery { resourcesRepository.getEnrichedLibraries(any(), any()) } returns listOf(

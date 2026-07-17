@@ -1,18 +1,24 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
 import org.json.JSONArray
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
-open class RealmMeetup : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmMeetup` model. Meetups are both synced (pulled from
+ * the server) and uploaded (locally created/edited meetups). All fields are simple scalars, so no
+ * type converters are required. Persistence goes through
+ * [org.ole.planet.myplanet.data.room.dao.MeetupDao].
+ */
+@Entity(tableName = "meetup", indices = [Index("meetupId"), Index("teamId"), Index("userId")])
+open class RealmMeetup {
     @PrimaryKey
-    var id: String? = null
+    var id: String = ""
     var userId: String? = null
     var meetupId: String? = null
     var meetupIdRev: String? = null
@@ -37,7 +43,11 @@ open class RealmMeetup : RealmObject() {
     var updated: Boolean = false
 
     companion object {
-        private fun mapFromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: RealmMeetup?): RealmMeetup {
+        /**
+         * Builds an unmanaged meetup from a CouchDB document. When [existingMeetup] is supplied its
+         * local-only fields (created date, recurring number, sync/source metadata) are preserved.
+         */
+        fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: RealmMeetup?): RealmMeetup {
             val meetup = RealmMeetup()
             meetup.id = JsonUtils.getString("_id", meetupDoc)
             meetup.meetupId = JsonUtils.getString("_id", meetupDoc)
@@ -69,53 +79,10 @@ open class RealmMeetup : RealmObject() {
             return meetup
         }
 
-        fun insert(mRealm: Realm, meetupDoc: JsonObject) {
-            insert("", meetupDoc, mRealm)
-        }
-
-        fun insert(userId: String?, meetupDoc: JsonObject, mRealm: Realm) {
-            val meetupId = JsonUtils.getString("_id", meetupDoc)
-            val myMeetupsDB = mRealm.where(RealmMeetup::class.java)
-                .equalTo("meetupId", meetupId).findFirst()
-
-            if (myMeetupsDB?.updated == true) return
-
-            val meetup = mapFromJson(meetupDoc, userId, myMeetupsDB)
-            mRealm.insertOrUpdate(meetup)
-        }
-
-        fun insertList(mRealm: Realm, userId: String?, documents: List<JsonObject>) {
-            if (documents.isEmpty()) return
-
-            val ids = documents.map { JsonUtils.getString("_id", it) }.toTypedArray()
-
-            val existingMeetups = mRealm.where(RealmMeetup::class.java)
-                .`in`("meetupId", ids)
-                .findAll()
-                .associateByTo(HashMap()) { it.meetupId }
-
-            val meetupsToInsert = mutableListOf<RealmMeetup>()
-
-            for (meetupDoc in documents) {
-                val id = JsonUtils.getString("_id", meetupDoc)
-                val myMeetupsDB = existingMeetups[id]
-
-                if (myMeetupsDB?.updated == true) continue
-
-                meetupsToInsert.add(mapFromJson(meetupDoc, userId, myMeetupsDB))
-            }
-
-            if (meetupsToInsert.isNotEmpty()) {
-                mRealm.insertOrUpdate(meetupsToInsert)
-            }
-        }
-
-        fun getMyMeetUpIds(realm: Realm?, userId: String?): JsonArray {
-            val meetups = realm?.where(RealmMeetup::class.java)?.isNotEmpty("userId")
-                ?.equalTo("userId", userId, Case.INSENSITIVE)?.findAll()
+        fun getMyMeetUpIds(meetups: List<RealmMeetup>): JsonArray {
             val ids = JsonArray()
-            for (lib in meetups ?: emptyList()) {
-                ids.add(lib.meetupId)
+            for (meetup in meetups) {
+                ids.add(meetup.meetupId)
             }
             return ids
         }
