@@ -59,4 +59,21 @@ class UploadConfigsTest {
             searchActivityDao.markUploaded(localId = "local-1", remoteId = "remote-1", rev = "1-rev")
         }
     }
+
+    @Test
+    fun `SearchActivity config reports rows that cannot be marked uploaded`() = runTest {
+        val result = UploadedItemResult(
+            localId = "missing-local",
+            remoteId = "remote-1",
+            remoteRev = "1-rev",
+            response = mockk(relaxed = true)
+        )
+        coEvery {
+            searchActivityDao.markUploaded(localId = "missing-local", remoteId = "remote-1", rev = "1-rev")
+        } returns 0
+
+        val failures = uploadConfigs.SearchActivity.markUploaded(listOf(result))
+
+        assertEquals(listOf(result), failures)
+    }
 }
