@@ -412,7 +412,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadRating() {
-        uploadCoordinator.upload(uploadConfigs.Rating)
+        uploadCoordinator.uploadRoom(uploadConfigs.Rating)
     }
 
     suspend fun uploadNews() {

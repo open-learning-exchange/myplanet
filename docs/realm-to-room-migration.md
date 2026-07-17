@@ -120,6 +120,12 @@ wired through `di/RoomModule`.
       `RealmRepository`; `Feedback` upload config -> `RoomUploadConfig` (markUploaded sets
       isUploaded via DAO). Sync path unchanged (already suspend/outer). Model test +
       repo test + UploadManager test updated.
+- [x] **Rating** migrated (uploaded + synced). `RealmRating` Room `@Entity` (@JvmField id/_id);
+      `RatingDao` (by-type, by-type-and-item, find-by-type-user-item, pending-uploads with the
+      guest filter folded into the query, markUploaded); `RatingsRepositoryImpl` keeps
+      `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
+      `RoomUploadConfig`. Repo aggregation moved from Realm `average()`/`RealmResults` to
+      in-memory over DAO lists. Repo test + model test + UploadManager test updated.
 - [ ] Migrate the remaining 15 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

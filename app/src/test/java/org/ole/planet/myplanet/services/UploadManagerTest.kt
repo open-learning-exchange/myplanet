@@ -224,10 +224,10 @@ class UploadManagerTest {
 
     @Test
     fun `uploadRating delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmRating>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<RealmRating>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadRating()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.Rating) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Rating) }
     }
 
     @Test

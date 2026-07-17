@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
+import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
@@ -89,5 +90,10 @@ object RoomModule {
     @Provides
     fun provideFeedbackDao(database: AppDatabase): FeedbackDao {
         return database.feedbackDao()
+    }
+
+    @Provides
+    fun provideRatingDao(database: AppDatabase): RatingDao {
+        return database.ratingDao()
     }
 }
