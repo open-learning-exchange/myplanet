@@ -339,7 +339,7 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     override fun onTagClicked(tag: Tag) {
         val realmTag = RealmTag().apply {
             name = tag.name
-            id = tag.id
+            id = tag.id.orEmpty()
         }
         onTagClicked(realmTag)
     }

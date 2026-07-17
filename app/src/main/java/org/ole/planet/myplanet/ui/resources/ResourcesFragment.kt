@@ -480,7 +480,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         val realmTag = allResourceModels.flatMap { it.tags }.find { it.id == tag.id }
         if (realmTag != null) {
             val rTag = searchTags.find { it.id == realmTag.id } ?: RealmTag().apply {
-                id = realmTag.id
+                id = realmTag.id.orEmpty()
                 name = realmTag.name
             }
             onTagClicked(rTag)

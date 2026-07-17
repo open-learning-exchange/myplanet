@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
 @Module
@@ -95,5 +96,10 @@ object RoomModule {
     @Provides
     fun provideRatingDao(database: AppDatabase): RatingDao {
         return database.ratingDao()
+    }
+
+    @Provides
+    fun provideTagDao(database: AppDatabase): TagDao {
+        return database.tagDao()
     }
 }
