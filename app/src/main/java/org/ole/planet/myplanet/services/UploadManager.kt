@@ -547,7 +547,7 @@ class UploadManager @Inject constructor(
         } else {
             uploadConfigs.ResourceActivities
         }
-        uploadCoordinator.upload(config)
+        uploadCoordinator.uploadRoom(config)
     }
 
     suspend fun uploadCourseActivities() {

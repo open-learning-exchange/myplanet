@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
@@ -107,5 +108,10 @@ object RoomModule {
     @Provides
     fun provideCourseActivityDao(database: AppDatabase): CourseActivityDao {
         return database.courseActivityDao()
+    }
+
+    @Provides
+    fun provideResourceActivityDao(database: AppDatabase): ResourceActivityDao {
+        return database.resourceActivityDao()
     }
 }

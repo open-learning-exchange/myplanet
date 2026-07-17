@@ -10,8 +10,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
@@ -19,6 +21,7 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 class UploadConfigsTest {
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val courseActivityDao: CourseActivityDao = mockk(relaxed = true)
+    private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val uploadConfigs = UploadConfigs(
         voicesRepository = mockk(relaxed = true),
         submissionsRepository = mockk(relaxed = true),
@@ -31,7 +34,8 @@ class UploadConfigsTest {
         ratingsRepository = mockk(relaxed = true),
         apkLogDao = mockk<ApkLogDao>(relaxed = true),
         searchActivityDao = searchActivityDao,
-        courseActivityDao = courseActivityDao
+        courseActivityDao = courseActivityDao,
+        resourceActivityDao = resourceActivityDao
     )
 
     @Test
@@ -118,4 +122,24 @@ class UploadConfigsTest {
             )
         }
     }
+    @Test
+    fun `ResourceActivities config fetches pending Room rows from DAO`() = runTest {
+        val pending = listOf(RealmResourceActivity().apply { id = "resource-local-1" })
+        coEvery { resourceActivityDao.getPendingUploads() } returns pending
+
+        val result = uploadConfigs.ResourceActivities.fetchPendingItems()
+
+        assertEquals(pending, result)
+    }
+
+    @Test
+    fun `ResourceActivitiesSync config fetches pending sync Room rows from DAO`() = runTest {
+        val pending = listOf(RealmResourceActivity().apply { id = "resource-sync-local-1"; type = "sync" })
+        coEvery { resourceActivityDao.getPendingSyncUploads() } returns pending
+
+        val result = uploadConfigs.ResourceActivitiesSync.fetchPendingItems()
+
+        assertEquals(pending, result)
+    }
+
 }

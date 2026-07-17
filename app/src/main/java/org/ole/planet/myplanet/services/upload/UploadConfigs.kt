@@ -6,6 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
@@ -47,7 +48,8 @@ class UploadConfigs @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val apkLogDao: ApkLogDao,
     private val searchActivityDao: SearchActivityDao,
-    private val courseActivityDao: CourseActivityDao
+    private val courseActivityDao: CourseActivityDao,
+    private val resourceActivityDao: ResourceActivityDao
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -109,24 +111,30 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-    val ResourceActivities = UploadConfig(
-        modelClass = RealmResourceActivity::class,
+    val ResourceActivities = RoomUploadConfig(
         endpoint = "resource_activities",
-        queryBuilder = { query ->
-            query.isNull("_rev").notEqualTo("type", "sync")
-        },
+        modelClassName = "RealmResourceActivity",
+        fetchPendingItems = { resourceActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
-        idExtractor = { it._id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                resourceActivityDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
-    val ResourceActivitiesSync = UploadConfig(
-        modelClass = RealmResourceActivity::class,
+    val ResourceActivitiesSync = RoomUploadConfig(
         endpoint = "admin_activities",
-        queryBuilder = { query ->
-            query.isNull("_rev").equalTo("type", "sync")
-        },
+        modelClassName = "RealmResourceActivity",
+        fetchPendingItems = { resourceActivityDao.getPendingSyncUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
-        idExtractor = { it._id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                resourceActivityDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
     val CourseActivities = RoomUploadConfig(
