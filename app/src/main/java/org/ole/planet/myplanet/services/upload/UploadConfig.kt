@@ -40,20 +40,22 @@ data class UploadConfig<T : RealmObject>(
     }
 }
 
-sealed class UploadSerializer<T : RealmObject> {
-    data class Simple<T : RealmObject>(
+// Bound is `Any` (not `RealmObject`) so the same serializer types work for both the Realm
+// UploadConfig and the Room RoomUploadConfig upload paths.
+sealed class UploadSerializer<T : Any> {
+    data class Simple<T : Any>(
         val serialize: (T) -> JsonObject
     ) : UploadSerializer<T>()
 
-    data class WithContext<T : RealmObject>(
+    data class WithContext<T : Any>(
         val serialize: (T, Context) -> JsonObject
     ) : UploadSerializer<T>()
 
-    data class Async<T : RealmObject>(
+    data class Async<T : Any>(
         val serialize: suspend (T) -> JsonObject
     ) : UploadSerializer<T>()
 
-    data class AsyncContext<T : RealmObject>(
+    data class AsyncContext<T : Any>(
         val serialize: suspend (T, Context) -> JsonObject
     ) : UploadSerializer<T>()
 }

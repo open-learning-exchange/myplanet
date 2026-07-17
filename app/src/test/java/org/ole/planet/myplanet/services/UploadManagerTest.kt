@@ -130,10 +130,10 @@ class UploadManagerTest {
 
     @Test
     fun `uploadCrashLog delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmApkLog>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<RealmApkLog>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadCrashLog()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.CrashLog) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CrashLog) }
     }
 
     @Test

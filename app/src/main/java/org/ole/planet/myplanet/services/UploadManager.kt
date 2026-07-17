@@ -534,7 +534,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadCrashLog() {
-        uploadCoordinator.upload(uploadConfigs.CrashLog)
+        uploadCoordinator.uploadRoom(uploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {

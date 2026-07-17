@@ -152,22 +152,23 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             )
             val userSessionManager = entryPoint.userSessionManager()
             val spm = entryPoint.sharedPrefManager()
+            val apkLogDao = entryPoint.apkLogDao()
             return try {
-                val databaseService = (context.applicationContext as MainApplication).databaseService
                 val model = userSessionManager.getUserModel()
-                databaseService.executeTransactionAsync { r ->
-                    val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                    log.parentCode = spm.getParentCode()
-                    log.createdOn = spm.getPlanetCode()
-                    model?.let { log.userId = it.id }
-                    log.time = time
-                    log.page = ""
-                    log.version = getVersionName(context)
-                    log.type = type
+                val log = RealmApkLog().apply {
+                    id = "${UUID.randomUUID()}"
+                    parentCode = spm.getParentCode()
+                    createdOn = spm.getPlanetCode()
+                    model?.let { userId = it.id }
+                    this.time = time
+                    page = ""
+                    version = getVersionName(context)
+                    this.type = type
                     if (error.isNotEmpty()) {
-                        log.error = error
+                        this.error = error
                     }
                 }
+                apkLogDao.insert(log)
                 true
             } catch (e: Exception) {
                 e.printStackTrace()

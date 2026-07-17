@@ -4,6 +4,7 @@ import dagger.Lazy
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -39,7 +40,8 @@ class UploadConfigs @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userRepository: UserRepository,
     private val surveysRepository: SurveysRepository,
-    private val feedbackRepository: FeedbackRepository
+    private val feedbackRepository: FeedbackRepository,
+    private val apkLogDao: ApkLogDao
 ) {
     val NewsActivities = UploadConfig(
         modelClass = RealmNewsLog::class,
@@ -168,12 +170,18 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-    val CrashLog = UploadConfig(
-        modelClass = RealmApkLog::class,
+    // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
+    val CrashLog = RoomUploadConfig(
         endpoint = "apk_logs",
-        queryBuilder = { query -> query.isNull("_rev") },
+        modelClassName = "RealmApkLog",
+        fetchPendingItems = { apkLogDao.getPending() },
         serializer = UploadSerializer.WithContext(RealmApkLog::serialize),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
+            // (0 updated) are reported back as local failures.
+            results.filter { result -> apkLogDao.markUploaded(result.localId, result.remoteRev) == 0 }
+        }
     )
 
     val SubmitPhotos = UploadConfig(
