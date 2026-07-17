@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
+import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -41,6 +42,7 @@ class UploadConfigs @Inject constructor(
     private val userRepository: UserRepository,
     private val surveysRepository: SurveysRepository,
     private val feedbackRepository: FeedbackRepository,
+    private val ratingsRepository: RatingsRepository,
     private val apkLogDao: ApkLogDao
 ) {
     val NewsActivities = UploadConfig(
@@ -270,19 +272,17 @@ class UploadConfigs @Inject constructor(
         )
     }
 
-    val Rating = UploadConfig(
-        modelClass = RealmRating::class,
+    // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
+    // Guest filtering is folded into getPendingRatingUploads()'s DAO query.
+    val Rating = RoomUploadConfig(
         endpoint = "ratings",
-        queryBuilder = { query ->
-            query.equalTo("isUpdated", true)
-        },
+        modelClassName = "RealmRating",
+        fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
         serializer = UploadSerializer.Simple(RealmRating::serializeRating),
         idExtractor = { it.id },
-        dbIdExtractor = { it._id },  // Enables POST/PUT logic
-        filterGuests = true,
-        guestUserIdExtractor = { it.userId },
-        additionalUpdates = { _, rating, _ ->
-            rating.isUpdated = false
+        dbIdExtractor = { it._id }, // Enables POST/PUT logic
+        markUploaded = { results ->
+            results.filter { result -> !ratingsRepository.markRatingUploaded(result.localId) }
         }
     )
 }

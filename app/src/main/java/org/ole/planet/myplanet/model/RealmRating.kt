@@ -1,33 +1,38 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication.Companion.context
-import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-open class RealmRating : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmRating` model. Uploaded (Room upload path) and
+ * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.RatingDao].
+ */
+@Entity(
+    tableName = "rating",
+    indices = [Index("userId"), Index("isUpdated"), Index("item"), Index("type")]
+)
+open class RealmRating {
+    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
     var createdOn: String? = null
     var _rev: String? = null
     var time: Long = 0
     var title: String? = null
-    @Index
     var userId: String? = null
-    @Index
     var isUpdated = false
     var rate = 0
+    @JvmField
     var _id: String? = null
-    @Index
     var item: String? = null
     var comment: String? = null
     var parentCode: String? = null
     var planetCode: String? = null
-    @Index
     var type: String? = null
     var user: String? = null
 
@@ -36,7 +41,7 @@ open class RealmRating : RealmObject() {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
             if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)
-            ob.add("user", JsonUtils.gson.fromJson(realmRating.user, JsonObject::class.java))
+            ob.add("user", org.ole.planet.myplanet.utils.JsonUtils.gson.fromJson(realmRating.user, JsonObject::class.java))
             ob.addProperty("item", realmRating.item)
             ob.addProperty("type", realmRating.type)
             ob.addProperty("title", realmRating.title)
@@ -50,29 +55,6 @@ open class RealmRating : RealmObject() {
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             return ob
-        }
-
-        fun insert(mRealm: Realm, act: JsonObject) {
-            var rating = mRealm.where(RealmRating::class.java).equalTo("_id", JsonUtils.getString("_id", act)).findFirst()
-            if (rating == null) {
-                rating = mRealm.createObject(RealmRating::class.java, JsonUtils.getString("_id", act))
-            }
-            if (rating != null) {
-                rating._rev = JsonUtils.getString("_rev", act)
-                rating._id = JsonUtils.getString("_id", act)
-                rating.time = JsonUtils.getLong("time", act)
-                rating.title = JsonUtils.getString("title", act)
-                rating.type = JsonUtils.getString("type", act)
-                rating.item = JsonUtils.getString("item", act)
-                rating.rate = JsonUtils.getInt("rate", act)
-                rating.isUpdated = false
-                rating.comment = JsonUtils.getString("comment", act)
-                rating.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", act))
-                rating.userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act))
-                rating.parentCode = JsonUtils.getString("parentCode", act)
-                rating.planetCode = JsonUtils.getString("planetCode", act)
-                rating.createdOn = JsonUtils.getString("createdOn", act)
-            }
         }
     }
 }
