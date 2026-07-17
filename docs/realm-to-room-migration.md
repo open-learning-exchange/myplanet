@@ -82,8 +82,12 @@ wired through `di/RoomModule`.
 - [x] **Retry** domain migrated end-to-end (`RealmRetryOperation` now a Room `@Entity`;
       Realm-based `createFromRetryFailure` factory replaced with a pure one; `RetryDao` with
       status-filtered queries/updates; `RetryRepositoryImpl` off `RealmRepository`; test ported).
+- [x] **Community** domain migrated (`RealmCommunity` now a Room `@Entity`; `CommunityDao` with a
+      `@Transaction replaceAll`; `CommunityRepositoryImpl` keeps `RealmRepository` only for the
+      still-Realm `RealmMeetup` insert, using `CommunityDao` for community rows). First proven
+      *coexistence-within-one-repo* template. Dropped a Realm-only `isValid` check in the sync UI.
 - [ ] Re-architect `RealmRepository`, upload framework, sync.
-- [ ] Remaining 34 model domains.
+- [ ] Remaining 33 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 
