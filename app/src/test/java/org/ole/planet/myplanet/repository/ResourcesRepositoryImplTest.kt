@@ -18,7 +18,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -295,14 +294,16 @@ class ResourcesRepositoryImplTest {
             mediums = setOf("video")
         )
 
-        coVerify { searchActivityDao.insert(capture(savedActivity)) }
-        assertNotNull(savedActivity.captured.id)
+        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
         assertEquals("parent", savedActivity.captured.parentCode)
         assertEquals("physics", savedActivity.captured.text)
         assertEquals("resources", savedActivity.captured.type)
         assertTrue(savedActivity.captured.filter.contains("science"))
+        assertTrue(savedActivity.captured.filter.contains("en"))
+        assertTrue(savedActivity.captured.filter.contains("beginner"))
         assertTrue(savedActivity.captured.filter.contains("video"))
     }
 }

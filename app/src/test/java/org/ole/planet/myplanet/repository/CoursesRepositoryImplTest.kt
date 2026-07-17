@@ -13,7 +13,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -185,14 +184,16 @@ class CoursesRepositoryImplTest {
             subject = "math"
         )
 
-        coVerify { searchActivityDao.insert(capture(savedActivity)) }
-        assertNotNull(savedActivity.captured.id)
+        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        assertTrue(savedActivity.captured.id.isNotBlank())
         assertEquals("learner", savedActivity.captured.user)
         assertEquals("planet", savedActivity.captured.createdOn)
         assertEquals("parent", savedActivity.captured.parentCode)
         assertEquals("algebra", savedActivity.captured.text)
         assertEquals("courses", savedActivity.captured.type)
         assertTrue(savedActivity.captured.filter.contains("doc.gradeLevel"))
+        assertTrue(savedActivity.captured.filter.contains("6"))
         assertTrue(savedActivity.captured.filter.contains("doc.subjectLevel"))
+        assertTrue(savedActivity.captured.filter.contains("math"))
     }
 }
