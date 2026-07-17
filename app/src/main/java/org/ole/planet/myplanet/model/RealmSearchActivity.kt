@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.model
 
-import com.google.gson.JsonObject
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils

@@ -20,6 +20,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
@@ -36,6 +37,7 @@ class ResourcesRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
+    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
 
@@ -65,6 +67,7 @@ class ResourcesRepositoryImplTest {
             sharedPrefManager,
             ratingsRepository,
             tagsRepository,
+            searchActivityDao,
             teamsRepositoryLazy,
             teamsSyncRepositoryLazy
         )

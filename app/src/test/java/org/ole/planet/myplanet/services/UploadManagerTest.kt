@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -134,6 +135,15 @@ class UploadManagerTest {
         uploadManager.uploadCrashLog()
         advanceUntilIdle()
         coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CrashLog) }
+    }
+
+
+    @Test
+    fun `uploadSearchActivity delegates to Room uploadCoordinator`() = testScope.runTest {
+        coEvery { uploadCoordinator.uploadRoom<RealmSearchActivity>(any()) } returns UploadResult.Success(1, emptyList())
+        uploadManager.uploadSearchActivity()
+        advanceUntilIdle()
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity) }
     }
 
     @Test
