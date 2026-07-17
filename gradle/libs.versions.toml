@@ -1,6 +1,7 @@
 [versions]
 gradle = "9.3.0"
 realm = "10.19.0"
+room = "2.8.4"
 hilt = "2.60.1"
 ksp = "2.3.10"
 kotlin = "2.4.10"
@@ -73,6 +74,10 @@ test-arch = { module = "androidx.arch.core:core-testing", version.ref = "testArc
 test-hilt = { module = "com.google.dagger:hilt-android-testing", version.ref = "hilt" }
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "gradle" }
 realm-gradle-plugin = { module = "io.realm:realm-gradle-plugin", version.ref = "realm" }
+room-runtime = { module = "androidx.room:room-runtime", version.ref = "room" }
+room-ktx = { module = "androidx.room:room-ktx", version.ref = "room" }
+room-compiler = { module = "androidx.room:room-compiler", version.ref = "room" }
+room-testing = { module = "androidx.room:room-testing", version.ref = "room" }
 hilt-android-gradle-plugin = { module = "com.google.dagger:hilt-android-gradle-plugin", version.ref = "hilt" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
