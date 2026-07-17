@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import org.ole.planet.myplanet.utils.DiffUtils
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
     private val steps = mutableListOf<String>()

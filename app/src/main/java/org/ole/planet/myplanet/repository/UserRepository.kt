@@ -3,11 +3,11 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AchievementData
+import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 
