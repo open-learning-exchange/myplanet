@@ -43,8 +43,7 @@ class FeedbackListViewModelTest {
 
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
-            userSessionManager = userSessionManager,
-            dispatcherProvider = dispatcherProvider
+            userSessionManager = userSessionManager
         )
     }
 
@@ -67,8 +66,7 @@ class FeedbackListViewModelTest {
         // Recreate viewModel to trigger init block with new mock data
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
-            userSessionManager = userSessionManager,
-            dispatcherProvider = dispatcherProvider
+            userSessionManager = userSessionManager
         )
 
         advanceUntilIdle()
@@ -91,8 +89,7 @@ class FeedbackListViewModelTest {
         // Init view model
         viewModel = FeedbackListViewModel(
             feedbackRepository = feedbackRepository,
-            userSessionManager = userSessionManager,
-            dispatcherProvider = dispatcherProvider
+            userSessionManager = userSessionManager
         )
         advanceUntilIdle()
         assertEquals(initialFeedback, viewModel.feedbackList.value)

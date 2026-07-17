@@ -39,7 +39,7 @@ class RatingsViewModelTest {
             override val default = Dispatchers.Unconfined
             override val unconfined = Dispatchers.Unconfined
         }
-        viewModel = RatingsViewModel(ratingsRepository, userRepository, testDispatcherProvider)
+        viewModel = RatingsViewModel(ratingsRepository, userRepository)
     }
 
     @Test
