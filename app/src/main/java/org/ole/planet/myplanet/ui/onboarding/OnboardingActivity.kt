@@ -101,9 +101,11 @@ class OnboardingActivity : AppCompatActivity() {
                 if (position == mAdapter.count - 1) {
                     binding.skip.visibility = View.GONE
                     binding.next.setText(R.string.get_started)
+                    binding.serverPrepHint.visibility = View.VISIBLE
                 } else {
                     binding.skip.visibility = View.VISIBLE
                     binding.next.setText(R.string.next)
+                    binding.serverPrepHint.visibility = View.GONE
                 }
             }
 
