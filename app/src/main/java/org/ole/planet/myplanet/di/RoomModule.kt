@@ -24,6 +24,7 @@ import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 
 @Module
@@ -114,5 +115,10 @@ object RoomModule {
     @Provides
     fun provideResourceActivityDao(database: AppDatabase): ResourceActivityDao {
         return database.resourceActivityDao()
+    }
+
+    @Provides
+    fun provideSubmitPhotosDao(database: AppDatabase): SubmitPhotosDao {
+        return database.submitPhotosDao()
     }
 }
