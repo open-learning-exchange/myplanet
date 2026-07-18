@@ -4,10 +4,8 @@ import android.app.Application
 import android.content.Context
 import android.content.SharedPreferences
 import android.os.Build
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.every
-import io.mockk.eq
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import io.mockk.verify

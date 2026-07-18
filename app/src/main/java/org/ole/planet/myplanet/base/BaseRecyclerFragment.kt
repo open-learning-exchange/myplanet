@@ -202,7 +202,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             if (deleteProgress && item is RealmMyCourse) {
                 item.courseId?.let { courseIdsToDelete.add(it) }
             }
-            removeFromShelf(item)
+            item?.let { removeFromShelf(it) }
         }
 
         if (courseIdsToDelete.isNotEmpty()) {
