@@ -2,23 +2,16 @@ package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import java.util.Locale
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmExamQuestion : RealmObject() {
-    @PrimaryKey
+open class RealmExamQuestion {
     var id: String? = null
     var header: String? = null
     var body: String? = null
     var type: String? = null
-    @Index
     var examId: String? = null
-    private var correctChoice: RealmList<String>? = null
+    private var correctChoice: MutableList<String>? = null
     var marks: String? = null
     var choices: String? = null
     var hasOtherOption: Boolean = false
@@ -29,12 +22,12 @@ open class RealmExamQuestion : RealmObject() {
         }
     }
 
-    fun getCorrectChoice(): RealmList<String>? {
+    fun getCorrectChoice(): List<String>? {
         return correctChoice
     }
 
     fun setCorrectChoices(choices: List<String>?) {
-        correctChoice = RealmList<String>().apply {
+        correctChoice = mutableListOf<String>().apply {
             choices.orEmpty().forEach { add(it) }
         }
     }
@@ -49,8 +42,8 @@ open class RealmExamQuestion : RealmObject() {
         }
 
     companion object {
-        fun insertExamQuestions(questions: JsonArray, examId: String?, mRealm: Realm) {
-            if (questions.size() == 0) return
+        fun insertExamQuestions(questions: JsonArray, examId: String?): List<RealmExamQuestion> {
+            if (questions.size() == 0) return emptyList()
 
             val questionsToInsert = mutableListOf<RealmExamQuestion>()
 
@@ -84,17 +77,17 @@ open class RealmExamQuestion : RealmObject() {
                 }
                 questionsToInsert.add(myQuestion)
             }
-            mRealm.insertOrUpdate(questionsToInsert)
+            return questionsToInsert
         }
 
         private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: RealmExamQuestion?) {
             for (a in 0 until array.size()) {
                 val res = array[a].asJsonObject
                 if (question["correctChoice"].isJsonArray) {
-                    myQuestion?.correctChoice = RealmList()
+                    myQuestion?.correctChoice = mutableListOf()
                     myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
                 } else if (JsonUtils.getString("correctChoice", question) == JsonUtils.getString("id", res)) {
-                    myQuestion?.correctChoice = RealmList()
+                    myQuestion?.correctChoice = mutableListOf()
                     myQuestion?.correctChoice?.add(JsonUtils.getString("res", res))
                 }
             }

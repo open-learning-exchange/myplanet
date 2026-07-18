@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
-import io.realm.RealmList
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -44,7 +43,7 @@ fun RoomUserEntity.toRealmModel(): RealmUser {
         name = this@toRealmModel.name
         firstName = this@toRealmModel.firstName
         lastName = this@toRealmModel.lastName
-        rolesList = RealmList<String?>().apply { addAll(this@toRealmModel.rolesList.orEmpty()) }
+        rolesList = mutableListOf<String?>().apply { addAll(this@toRealmModel.rolesList.orEmpty()) }
         planetCode = this@toRealmModel.planetCode
         parentCode = this@toRealmModel.parentCode
         userAdmin = this@toRealmModel.isUserAdmin
@@ -209,7 +208,7 @@ fun RoomAnswerEntity.toRealmModel(): RealmAnswer {
     return RealmAnswer().apply {
         id = this@toRealmModel.id
         value = this@toRealmModel.value
-        valueChoices = RealmList<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
+        valueChoices = mutableListOf<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
         mistakes = this@toRealmModel.mistakes
         isPassed = this@toRealmModel.isPassed
         grade = this@toRealmModel.grade
@@ -230,7 +229,7 @@ fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyLis
         user = this@toRealmModel.user
         startTime = this@toRealmModel.startTime
         lastUpdateTime = this@toRealmModel.lastUpdateTime
-        this.answers = RealmList<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
+        this.answers = mutableListOf<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
         grade = this@toRealmModel.grade
         status = this@toRealmModel.status
         uploaded = this@toRealmModel.uploaded

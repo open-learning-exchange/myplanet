@@ -2,14 +2,9 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmStepExam : RealmObject() {
-    @PrimaryKey
+open class RealmStepExam {
     var id: String? = null
     var _rev: String? = null
     var createdDate: Long = 0
@@ -21,7 +16,6 @@ open class RealmStepExam : RealmObject() {
     var description: String? = null
     var type: String? = null
     var stepId: String? = null
-    @Index
     var courseId: String? = null
     var sourcePlanet: String? = null
     var passingPercentage: String? = null
@@ -32,58 +26,33 @@ open class RealmStepExam : RealmObject() {
     var sourceSurveyId: String? = null
 
     companion object {
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, mRealm: Realm) {
-            insertCourseStepsExams(myCoursesID, stepId, exam, "", mRealm, null)
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject): RealmStepExam {
+            return insertCourseStepsExams(myCoursesID, stepId, exam, "")
         }
 
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?, mRealm: Realm, examCache: HashMap<String, RealmStepExam>? = null) {
-            val isInTransaction = mRealm.isInTransaction
-
-            val performInsert = {
-                val examId = JsonUtils.getString("_id", exam)
-                var myExam = examCache?.get(examId) ?: mRealm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()
-                if (myExam == null) {
-                    val createdExam = mRealm.createObject(RealmStepExam::class.java,
-                        if (TextUtils.isEmpty(examId)) {
-                            parentId
-                        } else {
-                            examId
-                        }
-                    )
-                    myExam = createdExam
-                    if (!TextUtils.isEmpty(examId)) {
-                        examCache?.put(examId, createdExam)
-                    }
-                }
-                checkIdsAndInsert(myCoursesID, stepId, myExam)
-                myExam?.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
-                myExam?.name = JsonUtils.getString("name", exam)
-                myExam?.description = JsonUtils.getString("description", exam)
-                myExam?.passingPercentage = JsonUtils.getString("passingPercentage", exam)
-                myExam?._rev = JsonUtils.getString("_rev", exam)
-                myExam?.createdBy = JsonUtils.getString("createdBy", exam)
-                myExam?.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
-                myExam?.createdDate = JsonUtils.getLong("createdDate", exam)
-                myExam?.updatedDate = JsonUtils.getLong("updatedDate", exam)
-                myExam?.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
-                myExam?.totalMarks = JsonUtils.getInt("totalMarks", exam)
-                myExam?.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
-                myExam?.isFromNation = !TextUtils.isEmpty(parentId)
-                myExam.teamId = JsonUtils.getString("teamId", exam)
-                myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
-                myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
-                val oldQuestions = mRealm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", JsonUtils.getString("_id", exam)).findAll()
-                if (oldQuestions == null || oldQuestions.isEmpty()) {
-                    RealmExamQuestion.insertExamQuestions(JsonUtils.getJsonArray("questions", exam), JsonUtils.getString("_id", exam), mRealm)
-                }
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): RealmStepExam {
+            val examId = JsonUtils.getString("_id", exam)
+            val myExam = RealmStepExam().apply {
+                id = if (TextUtils.isEmpty(examId)) parentId else examId
             }
-
-            if (isInTransaction) {
-                performInsert()
-            } else {
-                mRealm.executeTransaction { performInsert() }
-            }
+            checkIdsAndInsert(myCoursesID, stepId, myExam)
+            myExam.type = if (exam.has("type")) JsonUtils.getString("type", exam) else "exam"
+            myExam.name = JsonUtils.getString("name", exam)
+            myExam.description = JsonUtils.getString("description", exam)
+            myExam.passingPercentage = JsonUtils.getString("passingPercentage", exam)
+            myExam._rev = JsonUtils.getString("_rev", exam)
+            myExam.createdBy = JsonUtils.getString("createdBy", exam)
+            myExam.sourcePlanet = JsonUtils.getString("sourcePlanet", exam)
+            myExam.createdDate = JsonUtils.getLong("createdDate", exam)
+            myExam.updatedDate = JsonUtils.getLong("updatedDate", exam)
+            myExam.adoptionDate = JsonUtils.getLong("adoptionDate", exam)
+            myExam.totalMarks = JsonUtils.getInt("totalMarks", exam)
+            myExam.noOfQuestions = JsonUtils.getJsonArray("questions", exam).size()
+            myExam.isFromNation = !TextUtils.isEmpty(parentId)
+            myExam.teamId = JsonUtils.getString("teamId", exam)
+            myExam.isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", exam)
+            myExam.sourceSurveyId = JsonUtils.getString("sourceSurveyId", exam)
+            return myExam
         }
 
         private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {

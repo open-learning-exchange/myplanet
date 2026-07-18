@@ -4,43 +4,33 @@ import android.content.Context
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
-import java.io.File
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmMyCourse : RealmObject() {
-    @PrimaryKey
+open class RealmMyCourse {
     var id: String? = null
-    var userId: RealmList<String>? = null
+    var userId: MutableList<String>? = null
         private set
-    @Index
     var courseId: String? = null
     var courseRev: String? = null
     var languageOfInstruction: String? = null
     var courseTitle: String? = null
-    @Index
     var courseTitleNormal: String? = null
     var memberLimit: Int? = null
     var description: String? = null
     var method: String? = null
-    @Index
     var gradeLevel: String? = null
-    @Index
     var subjectLevel: String? = null
     var createdDate: Long = 0
     var coverFileName: String? = null
     private var numberOfSteps: Int? = null
-    var courseSteps: RealmList<RealmCourseStep>? = null
+    var courseSteps: MutableList<RealmCourseStep>? = null
     @Transient
     var isMyCourse: Boolean = false
     fun setUserId(userId: String?) {
         if (this.userId == null) {
-            this.userId = RealmList()
+            this.userId = mutableListOf()
         }
         if (this.userId?.contains(userId) != true && !TextUtils.isEmpty(userId)) {
             this.userId?.add(userId)
@@ -66,9 +56,9 @@ open class RealmMyCourse : RealmObject() {
     companion object {
         private val concatenatedLinks = HashSet<String>()
 
-        fun getCoverImageFile(context: Context, courseId: String?, fileName: String?): File? {
+        fun getCoverImageFile(context: Context, courseId: String?, fileName: String?): java.io.File? {
             if (courseId.isNullOrBlank() || fileName.isNullOrBlank()) return null
-            return File(
+            return java.io.File(
                 "${getOlePath(context)}course_attachments/$courseId/$fileName"
             )
         }

@@ -1,10 +1,6 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-
-open class RealmCourseStep : RealmObject() {
-    @PrimaryKey
+open class RealmCourseStep {
     var id: String? = null
     var courseId: String? = null
     var stepTitle: String? = null
