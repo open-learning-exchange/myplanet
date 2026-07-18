@@ -77,13 +77,13 @@ Important fields:
 - `resourceLocalAddress` / `resourceRemoteAddress` — local path vs server URL
 - `userId` — list of learner IDs who have added this resource to their personal library ("My Library")
 - `courseId` + `stepId` — if the resource belongs to a course step, these are set; a resource can exist both in the general library and inside a course step
-- `tag` — list of tag IDs linking to `RealmTag`; used for filtering
+- `tag` — list of tag IDs linking to `TagEntity`; used for filtering
 
 Resources are rated (1–5 stars) via `Rating`. The `type` field on a rating is `"resource"` or `"course"` to distinguish what's being rated.
 
 ### Tags
 
-Tags are labels attached to resources and courses for filtering and discovery. They are stored as `RealmTag` and linked to content via `tag` lists on `RealmMyLibrary` and via a separate tagging relationship on `RealmMyCourse`.
+Tags are labels attached to resources and courses for filtering and discovery. They are stored as `TagEntity` and linked to content via `tag` lists on `RealmMyLibrary` and via a separate tagging relationship on `RealmMyCourse`.
 
 ### Courses
 

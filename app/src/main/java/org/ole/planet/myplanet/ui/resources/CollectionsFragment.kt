@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagData
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
@@ -32,13 +32,13 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     private val binding get() = _binding!!
     @Inject
     lateinit var tagsRepository: TagsRepository
-    private lateinit var list: List<RealmTag>
-    private lateinit var childMap: HashMap<String, List<RealmTag>>
-    private var filteredList: ArrayList<RealmTag> = ArrayList()
+    private lateinit var list: List<TagEntity>
+    private lateinit var childMap: HashMap<String, List<TagEntity>>
+    private var filteredList: ArrayList<TagEntity> = ArrayList()
     private lateinit var adapter: ResourcesTagsAdapter
     private var dbType: String? = null
     private var listener: OnTagClickListener? = null
-    private var selectedItemsList: ArrayList<RealmTag> = ArrayList()
+    private var selectedItemsList: ArrayList<TagEntity> = ArrayList()
     private var currentTagDataList = mutableListOf<TagData>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -100,7 +100,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         }
     }
 
-    private fun buildTagDataList(parents: List<RealmTag>): List<TagData> {
+    private fun buildTagDataList(parents: List<TagEntity>): List<TagData> {
         val tagDataList = mutableListOf<TagData>()
         val isSelectMultiple = MainApplication.isCollectionSwitchOn
         for (parentTag in parents) {
@@ -120,7 +120,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         return tagDataList
     }
 
-    override fun onTagClicked(tag: RealmTag) {
+    override fun onTagClicked(tag: TagEntity) {
         listener?.onTagSelected(tag)
         dismiss()
     }
@@ -131,7 +131,7 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
         adapter.submitList(currentTagDataList.toList())
     }
 
-    override fun onCheckboxTagSelected(tag: RealmTag) {
+    override fun onCheckboxTagSelected(tag: TagEntity) {
         if (selectedItemsList.contains(tag)) {
             selectedItemsList.remove(tag)
         } else {
@@ -158,8 +158,8 @@ class CollectionsFragment : DialogFragment(), OnTagClickListener, CompoundButton
     }
 
     companion object {
-        private lateinit var recentList: MutableList<RealmTag>
-        fun getInstance(l: MutableList<RealmTag>, dbType: String): CollectionsFragment {
+        private lateinit var recentList: MutableList<TagEntity>
+        fun getInstance(l: MutableList<TagEntity>, dbType: String): CollectionsFragment {
             recentList = l
             val f = CollectionsFragment()
             val b = Bundle()

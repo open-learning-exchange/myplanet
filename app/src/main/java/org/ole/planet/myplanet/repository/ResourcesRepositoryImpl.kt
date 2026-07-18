@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -369,14 +369,14 @@ class ResourcesRepositoryImpl @Inject constructor(
         searchText: String,
         planetCode: String,
         parentCode: String,
-        tags: List<RealmTag>,
+        tags: List<TagEntity>,
         subjects: Set<String>,
         languages: Set<String>,
         levels: Set<String>,
         mediums: Set<String>
     ) {
         val filter = JsonObject().apply {
-            add("tags", RealmTag.getTagsArray(tags))
+            add("tags", TagEntity.getTagsArray(tags))
             add("subjects", getJsonArrayFromList(subjects))
             add("language", getJsonArrayFromList(languages))
             add("level", getJsonArrayFromList(levels))
@@ -618,7 +618,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return filteredRatings
     }
 
-    private suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<RealmTag>> {
+    private suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<TagEntity>> {
         return tagsRepository.getTagsForResources(ids)
     }
 

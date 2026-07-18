@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
@@ -337,25 +337,25 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
     }
 
     override fun onTagClicked(tag: Tag) {
-        val realmTag = RealmTag().apply {
+        val realmTag = TagEntity().apply {
             name = tag.name
             id = tag.id.orEmpty()
         }
         onTagClicked(realmTag)
     }
 
-    override fun onTagClicked(tag: RealmTag) {
+    override fun onTagClicked(tag: TagEntity) {
         if (::filterController.isInitialized) filterController.addTag(tag)
     }
 
-    override fun onTagSelected(tag: RealmTag) {
+    override fun onTagSelected(tag: TagEntity) {
         if (::filterController.isInitialized) {
             filterController.setSingleTag(tag)
             showNoData(tvMessage, adapterCourses.itemCount, "courses")
         }
     }
 
-    override fun onOkClicked(list: List<RealmTag>?) {
+    override fun onOkClicked(list: List<TagEntity>?) {
         if (::filterController.isInitialized) filterController.setTags(list ?: emptyList())
     }
 

@@ -16,7 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -98,9 +98,9 @@ class ResourcesViewModelTest {
             every { isResourceOffline() } returns true
         }
         val mockRating = mockk<JsonObject>(relaxed = true)
-        // RealmTag is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
+        // TagEntity is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
         // cannot be stubbed with mockk `every { id }`; use a real instance instead.
-        val mockTag = RealmTag().apply {
+        val mockTag = TagEntity().apply {
             id = "tag1"
             name = "Tag 1"
         }

@@ -52,7 +52,7 @@ import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.SubmitPhotos
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
@@ -79,7 +79,7 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         ChatHistory::class,
         Feedback::class,
         Rating::class,
-        RealmTag::class,
+        TagEntity::class,
         Meetup::class,
         SearchActivity::class,
         CourseActivity::class,

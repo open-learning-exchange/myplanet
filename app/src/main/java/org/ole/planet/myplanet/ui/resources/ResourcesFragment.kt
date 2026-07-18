@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
@@ -67,10 +67,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private val clearTags get() = binding.btnClearTags
     private val selectAll get() = binding.selectAll
     private val filter get() = binding.filter
-    private lateinit var searchTags: MutableList<RealmTag>
+    private lateinit var searchTags: MutableList<TagEntity>
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
-    private var tagsMap: Map<String, List<RealmTag>> = emptyMap()
+    private var tagsMap: Map<String, List<TagEntity>> = emptyMap()
     var userModel: RealmUser ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
@@ -479,7 +479,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     override fun onTagClicked(tag: TagItem) {
         val realmTag = allResourceModels.flatMap { it.tags }.find { it.id == tag.id }
         if (realmTag != null) {
-            val rTag = searchTags.find { it.id == realmTag.id } ?: RealmTag().apply {
+            val rTag = searchTags.find { it.id == realmTag.id } ?: TagEntity().apply {
                 id = realmTag.id.orEmpty()
                 name = realmTag.name
             }
@@ -502,7 +502,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun onTagClicked(tag: RealmTag) {
+    override fun onTagClicked(tag: TagEntity) {
         tvSelected.visibility = View.VISIBLE
         flexBoxTags.removeAllViews()
         val chipCloud = ChipCloud(activity, flexBoxTags, config)
@@ -515,9 +515,9 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun onTagSelected(tag: RealmTag) {
+    override fun onTagSelected(tag: TagEntity) {
         tvSelected.visibility = View.VISIBLE
-        val li: MutableList<RealmTag> = ArrayList()
+        val li: MutableList<TagEntity> = ArrayList()
         li.add(tag)
         searchTags = li
         tvSelected.text = getString(R.string.tag_selected, tag.name)
@@ -526,7 +526,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         }
     }
 
-    override fun onOkClicked(list: List<RealmTag>?) {
+    override fun onOkClicked(list: List<TagEntity>?) {
         if (list?.isEmpty() == true) {
             searchTags.clear()
             viewLifecycleOwner.lifecycleScope.launch {
@@ -675,7 +675,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         return if (::recyclerView.isInitialized) recyclerView else null
     }
 
-    private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<RealmTag>): List<ResourceListModel> {
+    private fun filterLocalLibraryByTag(models: List<ResourceListModel>, s: String, tags: List<TagEntity>): List<ResourceListModel> {
         var filteredList = ResourceSearchUtils.searchLocalModels(models, s)
 
         if (tags.isNotEmpty()) {
