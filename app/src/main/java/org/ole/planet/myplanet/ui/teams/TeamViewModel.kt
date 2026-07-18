@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
@@ -37,8 +37,8 @@ class TeamViewModel @Inject constructor(
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
 
-    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
-    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
+    private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
+    val taskList: StateFlow<List<TeamTask>> = _taskList
 
     fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
 

@@ -5,28 +5,28 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 
 /**
- * Status literals below match [RealmRetryOperation]'s STATUS_* constants (pending / in_progress /
+ * Status literals below match [RetryOperation]'s STATUS_* constants (pending / in_progress /
  * completed / abandoned). Room validates the SQL at compile time.
  */
 @Dao
 interface RetryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(operation: RealmRetryOperation)
+    suspend fun insert(operation: RetryOperation)
 
     @Update
-    suspend fun update(operation: RealmRetryOperation)
+    suspend fun update(operation: RetryOperation)
 
     @Query("SELECT * FROM retry_operation WHERE id = :id LIMIT 1")
-    suspend fun findById(id: String): RealmRetryOperation?
+    suspend fun findById(id: String): RetryOperation?
 
     @Query(
         "SELECT * FROM retry_operation WHERE status = 'pending' " +
             "AND nextRetryTime <= :now AND attemptCount < maxAttempts"
     )
-    suspend fun getPending(now: Long): List<RealmRetryOperation>
+    suspend fun getPending(now: Long): List<RetryOperation>
 
     @Query("SELECT COUNT(*) FROM retry_operation WHERE status = 'pending' OR status = 'in_progress'")
     suspend fun getActiveCount(): Long
@@ -41,7 +41,7 @@ interface RetryDao {
         "SELECT * FROM retry_operation WHERE itemId = :itemId AND uploadType = :uploadType " +
             "AND status != 'completed' AND status != 'abandoned' LIMIT 1"
     )
-    suspend fun findExisting(itemId: String, uploadType: String): RealmRetryOperation?
+    suspend fun findExisting(itemId: String, uploadType: String): RetryOperation?
 
     @Query("DELETE FROM retry_operation WHERE status = 'pending' OR status = 'abandoned'")
     suspend fun deletePendingAndAbandoned()

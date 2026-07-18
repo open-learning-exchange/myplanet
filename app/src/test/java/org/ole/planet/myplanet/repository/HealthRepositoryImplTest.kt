@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
-import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -49,10 +49,10 @@ class HealthRepositoryImplTest {
     private val mockApiInterface: ApiInterface = mockk(relaxed = true)
     private val healthExaminationDao: HealthExaminationDao = mockk(relaxed = true)
     private val realm: Realm = mockk(relaxed = true)
-    private val healthQuery: RealmQuery<RealmHealthExamination> = mockk(relaxed = true)
+    private val healthQuery: RealmQuery<HealthExamination> = mockk(relaxed = true)
     private val userQuery: RealmQuery<RealmUser> = mockk(relaxed = true)
-    private val healthResults: RealmResults<RealmHealthExamination> = mockk(relaxed = true)
-    private val healthResultsIterable = mutableListOf<RealmHealthExamination>()
+    private val healthResults: RealmResults<HealthExamination> = mockk(relaxed = true)
+    private val healthResultsIterable = mutableListOf<HealthExamination>()
 
     @Before
     fun setUp() {
@@ -97,7 +97,7 @@ class HealthRepositoryImplTest {
         unmockkObject(AndroidDecrypter)
         unmockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
         unmockkObject(JsonUtils)
-        unmockkObject(RealmHealthExamination.Companion)
+        unmockkObject(HealthExamination.Companion)
     }
 
     @Test
@@ -117,7 +117,7 @@ class HealthRepositoryImplTest {
     fun getHealthEntry_returns_user_and_examination() = testScope.runTest {
         val user = RealmUser()
         user.id = "user1"
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
         examination._id = "user1"
 
         every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
@@ -135,7 +135,7 @@ class HealthRepositoryImplTest {
     fun getHealthEntry_fallback_to_userId() = testScope.runTest {
         val user = RealmUser()
         user.id = "user1"
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
         examination._id = "exam1"
         examination.userId = "user1"
 
@@ -152,7 +152,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getExaminationById_returns_examination() = testScope.runTest {
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
         examination._id = "exam1"
 
         coEvery { healthExaminationDao.getById("exam1") } returns examination
@@ -165,7 +165,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getUpdatedHealthExaminations_returns_list() = testScope.runTest {
-        val examination = RealmHealthExamination().apply {
+        val examination = HealthExamination().apply {
             _id = "exam1"
             isUpdated = true
         }
@@ -180,7 +180,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getUpdatedHealthForUser_returns_list() = testScope.runTest {
-        val examination = RealmHealthExamination().apply {
+        val examination = HealthExamination().apply {
             _id = "exam1"
             isUpdated = true
             userId = "user1"
@@ -207,8 +207,8 @@ class HealthRepositoryImplTest {
 
     @Test
     fun saveExamination_saves_objects_to_realm() = testScope.runTest {
-        val examination = RealmHealthExamination()
-        val pojo = RealmHealthExamination()
+        val examination = HealthExamination()
+        val pojo = HealthExamination()
         val user = RealmUser()
 
         repository.saveExamination(examination, pojo, user)
@@ -220,7 +220,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun saveExamination_handles_nulls() = testScope.runTest {
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
 
         repository.saveExamination(examination, null, null)
         advanceUntilIdle()
@@ -230,7 +230,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun updateExaminationUserId_updates_id() = testScope.runTest {
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
         examination._id = "exam1"
         examination.userId = "old_user"
 
@@ -250,7 +250,7 @@ class HealthRepositoryImplTest {
     @Test
     fun getExaminationConditions_returns_map_for_valid_json() = testScope.runTest {
         mockkObject(JsonUtils)
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
         examination.conditions = "{\"Fever\": true, \"Cough\": false}"
 
         val jsonObject = JsonObject()
@@ -270,7 +270,7 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getExaminationConditions_returns_empty_map_for_malformed_json() = testScope.runTest {
-        val examination = RealmHealthExamination()
+        val examination = HealthExamination()
         examination.conditions = "malformed json"
 
         val result = repository.getExaminationConditions(examination)
@@ -282,7 +282,7 @@ class HealthRepositoryImplTest {
     @Test
     fun bulkInsertFromSync_inserts_items() = testScope.runTest {
         mockkObject(JsonUtils)
-        mockkObject(RealmHealthExamination.Companion)
+        mockkObject(HealthExamination.Companion)
 
         val jsonArray = JsonArray()
         val doc1 = JsonObject()
@@ -304,13 +304,13 @@ class HealthRepositoryImplTest {
         every { JsonUtils.getJsonObject("doc", item2) } returns doc2
         every { JsonUtils.getString("_id", doc2) } returns "_design/doc"
 
-        val detachedExamination = mockk<RealmHealthExamination>()
-        every { RealmHealthExamination.fromJson(doc1) } returns detachedExamination
+        val detachedExamination = mockk<HealthExamination>()
+        every { HealthExamination.fromJson(doc1) } returns detachedExamination
         repository.bulkInsertFromSync(jsonArray)
         advanceUntilIdle()
 
-        verify(exactly = 1) { RealmHealthExamination.fromJson(doc1) }
-        verify(exactly = 0) { RealmHealthExamination.fromJson(doc2) }
+        verify(exactly = 1) { HealthExamination.fromJson(doc1) }
+        verify(exactly = 0) { HealthExamination.fromJson(doc2) }
         coVerify(exactly = 1) { healthExaminationDao.upsertAll(listOf(detachedExamination)) }
     }
 }

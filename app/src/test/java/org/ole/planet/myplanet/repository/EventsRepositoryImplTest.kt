@@ -22,7 +22,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.MeetupCreationParams
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 
@@ -50,7 +50,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getMeetupsForTeam() = runTest {
-        coEvery { meetupDao.getByTeamId("team1") } returns listOf(RealmMeetup().apply { id = "1" })
+        coEvery { meetupDao.getByTeamId("team1") } returns listOf(Meetup().apply { id = "1" })
 
         val result = repository.getMeetupsForTeam("team1")
 
@@ -60,7 +60,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getMeetupById() = runTest {
-        val mockMeetup = RealmMeetup().apply { meetupId = "meetup1" }
+        val mockMeetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns mockMeetup
 
         val result = repository.getMeetupById("meetup1")
@@ -78,9 +78,9 @@ class EventsRepositoryImplTest {
         val mockUserQuery = mockk<RealmQuery<RealmUser>>(relaxed = true)
 
         coEvery { meetupDao.getMembersByMeetupId("meetup1") } returns listOf(
-            RealmMeetup().apply { userId = "user1" },
-            RealmMeetup().apply { userId = "user2" },
-            RealmMeetup().apply { userId = "user1" } // duplicate
+            Meetup().apply { userId = "user1" },
+            Meetup().apply { userId = "user2" },
+            Meetup().apply { userId = "user1" } // duplicate
         )
 
         every { mockRealm.where(RealmUser::class.java) } returns mockUserQuery
@@ -105,7 +105,7 @@ class EventsRepositoryImplTest {
 
     @Test
     fun toggleAttendance() = runTest {
-        val meetup = RealmMeetup().apply { meetupId = "meetup1" }
+        val meetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns meetup
 
         // Test joining (userId empty -> currentUserId)
@@ -138,7 +138,7 @@ class EventsRepositoryImplTest {
         val count = repository.batchInsertMeetups(docs)
         assertEquals(2, count)
 
-        val slot = slot<List<RealmMeetup>>()
+        val slot = slot<List<Meetup>>()
         coVerify(exactly = 1) { meetupDao.upsertAll(capture(slot)) }
         assertEquals(2, slot.captured.size)
     }
@@ -147,7 +147,7 @@ class EventsRepositoryImplTest {
     fun batchInsertMeetupsSkipsLocallyUpdated() = runTest {
         val docs = listOf(JsonObject().apply { addProperty("_id", "m1") })
         coEvery { meetupDao.getByMeetupIds(any()) } returns listOf(
-            RealmMeetup().apply { meetupId = "m1"; updated = true }
+            Meetup().apply { meetupId = "m1"; updated = true }
         )
 
         val count = repository.batchInsertMeetups(docs)

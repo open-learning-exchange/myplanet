@@ -15,7 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -94,7 +94,7 @@ class TeamViewModelTest {
     }
     @Test
     fun `taskList state is updated when loadTasks is called`() = runTest(testDispatcher) {
-        val tasks = listOf(RealmTeamTask().apply { id = "task1" })
+        val tasks = listOf(TeamTask().apply { id = "task1" })
         coEvery { teamsRepository.getTasksByTeamId("team1") } returns flowOf(tasks)
 
         viewModel.loadTasks("team1")

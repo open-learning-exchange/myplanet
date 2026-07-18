@@ -6,13 +6,13 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 
 /**
- * Room replacement for the former Realm `RealmMyLife` model.
+ * Room replacement for the former Realm `MyLife` model.
  *
  * The class name is kept so the UI (which uses it purely as a detached data holder) is unaffected
  * by the migration. Persistence now goes through [org.ole.planet.myplanet.data.room.dao.MyLifeDao].
  */
 @Entity(tableName = "my_life", indices = [Index("userId")])
-class RealmMyLife {
+class MyLife {
     @PrimaryKey
     var _id: String = ""
     var imageId: String? = null

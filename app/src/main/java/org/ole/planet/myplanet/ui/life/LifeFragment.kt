@@ -17,14 +17,14 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.callback.OnStartDragListener
 import org.ole.planet.myplanet.databinding.FragmentLifeBinding
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.utils.ItemReorderHelper
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-class LifeFragment : BaseRecyclerFragment<RealmMyLife?>(), OnStartDragListener {
+class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     private lateinit var lifeAdapter: LifeAdapter
     private var itemTouchHelper: ItemTouchHelper? = null
     @Inject

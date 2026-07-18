@@ -12,7 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -50,14 +50,14 @@ class FeedbackListViewModelTest {
     @Test
     fun testInitialStateIsPreloadEmptyList() = runTest(testDispatcher) {
         // This test validates the pre-load default state of the StateFlow before the init coroutine has executed
-        assertEquals(emptyList<RealmFeedback>(), viewModel.feedbackList.value)
+        assertEquals(emptyList<Feedback>(), viewModel.feedbackList.value)
     }
 
     @Test
     fun testFeedbackListEmitsDataFromFeedbackRepository() = runTest(testDispatcher) {
         val user = mockk<RealmUser>()
-        val feedback1 = mockk<RealmFeedback>()
-        val feedback2 = mockk<RealmFeedback>()
+        val feedback1 = mockk<Feedback>()
+        val feedback2 = mockk<Feedback>()
         val feedbackList = listOf(feedback1, feedback2)
 
         coEvery { userSessionManager.getUserModel() } returns user
@@ -78,8 +78,8 @@ class FeedbackListViewModelTest {
     @Test
     fun testRefreshFeedbackCancelsPreviousJobAndRetriggersFlowCollection() = runTest(testDispatcher) {
         val user = mockk<RealmUser>()
-        val initialFeedback = listOf(mockk<RealmFeedback>())
-        val updatedFeedback = listOf(mockk<RealmFeedback>(), mockk<RealmFeedback>())
+        val initialFeedback = listOf(mockk<Feedback>())
+        val updatedFeedback = listOf(mockk<Feedback>(), mockk<Feedback>())
 
         coEvery { userSessionManager.getUserModel() } returns user
 

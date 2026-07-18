@@ -15,7 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -52,11 +52,11 @@ class LifeRepositoryTest {
     @Test
     fun updateMyLifeListOrder_itemNotInList_weightNotUpdated() = runTest {
         // The reorder list only contains item with _id "3".
-        val listItem = RealmMyLife().apply { _id = "3"; userId = "u" }
+        val listItem = MyLife().apply { _id = "3"; userId = "u" }
 
         // The managed rows retrieved from the DB have ids "1" and "2" (not in the list).
-        val managedItem1 = RealmMyLife().apply { _id = "1"; weight = 99 }
-        val managedItem2 = RealmMyLife().apply { _id = "2"; weight = 99 }
+        val managedItem1 = MyLife().apply { _id = "1"; weight = 99 }
+        val managedItem2 = MyLife().apply { _id = "2"; weight = 99 }
         coEvery { myLifeDao.getByIds(any()) } returns listOf(managedItem1, managedItem2)
 
         repository.updateMyLifeListOrder(listOf(listItem))

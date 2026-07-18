@@ -9,7 +9,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
@@ -85,7 +85,7 @@ class RetryQueue @Inject constructor(
         }
     }
 
-    suspend fun getPendingOperations(): List<RealmRetryOperation> {
+    suspend fun getPendingOperations(): List<RetryOperation> {
         return retryRepository.getPending()
     }
 

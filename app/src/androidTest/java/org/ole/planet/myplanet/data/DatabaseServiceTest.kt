@@ -15,7 +15,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
 
 @RunWith(AndroidJUnit4::class)
@@ -84,14 +84,14 @@ class DatabaseServiceTest {
     @Test
     fun testExecuteTransactionAsync_commitsData() = runBlocking {
         databaseService.executeTransactionAsync { realm ->
-            val meetup = realm.createObject(RealmMeetup::class.java, "test-id")
+            val meetup = realm.createObject(Meetup::class.java, "test-id")
             meetup.meetupId = "test-id"
             meetup.title = "Test Meetup"
         }
         awaitGlobalInstanceCount(1)
 
         databaseService.withRealmAsync { realm ->
-            val meetup = realm.where(RealmMeetup::class.java).equalTo("meetupId", "test-id").findFirst()
+            val meetup = realm.where(Meetup::class.java).equalTo("meetupId", "test-id").findFirst()
             assertNotNull(meetup)
             assertEquals("Test Meetup", meetup?.title)
         }

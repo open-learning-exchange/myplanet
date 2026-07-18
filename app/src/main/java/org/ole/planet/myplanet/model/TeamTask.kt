@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "team_tasks", indices = [Index("teamId")])
-class RealmTeamTask {
+class TeamTask {
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -33,8 +33,8 @@ class RealmTeamTask {
     }
 
     companion object {
-        fun fromJson(obj: JsonObject?): RealmTeamTask {
-            val task = RealmTeamTask()
+        fun fromJson(obj: JsonObject?): TeamTask {
+            val task = TeamTask()
             task.id = JsonUtils.getString("_id", obj)
             task._id = JsonUtils.getString("_id", obj)
             task._rev = JsonUtils.getString("_rev", obj)
@@ -54,7 +54,7 @@ class RealmTeamTask {
             return task
         }
 
-        fun serialize(task: RealmTeamTask, user: RealmUser?): JsonObject {
+        fun serialize(task: TeamTask, user: RealmUser?): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(task._id)) {
                 `object`.addProperty("_id", task._id)

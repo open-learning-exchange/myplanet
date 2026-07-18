@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 
 data class RetryQueueDetails(
     val pendingCount: Long = 0,
-    val pendingOps: List<RealmRetryOperation> = emptyList(),
+    val pendingOps: List<RetryOperation> = emptyList(),
     val isProcessing: Boolean = false
 )
 

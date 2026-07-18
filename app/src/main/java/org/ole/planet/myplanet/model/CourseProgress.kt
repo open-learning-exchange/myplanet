@@ -9,7 +9,7 @@ import androidx.room.PrimaryKey
     tableName = "course_progress",
     indices = [Index("_id"), Index("userId"), Index("courseId"), Index(value = ["courseId", "userId", "stepNum"])]
 )
-open class RealmCourseProgress {
+open class CourseProgress {
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -26,7 +26,7 @@ open class RealmCourseProgress {
     var parentCode: String? = null
 
     companion object {
-        fun serializeProgress(progress: RealmCourseProgress): JsonObject {
+        fun serializeProgress(progress: CourseProgress): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("userId", progress.userId)
             `object`.addProperty("parentCode", progress.parentCode)

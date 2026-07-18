@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -30,7 +30,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         path: String?,
         description: String?
     ) {
-        val personal = RealmMyPersonal().apply {
+        val personal = Personal().apply {
             id = UUID.randomUUID().toString()
             _id = id
             this.title = title
@@ -43,7 +43,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.insert(personal)
     }
 
-    override suspend fun getPersonalResources(userId: String?): Flow<List<RealmMyPersonal>> {
+    override suspend fun getPersonalResources(userId: String?): Flow<List<Personal>> {
         if (userId.isNullOrBlank()) {
             return flowOf(emptyList())
         }
@@ -55,7 +55,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         personalDao.deleteById(id)
     }
 
-    override suspend fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit) {
+    override suspend fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
         personalDao.findByDocId(id)?.let { personal ->
             updater(personal)
             personalDao.update(personal)
@@ -66,7 +66,7 @@ class PersonalsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPendingPersonalUploads(userId: String): List<RealmMyPersonal> {
+    override suspend fun getPendingPersonalUploads(userId: String): List<Personal> {
         return personalDao.getPendingUploads(userId)
     }
 
@@ -79,10 +79,10 @@ class PersonalsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun uploadPersonalDocument(personal: RealmMyPersonal): Pair<String, String>? {
+    override suspend fun uploadPersonalDocument(personal: Personal): Pair<String, String>? {
         val response = apiInterface.postDoc(
             UrlUtils.header, "application/json",
-            "${UrlUtils.getUrl()}/resources", RealmMyPersonal.serialize(personal, context)
+            "${UrlUtils.getUrl()}/resources", Personal.serialize(personal, context)
         )
 
         val `object` = response.body()

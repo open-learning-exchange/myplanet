@@ -10,12 +10,12 @@ import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room replacement for the former Realm `RealmMyPersonal` model. The class name is kept because
+ * Room replacement for the former Realm `Personal` model. The class name is kept because
  * the UI and upload path use it purely as a detached data holder. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.PersonalDao].
  */
 @Entity(tableName = "my_personal", indices = [Index("userId")])
-open class RealmMyPersonal {
+open class Personal {
     // @JvmField (field access, no generated getters) so Room does not treat the local `id` and the
     // CouchDB `_id` as ambiguous accessors (getId vs get_id both normalise to "id").
     @PrimaryKey
@@ -33,7 +33,7 @@ open class RealmMyPersonal {
     var path: String? = null
 
     companion object {
-        fun serialize(personal: RealmMyPersonal, context: Context): JsonObject {
+        fun serialize(personal: Personal, context: Context): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("title", personal.title)
             `object`.addProperty("uploadDate", Date().time)

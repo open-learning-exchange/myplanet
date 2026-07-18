@@ -17,7 +17,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 class LifeRepositoryImplTest {
@@ -55,8 +55,8 @@ class LifeRepositoryImplTest {
     @Test
     fun getMyLifeByUserId_returnsDaoResult() = runTest {
         val userId = "user123"
-        val item1 = RealmMyLife().apply { weight = 1; this.userId = userId }
-        val item2 = RealmMyLife().apply { weight = 2; this.userId = userId }
+        val item1 = MyLife().apply { weight = 1; this.userId = userId }
+        val item2 = MyLife().apply { weight = 2; this.userId = userId }
         coEvery { myLifeDao.getByUserId(userId) } returns listOf(item1, item2)
 
         val result = repository.getMyLifeByUserId(userId)
@@ -89,17 +89,17 @@ class LifeRepositoryImplTest {
 
     @Test
     fun updateMyLifeListOrder_updatesWeightBasedOnListIndex() = runTest {
-        val item1 = RealmMyLife().apply { _id = "1"; weight = 0; userId = "u" }
-        val item2 = RealmMyLife().apply { _id = "2"; weight = 0; userId = "u" }
+        val item1 = MyLife().apply { _id = "1"; weight = 0; userId = "u" }
+        val item2 = MyLife().apply { _id = "2"; weight = 0; userId = "u" }
         val list = listOf(item1, item2)
 
         // Managed rows come back with mismatched weights so both need updating.
-        val managedItem1 = RealmMyLife().apply { _id = "1"; weight = 5 }
-        val managedItem2 = RealmMyLife().apply { _id = "2"; weight = 5 }
+        val managedItem1 = MyLife().apply { _id = "1"; weight = 5 }
+        val managedItem2 = MyLife().apply { _id = "2"; weight = 5 }
         coEvery { myLifeDao.getByIds(any()) } returns listOf(managedItem1, managedItem2)
         coEvery { myLifeDao.getByUserId("u") } returns emptyList()
 
-        val updatedSlot = slot<List<RealmMyLife>>()
+        val updatedSlot = slot<List<MyLife>>()
         coEvery { myLifeDao.update(capture(updatedSlot)) } returns Unit
 
         repository.updateMyLifeListOrder(list)
@@ -122,12 +122,12 @@ class LifeRepositoryImplTest {
     fun seedMyLifeIfEmpty_insertsItemsWhenNoExistingData() = runTest {
         val userId = "user123"
         val items = listOf(
-            RealmMyLife().apply { title = "Title1"; imageId = "img1"; this.userId = userId },
-            RealmMyLife().apply { title = "Title2"; imageId = "img2"; this.userId = userId }
+            MyLife().apply { title = "Title1"; imageId = "img1"; this.userId = userId },
+            MyLife().apply { title = "Title2"; imageId = "img2"; this.userId = userId }
         )
         coEvery { myLifeDao.countByUserId(userId) } returns 0
 
-        val insertedItemsSlot = slot<List<RealmMyLife>>()
+        val insertedItemsSlot = slot<List<MyLife>>()
         coEvery { myLifeDao.insertAll(capture(insertedItemsSlot)) } returns Unit
 
         repository.seedMyLifeIfEmpty(userId, items)
@@ -148,7 +148,7 @@ class LifeRepositoryImplTest {
     @Test
     fun seedMyLifeIfEmpty_skipsWhenDataExists() = runTest {
         val userId = "user123"
-        val items = listOf(RealmMyLife().apply { title = "Title1"; this.userId = userId })
+        val items = listOf(MyLife().apply { title = "Title1"; this.userId = userId })
         coEvery { myLifeDao.countByUserId(userId) } returns 3
 
         repository.seedMyLifeIfEmpty(userId, items)
@@ -181,8 +181,8 @@ class LifeRepositoryImplTest {
         val userId = "789"
         every { mockSharedPreferences.getString("myLifeCache_$userId", null) } returns "invalid_json"
 
-        val item1 = RealmMyLife().apply { weight = 1; this.userId = userId; this.isVisible = true }
-        val item2 = RealmMyLife().apply { weight = 2; this.userId = userId; this.isVisible = true }
+        val item1 = MyLife().apply { weight = 1; this.userId = userId; this.isVisible = true }
+        val item2 = MyLife().apply { weight = 2; this.userId = userId; this.isVisible = true }
         coEvery { myLifeDao.getByUserId(userId) } returns listOf(item1, item2)
 
         val result = repository.getMyLifeForDashboard(userId, emptyList())

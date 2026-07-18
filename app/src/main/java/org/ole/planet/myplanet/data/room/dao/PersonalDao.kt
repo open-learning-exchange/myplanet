@@ -6,7 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 
 @Dao
 interface PersonalDao {
@@ -19,22 +19,22 @@ interface PersonalDao {
     suspend fun countByTitle(title: String, userId: String?): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(item: RealmMyPersonal)
+    suspend fun insert(item: Personal)
 
     @Query("SELECT * FROM my_personal WHERE userId = :userId")
-    fun getByUserIdFlow(userId: String): Flow<List<RealmMyPersonal>>
+    fun getByUserIdFlow(userId: String): Flow<List<Personal>>
 
     @Query("SELECT * FROM my_personal WHERE userId = :userId AND isUploaded = 0")
-    suspend fun getPendingUploads(userId: String): List<RealmMyPersonal>
+    suspend fun getPendingUploads(userId: String): List<Personal>
 
     @Query("SELECT * FROM my_personal WHERE _id = :id LIMIT 1")
-    suspend fun findByDocId(id: String): RealmMyPersonal?
+    suspend fun findByDocId(id: String): Personal?
 
     @Query("SELECT * FROM my_personal WHERE id = :id LIMIT 1")
-    suspend fun findById(id: String): RealmMyPersonal?
+    suspend fun findById(id: String): Personal?
 
     @Update
-    suspend fun update(item: RealmMyPersonal)
+    suspend fun update(item: Personal)
 
     @Query("DELETE FROM my_personal WHERE _id = :id")
     suspend fun deleteByDocId(id: String)

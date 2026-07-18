@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.TeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -73,7 +73,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val teamLogDao: TeamLogDao,
     private val teamTaskDao: TeamTaskDao,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
-    override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
+    override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId)
     }
 
@@ -961,7 +961,7 @@ class TeamsRepositoryImpl @Inject constructor(
         userId: String,
         start: Long,
         end: Long,
-    ): List<RealmTeamTask> {
+    ): List<TeamTask> {
         if (userId.isBlank() || start > end) return emptyList()
         return teamTaskDao.getPendingTasksForUser(userId, start, end)
     }
@@ -973,7 +973,7 @@ class TeamsRepositoryImpl @Inject constructor(
         teamTaskDao.markTasksNotified(validIds)
     }
 
-    override suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>> {
+    override suspend fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>> {
         return teamTaskDao.getTasksByTeamId(teamId)
     }
 
@@ -1004,7 +1004,7 @@ class TeamsRepositoryImpl @Inject constructor(
         teamTaskDao.deleteById(taskId)
     }
 
-    private suspend fun upsertTask(task: RealmTeamTask) {
+    private suspend fun upsertTask(task: TeamTask) {
         if (task.link.isNullOrBlank()) {
             val linkObj = JsonObject().apply { addProperty("teams", task.teamId) }
             task.link = gson.toJson(linkObj)
@@ -1026,7 +1026,7 @@ class TeamsRepositoryImpl @Inject constructor(
         teamId: String,
         assigneeId: String?
     ) {
-        val realmTeamTask = RealmTeamTask().apply {
+        val realmTeamTask = TeamTask().apply {
             this.id = UUID.randomUUID().toString()
             this.title = title
             this.description = description
@@ -1617,13 +1617,13 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
     override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
-        val tasks = ArrayList<RealmTeamTask>(jsonArray.size())
+        val tasks = ArrayList<TeamTask>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                tasks.add(RealmTeamTask.fromJson(jsonDoc))
+                tasks.add(TeamTask.fromJson(jsonDoc))
             }
         }
         teamTaskDao.upsertAll(tasks)

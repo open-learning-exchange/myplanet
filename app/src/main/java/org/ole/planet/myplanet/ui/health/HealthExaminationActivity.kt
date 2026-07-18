@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
 import org.ole.planet.myplanet.model.RealmExamination
-import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -53,13 +53,13 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     var userId: String? = null
     var user: RealmUser? = null
     private var currentUser: RealmUser? = null
-    private var pojo: RealmHealthExamination? = null
+    private var pojo: HealthExamination? = null
     var health: RealmMyHealth? = null
     private var customDiag: MutableSet<String?>? = null
     private var mapConditions: HashMap<String?, Boolean>? = null
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
-    private var examination: RealmHealthExamination? = null
+    private var examination: HealthExamination? = null
     private var conditionsMap: Map<String, Boolean> = emptyMap()
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
@@ -216,7 +216,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         }
     }
 
-    private fun showCheckbox(examination: RealmHealthExamination?) {
+    private fun showCheckbox(examination: HealthExamination?) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
         for (s in arr) {
@@ -248,7 +248,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             createPojo()
             if (examination == null) {
                 val odUserId = generateIv()
-                examination = RealmHealthExamination()
+                examination = HealthExamination()
                 examination?._id = odUserId
                 examination?.userId = odUserId
             }
@@ -379,7 +379,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun createPojo() {
         try {
             if (pojo == null) {
-                pojo = RealmHealthExamination()
+                pojo = HealthExamination()
                 pojo?._id = userId.orEmpty()
                 pojo?.userId = user?._id
             }

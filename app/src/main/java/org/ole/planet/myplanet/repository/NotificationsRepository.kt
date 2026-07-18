@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 
@@ -26,7 +26,7 @@ interface NotificationsRepository {
     suspend fun getTeamNotificationInfo(teamId: String, userId: String): TeamNotificationInfo
     suspend fun getTeamNotifications(teamIds: List<String>, userId: String): Map<String, TeamNotificationInfo>
     suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
-    suspend fun getPendingSyncNotifications(): List<RealmNotification>
+    suspend fun getPendingSyncNotifications(): List<AppNotification>
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
     suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insert(doc: JsonObject)

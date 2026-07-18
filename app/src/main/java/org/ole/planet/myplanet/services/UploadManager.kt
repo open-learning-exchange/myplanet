@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -229,7 +229,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
+    suspend fun uploadMyPersonal(personal: Personal): String {
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {

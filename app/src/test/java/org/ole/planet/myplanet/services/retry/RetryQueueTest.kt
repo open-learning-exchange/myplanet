@@ -22,7 +22,7 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.repository.RetryRepository
 import org.ole.planet.myplanet.services.upload.UploadError
@@ -134,7 +134,7 @@ class RetryQueueTest {
     @Test
     fun queueFailedOperation_retryableError_existingOp_updates() = runTest {
         val error = UploadError("item1", Exception("fail"), retryable = true)
-        val existingOp = RealmRetryOperation().apply { id = "op1" }
+        val existingOp = RetryOperation().apply { id = "op1" }
         coEvery { retryRepository.getExistingOperation("item1", "type") } returns existingOp
         coEvery { retryRepository.updateAttempt("op1", any()) } returns Unit
 

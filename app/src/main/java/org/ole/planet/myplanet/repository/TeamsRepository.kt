@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -94,7 +94,7 @@ interface TeamsRepository {
     suspend fun getJoinRequestsInfo(requestIds: List<String>): List<JoinRequestInfo>
 
     suspend fun getTeamNamesByIds(ids: List<String>): Map<String, String>
-    fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>>
+    fun getTasksFlow(userId: String?): Flow<List<TeamTask>>
     suspend fun isMember(userId: String?, teamId: String): Boolean
     suspend fun isTeamLeader(teamId: String, userId: String?): Boolean
     suspend fun hasPendingRequest(teamId: String, userId: String?): Boolean
@@ -108,9 +108,9 @@ interface TeamsRepository {
     suspend fun updateTask(taskId: String, title: String, description: String, deadline: Long, assigneeId: String?)
     suspend fun assignTask(taskId: String, assigneeId: String?)
     suspend fun setTaskCompletion(taskId: String, completed: Boolean)
-    suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<RealmTeamTask>
+    suspend fun getPendingTasksForUser(userId: String, start: Long, end: Long): List<TeamTask>
     suspend fun markTasksNotified(taskIds: Collection<String>)
-    suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>>
+    suspend fun getTasksByTeamId(teamId: String): Flow<List<TeamTask>>
     suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>>
     suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String
     suspend fun addReport(report: FinanceReportParams)

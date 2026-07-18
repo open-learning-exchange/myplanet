@@ -39,9 +39,9 @@ import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.Achievement
-import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -984,7 +984,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: RealmHealthExamination().apply { _id = userId }
+        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
 
         userModel?.apply {
             firstName = (userData["firstName"] as? String)?.trim()
@@ -1402,7 +1402,7 @@ class UserRepositoryImpl @Inject constructor(
         } else {
             meetupDao.getByUserId(userId)
         }
-        val myMeetups = RealmMeetup.getMyMeetUpIds(userMeetups)
+        val myMeetups = Meetup.getMyMeetUpIds(userMeetups)
         val removedResources = removedLogDao.getRemovedDocIds("resources", userId).filterNotNull()
         val removedCourses = removedLogDao.getRemovedDocIds("courses", userId).filterNotNull()
         val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
