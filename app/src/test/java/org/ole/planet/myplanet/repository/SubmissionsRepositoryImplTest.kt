@@ -311,29 +311,28 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `saveExamAnswer executes without exceptions`() = runTest {
+    fun `saveExamAnswer upserts answer through Room`() = runTest {
         val answerData = mockk<ExamAnswerData>(relaxed = true)
-        val mockAnswer = RealmAnswer()
-        val mockExam = mockk<RealmStepExam>(relaxed = true)
-        val mockQuestion = mockk<RealmExamQuestion>(relaxed = true)
-        val mockSubmission = mockk<RealmSubmission>(relaxed = true)
+        val question = RealmExamQuestion().apply { id = "question1"; examId = "exam1"; type = "text" }
+        val submission = RealmSubmission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
 
-        every { answerData.component1() } returns mockSubmission
-        every { answerData.component2() } returns mockQuestion
-
-        coEvery { repository.getSubmissionById(any()) } returns mockSubmission
-        coEvery { repository.getExamById(any()) } returns mockExam
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery {
-            databaseService.executeTransactionAsync(capture(transactionSlot))
-        } answers {
-            // Empty to prevent internal query cast exceptions. We just verify the interaction.
-        }
+        every { answerData.component1() } returns submission
+        every { answerData.component2() } returns question
+        every { answerData.component3() } returns "answer text"
+        every { answerData.component4() } returns null
+        every { answerData.component5() } returns null
+        every { answerData.component6() } returns false
+        every { answerData.component7() } returns "survey"
+        every { answerData.component8() } returns 0
+        every { answerData.component9() } returns 1
+        every { answerData.component10() } returns true
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns RoomSubmissionEntity(id = "submission1", parentId = "exam1@course1", userId = "user1")
 
         val result = repository.saveExamAnswer(answerData)
+
         assertTrue(result)
-        coVerify { databaseService.executeTransactionAsync(any()) }
+        coVerify { answerDao.upsertAll(match { it.single().submissionId == "submission1" && it.single().value == "answer text" }) }
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "complete", any()) }
     }
 
     @Test

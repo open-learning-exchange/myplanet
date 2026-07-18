@@ -451,98 +451,72 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
         val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission) = answerData
-        val submissionId = submission?.id
+        val submissionRow = submission?.id?.let { submissionDao.getByIdOrRemoteId(it) }
+            ?: submission?.toRoomEntity()
+            ?: submissionDao.getLatestPendingByUser(submission?.userId)
+        val submissionId = submissionRow?.id
         val questionId = question.id
 
-        executeTransaction { r ->
-            val realmSubmission = if (submissionId != null) {
-                r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+        if (submissionRow != null && !questionId.isNullOrBlank()) {
+            val existing = answerDao.getBySubmissionAndQuestion(submissionRow.id, questionId)
+            val valueChoices: List<String>?
+            val value: String?
+
+            if (question.type.equals("select", ignoreCase = true)) {
+                if (otherVisible && !otherText.isNullOrEmpty()) {
+                    value = otherText
+                    valueChoices = listOf("""{"id":"other","text":"$otherText"}""")
+                } else {
+                    val choiceText = ExamAnswerUtils.getChoiceTextById(question, ans)
+                    value = choiceText
+                    valueChoices = if (ans.isNotEmpty()) {
+                        listOf("""{"id":"$ans","text":"$choiceText"}""")
+                    } else {
+                        emptyList()
+                    }
+                }
+            } else if (question.type.equals("selectMultiple", ignoreCase = true)) {
+                value = ""
+                valueChoices = listAns?.map { (text, id) ->
+                    if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
+                        """{"id":"other","text":"$otherText"}"""
+                    } else {
+                        """{"id":"$id","text":"$text"}"""
+                    }
+                }
             } else {
-                r.where(RealmSubmission::class.java)
-                    .equalTo("status", "pending")
-                    .sort("startTime", Sort.DESCENDING)
-                    .findFirst()
+                value = if (otherVisible && !otherText.isNullOrEmpty()) otherText else ans
+                valueChoices = null
             }
 
-            val realmQuestion = r.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
+            val isCorrect = if (type == "exam") {
+                ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
+            } else {
+                true
+            }
+            val isFinal = index == total - 1
+            val newStatus = when {
+                isFinal && isExplicitSubmission && type == "survey" -> "complete"
+                isFinal && isExplicitSubmission -> "requires grading"
+                else -> "pending"
+            }
+            val now = Date().time
+            val answer = RoomAnswerEntity(
+                id = existing?.id ?: UUID.randomUUID().toString(),
+                value = value,
+                valueChoices = valueChoices,
+                mistakes = if (type == "exam" && !isCorrect) (existing?.mistakes ?: 0) + 1 else existing?.mistakes ?: 0,
+                isPassed = if (type == "exam") isCorrect else existing?.isPassed ?: false,
+                grade = if (type == "exam") 1 else existing?.grade ?: 0,
+                examId = question.examId,
+                questionId = questionId,
+                submissionId = submissionId,
+            )
+            answerDao.upsertAll(listOf(answer))
+            submissionDao.updateStatusAndLastUpdate(submissionRow.id, newStatus, now)
 
-            if (realmSubmission != null && realmQuestion != null) {
-                val existing = realmSubmission.answers?.find { it.questionId == realmQuestion.id }
-                val ansObj = if (existing != null) {
-                    existing
-                } else {
-                    val newAnswerId = UUID.randomUUID().toString()
-                    val newAnswer = r.createObject(RealmAnswer::class.java, newAnswerId)
-                    realmSubmission.answers?.add(newAnswer)
-                    newAnswer
-                }
-                ansObj.questionId = realmQuestion.id
-                ansObj.submissionId = realmSubmission.id
-                ansObj.examId = realmQuestion.examId
-
-                if (realmQuestion.type.equals("select", ignoreCase = true)) {
-                    if (otherVisible && !otherText.isNullOrEmpty()) {
-                        ansObj.value = otherText
-                        ansObj.valueChoices = RealmList<String>().apply {
-                            add("""{"id":"other","text":"$otherText"}""")
-                        }
-                    } else {
-                        val choiceText = ExamAnswerUtils.getChoiceTextById(realmQuestion, ans)
-                        ansObj.value = choiceText
-                        ansObj.valueChoices = RealmList<String>().apply {
-                            if (ans.isNotEmpty()) {
-                                add("""{"id":"$ans","text":"$choiceText"}""")
-                            }
-                        }
-                    }
-                } else if (realmQuestion.type.equals("selectMultiple", ignoreCase = true)) {
-                    ansObj.value = ""
-                    ansObj.valueChoices = RealmList<String>().apply {
-                        listAns?.forEach { (text, id) ->
-                            if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
-                                add("""{"id":"other","text":"$otherText"}""")
-                            } else {
-                                add("""{"id":"$id","text":"$text"}""")
-                            }
-                        }
-                    }
-                } else {
-                    val textValue = if (otherVisible && !otherText.isNullOrEmpty()) {
-                        otherText
-                    } else {
-                        ans
-                    }
-                    ansObj.value = textValue
-                    ansObj.valueChoices = null
-                }
-
-                if (type == "exam") {
-                    val isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, realmQuestion)
-                    ansObj.isPassed = isCorrect
-                    ansObj.grade = 1
-                    if (!isCorrect) {
-                        ansObj.mistakes += 1
-                    }
-                }
-
-                val isFinal = index == total - 1
-                realmSubmission.lastUpdateTime = Date().time
-                realmSubmission.status = when {
-                    isFinal && isExplicitSubmission && type == "survey" -> "complete"
-                    isFinal && isExplicitSubmission -> "requires grading"
-                    else -> "pending"
-                }
-
-                if (realmSubmission.status == "complete" && type == "survey") {
-                    val orphans = r.where(RealmSubmission::class.java)
-                        .equalTo("parentId", realmSubmission.parentId)
-                        .equalTo("userId", realmSubmission.userId)
-                        .equalTo("status", "pending")
-                        .equalTo("type", "survey")
-                        .isNull("membershipDoc")
-                        .findAll()
-                    orphans.deleteAllFromRealm()
-                }
+            if (newStatus == "complete" && type == "survey") {
+                submissionDao.deletePendingSurveyOrphans(submissionRow.parentId, submissionRow.userId)
             }
         }
 
