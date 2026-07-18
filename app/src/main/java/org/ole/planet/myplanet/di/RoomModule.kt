@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
@@ -120,6 +121,11 @@ object RoomModule {
     @Provides
     fun provideMeetupDao(database: AppDatabase): MeetupDao {
         return database.meetupDao()
+    }
+
+    @Provides
+    fun provideNewsDao(database: AppDatabase): NewsDao {
+        return database.newsDao()
     }
 
     @Provides

@@ -8,12 +8,12 @@ import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.NotificationPayload
-import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.TeamNotification
@@ -33,7 +33,8 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
-    private val teamTaskDao: TeamTaskDao
+    private val teamTaskDao: TeamTaskDao,
+    private val newsDao: NewsDao
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
@@ -296,10 +297,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val notification = teamNotificationDao.findByParentAndType(teamId, "chat")
 
-        val chatCount = count(RealmNews::class.java) {
-            equalTo("viewableBy", "teams")
-            equalTo("viewableId", teamId)
-        }
+        val chatCount = newsDao.countTeamChats(teamId)
 
         val hasChat = notification != null && notification.lastCount < chatCount
 
@@ -326,16 +324,11 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         // 2. Fetch all relevant chat counts in a single query
-        val chatsResult = queryList(RealmNews::class.java) {
-            equalTo("viewableBy", "teams")
-            `in`("viewableId", teamIds.toTypedArray())
-        }
+        val chatViewableIds = newsDao.getTeamChatViewableIds(teamIds)
         val chatCountsById = mutableMapOf<String, Long>()
-        chatsResult.forEach {
-            it.viewableId?.let { viewableId ->
-                val currentCount = chatCountsById[viewableId] ?: 0
-                chatCountsById[viewableId] = currentCount + 1
-            }
+        chatViewableIds.forEach { viewableId ->
+            val currentCount = chatCountsById[viewableId] ?: 0
+            chatCountsById[viewableId] = currentCount + 1
         }
 
         // 3. Fetch all relevant tasks once

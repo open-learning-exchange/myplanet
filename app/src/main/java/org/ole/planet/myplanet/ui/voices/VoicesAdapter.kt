@@ -72,9 +72,7 @@ class VoicesAdapter(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             try {
-                val oId = oldItem.takeIf { it.isValid }?.id
-                val nId = newItem.takeIf { it.isValid }?.id
-                oId != null && oId == nId
+                oldItem.id.isNotEmpty() && oldItem.id == newItem.id
             } catch (e: Exception) {
                 false
             }
@@ -82,7 +80,6 @@ class VoicesAdapter(
         areContentsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             try {
-                if (!oldItem.isValid || !newItem.isValid) return@itemCallback false
                 oldItem.id == newItem.id && oldItem.time == newItem.time &&
                         oldItem.isEdited == newItem.isEdited && oldItem.message == newItem.message &&
                         oldItem.userName == newItem.userName && oldItem.userId == newItem.userId &&
@@ -245,7 +242,6 @@ class VoicesAdapter(
 
         if (holder is VoicesViewHolder) {
             val news = getNews(holder, position)
-            if (!news.isValid) return
 
             for (payload in payloads) {
                 when (payload) {
@@ -296,7 +292,7 @@ class VoicesAdapter(
             holder.bind(position)
             val news = getNews(holder, position)
 
-            if (news.isValid) {
+            run {
                 val sharedTeamName = JsonUtils.extractSharedTeamName(news)
                 resetViews(holder)
                 updateReplyCount(holder, news, position)
