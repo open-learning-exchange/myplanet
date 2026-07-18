@@ -81,10 +81,12 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE userId = :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE parentId LIKE '%' || :parentIdFragment || '%' LIMIT 1") suspend fun getFirstByParentIdContaining(parentIdFragment: String): RoomSubmissionEntity?
+    @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND type != 'survey' AND uploaded = 0") suspend fun getUnuploadedNonSurveyByParentIds(parentIds: List<String>): List<RoomSubmissionEntity>
     @Query("UPDATE submissions SET user = :userJson, status = 'complete', isUpdated = 1 WHERE id = :id") suspend fun markComplete(id: String, userJson: String): Int
     @Query("UPDATE submissions SET status = :status WHERE id = :id") suspend fun updateStatus(id: String, status: String): Int
     @Query("UPDATE submissions SET status = :status, lastUpdateTime = :lastUpdateTime WHERE id = :id") suspend fun updateStatusAndLastUpdate(id: String, status: String, lastUpdateTime: Long): Int
     @Query("DELETE FROM submissions WHERE parentId = :parentId AND userId = :userId") suspend fun deleteByParentAndUser(parentId: String, userId: String?): Int
+    @Query("DELETE FROM submissions WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM submissions WHERE parentId = :parentId AND userId = :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun deletePendingSurveyOrphans(parentId: String?, userId: String?): Int
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND (_id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id = '')") suspend fun getPendingSubmissions(): List<RoomSubmissionEntity>
