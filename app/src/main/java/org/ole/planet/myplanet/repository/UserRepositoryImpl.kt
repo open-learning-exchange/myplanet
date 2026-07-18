@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -42,7 +43,6 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -73,7 +73,8 @@ class UserRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
     private val meetupDao: MeetupDao,
-    private val offlineActivityDao: OfflineActivityDao
+    private val offlineActivityDao: OfflineActivityDao,
+    private val removedLogDao: RemovedLogDao
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
@@ -1482,18 +1483,16 @@ class UserRepositoryImpl @Inject constructor(
             meetupDao.getByUserId(userId)
         }
         val myMeetups = RealmMeetup.getMyMeetUpIds(userMeetups)
-        return withRealm { realm ->
-            val removedResources = listOf(*removedIds(realm, "resources", userId))
-            val removedCourses = listOf(*removedIds(realm, "courses", userId))
-            val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
-            val mergedCourseIds = mergeJsonArray(myCourseIds, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
-            val `object` = JsonObject()
-            `object`.addProperty("_id", sharedPrefManager.getUserId())
-            `object`.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
-            `object`.add("resourceIds", mergedResourceIds)
-            `object`.add("courseIds", mergedCourseIds)
-            `object`
-        }
+        val removedResources = removedLogDao.getRemovedDocIds("resources", userId).filterNotNull()
+        val removedCourses = removedLogDao.getRemovedDocIds("courses", userId).filterNotNull()
+        val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
+        val mergedCourseIds = mergeJsonArray(myCourseIds, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
+        val `object` = JsonObject()
+        `object`.addProperty("_id", sharedPrefManager.getUserId())
+        `object`.add("meetupIds", mergeJsonArray(myMeetups, JsonUtils.getJsonArray("meetupIds", jsonDoc), removedResources))
+        `object`.add("resourceIds", mergedResourceIds)
+        `object`.add("courseIds", mergedCourseIds)
+        return `object`
     }
 
     private fun mergeJsonArray(array1: JsonArray?, array2: JsonArray, removedIds: List<String>): JsonArray {

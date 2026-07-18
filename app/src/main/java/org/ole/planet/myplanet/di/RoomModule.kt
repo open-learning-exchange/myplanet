@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
@@ -155,5 +156,10 @@ object RoomModule {
     @Provides
     fun provideCourseProgressDao(database: AppDatabase): CourseProgressDao {
         return database.courseProgressDao()
+    }
+
+    @Provides
+    fun provideRemovedLogDao(database: AppDatabase): RemovedLogDao {
+        return database.removedLogDao()
     }
 }

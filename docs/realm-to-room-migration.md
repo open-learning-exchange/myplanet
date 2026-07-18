@@ -179,8 +179,11 @@ wired through `di/RoomModule`.
       now a Room `@Entity`; `CourseProgressDao` owns user/course progress reads, completion
       records, save/update paths, pending upload reads, upload acknowledgements, and sync upserts
       that preserve locally-passed steps when server progress lags.
+- [x] **RemovedLog** migrated (local shelf tombstones). `RealmRemovedLog` is now a Room
+      `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
+      courses are re-added, and shelf merge filtering for removed resources/courses.
 - [ ] Migrate the remaining ~8 uploadable models to `RoomUploadConfig` + the synced-only domains.
-- [ ] Remaining ~32 model domains.
+- [ ] Remaining ~31 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

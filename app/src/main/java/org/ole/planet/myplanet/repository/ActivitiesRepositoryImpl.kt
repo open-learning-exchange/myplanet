@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
@@ -52,7 +53,8 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val userChallengeActionsDao: UserChallengeActionsDao,
     private val courseActivityDao: CourseActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
-    private val offlineActivityDao: OfflineActivityDao
+    private val offlineActivityDao: OfflineActivityDao,
+    private val removedLogDao: RemovedLogDao
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
@@ -67,22 +69,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
-        executeTransaction { realm ->
-            realm.where(RealmRemovedLog::class.java)
-                .equalTo("type", "resources")
-                .equalTo("userId", userId)
-                .equalTo("docId", resourceId)
-                .findAll().deleteAllFromRealm()
-        }
+        removedLogDao.deleteByTypeUserAndDoc("resources", userId, resourceId)
     }
 
     override suspend fun markResourceRemoved(userId: String, resourceId: String) {
-        executeTransaction { realm ->
-            val log = realm.createObject(RealmRemovedLog::class.java, UUID.randomUUID().toString())
-            log.docId = resourceId
-            log.userId = userId
-            log.type = "resources"
-        }
+        removedLogDao.insert(
+            RealmRemovedLog().apply {
+                id = UUID.randomUUID().toString()
+                docId = resourceId
+                this.userId = userId
+                type = "resources"
+            }
+        )
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {

@@ -18,11 +18,11 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmTag
@@ -44,6 +44,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val tagsRepository: TagsRepository,
     private val searchActivityDao: SearchActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
+    private val removedLogDao: RemovedLogDao,
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
@@ -433,25 +434,16 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
 
             executeTransaction { realm ->
-                if (resourceIds.isNotEmpty()) {
-                    val libraryItems = realm.where(RealmMyLibrary::class.java)
-                        .`in`("resourceId", resourceIds.toTypedArray())
-                        .not().equalTo("userId", userId)
-                        .findAll()
+                val libraryItems = realm.where(RealmMyLibrary::class.java)
+                    .`in`("resourceId", resourceIds.toTypedArray())
+                    .not().equalTo("userId", userId)
+                    .findAll()
 
-                    libraryItems.forEach { libraryItem ->
-                        libraryItem.setUserId(userId)
-                    }
-
-                    val removedLogs = realm.where(RealmRemovedLog::class.java)
-                        .equalTo("type", "resources")
-                        .equalTo("userId", userId)
-                        .`in`("docId", resourceIds.toTypedArray())
-                        .findAll()
-
-                    removedLogs.deleteAllFromRealm()
+                libraryItems.forEach { libraryItem ->
+                    libraryItem.setUserId(userId)
                 }
             }
+            removedLogDao.deleteByTypeUserAndDocs("resources", userId, resourceIds)
         }
     }
 

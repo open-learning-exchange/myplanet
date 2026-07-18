@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.RealmCertification
@@ -53,7 +54,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val certificationDao: CertificationDao,
     private val tagDao: TagDao,
     private val searchActivityDao: SearchActivityDao,
-    private val courseProgressDao: CourseProgressDao
+    private val courseProgressDao: CourseProgressDao,
+    private val removedLogDao: RemovedLogDao
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -135,45 +137,30 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
         return runCatching {
-            if (courseIds.isEmpty()) {
-                return@runCatching false
-            }
+            val validCourseIds = courseIds.filter { it.isNotBlank() }
+            if (validCourseIds.isEmpty()) return@runCatching false
 
             var courseFound = false
             executeTransaction { realm ->
-                    val validCourseIds = courseIds.filter { it.isNotBlank() }
-                    if (validCourseIds.isEmpty()) return@executeTransaction
+                validCourseIds.chunked(1000).forEach { chunk ->
+                    val courses = realm.where(RealmMyCourse::class.java)
+                        .`in`("courseId", chunk.toTypedArray())
+                        .findAll()
 
-                    val allFoundCourseIds = mutableListOf<String>()
-                    val chunkSize = 1000
-                    validCourseIds.chunked(chunkSize).forEach { chunk ->
-                        val courses = realm.where(RealmMyCourse::class.java)
-                            .`in`("courseId", chunk.toTypedArray())
-                            .findAll()
-
-                        if (courses.isNotEmpty()) {
-                            courses.forEach { course ->
-                                course.setUserId(userId)
-                            }
-
-                            allFoundCourseIds.addAll(courses.mapNotNull { it.courseId })
-                            courseFound = true
-                        }
-                    }
-
-                    if (!userId.isNullOrBlank() && allFoundCourseIds.isNotEmpty()) {
-                        allFoundCourseIds.chunked(chunkSize).forEach { chunk ->
-                            realm.where(RealmRemovedLog::class.java)
-                                .equalTo("type", "courses")
-                                .equalTo("userId", userId)
-                                .`in`("docId", chunk.toTypedArray())
-                                .findAll()
-                                .deleteAllFromRealm()
-                        }
+                    if (courses.isNotEmpty()) {
+                        courses.forEach { course -> course.setUserId(userId) }
+                        courseFound = true
                     }
                 }
+            }
 
-                courseFound
+            if (!userId.isNullOrBlank() && courseFound) {
+                validCourseIds.chunked(1000).forEach { chunk ->
+                    removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
+                }
+            }
+
+            courseFound
         }
     }
 
@@ -307,15 +294,9 @@ class CoursesRepositoryImpl @Inject constructor(
                         it.setUserId(userId)
                     }
 
-                    val removedLog = realm.where(RealmRemovedLog::class.java)
-                        .equalTo("type", "courses")
-                        .equalTo("userId", userId)
-                        .equalTo("docId", courseId)
-                        .findFirst()
-
-                    removedLog?.deleteFromRealm()
                 }
             }
+            removedLogDao.deleteByTypeUserAndDoc("courses", userId, courseId)
         }
     }
 
@@ -326,8 +307,13 @@ class CoursesRepositoryImpl @Inject constructor(
                     .equalTo("courseId", courseId)
                     .findFirst()
                 course?.removeUserId(userId)
-                RealmRemovedLog.onRemove(realm, "courses", userId, courseId)
             }
+            removedLogDao.insert(RealmRemovedLog().apply {
+                id = UUID.randomUUID().toString()
+                type = "courses"
+                this.userId = userId
+                docId = courseId
+            })
             RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
