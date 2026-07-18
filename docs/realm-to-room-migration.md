@@ -107,7 +107,7 @@ wired through `di/RoomModule`.
       proven **sync-bulk-insert** conversion: the per-table `insert` moves from the shared Realm
       `executeTransaction` dispatch in `TransactionSyncManager` to the outer suspend `when` +
       a DAO upsert. Template for the remaining synced models.
-- [x] **Chat** migrated (`RealmChatHistory` Room `@Entity`, `ChatDao`; `ChatRepositoryImpl` off
+- [x] **Chat** migrated (`ChatHistory` Room `@Entity`, `ChatDao`; `ChatRepositoryImpl` off
       `RealmRepository` entirely). First proven **nested-relationship** pattern: `RealmConversation`
       (no independent identity, never queried alone) becomes a plain class stored as an embedded
       JSON `List<RealmConversation>` via a `Converters` type converter — the right mapping for
@@ -120,7 +120,7 @@ wired through `di/RoomModule`.
       `RealmRepository`; `Feedback` upload config -> `RoomUploadConfig` (markUploaded sets
       isUploaded via DAO). Sync path unchanged (already suspend/outer). Model test +
       repo test + UploadManager test updated.
-- [x] **Rating** migrated (uploaded + synced). `RealmRating` Room `@Entity` (@JvmField id/_id);
+- [x] **Rating** migrated (uploaded + synced). `Rating` Room `@Entity` (@JvmField id/_id);
       `RatingDao` (by-type, by-type-and-item, find-by-type-user-item, pending-uploads with the
       guest filter folded into the query, markUploaded); `RatingsRepositoryImpl` keeps
       `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
@@ -192,7 +192,7 @@ wired through `di/RoomModule`.
       deletes, single-doc upserts, and sync bulk upserts. Notification sync now runs outside the
       legacy Realm transaction path.
 - [x] **Achievement** migrated (synced + custom uploaded profile achievement docs).
-      `RealmAchievement` is now a Room `@Entity` with JSON-backed `List<String>` fields;
+      `Achievement` is now a Room `@Entity` with JSON-backed `List<String>` fields;
       `AchievementDao` owns initialization, edits, pending-upload reads, upload acknowledgements,
       and sync bulk upserts. Achievement sync now runs outside the legacy Realm transaction path.
 - [x] **HealthExamination** migrated (synced + custom uploaded health records).

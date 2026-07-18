@@ -8,14 +8,14 @@ import org.ole.planet.myplanet.MainApplication.Companion.context
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room replacement for the former Realm `RealmRating` model. Uploaded (Room upload path) and
+ * Room replacement for the former Realm `Rating` model. Uploaded (Room upload path) and
  * synced; persistence goes through [org.ole.planet.myplanet.data.room.dao.RatingDao].
  */
 @Entity(
     tableName = "rating",
     indices = [Index("userId"), Index("isUpdated"), Index("item"), Index("type")]
 )
-open class RealmRating {
+open class Rating {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
@@ -37,7 +37,7 @@ open class RealmRating {
     var user: String? = null
 
     companion object {
-        fun serializeRating(realmRating: RealmRating): JsonObject {
+        fun serializeRating(realmRating: Rating): JsonObject {
             val ob = JsonObject()
             if (realmRating._id != null) ob.addProperty("_id", realmRating._id)
             if (realmRating._rev != null) ob.addProperty("_rev", realmRating._rev)

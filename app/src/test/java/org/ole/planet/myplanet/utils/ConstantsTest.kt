@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
@@ -79,9 +79,9 @@ class ConstantsTest {
         assertEquals(14, classList.size)
         assertEquals(RealmNews::class.java, classList["news"])
         assertEquals(RealmTag::class.java, classList["tags"])
-        assertEquals(RealmRating::class.java, classList["ratings"])
+        assertEquals(Rating::class.java, classList["ratings"])
         assertEquals(RealmMyCourse::class.java, classList["courses"])
-        assertEquals(RealmAchievement::class.java, classList["achievements"])
+        assertEquals(Achievement::class.java, classList["achievements"])
         assertEquals(RealmFeedback::class.java, classList["feedback"])
         assertEquals(RealmMyTeam::class.java, classList["teams"])
         assertEquals(RealmTeamTask::class.java, classList["tasks"])

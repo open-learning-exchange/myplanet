@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatResponse
 import org.ole.planet.myplanet.model.CouchDBResponse
-import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
@@ -78,7 +78,7 @@ class ChatRepositoryImplTest {
     @Test
     fun getChatHistoryForUser_delegatesToDao() = runTest {
         val userName = "testUser"
-        val mockHistoryList = listOf(RealmChatHistory().apply { user = userName })
+        val mockHistoryList = listOf(ChatHistory().apply { user = userName })
         coEvery { chatDao.getByUser(userName) } returns mockHistoryList
 
         val result = chatRepository.getChatHistoryForUser(userName)
@@ -90,9 +90,9 @@ class ChatRepositoryImplTest {
     @Test
     fun getLatestRev_findsHighestRevByNumericPrefix() = runTest {
         val id = "123"
-        val item1 = RealmChatHistory().apply { _rev = "1-abc" }
-        val item2 = RealmChatHistory().apply { _rev = "10-def" }
-        val item3 = RealmChatHistory().apply { _rev = "2-ghi" }
+        val item1 = ChatHistory().apply { _rev = "1-abc" }
+        val item2 = ChatHistory().apply { _rev = "10-def" }
+        val item3 = ChatHistory().apply { _rev = "2-ghi" }
         coEvery { chatDao.getByDocId(id) } returns listOf(item1, item2, item3)
 
         val result = chatRepository.getLatestRev(id)
@@ -112,7 +112,7 @@ class ChatRepositoryImplTest {
             addProperty("_rev", "2-rev")
             add("conversations", JsonArray())
         }
-        val slot = slot<List<RealmChatHistory>>()
+        val slot = slot<List<ChatHistory>>()
         coEvery { chatDao.upsertAll(capture(slot)) } returns Unit
 
         chatRepository.insertChatHistoryList(listOf(chatObj1, chatObj2))
@@ -130,7 +130,7 @@ class ChatRepositoryImplTest {
             add("conversations", JsonArray())
         }
         val wrapper = JsonObject().apply { add("doc", chatDoc) }
-        val slot = slot<List<RealmChatHistory>>()
+        val slot = slot<List<ChatHistory>>()
         coEvery { chatDao.upsertAll(capture(slot)) } returns Unit
 
         chatRepository.insertChatHistoryFromSync(listOf(wrapper))

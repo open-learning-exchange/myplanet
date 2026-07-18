@@ -30,10 +30,10 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
-import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.Certification
-import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -45,7 +45,7 @@ import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RealmRetryOperation
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RemovedLog
@@ -75,9 +75,9 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         UserChallengeActions::class,
         TeamNotification::class,
         Certification::class,
-        RealmChatHistory::class,
+        ChatHistory::class,
         RealmFeedback::class,
-        RealmRating::class,
+        Rating::class,
         RealmTag::class,
         RealmMeetup::class,
         SearchActivity::class,
@@ -91,7 +91,7 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         RemovedLog::class,
         RealmTeamTask::class,
         RealmNotification::class,
-        RealmAchievement::class,
+        Achievement::class,
         RealmHealthExamination::class,
     ],
     version = 1,

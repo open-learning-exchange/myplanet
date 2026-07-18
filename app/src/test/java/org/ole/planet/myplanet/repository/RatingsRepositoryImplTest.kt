@@ -18,7 +18,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.RatingDao
-import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RealmUser
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -59,8 +59,8 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `getRatings aggregates ratings properly`() = runTest {
-        val rating1 = RealmRating().apply { type = "course"; item = "course1"; rate = 4; userId = "user1" }
-        val rating2 = RealmRating().apply { type = "course"; item = "course1"; rate = 5; userId = "user2" }
+        val rating1 = Rating().apply { type = "course"; item = "course1"; rate = 4; userId = "user1" }
+        val rating2 = Rating().apply { type = "course"; item = "course1"; rate = 5; userId = "user2" }
         coEvery { ratingDao.getByType("course") } returns listOf(rating1, rating2)
 
         val result = repository.getRatings("course", "user1")
@@ -75,7 +75,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `getRatingsById returns specific aggregated rating`() = runTest {
-        val rating = RealmRating().apply { type = "course"; item = "course1"; rate = 5; userId = "user1" }
+        val rating = Rating().apply { type = "course"; item = "course1"; rate = 5; userId = "user1" }
         coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(rating)
 
         val result = repository.getRatingsById("course", "course1", "user1")
@@ -88,7 +88,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `getCourseRatings returns aggregated course ratings`() = runTest {
-        val rating = RealmRating().apply { type = "course"; item = "course1"; rate = 3; userId = "user1" }
+        val rating = Rating().apply { type = "course"; item = "course1"; rate = 3; userId = "user1" }
         coEvery { ratingDao.getByType("course") } returns listOf(rating)
 
         val result = repository.getCourseRatings("user1")
@@ -99,7 +99,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `getResourceRatings returns aggregated resource ratings`() = runTest {
-        val rating = RealmRating().apply { type = "resource"; item = "resource1"; rate = 5; userId = "user1" }
+        val rating = Rating().apply { type = "resource"; item = "resource1"; rate = 5; userId = "user1" }
         coEvery { ratingDao.getByType("resource") } returns listOf(rating)
 
         val result = repository.getResourceRatings("user1")
@@ -110,8 +110,8 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `getRatingSummary returns correct summary`() = runTest {
-        val userRating = RealmRating().apply { id = "rating1"; rate = 5; comment = "Great"; userId = "user1" }
-        val other = RealmRating().apply { id = "rating2"; rate = 4; userId = "user2" }
+        val userRating = Rating().apply { id = "rating1"; rate = 5; comment = "Great"; userId = "user1" }
+        val other = Rating().apply { id = "rating2"; rate = 4; userId = "user2" }
         coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(userRating, other)
 
         val summary = repository.getRatingSummary("course", "course1", "user1")
@@ -140,10 +140,10 @@ class RatingsRepositoryImplTest {
     fun `submitRating inserts new rating if not exists`() = runTest {
         mockUserLookup(RealmUser().apply { id = "user1"; _id = "user1" })
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
-        val savedSlot = slot<RealmRating>()
+        val savedSlot = slot<Rating>()
         coEvery { ratingDao.upsert(capture(savedSlot)) } returns Unit
         coEvery { ratingDao.getByTypeAndItem("course", "course1") } returns listOf(
-            RealmRating().apply { rate = 4; userId = "user1" }
+            Rating().apply { rate = 4; userId = "user1" }
         )
 
         val summary = repository.submitRating("course", "course1", "Good", "user1", 4f, "Nice")
@@ -159,7 +159,7 @@ class RatingsRepositoryImplTest {
     @Test
     fun `submitRating updates existing rating if it exists`() = runTest {
         mockUserLookup(RealmUser().apply { id = "user1"; _id = "user1" })
-        val existingRating = RealmRating().apply { id = "existing_id"; rate = 3 }
+        val existingRating = Rating().apply { id = "existing_id"; rate = 3 }
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns existingRating
         coEvery { ratingDao.findById("existing_id") } returns existingRating
         coEvery { ratingDao.update(any()) } returns Unit
@@ -189,7 +189,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `insertRatingsFromSync upserts mapped entities`() = runTest {
-        val savedSlot = slot<List<RealmRating>>()
+        val savedSlot = slot<List<Rating>>()
         coEvery { ratingDao.upsertAll(capture(savedSlot)) } returns Unit
 
         val docs = listOf(

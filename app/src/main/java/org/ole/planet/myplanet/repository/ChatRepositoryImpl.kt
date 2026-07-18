@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
-import org.ole.planet.myplanet.model.RealmChatHistory
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -109,7 +109,7 @@ class ChatRepositoryImpl @Inject constructor(
         return chatApiService.fetchAiProviders()
     }
 
-    override suspend fun getChatHistoryForUser(userName: String?): List<RealmChatHistory> {
+    override suspend fun getChatHistoryForUser(userName: String?): List<ChatHistory> {
         if (userName.isNullOrEmpty()) {
             return emptyList()
         }
@@ -152,7 +152,7 @@ class ChatRepositoryImpl @Inject constructor(
         // conversations JSON), which subsumes the old "delete orphaned conversations" step.
         val entities = chats.map { json ->
             val chatHistoryId = JsonUtils.getString("_id", json)
-            RealmChatHistory().apply {
+            ChatHistory().apply {
                 id = chatHistoryId
                 _id = chatHistoryId
                 _rev = JsonUtils.getString("_rev", json)
