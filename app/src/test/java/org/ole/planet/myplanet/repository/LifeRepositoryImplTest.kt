@@ -45,7 +45,6 @@ class LifeRepositoryImplTest {
         gson = Gson()
         repository = LifeRepositoryImpl(
             myLifeDao,
-            testDispatcher,
             sharedPrefManager,
             gson,
             CoroutineScope(testDispatcher)

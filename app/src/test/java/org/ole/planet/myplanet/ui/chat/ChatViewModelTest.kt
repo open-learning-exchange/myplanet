@@ -223,11 +223,11 @@ class ChatViewModelTest {
     fun `searchChats by full conversation filters by question`() = runTest {
         val chat1 = ChatHistory().apply {
             title = "Chat 1"
-            conversations = io.realm.RealmList(RealmConversation().apply { query = "How is the weather?" })
+            conversations = listOf(RealmConversation().apply { query = "How is the weather?" })
         }
         val chat2 = ChatHistory().apply {
             title = "Chat 2"
-            conversations = io.realm.RealmList(RealmConversation().apply { query = "Tell me a joke." })
+            conversations = listOf(RealmConversation().apply { query = "Tell me a joke." })
         }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)

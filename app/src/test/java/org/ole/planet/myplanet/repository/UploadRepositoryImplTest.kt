@@ -1,10 +1,8 @@
 package org.ole.planet.myplanet.repository
 
-import io.mockk.any
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
-import io.mockk.eq
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import kotlinx.coroutines.ExperimentalCoroutinesApi

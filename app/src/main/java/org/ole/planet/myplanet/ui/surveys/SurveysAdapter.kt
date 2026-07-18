@@ -113,7 +113,7 @@ class SurveysAdapter(
                 val questionCount = bindingData?.questionCount ?: 0
 
                 startSurvey.setOnClickListener {
-                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
+                    val shouldAdopt = exam.isTeamShareAllowed && teamSubmission == null
                     if (shouldAdopt) {
                         onAdoptSurveyListener.onAdoptSurvey(exam.id.orEmpty())
                     } else {
@@ -126,7 +126,7 @@ class SurveysAdapter(
                     startSurvey.visibility = View.GONE
                 }
 
-                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission?.isValid != true
+                val shouldShowAdopt = exam.isTeamShareAllowed && teamSubmission == null
 
                 startSurvey.text = when {
                     shouldShowAdopt -> context.getString(R.string.adopt_survey)

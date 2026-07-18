@@ -61,8 +61,9 @@ object JsonUtils {
     }
 
     fun getStringAsJsonArray(s: String?): JsonArray {
+        if (s.isNullOrBlank()) return JsonArray()
         val arrayElement = parseString(s)
-        return arrayElement.asJsonArray
+        return if (arrayElement.isJsonArray) arrayElement.asJsonArray else JsonArray()
     }
 
     fun getBoolean(fieldName: String, jsonObject: JsonObject?): Boolean = safeGet(false) {

@@ -47,13 +47,13 @@ class VoicesViewModelTest {
     fun `test search and label filter results`() = runTest {
         val news1 = mockk<RealmNews>(relaxed = true) {
             coEvery { message } returns "This is a Test message"
-            coEvery { labels } returns io.realm.RealmList("Label1")
+            coEvery { labels } returns listOf("Label1")
             coEvery { userName } returns "User1"
             coEvery { newsTitle } returns "Title1"
         }
         val news2 = mockk<RealmNews>(relaxed = true) {
             coEvery { message } returns "Another Message"
-            coEvery { labels } returns io.realm.RealmList("Label2")
+            coEvery { labels } returns listOf("Label2")
             coEvery { userName } returns "User2"
             coEvery { newsTitle } returns "Title2"
         }
@@ -93,15 +93,15 @@ class VoicesViewModelTest {
     fun `test simultaneous query and label filtering`() = runTest {
         val news1 = mockk<RealmNews>(relaxed = true) {
             coEvery { message } returns "Apple"
-            coEvery { labels } returns io.realm.RealmList("Fruit")
+            coEvery { labels } returns listOf("Fruit")
         }
         val news2 = mockk<RealmNews>(relaxed = true) {
             coEvery { message } returns "Banana"
-            coEvery { labels } returns io.realm.RealmList("Fruit")
+            coEvery { labels } returns listOf("Fruit")
         }
         val news3 = mockk<RealmNews>(relaxed = true) {
             coEvery { message } returns "Carrot"
-            coEvery { labels } returns io.realm.RealmList("Vegetable")
+            coEvery { labels } returns listOf("Vegetable")
         }
 
         coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(news1, news2, news3))

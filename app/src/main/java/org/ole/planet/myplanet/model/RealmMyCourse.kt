@@ -32,7 +32,7 @@ open class RealmMyCourse {
         if (this.userId == null) {
             this.userId = mutableListOf()
         }
-        if (this.userId?.contains(userId) != true && !TextUtils.isEmpty(userId)) {
+        if (this.userId?.contains(userId) != true && !userId.isNullOrEmpty()) {
             this.userId?.add(userId)
         }
     }

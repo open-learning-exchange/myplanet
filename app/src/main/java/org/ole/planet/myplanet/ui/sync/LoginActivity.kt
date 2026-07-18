@@ -447,16 +447,14 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
             teamList.clear()
             teamList.add(getString(R.string.select_team))
             for (team in teams) {
-                if (team.isValid) {
-                    teamList.add(team.name)
-                }
+                teamList.add(team.name)
             }
             binding.team.adapter = teamAdapter
             val lastSelection = prefData.getSelectedTeamId()
             if (!lastSelection.isNullOrEmpty()) {
                 for (i in teams.indices) {
                     val team = teams[i]
-                    if (team._id != null && team._id == lastSelection && team.isValid) {
+                    if (team._id != null && team._id == lastSelection) {
                         val lastSelectedPosition = i + 1
                         binding.team.setSelection(lastSelectedPosition)
                         break

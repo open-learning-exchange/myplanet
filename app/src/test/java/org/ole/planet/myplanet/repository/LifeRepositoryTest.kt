@@ -33,7 +33,6 @@ class LifeRepositoryTest {
         every { sharedPrefManager.rawPreferences } returns mockk(relaxed = true)
         repository = LifeRepositoryImpl(
             myLifeDao,
-            testDispatcher,
             sharedPrefManager,
             Gson(),
             CoroutineScope(testDispatcher)

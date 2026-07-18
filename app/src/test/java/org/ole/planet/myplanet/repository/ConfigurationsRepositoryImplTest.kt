@@ -55,7 +55,6 @@ class ConfigurationsRepositoryImplTest {
             context,
             apiInterface,
             serviceScope,
-            preferences,
             sharedPrefManager,
             appDatabase,
             serverUrlMapper,

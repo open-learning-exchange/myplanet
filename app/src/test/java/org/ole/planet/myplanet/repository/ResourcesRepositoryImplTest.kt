@@ -60,7 +60,6 @@ class ResourcesRepositoryImplTest {
             searchActivityDao,
             resourceActivityDao,
             removedLogDao,
-            teamsRepositoryLazy,
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userDao,
