@@ -55,6 +55,7 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND (_id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id = '')") suspend fun getPendingSubmissions(): List<RoomSubmissionEntity>
     @Upsert suspend fun upsertAll(items: List<RoomSubmissionEntity>)
+    @Upsert fun upsertAllBlocking(items: List<RoomSubmissionEntity>)
     @Query("UPDATE submissions SET _id = :remoteId, _rev = :remoteRev, isUpdated = 0 WHERE id = :localId") suspend fun markUploaded(localId: String, remoteId: String?, remoteRev: String?): Int
 }
 
@@ -62,6 +63,7 @@ interface SubmissionDao {
 interface AnswerDao {
     @Query("SELECT * FROM answers WHERE submissionId = :submissionId") suspend fun getBySubmissionId(submissionId: String): List<RoomAnswerEntity>
     @Upsert suspend fun upsertAll(items: List<RoomAnswerEntity>)
+    @Upsert fun upsertAllBlocking(items: List<RoomAnswerEntity>)
 }
 
 @Dao

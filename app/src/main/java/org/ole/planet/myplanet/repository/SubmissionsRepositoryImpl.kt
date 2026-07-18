@@ -19,6 +19,10 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -46,7 +50,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
-    private val submitPhotosDao: SubmitPhotosDao
+    private val submitPhotosDao: SubmitPhotosDao,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -719,12 +725,92 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         documentList.forEach { jsonDoc ->
             insertSubmissionInternal(realm, jsonDoc)
         }
+        upsertRoomSubmissionsFromSync(documentList)
     }
 
     override suspend fun insertSubmission(submission: JsonObject) {
         if (submission.has("_attachments")) return
         executeTransaction { mRealm ->
             insertSubmissionInternal(mRealm, submission)
+        }
+        upsertRoomSubmissionsFromSync(listOf(submission))
+    }
+
+    private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
+        val submissions = ArrayList<RoomSubmissionEntity>(documentList.size)
+        val answers = ArrayList<RoomAnswerEntity>()
+
+        documentList.filterNot { it.has("_attachments") }.forEach { submission ->
+            val id = JsonUtils.getString("_id", submission)
+            if (id.isBlank()) return@forEach
+            val serverStatus = JsonUtils.getString("status", submission)
+            val userJson = JsonUtils.getJsonObject("user", submission)
+            val teamJson = JsonUtils.getJsonObject("team", submission)
+            val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
+            val userId = normalizeSubmissionUserId(JsonUtils.getString("_id", userJson))
+            submissions.add(
+                RoomSubmissionEntity(
+                    id = id,
+                    _id = id,
+                    _rev = JsonUtils.getString("_rev", submission),
+                    parentId = JsonUtils.getString("parentId", submission),
+                    type = JsonUtils.getString("type", submission),
+                    userId = userId,
+                    user = JsonUtils.gson.toJson(userJson),
+                    startTime = JsonUtils.getLong("startTime", submission),
+                    lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission),
+                    grade = JsonUtils.getLong("grade", submission),
+                    status = serverStatus,
+                    uploaded = JsonUtils.getString("_rev", submission).isNotEmpty(),
+                    sender = JsonUtils.getString("sender", submission),
+                    source = JsonUtils.getString("source", submission),
+                    parentCode = JsonUtils.getString("parentCode", submission),
+                    parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission)),
+                    teamId = JsonUtils.getString("_id", teamJson).ifBlank { JsonUtils.getString("teamId", membershipJson) },
+                    isUpdated = false,
+                )
+            )
+
+            val answersArray = JsonUtils.getJsonArray("answers", submission)
+            for (i in 0 until answersArray.size()) {
+                val answerJson = answersArray[i].asJsonObject
+                val valueElement = answerJson.get("value")
+                val valueChoices = if (valueElement != null && valueElement.isJsonArray) {
+                    valueElement.asJsonArray.map { it.toString() }
+                } else {
+                    null
+                }
+                val examIdPart = JsonUtils.getString("parentId", submission).split("@").firstOrNull()
+                    ?: JsonUtils.getString("parentId", submission)
+                answers.add(
+                    RoomAnswerEntity(
+                        id = "$id-$i",
+                        value = valueElement?.takeIf { !it.isJsonArray && !it.isJsonNull }?.asString,
+                        valueChoices = valueChoices,
+                        mistakes = JsonUtils.getInt("mistakes", answerJson),
+                        isPassed = JsonUtils.getBoolean("passed", answerJson),
+                        examId = JsonUtils.getString("parentId", submission),
+                        questionId = JsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
+                        submissionId = id,
+                    )
+                )
+            }
+        }
+
+        if (submissions.isEmpty() && answers.isEmpty()) return
+
+        databaseService.room.runInTransaction {
+            if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
+            if (answers.isNotEmpty()) answerDao.upsertAllBlocking(answers)
+        }
+    }
+
+    private fun normalizeSubmissionUserId(userId: String): String {
+        return if (userId.contains("@")) {
+            val localUserId = userId.substringBefore("@")
+            if (localUserId.startsWith("org.couchdb.user:")) localUserId else "org.couchdb.user:$localUserId"
+        } else {
+            userId
         }
     }
 

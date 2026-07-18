@@ -75,7 +75,9 @@ class SubmissionsRepositoryImplTest {
             context,
             sharedPrefManager,
             exporter,
-            submitPhotosDao
+            submitPhotosDao,
+            mockk(relaxed = true),
+            mockk(relaxed = true)
         ), recordPrivateCalls = true)
     }
 
