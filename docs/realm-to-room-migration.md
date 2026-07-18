@@ -96,8 +96,8 @@ wired through `di/RoomModule`.
       for its other models). NB: transient KSP `"Dao could not be resolved"` failures during this
       work were **corrupted incremental/daemon build state** from rapid iterative builds, not a
       real blocker — `./gradlew --stop` + a clean build clears them.
-- [x] **ApkLog** migrated through the new path (`RealmApkLog` now a Room `@Entity`, `ApkLogDao`,
-      `CrashLog` is a `RoomUploadConfig`, `MainApplication.saveLogToRealm` + crash-log sweep write
+- [x] **ApkLog** migrated through the new path (`ApkLog` now a Room `@Entity`, `ApkLogDao`,
+      `CrashLog` is a `RoomUploadConfig`, `MainApplication.saveLogToRoom` + crash-log sweep write
       via the DAO, `uploadCrashLog()` uses `uploadRoom`). First uploadable model on Room.
 - [x] **TeamNotification** migrated (single-id Room `@Entity`, `TeamNotificationDao`; converted
       3 sites across `NotificationsRepositoryImpl` + `VoicesRepositoryImpl`, both kept on
