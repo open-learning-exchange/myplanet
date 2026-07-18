@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -228,19 +229,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun saveSubmission(submission: RealmSubmission) {
-        try {
-            save(submission)
-        } catch (e: Exception) {
-            throw e
+        val submissionEntity = submission.toRoomEntity() ?: return
+        val answerEntities = submission.answers?.mapNotNull { it.toRoomEntity() }.orEmpty()
+        submissionDao.upsertAll(listOf(submissionEntity))
+        if (answerEntities.isNotEmpty()) {
+            answerDao.upsertAll(answerEntities)
         }
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: JsonObject) {
-        update(RealmSubmission::class.java, "id", id) { sub ->
-            sub.user = payload.toString()
-            sub.status = "complete"
-            sub.isUpdated = true // Mark for upload
-        }
+        submissionDao.markComplete(id, payload.toString())
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
@@ -337,23 +335,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?) {
-        executeTransaction { realm ->
-            val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
-                "${examId}@${courseId}"
-            } else {
-                examId
-            }
-
-            val allSubmissions = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("parentId", parentIdToSearch)
-                .findAll()
-
-            allSubmissions.forEach { submission ->
-                submission.answers?.deleteAllFromRealm()
-                submission.deleteFromRealm()
-            }
+        val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
+            "${examId}@${courseId}"
+        } else {
+            examId
         }
+        val submissions = submissionDao.getByParentUserAndStatus(parentIdToSearch, userId, null)
+        val submissionIds = submissions.map { it.id }
+        if (submissionIds.isNotEmpty()) {
+            answerDao.deleteBySubmissionIds(submissionIds)
+        }
+        submissionDao.deleteByParentAndUser(parentIdToSearch, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
@@ -629,25 +621,23 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
-        var detachedSub: RealmSubmission? = null
-        executeTransaction { r ->
-            val sub = r.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("parentId", parentId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst()
-
-            val managedSub = createSubmissionInternal(sub, r)
-            if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
-            if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
-            if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
-            if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
-            if (managedSub.startTime == 0L) managedSub.startTime = Date().time
-
-            detachedSub = r.copyFromRealm(managedSub)
+        val existing = hydrateSubmission(submissionDao.getLatestPendingByUserAndParent(userId, parentId))
+        if (existing != null) {
+            return existing
         }
-        return detachedSub ?: error("Failed to create or retrieve submission")
+
+        val submission = RealmSubmission().apply {
+            id = UUID.randomUUID().toString()
+            this.userId = userId
+            this.parentId = parentId
+            status = "pending"
+            type = "survey"
+            startTime = Date().time
+            lastUpdateTime = startTime
+            answers = RealmList()
+        }
+        saveSubmission(submission)
+        return submission
     }
 
     private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {

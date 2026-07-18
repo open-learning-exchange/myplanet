@@ -253,6 +253,10 @@ wired through `di/RoomModule`.
       result counts, parent/status submission lists, submission item summaries, and completion checks.
       `RoomSubmissionEntity` and `RoomAnswerEntity` hydrate legacy `RealmSubmission`/`RealmAnswer`
       compatibility objects with child answers grouped in one DAO batch per submission list.
+- [x] **Submission write helpers moved to Room**: `saveSubmission`, `markSubmissionComplete`,
+      `deleteExamSubmissions`, and `getOrCreateSubmission` now use `SubmissionDao`/`AnswerDao`
+      instead of Realm transactions. This keeps survey-response creation, completion marking, and
+      local exam-submission cleanup on the same Room tables used by the read paths.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
