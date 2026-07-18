@@ -278,6 +278,10 @@ wired through `di/RoomModule`.
       user lookup now uses `UserDao`, and `SubmissionsRepositoryImpl` no longer extends the Realm
       repository base or injects a Realm dispatcher. Submission code still accepts legacy model types at
       its public boundary, but its migrated data access no longer depends on the generic Realm helpers.
+- [x] **Progress submission mistake aggregation moved to Room**: `ProgressRepositoryImpl.fetchCourseData`
+      now reads exam submissions, answers, and questions through `SubmissionDao`, `AnswerDao`, and
+      `QuestionDao` instead of querying Realm inside the per-course loop. This removes the remaining
+      Realm submission/answer/question reads from progress reporting.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
