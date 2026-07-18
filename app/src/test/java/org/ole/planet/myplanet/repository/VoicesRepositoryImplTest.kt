@@ -125,11 +125,11 @@ class VoicesRepositoryImplTest {
         }
         val news2 = RealmNews().apply {
             viewableBy = "other"
-            viewIn = "[{"_id":"user1"}]"
+            viewIn = "[{\"_id\":\"user1\"}]"
         }
         val news3 = RealmNews().apply {
             viewableBy = "other"
-            viewIn = "[{"_id":"user2"}]"
+            viewIn = "[{\"_id\":\"user2\"}]"
         }
         coEvery { newsDao.getTopLevelMessages() } returns listOf(news1, news2, news3)
 
@@ -137,7 +137,7 @@ class VoicesRepositoryImplTest {
 
         assertEquals(2, result.size)
         assertEquals("community", result[0].viewableBy)
-        assertEquals("[{"_id":"user1"}]", result[1].viewIn)
+        assertEquals("[{\"_id\":\"user1\"}]", result[1].viewIn)
     }
 
     @Test
@@ -148,11 +148,11 @@ class VoicesRepositoryImplTest {
         }
         val news2 = RealmNews().apply {
             viewableBy = "other"
-            viewIn = "[{"_id":"team1"}]"
+            viewIn = "[{\"_id\":\"team1\"}]"
         }
         val news3 = RealmNews().apply {
             viewableBy = "other"
-            viewIn = "[{"_id":"team2"}]"
+            viewIn = "[{\"_id\":\"team2\"}]"
         }
         coEvery { newsDao.getTopLevel() } returns listOf(news1, news2, news3)
 
@@ -160,7 +160,7 @@ class VoicesRepositoryImplTest {
 
         assertEquals(2, result.size)
         assertEquals("teams", result[0].viewableBy)
-        assertEquals("[{"_id":"team1"}]", result[1].viewIn)
+        assertEquals("[{\"_id\":\"team1\"}]", result[1].viewIn)
     }
 
     @Test
@@ -171,7 +171,7 @@ class VoicesRepositoryImplTest {
         }
         val news2 = RealmNews().apply {
             viewableBy = "other"
-            viewIn = "[{"_id":"team2"}]"
+            viewIn = "[{\"_id\":\"team2\"}]"
         }
         coEvery { newsDao.getTopLevel() } returns listOf(news1, news2)
 
