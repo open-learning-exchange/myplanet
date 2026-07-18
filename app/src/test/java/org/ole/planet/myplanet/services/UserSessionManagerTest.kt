@@ -90,11 +90,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLoginAsync invokes callback and logs login on success`() = testScope.runTest {
-        val mockUser = mockk<UserEntity>(relaxed = true)
-        every { mockUser.id } returns "id123"
-        every { mockUser.name } returns "test_name"
-        every { mockUser.parentCode } returns "pc123"
-        every { mockUser.planetCode } returns "pl123"
+        val mockUser = UserEntity(id = "id123", name = "test_name", parentCode = "pc123", planetCode = "pl123")
         coEvery { userRepository.getUserModel() } returns mockUser
 
         var callbackInvoked = false
@@ -159,11 +155,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount delegates to logResourceOpen for normal user`() = testScope.runTest {
-        val mockUser = mockk<UserEntity>(relaxed = true)
-        every { mockUser.id } returns "normal_user"
-        every { mockUser.name } returns "test_name"
-        every { mockUser.parentCode } returns "pc123"
-        every { mockUser.planetCode } returns "pl123"
+        val mockUser = UserEntity(id = "normal_user", name = "test_name", parentCode = "pc123", planetCode = "pl123")
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = mockk<MyLibrary>()
@@ -187,8 +179,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount uses default type`() = testScope.runTest {
-        val mockUser = mockk<UserEntity>(relaxed = true)
-        every { mockUser.id } returns "normal_user"
+        val mockUser = UserEntity(id = "normal_user")
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = mockk<MyLibrary>(relaxed = true)
@@ -210,8 +201,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount exits early for guest user`() = testScope.runTest {
-        val mockUser = mockk<UserEntity>(relaxed = true)
-        every { mockUser.id } returns "guest_user"
+        val mockUser = UserEntity(id = "guest_user")
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = mockk<MyLibrary>(relaxed = true)
@@ -289,8 +279,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount handles exception from activitiesRepository`() = testScope.runTest {
-        val mockUser = mockk<UserEntity>(relaxed = true)
-        every { mockUser.id } returns "normal_user"
+        val mockUser = UserEntity(id = "normal_user")
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val mockLibrary = mockk<MyLibrary>(relaxed = true)

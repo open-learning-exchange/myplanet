@@ -252,9 +252,10 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `createExamSubmission creates and returns new submission`() = runTest {
-        val exam = mockk<StepExam>(relaxed = true)
-        every { exam.courseId } returns "course_id"
-        every { exam.id } returns "exam_id"
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
+        }
 
         val result = repository.createExamSubmission(
             CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", null)

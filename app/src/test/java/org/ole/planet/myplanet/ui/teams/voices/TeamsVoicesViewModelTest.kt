@@ -37,9 +37,10 @@ class TeamsVoicesViewModelTest {
     @Test
     fun `loadTeam fetches team and maps to VoicePostingPolicy`() = runTest(testDispatcher) {
         val teamId = "team123"
-        val mockTeam = mockk<MyTeam>(relaxed = true)
-        coEvery { mockTeam._id } returns teamId
-        coEvery { mockTeam.isPublic } returns true
+        val mockTeam = MyTeam().apply {
+            _id = teamId
+            isPublic = true
+        }
         coEvery { teamsRepository.getTeamByIdOrTeamId(teamId) } returns mockTeam
 
         viewModel.loadTeam(teamId)

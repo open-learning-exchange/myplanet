@@ -152,7 +152,7 @@ class ChatViewModelTest {
 
     @Test
     fun `loadChatHistoryScreenData fetches all data correctly when no caches are provided`() = runTest {
-        val user = mockk<UserEntity>(relaxed = true)
+        val user = UserEntity(_id = "user123", planetCode = "planet1", name = "Test User")
         val conversation = ChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
@@ -161,9 +161,6 @@ class ChatViewModelTest {
         val team = mockk<TeamSummary>(relaxed = true)
 
         coEvery { userRepository.getUserById("user123") } returns user
-        coEvery { user.planetCode } returns "planet1"
-        coEvery { user.name } returns "Test User"
-        coEvery { user._id } returns "user123"
         coEvery { voicesRepository.getPlanetNewsMessages("planet1") } returns listOf(news)
         coEvery { chatRepository.getChatHistoryForUser("Test User") } returns listOf(conversation)
         coEvery { teamsRepository.getTeamSummaries("user123") } returns listOf(team)

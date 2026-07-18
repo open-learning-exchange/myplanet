@@ -198,9 +198,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             return Result.failure(Exception("Resource title already exists"))
         }
 
-        val _id = UUID.randomUUID().toString()
+        val id = UUID.randomUUID().toString()
         val resource = MyLibrary().apply {
-            this._id = id
+            this.id = id
             this.title = title
             this.titleNormal = Utilities.normalizeText(title)
             this.addedBy = request.addedBy
@@ -327,7 +327,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         searchActivityDao.insert(
             SearchActivity(
-                _id = UUID.randomUUID().toString(),
+                id = UUID.randomUUID().toString(),
                 user = userName,
                 time = Calendar.getInstance().timeInMillis,
                 createdOn = planetCode,
