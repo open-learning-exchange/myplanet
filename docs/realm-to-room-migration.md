@@ -291,9 +291,34 @@ wired through `di/RoomModule`.
 - [x] **Course progress deletion moved to Room**: `CoursesRepositoryImpl.deleteCourseProgress`
       now resolves course exams through `ExamDao` and deletes matching local exam submissions plus
       answers through `SubmissionDao`/`AnswerDao` instead of a Realm transaction.
-- [ ] Remaining ~26 model domains.
-- [ ] Migrate 39 Realm-based test files.
-- [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
+- [x] **All remaining model domains migrated** (User, Teams, Courses, CourseSteps, Exams,
+      ExamQuestions, Answers, Submissions). The remaining `Realm*` model classes are now plain
+      Kotlin classes backed by a Room "legacy" entity layer (`data/room/entity/legacy/` +
+      `LegacyRoomMappers`) so callers keep the old shapes while persistence is Room.
+- [x] **`DatabaseService` is Room-backed** and all repositories read/write exclusively through
+      Room DAOs.
+- [x] **Realm removed**: the `realm-android` Gradle plugin, `librealm-jni.so` `doNotStrip`,
+      `RealmRepository`, `RealmMigrations`, `RealmDispatcher`, and `RealmUtils` are deleted; **zero
+      `io.realm` references remain in `app/src/main`**. `assembleDefaultDebug` and
+      `testDefaultDebugUnitTest` are green.
+
+## Status: functionally complete ✅
+
+The Realm → Room migration is functionally complete — the app compiles, `assembleDefaultDebug`
+builds a Realm-free APK, and the full unit suite passes with no Realm dependency.
+
+**Remaining polish (optional, not blocking):**
+
+- **Naming debt.** Many classes still carry `Realm*` names (`RealmMyCourse`, `RealmNews`,
+  `RealmMyLibrary`, `RealmUser`, …) even though they are plain Kotlin / Room entities now. A rename
+  pass (and collapsing the `legacy` shadow-entity + mapper layer into the entities directly) would
+  pay off the last of the debt. Deferred because it is a large, cross-cutting rename.
+- **`android.enableJetifier` stays.** It is *not* Realm-only: a transitive
+  `com.android.support:animated-vector-drawable:28.0.0` artifact still needs jetifier, so removing
+  it breaks the build. Revisit only after that legacy support-library artifact is gone.
+- **Instrumented / device verification.** The unit suite mocks DAOs, so it does not exercise real
+  Room SQL, the shadow-schema mappers, or sync/upload against a device. An instrumented run plus a
+  real device sync-and-smoke test is recommended before shipping.
 
 ## Local build environment (ephemeral sessions)
 
