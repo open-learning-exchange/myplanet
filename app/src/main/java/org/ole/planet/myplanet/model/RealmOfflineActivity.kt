@@ -1,21 +1,24 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmOfflineActivity : RealmObject() {
+@Entity(
+    tableName = "offline_activity",
+    indices = [Index("_rev"), Index("userId"), Index("type"), Index("_id"), Index("loginTime"), Index("userName")]
+)
+open class RealmOfflineActivity {
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
-    @Index
     var _rev: String? = null
     var userName: String? = null
-    @Index
     var userId: String? = null
-    @Index
     var type: String? = null
     var description: String? = null
     var createdOn: String? = null

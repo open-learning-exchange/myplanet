@@ -171,6 +171,10 @@ wired through `di/RoomModule`.
       now a Room `@Entity`; `TeamLogDao` owns visit counts, last-visit lookups, sync upserts,
       pending uploads, and upload acknowledgements; team activity sync now runs outside the legacy
       Realm transaction path and upload config uses `RoomUploadConfig`.
+- [x] **OfflineActivity / login activities** migrated (custom uploaded + synced login log).
+      `RealmOfflineActivity` is now a Room `@Entity`; `OfflineActivityDao` owns offline login
+      counts/flows, last-login lookups, pending upload reads, upload acknowledgements, and sync
+      upserts with the existing `_id` plus `loginTime`/`user` fallback dedupe behavior.
 - [ ] Migrate the remaining ~9 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.

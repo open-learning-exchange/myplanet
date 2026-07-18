@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -41,7 +42,6 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog.Companion.removedIds
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
@@ -72,7 +72,8 @@ class UserRepositoryImpl @Inject constructor(
     @ApplicationScope private val appScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
-    private val meetupDao: MeetupDao
+    private val meetupDao: MeetupDao,
+    private val offlineActivityDao: OfflineActivityDao
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
@@ -418,10 +419,7 @@ class UserRepositoryImpl @Inject constructor(
             return emptyMap()
         }
 
-        val activities = queryList(RealmOfflineActivity::class.java) {
-            equalTo("userId", userId)
-            between("loginTime", startMillis, endMillis)
-        }
+        val activities = offlineActivityDao.getByUserIdAndLoginTimeBetween(userId, startMillis, endMillis)
 
         if (activities.isEmpty()) {
             return emptyMap()
