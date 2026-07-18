@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.AppPreferences
@@ -74,7 +75,8 @@ class UserRepositoryImpl @Inject constructor(
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
     private val meetupDao: MeetupDao,
     private val offlineActivityDao: OfflineActivityDao,
-    private val removedLogDao: RemovedLogDao
+    private val removedLogDao: RemovedLogDao,
+    private val achievementDao: AchievementDao
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
@@ -1140,17 +1142,11 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
-        executeTransaction { transactionRealm ->
-            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-
-            if (achievement == null) {
-                transactionRealm.createObject(RealmAchievement::class.java, achievementId)
-            }
-        }
-
-        return findByField(RealmAchievement::class.java, "_id", achievementId)
+        val existing = achievementDao.getById(achievementId)
+        if (existing != null) return existing
+        val achievement = RealmAchievement().apply { _id = achievementId }
+        achievementDao.upsert(achievement)
+        return achievement
     }
 
     override suspend fun updateAchievement(
@@ -1166,24 +1162,19 @@ class UserRepositoryImpl @Inject constructor(
         parentCode: String,
         resumeFileName: String
     ) {
-        executeTransaction { transactionRealm ->
-            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", achievementId)
-                .findFirst()
-            if (achievement != null) {
-                achievement.achievementsHeader = header
-                achievement.goals = goals
-                achievement.purpose = purpose
-                achievement.sendToNation = sendToNation
-                achievement.createdOn = createdOn
-                achievement.username = username
-                achievement.parentCode = parentCode
-                achievement.setAchievements(achievements)
-                achievement.setReferences(references)
-                achievement.resumeFileName = resumeFileName
-                achievement.isUpdated = true
-            }
-        }
+        val achievement = achievementDao.getById(achievementId) ?: return
+        achievement.achievementsHeader = header
+        achievement.goals = goals
+        achievement.purpose = purpose
+        achievement.sendToNation = sendToNation
+        achievement.createdOn = createdOn
+        achievement.username = username
+        achievement.parentCode = parentCode
+        achievement.setAchievements(achievements)
+        achievement.setReferences(references)
+        achievement.resumeFileName = resumeFileName
+        achievement.isUpdated = true
+        achievementDao.upsert(achievement)
     }
 
     override suspend fun markUserUploaded(userId: String, id: String, rev: String) {
@@ -1213,48 +1204,39 @@ class UserRepositoryImpl @Inject constructor(
         )
     }
 
-    override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData = withRealm { realm ->
-        val achievement = realm.where(RealmAchievement::class.java)
-            .equalTo("_id", "$userId@$planetCode")
-            .findFirst()
+    override suspend fun getAchievementData(userId: String, planetCode: String): AchievementData {
+        val achievement = achievementDao.getById("$userId@$planetCode") ?: return AchievementData()
+        val resourceIds = achievement.achievements?.mapNotNull { json ->
+            JsonUtils.gson.fromJson(json, JsonObject::class.java)
+                ?.getAsJsonArray("resources")
+                ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
+        }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
 
-        if (achievement != null) {
-            val achievementCopy = realm.copyFromRealm(achievement)
-            val resourceIds = achievementCopy.achievements?.mapNotNull { json ->
-                JsonUtils.gson.fromJson(json, JsonObject::class.java)
-                    ?.getAsJsonArray("resources")
-                    ?.mapNotNull { it.asJsonObject?.get("_id")?.asString }
-            }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
-
-            val resources = if (resourceIds.isNotEmpty()) {
+        val resources = if (resourceIds.isNotEmpty()) {
+            withRealm { realm ->
                 realm.copyFromRealm(
                     realm.where(RealmMyLibrary::class.java)
                         .`in`("id", resourceIds)
                         .findAll()
                 )
-            } else {
-                emptyList()
             }
-
-            AchievementData(
-                goals = achievementCopy.goals ?: "",
-                purpose = achievementCopy.purpose ?: "",
-                achievementsHeader = achievementCopy.achievementsHeader ?: "",
-                achievements = achievementCopy.achievements ?: emptyList(),
-                achievementResources = resources,
-                references = achievementCopy.references ?: emptyList(),
-                resumeFileName = achievementCopy.resumeFileName ?: ""
-            )
         } else {
-            AchievementData()
+            emptyList()
         }
+
+        return AchievementData(
+            goals = achievement.goals ?: "",
+            purpose = achievement.purpose ?: "",
+            achievementsHeader = achievement.achievementsHeader ?: "",
+            achievements = achievement.achievements ?: emptyList(),
+            achievementResources = resources,
+            references = achievement.references ?: emptyList(),
+            resumeFileName = achievement.resumeFileName ?: ""
+        )
     }
 
     override suspend fun getAchievementsForUpload(): List<JsonObject> {
-        return queryList(RealmAchievement::class.java) {
-            not().beginsWith("_id", "guest")
-            equalTo("isUpdated", true)
-        }.map { RealmAchievement.serialize(it) }
+        return achievementDao.getPendingUploads().map { RealmAchievement.serialize(it) }
     }
 
     override suspend fun getSavedUsers(): List<User> = sharedPrefManager.getSavedUsers()
@@ -1316,63 +1298,20 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markAchievementUploaded(id: String, rev: String?) {
-        executeTransaction { transactionRealm ->
-            val achievement = transactionRealm.where(RealmAchievement::class.java)
-                .equalTo("_id", id)
-                .findFirst()
-            if (achievement != null) {
-                if (!rev.isNullOrEmpty()) achievement._rev = rev
-                achievement.isUpdated = false
-            }
-        }
+        achievementDao.markUploaded(id, rev)
     }
 
-    override fun bulkInsertAchievementsFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        val ids = mutableListOf<String>()
+    override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
+        val achievements = ArrayList<RealmAchievement>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
-                ids.add(id)
+                achievements.add(RealmAchievement.fromJson(jsonDoc))
             }
         }
-
-        if (ids.isEmpty()) return
-
-        val existingAchievements = realm.where(RealmAchievement::class.java)
-            .`in`("_id", ids.toTypedArray())
-            .findAll()
-            .associateBy { it._id }
-            .toMutableMap()
-
-        documentList.forEach { act ->
-            val id = JsonUtils.getString("_id", act)
-            var achievement = existingAchievements[id]
-
-            if (achievement == null) {
-                achievement = realm.createObject(RealmAchievement::class.java, id)
-                existingAchievements[id] = achievement
-            }
-
-            achievement?._rev = JsonUtils.getString("_rev", act)
-            achievement?.purpose = JsonUtils.getString("purpose", act)
-            achievement?.goals = JsonUtils.getString("goals", act)
-            achievement?.achievementsHeader = JsonUtils.getString("achievementsHeader", act)
-            achievement?.sendToNation = act.get("sendToNation")?.asString ?: "false"
-            achievement?.dateSortOrder = JsonUtils.getString("dateSortOrder", act)
-            achievement?.createdOn = JsonUtils.getString("createdOn", act)
-            achievement?.username = JsonUtils.getString("username", act)
-            achievement?.parentCode = JsonUtils.getString("parentCode", act)
-            achievement?.isUpdated = false
-            achievement?.setReferences(JsonUtils.getJsonArray("references", act))
-            achievement?.setAchievements(JsonUtils.getJsonArray("achievements", act))
-            achievement?.setLinks(JsonUtils.getJsonArray("links", act))
-            achievement?.setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
-            achievement?.resumeFileName = JsonUtils.getString("resumeFileName", act)
-        }
+        achievementDao.upsertAll(achievements)
     }
 
     override suspend fun insertUsersFromSync(docs: List<JsonObject>) {

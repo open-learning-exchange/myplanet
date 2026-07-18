@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.data.room
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
+import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmChatHistory
@@ -84,6 +86,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmRemovedLog::class,
         RealmTeamTask::class,
         RealmNotification::class,
+        RealmAchievement::class,
     ],
     version = 1,
     exportSchema = false,
@@ -113,4 +116,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun removedLogDao(): RemovedLogDao
     abstract fun teamTaskDao(): TeamTaskDao
     abstract fun notificationDao(): NotificationDao
+    abstract fun achievementDao(): AchievementDao
 }

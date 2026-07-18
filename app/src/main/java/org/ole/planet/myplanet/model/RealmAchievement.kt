@@ -3,26 +3,26 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import android.util.LruCache
 import android.widget.EditText
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.Ignore
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmAchievement : RealmObject() {
-    var achievements: RealmList<String>? = null
-    var references: RealmList<String>? = null
-    var links: RealmList<String>? = null
-    var otherInfo: RealmList<String>? = null
+@Entity(tableName = "achievements")
+class RealmAchievement {
+    var achievements: List<String>? = null
+    var references: List<String>? = null
+    var links: List<String>? = null
+    var otherInfo: List<String>? = null
     var purpose: String? = null
     var achievementsHeader: String? = null
     var sendToNation: String? = null
     var _rev: String? = null
     @PrimaryKey
-    var _id: String? = null
+    var _id: String = ""
     var goals: String? = null
     var dateSortOrder: String? = null
     var createdOn: String? = null
@@ -48,41 +48,41 @@ open class RealmAchievement : RealmObject() {
         get() = parseStringListToJsonArray(otherInfo)
 
     fun setLinks(la: JsonArray?) {
-        links = RealmList()
+        links = mutableListOf()
         if (la == null) return
         for (el in la) {
             val e = JsonUtils.gson.toJson(el)
-            if (links?.contains(e) != true) links?.add(e)
+            if (links?.contains(e) != true) links = links.orEmpty() + e
         }
     }
 
     fun setOtherInfo(oi: JsonArray?) {
-        otherInfo = RealmList()
+        otherInfo = mutableListOf()
         if (oi == null) return
         for (el in oi) {
             val e = JsonUtils.gson.toJson(el)
-            if (otherInfo?.contains(e) != true) otherInfo?.add(e)
+            if (otherInfo?.contains(e) != true) otherInfo = otherInfo.orEmpty() + e
         }
     }
 
     fun setAchievements(ac: JsonArray) {
-        achievements = RealmList()
+        achievements = mutableListOf()
         for (el in ac) {
             val achievement = JsonUtils.gson.toJson(el)
             if (achievements?.contains(achievement) != true) {
-                achievements?.add(achievement)
+                achievements = achievements.orEmpty() + achievement
             }
         }
     }
 
     fun setReferences(of: JsonArray?) {
         cachedReferencesArray = null
-        references = RealmList()
+        references = mutableListOf()
         if (of == null) return
         for (el in of) {
             val e = JsonUtils.gson.toJson(el)
             if (references?.contains(e) != true) {
-                references?.add(e)
+                references = references.orEmpty() + e
             }
         }
     }
@@ -90,7 +90,7 @@ open class RealmAchievement : RealmObject() {
     companion object {
         private val parsedJsonCache = LruCache<String, JsonElement>(1000)
 
-        private fun parseStringListToJsonArray(list: RealmList<String>?): JsonArray {
+        private fun parseStringListToJsonArray(list: List<String>?): JsonArray {
             val array = JsonArray()
             for (s in list ?: emptyList()) {
                 var ob = parsedJsonCache.get(s)
@@ -101,6 +101,27 @@ open class RealmAchievement : RealmObject() {
                 array.add(ob?.deepCopy())
             }
             return array
+        }
+
+        fun fromJson(act: JsonObject): RealmAchievement {
+            return RealmAchievement().apply {
+                _id = JsonUtils.getString("_id", act)
+                _rev = JsonUtils.getString("_rev", act)
+                purpose = JsonUtils.getString("purpose", act)
+                goals = JsonUtils.getString("goals", act)
+                achievementsHeader = JsonUtils.getString("achievementsHeader", act)
+                sendToNation = act.get("sendToNation")?.asString ?: "false"
+                dateSortOrder = JsonUtils.getString("dateSortOrder", act)
+                createdOn = JsonUtils.getString("createdOn", act)
+                username = JsonUtils.getString("username", act)
+                parentCode = JsonUtils.getString("parentCode", act)
+                isUpdated = false
+                setReferences(JsonUtils.getJsonArray("references", act))
+                setAchievements(JsonUtils.getJsonArray("achievements", act))
+                setLinks(JsonUtils.getJsonArray("links", act))
+                setOtherInfo(JsonUtils.getJsonArray("otherInfo", act))
+                resumeFileName = JsonUtils.getString("resumeFileName", act)
+            }
         }
 
         fun serialize(sub: RealmAchievement): JsonObject {
