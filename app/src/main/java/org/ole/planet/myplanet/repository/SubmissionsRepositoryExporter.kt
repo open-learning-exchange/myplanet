@@ -11,21 +11,23 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
 internal class SubmissionsRepositoryExporter @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
+    private val examDao: ExamDao,
+    private val questionDao: QuestionDao,
     private val timeProvider: TimeProvider
-) : RealmRepository(databaseService, realmDispatcher) {
+) {
 
     companion object {
         private const val PAGE_WIDTH = 595
@@ -37,10 +39,11 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
     suspend fun generateSubmissionPdf(
         context: Context,
         submissionId: String
-    ): File? = withRealmAsync { realm ->
-        try {
-            val submission = realm.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
-                ?: return@withRealmAsync null
+    ): File? {
+        return try {
+            val submissionEntity = submissionDao.getByIdOrRemoteId(submissionId) ?: return null
+            val answers = answerDao.getBySubmissionId(submissionEntity.id)
+            val submission = submissionEntity.toRealmModel(answers)
 
             val document = PdfDocument()
             try {
@@ -63,9 +66,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 }
 
                 val examId = getExamId(submission.parentId)
-                val exam = realm.where(RealmStepExam::class.java)
-                    .equalTo("id", examId)
-                    .findFirst()
+                val exam = examId?.let { examDao.getById(it)?.toRealmModel() }
 
                 canvas.drawText(exam?.name ?: "Submission Report", MARGIN, yPosition, titlePaint)
                 yPosition += LINE_HEIGHT * 2
@@ -75,9 +76,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 canvas.drawText("Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 2
 
-                val questions = realm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", examId)
-                    .findAll()
+                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } }.orEmpty()
 
                 val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
 
@@ -128,13 +127,19 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         context: Context,
         submissionIds: List<String>,
         examTitle: String
-    ): File? = withRealmAsync { realm ->
-        try {
-            val submissions = submissionIds.mapNotNull { id ->
-                realm.where(RealmSubmission::class.java).equalTo("id", id).findFirst()
+    ): File? {
+        return try {
+            val submissionEntities = if (submissionIds.isEmpty()) emptyList() else submissionDao.getByIds(submissionIds)
+            val answersBySubmissionId = if (submissionEntities.isEmpty()) {
+                emptyMap()
+            } else {
+                answerDao.getBySubmissionIds(submissionEntities.map { it.id }).groupBy { it.submissionId }
+            }
+            val submissions = submissionEntities.map { submission ->
+                submission.toRealmModel(answersBySubmissionId[submission.id].orEmpty())
             }
 
-            if (submissions.isEmpty()) return@withRealmAsync null
+            if (submissions.isEmpty()) return null
 
             val document = PdfDocument()
             try {
@@ -169,9 +174,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)
-                val questions = realm.where(RealmExamQuestion::class.java)
-                    .equalTo("examId", examId)
-                    .findAll()
+                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } }.orEmpty()
 
                 submissions.forEachIndexed { submissionIndex, submission ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {
