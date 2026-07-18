@@ -64,7 +64,8 @@ class CoursesRepositoryImplTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             searchActivityDao,
-            courseProgressDao
+            courseProgressDao,
+            mockk(relaxed = true)
         )
     }
 

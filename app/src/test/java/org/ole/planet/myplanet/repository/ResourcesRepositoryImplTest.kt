@@ -75,6 +75,7 @@ class ResourcesRepositoryImplTest {
             tagsRepository,
             searchActivityDao,
             resourceActivityDao,
+            mockk(relaxed = true),
             teamsRepositoryLazy,
             teamsSyncRepositoryLazy
         )
