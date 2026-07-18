@@ -19,6 +19,7 @@ import org.junit.After
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
@@ -43,6 +44,7 @@ class TeamsRepositoryImplTest {
     private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val apiInterfaceMock = mockk<ApiInterface>(relaxed = true)
+    private val teamLogDao: TeamLogDao = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -77,7 +79,8 @@ class TeamsRepositoryImplTest {
             dispatcherProvider,
             mockUserRepository,
             mockk(),
-            TestTimeProvider()
+            TestTimeProvider(),
+            teamLogDao
         )
     }
 

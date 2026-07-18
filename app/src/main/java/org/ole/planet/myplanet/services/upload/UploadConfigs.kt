@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -55,7 +56,8 @@ class UploadConfigs @Inject constructor(
     private val courseActivityDao: CourseActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val submitPhotosDao: SubmitPhotosDao,
-    private val newsLogDao: NewsLogDao
+    private val newsLogDao: NewsLogDao,
+    private val teamLogDao: TeamLogDao
 ) {
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
@@ -95,12 +97,17 @@ class UploadConfigs @Inject constructor(
         idExtractor = { it.id }
     )
 
-    val TeamActivities = UploadConfig(
-        modelClass = RealmTeamLog::class,
+    val TeamActivities = RoomUploadConfig(
         endpoint = "team_activities",
-        queryBuilder = { query -> query.isNull("_rev") },
+        modelClassName = "RealmTeamLog",
+        fetchPendingItems = { teamLogDao.getPendingUploads() },
         serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                teamLogDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
     val SearchActivity = RoomUploadConfig(

@@ -256,13 +256,15 @@ class TransactionSyncManager @Inject constructor(
                     "tags" -> timedBatchInsert(table, arr.size()) {
                         tagsRepository.insert(extractDocs(arr))
                     }
+                    "team_activities" -> timedBatchInsert(table, arr.size()) {
+                        teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(arr)
+                    }
                     else -> {
                         // Use async transaction to avoid blocking (ANR-safe)
                         executeTransaction { mRealm: Realm ->
                             val insertStartTime = SystemClock.elapsedRealtime()
                             when (table) {
                                 "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                                "team_activities" -> teamsSyncRepository.get().bulkInsertTeamActivitiesFromSync(mRealm, arr)
                                 "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
                                 "courses" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
                                 "achievements" -> userSyncRepository.bulkInsertAchievementsFromSync(mRealm, arr)

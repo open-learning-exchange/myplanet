@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -68,6 +69,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userRepository: UserRepository,
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val timeProvider: TimeProvider,
+    private val teamLogDao: TeamLogDao,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
         return queryListFlow(RealmTeamTask::class.java) {
@@ -805,11 +807,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val cutoff = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -30) }.timeInMillis
 
-        val recentLogs = queryList(RealmTeamLog::class.java) {
-            equalTo("type", "teamVisit")
-            greaterThan("time", cutoff)
-            `in`("teamId", validIds.toTypedArray())
-        }
+        val recentLogs = teamLogDao.getRecentTeamVisits(cutoff, validIds)
 
         return recentLogs
             .mapNotNull { it.teamId }
@@ -1106,7 +1104,7 @@ class TeamsRepositoryImpl @Inject constructor(
             parentCode = userParentCode
             time = Date().time
         }
-        save(log)
+        teamLogDao.insert(log)
     }
 
 
@@ -1313,11 +1311,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val userNames = orderedMembers.mapNotNull { it.name }.distinct().toTypedArray()
         val logs = if (userNames.isNotEmpty()) {
-            queryList(RealmTeamLog::class.java) {
-                equalTo("type", "teamVisit")
-                equalTo("teamId", teamId)
-                `in`("user", userNames)
-            }
+            teamLogDao.getTeamVisitsForUsers(teamId, userNames.toList())
         } else {
             emptyList()
         }
@@ -1434,11 +1428,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val userNames = users.mapNotNull { it.name }.distinct().toTypedArray()
         val logs = if (userNames.isNotEmpty()) {
-            queryList(RealmTeamLog::class.java) {
-                equalTo("type", "teamVisit")
-                equalTo("teamId", teamId)
-                `in`("user", userNames)
-            }
+            teamLogDao.getTeamVisitsForUsers(teamId, userNames.toList())
         } else {
             emptyList()
         }
@@ -1468,66 +1458,31 @@ class TeamsRepositoryImpl @Inject constructor(
 
 
     override suspend fun insertTeamLog(json: JsonObject) {
-        executeTransaction { realm ->
-            var tag = realm.where(RealmTeamLog::class.java)
-                .equalTo("_id", JsonUtils.getString("_id", json)).findFirst()
-            if (tag == null) {
-                tag = realm.createObject(RealmTeamLog::class.java, JsonUtils.getString("_id", json))
-            }
-            if (tag != null) {
-                tag._rev = JsonUtils.getString("_rev", json)
-                tag._id = JsonUtils.getString("_id", json)
-                tag.type = JsonUtils.getString("type", json)
-                tag.user = JsonUtils.getString("user", json)
-                tag.createdOn = JsonUtils.getString("createdOn", json)
-                tag.parentCode = JsonUtils.getString("parentCode", json)
-                tag.time = JsonUtils.getLong("time", json)
-                tag.teamId = JsonUtils.getString("teamId", json)
-                tag.teamType = JsonUtils.getString("teamType", json)
-            }
-        }
+        teamLogDao.upsertAll(listOf(teamLogFromJson(json)))
     }
 
     override suspend fun insertTeamLogs(logs: List<JsonObject>) {
-        executeTransaction { realm ->
-            val ids = logs.map { JsonUtils.getString("_id", it) }.toTypedArray()
-            val existingLogs = if (ids.isNotEmpty()) {
-                realm.where(RealmTeamLog::class.java).`in`("_id", ids).findAll().associateBy { it._id }.toMutableMap()
-            } else {
-                mutableMapOf()
-            }
-            val newLogs = mutableListOf<RealmTeamLog>()
-            for (json in logs) {
-                val id = JsonUtils.getString("_id", json)
-                var tag = existingLogs[id]
-                if (tag == null) {
-                    tag = RealmTeamLog()
-                    tag.id = id
-                    existingLogs[id] = tag
-                    newLogs.add(tag)
-                }
-                tag._rev = JsonUtils.getString("_rev", json)
-                tag._id = JsonUtils.getString("_id", json)
-                tag.type = JsonUtils.getString("type", json)
-                tag.user = JsonUtils.getString("user", json)
-                tag.createdOn = JsonUtils.getString("createdOn", json)
-                tag.parentCode = JsonUtils.getString("parentCode", json)
-                tag.time = JsonUtils.getLong("time", json)
-                tag.teamId = JsonUtils.getString("teamId", json)
-                tag.teamType = JsonUtils.getString("teamType", json)
-            }
-            if (newLogs.isNotEmpty()) {
-                realm.insert(newLogs)
-            }
-        }
+        teamLogDao.upsertAll(logs.map(::teamLogFromJson))
     }
 
     override suspend fun getLastVisit(userName: String?, teamId: String?): Long? {
-        return queryList(RealmTeamLog::class.java) {
-            equalTo("type", "teamVisit")
-            equalTo("user", userName)
-            equalTo("teamId", teamId)
-        }.maxOfOrNull { it.time ?: 0 }
+        return teamLogDao.getLastVisit(userName, teamId)
+    }
+
+    private fun teamLogFromJson(json: JsonObject): RealmTeamLog {
+        val remoteId = JsonUtils.getString("_id", json)
+        return RealmTeamLog().apply {
+            id = remoteId
+            _rev = JsonUtils.getString("_rev", json)
+            _id = remoteId
+            type = JsonUtils.getString("type", json)
+            user = JsonUtils.getString("user", json)
+            createdOn = JsonUtils.getString("createdOn", json)
+            parentCode = JsonUtils.getString("parentCode", json)
+            time = JsonUtils.getLong("time", json)
+            teamId = JsonUtils.getString("teamId", json)
+            teamType = JsonUtils.getString("teamType", json)
+        }
     }
 
     override fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
@@ -1689,7 +1644,7 @@ class TeamsRepositoryImpl @Inject constructor(
             RealmTeamTask.insert(realm, jsonDoc)
         }
     }
-    override fun bulkInsertTeamActivitiesFromSync(realm: Realm, jsonArray: JsonArray) {
+    override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -1699,34 +1654,6 @@ class TeamsRepositoryImpl @Inject constructor(
                 documentList.add(jsonDoc)
             }
         }
-        val ids = documentList.map { JsonUtils.getString("_id", it) }.toTypedArray()
-        val existingLogs = if (ids.isNotEmpty()) {
-            realm.where(RealmTeamLog::class.java).`in`("_id", ids).findAll().associateBy { it._id }.toMutableMap()
-        } else {
-            mutableMapOf()
-        }
-        val newLogs = mutableListOf<RealmTeamLog>()
-        for (json in documentList) {
-            val id = JsonUtils.getString("_id", json)
-            var tag = existingLogs[id]
-            if (tag == null) {
-                tag = RealmTeamLog()
-                tag.id = id
-                existingLogs[id] = tag
-                newLogs.add(tag)
-            }
-            tag._rev = JsonUtils.getString("_rev", json)
-            tag._id = JsonUtils.getString("_id", json)
-            tag.type = JsonUtils.getString("type", json)
-            tag.user = JsonUtils.getString("user", json)
-            tag.createdOn = JsonUtils.getString("createdOn", json)
-            tag.parentCode = JsonUtils.getString("parentCode", json)
-            tag.time = JsonUtils.getLong("time", json)
-            tag.teamId = JsonUtils.getString("teamId", json)
-            tag.teamType = JsonUtils.getString("teamType", json)
-        }
-        if (newLogs.isNotEmpty()) {
-            realm.insert(newLogs)
-        }
+        insertTeamLogs(documentList)
     }
 }

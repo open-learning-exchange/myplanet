@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -27,6 +28,7 @@ class UploadConfigsTest {
     private val newsLogDao: NewsLogDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
+    private val teamLogDao: TeamLogDao = mockk(relaxed = true)
     private val uploadConfigs = UploadConfigs(
         voicesRepository = mockk(relaxed = true),
         submissionsRepository = mockk(relaxed = true),
@@ -43,7 +45,8 @@ class UploadConfigsTest {
         courseActivityDao = courseActivityDao,
         resourceActivityDao = resourceActivityDao,
         submitPhotosDao = submitPhotosDao,
-        newsLogDao = newsLogDao
+        newsLogDao = newsLogDao,
+        teamLogDao = teamLogDao
     )
 
     @Test

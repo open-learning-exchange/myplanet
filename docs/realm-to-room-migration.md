@@ -167,7 +167,11 @@ wired through `di/RoomModule`.
 - [x] **NewsLog** migrated (uploaded-only activity log). `RealmNewsLog` is now a Room
       `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
       config uses `RoomUploadConfig`.
-- [ ] Migrate the remaining ~10 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **TeamActivities / TeamLog** migrated (uploaded + synced team visit log). `RealmTeamLog` is
+      now a Room `@Entity`; `TeamLogDao` owns visit counts, last-visit lookups, sync upserts,
+      pending uploads, and upload acknowledgements; team activity sync now runs outside the legacy
+      Realm transaction path and upload config uses `RoomUploadConfig`.
+- [ ] Migrate the remaining ~9 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
