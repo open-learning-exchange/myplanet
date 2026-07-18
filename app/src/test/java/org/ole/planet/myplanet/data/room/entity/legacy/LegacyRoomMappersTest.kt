@@ -1,13 +1,12 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
-import io.realm.RealmList
 import org.junit.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmUser
+import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class LegacyRoomMappersTest {
     @Test
@@ -19,7 +18,7 @@ class LegacyRoomMappersTest {
             name = "learner"
             firstName = "Learner"
             lastName = "One"
-            rolesList = RealmList("learner", "manager")
+            rolesList = mutableListOf("learner", "manager")
             userAdmin = true
             planetCode = "planet"
             parentCode = "parent"
@@ -43,7 +42,7 @@ class LegacyRoomMappersTest {
             courseRev = "1-course"
             courseTitle = "Math"
             description = "Numbers"
-            courseSteps = RealmList(
+            courseSteps = mutableListOf(
                 RealmCourseStep().apply { id = "step-1" },
                 RealmCourseStep().apply { id = "step-2" },
             )

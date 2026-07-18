@@ -4,11 +4,8 @@ import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.every
-import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.realm.Realm
-import io.realm.RealmQuery
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -16,16 +13,12 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class RealmStepExamBenchmarkTest {
 
-    private lateinit var mockRealm: Realm
-
     @Before
     fun setup() {
-        mockRealm = mockk(relaxed = true)
-        every { mockRealm.isInTransaction } returns true
         mockkStatic(TextUtils::class)
         every { TextUtils.isEmpty(any()) } answers {
             val str = firstArg<CharSequence?>()
-            str == null || str.length == 0
+            str == null || str.isEmpty()
         }
     }
 
@@ -47,15 +40,6 @@ class RealmStepExamBenchmarkTest {
             jsonArray.add(obj)
         }
 
-        // Mocking behavior
-        val mockQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
-        every { mockRealm.where(RealmStepExam::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", any<String>()) } returns mockQuery
-        every { mockQuery.findFirst() } returns null
-        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } answers {
-            RealmStepExam().apply { id = secondArg() as String }
-        }
-
         val start = System.currentTimeMillis()
 
         val documentList = ArrayList<JsonObject>(jsonArray.size())
@@ -68,9 +52,9 @@ class RealmStepExamBenchmarkTest {
             }
         }
 
-        for (i in 0 until 10) { // run 10 times to get more pronounced time
+        repeat(10) {
             documentList.forEach { jsonDoc ->
-                RealmStepExam.insertCourseStepsExams("", "", jsonDoc, mockRealm)
+                RealmStepExam.insertCourseStepsExams("", "", jsonDoc)
             }
         }
 

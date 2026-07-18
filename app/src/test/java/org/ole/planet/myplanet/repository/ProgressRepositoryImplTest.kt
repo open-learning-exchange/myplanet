@@ -11,25 +11,23 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
-import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -44,7 +42,6 @@ class ProgressRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private lateinit var mockCoursesRepository: CoursesRepository
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
@@ -58,19 +55,20 @@ class ProgressRepositoryImplTest {
         every { dispatcherProvider.io } returns testDispatcher
         mockCoursesRepository = mockk<CoursesRepository>()
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns emptyList()
-        repository = spyk(ProgressRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            dispatcherProvider,
-            { mockCoursesRepository },
-            { mockk(relaxed = true) },
-            courseProgressDao,
-            courseStepDao,
-            examDao,
-            submissionDao,
-            answerDao,
-            questionDao
-        ), recordPrivateCalls = true)
+        repository = spyk(
+            ProgressRepositoryImpl(
+                dispatcherProvider,
+                dagger.Lazy { mockCoursesRepository },
+                dagger.Lazy { mockk(relaxed = true) },
+                courseProgressDao,
+                courseStepDao,
+                examDao,
+                submissionDao,
+                answerDao,
+                questionDao
+            ),
+            recordPrivateCalls = true
+        )
     }
 
     @After
@@ -108,7 +106,6 @@ class ProgressRepositoryImplTest {
             RealmCourseStep().apply { id = "step4" }
         )
 
-        // Steps 1 and 3 are present, 2 is missing. The gap is at step 2, so progress should be 1.
         val progresses = listOf(
             CourseProgress().apply { stepNum = 1 },
             CourseProgress().apply { stepNum = 3 }
@@ -120,7 +117,6 @@ class ProgressRepositoryImplTest {
         advanceUntilIdle()
         assertEquals(1, progress)
 
-        // Now test where 1, 2, 3 are present, 4 is missing, to ensure it doesn't just always return 1
         val progresses2 = listOf(
             CourseProgress().apply { stepNum = 1 },
             CourseProgress().apply { stepNum = 2 },
@@ -165,7 +161,7 @@ class ProgressRepositoryImplTest {
         val steps = listOf(
             RealmCourseStep().apply { courseId = "course1" }
         )
-        myCourses[0].courseSteps = io.realm.RealmList(*steps.toTypedArray())
+        myCourses[0].courseSteps = steps.toMutableList()
 
         val exams = listOf(
             RealmStepExam().apply {
@@ -225,7 +221,7 @@ class ProgressRepositoryImplTest {
         }
 
         coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(
-            org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity(id = "q1", examId = "exam1")
+            org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity(id = question.id ?: "q1", examId = question.examId)
         )
 
         val data = repository.fetchCourseData("user1")
@@ -244,8 +240,9 @@ class ProgressRepositoryImplTest {
         assertEquals(2, obj.get("mistakes").asInt)
 
         val stepMistake = obj.get("stepMistake").asJsonObject
-        assertEquals(2, stepMistake.get("0").asInt) // Exam 1 is at index 0
+        assertEquals(2, stepMistake.get("0").asInt)
     }
+
     @Test
     fun testGetCourseProgress() = testScope.runTest {
         val courseIds = listOf("course1", "course2")
@@ -293,12 +290,15 @@ class ProgressRepositoryImplTest {
             RealmMyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = io.realm.RealmList(RealmCourseStep().apply { courseId = "course1" })
+                courseSteps = mutableListOf(RealmCourseStep().apply { courseId = "course1" })
             },
             RealmMyCourse().apply {
                 courseId = "course2"
                 courseTitle = "Course 2"
-                courseSteps = io.realm.RealmList(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
+                courseSteps = mutableListOf(
+                    RealmCourseStep().apply { courseId = "course2" },
+                    RealmCourseStep().apply { courseId = "course2" }
+                )
             }
         )
 
@@ -322,11 +322,9 @@ class ProgressRepositoryImplTest {
     fun testHasUserCompletedSync() = testScope.runTest {
         val activitiesRepo = mockk<ActivitiesRepository>()
         val localRepository = ProgressRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
             dispatcherProvider,
-            { mockCoursesRepository },
-            { activitiesRepo },
+            dagger.Lazy { mockCoursesRepository },
+            dagger.Lazy { activitiesRepo },
             courseProgressDao,
             courseStepDao,
             examDao,

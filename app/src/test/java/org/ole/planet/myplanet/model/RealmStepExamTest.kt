@@ -3,62 +3,24 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.mockk.MockKAnnotations
-import io.mockk.Runs
 import io.mockk.every
-import io.mockk.impl.annotations.MockK
-import io.mockk.just
-import io.mockk.mockk
-import io.mockk.mockkObject
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
-import io.mockk.verify
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
-import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.util.UUID
 
 class RealmStepExamTest {
 
-    @MockK
-    lateinit var mockRealm: Realm
-
     @Before
     fun setup() {
-        MockKAnnotations.init(this)
-        mockkObject(RealmExamQuestion.Companion)
-        // JsonUtils is a pure-Gson Kotlin object and works as-is on the JVM — no mocking needed.
-        // TextUtils is a real Android static, so mockkStatic applies here.
         mockkStatic(TextUtils::class)
-
         every { TextUtils.isEmpty(any()) } answers {
             val str = arg<CharSequence?>(0)
             str.isNullOrEmpty()
-        }
-
-        every { mockRealm.isInTransaction } returns false
-        every { mockRealm.executeTransaction(any()) } answers {
-            val transaction = arg<Realm.Transaction>(0)
-            try {
-                transaction.execute(mockRealm)
-            } catch (e: Exception) {
-                // Ignore for mock
-            }
-        }
-        every { mockRealm.executeTransactionAsync(any(), any(), any()) } answers {
-            val transaction = arg<Realm.Transaction>(0)
-            try {
-                transaction.execute(mockRealm)
-            } catch (e: Exception) {
-            }
-            val success = arg<Realm.Transaction.OnSuccess>(1)
-            success.onSuccess()
-            mockk()
         }
     }
 
@@ -89,39 +51,19 @@ class RealmStepExamTest {
             add("questions", JsonArray().apply { add(JsonObject()) })
         }
 
-        val mockQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
-        every { mockRealm.where(RealmStepExam::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", examId) } returns mockQuery
-        every { mockQuery.findFirst() } returns null
+        val result = RealmStepExam.insertCourseStepsExams("course1", "step1", examJson)
 
-        val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
-        every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, null as String?) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
-
-        val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
-        val mockQuestionsResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuestionsQuery
-        every { mockQuestionsQuery.equalTo("examId", examId) } returns mockQuestionsQuery
-        every { mockQuestionsQuery.findAll() } returns mockQuestionsResults
-        every { mockQuestionsResults.isEmpty() } returns true
-
-        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
-
-        // Calling the 4 arg which delegates to 5 arg with empty string
-        RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, mockRealm)
-
-        verify { mockRealmStepExam.name = "Test Exam" }
-        verify { mockRealmStepExam.description = "Exam Description" }
-        verify { mockRealmStepExam.type = "exam" }
-        verify { mockRealmStepExam.courseId = "course1" }
-        verify { mockRealmStepExam.stepId = "step1" }
-        verify { mockRealmStepExam.isFromNation = false }
-        verify { mockRealmStepExam.teamId = "team1" }
-        verify { mockRealmStepExam.isTeamShareAllowed = true }
-        verify { mockRealmStepExam.sourceSurveyId = "survey1" }
-        verify { mockRealmStepExam.noOfQuestions = 1 }
+        assertEquals(examId, result.id)
+        assertEquals("Test Exam", result.name)
+        assertEquals("Exam Description", result.description)
+        assertEquals("exam", result.type)
+        assertEquals("course1", result.courseId)
+        assertEquals("step1", result.stepId)
+        assertEquals(false, result.isFromNation)
+        assertEquals("team1", result.teamId)
+        assertEquals(true, result.isTeamShareAllowed)
+        assertEquals("survey1", result.sourceSurveyId)
+        assertEquals(1, result.noOfQuestions)
     }
 
     @Test
@@ -133,36 +75,13 @@ class RealmStepExamTest {
             add("questions", JsonArray())
         }
 
-        val mockQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
-        every { mockRealm.where(RealmStepExam::class.java) } returns mockQuery
-        every { mockQuery.equalTo("id", examId) } returns mockQuery
-        every { mockQuery.findFirst() } returns null
+        val result = RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, "parent-nation-id")
 
-        val mockRealmStepExam = mockk<RealmStepExam>(relaxed = true)
-        val parentId = "parent-nation-id"
-        // Ensure ambiguity is removed by explicitly testing specific arg logic
-        every { mockRealm.createObject(RealmStepExam::class.java, parentId) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, examId) } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, "") } returns mockRealmStepExam
-        every { mockRealm.createObject(RealmStepExam::class.java, any<String>()) } returns mockRealmStepExam
-
-        val mockQuestionsQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
-        val mockQuestionsResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuestionsQuery
-        every { mockQuestionsQuery.equalTo("examId", examId) } returns mockQuestionsQuery
-        every { mockQuestionsQuery.findAll() } returns mockQuestionsResults
-        every { mockQuestionsResults.isEmpty() } returns true
-
-        every { RealmExamQuestion.insertExamQuestions(any(), any(), any()) } just Runs
-
-        // Explicitly calling the 5 arg method
-        RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, parentId, mockRealm)
-
-        verify { mockRealmStepExam.name = "Nation Exam" }
-        verify { mockRealmStepExam.isFromNation = true }
-        verify { mockRealmStepExam.noOfQuestions = 0 }
+        assertEquals(examId, result.id)
+        assertEquals("Nation Exam", result.name)
+        assertTrue(result.isFromNation)
+        assertEquals(0, result.noOfQuestions)
     }
-
 
     @Test
     fun testSerializeExam() {
@@ -183,18 +102,15 @@ class RealmStepExamTest {
             teamId = "team1"
         }
 
-        val mockQuery = mockk<RealmQuery<RealmExamQuestion>>(relaxed = true)
-        val mockResults = mockk<RealmResults<RealmExamQuestion>>(relaxed = true)
-        every { mockRealm.where(RealmExamQuestion::class.java) } returns mockQuery
-        every { mockQuery.equalTo("examId", "exam1") } returns mockQuery
-        every { mockQuery.findAll() } returns mockResults
-        every { mockResults.iterator() } returns mutableListOf<RealmExamQuestion>().iterator()
-        every { mockResults.isLoaded } returns true
-        every { mockResults.isValid } returns true
-
-        every { RealmExamQuestion.serializeQuestions(any()) } returns JsonArray()
-
-        val questions = listOf(mockk<RealmExamQuestion>())
+        val questions = listOf(
+            RealmExamQuestion().apply {
+                header = "Header"
+                body = "Body"
+                type = "select"
+                marks = "1"
+                setCorrectChoices(listOf("Choice A"))
+            }
+        )
         val json = RealmStepExam.serializeExam(exam, questions)
 
         assertEquals("exam1", json.get("_id").asString)

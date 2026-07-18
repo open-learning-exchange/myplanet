@@ -3,89 +3,61 @@ package org.ole.planet.myplanet.data
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import io.realm.RealmModel
-import io.realm.RealmQuery
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.util.concurrent.Callable
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertThrows
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.AppDatabase
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DatabaseServiceTest {
 
-    interface TestModel : RealmModel
-
-    @Test
-    fun `applyEqualTo applies string correctly`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        every { mockQuery.equalTo("field", "value") } returns mockQuery
-
-        val result = mockQuery.applyEqualTo("field", "value")
-
-        assertEquals(mockQuery, result)
-        verify { mockQuery.equalTo("field", "value") }
+    private val testDispatcher = UnconfinedTestDispatcher()
+    private val dispatcherProvider = object : DispatcherProvider {
+        override val main = testDispatcher
+        override val io = testDispatcher
+        override val default = testDispatcher
+        override val unconfined = testDispatcher
     }
 
     @Test
-    fun `applyEqualTo applies int correctly`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        every { mockQuery.equalTo("field", 123) } returns mockQuery
+    fun `withRoomAsync returns operation result`() = runTest(testDispatcher) {
+        val room = mockk<AppDatabase>(relaxed = true)
+        val service = DatabaseService(dispatcherProvider, room)
 
-        val result = mockQuery.applyEqualTo("field", 123)
-
-        assertEquals(mockQuery, result)
-        verify { mockQuery.equalTo("field", 123) }
-    }
-
-    @Test
-    fun `applyEqualTo applies boolean correctly`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        every { mockQuery.equalTo("field", true) } returns mockQuery
-
-        val result = mockQuery.applyEqualTo("field", true)
-
-        assertEquals(mockQuery, result)
-        verify { mockQuery.equalTo("field", true) }
-    }
-
-    @Test
-    fun `applyEqualTo applies long correctly`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        every { mockQuery.equalTo("field", 123L) } returns mockQuery
-
-        val result = mockQuery.applyEqualTo("field", 123L)
-
-        assertEquals(mockQuery, result)
-        verify { mockQuery.equalTo("field", 123L) }
-    }
-
-    @Test
-    fun `applyEqualTo applies float correctly`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        every { mockQuery.equalTo("field", 12.3f) } returns mockQuery
-
-        val result = mockQuery.applyEqualTo("field", 12.3f)
-
-        assertEquals(mockQuery, result)
-        verify { mockQuery.equalTo("field", 12.3f) }
-    }
-
-    @Test
-    fun `applyEqualTo applies double correctly`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        every { mockQuery.equalTo("field", 12.3) } returns mockQuery
-
-        val result = mockQuery.applyEqualTo("field", 12.3)
-
-        assertEquals(mockQuery, result)
-        verify { mockQuery.equalTo("field", 12.3) }
-    }
-
-    @Test
-    fun `applyEqualTo throws exception for unsupported type`() {
-        val mockQuery = mockk<RealmQuery<TestModel>>(relaxed = true)
-        val unsupportedObject = object {}
-
-        assertThrows(IllegalArgumentException::class.java) {
-            mockQuery.applyEqualTo("field", unsupportedObject)
+        val result = service.withRoomAsync { database ->
+            assertEquals(room, database)
+            "success"
         }
+
+        assertEquals("success", result)
+    }
+
+    @Test
+    fun `executeRoomTransactionAsync runs transaction`() = runTest(testDispatcher) {
+        val room = mockk<AppDatabase>(relaxed = true)
+        every { room.runInTransaction(any<Callable<String>>()) } answers { firstArg<Callable<String>>().call() }
+        val service = DatabaseService(dispatcherProvider, room)
+
+        val result = service.executeRoomTransactionAsync { database ->
+            assertEquals(room, database)
+            "done"
+        }
+
+        assertEquals("done", result)
+        verify(exactly = 1) { room.runInTransaction(any<Callable<String>>()) }
+    }
+
+    @Test
+    fun `clearAll delegates to room clearAllTables`() = runTest(testDispatcher) {
+        val room = mockk<AppDatabase>(relaxed = true)
+        val service = DatabaseService(dispatcherProvider, room)
+
+        service.clearAll()
+
+        verify(exactly = 1) { room.clearAllTables() }
     }
 }

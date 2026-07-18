@@ -6,7 +6,6 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -14,31 +13,44 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
+import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @ExperimentalCoroutinesApi
 class NotificationsRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var userRepository: dagger.Lazy<UserRepository>
     private lateinit var teamsRepository: dagger.Lazy<TeamsRepository>
     private lateinit var repository: NotificationsRepositoryImpl
+    private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
-    private val testDispatcher = UnconfinedTestDispatcher()
+    private lateinit var teamTaskDao: TeamTaskDao
+    private lateinit var newsDao: NewsDao
+    private lateinit var examDao: ExamDao
 
     @Before
     fun setUp() {
-        databaseService = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
+        teamNotificationDao = mockk(relaxed = true)
         notificationDao = mockk(relaxed = true)
-        repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository,
-            TestTimeProvider(), mockk(relaxed = true), notificationDao, mockk<TeamTaskDao>(relaxed = true),
-            mockk(relaxed = true)
+        teamTaskDao = mockk(relaxed = true)
+        newsDao = mockk(relaxed = true)
+        examDao = mockk(relaxed = true)
+        repository = NotificationsRepositoryImpl(
+            userRepository,
+            teamsRepository,
+            TestTimeProvider(),
+            teamNotificationDao,
+            notificationDao,
+            teamTaskDao,
+            newsDao,
+            examDao,
         )
     }
 
@@ -62,7 +74,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `insert with missing id does nothing`() = runTest {
-        val jsonObject = JsonObject() // Missing _id
+        val jsonObject = JsonObject()
 
         repository.insert(jsonObject)
 
