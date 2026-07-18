@@ -37,7 +37,8 @@ class NotificationsRepositoryImplTest {
         teamsRepository = mockk(relaxed = true)
         notificationDao = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository,
-            TestTimeProvider(), mockk(relaxed = true), notificationDao, mockk<TeamTaskDao>(relaxed = true)
+            TestTimeProvider(), mockk(relaxed = true), notificationDao, mockk<TeamTaskDao>(relaxed = true),
+            mockk(relaxed = true)
         )
     }
 

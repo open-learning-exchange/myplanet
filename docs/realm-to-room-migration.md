@@ -199,7 +199,23 @@ wired through `di/RoomModule`.
       `HealthExamination` is now a Room `@Entity`; `HealthExaminationDao` owns profile/id
       lookups, pending upload reads, upload acknowledgements, user-id fixes after user upload,
       and sync bulk upserts. Health sync now runs outside the legacy Realm transaction path.
-- [ ] Remaining ~28 model domains.
+- [x] **News / Voices** migrated (synced + custom uploaded discussion posts — the largest single
+      domain, ~35 referencing files). `RealmNews` is now a Room `@Entity` (class name kept so the
+      voices/teams/community UI is untouched; `@JvmField` id/_id; `imageUrls`/`labels`
+      `RealmList<String>` → `List<String>?` via `Converters`; computed getters marked
+      `@get:Ignore`; the Realm-managed `createNews(...,Realm,...)` companion replaced with a pure
+      unmanaged factory). `NewsDao` owns by-id/_id/newsId reads, top-level + top-level-message
+      lists and their `Flow`s, replies, reply counts, planet/team/time-range queries, team-chat
+      counts, upserts and cascade deletes. `VoicesRepositoryImpl` moved off the generic Realm API
+      onto `NewsDao` (keeps `RealmRepository` only for the still-Realm `RealmMyLibrary` lookups);
+      team/community visibility filtering runs in-memory (mirrors `isVisibleToUser`) instead of
+      Realm `contains()`; recursive reply deletion collects ids then `deleteByIds`. Sync
+      `insertNewsList`/`insertNewsFromJson` build entities + DAO upsert; the custom news upload
+      path (`getNewsForUpload`/`markNewsUploaded`) uses the DAO. `NotificationsRepositoryImpl`
+      team-chat counts moved to `NewsDao`; `VoicesAdapter` drops Realm-only `isValid` liveness
+      checks (POJOs are always valid). Repo/label-manager tests rewritten to mock `NewsDao` (and
+      use real `RealmNews` instances since `id` is now a `@JvmField`).
+- [ ] Remaining ~27 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

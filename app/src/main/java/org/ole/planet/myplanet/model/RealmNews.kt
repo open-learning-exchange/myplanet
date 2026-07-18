@@ -1,25 +1,34 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonSyntaxException
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.Ignore
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import java.util.Date
 import java.util.UUID
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmNews : RealmObject() {
+/**
+ * Room replacement for the former Realm `RealmNews` model (voices/discussion posts).
+ *
+ * `imageUrls` and `labels` (formerly `RealmList<String>`) are plain `List<String>` stored as JSON
+ * via the shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
+ * [org.ole.planet.myplanet.data.room.dao.NewsDao]. The class name is kept (`RealmNews`) so the
+ * large voices UI surface is untouched; a later rename pass drops the `Realm` prefix.
+ */
+@Entity(tableName = "news", indices = [Index("userId"), Index("replyTo"), Index("_id")])
+open class RealmNews {
+    // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var _rev: String? = null
-    @Index
     var userId: String? = null
     var user: String? = null
     var message: String? = null
@@ -27,7 +36,6 @@ open class RealmNews : RealmObject() {
     var viewableBy: String? = null
     var viewableId: String? = null
     var avatar: String? = null
-    @Index
     var replyTo: String? = null
     var userName: String? = null
     var messagePlanetCode: String? = null
@@ -36,9 +44,9 @@ open class RealmNews : RealmObject() {
     var time: Long = 0
     var createdOn: String? = null
     var parentCode: String? = null
-    var imageUrls: RealmList<String>? = null
+    var imageUrls: List<String>? = null
     var images: String? = null
-    var labels: RealmList<String>? = null
+    var labels: List<String>? = null
     var viewIn: String? = null
     var newsId: String? = null
     var newsRev: String? = null
@@ -52,6 +60,7 @@ open class RealmNews : RealmObject() {
     var isEdited: Boolean = false
     var editedTime: Long = 0
     var sharedBy: String? = null
+
     @Ignore
     var sortDate: Long = 0
     @Ignore
@@ -67,9 +76,11 @@ open class RealmNews : RealmObject() {
     @Ignore
     var rawImageUrls: List<String>? = null
 
+    @get:Ignore
     val imagesArray: JsonArray
         get() = if (images == null) JsonArray() else JsonUtils.gson.fromJson(images, JsonArray::class.java)
 
+    @get:Ignore
     val labelsArray: JsonArray
         get() {
             val array = JsonArray()
@@ -84,13 +95,16 @@ open class RealmNews : RealmObject() {
         this.isEdited = true
         this.editedTime = Date().time
     }
+
     fun setLabels(images: JsonArray) {
-        labels = RealmList()
+        val newLabels = ArrayList<String>()
         for (ob in images) {
-            labels?.add(ob.asString)
+            newLabels.add(ob.asString)
         }
+        labels = newLabels
     }
 
+    @get:Ignore
     val messageWithoutMarkdown: String?
         get() {
             var ms = message
@@ -100,6 +114,7 @@ open class RealmNews : RealmObject() {
             return ms
         }
 
+    @get:Ignore
     val isCommunityNews: Boolean
         get() {
             val array = JsonUtils.gson.fromJson(viewIn, JsonArray::class.java)
@@ -132,13 +147,17 @@ open class RealmNews : RealmObject() {
     }
 
     companion object {
-        fun createNews(map: HashMap<String?, String>, mRealm: Realm, user: RealmUser?, imageUrls: RealmList<String>?, isReply: Boolean = false): RealmNews {
-            val shouldManageTransaction = !mRealm.isInTransaction
-            if (shouldManageTransaction) {
-                mRealm.beginTransaction()
-            }
-
-            val news = mRealm.createObject(RealmNews::class.java, "${UUID.randomUUID()}")
+        /**
+         * Builds an unmanaged [RealmNews] from a form map. The caller persists it via the DAO.
+         */
+        fun createNews(
+            map: HashMap<String?, String>,
+            user: RealmUser?,
+            imageUrls: List<String>?,
+            isReply: Boolean = false
+        ): RealmNews {
+            val news = RealmNews()
+            news.id = "${UUID.randomUUID()}"
             news.message = map["message"]
             news.time = Date().time
             news.createdOn = user?.planetCode
@@ -149,7 +168,7 @@ open class RealmNews : RealmObject() {
             news.messagePlanetCode = map["messagePlanetCode"]
             news.messageType = map["messageType"]
             news.sharedBy = ""
-            if(isReply){
+            if (isReply) {
                 news.viewIn = map["viewIn"]
             } else {
                 news.viewIn = getViewInJson(map)
@@ -165,10 +184,7 @@ open class RealmNews : RealmObject() {
             news.userId = user?.id
             news.replyTo = map["replyTo"] ?: ""
             news.user = JsonUtils.gson.toJson(user?.serialize())
-            if (news.imageUrls == null) {
-                news.imageUrls = RealmList()
-            }
-            imageUrls?.forEach { news.imageUrls?.add(it) }
+            news.imageUrls = imageUrls?.toList() ?: emptyList()
 
             if (map.containsKey("news")) {
                 val newsObj = map["news"]
@@ -209,9 +225,6 @@ open class RealmNews : RealmObject() {
                 }
             }
 
-            if (shouldManageTransaction) {
-                mRealm.commitTransaction()
-            }
             return news
         }
 

@@ -15,7 +15,6 @@ import io.mockk.mockkObject
 import io.mockk.slot
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.realm.RealmList
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -85,9 +84,12 @@ class VoicesLabelManagerTest {
         fbChipsField.isAccessible = true
         fbChipsField.set(binding, fbChips)
 
-        voice = mockk(relaxed = true)
-        every { voice.id } returns "test-id"
-        every { voice.labels } returns null
+        // RealmNews is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
+        // cannot be stubbed with mockk; use a real instance and set its labels per test.
+        voice = RealmNews().apply {
+            id = "test-id"
+            labels = null
+        }
     }
 
     @After
@@ -140,9 +142,7 @@ class VoicesLabelManagerTest {
 
     @Test
     fun testRemoveLabelActionTriggered() = runTest {
-        val labelsMock = mockk<RealmList<String>>(relaxed = true)
-        every { labelsMock.iterator() } answers { mutableListOf("Offer").iterator() }
-        every { voice.labels } returns labelsMock
+        voice.labels = listOf("Offer")
 
         voicesLabelManager.showChips(binding, voice, true)
 
@@ -167,10 +167,7 @@ class VoicesLabelManagerTest {
 
     @Test
     fun testShowChips_WithLabels_CannotManage() {
-        val labelsMock = mockk<RealmList<String>>(relaxed = true)
-        every { labelsMock.iterator() } answers { mutableListOf("offer").iterator() }
-
-        every { voice.labels } returns labelsMock
+        voice.labels = listOf("offer")
 
         voicesLabelManager.showChips(binding, voice, false)
 
@@ -189,10 +186,7 @@ class VoicesLabelManagerTest {
 
     @Test
     fun testShowChips_AllLabelsUsed_CanManage() {
-        val allLabelsMock = mockk<RealmList<String>>(relaxed = true)
-        every { allLabelsMock.size } returns Constants.LABELS.values.size
-        every { allLabelsMock.iterator() } answers { Constants.LABELS.values.iterator() }
-        every { voice.labels } returns allLabelsMock
+        voice.labels = Constants.LABELS.values.toList()
 
         voicesLabelManager.showChips(binding, voice, true)
 

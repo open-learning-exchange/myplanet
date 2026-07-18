@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
@@ -41,6 +42,7 @@ import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.AppNotification
@@ -93,6 +95,7 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         AppNotification::class,
         Achievement::class,
         HealthExamination::class,
+        RealmNews::class,
     ],
     version = 1,
     exportSchema = false,
@@ -124,4 +127,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun achievementDao(): AchievementDao
     abstract fun healthExaminationDao(): HealthExaminationDao
+    abstract fun newsDao(): NewsDao
 }

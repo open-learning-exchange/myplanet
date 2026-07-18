@@ -4,9 +4,6 @@ import android.text.TextUtils
 import com.google.gson.Gson
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Case
-import io.realm.Realm
-import io.realm.Sort
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -21,10 +18,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.findCopyByField
+import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.RealmUser
@@ -41,12 +38,13 @@ class VoicesRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val sharedPrefManager: SharedPrefManager,
     private val userRepositoryLazy: dagger.Lazy<UserRepository>,
-    private val teamNotificationDao: TeamNotificationDao
+    private val teamNotificationDao: TeamNotificationDao,
+    private val newsDao: NewsDao
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
     override suspend fun getNewsForUpload(): List<NewsUploadData> {
-        return queryList(RealmNews::class.java)
+        return newsDao.getAll()
             .mapNotNull { news ->
                 if (news.userId?.startsWith("guest") == true) null
                 else NewsUploadData(
@@ -60,29 +58,23 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markNewsUploaded(updates: List<NewsUpdateData>) {
-        executeTransaction { realm ->
-            val ids = updates.mapNotNull { it.id }
-            val managedNewsMap = mutableMapOf<String, RealmNews>()
-
-            if (ids.isNotEmpty()) {
-                val results = realm.where(RealmNews::class.java)
-                    .`in`("id", ids.toTypedArray())
-                    .findAll()
-                results.forEach { n ->
-                    n.id?.let { id -> managedNewsMap[id] = n }
+        val ids = updates.mapNotNull { it.id }
+        if (ids.isEmpty()) return
+        val newsById = newsDao.getByIds(ids).associateBy { it.id }
+        val toUpdate = mutableListOf<RealmNews>()
+        updates.forEach { update ->
+            update.id?.let { id ->
+                newsById[id]?.let { news ->
+                    news.imageUrls = emptyList()
+                    news._id = update._id
+                    news._rev = update._rev
+                    news.images = gson.toJson(update.imagesArray)
+                    toUpdate.add(news)
                 }
             }
-
-            updates.forEach { update ->
-                update.id?.let { id ->
-                    managedNewsMap[id]?.let { managedNews ->
-                        managedNews.imageUrls?.clear()
-                        managedNews._id = update._id
-                        managedNews._rev = update._rev
-                        managedNews.images = gson.toJson(update.imagesArray)
-                    }
-                }
-            }
+        }
+        if (toUpdate.isNotEmpty()) {
+            newsDao.upsertAll(toUpdate)
         }
     }
 
@@ -97,55 +89,33 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
-        return withRealm(ensureLatest = true) { realm ->
-            val news = realm.findCopyByField(RealmNews::class.java, "id", newsId)
-            val replies = realm.where(RealmNews::class.java)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
-                .sort("time", Sort.DESCENDING)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            news to replies
-        }
+        val news = newsDao.getById(newsId)
+        val replies = newsDao.getReplies(newsId)
+        return news to replies
     }
 
     override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
-        val allNews = queryList(RealmNews::class.java) {
-            isEmpty("replyTo")
-            equalTo("docType", "message", Case.INSENSITIVE)
-            sort("time", Sort.DESCENDING)
-        }
-        if (allNews.isEmpty()) {
-            return emptyList()
-        }
-
-        return allNews.filter { news ->
+        return newsDao.getTopLevelMessages().filter { news ->
             isVisibleToUser(news, userIdentifier)
         }
     }
 
     override suspend fun isAlreadyShared(chatId: String, viewInId: String): Boolean {
-        return withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .equalTo("newsId", chatId)
-                .contains("viewIn", "\"_id\":\"$viewInId\"", Case.INSENSITIVE)
-                .findFirst() != null
+        return newsDao.getByNewsId(chatId).any { news ->
+            news.viewIn?.contains("\"_id\":\"$viewInId\"", ignoreCase = true) == true
         }
     }
 
     override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
-        return withRealmAsync { realm ->
-            val managedNews = createNews(map, realm, user, realmImageList)
-            realm.copyFromRealm(managedNews)
-        }
+        val news = RealmNews.createNews(map, user, imageList)
+        newsDao.upsert(news)
+        return news
     }
 
     override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         return try {
-            executeTransaction { realm ->
-                RealmNews.createNews(newsData, realm, user, realmImageList)
-            }
+            val news = RealmNews.createNews(newsData, user, imageList)
+            newsDao.upsert(news)
             true
         } catch (e: Exception) {
             e.printStackTrace()
@@ -154,19 +124,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
-        return withRealm { realm ->
-            val query = realm.where(RealmNews::class.java)
-                .isEmpty("replyTo")
-                .beginGroup()
-                .equalTo("viewableBy", "teams", Case.INSENSITIVE)
-                .equalTo("viewableId", teamId, Case.INSENSITIVE)
-                .or()
-                .contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
-                .endGroup()
-                .sort("time", Sort.DESCENDING)
-
-            realm.copyFromRealm(query.findAll())
-        }
+        return newsDao.getTopLevel().filter { matchesTeam(it, teamId) }
     }
 
     private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {
@@ -190,71 +148,63 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
-        val allNewsFlow = queryListFlow(RealmNews::class.java) {
-            isEmpty("replyTo")
-            equalTo("docType", "message", Case.INSENSITIVE)
-            sort("time", Sort.DESCENDING)
-        }
-        .distinctUntilChanged { old, new ->
-            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
-        }
-        .flowOn(realmDispatcher) // Realm async queries require a Looper thread.
+    // Team-discussion visibility: top-level post targeted at the team, either via the
+    // viewableBy/viewableId columns or an entry inside the viewIn JSON.
+    private fun matchesTeam(news: RealmNews, teamId: String): Boolean {
+        val byViewable = news.viewableBy.equals("teams", ignoreCase = true) &&
+            news.viewableId.equals(teamId, ignoreCase = true)
+        val byViewIn = news.viewIn?.contains("\"_id\":\"$teamId\"", ignoreCase = true) == true
+        return byViewable || byViewIn
+    }
 
-        return allNewsFlow.map { allNews ->
-            // allNews are unmanaged copies (POJOs) created by copyFromRealm in queryListFlow.
-            // It is safe to process them on a background thread.
-            allNews.filter { news ->
-                isVisibleToUser(news, userIdentifier)
-            }.map { news ->
-                news.sortDate = news.calculateSortDate()
-                news
+    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+        return newsDao.getTopLevelMessagesFlow()
+            .distinctUntilChanged { old, new ->
+                old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
             }
-        }.flowOn(dispatcherProvider.default)
+            .map { allNews ->
+                allNews.filter { news ->
+                    isVisibleToUser(news, userIdentifier)
+                }.map { news ->
+                    news.sortDate = news.calculateSortDate()
+                    news
+                }
+            }.flowOn(dispatcherProvider.default)
     }
 
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
-        return queryListFlow(RealmNews::class.java) {
-            isEmpty("replyTo")
-            beginGroup()
-            equalTo("viewableBy", "teams", Case.INSENSITIVE)
-            equalTo("viewableId", teamId, Case.INSENSITIVE)
-            or()
-            contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
-            endGroup()
-            sort("time", Sort.DESCENDING)
-        }
-        .distinctUntilChanged { old, new ->
-            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
-        }
-        .flowOn(dispatcherProvider.default)
+        return newsDao.getTopLevelFlow()
+            .map { allNews -> allNews.filter { matchesTeam(it, teamId) } }
+            .distinctUntilChanged { old, new ->
+                old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
+            }
+            .flowOn(dispatcherProvider.default)
     }
 
     override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {
         return try {
-            executeTransaction { realm ->
-                val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-                if (news != null) {
-                    val array = gson.fromJson(news.viewIn, JsonArray::class.java)
-                    if (array != null && array.size() > 0) {
-                        val firstElement = array.get(0)
-                        if (firstElement.isJsonObject) {
-                            val obj = firstElement.asJsonObject
-                            if (!obj.has("name")) {
-                                obj.addProperty("name", teamName)
-                            }
+            val news = newsDao.getById(newsId)
+            if (news != null) {
+                val array = gson.fromJson(news.viewIn, JsonArray::class.java)
+                if (array != null && array.size() > 0) {
+                    val firstElement = array.get(0)
+                    if (firstElement.isJsonObject) {
+                        val obj = firstElement.asJsonObject
+                        if (!obj.has("name")) {
+                            obj.addProperty("name", teamName)
                         }
                     }
-
-                    val ob = JsonObject()
-                    ob.addProperty("section", "community")
-                    ob.addProperty("_id", "$planetCode@$parentCode")
-                    ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
-                    array?.add(ob)
-
-                    news.sharedBy = userId
-                    news.viewIn = gson.toJson(array)
                 }
+
+                val ob = JsonObject()
+                ob.addProperty("section", "community")
+                ob.addProperty("_id", "$planetCode@$parentCode")
+                ob.addProperty("sharedDate", Calendar.getInstance().timeInMillis)
+                array?.add(ob)
+
+                news.sharedBy = userId
+                news.viewIn = gson.toJson(array)
+                newsDao.upsert(news)
             }
             Result.success(Unit)
         } catch (e: Exception) {
@@ -279,157 +229,118 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deletePost(newsId: String, teamName: String) {
-        executeTransaction { transactionRealm ->
-            val news = transactionRealm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            if (news != null) {
-                val ar = try {
-                    gson.fromJson(news.viewIn, JsonArray::class.java)
-                } catch (e: Exception) {
-                    null
-                }
+        val news = newsDao.getById(newsId) ?: return
+        val ar = try {
+            gson.fromJson(news.viewIn, JsonArray::class.java)
+        } catch (e: Exception) {
+            null
+        }
 
-                if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
-                    news.id?.let { id -> deleteRepliesOf(id, transactionRealm) }
-                    news.deleteFromRealm()
-                } else {
-                    val filtered = JsonArray().apply {
-                        ar.forEach { elem ->
-                            if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
-                                add(elem)
-                            }
-                        }
+        if (teamName.isNotEmpty() || ar == null || ar.size() < 2) {
+            val idsToDelete = collectNewsAndReplies(newsId)
+            newsDao.deleteByIds(idsToDelete)
+        } else {
+            val filtered = JsonArray().apply {
+                ar.forEach { elem ->
+                    if (elem.isJsonObject && !elem.asJsonObject.has("sharedDate")) {
+                        add(elem)
                     }
-                    news.viewIn = gson.toJson(filtered)
                 }
             }
+            news.viewIn = gson.toJson(filtered)
+            newsDao.upsert(news)
         }
     }
 
     override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
-        return withRealm { realm ->
-            val query = realm.where(RealmNews::class.java)
-                .isEmpty("replyTo")
-                .beginGroup()
-                .equalTo("viewableBy", "teams", Case.INSENSITIVE)
-                .equalTo("viewableId", teamId, Case.INSENSITIVE)
-                .endGroup()
-                .or()
-                .contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
-                .sort("time", Sort.DESCENDING)
-
-            realm.copyFromRealm(query.findAll())
-        }
+        return newsDao.getTopLevel().filter { matchesTeam(it, teamId) }
     }
 
     override suspend fun getReplyCount(newsId: String?): Int {
-        return withRealm { realm ->
-            realm.where(RealmNews::class.java)
-                .equalTo("replyTo", newsId, Case.INSENSITIVE)
-                .count()
-                .toInt()
-        }
+        if (newsId == null) return 0
+        return newsDao.getReplyCount(newsId)
     }
 
     override suspend fun deleteNews(newsId: String) {
-        executeTransaction {
-            deleteRepliesOf(newsId, it)
-            it.where(RealmNews::class.java).equalTo("id", newsId).findAll().deleteAllFromRealm()
-        }
+        val idsToDelete = collectNewsAndReplies(newsId)
+        newsDao.deleteByIds(idsToDelete)
     }
 
-    private fun deleteRepliesOf(newsId: String, realm: io.realm.Realm) {
-        val replies = realm.where(RealmNews::class.java).equalTo("replyTo", newsId).findAll()
-        replies.forEach { reply ->
-            val replyId = reply.id ?: return@forEach
-            deleteRepliesOf(replyId, realm)
-            reply.deleteFromRealm()
+    // Gathers a post and all of its (recursive) replies for deletion.
+    private suspend fun collectNewsAndReplies(newsId: String): List<String> {
+        val ids = mutableListOf(newsId)
+        newsDao.getDirectReplies(newsId).forEach { reply ->
+            ids.addAll(collectNewsAndReplies(reply.id))
         }
+        return ids
     }
 
     override suspend fun addLabel(newsId: String, label: String) {
-        executeTransaction {
-            val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            news?.labels?.add(label)
-        }
+        val news = newsDao.getById(newsId) ?: return
+        val labels = news.labels?.toMutableList() ?: mutableListOf()
+        labels.add(label)
+        news.labels = labels
+        newsDao.upsert(news)
     }
 
     override suspend fun removeLabel(newsId: String, label: String) {
-        executeTransaction {
-            val news = it.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            news?.labels?.remove(label)
-        }
+        val news = newsDao.getById(newsId) ?: return
+        val labels = news.labels?.toMutableList() ?: return
+        labels.remove(label)
+        news.labels = labels
+        newsDao.upsert(news)
     }
 
     override suspend fun getCommunityVoiceDates(startTime: Long, endTime: Long, userId: String?): List<String> {
-        return withRealm { realm ->
-            val query = realm.where(RealmNews::class.java)
-                .greaterThanOrEqualTo("time", startTime)
-                .lessThanOrEqualTo("time", endTime)
-            if (userId != null) query.equalTo("userId", userId)
-            val results = query.findAll()
-            results.filter { isCommunitySection(it) }
-                .map { getDateFromTimestamp(it.time) }
-                .distinct()
+        val results = if (userId != null) {
+            newsDao.getInTimeRangeForUser(startTime, endTime, userId)
+        } else {
+            newsDao.getInTimeRange(startTime, endTime)
         }
+        return results.filter { isCommunitySection(it) }
+            .map { getDateFromTimestamp(it.time) }
+            .distinct()
     }
 
     override suspend fun getNewsById(id: String): RealmNews? {
-        return withRealm { realm ->
-            realm.findCopyByField(RealmNews::class.java, "id", id)
-        }
+        return newsDao.getById(id)
     }
 
     override suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?) {
-        val realmImageList = imageList?.let { io.realm.RealmList<String>().apply { addAll(it) } }
-        val userId = currentUser.id
-        val viewableBy = news.viewableBy
-        val viewableId = news.viewableId
         val newsId = news._id ?: news.id
-        val messageType = news.messageType
-        val messagePlanetCode = news.messagePlanetCode
-        val viewIn = news.viewIn
-
-        executeTransaction { realm ->
-            val transactionUser = realm.where(RealmUser::class.java).equalTo("id", userId).findFirst()
-            val map = HashMap<String?, String>()
-            map["message"] = message
-            map["viewableBy"] = viewableBy ?: ""
-            map["viewableId"] = viewableId ?: ""
-            map["replyTo"] = newsId ?: ""
-            map["messageType"] = messageType ?: ""
-            map["messagePlanetCode"] = messagePlanetCode ?: ""
-            map["viewIn"] = viewIn ?: ""
-            createNews(map, realm, transactionUser, realmImageList, true)
-        }
+        val map = HashMap<String?, String>()
+        map["message"] = message
+        map["viewableBy"] = news.viewableBy ?: ""
+        map["viewableId"] = news.viewableId ?: ""
+        map["replyTo"] = newsId
+        map["messageType"] = news.messageType ?: ""
+        map["messagePlanetCode"] = news.messagePlanetCode ?: ""
+        map["viewIn"] = news.viewIn ?: ""
+        val reply = RealmNews.createNews(map, currentUser, imageList, isReply = true)
+        newsDao.upsert(reply)
     }
 
     override suspend fun editPost(newsId: String, message: String, imagesToRemove: Set<String>, newImages: List<String>?) {
-        val realmImageList = newImages?.let { io.realm.RealmList<String>().apply { addAll(it) } }
         if (message.isEmpty()) return
-        executeTransaction { realm ->
-            val news = realm.where(RealmNews::class.java).equalTo("id", newsId).findFirst()
-            if (news != null) {
-                if (imagesToRemove.isNotEmpty()) {
-                    val imageUrls = news.imageUrls
-                    if (imageUrls != null) {
-                        val updatedUrls = imageUrls.filter { imageUrlJson ->
-                            try {
-                                val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
-                                val path = JsonUtils.getString("imageUrl", imgObject)
-                                !imagesToRemove.contains(path)
-                            } catch (_: Exception) {
-                                true
-                            }
-                        }
-                        news.imageUrls?.clear()
-                        news.imageUrls?.addAll(updatedUrls)
-                    }
+        val news = newsDao.getById(newsId) ?: return
+        val urls = (news.imageUrls ?: emptyList()).toMutableList()
+        if (imagesToRemove.isNotEmpty()) {
+            val updatedUrls = urls.filter { imageUrlJson ->
+                try {
+                    val imgObject = JsonUtils.gson.fromJson(imageUrlJson, JsonObject::class.java)
+                    val path = JsonUtils.getString("imageUrl", imgObject)
+                    !imagesToRemove.contains(path)
+                } catch (_: Exception) {
+                    true
                 }
-
-                realmImageList?.forEach { news.imageUrls?.add(it) }
-                news.updateMessage(message)
             }
+            urls.clear()
+            urls.addAll(updatedUrls)
         }
+        newImages?.let { urls.addAll(it) }
+        news.imageUrls = urls
+        news.updateMessage(message)
+        newsDao.upsert(news)
     }
 
     private fun isCommunitySection(news: RealmNews): Boolean {
@@ -461,53 +372,43 @@ class VoicesRepositoryImpl @Inject constructor(
         if (planetCode.isNullOrEmpty()) {
             return emptyList()
         }
-        return queryList(RealmNews::class.java) {
-            equalTo("docType", "message", Case.INSENSITIVE)
-            equalTo("createdOn", planetCode, Case.INSENSITIVE)
-        }
+        return newsDao.getPlanetMessages(planetCode)
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        executeTransaction { mRealm ->
-            docs.forEach { doc ->
-                insertNewsToRealm(mRealm, doc)
-            }
-        }
+        val newsList = docs.map { buildNewsFromJson(it) }
+        newsDao.upsertAll(newsList)
         saveConcatenatedLinksToPrefs()
     }
 
     override suspend fun insertNewsFromJson(doc: JsonObject) {
-        executeTransaction { mRealm ->
-            insertNewsToRealm(mRealm, doc)
-        }
+        newsDao.upsert(buildNewsFromJson(doc))
         saveConcatenatedLinksToPrefs()
     }
 
-    private fun insertNewsToRealm(mRealm: Realm, doc: JsonObject) {
-        var news = mRealm.where(RealmNews::class.java).equalTo("_id", JsonUtils.getString("_id", doc)).findFirst()
-        if (news == null) {
-            news = mRealm.createObject(RealmNews::class.java, JsonUtils.getString("_id", doc))
-        }
-        news?._rev = JsonUtils.getString("_rev", doc)
-        news?._id = JsonUtils.getString("_id", doc)
-        news?.viewableBy = JsonUtils.getString("viewableBy", doc)
-        news?.docType = JsonUtils.getString("docType", doc)
-        news?.avatar = JsonUtils.getString("avatar", doc)
-        news?.updatedDate = JsonUtils.getLong("updatedDate", doc)
-        news?.viewableId = JsonUtils.getString("viewableId", doc)
-        news?.createdOn = JsonUtils.getString("createdOn", doc)
-        news?.messageType = JsonUtils.getString("messageType", doc)
-        news?.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
-        news?.replyTo = JsonUtils.getString("replyTo", doc)
-        news?.parentCode = JsonUtils.getString("parentCode", doc)
+    private suspend fun buildNewsFromJson(doc: JsonObject): RealmNews {
+        val underscoreId = JsonUtils.getString("_id", doc)
+        val news = newsDao.getByUnderscoreId(underscoreId) ?: RealmNews().apply { id = underscoreId }
+        news._rev = JsonUtils.getString("_rev", doc)
+        news._id = underscoreId
+        news.viewableBy = JsonUtils.getString("viewableBy", doc)
+        news.docType = JsonUtils.getString("docType", doc)
+        news.avatar = JsonUtils.getString("avatar", doc)
+        news.updatedDate = JsonUtils.getLong("updatedDate", doc)
+        news.viewableId = JsonUtils.getString("viewableId", doc)
+        news.createdOn = JsonUtils.getString("createdOn", doc)
+        news.messageType = JsonUtils.getString("messageType", doc)
+        news.messagePlanetCode = JsonUtils.getString("messagePlanetCode", doc)
+        news.replyTo = JsonUtils.getString("replyTo", doc)
+        news.parentCode = JsonUtils.getString("parentCode", doc)
         val user = JsonUtils.getJsonObject("user", doc)
-        news?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
-        news?.userId = JsonUtils.getString("_id", user)
-        news?.userName = JsonUtils.getString("name", user)
-        news?.time = JsonUtils.getLong("time", doc)
+        news.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", doc))
+        news.userId = JsonUtils.getString("_id", user)
+        news.userName = JsonUtils.getString("name", user)
+        news.time = JsonUtils.getLong("time", doc)
         val images = JsonUtils.getJsonArray("images", doc)
         val message = JsonUtils.getString("message", doc)
-        news?.message = message
+        news.message = message
         val links = extractLinks(message)
         val baseUrl = UrlUtils.getUrl()
         synchronized(concatenatedLinks) {
@@ -516,22 +417,23 @@ class VoicesRepositoryImpl @Inject constructor(
                 concatenatedLinks.add(concatenatedLink)
             }
         }
-        news?.images = JsonUtils.gson.toJson(images)
+        news.images = JsonUtils.gson.toJson(images)
         val labels = JsonUtils.getJsonArray("labels", doc)
-        news?.viewIn = JsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
-        news?.setLabels(labels)
-        news?.chat = JsonUtils.getBoolean("chat", doc)
+        news.viewIn = JsonUtils.gson.toJson(JsonUtils.getJsonArray("viewIn", doc))
+        news.setLabels(labels)
+        news.chat = JsonUtils.getBoolean("chat", doc)
 
         val newsObj = JsonUtils.getJsonObject("news", doc)
-        news?.newsId = JsonUtils.getString("_id", newsObj)
-        news?.newsRev = JsonUtils.getString("_rev", newsObj)
-        news?.newsUser = JsonUtils.getString("user", newsObj)
-        news?.aiProvider = JsonUtils.getString("aiProvider", newsObj)
-        news?.newsTitle = JsonUtils.getString("title", newsObj)
-        news?.conversations = JsonUtils.gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
-        news?.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
-        news?.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
-        news?.sharedBy = JsonUtils.getString("sharedBy", newsObj)
+        news.newsId = JsonUtils.getString("_id", newsObj)
+        news.newsRev = JsonUtils.getString("_rev", newsObj)
+        news.newsUser = JsonUtils.getString("user", newsObj)
+        news.aiProvider = JsonUtils.getString("aiProvider", newsObj)
+        news.newsTitle = JsonUtils.getString("title", newsObj)
+        news.conversations = JsonUtils.gson.toJson(JsonUtils.getJsonArray("conversations", newsObj))
+        news.newsCreatedDate = JsonUtils.getLong("createdDate", newsObj)
+        news.newsUpdatedDate = JsonUtils.getLong("updatedDate", newsObj)
+        news.sharedBy = JsonUtils.getString("sharedBy", newsObj)
+        return news
     }
 
     private fun serializeNews(news: RealmNews): JsonObject {
