@@ -23,8 +23,8 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -385,7 +385,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val filterPayload = JsonUtils.gson.toJson(filter)
 
         searchActivityDao.insert(
-            RealmSearchActivity(
+            SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
                 time = Calendar.getInstance().timeInMillis,

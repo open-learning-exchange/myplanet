@@ -24,12 +24,12 @@ import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.ApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyPersonal
 import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -138,7 +138,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadSearchActivity delegates to Room uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.uploadRoom<RealmSearchActivity>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<SearchActivity>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadSearchActivity()
         advanceUntilIdle()
         coVerify { uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity) }
@@ -146,7 +146,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadCourseActivities delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.uploadRoom<RealmCourseActivity>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<CourseActivity>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadCourseActivities()
         advanceUntilIdle()
         coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities) }

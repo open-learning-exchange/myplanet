@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
     tableName = "course_activity",
     indices = [Index("_rev"), Index("courseId"), Index("type")]
 )
-open class RealmCourseActivity {
+open class CourseActivity {
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -26,15 +26,15 @@ open class RealmCourseActivity {
     var user: String? = null
 
     companion object {
-        fun serializeSerialize(realmCourseActivities: RealmCourseActivity): JsonObject {
+        fun serialize(courseActivity: CourseActivity): JsonObject {
             val ob = JsonObject()
-            ob.addProperty("user", realmCourseActivities.user)
-            ob.addProperty("courseId", realmCourseActivities.courseId)
-            ob.addProperty("type", realmCourseActivities.type)
-            ob.addProperty("title", realmCourseActivities.title)
-            ob.addProperty("time", realmCourseActivities.time)
-            ob.addProperty("createdOn", realmCourseActivities.createdOn)
-            ob.addProperty("parentCode", realmCourseActivities.parentCode)
+            ob.addProperty("user", courseActivity.user)
+            ob.addProperty("courseId", courseActivity.courseId)
+            ob.addProperty("type", courseActivity.type)
+            ob.addProperty("title", courseActivity.title)
+            ob.addProperty("time", courseActivity.time)
+            ob.addProperty("createdOn", courseActivity.createdOn)
+            ob.addProperty("parentCode", courseActivity.parentCode)
             ob.addProperty("androidId", NetworkUtils.getUniqueIdentifier())
             ob.addProperty("deviceName", NetworkUtils.getDeviceName())
             return ob

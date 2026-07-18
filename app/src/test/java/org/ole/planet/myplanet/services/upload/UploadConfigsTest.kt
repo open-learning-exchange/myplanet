@@ -17,10 +17,10 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmNewsLog
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.CourseActivity
+import org.ole.planet.myplanet.model.NewsLog
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 
@@ -56,7 +56,7 @@ class UploadConfigsTest {
 
     @Test
     fun `SearchActivity config fetches pending Room rows from DAO`() = runTest {
-        val pending = listOf(RealmSearchActivity(id = "local-1", text = "math"))
+        val pending = listOf(SearchActivity(id = "local-1", text = "math"))
         coEvery { searchActivityDao.getPendingUploads() } returns pending
 
         val result = uploadConfigs.SearchActivity.fetchPendingItems()
@@ -103,7 +103,7 @@ class UploadConfigsTest {
 
     @Test
     fun `CourseActivities config fetches pending Room rows from DAO`() = runTest {
-        val pending = listOf(RealmCourseActivity().apply { id = "course-local-1" })
+        val pending = listOf(CourseActivity().apply { id = "course-local-1" })
         coEvery { courseActivityDao.getPendingUploads() } returns pending
 
         val result = uploadConfigs.CourseActivities.fetchPendingItems()
@@ -140,7 +140,7 @@ class UploadConfigsTest {
     }
     @Test
     fun `ResourceActivities config fetches pending Room rows from DAO`() = runTest {
-        val pending = listOf(RealmResourceActivity().apply { id = "resource-local-1" })
+        val pending = listOf(ResourceActivity().apply { id = "resource-local-1" })
         coEvery { resourceActivityDao.getPendingUploads() } returns pending
 
         val result = uploadConfigs.ResourceActivities.fetchPendingItems()
@@ -150,7 +150,7 @@ class UploadConfigsTest {
 
     @Test
     fun `ResourceActivitiesSync config fetches pending sync Room rows from DAO`() = runTest {
-        val pending = listOf(RealmResourceActivity().apply { id = "resource-sync-local-1"; type = "sync" })
+        val pending = listOf(ResourceActivity().apply { id = "resource-sync-local-1"; type = "sync" })
         coEvery { resourceActivityDao.getPendingSyncUploads() } returns pending
 
         val result = uploadConfigs.ResourceActivitiesSync.fetchPendingItems()
@@ -160,7 +160,7 @@ class UploadConfigsTest {
 
     @Test
     fun `NewsActivities config fetches pending Room rows from DAO`() = runTest {
-        val pending = listOf(RealmNewsLog().apply { id = "news-local-1" })
+        val pending = listOf(NewsLog().apply { id = "news-local-1" })
         coEvery { newsLogDao.getPendingUploads() } returns pending
 
         val result = uploadConfigs.NewsActivities.fetchPendingItems()

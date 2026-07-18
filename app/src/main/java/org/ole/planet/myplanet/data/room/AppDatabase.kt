@@ -36,22 +36,22 @@ import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmNewsLog
+import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmSearchActivity
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamLog
@@ -81,15 +81,15 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmRating::class,
         RealmTag::class,
         RealmMeetup::class,
-        RealmSearchActivity::class,
-        RealmCourseActivity::class,
-        RealmResourceActivity::class,
-        RealmSubmitPhotos::class,
-        RealmNewsLog::class,
+        SearchActivity::class,
+        CourseActivity::class,
+        ResourceActivity::class,
+        SubmitPhotos::class,
+        NewsLog::class,
         RealmTeamLog::class,
         RealmOfflineActivity::class,
         RealmCourseProgress::class,
-        RealmRemovedLog::class,
+        RemovedLog::class,
         RealmTeamTask::class,
         RealmNotification::class,
         RealmAchievement::class,

@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
 
 @Entity(tableName = "submit_photos")
-open class RealmSubmitPhotos {
+open class SubmitPhotos {
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -22,7 +22,7 @@ open class RealmSubmitPhotos {
     var uploaded = false
 
     companion object {
-        fun serializeRealmSubmitPhotos(submit: RealmSubmitPhotos): JsonObject {
+        fun serialize(submit: SubmitPhotos): JsonObject {
             val obj = JsonObject()
             obj.addProperty("id", submit.id)
             obj.addProperty("submissionId", submit.submissionId)

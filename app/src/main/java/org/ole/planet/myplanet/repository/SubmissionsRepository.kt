@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
 
@@ -53,7 +53,7 @@ interface SubmissionsRepository {
     suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>>
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission
-    suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos>
+    suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
     suspend fun insertSubmission(submission: JsonObject)
     suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject

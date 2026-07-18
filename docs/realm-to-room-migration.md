@@ -148,23 +148,23 @@ wired through `di/RoomModule`.
       upload-manager + user-repo constructor tests updated. Also fixed a latent Tag-migration
       fallout: `ResourcesViewModelTest` can no longer mockk `RealmTag.id` (now a `@JvmField`), so
       it uses a real instance.
-- [x] **SearchActivity** migrated (uploaded-only local activity log). `RealmSearchActivity` is now
+- [x] **SearchActivity** migrated (uploaded-only local activity log). `SearchActivity` is now
       a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload
       acknowledgements; course/resource search logging now writes through the DAO; upload config
       uses `RoomUploadConfig`.
-- [x] **CourseActivity** migrated (uploaded-only course visit log). `RealmCourseActivity` is now
+- [x] **CourseActivity** migrated (uploaded-only course visit log). `CourseActivity` is now
       a Room `@Entity`; `CourseActivityDao` owns visit inserts, pending upload lookup, and upload
       acknowledgements; course visit logging writes through the DAO; upload config uses
       `RoomUploadConfig`.
-- [x] **ResourceActivity** migrated (uploaded + local read paths). `RealmResourceActivity` is
+- [x] **ResourceActivity** migrated (uploaded + local read paths). `ResourceActivity` is
       now a Room `@Entity`; `ResourceActivityDao` owns resource-open/sync inserts, counts,
       most-opened lookups, opened-resource observation, pending upload lookup, and upload
       acknowledgements; both regular and sync upload configs use `RoomUploadConfig`.
-- [x] **SubmitPhotos** migrated (uploaded photo submissions). `RealmSubmitPhotos` is now a
+- [x] **SubmitPhotos** migrated (uploaded photo submissions). `SubmitPhotos` is now a
       Room `@Entity`; `SubmitPhotosDao` owns photo inserts, pending lookup, id lookups, and
       upload acknowledgements; repository/photo uploader paths use the DAO, and the legacy upload
       config is Room-capable.
-- [x] **NewsLog** migrated (uploaded-only activity log). `RealmNewsLog` is now a Room
+- [x] **NewsLog** migrated (uploaded-only activity log). `NewsLog` is now a Room
       `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
       config uses `RoomUploadConfig`.
 - [x] **TeamActivities / TeamLog** migrated (uploaded + synced team visit log). `RealmTeamLog` is
@@ -179,7 +179,7 @@ wired through `di/RoomModule`.
       now a Room `@Entity`; `CourseProgressDao` owns user/course progress reads, completion
       records, save/update paths, pending upload reads, upload acknowledgements, and sync upserts
       that preserve locally-passed steps when server progress lags.
-- [x] **RemovedLog** migrated (local shelf tombstones). `RealmRemovedLog` is now a Room
+- [x] **RemovedLog** migrated (local shelf tombstones). `RemovedLog` is now a Room
       `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
       courses are re-added, and shelf merge filtering for removed resources/courses.
 - [x] **TeamTask** migrated (uploaded + synced task rows). `RealmTeamTask` is now a Room

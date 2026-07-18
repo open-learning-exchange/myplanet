@@ -14,19 +14,19 @@ import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.ApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNewsLog
+import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
@@ -65,9 +65,9 @@ class UploadConfigs @Inject constructor(
 ) {
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
-        modelClassName = "RealmNewsLog",
+        modelClassName = "NewsLog",
         fetchPendingItems = { newsLogDao.getPendingUploads() },
-        serializer = UploadSerializer.Simple(RealmNewsLog::serialize),
+        serializer = UploadSerializer.Simple(NewsLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -120,7 +120,7 @@ class UploadConfigs @Inject constructor(
 
     val SearchActivity = RoomUploadConfig(
         endpoint = "search_activities",
-        modelClassName = "RealmSearchActivity",
+        modelClassName = "SearchActivity",
         fetchPendingItems = { searchActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple { it.serialize() },
         idExtractor = { it.id },
@@ -137,7 +137,7 @@ class UploadConfigs @Inject constructor(
 
     val ResourceActivities = RoomUploadConfig(
         endpoint = "resource_activities",
-        modelClassName = "RealmResourceActivity",
+        modelClassName = "ResourceActivity",
         fetchPendingItems = { resourceActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
@@ -150,7 +150,7 @@ class UploadConfigs @Inject constructor(
 
     val ResourceActivitiesSync = RoomUploadConfig(
         endpoint = "admin_activities",
-        modelClassName = "RealmResourceActivity",
+        modelClassName = "ResourceActivity",
         fetchPendingItems = { resourceActivityDao.getPendingSyncUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
@@ -163,9 +163,9 @@ class UploadConfigs @Inject constructor(
 
     val CourseActivities = RoomUploadConfig(
         endpoint = "course_activities",
-        modelClassName = "RealmCourseActivity",
+        modelClassName = "CourseActivity",
         fetchPendingItems = { courseActivityDao.getPendingUploads() },
-        serializer = UploadSerializer.Simple(RealmCourseActivity::serializeSerialize),
+        serializer = UploadSerializer.Simple(CourseActivity::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -235,9 +235,9 @@ class UploadConfigs @Inject constructor(
 
     val SubmitPhotos = RoomUploadConfig(
         endpoint = "submissions",
-        modelClassName = "RealmSubmitPhotos",
+        modelClassName = "SubmitPhotos",
         fetchPendingItems = { submitPhotosDao.getUnuploaded() },
-        serializer = UploadSerializer.Simple(RealmSubmitPhotos::serializeRealmSubmitPhotos),
+        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
