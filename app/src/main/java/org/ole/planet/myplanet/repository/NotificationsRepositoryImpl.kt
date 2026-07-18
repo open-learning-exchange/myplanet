@@ -8,13 +8,14 @@ import java.util.Date
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.NotificationDao
+import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
-import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
@@ -25,12 +26,13 @@ import org.ole.planet.myplanet.utils.TimeProvider
 private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
-        databaseService: DatabaseService,
+    databaseService: DatabaseService,
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userRepository: Lazy<UserRepository>,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
+    private val notificationDao: NotificationDao,
     private val teamTaskDao: TeamTaskDao
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
@@ -40,45 +42,23 @@ class NotificationsRepositoryImpl @Inject constructor(
     override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {
         if (notificationId.startsWith("summary_")) {
             val type = notificationId.removePrefix("summary_")
-            executeTransaction { realm ->
-                realm.where(RealmNotification::class.java)
-                    .equalTo("userId", userId)
-                    .equalTo("type", type)
-                    .equalTo("isRead", false)
-                    .findAll()
-                    .forEach { it.isRead = true; it.needsSync = it.isFromServer }
-            }
+            notificationDao.markSummaryAsRead(userId, type)
         } else {
-            executeTransaction { realm ->
-                val notification = realm.where(RealmNotification::class.java)
-                    .equalTo("id", notificationId)
-                    .findFirst()
-                notification?.isRead = true
-                notification?.needsSync = notification.isFromServer == true
-            }
+            notificationDao.markAsRead(notificationId)
         }
     }
 
     override suspend fun getUnreadCount(userId: String?, isAdmin: Boolean): Int {
         if (userId == null) return 0
 
-        return count(RealmNotification::class.java) {
-            beginGroup()
-            equalTo("userId", userId)
-            if (isAdmin) {
-                or()
-                equalTo("userId", "SYSTEM")
-            }
-            endGroup()
-            equalTo("isRead", false)
-        }.toInt()
+        return notificationDao.getUnreadCount(userId, isAdmin)
     }
 
     override suspend fun updateResourceNotification(userId: String?, resourceCount: Int) {
         userId ?: return
 
         val notificationId = "$userId:resource:count"
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val existingNotification = notificationDao.getById(notificationId)
 
         if (resourceCount > 0) {
             val previousCount = existingNotification?.message?.toIntOrNull() ?: 0
@@ -99,9 +79,9 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.relatedId = "$resourceCount"
                 this.createdAt = Date()
             }
-            save(notification)
+            notificationDao.upsert(notification)
         } else {
-            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
+            existingNotification?.let { notificationDao.deleteById(it.id) }
         }
     }
 
@@ -109,7 +89,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         userId ?: return
 
         val notificationId = "$userId:storage"
-        val existingNotification = findByField(RealmNotification::class.java, "id", notificationId)
+        val existingNotification = notificationDao.getById(notificationId)
 
         if (availablePercent <= STORAGE_WARNING_AVAILABLE_PERCENT) {
             val previousPercent = existingNotification?.message?.replace("%", "")?.toIntOrNull()
@@ -130,68 +110,35 @@ class NotificationsRepositoryImpl @Inject constructor(
                 this.relatedId = "storage"
                 this.createdAt = Date()
             }
-            save(notification)
+            notificationDao.upsert(notification)
         } else {
-            existingNotification?.let { delete(RealmNotification::class.java, "id", it.id) }
+            existingNotification?.let { notificationDao.deleteById(it.id) }
         }
     }
 
     override suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String> {
         if (notificationIds.isEmpty()) return emptySet()
 
-        val updatedIds = mutableSetOf<String>()
-        val now = Date()
-        executeTransaction { realm ->
-            val notifications = realm.where(RealmNotification::class.java)
-                .`in`("id", notificationIds.toTypedArray())
-                .findAll()
-
-            notifications.forEach { notification ->
-                notification.isRead = true
-                notification.createdAt = now
-                if (notification.isFromServer) notification.needsSync = true
-                updatedIds.add(notification.id)
-            }
-        }
-        return updatedIds
+        val existingIds = notificationDao.getByIds(notificationIds.toList()).map { it.id }.toSet()
+        if (existingIds.isEmpty()) return emptySet()
+        notificationDao.markAsRead(existingIds.toList(), Date())
+        return existingIds
     }
 
     override suspend fun markAllUnreadAsRead(userId: String?): Set<String> {
         val actualUserId = userId ?: return emptySet()
-        val updatedIds = mutableSetOf<String>()
-        val now = Date()
-        executeTransaction { realm ->
-            realm.where(RealmNotification::class.java)
-                .equalTo("userId", actualUserId)
-                .equalTo("isRead", false)
-                .findAll()
-                ?.forEach { notification ->
-                    notification.isRead = true
-                    notification.createdAt = now
-                    if (notification.isFromServer) notification.needsSync = true
-                    updatedIds.add(notification.id)
-                }
-        }
-        return updatedIds
+        val unreadIds = notificationDao.getNotifications(actualUserId, "unread", false).map { it.id }.toSet()
+        if (unreadIds.isEmpty()) return emptySet()
+        notificationDao.markAllUnreadAsRead(actualUserId, Date())
+        return unreadIds
     }
 
     override suspend fun getNotifications(userId: String, filter: String, isAdmin: Boolean): List<NotificationPayload> {
-        return queryList(RealmNotification::class.java) {
-            beginGroup()
-            equalTo("userId", userId)
-            if (isAdmin) {
-                or()
-                equalTo("userId", "SYSTEM")
-            }
-            endGroup()
-            notEqualTo("message", "INVALID")
-            isNotEmpty("message")
-            when (filter) {
-                "read" -> equalTo("isRead", true)
-                "unread" -> equalTo("isRead", false)
-            }
-            sort("isRead", io.realm.Sort.ASCENDING, "createdAt", io.realm.Sort.DESCENDING)
-        }.map {
+        val normalizedFilter = when (filter) {
+            "read", "unread" -> filter
+            else -> ""
+        }
+        return notificationDao.getNotifications(userId, normalizedFilter, isAdmin).map {
             NotificationPayload(
                 id = it.id,
                 userId = it.userId,
@@ -408,27 +355,13 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingSyncNotifications(): List<RealmNotification> {
-        return queryList(RealmNotification::class.java) {
-            equalTo("needsSync", true)
-            isNotNull("rev")
-        }
+        return notificationDao.getPendingSyncNotifications()
     }
 
     override suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>) {
         if (syncResults.isEmpty()) return
-        val ids = syncResults.map { it.first }.toTypedArray()
-        val revMap = syncResults.toMap()
-        executeTransaction { realm ->
-            val notifications = realm.where(RealmNotification::class.java)
-                .`in`("id", ids)
-                .findAll()
-
-            notifications.forEach { notification ->
-                notification.needsSync = false
-                revMap[notification.id]?.let { newRev ->
-                    notification.rev = newRev
-                }
-            }
+        syncResults.forEach { (id, rev) ->
+            notificationDao.markSynced(id, rev)
         }
     }
 
@@ -450,30 +383,24 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun insert(doc: JsonObject) {
         val parsed = parseNotification(doc) ?: return
-        executeTransaction { realm ->
-            val existing = realm.where(RealmNotification::class.java).equalTo("id", parsed.id).findFirst()
-            if (existing?.needsSync == true) {
-                parsed.needsSync = true
-                parsed.isRead = existing.isRead
-            }
-            realm.copyToRealmOrUpdate(parsed)
+        val existing = notificationDao.getById(parsed.id)
+        if (existing?.needsSync == true) {
+            parsed.needsSync = true
+            parsed.isRead = existing.isRead
         }
+        notificationDao.upsert(parsed)
     }
 
     override suspend fun deleteNotifications(ids: Set<String>): Set<String> {
         if (ids.isEmpty()) return emptySet()
-        val deletedIds = mutableSetOf<String>()
-        executeTransaction { realm ->
-            val notifications = realm.where(RealmNotification::class.java)
-                .`in`("id", ids.toTypedArray())
-                .findAll()
-            notifications.forEach { deletedIds.add(it.id) }
-            notifications.deleteAllFromRealm()
+        val deletedIds = notificationDao.getByIds(ids.toList()).map { it.id }.toSet()
+        if (deletedIds.isNotEmpty()) {
+            notificationDao.deleteByIds(deletedIds.toList())
         }
         return deletedIds
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+    override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -484,12 +411,8 @@ class NotificationsRepositoryImpl @Inject constructor(
             }
         }
         val parsedList = documentList.mapNotNull { parseNotification(it) }
-        val ids = parsedList.map { it.id }.toTypedArray()
-        val existingNotifications = if (ids.isNotEmpty()) {
-            realm.where(RealmNotification::class.java)
-                .`in`("id", ids)
-                .findAll()
-                .associateBy { it.id }
+        val existingNotifications = if (parsedList.isNotEmpty()) {
+            notificationDao.getByIds(parsedList.map { it.id }).associateBy { it.id }
         } else {
             emptyMap()
         }
@@ -499,7 +422,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                 parsed.needsSync = true
                 parsed.isRead = existing.isRead
             }
-            realm.copyToRealmOrUpdate(parsed)
         }
+        notificationDao.upsertAll(parsedList)
     }
 }

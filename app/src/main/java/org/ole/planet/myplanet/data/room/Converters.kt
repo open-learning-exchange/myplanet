@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room
 
 import androidx.room.TypeConverter
 import com.google.gson.reflect.TypeToken
+import java.util.Date
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -13,6 +14,16 @@ import org.ole.planet.myplanet.utils.JsonUtils
  * self-describing and survives the drop-and-resync migration away from Realm.
  */
 class Converters {
+    @TypeConverter
+    fun fromDate(value: Date?): Long? {
+        return value?.time
+    }
+
+    @TypeConverter
+    fun toDate(value: Long?): Date? {
+        return value?.let(::Date)
+    }
+
     @TypeConverter
     fun fromStringList(value: List<String>?): String? {
         return value?.let { JsonUtils.gson.toJson(it) }

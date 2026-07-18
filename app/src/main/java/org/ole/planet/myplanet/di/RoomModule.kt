@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
@@ -167,5 +168,10 @@ object RoomModule {
     @Provides
     fun provideTeamTaskDao(database: AppDatabase): TeamTaskDao {
         return database.teamTaskDao()
+    }
+
+    @Provides
+    fun provideNotificationDao(database: AppDatabase): NotificationDao {
+        return database.notificationDao()
     }
 }

@@ -187,7 +187,11 @@ wired through `di/RoomModule`.
       sync upserts, pending-upload reads, and upload acknowledgements; task repository and
       notification lookups use the DAO, and the upload config now uses `RoomUploadConfig`.
 - [ ] Migrate the remaining ~7 uploadable models to `RoomUploadConfig` + the synced-only domains.
-- [ ] Remaining ~31 model domains.
+- [x] **Notification** migrated (synced local notification rows). `RealmNotification` is now a
+      Room `@Entity`; `NotificationDao` owns unread counts, read/sync marking, list filters,
+      deletes, single-doc upserts, and sync bulk upserts. Notification sync now runs outside the
+      legacy Realm transaction path.
+- [ ] Remaining ~30 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 
