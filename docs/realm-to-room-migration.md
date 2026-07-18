@@ -262,6 +262,10 @@ wired through `di/RoomModule`.
       compatibility submissions and persists through Room, and simple status/exam lookup helpers
       (`getLastPendingSubmission`, `updateSubmissionStatus`, `getExamByStepId`, `getExamById`) now
       use Room DAOs.
+- [x] **Exam answer saves moved to Room**: `saveExamAnswer` now reads/upserts answers through
+      `AnswerDao`, updates submission status/timestamps through `SubmissionDao`, and removes pending
+      survey orphans through Room when a survey is completed. Realm remains only in deeper legacy
+      sync/upload serialization paths for submissions.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
