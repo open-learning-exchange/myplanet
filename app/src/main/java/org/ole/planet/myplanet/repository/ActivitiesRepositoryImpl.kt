@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
@@ -50,27 +51,19 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val userChallengeActionsDao: UserChallengeActionsDao,
     private val courseActivityDao: CourseActivityDao,
-    private val resourceActivityDao: ResourceActivityDao
+    private val resourceActivityDao: ResourceActivityDao,
+    private val offlineActivityDao: OfflineActivityDao
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
-        return queryList(RealmOfflineActivity::class.java) {
-            equalTo("userId", userId)
-            equalTo("type", UserSessionManager.KEY_LOGIN)
-        }.size
+        return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
     }
 
     override suspend fun getOfflineLoginCount(userName: String): Int {
-        return count(RealmOfflineActivity::class.java) {
-            equalTo("userName", userName)
-            equalTo("type", UserSessionManager.KEY_LOGIN)
-        }.toInt()
+        return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
     override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
-        return queryListFlow(RealmOfflineActivity::class.java) {
-            equalTo("userName", userName)
-            equalTo("type", UserSessionManager.KEY_LOGIN)
-        }
+        return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
     override suspend fun markResourceAdded(userId: String?, resourceId: String) {
@@ -120,42 +113,34 @@ class ActivitiesRepositoryImpl @Inject constructor(
         parentCode: String?,
         planetCode: String?
     ) {
-        executeTransaction { realm ->
-            val offlineActivities =
-                realm.createObject(RealmOfflineActivity::class.java, UUID.randomUUID().toString())
-            offlineActivities.userId = userId
-            offlineActivities.userName = userName
-            offlineActivities.parentCode = parentCode
-            offlineActivities.createdOn = planetCode
-            offlineActivities.type = UserSessionManager.KEY_LOGIN
-            offlineActivities._rev = null
-            offlineActivities._id = null
-            offlineActivities.description = "Member login on offline application"
-            offlineActivities.loginTime = Date().time
-        }
+        offlineActivityDao.insert(
+            RealmOfflineActivity().apply {
+                id = UUID.randomUUID().toString()
+                this.userId = userId
+                this.userName = userName
+                this.parentCode = parentCode
+                createdOn = planetCode
+                type = UserSessionManager.KEY_LOGIN
+                _rev = null
+                _id = null
+                description = "Member login on offline application"
+                loginTime = Date().time
+            }
+        )
     }
 
     override suspend fun logLogout(userName: String?) {
-        executeTransaction { realm ->
-            realm.where(RealmOfflineActivity::class.java)
-                .equalTo("type", UserSessionManager.KEY_LOGIN).sort("loginTime", io.realm.Sort.DESCENDING)
-                .findFirst()
-                ?.logoutTime = Date().time
+        offlineActivityDao.getLatestByType(UserSessionManager.KEY_LOGIN)?.let { activity ->
+            offlineActivityDao.updateLogoutTime(activity.id, Date().time)
         }
     }
 
     override suspend fun getGlobalLastVisit(): Long? {
-        return withRealm { realm ->
-            realm.where(RealmOfflineActivity::class.java).max("loginTime") as Long?
-        }
+        return offlineActivityDao.getGlobalLastVisit()
     }
 
     override suspend fun getLastVisit(userName: String): Long? {
-        return withRealm { realm ->
-            realm.where(RealmOfflineActivity::class.java)
-                .equalTo("userName", userName)
-                .max("loginTime") as Long?
-        }
+        return offlineActivityDao.getLastVisit(userName)
     }
 
     override suspend fun logResourceOpen(
@@ -209,18 +194,13 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     private suspend fun getUnuploadedLoginActivities(): List<LoginActivityData> {
-        return queryList(RealmOfflineActivity::class.java) {
-            isNull("_rev")
-            equalTo("type", "login")
-        }.mapNotNull { activity ->
-            if (activity.userId?.startsWith("guest") == true || activity.id == null || activity.userId == null) {
+        return offlineActivityDao.getPendingLoginUploads().mapNotNull { activity ->
+            if (activity.userId?.startsWith("guest") == true || activity.userId == null) {
                 null
             } else {
-                val actId = activity.id ?: return@mapNotNull null
-                val actUserId = activity.userId ?: return@mapNotNull null
                 LoginActivityData(
-                    actId,
-                    actUserId,
+                    activity.id,
+                    activity.userId ?: return@mapNotNull null,
                     serializeLoginActivities(activity, context)
                 )
             }
@@ -228,14 +208,12 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     private suspend fun markActivitiesUploaded(ids: Array<String>, revMap: Map<String, JsonObject?>) {
-        executeTransaction { transactionRealm ->
-            val activities = transactionRealm.where(RealmOfflineActivity::class.java)
-                .`in`("id", ids)
-                .findAll()
-
-            activities.forEach { activity ->
-                revMap[activity.id]?.let { activity.changeRev(it) }
-            }
+        val activities = offlineActivityDao.getByIds(ids.toList())
+        activities.forEach { activity ->
+            revMap[activity.id]?.let { activity.changeRev(it) }
+        }
+        if (activities.isNotEmpty()) {
+            offlineActivityDao.upsertAll(activities)
         }
     }
 
@@ -274,54 +252,35 @@ class ActivitiesRepositoryImpl @Inject constructor(
         )
     }
 
-    private fun insertActivityInternal(
-        realm: io.realm.Realm,
+    private fun activityFromJson(
         json: JsonObject,
-        existingActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null,
-        fallbackActivitiesMap: MutableMap<String, RealmOfflineActivity>? = null
-    ) {
-        val serverIdStr = JsonUtils.getString("_id", json)
+        existingActivitiesMap: MutableMap<String, RealmOfflineActivity>,
+        fallbackActivitiesMap: MutableMap<String, RealmOfflineActivity>
+    ): RealmOfflineActivity {
+        val serverId = JsonUtils.getString("_id", json)
         val loginTime = JsonUtils.getLong("loginTime", json)
         val userName = JsonUtils.getString("user", json)
 
-        var activities = if (existingActivitiesMap != null) {
-            existingActivitiesMap[serverIdStr]
-        } else {
-            realm.where(RealmOfflineActivity::class.java)
-                .equalTo("_id", serverIdStr)
-                .findFirst()
-        }
+        val fallbackKey = "${loginTime}_${userName}"
+        val activity = existingActivitiesMap[serverId]
+            ?: fallbackActivitiesMap[fallbackKey]
+            ?: RealmOfflineActivity().apply { id = serverId }
 
-        if (activities == null && loginTime > 0 && userName.isNotEmpty()) {
-            activities = if (fallbackActivitiesMap != null) {
-                fallbackActivitiesMap["${loginTime}_${userName}"]
-            } else {
-                realm.where(RealmOfflineActivity::class.java)
-                    .equalTo("loginTime", loginTime)
-                    .equalTo("userName", userName)
-                    .findFirst()
-            }
-        }
+        activity._rev = JsonUtils.getString("_rev", json)
+        activity._id = serverId
+        activity.loginTime = loginTime
+        activity.type = JsonUtils.getString("type", json)
+        activity.userName = userName
+        activity.parentCode = JsonUtils.getString("parentCode", json)
+        activity.createdOn = JsonUtils.getString("createdOn", json)
+        activity.logoutTime = JsonUtils.getLong("logoutTime", json)
+        activity.androidId = JsonUtils.getString("androidId", json)
 
-        if (activities == null) {
-            activities = realm.createObject(RealmOfflineActivity::class.java, serverIdStr)
-            existingActivitiesMap?.put(serverIdStr, activities)
-
-            if (loginTime > 0 && userName.isNotEmpty()) {
-                fallbackActivitiesMap?.put("${loginTime}_${userName}", activities)
-            }
+        existingActivitiesMap[serverId] = activity
+        if (loginTime > 0 && userName.isNotEmpty()) {
+            fallbackActivitiesMap.putIfAbsent(fallbackKey, activity)
         }
-        if (activities != null) {
-            activities._rev = JsonUtils.getString("_rev", json)
-            activities._id = serverIdStr
-            activities.loginTime = loginTime
-            activities.type = JsonUtils.getString("type", json)
-            activities.userName = userName
-            activities.parentCode = JsonUtils.getString("parentCode", json)
-            activities.createdOn = JsonUtils.getString("createdOn", json)
-            activities.logoutTime = JsonUtils.getLong("logoutTime", json)
-            activities.androidId = JsonUtils.getString("androidId", json)
-        }
+        return activity
     }
 
     override suspend fun hasUserSyncAction(userId: String?): Boolean {
@@ -354,7 +313,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return ob
     }
 
-        override suspend fun uploadActivities() {
+    override suspend fun uploadActivities() {
         val activitiesToUpload = getUnuploadedLoginActivities()
 
         activitiesToUpload.chunked(50).forEach { batch ->
@@ -391,59 +350,32 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertLoginActivitiesFromSync(docs: List<JsonObject>) {
-        executeTransaction { realm ->
-            val documentList = ArrayList<JsonObject>(docs.size)
-            val ids = mutableListOf<String>()
-
-            for (jsonDoc in docs) {
-                val id = JsonUtils.getString("_id", jsonDoc)
-                if (!id.startsWith("_design")) {
-                    documentList.add(jsonDoc)
-                    if (id.isNotEmpty()) {
-                        ids.add(id)
-                    }
-                }
-            }
-
-            val existingActivitiesMap = if (ids.isNotEmpty()) {
-                realm.where(RealmOfflineActivity::class.java)
-                    .`in`("_id", ids.toTypedArray())
-                    .findAll()
-                    .associateBy { it._id ?: "" }
-                    .toMutableMap()
-            } else {
-                mutableMapOf<String, RealmOfflineActivity>()
-            }
-
-            val fallbackCandidates = if (documentList.isNotEmpty()) {
-                val loginTimes = documentList.map { JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct().toTypedArray()
-                val userNames = documentList.map { JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct().toTypedArray()
-
-                if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
-                    val results = realm.where(RealmOfflineActivity::class.java)
-                        .`in`("loginTime", loginTimes)
-                        .`in`("userName", userNames)
-                        .findAll()
-
-                    val map = mutableMapOf<String, RealmOfflineActivity>()
-                    for (activity in results) {
-                        val key = "${activity.loginTime}_${activity.userName}"
-                        if (!map.containsKey(key)) {
-                            map[key] = activity
-                        }
-                    }
-                    map
-                } else {
-                    mutableMapOf()
-                }
-            } else {
-                mutableMapOf()
-            }
-
-            documentList.forEach { jsonDoc ->
-                insertActivityInternal(realm, jsonDoc, existingActivitiesMap, fallbackCandidates)
-            }
+        val documentList = docs.filter { jsonDoc ->
+            !JsonUtils.getString("_id", jsonDoc).startsWith("_design")
         }
+        if (documentList.isEmpty()) return
+
+        val ids = documentList.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
+        val existingActivitiesMap = if (ids.isNotEmpty()) {
+            offlineActivityDao.getByRemoteIds(ids).associateBy { it._id ?: "" }.toMutableMap()
+        } else {
+            mutableMapOf()
+        }
+
+        val loginTimes = documentList.map { JsonUtils.getLong("loginTime", it) }.filter { it > 0 }.distinct()
+        val userNames = documentList.map { JsonUtils.getString("user", it) }.filter { it.isNotEmpty() }.distinct()
+        val fallbackActivitiesMap = if (loginTimes.isNotEmpty() && userNames.isNotEmpty()) {
+            offlineActivityDao.getByLoginTimesAndUserNames(loginTimes, userNames)
+                .associateBy { "${it.loginTime}_${it.userName}" }
+                .toMutableMap()
+        } else {
+            mutableMapOf()
+        }
+
+        val activities = documentList.map { jsonDoc ->
+            activityFromJson(jsonDoc, existingActivitiesMap, fallbackActivitiesMap)
+        }
+        offlineActivityDao.upsertAll(activities)
     }
 
     override suspend fun uploadMyPlanetActivities(userModel: RealmUser) {
