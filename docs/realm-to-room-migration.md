@@ -191,7 +191,11 @@ wired through `di/RoomModule`.
       Room `@Entity`; `NotificationDao` owns unread counts, read/sync marking, list filters,
       deletes, single-doc upserts, and sync bulk upserts. Notification sync now runs outside the
       legacy Realm transaction path.
-- [ ] Remaining ~30 model domains.
+- [x] **Achievement** migrated (synced + custom uploaded profile achievement docs).
+      `RealmAchievement` is now a Room `@Entity` with JSON-backed `List<String>` fields;
+      `AchievementDao` owns initialization, edits, pending-upload reads, upload acknowledgements,
+      and sync bulk upserts. Achievement sync now runs outside the legacy Realm transaction path.
+- [ ] Remaining ~29 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

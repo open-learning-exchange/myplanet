@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
+import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
@@ -173,5 +174,10 @@ object RoomModule {
     @Provides
     fun provideNotificationDao(database: AppDatabase): NotificationDao {
         return database.notificationDao()
+    }
+
+    @Provides
+    fun provideAchievementDao(database: AppDatabase): AchievementDao {
+        return database.achievementDao()
     }
 }
