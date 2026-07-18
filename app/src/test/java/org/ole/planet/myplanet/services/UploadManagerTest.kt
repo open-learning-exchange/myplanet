@@ -23,7 +23,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
@@ -130,7 +130,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadCrashLog delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.uploadRoom<RealmApkLog>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<ApkLog>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadCrashLog()
         advanceUntilIdle()
         coVerify { uploadCoordinator.uploadRoom(uploadConfigs.CrashLog) }

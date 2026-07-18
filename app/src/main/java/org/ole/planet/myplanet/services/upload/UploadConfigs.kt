@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
@@ -222,9 +222,9 @@ class UploadConfigs @Inject constructor(
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
     val CrashLog = RoomUploadConfig(
         endpoint = "apk_logs",
-        modelClassName = "RealmApkLog",
+        modelClassName = "ApkLog",
         fetchPendingItems = { apkLogDao.getPending() },
-        serializer = UploadSerializer.WithContext(RealmApkLog::serialize),
+        serializer = UploadSerializer.WithContext(ApkLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist

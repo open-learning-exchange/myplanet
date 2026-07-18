@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
-import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
@@ -151,7 +151,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val apkLogDao = entryPoint.apkLogDao()
             return try {
                 val model = userSessionManager.getUserModel()
-                val log = RealmApkLog().apply {
+                val log = ApkLog().apply {
                     id = "${UUID.randomUUID()}"
                     parentCode = spm.getParentCode()
                     createdOn = spm.getPlanetCode()
@@ -245,9 +245,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
             val error = e.stackTraceToString()
-            val pendingFile = CrashLogStore.save(context, RealmApkLog.ERROR_TYPE_CRASH, error)
+            val pendingFile = CrashLogStore.save(context, ApkLog.ERROR_TYPE_CRASH, error)
             applicationScope.launch {
-                if (saveLogToRoom(RealmApkLog.ERROR_TYPE_CRASH, error, "${Date().time}")) {
+                if (saveLogToRoom(ApkLog.ERROR_TYPE_CRASH, error, "${Date().time}")) {
                     pendingFile?.delete()
                 }
             }

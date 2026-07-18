@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.RealmCertification
 import org.ole.planet.myplanet.model.RealmChatHistory
 import org.ole.planet.myplanet.model.RealmCommunity
@@ -72,7 +72,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmMyPersonal::class,
         RealmRetryOperation::class,
         RealmCommunity::class,
-        RealmApkLog::class,
+        ApkLog::class,
         RealmUserChallengeActions::class,
         RealmTeamNotification::class,
         RealmCertification::class,

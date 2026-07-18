@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
  * (`UploadConfigs.CrashLog`). A row with a null `_rev` is considered pending upload.
  */
 @Entity(tableName = "apk_log")
-open class RealmApkLog {
+open class ApkLog {
     @PrimaryKey
     var id: String = ""
     var userId: String? = null
@@ -28,7 +28,7 @@ open class RealmApkLog {
     companion object {
         const val ERROR_TYPE_CRASH = "crash"
 
-        fun serialize(log: RealmApkLog, context: Context): JsonObject {
+        fun serialize(log: ApkLog, context: Context): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("type", log.type)
             `object`.addProperty("error", log.error)
