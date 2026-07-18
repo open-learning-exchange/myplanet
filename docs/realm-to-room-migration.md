@@ -257,6 +257,11 @@ wired through `di/RoomModule`.
       `deleteExamSubmissions`, and `getOrCreateSubmission` now use `SubmissionDao`/`AnswerDao`
       instead of Realm transactions. This keeps survey-response creation, completion marking, and
       local exam-submission cleanup on the same Room tables used by the read paths.
+- [x] **Submission flows and creation moved to Room**: pending-survey and all-submission `Flow`
+      streams now come from `SubmissionDao` `Flow`s, `createExamSubmission` builds unmanaged
+      compatibility submissions and persists through Room, and simple status/exam lookup helpers
+      (`getLastPendingSubmission`, `updateSubmissionStatus`, `getExamByStepId`, `getExamById`) now
+      use Room DAOs.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

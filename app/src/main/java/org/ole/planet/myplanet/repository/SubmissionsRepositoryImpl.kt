@@ -6,7 +6,6 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Case
 import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
@@ -16,6 +15,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
@@ -84,17 +84,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
-        return queryListFlow(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-                .equalTo("type", "survey")
-                .equalTo("status", "pending", Case.INSENSITIVE)
-        }
+        return submissionDao.observePendingSurveys(userId).map { rows -> rows.map { it.toRealmModel() } }
     }
 
     override fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
-        return queryListFlow(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-        }.distinctUntilChanged { old, new ->
+        return submissionDao.observeByUserId(userId).map { rows -> rows.map { it.toRealmModel() } }.distinctUntilChanged { old, new ->
             // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
@@ -410,70 +404,49 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             null
         }
 
-        var detachedSub: RealmSubmission? = null
-        executeTransaction { r ->
-                val managedSub = createSubmissionInternal(null, r)
-
-                val parentId = when {
-                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
-                        "${exam.id}@${exam.courseId}"
-                    } else {
-                        exam.id
-                    }
-                    else -> managedSub.parentId
+        val now = Date().time
+        val submission = RealmSubmission().apply {
+            id = UUID.randomUUID().toString()
+            parentId = when {
+                !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                    "${exam.id}@${exam.courseId}"
+                } else {
+                    exam.id
                 }
-                managedSub.parentId = parentId
-
-                try {
-                    val parentJsonString = JsonObject().apply {
-                        addProperty("_id", exam.id ?: "")
-                        addProperty("name", exam.name ?: "")
-                        addProperty("courseId", exam.courseId ?: "")
-                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
-                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
-                        addProperty("noOfQuestions", exam.noOfQuestions)
-                        addProperty("isFromNation", exam.isFromNation)
-                    }.toString()
-                    managedSub.parent = parentJsonString
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                managedSub.userId = userId
-                managedSub.status = "pending"
-                managedSub.type = type
-                managedSub.startTime = Date().time
-                managedSub.lastUpdateTime = Date().time
-                if (managedSub.answers == null) {
-                    managedSub.answers = RealmList()
-                }
-
-                if (team != null) {
-                    val teamRef = r.createObject(RealmTeamReference::class.java)
-                    teamRef._id = team._id
-                    teamRef.name = team.name
-                    teamRef.type = team.type ?: "team"
-                    managedSub.teamObject = teamRef
-
-                    val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
-                    membershipDoc.teamId = teamId
-                    managedSub.membershipDoc = membershipDoc
-
-                    try {
-                        val userJson = JsonObject()
-                        userJson.addProperty("age", userDob ?: "")
-                        userJson.addProperty("gender", userGender ?: "")
-                        val membershipJson = JsonObject()
-                        membershipJson.addProperty("teamId", teamId)
-                        userJson.add("membershipDoc", membershipJson)
-                        managedSub.user = userJson.toString()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-                detachedSub = r.copyFromRealm(managedSub)
+                else -> null
             }
-        return detachedSub
+            parent = JsonObject().apply {
+                addProperty("_id", exam.id ?: "")
+                addProperty("name", exam.name ?: "")
+                addProperty("courseId", exam.courseId ?: "")
+                addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                addProperty("noOfQuestions", exam.noOfQuestions)
+                addProperty("isFromNation", exam.isFromNation)
+            }.toString()
+            this.userId = userId
+            status = "pending"
+            this.type = type
+            startTime = now
+            lastUpdateTime = now
+            answers = RealmList()
+
+            if (team != null) {
+                teamObject = RealmTeamReference().apply {
+                    _id = team._id
+                    name = team.name
+                    this.type = team.type ?: "team"
+                }
+                membershipDoc = RealmMembershipDoc().apply { this.teamId = teamId }
+                user = JsonObject().apply {
+                    addProperty("age", userDob ?: "")
+                    addProperty("gender", userGender ?: "")
+                    add("membershipDoc", JsonObject().apply { addProperty("teamId", teamId) })
+                }.toString()
+            }
+        }
+        saveSubmission(submission)
+        return submission
     }
 
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
@@ -581,28 +554,20 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getLastPendingSubmission(userId: String?): RealmSubmission? {
-        return withRealm { realm ->
-            realm.where(RealmSubmission::class.java)
-                .equalTo("status", "pending")
-                .equalTo("userId", userId)
-                .sort("startTime", Sort.DESCENDING)
-                .findFirst()?.let { realm.copyFromRealm(it) }
-        }
+        return hydrateSubmission(submissionDao.getLatestPendingByUser(userId))
     }
 
     override suspend fun updateSubmissionStatus(submissionId: String?, status: String) {
         if (submissionId.isNullOrEmpty()) return
-        update(RealmSubmission::class.java, "id", submissionId) { submission ->
-            submission.status = status
-        }
+        submissionDao.updateStatus(submissionId, status)
     }
 
     override suspend fun getExamByStepId(stepId: String): RealmStepExam? {
-        return findByField(RealmStepExam::class.java, "stepId", stepId)
+        return examDao.getFirstByStepId(stepId)?.toRealmModel()
     }
 
     override suspend fun getExamById(id: String): RealmStepExam? {
-        return findByField(RealmStepExam::class.java, "id", id)
+        return examDao.getById(id)?.toRealmModel()
     }
 
     override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
