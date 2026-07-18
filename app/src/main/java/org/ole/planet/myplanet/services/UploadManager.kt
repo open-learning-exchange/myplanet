@@ -160,7 +160,7 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        uploadCoordinator.upload(uploadConfigs.CourseProgress)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {

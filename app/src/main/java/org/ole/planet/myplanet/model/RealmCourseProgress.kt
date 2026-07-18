@@ -1,14 +1,19 @@
 package org.ole.planet.myplanet.model
 
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-open class RealmCourseProgress : RealmObject() {
+@Entity(
+    tableName = "course_progress",
+    indices = [Index("_id"), Index("userId"), Index("courseId"), Index(value = ["courseId", "userId", "stepNum"])]
+)
+open class RealmCourseProgress {
     @PrimaryKey
-    var id: String? = null
-    @Index
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var createdOn: String? = null
     var createdDate: Long = 0
@@ -16,9 +21,7 @@ open class RealmCourseProgress : RealmObject() {
     var _rev: String? = null
     var stepNum = 0
     var passed = false
-    @Index
     var userId: String? = null
-    @Index
     var courseId: String? = null
     var parentCode: String? = null
 
