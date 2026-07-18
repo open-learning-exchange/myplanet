@@ -21,8 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -71,7 +70,7 @@ class HealthRepositoryImplTest {
     @Test
     fun getHealthEntry_returns_user_and_examination() = testScope.runTest {
         val examination = HealthExamination().apply { _id = "user1" }
-        coEvery { userDao.getById("user1") } returns RoomUserEntity(id = "user1")
+        coEvery { userDao.getById("user1") } returns UserEntity(id = "user1")
         coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
 
         val result = repository.getHealthEntry("user1")
@@ -87,7 +86,7 @@ class HealthRepositoryImplTest {
             _id = "exam1"
             userId = "user1"
         }
-        coEvery { userDao.getById("user1") } returns RoomUserEntity(id = "user1", _id = "remote-user1")
+        coEvery { userDao.getById("user1") } returns UserEntity(id = "user1", _id = "remote-user1")
         coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
 
         val result = repository.getHealthEntry("user1")

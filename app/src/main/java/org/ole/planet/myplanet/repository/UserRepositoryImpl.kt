@@ -27,10 +27,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
-import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.AppPreferences
@@ -95,7 +92,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getUserById(userId: String): UserEntity? {
-        return userDao.getById(userId)?.toRealmModel()
+        return userDao.getById(userId)
     }
 
     override suspend fun getUsersByIds(userIds: List<String>): List<UserEntity> {
@@ -103,27 +100,26 @@ class UserRepositoryImpl @Inject constructor(
         val userIdSet = userIds.toSet()
         return userDao.getAll()
             .filter { it.id in userIdSet || it._id in userIdSet }
-            .map { it.toRealmModel() }
+            .map { it }
     }
 
     override suspend fun getUserByAnyId(id: String): UserEntity? {
-        return userDao.getById(id)?.toRealmModel()
+        return userDao.getById(id)
     }
 
     override suspend fun getUserByName(name: String): UserEntity? {
-        return userDao.getByName(name)?.toRealmModel()
+        return userDao.getByName(name)
     }
 
     override suspend fun findUserByName(name: String): UserEntity? {
         return userDao.getAll()
             .firstOrNull { it.name.equals(name, ignoreCase = true) }
-            ?.toRealmModel()
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
         return userDao.getAll()
             .filter { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
-            .map { it.toRealmModel() }
+            .map { it }
     }
 
     private fun mapToLightweightUser(managedUser: UserEntity): UserEntity {
@@ -138,14 +134,13 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getAll()
             .asSequence()
             .filter { !it._id.isNullOrBlank() }
-            .map { mapToLightweightUser(it.toRealmModel()) }
+            .map { mapToLightweightUser(it) }
             .toList()
     }
 
     override suspend fun getSyncedUserByName(name: String): UserEntity? {
         return userDao.getByName(name)
             ?.takeIf { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
-            ?.toRealmModel()
     }
 
     private fun buildGuestUserJson(username: String): JsonObject {
@@ -162,7 +157,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllUsers(): List<UserEntity> {
-        return userDao.getAll().map { it.toRealmModel() }
+        return userDao.getAll().map { it }
     }
 
     override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
@@ -173,7 +168,7 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getAll()
             .asSequence()
             .filter { it._id.isNullOrBlank() || it.isUpdated }
-            .map { it.toRealmModel() }
+            .map { it }
             .take(limit)
             .toList()
     }
@@ -183,7 +178,7 @@ class UserRepositoryImpl @Inject constructor(
             userDao.getAll()
         } else {
             userDao.search(query)
-        }.map { it.toRealmModel() }
+        }.map { it }
         return sortUsers(users, sortField, descending)
     }
 
@@ -238,7 +233,7 @@ class UserRepositoryImpl @Inject constructor(
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId
             name = JsonUtils.getString("name", jsonDoc)
-            setRoles(mutableListOf<String?>().apply {
+            setRoles(mutableListOf<String>().apply {
                 for (i in 0 until rolesArray.size()) {
                     add(JsonUtils.getString(rolesArray, i))
                 }
@@ -322,25 +317,25 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun migrateGuestUser(id: String, userName: String, users: List<RoomUserEntity>): UserEntity? {
+    private suspend fun migrateGuestUser(id: String, userName: String, users: List<UserEntity>): UserEntity? {
         val guestUser = users.firstOrNull {
             it.name == userName && it._id?.startsWith("guest_") == true
         } ?: return null
 
         userDao.deleteById(guestUser.id)
-        return guestUser.toRealmModel().apply {
+        return guestUser.apply {
             this.id = id
             this._id = id
         }
     }
 
-    private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<RoomUserEntity>? = null): UserEntity? {
+    private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<UserEntity>? = null): UserEntity? {
         if (jsonDoc == null) return null
         return try {
             val availableUsers = users ?: userDao.getAll()
             val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
             val userName = JsonUtils.getString("name", jsonDoc)
-            val existingUser = availableUsers.firstOrNull { it.id == id || it._id == id }?.toRealmModel()
+            val existingUser = availableUsers.firstOrNull { it.id == id || it._id == id }
             val user = existingUser
                 ?: if (id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
                     migrateGuestUser(id, userName, availableUsers)
@@ -358,9 +353,9 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     private suspend fun upsertUser(user: UserEntity): UserEntity? {
-        val entity = user.toRoomEntity() ?: return null
+        val entity = user ?: return null
         userDao.upsert(entity)
-        return userDao.getById(entity.id)?.toRealmModel()
+        return userDao.getById(entity.id)
     }
 
     private fun sortUsers(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
@@ -549,12 +544,12 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getUserModel(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return userDao.getById(userId)?.toRealmModel()
+        return userDao.getById(userId)
     }
 
     override suspend fun getUserProfile(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
-        return userDao.getById(userId)?.toRealmModel()
+        return userDao.getById(userId)
     }
 
     override suspend fun getUserImageUrl(): String? {
@@ -898,7 +893,7 @@ class UserRepositoryImpl @Inject constructor(
             val userIdSet = userIds.toSet()
             userDao.getAll()
                 .filter { it.id in userIdSet }
-                .map { it.toRealmModel() }
+                .map { it }
                 .associateBy { it.id ?: "" }
         }
         return HealthRecord(mh, mm, list, userMap)
@@ -1234,13 +1229,13 @@ class UserRepositoryImpl @Inject constructor(
 
         val existingUsers = userDao.getAll().toMutableList()
         val usersToDelete = linkedSetOf<String>()
-        val usersToUpsert = mutableListOf<RoomUserEntity>()
+        val usersToUpsert = mutableListOf<UserEntity>()
 
         for (jsonDoc in documentList) {
             try {
                 val id = JsonUtils.getString("_id", jsonDoc).takeIf { it.isNotEmpty() } ?: UUID.randomUUID().toString()
                 val userName = JsonUtils.getString("name", jsonDoc)
-                val existingUser = existingUsers.firstOrNull { it.id == id || it._id == id }?.toRealmModel()
+                val existingUser = existingUsers.firstOrNull { it.id == id || it._id == id }
                 val guestUser = if (existingUser == null && id.startsWith("org.couchdb.user:") && userName.isNotEmpty()) {
                     existingUsers.firstOrNull { it.name == userName && it._id?.startsWith("guest_") == true }
                 } else {
@@ -1248,7 +1243,7 @@ class UserRepositoryImpl @Inject constructor(
                 }
 
                 val user = existingUser
-                    ?: guestUser?.toRealmModel()?.apply {
+                    ?: guestUser?.apply {
                         usersToDelete += guestUser.id
                         this.id = id
                         this._id = id
@@ -1256,7 +1251,7 @@ class UserRepositoryImpl @Inject constructor(
                     ?: UserEntity().apply { this.id = id }
 
                 applyJsonToUser(jsonDoc, user, settings)
-                val entity = user.toRoomEntity() ?: continue
+                val entity = user ?: continue
                 usersToUpsert.removeAll { it.id == entity.id }
                 usersToUpsert += entity
                 existingUsers.removeAll { it.id == entity.id || it._id == entity._id }

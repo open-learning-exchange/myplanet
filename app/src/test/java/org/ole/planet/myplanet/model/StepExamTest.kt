@@ -1,4 +1,6 @@
 package org.ole.planet.myplanet.model
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.ExamQuestion
 
 import android.text.TextUtils
 import com.google.gson.JsonArray

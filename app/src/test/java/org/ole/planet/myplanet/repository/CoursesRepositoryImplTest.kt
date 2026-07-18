@@ -1,4 +1,6 @@
 package org.ole.planet.myplanet.repository
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.CourseStep
 
 import com.google.gson.JsonParser
 import io.mockk.coEvery
@@ -18,14 +20,12 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CourseDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
@@ -99,7 +99,7 @@ class CoursesRepositoryImplTest {
     @Test
     fun `search empty query returns all courses`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
-            RoomCourseEntity(id = "id1", courseId = "id1", courseTitle = "Math", courseTitleNormal = "math")
+            MyCourse(id = "id1", courseId = "id1", courseTitle = "Math", courseTitleNormal = "math")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
@@ -112,9 +112,9 @@ class CoursesRepositoryImplTest {
     @Test
     fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
-            RoomCourseEntity(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
-            RoomCourseEntity(id = "2", courseId = "2", courseTitle = "Science", courseTitleNormal = "science"),
-            RoomCourseEntity(id = "3", courseId = "3", courseTitle = "Math 101", courseTitleNormal = "math 101")
+            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Science", courseTitleNormal = "science"),
+            MyCourse(id = "3", courseId = "3", courseTitle = "Math 101", courseTitleNormal = "math 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
@@ -128,8 +128,8 @@ class CoursesRepositoryImplTest {
     @Test
     fun `search multi word matches all parts`() = runTest {
         coEvery { courseDao.getAll() } returns listOf(
-            RoomCourseEntity(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101"),
-            RoomCourseEntity(id = "2", courseId = "2", courseTitle = "Basic Science 101", courseTitleNormal = "basic science 101")
+            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Basic Science 101", courseTitleNormal = "basic science 101")
         )
         coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
@@ -142,12 +142,12 @@ class CoursesRepositoryImplTest {
     @Test
     fun `getCoursesByIds returns correct courses`() = runTest {
         coEvery { courseDao.getByCourseIds(listOf("id1", "id2")) } returns listOf(
-            RoomCourseEntity(id = "id1", courseId = "id1", courseTitle = "Course 1"),
-            RoomCourseEntity(id = "id2", courseId = "id2", courseTitle = "Course 2")
+            MyCourse(id = "id1", courseId = "id1", courseTitle = "Course 1"),
+            MyCourse(id = "id2", courseId = "id2", courseTitle = "Course 2")
         )
         coEvery { courseStepDao.getByCourseIds(listOf("id1", "id2")) } returns listOf(
-            RoomCourseStepEntity(id = "step1", courseId = "id1", stepTitle = "Step 1"),
-            RoomCourseStepEntity(id = "step2", courseId = "id2", stepTitle = "Step 2")
+            CourseStep(id = "step1", courseId = "id1", stepTitle = "Step 1"),
+            CourseStep(id = "step2", courseId = "id2", stepTitle = "Step 2")
         )
 
         val result = repository.getCoursesByIds(listOf("id1", "id2"))

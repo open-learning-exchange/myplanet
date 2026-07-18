@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.model
+import org.ole.planet.myplanet.model.UserEntity
 
 import android.content.Context
 import io.mockk.every

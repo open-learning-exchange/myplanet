@@ -4,12 +4,10 @@ import com.google.gson.JsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
-import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -27,7 +25,7 @@ class UploadRepositoryImpl @Inject constructor(
     override suspend fun <T : Any> queryPending(config: UploadQueryContract<T>): List<T> {
         return when (config.queryType) {
             UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys()
-                .map { it.toRealmModel() } as List<T>
+                .map { it } as List<T>
 
             UploadQueryType.ExamResults -> hydrateSubmissions(submissionDao.getPendingExamResults()) as List<T>
 
@@ -65,11 +63,11 @@ class UploadRepositoryImpl @Inject constructor(
         return apiInterface.getJsonObject(UrlUtils.header, url)
     }
 
-    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<Submission> {
+    private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
         if (rows.isEmpty()) return emptyList()
         val answersBySubmissionId =
             answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
-        return rows.map { row -> row.toRealmModel(answersBySubmissionId[row.id].orEmpty()) }
+        return rows.map { row -> row.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } } }
     }
 
     private suspend fun markExamsUploaded(
@@ -81,7 +79,7 @@ class UploadRepositoryImpl @Inject constructor(
         val failed = mutableListOf<UploadedItemResult>()
 
         succeeded.forEach { result ->
-            val exam = existing[result.localId]?.toRealmModel()
+            val exam = existing[result.localId]
             if (exam == null) {
                 failed += result
             } else {
@@ -91,7 +89,7 @@ class UploadRepositoryImpl @Inject constructor(
         }
 
         if (updated.isNotEmpty()) {
-            examDao.upsertAll(updated.mapNotNull { it.toRoomEntity() })
+            examDao.upsertAll(updated.mapNotNull { it })
         }
 
         return failed

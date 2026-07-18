@@ -11,12 +11,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -43,7 +43,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         return try {
             val submissionEntity = submissionDao.getByIdOrRemoteId(submissionId) ?: return null
             val answers = answerDao.getBySubmissionId(submissionEntity.id)
-            val submission = submissionEntity.toRealmModel(answers)
+            val submission = submissionEntity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
 
             val document = PdfDocument()
             try {
@@ -66,7 +66,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 }
 
                 val examId = getExamId(submission.parentId)
-                val exam = examId?.let { examDao.getById(it)?.toRealmModel() }
+                val exam = examId?.let { examDao.getById(it) }
 
                 canvas.drawText(exam?.name ?: "Submission Report", MARGIN, yPosition, titlePaint)
                 yPosition += LINE_HEIGHT * 2
@@ -76,7 +76,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 canvas.drawText("Date: ${TimeUtils.getFormattedDateWithTime(submission.lastUpdateTime)}", MARGIN, yPosition, normalPaint)
                 yPosition += LINE_HEIGHT * 2
 
-                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } }.orEmpty()
+                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } }.orEmpty()
 
                 val answersMap = submission.answers?.associateBy { it.questionId } ?: emptyMap()
 
@@ -136,7 +136,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 answerDao.getBySubmissionIds(submissionEntities.map { it.id }).groupBy { it.submissionId }
             }
             val submissions = submissionEntities.map { submission ->
-                submission.toRealmModel(answersBySubmissionId[submission.id].orEmpty())
+                submission.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
             }
 
             if (submissions.isEmpty()) return null
@@ -174,7 +174,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
                 yPosition += LINE_HEIGHT * 3
 
                 val examId = getExamId(submissions.firstOrNull()?.parentId)
-                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } }.orEmpty()
+                val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } }.orEmpty()
 
                 submissions.forEachIndexed { submissionIndex, submission ->
                     if (yPosition > PAGE_HEIGHT - MARGIN - 100) {

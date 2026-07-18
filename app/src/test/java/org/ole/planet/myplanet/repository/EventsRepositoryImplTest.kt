@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.repository
+import org.ole.planet.myplanet.model.UserEntity
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -15,8 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.utils.SystemTimeProvider
@@ -70,9 +70,9 @@ class EventsRepositoryImplTest {
             Meetup().apply { userId = "user1" }
         )
         coEvery { userDao.getAll() } returns listOf(
-            RoomUserEntity(id = "user1"),
-            RoomUserEntity(id = "user2", _id = "remote-user2"),
-            RoomUserEntity(id = "user3")
+            UserEntity(id = "user1"),
+            UserEntity(id = "user2", _id = "remote-user2"),
+            UserEntity(id = "user3")
         )
 
         val result = repository.getJoinedMembers("meetup1")

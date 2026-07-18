@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.repository
+import org.ole.planet.myplanet.model.UserEntity
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -15,8 +16,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.RatingDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Rating
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -37,7 +37,7 @@ class RatingsRepositoryImplTest {
         repository = RatingsRepositoryImpl(gson, ratingDao, userDao)
     }
 
-    private fun mockUserLookup(user: RoomUserEntity?) {
+    private fun mockUserLookup(user: UserEntity?) {
         coEvery { userDao.getById(any()) } returns user
     }
 
@@ -122,7 +122,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `submitRating inserts new rating if not exists`() = runTest {
-        mockUserLookup(RoomUserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
+        mockUserLookup(UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
         val savedSlot = slot<Rating>()
         coEvery { ratingDao.upsert(capture(savedSlot)) } returns Unit
@@ -142,7 +142,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `submitRating updates existing rating if it exists`() = runTest {
-        mockUserLookup(RoomUserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
+        mockUserLookup(UserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
         val existingRating = Rating().apply { id = "existing_id"; rate = 3 }
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns existingRating
         coEvery { ratingDao.findById("existing_id") } returns existingRating

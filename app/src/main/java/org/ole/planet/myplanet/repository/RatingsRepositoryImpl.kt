@@ -7,8 +7,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.room.dao.RatingDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -137,7 +136,7 @@ class RatingsRepositoryImpl @Inject constructor(
     private suspend fun findUserForRating(userId: String): UserEntity {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
-        val user = userDao.getById(userId)?.toRealmModel()
+        val user = userDao.getById(userId)
 
         return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
     }
