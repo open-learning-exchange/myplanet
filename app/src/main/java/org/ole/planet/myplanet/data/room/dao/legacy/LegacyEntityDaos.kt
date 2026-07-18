@@ -55,6 +55,7 @@ interface ExamDao {
 
 @Dao
 interface QuestionDao {
+    @Query("SELECT * FROM exam_questions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<RoomQuestionEntity>
     @Query("SELECT * FROM exam_questions WHERE examId = :examId") suspend fun getByExamId(examId: String): List<RoomQuestionEntity>
     @Query("SELECT * FROM exam_questions WHERE examId IN (:examIds)") suspend fun getByExamIds(examIds: List<String>): List<RoomQuestionEntity>
     @Query("SELECT COUNT(*) FROM exam_questions WHERE examId = :examId") suspend fun countByExamId(examId: String): Int
@@ -67,6 +68,7 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE id = :id OR _id = :id LIMIT 1") suspend fun getByIdOrRemoteId(id: String): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId") suspend fun getByUserId(userId: String): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId") fun observeByUserId(userId: String): Flow<List<RoomSubmissionEntity>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun getPendingSurveys(userId: String): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND LOWER(status) = 'pending' AND type = 'survey'") fun observePendingSurveys(userId: String?): Flow<List<RoomSubmissionEntity>>

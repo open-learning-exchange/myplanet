@@ -8,7 +8,6 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
-import io.realm.RealmQuery
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
@@ -21,9 +20,13 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.CourseProgress
@@ -46,6 +49,9 @@ class ProgressRepositoryImplTest {
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
+    private val submissionDao: SubmissionDao = mockk(relaxed = true)
+    private val answerDao: AnswerDao = mockk(relaxed = true)
+    private val questionDao: QuestionDao = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -60,7 +66,10 @@ class ProgressRepositoryImplTest {
             { mockk(relaxed = true) },
             courseProgressDao,
             courseStepDao,
-            examDao
+            examDao,
+            submissionDao,
+            answerDao,
+            questionDao
         ), recordPrivateCalls = true)
     }
 
@@ -71,9 +80,7 @@ class ProgressRepositoryImplTest {
 
     @Test
     fun fetchCourseData_executes_successfully() = runTest(testDispatcher) {
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns emptyList<RealmSubmission>()
+        coEvery { submissionDao.getExamSubmissionsByUser("user123") } returns emptyList()
         val result = repository.fetchCourseData("user123")
         assertEquals(JsonArray(), result)
     }
@@ -200,21 +207,26 @@ class ProgressRepositoryImplTest {
             courseId = "course1"
         })
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns submissions
+        coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
+            RoomSubmissionEntity(id = submission.id ?: "submission", parentId = submission.parentId, userId = submission.userId, type = submission.type)
+        }
 
         coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams.map { exam ->
             RoomExamEntity(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
         }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmAnswer::class.java, any<Function1<RealmQuery<RealmAnswer>, Unit>>())
-        } returns answers
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
+            org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity(
+                id = answer.id ?: "answer",
+                questionId = answer.questionId,
+                submissionId = answer.submissionId,
+                mistakes = answer.mistakes,
+            )
+        }
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmExamQuestion::class.java, any<Function1<RealmQuery<RealmExamQuestion>, Unit>>())
-        } returns listOf(question)
+        coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(
+            org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity(id = "q1", examId = "exam1")
+        )
 
         val data = repository.fetchCourseData("user1")
         advanceUntilIdle()
@@ -317,7 +329,10 @@ class ProgressRepositoryImplTest {
             { activitiesRepo },
             courseProgressDao,
             courseStepDao,
-            examDao
+            examDao,
+            submissionDao,
+            answerDao,
+            questionDao
         )
 
         coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns true
