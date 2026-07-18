@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -28,6 +29,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.applyEqualTo
 import org.ole.planet.myplanet.data.findCopyByField
 import org.ole.planet.myplanet.data.queryList
@@ -45,6 +47,7 @@ class HealthRepositoryImplTest {
     private val testScope = TestScope(testDispatcher)
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private val mockApiInterface: ApiInterface = mockk(relaxed = true)
+    private val healthExaminationDao: HealthExaminationDao = mockk(relaxed = true)
     private val realm: Realm = mockk(relaxed = true)
     private val healthQuery: RealmQuery<RealmHealthExamination> = mockk(relaxed = true)
     private val userQuery: RealmQuery<RealmUser> = mockk(relaxed = true)
@@ -65,7 +68,6 @@ class HealthRepositoryImplTest {
             operation(realm)
         }
 
-        every { realm.where(RealmHealthExamination::class.java) } returns healthQuery
         every { realm.where(RealmUser::class.java) } returns userQuery
 
         every { healthQuery.equalTo(any<String>(), any<String>()) } returns healthQuery
@@ -76,14 +78,7 @@ class HealthRepositoryImplTest {
 
         every { userQuery.equalTo(any<String>(), any<String>()) } returns userQuery
 
-        every { healthResults.iterator() } answers { healthResultsIterable.toMutableList().iterator() }
-        every { healthResults.isValid } returns true
 
-        every { realm.copyFromRealm(any<Iterable<RealmHealthExamination>>()) } answers {
-            val list = arg<Iterable<RealmHealthExamination>>(0)
-            list.toList()
-        }
-        every { realm.copyFromRealm(any<RealmHealthExamination>()) } answers { arg<RealmHealthExamination>(0) }
         every { realm.copyFromRealm(any<RealmUser>()) } answers { arg<RealmUser>(0) }
 
         mockkStatic("org.ole.planet.myplanet.data.DatabaseServiceKt")
@@ -92,7 +87,8 @@ class HealthRepositoryImplTest {
             mockApiInterface,
             databaseService,
             UnconfinedTestDispatcher(),
-            dispatcherProvider
+            dispatcherProvider,
+            healthExaminationDao
         )
     }
 
@@ -126,7 +122,7 @@ class HealthRepositoryImplTest {
 
         every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns examination
+        coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
 
         val result = repository.getHealthEntry("user1")
         advanceUntilIdle()
@@ -145,8 +141,7 @@ class HealthRepositoryImplTest {
 
         every { realm.findCopyByField(RealmUser::class.java, "_id", "user1") } returns null
         every { realm.findCopyByField(RealmUser::class.java, "id", "user1") } returns user
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "user1") } returns null
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "userId", "user1") } returns examination
+        coEvery { healthExaminationDao.getByIdOrUserId("user1") } returns examination
 
         val result = repository.getHealthEntry("user1")
         advanceUntilIdle()
@@ -160,7 +155,7 @@ class HealthRepositoryImplTest {
         val examination = RealmHealthExamination()
         examination._id = "exam1"
 
-        every { realm.findCopyByField(RealmHealthExamination::class.java, "_id", "exam1") } returns examination
+        coEvery { healthExaminationDao.getById("exam1") } returns examination
 
         val result = repository.getExaminationById("exam1")
         advanceUntilIdle()
@@ -170,20 +165,13 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getUpdatedHealthExaminations_returns_list() = testScope.runTest {
-        val examination = RealmHealthExamination()
-        examination._id = "exam1"
-        examination.isUpdated = true
-
-        healthResultsIterable.clear()
-        healthResultsIterable.add(examination)
-
-        val builderSlot = slot<(RealmQuery<RealmHealthExamination>) -> Unit>()
-        every { realm.queryList(RealmHealthExamination::class.java, capture(builderSlot)) } returns healthResultsIterable
+        val examination = RealmHealthExamination().apply {
+            _id = "exam1"
+            isUpdated = true
+        }
+        coEvery { healthExaminationDao.getUpdated() } returns listOf(examination)
 
         val result = repository.getUpdatedHealthExaminations()
-        builderSlot.captured.invoke(healthQuery)
-        verify { healthQuery.equalTo("isUpdated", true) }
-        verify { healthQuery.notEqualTo("userId", "") }
         advanceUntilIdle()
 
         assertEquals(1, result.size)
@@ -192,21 +180,14 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getUpdatedHealthForUser_returns_list() = testScope.runTest {
-        val examination = RealmHealthExamination()
-        examination._id = "exam1"
-        examination.isUpdated = true
-        examination.userId = "user1"
-
-        healthResultsIterable.clear()
-        healthResultsIterable.add(examination)
-
-        val builderSlot = slot<(RealmQuery<RealmHealthExamination>) -> Unit>()
-        every { realm.queryList(RealmHealthExamination::class.java, capture(builderSlot)) } returns healthResultsIterable
+        val examination = RealmHealthExamination().apply {
+            _id = "exam1"
+            isUpdated = true
+            userId = "user1"
+        }
+        coEvery { healthExaminationDao.getUpdatedForUser("user1") } returns listOf(examination)
 
         val result = repository.getUpdatedHealthForUser("user1")
-        builderSlot.captured.invoke(healthQuery)
-        verify { healthQuery.equalTo("isUpdated", true) }
-        verify { healthQuery.equalTo("userId", "user1") }
         advanceUntilIdle()
 
         assertEquals(1, result.size)
@@ -216,25 +197,12 @@ class HealthRepositoryImplTest {
     @Test
     fun markHealthExaminationsUploaded_updates_revisions() = testScope.runTest {
         val idToRevMap = mapOf("exam1" to "rev1", "exam2" to "rev2")
-        val exam1 = RealmHealthExamination()
-        exam1._id = "exam1"
-        val exam2 = RealmHealthExamination()
-        exam2._id = "exam2"
-
-        healthResultsIterable.clear()
-        healthResultsIterable.add(exam1)
-        healthResultsIterable.add(exam2)
-
-        every { healthQuery.`in`("_id", any<Array<String>>()) } returns healthQuery
 
         repository.markHealthExaminationsUploaded(idToRevMap)
         advanceUntilIdle()
 
-        verify { healthQuery.`in`(eq("_id"), match<Array<String>> { it.toSet() == setOf("exam1", "exam2") }) }
-        assertEquals("rev1", exam1._rev)
-        assertEquals(false, exam1.isUpdated)
-        assertEquals("rev2", exam2._rev)
-        assertEquals(false, exam2.isUpdated)
+        coVerify { healthExaminationDao.markUploaded("exam1", "rev1") }
+        coVerify { healthExaminationDao.markUploaded("exam2", "rev2") }
     }
 
     @Test
@@ -243,28 +211,21 @@ class HealthRepositoryImplTest {
         val pojo = RealmHealthExamination()
         val user = RealmUser()
 
-        every { realm.copyToRealmOrUpdate(any<RealmHealthExamination>()) } returns examination
-        every { realm.copyToRealmOrUpdate(any<RealmUser>()) } returns user
-
         repository.saveExamination(examination, pojo, user)
         advanceUntilIdle()
 
-        verify(exactly = 1) { realm.copyToRealmOrUpdate(user) }
-        verify(exactly = 1) { realm.copyToRealmOrUpdate(pojo) }
-        verify(exactly = 1) { realm.copyToRealmOrUpdate(examination) }
+        coVerify(exactly = 1) { healthExaminationDao.upsert(pojo) }
+        coVerify(exactly = 1) { healthExaminationDao.upsert(examination) }
     }
 
     @Test
     fun saveExamination_handles_nulls() = testScope.runTest {
         val examination = RealmHealthExamination()
 
-        every { realm.copyToRealmOrUpdate(any<RealmHealthExamination>()) } returns examination
-
         repository.saveExamination(examination, null, null)
         advanceUntilIdle()
 
-        verify(exactly = 0) { realm.copyToRealmOrUpdate(any<RealmUser>()) }
-        verify(exactly = 1) { realm.copyToRealmOrUpdate(examination) }
+        coVerify(exactly = 1) { healthExaminationDao.upsert(examination) }
     }
 
     @Test
@@ -273,13 +234,10 @@ class HealthRepositoryImplTest {
         examination._id = "exam1"
         examination.userId = "old_user"
 
-        every { healthQuery.applyEqualTo("_id", "exam1") } returns healthQuery
-        every { healthQuery.findFirst() } returns examination
-
         repository.updateExaminationUserId("exam1", "new_user")
         advanceUntilIdle()
 
-        assertEquals("new_user", examination.userId)
+        coVerify { healthExaminationDao.updateUserId("exam1", "new_user") }
     }
 
     @Test
@@ -348,13 +306,11 @@ class HealthRepositoryImplTest {
 
         val detachedExamination = mockk<RealmHealthExamination>()
         every { RealmHealthExamination.fromJson(doc1) } returns detachedExamination
-        every { realm.insertOrUpdate(any<List<RealmHealthExamination>>()) } returns Unit
-
-        repository.bulkInsertFromSync(realm, jsonArray)
+        repository.bulkInsertFromSync(jsonArray)
         advanceUntilIdle()
 
         verify(exactly = 1) { RealmHealthExamination.fromJson(doc1) }
         verify(exactly = 0) { RealmHealthExamination.fromJson(doc2) }
-        verify(exactly = 1) { realm.insertOrUpdate(listOf(detachedExamination)) }
+        coVerify(exactly = 1) { healthExaminationDao.upsertAll(listOf(detachedExamination)) }
     }
 }

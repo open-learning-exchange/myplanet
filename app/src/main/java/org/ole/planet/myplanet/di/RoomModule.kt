@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
+import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
@@ -168,5 +169,10 @@ object RoomModule {
     @Provides
     fun provideAchievementDao(database: AppDatabase): AchievementDao {
         return database.achievementDao()
+    }
+
+    @Provides
+    fun provideHealthExaminationDao(database: AppDatabase): HealthExaminationDao {
+        return database.healthExaminationDao()
     }
 }
