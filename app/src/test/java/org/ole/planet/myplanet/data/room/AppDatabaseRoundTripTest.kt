@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.data.room
+import org.ole.planet.myplanet.model.UserEntity
 
 import android.app.Application
 import androidx.room.Room
@@ -10,7 +11,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.model.Attachment
 import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.model.News
@@ -120,7 +120,7 @@ class AppDatabaseRoundTripTest {
     @Test
     fun `legacy UserEntity round-trips roles list and deletes`() = runBlocking {
         db.userDao().upsert(
-            RoomUserEntity(id = "u1", _id = "u1", name = "Ada", rolesList = listOf("learner", "leader"))
+            UserEntity(id = "u1", _id = "u1", name = "Ada", rolesList = listOf("learner", "leader"))
         )
         val loaded = db.userDao().getById("u1")
         assertEquals("Ada", loaded?.name)

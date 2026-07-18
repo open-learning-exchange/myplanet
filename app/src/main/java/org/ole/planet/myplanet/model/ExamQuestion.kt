@@ -1,21 +1,28 @@
 package org.ole.planet.myplanet.model
+import androidx.room.ColumnInfo
+import androidx.room.Entity
+import androidx.room.Ignore
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Locale
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class ExamQuestion {
-    var id: String? = null
-    var header: String? = null
-    var body: String? = null
-    var type: String? = null
-    var examId: String? = null
-    private var correctChoice: MutableList<String>? = null
-    var marks: String? = null
-    var choices: String? = null
-    var hasOtherOption: Boolean = false
+@Entity(tableName = "exam_questions", indices = [Index("examId")])
+open class ExamQuestion(
+    @PrimaryKey @JvmField var id: String = "",
+    var header: String? = null,
+    @ColumnInfo(name = "question") var body: String? = null,
+    var type: String? = null,
+    var examId: String? = null,
+    @Ignore private var correctChoice: MutableList<String>? = null,
+    var marks: String? = null,
+    var choices: String? = null,
+    var hasOtherOption: Boolean = false,
     var scaleMax: Int = 9
+) {
     private fun setCorrectChoiceArray(array: JsonArray, question: ExamQuestion?) {
         for (i in 0 until array.size()) {
             question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
@@ -32,6 +39,7 @@ open class ExamQuestion {
         }
     }
 
+    @get:Ignore
     val correctChoiceArray: JsonArray
         get() {
             val array = JsonArray()

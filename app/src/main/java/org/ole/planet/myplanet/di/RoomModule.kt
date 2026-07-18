@@ -38,14 +38,14 @@ import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CourseDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 
 @Module
 @InstallIn(SingletonComponent::class)

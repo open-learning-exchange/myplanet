@@ -16,12 +16,10 @@ import kotlinx.coroutines.flow.flowOn
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
-import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
@@ -58,7 +56,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getExamQuestions(examId: String): List<ExamQuestion> {
-        return questionDao.getByExamId(examId).map { it.toRealmModel() }
+        return questionDao.getByExamId(examId).map { it }
     }
 
     override suspend fun adoptSurvey(
@@ -68,7 +66,7 @@ class SurveysRepositoryImpl @Inject constructor(
         isTeam: Boolean
     ) {
         val userModel = userSessionManager.getUserModel()
-        val exam = examDao.getById(examId)?.toRealmModel() ?: return
+        val exam = examDao.getById(examId) ?: return
 
         val sParentCode = sharedPrefManager.getParentCode()
         val planetCode = sharedPrefManager.getPlanetCode()
@@ -83,12 +81,12 @@ class SurveysRepositoryImpl @Inject constructor(
                 if (existingSurvey == null) {
                     val newSurveyId = UUID.randomUUID().toString()
                     val mappedSurvey = createMappedSurvey(newSurveyId, examId, exam, userModel, teamName, teamId)
-                    examDao.upsert(mappedSurvey.toRoomEntity() ?: return)
+                    examDao.upsert(mappedSurvey ?: return)
 
                     val questionEntities = ExamQuestion.insertExamQuestions(
                         ExamQuestion.serializeQuestions(getExamQuestions(examId)),
                         newSurveyId
-                    ).mapNotNull { it.toRoomEntity() }
+                    ).mapNotNull { it }
                     if (questionEntities.isNotEmpty()) {
                         questionDao.upsertAll(questionEntities)
                     }
@@ -108,7 +106,7 @@ class SurveysRepositoryImpl @Inject constructor(
                 sParentCode = sParentCode,
                 isTeam = isTeam,
                 teamId = teamId
-            )?.toRoomEntity()?.let { submissionDao.upsertAll(listOf(it)) }
+            )?.let { submissionDao.upsertAll(listOf(it)) }
         }
     }
 
@@ -202,7 +200,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
         return candidates.firstOrNull {
             it.parentId == examId && it.status.orEmpty().isEmpty()
-        }?.toRealmModel()
+        }
     }
 
     private suspend fun createMappedSubmission(
@@ -251,7 +249,7 @@ class SurveysRepositoryImpl @Inject constructor(
         return examDao.getByType("surveys")
             .asSequence()
             .filter { it.teamId == teamId || filteredSubmissionIds.contains(it.id) }
-            .map { it.toRealmModel() }
+            .map { it }
             .toList()
     }
 
@@ -264,14 +262,14 @@ class SurveysRepositoryImpl @Inject constructor(
             .asSequence()
             .filter { it.isTeamShareAllowed }
             .filterNot { excludedIds.contains(it.id) }
-            .map { it.toRealmModel() }
+            .map { it }
             .toList()
     }
 
     override suspend fun getIndividualSurveys(): List<StepExam> {
         return examDao.getByType("surveys")
             .filter { !it.isTeamShareAllowed && it.teamId.isNullOrEmpty() }
-            .map { it.toRealmModel() }
+            .map { it }
     }
 
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {
@@ -316,7 +314,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }.filterKeys { it != null }
 
         return surveys.mapNotNull { survey ->
-            val surveyId = survey.id ?: return@mapNotNull null
+            val surveyId = survey.id
             val surveySubmissions = submissionsByParentId[surveyId].orEmpty()
             val submissionCount = surveySubmissions.size
             surveyId to SurveyInfo(
@@ -351,9 +349,9 @@ class SurveysRepositoryImpl @Inject constructor(
         val questionCounts = questionDao.getByExamIds(surveyIds).groupingBy { it.examId }.eachCount()
 
         return surveys.mapNotNull { survey ->
-            val surveyId = survey.id ?: return@mapNotNull null
+            val surveyId = survey.id
             surveyId to SurveyFormState(
-                teamSubmissions[surveyId]?.toRealmModel(),
+                teamSubmissions[surveyId],
                 questionCounts[surveyId] ?: 0
             )
         }.toMap()
@@ -365,17 +363,17 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSurvey(id: String): StepExam? {
-        return examDao.getById(id)?.toRealmModel()
-            ?: examDao.getByType("surveys").firstOrNull { it.name == id }?.toRealmModel()
+        return examDao.getById(id)
+            ?: examDao.getByType("surveys").firstOrNull { it.name == id }
     }
 
     override suspend fun getSurveys(): List<StepExam> {
-        return examDao.getByType("surveys").map { it.toRealmModel() }
+        return examDao.getByType("surveys").map { it }
     }
 
     override suspend fun getSurveys(ascending: Boolean): List<StepExam> {
         val entities = examDao.getByType("surveys").sortedBy { it.createdDate }
-        return (if (ascending) entities else entities.asReversed()).map { it.toRealmModel() }
+        return (if (ascending) entities else entities.asReversed()).map { it }
     }
 
     override suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray) {
@@ -397,10 +395,10 @@ class SurveysRepositoryImpl @Inject constructor(
         }
 
         if (exams.isNotEmpty()) {
-            examDao.upsertAll(exams.mapNotNull { it.toRoomEntity() })
+            examDao.upsertAll(exams.mapNotNull { it })
         }
         if (questions.isNotEmpty()) {
-            questionDao.upsertAll(questions.mapNotNull { it.toRoomEntity() })
+            questionDao.upsertAll(questions.mapNotNull { it })
         }
     }
 
@@ -461,6 +459,6 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPendingAdoptedSurveys(): List<StepExam> {
-        return examDao.getPendingAdoptedSurveys().map { it.toRealmModel() }
+        return examDao.getPendingAdoptedSurveys().map { it }
     }
 }

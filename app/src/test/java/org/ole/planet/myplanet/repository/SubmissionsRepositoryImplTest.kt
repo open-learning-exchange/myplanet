@@ -21,13 +21,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.Answer
@@ -85,7 +83,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getPendingSurveysFlow queries correctly`() = runTest {
-        every { submissionDao.observePendingSurveys("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(RoomSubmissionEntity(id = "submission1")))
+        every { submissionDao.observePendingSurveys("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(Submission(id = "submission1")))
 
         val result = repository.getPendingSurveysFlow("user_123").first()
         assertEquals(1, result.size)
@@ -93,7 +91,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsFlow queries correctly`() = runTest {
-        every { submissionDao.observeByUserId("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(RoomSubmissionEntity(id = "submission1")))
+        every { submissionDao.observeByUserId("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(Submission(id = "submission1")))
 
         val result = repository.getSubmissionsFlow("user_123").first()
         assertEquals(1, result.size)
@@ -101,10 +99,10 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
-        val subList = listOf(RoomSubmissionEntity(id = "1", lastUpdateTime = 100L))
-        val subListDup = listOf(RoomSubmissionEntity(id = "1", lastUpdateTime = 100L))
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDup = listOf(Submission(id = "1", lastUpdateTime = 100L))
 
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<RoomSubmissionEntity>>(replay = 1)
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
         every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
@@ -139,8 +137,8 @@ class SubmissionsRepositoryImplTest {
     @Test
     fun `getUniquePendingSurveys returns list when exams exist`() = runTest {
         coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
-            RoomSubmissionEntity(id = "sub1", parentId = "exam1@course1"),
-            RoomSubmissionEntity(id = "sub2", parentId = "exam2@course1"),
+            Submission(id = "sub1", parentId = "exam1@course1"),
+            Submission(id = "sub2", parentId = "exam2@course1"),
         )
         coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub2")) } returns emptyList()
         coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns emptyList()
@@ -163,7 +161,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsByUserId returns correctly`() = runTest {
-        coEvery { submissionDao.getByUserId("test") } returns listOf(RoomSubmissionEntity(id = "submission1", userId = "test"))
+        coEvery { submissionDao.getByUserId("test") } returns listOf(Submission(id = "submission1", userId = "test"))
         coEvery { answerDao.getBySubmissionIds(listOf("submission1")) } returns emptyList()
 
         val result = repository.getSubmissionsByUserId("test")
@@ -174,7 +172,7 @@ class SubmissionsRepositoryImplTest {
     fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2")
-        coEvery { examDao.getById(examId) } returns RoomExamEntity(id = examId, courseId = "courseId")
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
 
         coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
 
@@ -234,7 +232,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
-        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(RoomSubmissionEntity(id = "submission1"))
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(Submission(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
 
@@ -282,7 +280,7 @@ class SubmissionsRepositoryImplTest {
         every { answerData.component8() } returns 0
         every { answerData.component9() } returns 1
         every { answerData.component10() } returns true
-        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns RoomSubmissionEntity(id = "submission1", parentId = "exam1@course1", userId = "user1")
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
 
         val result = repository.saveExamAnswer(answerData)
 

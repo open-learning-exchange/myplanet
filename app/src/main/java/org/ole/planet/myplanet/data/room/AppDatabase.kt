@@ -33,23 +33,23 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomTeamEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CourseDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.ChatHistory
@@ -116,16 +116,16 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         HealthExamination::class,
         News::class,
         MyLibrary::class,
-        RoomUserEntity::class,
-        RoomCourseEntity::class,
-        RoomCourseStepEntity::class,
-        RoomExamEntity::class,
-        RoomQuestionEntity::class,
-        RoomSubmissionEntity::class,
-        RoomAnswerEntity::class,
-        RoomTeamEntity::class,
+        UserEntity::class,
+        MyCourse::class,
+        CourseStep::class,
+        StepExam::class,
+        ExamQuestion::class,
+        Submission::class,
+        Answer::class,
+        MyTeam::class,
     ],
-    version = 3,
+    version = 4,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)

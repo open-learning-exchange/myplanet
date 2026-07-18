@@ -18,14 +18,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseStep
@@ -195,7 +192,7 @@ class ProgressRepositoryImplTest {
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
 
         coEvery { courseStepDao.getByCourseIds(listOf("course1")) } returns steps.mapIndexed { index, step ->
-            RoomCourseStepEntity(id = step.id ?: "step$index", courseId = step.courseId)
+            CourseStep(id = step.id ?: "step$index", courseId = step.courseId)
         }
 
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(CourseProgress().apply {
@@ -204,15 +201,15 @@ class ProgressRepositoryImplTest {
         })
 
         coEvery { submissionDao.getExamSubmissionsByUser("user1") } returns submissions.map { submission ->
-            RoomSubmissionEntity(id = submission.id ?: "submission", parentId = submission.parentId, userId = submission.userId, type = submission.type)
+            Submission(id = submission.id ?: "submission", parentId = submission.parentId, userId = submission.userId, type = submission.type)
         }
 
         coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams.map { exam ->
-            RoomExamEntity(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
+            StepExam(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
         }
 
         coEvery { answerDao.getBySubmissionIds(listOf("sub1")) } returns answers.map { answer ->
-            org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity(
+            org.ole.planet.myplanet.model.Answer(
                 id = answer.id ?: "answer",
                 questionId = answer.questionId,
                 submissionId = answer.submissionId,
@@ -221,7 +218,7 @@ class ProgressRepositoryImplTest {
         }
 
         coEvery { questionDao.getByIds(listOf("q1")) } returns listOf(
-            org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity(id = question.id ?: "q1", examId = question.examId)
+            org.ole.planet.myplanet.model.ExamQuestion(id = question.id ?: "q1", examId = question.examId)
         )
 
         val data = repository.fetchCourseData("user1")
@@ -252,7 +249,7 @@ class ProgressRepositoryImplTest {
         val progresses1 = listOf(CourseProgress().apply { courseId = "course1"; stepNum = 1 })
 
         coEvery { courseStepDao.getByCourseIds(courseIds) } returns (steps1 + steps2).mapIndexed { index, step ->
-            RoomCourseStepEntity(id = step.id ?: "step$index", courseId = step.courseId)
+            CourseStep(id = step.id ?: "step$index", courseId = step.courseId)
         }
 
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", courseIds) } returns progresses1

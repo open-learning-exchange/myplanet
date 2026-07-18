@@ -1,20 +1,27 @@
 package org.ole.planet.myplanet.model
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.Ignore
+import androidx.room.PrimaryKey
 
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class Answer {
-    var id: String? = null
-    var value: String? = null
-    var valueChoices: MutableList<String>? = null
-    var mistakes = 0
-    var isPassed = false
-    var grade = 0
-    var examId: String? = null
-    var questionId: String? = null
+@Entity(tableName = "answers", indices = [Index("examId"), Index("questionId"), Index("submissionId")])
+open class Answer(
+    @PrimaryKey @JvmField var id: String = "",
+    var value: String? = null,
+    var valueChoices: List<String>? = null,
+    var mistakes: Int = 0,
+    var isPassed: Boolean = false,
+    var grade: Int = 0,
+    var examId: String? = null,
+    var questionId: String? = null,
     var submissionId: String? = null
+) {
+    @get:Ignore
     val valueChoicesArray: JsonArray
         get() {
             val array = JsonArray()

@@ -292,9 +292,9 @@ wired through `di/RoomModule`.
       now resolves course exams through `ExamDao` and deletes matching local exam submissions plus
       answers through `SubmissionDao`/`AnswerDao` instead of a Realm transaction.
 - [x] **All remaining model domains migrated** (User, Teams, Courses, CourseSteps, Exams,
-      ExamQuestions, Answers, Submissions). The remaining `Realm*` model classes are now plain
-      Kotlin classes backed by a Room "legacy" entity layer (`data/room/entity/legacy/` +
-      `LegacyRoomMappers`) so callers keep the old shapes while persistence is Room.
+      ExamQuestions, Answers, Submissions). The remaining `Realm*` model classes are now Room
+      entities directly; the temporary `data/room/entity/legacy/` shadow entities and
+      `LegacyRoomMappers` have been removed.
 - [x] **`DatabaseService` is Room-backed** and all repositories read/write exclusively through
       Room DAOs.
 - [x] **Realm removed**: the `realm-android` Gradle plugin, `librealm-jni.so` `doNotStrip`,
@@ -311,13 +311,12 @@ builds a Realm-free APK, and the full unit suite passes with no Realm dependency
 
 - **Naming debt.** Many classes still carry `Realm*` names (`RealmMyCourse`, `RealmNews`,
   `RealmMyLibrary`, `RealmUser`, …) even though they are plain Kotlin / Room entities now. A rename
-  pass (and collapsing the `legacy` shadow-entity + mapper layer into the entities directly) would
-  pay off the last of the debt. Deferred because it is a large, cross-cutting rename.
+  pass would pay off the last of the debt. Deferred because it is a large, cross-cutting rename.
 - **`android.enableJetifier` stays.** It is *not* Realm-only: a transitive
   `com.android.support:animated-vector-drawable:28.0.0` artifact still needs jetifier, so removing
   it breaks the build. Revisit only after that legacy support-library artifact is gone.
 - **Instrumented / device verification.** The unit suite mocks DAOs, so it does not exercise real
-  Room SQL, the shadow-schema mappers, or sync/upload against a device. An instrumented run plus a
+  Room SQL, sync/upload against a device. An instrumented run plus a
   real device sync-and-smoke test is recommended before shipping.
 
 ## Local build environment (ephemeral sessions)

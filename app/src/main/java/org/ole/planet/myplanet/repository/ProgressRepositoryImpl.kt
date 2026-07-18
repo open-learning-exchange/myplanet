@@ -7,12 +7,11 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseProgress
@@ -38,7 +37,7 @@ class ProgressRepositoryImpl @Inject constructor(
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()
         } else {
-            courseStepDao.getByCourseIds(courseIds).map { it.toRealmModel() }
+            courseStepDao.getByCourseIds(courseIds).map { it }
         }
         val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
@@ -66,11 +65,11 @@ class ProgressRepositoryImpl @Inject constructor(
         val allExams = if (courseIds.isEmpty()) {
             emptyList()
         } else {
-            examDao.getByCourseIds(courseIds).map { it.toRealmModel() }
+            examDao.getByCourseIds(courseIds).map { it }
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
         val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
-            .map { it.toRealmModel() }
+            .map { it }
             .groupBy { submission -> courseIds.firstOrNull { courseId -> submission.parentId?.contains(courseId) == true } }
 
         mycourses.forEach { course ->
@@ -122,10 +121,10 @@ class ProgressRepositoryImpl @Inject constructor(
         submissions: List<Submission>, examIds: List<String>, obj: JsonObject
     ) {
         val submissionIds = submissions.mapNotNull { it.id }
-        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it.toRealmModel() }
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it }
 
         val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
-        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds).map { it.toRealmModel() }
+        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds).map { it }
         val questionsMap = allQuestions.associateBy { it.id }
 
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }

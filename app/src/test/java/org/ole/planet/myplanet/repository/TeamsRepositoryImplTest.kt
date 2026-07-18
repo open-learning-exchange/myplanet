@@ -20,10 +20,10 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
-import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
-import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.dao.CourseDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User

@@ -31,7 +31,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
