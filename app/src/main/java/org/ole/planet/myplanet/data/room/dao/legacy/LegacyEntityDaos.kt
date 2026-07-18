@@ -73,7 +73,10 @@ interface SubmissionDao {
     @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND parentId = :parentId AND type = :type") suspend fun countByUserParentAndType(userId: String?, parentId: String, type: String): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND parentId LIKE '%' || :examId || '%' AND status != 'pending'") suspend fun countCompletedByUserAndExamId(userId: String?, examId: String): Int
     @Query("SELECT * FROM submissions WHERE parentId = :parentId AND userId = :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE parentId LIKE '%' || :parentIdFragment || '%' LIMIT 1") suspend fun getFirstByParentIdContaining(parentIdFragment: String): RoomSubmissionEntity?
+    @Query("UPDATE submissions SET user = :userJson, status = 'complete', isUpdated = 1 WHERE id = :id") suspend fun markComplete(id: String, userJson: String): Int
+    @Query("DELETE FROM submissions WHERE parentId = :parentId AND userId = :userId") suspend fun deleteByParentAndUser(parentId: String, userId: String?): Int
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND (_id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id = '')") suspend fun getPendingSubmissions(): List<RoomSubmissionEntity>
     @Upsert suspend fun upsertAll(items: List<RoomSubmissionEntity>)
@@ -85,6 +88,7 @@ interface SubmissionDao {
 interface AnswerDao {
     @Query("SELECT * FROM answers WHERE submissionId = :submissionId") suspend fun getBySubmissionId(submissionId: String): List<RoomAnswerEntity>
     @Query("SELECT * FROM answers WHERE submissionId IN (:submissionIds)") suspend fun getBySubmissionIds(submissionIds: List<String>): List<RoomAnswerEntity>
+    @Query("DELETE FROM answers WHERE submissionId IN (:submissionIds)") suspend fun deleteBySubmissionIds(submissionIds: List<String>): Int
     @Upsert suspend fun upsertAll(items: List<RoomAnswerEntity>)
     @Upsert fun upsertAllBlocking(items: List<RoomAnswerEntity>)
 }

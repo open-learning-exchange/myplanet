@@ -225,18 +225,12 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `saveSubmission performs transaction`() = runTest {
-        val sub = mockk<RealmSubmission>(relaxed = true)
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            val realm = mockk<Realm>(relaxed = true)
-            transactionSlot.captured.invoke(realm)
-        }
+    fun `saveSubmission upserts submission through Room`() = runTest {
+        val sub = RealmSubmission().apply { id = "submission1" }
 
         repository.saveSubmission(sub)
 
-        coVerify { databaseService.executeTransactionAsync(any()) }
+        coVerify { submissionDao.upsertAll(match { it.single().id == "submission1" }) }
     }
 
     @Test
@@ -300,20 +294,13 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `deleteExamSubmissions queries and deletes correctly`() = runTest {
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            val realm = mockk<Realm>(relaxed = true)
-            val query = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
-            every { realm.where(RealmSubmission::class.java) } returns query
-            every { query.equalTo(any<String>(), any<String>()) } returns query
-            every { query.findAll() } returns mockk(relaxed = true)
-
-            transactionSlot.captured.invoke(realm)
-        }
+    fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(RoomSubmissionEntity(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
-        coVerify { databaseService.executeTransactionAsync(any()) }
+
+        coVerify { answerDao.deleteBySubmissionIds(listOf("submission1")) }
+        coVerify { submissionDao.deleteByParentAndUser("exam@course", "user") }
     }
 
     @Test
@@ -374,17 +361,11 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `markSubmissionComplete executes transaction`() = runTest {
-        val mockSub = mockk<RealmSubmission>(relaxed = true)
-        coEvery {
-            repository["update"](RealmSubmission::class.java, "id", "test_id", any<Function1<RealmSubmission, Unit>>())
-        } answers {
-            val updater = it.invocation.args[3] as (RealmSubmission) -> Unit
-            updater.invoke(mockSub)
-        }
+    fun `markSubmissionComplete updates submission through Room`() = runTest {
+        val payload = JsonObject().apply { addProperty("name", "Learner") }
 
-        repository.markSubmissionComplete("test_id", JsonObject())
+        repository.markSubmissionComplete("test_id", payload)
 
-        verify { mockSub.status = "complete" }
+        coVerify { submissionDao.markComplete("test_id", payload.toString()) }
     }
 }
