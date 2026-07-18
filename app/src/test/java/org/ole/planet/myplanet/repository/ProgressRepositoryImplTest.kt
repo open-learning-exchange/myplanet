@@ -22,6 +22,8 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.CourseProgress
@@ -43,6 +45,7 @@ class ProgressRepositoryImplTest {
     private lateinit var mockCoursesRepository: CoursesRepository
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
+    private val examDao: ExamDao = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -56,7 +59,8 @@ class ProgressRepositoryImplTest {
             { mockCoursesRepository },
             { mockk(relaxed = true) },
             courseProgressDao,
-            courseStepDao
+            courseStepDao,
+            examDao
         ), recordPrivateCalls = true)
     }
 
@@ -200,9 +204,9 @@ class ProgressRepositoryImplTest {
             repository invoke "queryList" withArguments listOf(RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
         } returns submissions
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmStepExam::class.java, any<Function1<RealmQuery<RealmStepExam>, Unit>>())
-        } returns exams
+        coEvery { examDao.getByCourseIds(listOf("course1")) } returns exams.map { exam ->
+            RoomExamEntity(id = exam.id ?: "exam", courseId = exam.courseId, stepId = exam.stepId, type = exam.type)
+        }
 
         coEvery {
             repository invoke "queryList" withArguments listOf(RealmAnswer::class.java, any<Function1<RealmQuery<RealmAnswer>, Unit>>())
@@ -312,7 +316,8 @@ class ProgressRepositoryImplTest {
             { mockCoursesRepository },
             { activitiesRepo },
             courseProgressDao,
-            courseStepDao
+            courseStepDao,
+            examDao
         )
 
         coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns true

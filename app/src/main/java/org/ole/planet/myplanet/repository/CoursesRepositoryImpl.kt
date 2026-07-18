@@ -145,9 +145,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return 0
         }
-        return count(RealmStepExam::class.java) {
-            equalTo("courseId", courseId)
-        }.toInt()
+        return examDao.getByCourseIdAndType(courseId, "courses").size
     }
 
     override suspend fun getCourseSteps(courseId: String): List<RealmCourseStep> {
@@ -350,20 +348,11 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepsList = getCourseSteps(courseId)
         val current = progressRepository.getCurrentProgress(stepsList, userId, courseId)
         val courseTitle = getCourseById(courseId)?.courseTitle
+        val stepIds = stepsList.mapNotNull { it.id }
+        val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds).map { it.toRealmModel() }
         return withRealm { realm ->
             val max = stepsList.size
             val title = courseTitle
-
-            val stepIds = stepsList.mapNotNull { it.id }
-            val allExams = mutableListOf<RealmStepExam>()
-            if (stepIds.isNotEmpty()) {
-                stepIds.chunked(1000).forEach { chunk ->
-                    val chunkExams = realm.where(RealmStepExam::class.java)
-                        .`in`("stepId", chunk.toTypedArray())
-                        .findAll()
-                    allExams.addAll(chunkExams)
-                }
-            }
             val examsByStepId = allExams.groupBy { it.stepId }
 
             val examIds = allExams.mapNotNull { it.id }
@@ -496,19 +485,9 @@ class CoursesRepositoryImpl @Inject constructor(
         val step = courseStepDao.getById(stepId)?.toRealmModel()
             ?: throw IllegalStateException("Step not found")
         val resources = myLibraryDao.getByStepId(stepId)
-        val intermediate = withRealm { realm ->
-            val stepExams = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "courses")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            val stepSurvey = realm.where(RealmStepExam::class.java)
-                .equalTo("stepId", stepId)
-                .equalTo("type", "surveys")
-                .findAll()
-                .let { realm.copyFromRealm(it) }
-            CourseStepData(step, resources, stepExams, stepSurvey, false)
-        }
+        val stepExams = examDao.getByStepIdAndType(stepId, "courses").map { it.toRealmModel() }
+        val stepSurvey = examDao.getByStepIdAndType(stepId, "surveys").map { it.toRealmModel() }
+        val intermediate = CourseStepData(step, resources, stepExams, stepSurvey, false)
         val userHasCourse = isMyCourse(userId, intermediate.step.courseId)
         return intermediate.copy(userHasCourse = userHasCourse)
     }
@@ -558,9 +537,8 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteCourseProgress(courseId: String?) {
+        val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id }.toTypedArray() } ?: emptyArray()
         executeTransaction { realm ->
-            val examList = realm.where(RealmStepExam::class.java).equalTo("courseId", courseId).findAll()
-            val examIds = examList.mapNotNull { it.id }.toTypedArray()
             if (examIds.isNotEmpty()) {
                 realm.where(RealmSubmission::class.java)
                     .`in`("parentId", examIds)
