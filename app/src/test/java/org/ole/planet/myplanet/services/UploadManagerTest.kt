@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
@@ -217,10 +216,10 @@ class UploadManagerTest {
 
     @Test
     fun `uploadTeamTask delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmTeamTask>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom(uploadConfigs.TeamTask) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadTeamTask()
         advanceUntilIdle()
-        coVerify { uploadCoordinator.upload(uploadConfigs.TeamTask) }
+        coVerify { uploadCoordinator.uploadRoom(uploadConfigs.TeamTask) }
     }
 
     @Test

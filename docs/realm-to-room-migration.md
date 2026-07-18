@@ -182,7 +182,11 @@ wired through `di/RoomModule`.
 - [x] **RemovedLog** migrated (local shelf tombstones). `RealmRemovedLog` is now a Room
       `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
       courses are re-added, and shelf merge filtering for removed resources/courses.
-- [ ] Migrate the remaining ~8 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **TeamTask** migrated (uploaded + synced task rows). `RealmTeamTask` is now a Room
+      `@Entity`; `TeamTaskDao` owns task flows, due-task notification lookups, title/id lookups,
+      sync upserts, pending-upload reads, and upload acknowledgements; task repository and
+      notification lookups use the DAO, and the upload config now uses `RoomUploadConfig`.
+- [ ] Migrate the remaining ~7 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~31 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

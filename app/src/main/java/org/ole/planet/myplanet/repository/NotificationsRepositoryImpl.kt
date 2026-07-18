@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
@@ -29,7 +30,8 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val userRepository: Lazy<UserRepository>,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val timeProvider: TimeProvider,
-    private val teamNotificationDao: TeamNotificationDao
+    private val teamNotificationDao: TeamNotificationDao,
+    private val teamTaskDao: TeamTaskDao
 ) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
     override suspend fun refresh() {
         withRealm { it.refresh() }
@@ -216,7 +218,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
-            val task = findByField(RealmTeamTask::class.java, "id", it)
+            val task = teamTaskDao.getById(it)
             val linkJson = org.json.JSONObject(task?.link ?: "{}")
             val teamId = linkJson.optString("teams")
             if (teamId.isNotEmpty()) {
@@ -254,9 +256,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         if (taskIds.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = queryList(RealmTeamTask::class.java) {
-            `in`("id", taskIds.toTypedArray())
-        }
+        val tasks = teamTaskDao.getByIds(taskIds)
 
         val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
         if (teamIds.isNotEmpty()) {
@@ -314,7 +314,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTaskTeamName(taskTitle: String): String? {
-        val taskObj = findByField(RealmTeamTask::class.java, "title", taskTitle)
+        val taskObj = teamTaskDao.getByTitle(taskTitle)
         val teamInfo = taskObj?.teamId?.let { teamsRepository.get().getTeamLabelInfo(it) }
         return teamInfo?.name
     }
@@ -323,9 +323,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         if (taskTitles.isEmpty()) return emptyMap()
         val map = mutableMapOf<String, String>()
 
-        val tasks = queryList(RealmTeamTask::class.java) {
-            `in`("title", taskTitles.toTypedArray())
-        }
+        val tasks = teamTaskDao.getByTitles(taskTitles)
 
         val teamIds = tasks.mapNotNull { it.teamId }.filter { it.isNotEmpty() }.distinct()
         if (teamIds.isNotEmpty()) {
@@ -358,10 +356,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val hasChat = notification != null && notification.lastCount < chatCount
 
-        val tasks = queryList(RealmTeamTask::class.java) {
-            equalTo("assignee", userId)
-            between("deadline", current, tomorrow.timeInMillis)
-        }
+        val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
 
         val hasTask = tasks.isNotEmpty()
 
@@ -399,10 +394,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         // 3. Fetch all relevant tasks once
         val current = timeProvider.now()
         val tomorrow = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, 1) }
-        val tasks = queryList(RealmTeamTask::class.java) {
-            equalTo("assignee", userId)
-            between("deadline", current, tomorrow.timeInMillis)
-        }
+        val tasks = teamTaskDao.getTasksForUserBetween(userId, current, tomorrow.timeInMillis)
         val hasTask = tasks.isNotEmpty()
 
         // 4. Combine the results in memory

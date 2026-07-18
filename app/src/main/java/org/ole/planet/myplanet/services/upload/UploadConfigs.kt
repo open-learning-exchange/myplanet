@@ -12,6 +12,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmCourseProgress
@@ -59,7 +60,8 @@ class UploadConfigs @Inject constructor(
     private val resourceActivityDao: ResourceActivityDao,
     private val submitPhotosDao: SubmitPhotosDao,
     private val newsLogDao: NewsLogDao,
-    private val teamLogDao: TeamLogDao
+    private val teamLogDao: TeamLogDao,
+    private val teamTaskDao: TeamTaskDao
 ) {
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
@@ -87,19 +89,20 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-    val TeamTask = UploadConfig(
-        modelClass = RealmTeamTask::class,
+    val TeamTask = RoomUploadConfig(
         endpoint = "tasks",
-        queryBuilder = { query ->
-            query.beginGroup()
-                .isNull("_id").or().isEmpty("_id").or().equalTo("isUpdated", true)
-                .endGroup()
-        },
+        modelClassName = "RealmTeamTask",
+        fetchPendingItems = { teamTaskDao.getPendingUploads() },
         serializer = UploadSerializer.Async { task ->
             val user = userRepository.getUserById(task.assignee ?: "")
             RealmTeamTask.serialize(task, user)
         },
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                teamTaskDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
     val TeamActivities = RoomUploadConfig(

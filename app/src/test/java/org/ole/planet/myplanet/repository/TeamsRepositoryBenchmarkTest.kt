@@ -17,6 +17,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
@@ -71,7 +72,8 @@ class TeamsRepositoryBenchmarkTest {
             userRepository,
             resourcesRepositoryLazy,
             TestTimeProvider(),
-            teamLogDao
+            teamLogDao,
+            mockk<TeamTaskDao>(relaxed = true)
         )
     }
 

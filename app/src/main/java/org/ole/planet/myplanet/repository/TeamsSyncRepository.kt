@@ -19,6 +19,6 @@ interface TeamsSyncRepository {
     fun insertMyTeam(realm: Realm, doc: JsonObject)
     suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
     fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray)
-    fun bulkInsertTasksFromSync(realm: Realm, jsonArray: JsonArray)
+    suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray)
     suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray)
 }

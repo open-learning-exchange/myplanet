@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.model.RealmApkLog
 import org.ole.planet.myplanet.model.RealmCertification
@@ -48,6 +49,7 @@ import org.ole.planet.myplanet.model.RealmSubmitPhotos
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.RealmTeamNotification
 import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 
 /**
@@ -82,6 +84,7 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
         RealmOfflineActivity::class,
         RealmCourseProgress::class,
         RealmRemovedLog::class,
+        RealmTeamTask::class,
     ],
     version = 1,
     exportSchema = false,
@@ -111,4 +114,5 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun offlineActivityDao(): OfflineActivityDao
     abstract fun courseProgressDao(): CourseProgressDao
     abstract fun removedLogDao(): RemovedLogDao
+    abstract fun teamTaskDao(): TeamTaskDao
 }

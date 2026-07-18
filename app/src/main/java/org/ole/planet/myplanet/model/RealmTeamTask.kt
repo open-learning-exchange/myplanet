@@ -2,22 +2,23 @@ package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmTeamTask : RealmObject() {
+@Entity(tableName = "team_tasks", indices = [Index("teamId")])
+class RealmTeamTask {
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var _rev: String? = null
     var title: String? = null
     var description: String? = null
     var link: String? = null
     var sync: String? = null
-    @Index
     var teamId: String? = null
     var isUpdated = false
     var assignee: String? = null
@@ -32,28 +33,25 @@ open class RealmTeamTask : RealmObject() {
     }
 
     companion object {
-        fun insert(mRealm: Realm, obj: JsonObject?) {
-            var task = mRealm.where(RealmTeamTask::class.java).equalTo("_id", JsonUtils.getString("_id", obj)).findFirst()
-            if (task == null) {
-                task = mRealm.createObject(RealmTeamTask::class.java, JsonUtils.getString("_id", obj))
+        fun fromJson(obj: JsonObject?): RealmTeamTask {
+            val task = RealmTeamTask()
+            task.id = JsonUtils.getString("_id", obj)
+            task._id = JsonUtils.getString("_id", obj)
+            task._rev = JsonUtils.getString("_rev", obj)
+            task.title = JsonUtils.getString("title", obj)
+            task.status = JsonUtils.getString("status", obj)
+            task.deadline = JsonUtils.getLong("deadline", obj)
+            task.completedTime = JsonUtils.getLong("completedTime", obj)
+            task.description = JsonUtils.getString("description", obj)
+            task.link = JsonUtils.gson.toJson(JsonUtils.getJsonObject("link", obj))
+            task.sync = JsonUtils.gson.toJson(JsonUtils.getJsonObject("sync", obj))
+            task.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj))
+            val user = JsonUtils.getJsonObject("assignee", obj)
+            if (user.has("_id")) {
+                task.assignee = JsonUtils.getString("_id", user)
             }
-            if (task != null) {
-                task._id = JsonUtils.getString("_id", obj)
-                task._rev = JsonUtils.getString("_rev", obj)
-                task.title = JsonUtils.getString("title", obj)
-                task.status = JsonUtils.getString("status", obj)
-                task.deadline = JsonUtils.getLong("deadline", obj)
-                task.completedTime = JsonUtils.getLong("completedTime", obj)
-                task.description = JsonUtils.getString("description", obj)
-                task.link = JsonUtils.gson.toJson(JsonUtils.getJsonObject("link", obj))
-                task.sync = JsonUtils.gson.toJson(JsonUtils.getJsonObject("sync", obj))
-                task.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", obj))
-                val user = JsonUtils.getJsonObject("assignee", obj)
-                if (user.has("_id")) {
-                    task.assignee = JsonUtils.getString("_id", user)
-                }
-                task.completed = JsonUtils.getBoolean("completed", obj)
-            }
+            task.completed = JsonUtils.getBoolean("completed", obj)
+            return task
         }
 
         fun serialize(task: RealmTeamTask, user: RealmUser?): JsonObject {
