@@ -134,6 +134,19 @@ fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
     )
 }
 
+fun RoomQuestionEntity.toRealmModel(): RealmExamQuestion {
+    return RealmExamQuestion().apply {
+        id = this@toRealmModel.id
+        examId = this@toRealmModel.examId
+        type = this@toRealmModel.type
+        body = this@toRealmModel.question
+        header = this@toRealmModel.question
+        choices = this@toRealmModel.choices?.firstOrNull()
+        setCorrectChoices(this@toRealmModel.correctChoice)
+        marks = this@toRealmModel.grade.toString()
+    }
+}
+
 fun RealmSubmission.toRoomEntity(): RoomSubmissionEntity? {
     val localId = id ?: _id ?: return null
     return RoomSubmissionEntity(

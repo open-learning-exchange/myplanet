@@ -38,6 +38,9 @@ interface CourseStepDao {
 
 @Dao
 interface ExamDao {
+    @Query("SELECT * FROM exams WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE id = :id LIMIT 1") suspend fun getById(id: String): RoomExamEntity?
+    @Query("SELECT * FROM exams WHERE stepId = :stepId LIMIT 1") suspend fun getFirstByStepId(stepId: String): RoomExamEntity?
     @Query("SELECT * FROM exams WHERE courseId = :courseId") suspend fun getByCourseId(courseId: String): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIds(courseIds: List<String>): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE courseId = :courseId AND type = :type") suspend fun getByCourseIdAndType(courseId: String, type: String): List<RoomExamEntity>
@@ -52,6 +55,8 @@ interface ExamDao {
 @Dao
 interface QuestionDao {
     @Query("SELECT * FROM exam_questions WHERE examId = :examId") suspend fun getByExamId(examId: String): List<RoomQuestionEntity>
+    @Query("SELECT * FROM exam_questions WHERE examId IN (:examIds)") suspend fun getByExamIds(examIds: List<String>): List<RoomQuestionEntity>
+    @Query("SELECT COUNT(*) FROM exam_questions WHERE examId = :examId") suspend fun countByExamId(examId: String): Int
     @Upsert suspend fun upsertAll(items: List<RoomQuestionEntity>)
     @Upsert fun upsertAllBlocking(items: List<RoomQuestionEntity>)
 }

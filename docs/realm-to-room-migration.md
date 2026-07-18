@@ -243,6 +243,11 @@ wired through `di/RoomModule`.
       survey reads for course progress, course-step detail, exam counts, and local-progress cleanup,
       hydrating legacy `RealmStepExam` compatibility objects from `RoomExamEntity`. Sync writes for
       both tables were already landing in Room.
+- [x] **Submission survey/exam metadata reads moved to Room**: `SubmissionsRepositoryImpl` now
+      resolves survey titles/maps, exam question counts, bulk-survey parent ids, step completion,
+      unfinished/pending survey metadata, and submission-detail question rows through `ExamDao` and
+      `QuestionDao` instead of Realm queries. `RoomQuestionEntity` hydrates legacy
+      `RealmExamQuestion` compatibility objects, including correct-choice data for grading display.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

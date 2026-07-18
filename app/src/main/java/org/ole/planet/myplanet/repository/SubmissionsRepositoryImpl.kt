@@ -20,9 +20,12 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
@@ -52,7 +55,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val exporter: SubmissionsRepositoryExporter,
     private val submitPhotosDao: SubmitPhotosDao,
     private val submissionDao: SubmissionDao,
-    private val answerDao: AnswerDao
+    private val answerDao: AnswerDao,
+    private val examDao: ExamDao,
+    private val questionDao: QuestionDao
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -94,11 +99,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
+    private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         if (examIds.isEmpty()) return emptyList()
-        return queryList(RealmStepExam::class.java) {
-            `in`("id", examIds.toTypedArray())
-        }
+        return examDao.getByIds(examIds).map { it.toRealmModel() }
     }
 
     override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
@@ -169,7 +172,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getExamQuestionCount(stepId: String): Int {
-        return findByField(RealmStepExam::class.java, "stepId", stepId)?.noOfQuestions ?: 0
+        return examDao.getFirstByStepId(stepId)?.noOfQuestions ?: 0
     }
 
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
@@ -200,19 +203,11 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             return false
         }
 
-        val questions = queryList(RealmExamQuestion::class.java) {
-            equalTo("examId", stepExamId)
-        }
-        if (questions.isEmpty()) {
+        if (questionDao.countByExamId(stepExamId) == 0) {
             return false
         }
 
-        val examId = questions.firstOrNull()?.examId
-        if (examId.isNullOrBlank()) {
-            return false
-        }
-
-        val parentId = "$examId@$courseId"
+        val parentId = "$stepExamId@$courseId"
         return count(RealmSubmission::class.java) {
             equalTo("userId", userId)
             equalTo("parentId", parentId)
@@ -238,13 +233,11 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>) {
-        val parentId = withRealm { realm ->
-            val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
-            if (!courseId.isNullOrEmpty()) {
-                "$examId@$courseId"
-            } else {
-                examId
-            }
+        val courseId = examDao.getById(examId)?.courseId
+        val parentId = if (!courseId.isNullOrEmpty()) {
+            "$examId@$courseId"
+        } else {
+            examId
         }
         userIds.forEach { userId ->
             getOrCreateSubmission(userId, parentId)
@@ -289,9 +282,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
         val user = submission.userId?.let { findByField(RealmUser::class.java, "id", it) }
 
-        val questions = queryList(RealmExamQuestion::class.java) {
-            equalTo("examId", examId)
-        }
+        val questions = examId?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } } ?: emptyList()
 
         val questionAnswers = questions.map { question ->
             val answer = submission.answers?.find { it.questionId == question.id }
@@ -403,7 +394,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
-        val exam = findByField(RealmStepExam::class.java, "stepId", stepId) ?: return true
+        val exam = examDao.getFirstByStepId(stepId) ?: return true
         return exam.id?.let {
             count(RealmSubmission::class.java) {
                 equalTo("userId", userId)
@@ -414,10 +405,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     private suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
-        return queryList(RealmStepExam::class.java) {
-            equalTo("courseId", courseId)
-            equalTo("type", "survey")
-        }
+        return examDao.getByCourseIdAndType(courseId, "survey").map { it.toRealmModel() }
     }
 
     override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
