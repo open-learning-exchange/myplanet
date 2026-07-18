@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.data.room.dao.legacy
 import androidx.room.Dao
 import androidx.room.Query
 import androidx.room.Upsert
+import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
@@ -66,7 +67,9 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE id = :id OR _id = :id LIMIT 1") suspend fun getByIdOrRemoteId(id: String): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId") suspend fun getByUserId(userId: String): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE userId = :userId") fun observeByUserId(userId: String): Flow<List<RoomSubmissionEntity>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun getPendingSurveys(userId: String): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND LOWER(status) = 'pending' AND type = 'survey'") fun observePendingSurveys(userId: String?): Flow<List<RoomSubmissionEntity>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun getUniquePendingSurveyCandidates(userId: String): List<RoomSubmissionEntity>
     @Query("SELECT COUNT(*) FROM submissions WHERE (isUpdated = 1 OR _id = '')") suspend fun countPendingOfflineSubmissions(): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE LOWER(status) = 'pending' AND id IN (SELECT submissionId FROM answers WHERE submissionId IS NOT NULL)") suspend fun countPendingExamResults(): Int
@@ -74,8 +77,10 @@ interface SubmissionDao {
     @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND parentId LIKE '%' || :examId || '%' AND status != 'pending'") suspend fun countCompletedByUserAndExamId(userId: String?, examId: String): Int
     @Query("SELECT * FROM submissions WHERE parentId = :parentId AND userId = :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): RoomSubmissionEntity?
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE parentId LIKE '%' || :parentIdFragment || '%' LIMIT 1") suspend fun getFirstByParentIdContaining(parentIdFragment: String): RoomSubmissionEntity?
     @Query("UPDATE submissions SET user = :userJson, status = 'complete', isUpdated = 1 WHERE id = :id") suspend fun markComplete(id: String, userJson: String): Int
+    @Query("UPDATE submissions SET status = :status WHERE id = :id") suspend fun updateStatus(id: String, status: String): Int
     @Query("DELETE FROM submissions WHERE parentId = :parentId AND userId = :userId") suspend fun deleteByParentAndUser(parentId: String, userId: String?): Int
     @Query("SELECT * FROM submissions WHERE type = 'exam' AND parentId IS NOT NULL AND userId IS NOT NULL AND (_id IS NULL OR _id = '')") suspend fun getPendingExamResults(): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE status = 'complete' AND (isUpdated = 1 OR _id = '')") suspend fun getPendingSubmissions(): List<RoomSubmissionEntity>

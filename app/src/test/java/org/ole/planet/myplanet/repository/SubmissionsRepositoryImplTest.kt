@@ -100,10 +100,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getPendingSurveysFlow queries correctly`() = runTest {
-        val mockList = listOf(mockk<RealmSubmission>())
-        coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns kotlinx.coroutines.flow.flowOf(mockList)
+        every { submissionDao.observePendingSurveys("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(RoomSubmissionEntity(id = "submission1")))
 
         val result = repository.getPendingSurveysFlow("user_123").first()
         assertEquals(1, result.size)
@@ -111,10 +108,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsFlow queries correctly`() = runTest {
-        val mockList = listOf(mockk<RealmSubmission>())
-        coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns kotlinx.coroutines.flow.flowOf(mockList)
+        every { submissionDao.observeByUserId("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(RoomSubmissionEntity(id = "submission1")))
 
         val result = repository.getSubmissionsFlow("user_123").first()
         assertEquals(1, result.size)
@@ -122,22 +116,11 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
-        val s1 = mockk<RealmSubmission>(relaxed = true).apply {
-            every { id } returns "1"
-            every { lastUpdateTime } returns 100L
-        }
-        val s1_dup = mockk<RealmSubmission>(relaxed = true).apply {
-            every { id } returns "1"
-            every { lastUpdateTime } returns 100L
-        }
-        val subList = listOf(s1)
-        val subListDup = listOf(s1_dup)
+        val subList = listOf(RoomSubmissionEntity(id = "1", lastUpdateTime = 100L))
+        val subListDup = listOf(RoomSubmissionEntity(id = "1", lastUpdateTime = 100L))
 
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<RealmSubmission>>(replay = 1)
-
-        coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns flowEmitter
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<RoomSubmissionEntity>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
         val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
@@ -319,19 +302,12 @@ class SubmissionsRepositoryImplTest {
         every { exam.courseId } returns "course_id"
         every { exam.id } returns "exam_id"
 
-        val realm = mockk<Realm>(relaxed = true)
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            // Empty to skip lambda execution to prevent Realm type issues when testing createObject
-        }
-
         val result = repository.createExamSubmission(
-            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team")
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", null)
         )
-        // Function executeTransaction wrapper does not execute anything, so result can be null.
-        // We verify the interaction.
-        coVerify { databaseService.executeTransactionAsync(any()) }
+
+        assertEquals("exam_id@course_id", result?.parentId)
+        coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 
     @Test
