@@ -232,11 +232,9 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        // Since insertSubmissionInternal is called on `this`, spyk can track it
-        every { repository["insertSubmissionInternal"](any<Realm>(), any<JsonObject>()) } answers { }
-
         repository.bulkInsertFromSync(realm, jsonArray)
-        verify(exactly = 1) { repository["insertSubmissionInternal"](realm, any<JsonObject>()) }
+
+        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
     }
 
     @Test
@@ -247,33 +245,15 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `insertSubmission performs happy path creation`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(realm)
-        }
-
-        val query = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
-        every { realm.where(RealmSubmission::class.java) } returns query
-        every { query.equalTo(any<String>(), any<String>()) } returns query
-        every { query.findFirst() } returns null
-        every { realm.createObject(RealmSubmission::class.java, any<String>()) } returns mockk<RealmSubmission>(relaxed = true)
-
+    fun `insertSubmission upserts synced submission through Room`() = runTest {
         val submission = JsonObject().apply {
             addProperty("_id", "test_id")
             addProperty("status", "pending")
         }
 
-        every { repository["updateBasicFields"](any<RealmSubmission>(), any<String>(), any<String>(), any<Boolean>(), any<JsonObject>()) } answers { }
-        every { repository["updateTeam"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>()) } answers { }
-        every { repository["updateMembership"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>()) } answers { }
-        every { repository["updateUserId"](any<RealmSubmission>(), any<JsonObject>()) } answers { }
-        every { repository["updateAnswers"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>(), any<Boolean>()) } answers { }
-
         repository.insertSubmission(submission)
 
-        verify(exactly = 1) { realm.createObject(RealmSubmission::class.java, "test_id") }
+        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
     }
 
     @Test
