@@ -26,6 +26,9 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -46,6 +49,8 @@ class SubmissionsRepositoryImplTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
+    private val examDao: ExamDao = mockk(relaxed = true)
+    private val questionDao: QuestionDao = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
@@ -77,7 +82,9 @@ class SubmissionsRepositoryImplTest {
             exporter,
             submitPhotosDao,
             mockk(relaxed = true),
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            examDao,
+            questionDao
         ), recordPrivateCalls = true)
     }
 
@@ -204,19 +211,7 @@ class SubmissionsRepositoryImplTest {
     fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2")
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
-        val exam = mockk<RealmStepExam>(relaxed = true)
-
-        every { realm.where(RealmStepExam::class.java) } returns query
-        every { query.equalTo("id", examId) } returns query
-        every { query.findFirst() } returns exam
-        every { exam.courseId } returns "courseId"
-
-        coEvery { repository["withRealm"](any<Boolean>(), any<Function1<Realm, Any>>()) } answers {
-            val action = arg<Function1<Realm, Any>>(1)
-            action.invoke(realm)
-        }
+        coEvery { examDao.getById(examId) } returns RoomExamEntity(id = examId, courseId = "courseId")
 
         coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
 
@@ -320,13 +315,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `hasSubmission returns true when match found`() = runTest {
-        val mockQuestionList = listOf(mockk<RealmExamQuestion>(relaxed = true).apply {
-            every { examId } returns "stepExamId"
-        })
-
-        coEvery {
-            repository["queryList"](RealmExamQuestion::class.java, false, any<Function1<RealmQuery<RealmExamQuestion>, Unit>>())
-        } answers { mockQuestionList }
+        coEvery { questionDao.countByExamId("stepExamId") } returns 1
 
         coEvery {
             repository["count"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
