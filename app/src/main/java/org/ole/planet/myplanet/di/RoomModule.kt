@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -126,5 +127,10 @@ object RoomModule {
     @Provides
     fun provideNewsLogDao(database: AppDatabase): NewsLogDao {
         return database.newsLogDao()
+    }
+
+    @Provides
+    fun provideTeamLogDao(database: AppDatabase): TeamLogDao {
+        return database.teamLogDao()
     }
 }

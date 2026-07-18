@@ -6,10 +6,8 @@ import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.verify
+import io.mockk.coVerify
 import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -18,6 +16,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.model.RealmTeamLog
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
@@ -41,6 +40,7 @@ class TeamsRepositoryBenchmarkTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository> = mockk()
     private val realm: Realm = mockk(relaxed = true)
+    private val teamLogDao: TeamLogDao = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -70,7 +70,8 @@ class TeamsRepositoryBenchmarkTest {
             dispatcherProvider,
             userRepository,
             resourcesRepositoryLazy,
-            TestTimeProvider()
+            TestTimeProvider(),
+            teamLogDao
         )
     }
 
@@ -83,19 +84,9 @@ class TeamsRepositoryBenchmarkTest {
             }
         }
 
-        val query: RealmQuery<RealmTeamLog> = mockk(relaxed = true)
-        val results: RealmResults<RealmTeamLog> = mockk(relaxed = true)
-
-        every { realm.where(RealmTeamLog::class.java) } returns query
-        every { query.`in`(any<String>(), any<Array<String>>()) } returns query
-        every { query.findAll() } returns results
-        every { results.iterator() } returns mutableListOf<RealmTeamLog>().iterator()
-
-        every { realm.createObject(RealmTeamLog::class.java, any()) } returns RealmTeamLog()
-
         teamsRepository.insertTeamLogs(logs)
 
-        verify(exactly = 1) { realm.where(RealmTeamLog::class.java) }
+        coVerify(exactly = 1) { teamLogDao.upsertAll(match { it.size == 100 && it.first().id == "id_1" }) }
     }
 
     @Test
@@ -105,23 +96,8 @@ class TeamsRepositoryBenchmarkTest {
             JsonObject().apply { addProperty("_id", "dup_id"); addProperty("_rev", "rev2") }
         )
 
-        val query: RealmQuery<RealmTeamLog> = mockk(relaxed = true)
-        val results: RealmResults<RealmTeamLog> = mockk(relaxed = true)
-
-        every { realm.where(RealmTeamLog::class.java) } returns query
-        every { query.`in`(any<String>(), any<Array<String>>()) } returns query
-        every { query.findAll() } returns results
-        every { results.iterator() } returns mutableListOf<RealmTeamLog>().iterator()
-
-        // We now use bulk inserts with unmanaged objects, so createObject is not called.
-        // Instead, we just verify it runs without throwing.
-        every { realm.insert(any<List<RealmTeamLog>>()) } returns Unit
-
         teamsRepository.insertTeamLogs(logs)
 
-        // Verify that createObject is never called anymore
-        verify(exactly = 0) { realm.createObject(RealmTeamLog::class.java, "dup_id") }
-        // Verify bulk insert is called
-        verify(exactly = 1) { realm.insert(any<List<RealmTeamLog>>()) }
+        coVerify(exactly = 1) { teamLogDao.upsertAll(match { it.size == 2 && it.all { log -> log.id == "dup_id" } }) }
     }
 }

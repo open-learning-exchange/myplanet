@@ -1,18 +1,22 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-open class RealmTeamLog : RealmObject() {
+@Entity(
+    tableName = "team_log",
+    indices = [Index("teamId"), Index("type"), Index("_id"), Index("_rev")]
+)
+open class RealmTeamLog {
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var _rev: String? = null
-    @Index
     var teamId: String? = null
     var user: String? = null
-    @Index
     var type: String? = null
     var teamType: String? = null
     var createdOn: String? = null
