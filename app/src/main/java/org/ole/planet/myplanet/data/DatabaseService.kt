@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 class DatabaseService(
     context: Context,
     private val dispatcherProvider: DispatcherProvider,
-    private val appDatabase: AppDatabase? = null,
+    val room: AppDatabase,
 ) {
     val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
     private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
@@ -45,10 +45,6 @@ class DatabaseService(
     }
 
     fun createManagedRealmInstance(): Realm = openRealm()
-
-    fun roomDatabase(): AppDatabase {
-        return appDatabase ?: error("Room database is not configured for DatabaseService")
-    }
 
     private fun openRealm(): Realm {
         return try {
@@ -112,23 +108,21 @@ class DatabaseService(
 
     suspend fun <T> withRoomAsync(operation: suspend (AppDatabase) -> T): T {
         return withContext(ioDispatcher) {
-            operation(roomDatabase())
+            operation(room)
         }
     }
 
     suspend fun <T> executeRoomTransactionAsync(operation: (AppDatabase) -> T): T {
         return withContext(ioDispatcher) {
-            roomDatabase().runInTransaction<T> {
-                operation(roomDatabase())
+            room.runInTransaction<T> {
+                operation(room)
             }
         }
     }
 
     suspend fun clearAll() {
-        appDatabase?.let { database ->
-            withContext(ioDispatcher) {
-                database.clearAllTables()
-            }
+        withContext(ioDispatcher) {
+            room.clearAllTables()
         }
         executeTransactionAsync { it.deleteAll() }
     }
