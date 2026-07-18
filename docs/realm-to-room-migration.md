@@ -265,7 +265,11 @@ wired through `di/RoomModule`.
 - [x] **Exam answer saves moved to Room**: `saveExamAnswer` now reads/upserts answers through
       `AnswerDao`, updates submission status/timestamps through `SubmissionDao`, and removes pending
       survey orphans through Room when a survey is completed. Realm remains only in deeper legacy
-      sync/upload serialization paths for submissions.
+      upload serialization paths for submissions.
+- [x] **Submission sync inserts moved to Room-only**: `bulkInsertFromSync` and `insertSubmission`
+      now upsert CouchDB submission docs directly into `SubmissionDao`/`AnswerDao` and no longer
+      mirror synced submission payloads into Realm. The old Realm parsing helpers remain only as
+      dead legacy code until the final Realm deletion pass.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

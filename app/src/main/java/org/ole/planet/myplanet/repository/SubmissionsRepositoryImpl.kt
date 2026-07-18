@@ -599,17 +599,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertSubmissionInternal(realm, jsonDoc)
-        }
         upsertRoomSubmissionsFromSync(documentList)
     }
 
     override suspend fun insertSubmission(submission: JsonObject) {
         if (submission.has("_attachments")) return
-        executeTransaction { mRealm ->
-            insertSubmissionInternal(mRealm, submission)
-        }
         upsertRoomSubmissionsFromSync(listOf(submission))
     }
 
@@ -676,10 +670,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
         if (submissions.isEmpty() && answers.isEmpty()) return
 
-        databaseService.room.runInTransaction {
-            if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
-            if (answers.isNotEmpty()) answerDao.upsertAllBlocking(answers)
-        }
+        if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
+        if (answers.isNotEmpty()) answerDao.upsertAllBlocking(answers)
     }
 
     private fun normalizeSubmissionUserId(userId: String): String {
