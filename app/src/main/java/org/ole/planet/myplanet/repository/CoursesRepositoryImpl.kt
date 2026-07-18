@@ -521,15 +521,13 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteCourseProgress(courseId: String?) {
-        val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id }.toTypedArray() } ?: emptyArray()
-        executeTransaction { realm ->
-            if (examIds.isNotEmpty()) {
-                realm.where(RealmSubmission::class.java)
-                    .`in`("parentId", examIds)
-                    .notEqualTo("type", "survey")
-                    .equalTo("uploaded", false)
-                    .findAll()
-                    .deleteAllFromRealm()
+        val examIds = courseId?.let { examDao.getByCourseId(it).map { exam -> exam.id } }.orEmpty()
+        if (examIds.isNotEmpty()) {
+            val submissions = submissionDao.getUnuploadedNonSurveyByParentIds(examIds.mapNotNull { it })
+            val submissionIds = submissions.map { it.id }
+            if (submissionIds.isNotEmpty()) {
+                answerDao.deleteBySubmissionIds(submissionIds)
+                submissionDao.deleteByIds(submissionIds)
             }
         }
     }

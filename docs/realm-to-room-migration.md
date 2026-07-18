@@ -288,6 +288,9 @@ wired through `di/RoomModule`.
 - [x] **Per-course step progress details moved to Room**: `CoursesRepositoryImpl.getCourseProgress`
       now builds step-level exam completion data from `ExamDao`, `QuestionDao`, `SubmissionDao`, and
       `AnswerDao` instead of opening Realm for exam questions, submissions, and answers.
+- [x] **Course progress deletion moved to Room**: `CoursesRepositoryImpl.deleteCourseProgress`
+      now resolves course exams through `ExamDao` and deletes matching local exam submissions plus
+      answers through `SubmissionDao`/`AnswerDao` instead of a Realm transaction.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
