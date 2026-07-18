@@ -5,9 +5,8 @@ import java.io.File
 
 /**
  * Synchronous, dependency-free persistence for crash/ANR reports. Reports are written
- * here before any coroutine or Realm machinery runs, because both share the dispatcher
- * and write lock with whatever workload caused the failure — the process may die before
- * an async Realm write commits. Files left behind are swept into ApkLog on the
+ * here before any coroutine or Room machinery runs, because app shutdown can happen
+ * before launched coroutines finish persisting rows. Files left behind are swept into ApkLog on the
  * next app start.
  */
 object CrashLogStore {

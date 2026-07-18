@@ -7,7 +7,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room replacement for the former Realm `RealmApkLog` model. Crash/ANR/error logs are written via
+ * Room entity for crash/ANR/error logs, replacing the former Realm APK log model. Logs are written via
  * [org.ole.planet.myplanet.data.room.dao.ApkLogDao] and uploaded through the Room upload path
  * (`UploadConfigs.CrashLog`). A row with a null `_rev` is considered pending upload.
  */
