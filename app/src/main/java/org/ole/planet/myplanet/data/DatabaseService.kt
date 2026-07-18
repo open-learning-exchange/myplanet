@@ -9,10 +9,15 @@ import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider) {
+class DatabaseService(
+    context: Context,
+    private val dispatcherProvider: DispatcherProvider,
+    private val appDatabase: AppDatabase? = null,
+) {
     val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
     private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
 
@@ -40,6 +45,10 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
     }
 
     fun createManagedRealmInstance(): Realm = openRealm()
+
+    fun roomDatabase(): AppDatabase {
+        return appDatabase ?: error("Room database is not configured for DatabaseService")
+    }
 
     private fun openRealm(): Realm {
         return try {
@@ -101,7 +110,26 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         }
     }
 
+    suspend fun <T> withRoomAsync(operation: suspend (AppDatabase) -> T): T {
+        return withContext(ioDispatcher) {
+            operation(roomDatabase())
+        }
+    }
+
+    suspend fun <T> executeRoomTransactionAsync(operation: (AppDatabase) -> T): T {
+        return withContext(ioDispatcher) {
+            roomDatabase().runInTransaction<T> {
+                operation(roomDatabase())
+            }
+        }
+    }
+
     suspend fun clearAll() {
+        appDatabase?.let { database ->
+            withContext(ioDispatcher) {
+                database.clearAllTables()
+            }
+        }
         executeTransactionAsync { it.deleteAll() }
     }
 
