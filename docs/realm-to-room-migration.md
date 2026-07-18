@@ -285,6 +285,9 @@ wired through `di/RoomModule`.
 - [x] **Submission PDF export moved to Room**: `SubmissionsRepositoryExporter` now reads submissions,
       answers, exams, and questions through `SubmissionDao`, `AnswerDao`, `ExamDao`, and `QuestionDao`
       instead of opening Realm while rendering single-submission and bulk-submission PDFs.
+- [x] **Per-course step progress details moved to Room**: `CoursesRepositoryImpl.getCourseProgress`
+      now builds step-level exam completion data from `ExamDao`, `QuestionDao`, `SubmissionDao`, and
+      `AnswerDao` instead of opening Realm for exam questions, submissions, and answers.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
