@@ -82,7 +82,7 @@ wired through `di/RoomModule`.
 - [x] **Retry** domain migrated end-to-end (`RealmRetryOperation` now a Room `@Entity`;
       Realm-based `createFromRetryFailure` factory replaced with a pure one; `RetryDao` with
       status-filtered queries/updates; `RetryRepositoryImpl` off `RealmRepository`; test ported).
-- [x] **Community** domain migrated (`RealmCommunity` now a Room `@Entity`; `CommunityDao` with a
+- [x] **Community** domain migrated (`Community` now a Room `@Entity`; `CommunityDao` with a
       `@Transaction replaceAll`; `CommunityRepositoryImpl` keeps `RealmRepository` only for the
       still-Realm `RealmMeetup` insert, using `CommunityDao` for community rows). First proven
       *coexistence-within-one-repo* template. Dropped a Realm-only `isValid` check in the sync UI.
@@ -102,7 +102,7 @@ wired through `di/RoomModule`.
 - [x] **TeamNotification** migrated (single-id Room `@Entity`, `TeamNotificationDao`; converted
       3 sites across `NotificationsRepositoryImpl` + `VoicesRepositoryImpl`, both kept on
       `RealmRepository` for their other models; test constructors updated).
-- [x] **Certification** migrated (`RealmCertification` Room `@Entity`, `CertificationDao` with a
+- [x] **Certification** migrated (`Certification` Room `@Entity`, `CertificationDao` with a
       LIKE-based `countByCourseId`; `isCourseCertified` + the sync bulk-insert converted). First
       proven **sync-bulk-insert** conversion: the per-table `insert` moves from the shared Realm
       `executeTransaction` dispatch in `TransactionSyncManager` to the outer suspend `when` +
@@ -167,12 +167,12 @@ wired through `di/RoomModule`.
 - [x] **NewsLog** migrated (uploaded-only activity log). `NewsLog` is now a Room
       `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
       config uses `RoomUploadConfig`.
-- [x] **TeamActivities / TeamLog** migrated (uploaded + synced team visit log). `RealmTeamLog` is
+- [x] **TeamActivities / TeamLog** migrated (uploaded + synced team visit log). `TeamLog` is
       now a Room `@Entity`; `TeamLogDao` owns visit counts, last-visit lookups, sync upserts,
       pending uploads, and upload acknowledgements; team activity sync now runs outside the legacy
       Realm transaction path and upload config uses `RoomUploadConfig`.
 - [x] **OfflineActivity / login activities** migrated (custom uploaded + synced login log).
-      `RealmOfflineActivity` is now a Room `@Entity`; `OfflineActivityDao` owns offline login
+      `OfflineActivity` is now a Room `@Entity`; `OfflineActivityDao` owns offline login
       counts/flows, last-login lookups, pending upload reads, upload acknowledgements, and sync
       upserts with the existing `_id` plus `loginTime`/`user` fallback dedupe behavior.
 - [x] **CourseProgress** migrated (uploaded + synced progress records). `RealmCourseProgress` is

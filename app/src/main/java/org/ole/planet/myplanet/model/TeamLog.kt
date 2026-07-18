@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
     tableName = "team_log",
     indices = [Index("teamId"), Index("type"), Index("_id"), Index("_rev")]
 )
-open class RealmTeamLog {
+open class TeamLog {
     @PrimaryKey
     @JvmField
     var id: String = ""

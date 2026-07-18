@@ -4,7 +4,7 @@ import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import io.realm.Realm
-import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.TeamLog
 
 interface TeamsSyncRepository {
     suspend fun getTeamsForUpload(): List<TeamUploadData>
@@ -15,7 +15,7 @@ interface TeamsSyncRepository {
     suspend fun syncTeamActivities()
     suspend fun insertTeamLog(json: JsonObject)
     suspend fun insertTeamLogs(logs: List<JsonObject>)
-    fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject
+    fun serializeTeamActivities(log: TeamLog, context: Context): JsonObject
     fun insertMyTeam(realm: Realm, doc: JsonObject)
     suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
     fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray)

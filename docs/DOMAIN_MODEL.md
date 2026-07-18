@@ -99,9 +99,9 @@ How they connect:
 
 A learner's membership in a course is tracked by the `userId` list on `RealmMyCourse` — joining a course adds the learner's ID to that list. Progress through steps is tracked by `RealmCourseProgress` records (one per step, per learner).
 
-**Certifications:** `RealmCertification` is a static reference list synced down from the server — it just maps a certification `name` to a list of `courseIds`. It has no `userId` and no completion/progress field; nothing in the codebase marks a certification as "earned" by a learner.
+**Certifications:** `Certification` is a static reference list synced down from the server — it just maps a certification `name` to a list of `courseIds`. It has no `userId` and no completion/progress field; nothing in the codebase marks a certification as "earned" by a learner.
 
-Course completion itself is tracked separately and per-learner: `ProgressRepositoryImpl.getCompletedCourses(userId)` (`ProgressRepositoryImpl.kt:156-185`) checks `RealmCourseProgress` and counts a course complete once every one of its steps has a `passed = true` record. The dashboard (`BellDashboardFragment.showBadges()`) renders one star-icon badge per completed course in a row on the profile card. `isCourseCertified(courseId)` — a `RealmCertification` lookup with **no** `userId` parameter — is then used only to recolor that already-rendered badge: bright if the completed course happens to belong to some certification's `courseIds` list, dim grey otherwise. So "certification" in this app is a label on a course, surfaced as a color cue on a learner's completion badge — not a separate achievement a learner unlocks.
+Course completion itself is tracked separately and per-learner: `ProgressRepositoryImpl.getCompletedCourses(userId)` (`ProgressRepositoryImpl.kt:156-185`) checks `RealmCourseProgress` and counts a course complete once every one of its steps has a `passed = true` record. The dashboard (`BellDashboardFragment.showBadges()`) renders one star-icon badge per completed course in a row on the profile card. `isCourseCertified(courseId)` — a `Certification` lookup with **no** `userId` parameter — is then used only to recolor that already-rendered badge: bright if the completed course happens to belong to some certification's `courseIds` list, dim grey otherwise. So "certification" in this app is a label on a course, surfaced as a color cue on a learner's completion badge — not a separate achievement a learner unlocks.
 
 ---
 
@@ -278,7 +278,7 @@ RealmUser (learner)
 │
 ├── records health data → RealmHealthExamination
 │
-├── earns certifications → RealmCertification (groups courses)
+├── earns certifications → Certification (groups courses)
 │
 └── writes achievements → RealmAchievement
 ```

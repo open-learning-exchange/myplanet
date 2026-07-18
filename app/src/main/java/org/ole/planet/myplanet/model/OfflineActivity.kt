@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
     tableName = "offline_activity",
     indices = [Index("_rev"), Index("userId"), Index("type"), Index("_id"), Index("loginTime"), Index("userName")]
 )
-open class RealmOfflineActivity {
+open class OfflineActivity {
     @PrimaryKey
     @JvmField
     var id: String = ""

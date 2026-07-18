@@ -26,7 +26,7 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNews.Companion.createNews
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
-import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -268,7 +268,7 @@ class VoicesRepositoryImpl @Inject constructor(
             existing.lastCount = count
             teamNotificationDao.update(existing)
         } else {
-            val notification = RealmTeamNotification().apply {
+            val notification = TeamNotification().apply {
                 id = UUID.randomUUID().toString()
                 parentId = teamId
                 type = "chat"
