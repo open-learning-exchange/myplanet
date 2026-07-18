@@ -3,16 +3,12 @@ package org.ole.planet.myplanet.model
 import android.text.TextUtils
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmAnswer : RealmObject() {
-    @PrimaryKey
+open class RealmAnswer {
     var id: String? = null
     var value: String? = null
-    var valueChoices: RealmList<String>? = null
+    var valueChoices: MutableList<String>? = null
     var mistakes = 0
     var isPassed = false
     var grade = 0
@@ -32,7 +28,7 @@ open class RealmAnswer : RealmObject() {
         }
 
     companion object {
-        fun serializeRealmAnswer(answers: RealmList<RealmAnswer>): JsonArray {
+        fun serializeRealmAnswer(answers: List<RealmAnswer>): JsonArray {
             val array = JsonArray()
             for (ans in answers) {
                 array.add(createObject(ans))

@@ -5,10 +5,6 @@ import androidx.core.net.toUri
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-import io.realm.annotations.RealmClass
 import java.io.File
 import java.io.InputStream
 import java.util.Locale
@@ -18,14 +14,12 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
-@RealmClass(name = "RealmUserModel")
-open class RealmUser : RealmObject() {
-    @PrimaryKey
+open class RealmUser {
     var id: String? = null
     var _id: String? = null
     var _rev: String? = null
     var name: String? = null
-    var rolesList: RealmList<String?>? = null
+    var rolesList: MutableList<String?>? = null
     var userAdmin: Boolean? = null
     var joinDate: Long = 0
     var firstName: String? = null
@@ -138,7 +132,7 @@ open class RealmUser : RealmObject() {
         return ar
     }
 
-    fun setRoles(roles: RealmList<String?>?) {
+    fun setRoles(roles: MutableList<String?>?) {
         rolesList = roles
     }
 
