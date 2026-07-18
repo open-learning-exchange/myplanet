@@ -40,12 +40,14 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE stepId = :stepId") suspend fun getByStepId(stepId: String): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE sourceSurveyId IS NOT NULL AND _rev IS NULL") suspend fun getPendingAdoptedSurveys(): List<RoomExamEntity>
     @Upsert suspend fun upsertAll(items: List<RoomExamEntity>)
+    @Upsert fun upsertAllBlocking(items: List<RoomExamEntity>)
 }
 
 @Dao
 interface QuestionDao {
     @Query("SELECT * FROM exam_questions WHERE examId = :examId") suspend fun getByExamId(examId: String): List<RoomQuestionEntity>
     @Upsert suspend fun upsertAll(items: List<RoomQuestionEntity>)
+    @Upsert fun upsertAllBlocking(items: List<RoomQuestionEntity>)
 }
 
 @Dao

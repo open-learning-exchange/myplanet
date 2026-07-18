@@ -22,8 +22,12 @@ import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -59,6 +63,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val certificationDao: CertificationDao,
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
+    private val examDao: ExamDao,
+    private val questionDao: QuestionDao,
     private val tagDao: TagDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
@@ -600,6 +606,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private fun upsertRoomCoursesFromSync(documentList: List<JsonObject>) {
         val courses = ArrayList<RoomCourseEntity>(documentList.size)
         val steps = ArrayList<RoomCourseStepEntity>()
+        val exams = ArrayList<RoomExamEntity>()
+        val questions = ArrayList<RoomQuestionEntity>()
 
         documentList.forEach { doc ->
             val courseId = JsonUtils.getString("_id", doc)
@@ -620,6 +628,8 @@ class CoursesRepositoryImpl @Inject constructor(
                         noOfResources = JsonUtils.getJsonArray("resources", stepJson).size(),
                     )
                 )
+                collectRoomExam(stepJson, "exam", courseId, stepId, exams, questions)
+                collectRoomExam(stepJson, "survey", courseId, stepId, exams, questions)
             }
             courses.add(
                 RoomCourseEntity(
@@ -635,11 +645,65 @@ class CoursesRepositoryImpl @Inject constructor(
             )
         }
 
-        if (courses.isEmpty() && steps.isEmpty()) return
+        if (courses.isEmpty() && steps.isEmpty() && exams.isEmpty() && questions.isEmpty()) return
 
         databaseService.room.runInTransaction {
             if (courses.isNotEmpty()) courseDao.upsertAllBlocking(courses)
             if (steps.isNotEmpty()) courseStepDao.upsertAllBlocking(steps)
+            if (exams.isNotEmpty()) examDao.upsertAllBlocking(exams)
+            if (questions.isNotEmpty()) questionDao.upsertAllBlocking(questions)
+        }
+    }
+
+    private fun collectRoomExam(
+        stepJson: JsonObject,
+        examKey: String,
+        courseId: String,
+        stepId: String,
+        exams: MutableList<RoomExamEntity>,
+        questions: MutableList<RoomQuestionEntity>
+    ) {
+        if (!stepJson.has(examKey)) return
+        val examJson = stepJson.getAsJsonObject(examKey)
+        val examId = JsonUtils.getString("_id", examJson).ifBlank { "$courseId-$stepId-$examKey" }
+        val questionArray = JsonUtils.getJsonArray("questions", examJson)
+        exams.add(
+            RoomExamEntity(
+                id = examId,
+                _rev = JsonUtils.getString("_rev", examJson),
+                createdDate = JsonUtils.getLong("createdDate", examJson),
+                updatedDate = JsonUtils.getLong("updatedDate", examJson),
+                adoptionDate = JsonUtils.getLong("adoptionDate", examJson),
+                createdBy = JsonUtils.getString("createdBy", examJson),
+                totalMarks = JsonUtils.getInt("totalMarks", examJson),
+                name = JsonUtils.getString("name", examJson),
+                description = JsonUtils.getString("description", examJson),
+                type = if (examJson.has("type")) JsonUtils.getString("type", examJson) else examKey,
+                stepId = stepId,
+                courseId = courseId,
+                sourcePlanet = JsonUtils.getString("sourcePlanet", examJson),
+                passingPercentage = JsonUtils.getString("passingPercentage", examJson),
+                noOfQuestions = questionArray.size(),
+                teamId = JsonUtils.getString("teamId", examJson),
+                isTeamShareAllowed = JsonUtils.getBoolean("teamShareAllowed", examJson),
+                sourceSurveyId = JsonUtils.getString("sourceSurveyId", examJson),
+            )
+        )
+        for (i in 0 until questionArray.size()) {
+            val questionJson = questionArray[i].asJsonObject
+            val questionId = JsonUtils.getString("id", questionJson).ifBlank { "$examId-$i" }
+            questions.add(
+                RoomQuestionEntity(
+                    id = questionId,
+                    examId = examId,
+                    type = JsonUtils.getString("type", questionJson),
+                    question = JsonUtils.getString("body", questionJson).ifBlank { JsonUtils.getString("title", questionJson) },
+                    choices = JsonUtils.getJsonArray("choices", questionJson).map { it.toString() },
+                    correctChoice = JsonUtils.getJsonArray("correctChoice", questionJson).map { it.asString },
+                    grade = JsonUtils.getString("marks", questionJson).toIntOrNull() ?: 0,
+                    order = i,
+                )
+            )
         }
     }
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
