@@ -36,6 +36,23 @@ fun RealmUser.toRoomEntity(): RoomUserEntity? {
     )
 }
 
+fun RoomUserEntity.toRealmModel(): RealmUser {
+    return RealmUser().apply {
+        id = this@toRealmModel.id
+        _id = this@toRealmModel._id
+        _rev = this@toRealmModel._rev
+        name = this@toRealmModel.name
+        firstName = this@toRealmModel.firstName
+        lastName = this@toRealmModel.lastName
+        rolesList = RealmList<String?>().apply { addAll(this@toRealmModel.rolesList.orEmpty()) }
+        planetCode = this@toRealmModel.planetCode
+        parentCode = this@toRealmModel.parentCode
+        userAdmin = this@toRealmModel.isUserAdmin
+        joinDate = this@toRealmModel.joined
+        isUpdated = this@toRealmModel.updated > 0
+    }
+}
+
 fun RealmMyCourse.toRoomEntity(): RoomCourseEntity? {
     val localId = id ?: courseId ?: return null
     return RoomCourseEntity(
