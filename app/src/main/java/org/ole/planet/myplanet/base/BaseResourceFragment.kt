@@ -25,10 +25,10 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
@@ -48,7 +48,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
     var homeItemClickListener: OnHomeItemClickListener? = null
-    var model: RealmUser? = null
+    var model: UserEntity? = null
     var lv: RecyclerView? = null
     var convertView: View? = null
     internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
@@ -140,7 +140,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    protected fun showDownloadDialog(dbMyLibrary: List<RealmMyLibrary?>) {
+    protected fun showDownloadDialog(dbMyLibrary: List<MyLibrary?>) {
         if (!isAdded) return
         if (dbMyLibrary.isEmpty()) {
             return
@@ -255,7 +255,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun createListView(dbMyLibrary: List<RealmMyLibrary?>, alertDialog: AlertDialog) {
+    fun createListView(dbMyLibrary: List<MyLibrary?>, alertDialog: AlertDialog) {
         lv = convertView?.findViewById(R.id.alertDialog_listView)
         val names = dbMyLibrary.map { it?.title ?: "" }
         val adapter = CheckboxAdapter {
@@ -305,14 +305,14 @@ abstract class BaseResourceFragment : Fragment() {
                 return@launch
             }
 
-            if (`object` is RealmMyLibrary) {
+            if (`object` is MyLibrary) {
                 val resourceId = `object`.resourceId
                 if (resourceId != null) {
                     resourcesRepository.removeResourceFromShelf(resourceId, userId)
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
                 }
             } else {
-                val courseId = (`object` as RealmMyCourse).courseId
+                val courseId = (`object` as MyCourse).courseId
                 if (courseId != null) {
                     coursesRepository.removeCourseFromShelf(courseId, userId)
                     Utilities.toast(activity, getString(R.string.removed_from_mycourse))
@@ -326,7 +326,7 @@ abstract class BaseResourceFragment : Fragment() {
         tvSelected?.text = selected
     }
 
-    fun addToLibrary(libraryItems: List<RealmMyLibrary?>, selectedItems: ArrayList<Int>) {
+    fun addToLibrary(libraryItems: List<MyLibrary?>, selectedItems: ArrayList<Int>) {
         lifecycleScope.launch {
             val userId = profileDbHandler.getUserModel()?.id ?: return@launch
             val resourceIds = selectedItems.mapNotNull { index ->
@@ -342,7 +342,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun addAllToLibrary(libraryItems: List<RealmMyLibrary?>) {
+    fun addAllToLibrary(libraryItems: List<MyLibrary?>) {
         lifecycleScope.launch {
             val user = profileDbHandler.getUserModel()
             val userId = user?.id ?: return@launch

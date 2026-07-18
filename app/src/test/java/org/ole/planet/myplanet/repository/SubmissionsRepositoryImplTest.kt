@@ -30,10 +30,10 @@ import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @ExperimentalCoroutinesApi
@@ -186,7 +186,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `saveSubmission upserts submission through Room`() = runTest {
-        val sub = RealmSubmission().apply { id = "submission1" }
+        val sub = Submission().apply { id = "submission1" }
 
         repository.saveSubmission(sub)
 
@@ -254,7 +254,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `createExamSubmission creates and returns new submission`() = runTest {
-        val exam = mockk<RealmStepExam>(relaxed = true)
+        val exam = mockk<StepExam>(relaxed = true)
         every { exam.courseId } returns "course_id"
         every { exam.id } returns "exam_id"
 
@@ -269,8 +269,8 @@ class SubmissionsRepositoryImplTest {
     @Test
     fun `saveExamAnswer upserts answer through Room`() = runTest {
         val answerData = mockk<ExamAnswerData>(relaxed = true)
-        val question = RealmExamQuestion().apply { id = "question1"; examId = "exam1"; type = "text" }
-        val submission = RealmSubmission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
+        val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "text" }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
 
         every { answerData.component1() } returns submission
         every { answerData.component2() } returns question

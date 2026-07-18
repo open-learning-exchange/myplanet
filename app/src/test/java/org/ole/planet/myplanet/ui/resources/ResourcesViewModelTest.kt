@@ -15,7 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.LibraryWithMetadata
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -92,9 +92,9 @@ class ResourcesViewModelTest {
 
     @Test
     fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
-        // RealmMyLibrary is a Room entity whose id is a @JvmField and whose isResourceOffline() is
+        // MyLibrary is a Room entity whose id is a @JvmField and whose isResourceOffline() is
         // @Ignore'd — neither can be stubbed with mockk; use a real instance.
-        val mockLibrary = RealmMyLibrary().apply {
+        val mockLibrary = MyLibrary().apply {
             id = "lib1"
             title = "Library 1"
             resourceOffline = true

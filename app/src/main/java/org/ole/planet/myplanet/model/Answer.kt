@@ -5,7 +5,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmAnswer {
+open class Answer {
     var id: String? = null
     var value: String? = null
     var valueChoices: MutableList<String>? = null
@@ -28,7 +28,7 @@ open class RealmAnswer {
         }
 
     companion object {
-        fun serializeRealmAnswer(answers: List<RealmAnswer>): JsonArray {
+        fun serializeRealmAnswer(answers: List<Answer>): JsonArray {
             val array = JsonArray()
             for (ans in answers) {
                 array.add(createObject(ans))
@@ -36,7 +36,7 @@ open class RealmAnswer {
             return array
         }
 
-        private fun createObject(ans: RealmAnswer): JsonObject {
+        private fun createObject(ans: Answer): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(ans.value)) {
                 `object`.addProperty("value", ans.value)

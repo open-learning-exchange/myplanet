@@ -14,12 +14,12 @@ import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.CourseCompletion
-import org.ole.planet.myplanet.model.RealmAnswer
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CourseProgress
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -93,14 +93,14 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCurrentProgress(
-        steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
+        steps: List<CourseStep?>?, userId: String?, courseId: String?
     ): Int {
         val progresses = courseProgressDao.getByUserAndCourse(userId, courseId)
         return calculateCurrentProgress(steps, progresses)
     }
 
     private fun calculateCurrentProgress(
-        steps: List<RealmCourseStep?>?, progresses: List<CourseProgress>
+        steps: List<CourseStep?>?, progresses: List<CourseProgress>
     ): Int {
         val stepsSize = steps?.size ?: 0
         val completed = BooleanArray(stepsSize + 1)
@@ -119,7 +119,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private suspend fun submissionMap(
-        submissions: List<RealmSubmission>, examIds: List<String>, obj: JsonObject
+        submissions: List<Submission>, examIds: List<String>, obj: JsonObject
     ) {
         val submissionIds = submissions.mapNotNull { it.id }
         val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it.toRealmModel() }

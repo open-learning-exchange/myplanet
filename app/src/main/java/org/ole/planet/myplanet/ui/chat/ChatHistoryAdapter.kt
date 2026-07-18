@@ -19,9 +19,9 @@ import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
@@ -31,8 +31,8 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class ChatHistoryAdapter(
     private val context: Context,
     chatHistoryList: List<ChatHistory>,
-    private var currentUser: RealmUser?,
-    private var newsList: List<RealmNews>,
+    private var currentUser: UserEntity?,
+    private var newsList: List<News>,
     private var shareTargets: ChatShareTargets,
     private val onShareChat: (HashMap<String?, String>, ChatHistory) -> Unit,
 ) : ListAdapter<ChatHistory, ChatHistoryAdapter.ViewHolderChat>(
@@ -62,7 +62,7 @@ class ChatHistoryAdapter(
         submitList(chatHistoryList)
     }
 
-    fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
+    fun updateCachedData(user: UserEntity?, sharedNews: List<News>) {
         currentUser = user
         newsList = sharedNews
         cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
@@ -250,7 +250,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun serializeConversation(conversation: RealmConversation): HashMap<String?, String> {
+    private fun serializeConversation(conversation: Conversation): HashMap<String?, String> {
         val conversationMap = HashMap<String?, String>()
         conversationMap["query"] = conversation.query ?: ""
         conversationMap["response"] = conversation.response ?: ""

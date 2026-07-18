@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.AddTransactionBinding
 import org.ole.planet.myplanet.databinding.FragmentFinanceBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
@@ -245,7 +245,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         observeTransactions()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

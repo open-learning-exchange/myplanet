@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmMyCourse {
+open class MyCourse {
     var id: String? = null
     var userId: MutableList<String>? = null
         private set
@@ -25,7 +25,7 @@ open class RealmMyCourse {
     var createdDate: Long = 0
     var coverFileName: String? = null
     private var numberOfSteps: Int? = null
-    var courseSteps: MutableList<RealmCourseStep>? = null
+    var courseSteps: MutableList<CourseStep>? = null
     @Transient
     var isMyCourse: Boolean = false
     fun setUserId(userId: String?) {
@@ -88,7 +88,7 @@ open class RealmMyCourse {
             spm.setConcatenatedLinks(jsonConcatenatedLinks)
         }
 
-        fun serialize(course: RealmMyCourse, resourcesByStepId: Map<String?, List<RealmMyLibrary>>): JsonObject {
+        fun serialize(course: MyCourse, resourcesByStepId: Map<String?, List<MyLibrary>>): JsonObject {
             val obj = JsonObject()
             obj.addProperty("_id", course.courseId)
             obj.addProperty("_rev", course.courseRev)

@@ -25,9 +25,9 @@ import org.ole.planet.myplanet.callback.OnCourseItemSelectedListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.model.Course
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -41,13 +41,13 @@ import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
-class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
+class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedListener, OnTagClickListener, RealtimeSyncMixin {
     private lateinit var adapterCourses: CoursesAdapter
     private lateinit var orderByDate: Button
     private lateinit var orderByTitle: Button
     private lateinit var filterController: CourseFilterController
     private lateinit var selectionController: CourseSelectionController
-    var userModel: RealmUser? = null
+    var userModel: UserEntity? = null
     private lateinit var confirmation: AlertDialog
     private var selectionJob: Job? = null
     private var pendingScrollState: Parcelable? = null
@@ -318,14 +318,14 @@ class CoursesFragment : BaseRecyclerFragment<RealmMyCourse?>(), OnCourseItemSele
                 course?.let {
                     var rc = coursesRepository.getCourseById(it.courseId)
                     if (rc == null) {
-                        rc = RealmMyCourse()
+                        rc = MyCourse()
                         rc.courseId = it.courseId
                         rc.courseTitle = it.courseTitle
                         rc.isMyCourse = it.isMyCourse
                     }
                     rc
                 }
-            }.toMutableList<RealmMyCourse?>()
+            }.toMutableList<MyCourse?>()
 
             withContext(dispatcherProvider.main) {
                 selectedItems = realmCourses

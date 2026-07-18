@@ -23,10 +23,10 @@ import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -59,7 +59,7 @@ class SurveysRepositoryImpl @Inject constructor(
         private const val KEY_LAST_SURVEY_DIALOG_SHOWN = "last_survey_dialog_shown"
     }
 
-    override suspend fun getExamQuestions(examId: String): List<RealmExamQuestion> {
+    override suspend fun getExamQuestions(examId: String): List<ExamQuestion> {
         return questionDao.getByExamId(examId).map { it.toRealmModel() }
     }
 
@@ -87,8 +87,8 @@ class SurveysRepositoryImpl @Inject constructor(
                     val mappedSurvey = createMappedSurvey(newSurveyId, examId, exam, userModel, teamName, teamId)
                     examDao.upsert(mappedSurvey.toRoomEntity() ?: return)
 
-                    val questionEntities = RealmExamQuestion.insertExamQuestions(
-                        RealmExamQuestion.serializeQuestions(getExamQuestions(examId)),
+                    val questionEntities = ExamQuestion.insertExamQuestions(
+                        ExamQuestion.serializeQuestions(getExamQuestions(examId)),
                         newSurveyId
                     ).mapNotNull { it.toRoomEntity() }
                     if (questionEntities.isNotEmpty()) {
@@ -114,7 +114,7 @@ class SurveysRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun createParentJsonString(exam: RealmStepExam): String {
+    private fun createParentJsonString(exam: StepExam): String {
         return try {
             JSONObject().apply {
                 put("_id", exam.id)
@@ -131,7 +131,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     private fun createUserJsonString(
-        userModel: RealmUser?,
+        userModel: UserEntity?,
         planetCode: String,
         isTeam: Boolean,
         teamId: String?
@@ -162,12 +162,12 @@ class SurveysRepositoryImpl @Inject constructor(
     private fun createMappedSurvey(
         newSurveyId: String,
         examId: String,
-        exam: RealmStepExam,
-        userModel: RealmUser?,
+        exam: StepExam,
+        userModel: UserEntity?,
         teamName: String,
         teamId: String
-    ): RealmStepExam {
-        return RealmStepExam().apply {
+    ): StepExam {
+        return StepExam().apply {
             id = newSurveyId
             _rev = null
             createdDate = timeProvider.now()
@@ -195,7 +195,7 @@ class SurveysRepositoryImpl @Inject constructor(
         examId: String,
         teamId: String?,
         isTeam: Boolean
-    ): RealmSubmission? {
+    ): Submission? {
         if (userId.isNullOrEmpty()) return null
         val candidates = if (isTeam && !teamId.isNullOrEmpty()) {
             submissionDao.getByUserIdAndTeamId(userId, teamId)
@@ -217,8 +217,8 @@ class SurveysRepositoryImpl @Inject constructor(
         sParentCode: String,
         isTeam: Boolean,
         teamId: String?
-    ): RealmSubmission? {
-        val submission = RealmSubmission().apply {
+    ): Submission? {
+        val submission = Submission().apply {
             id = adoptionId
             parentId = examId
             parent = parentJsonString
@@ -233,7 +233,7 @@ class SurveysRepositoryImpl @Inject constructor(
             lastUpdateTime = timeProvider.now()
             isUpdated = true
             if (isTeam && teamId != null) {
-                membershipDoc = org.ole.planet.myplanet.model.RealmMembershipDoc().apply {
+                membershipDoc = org.ole.planet.myplanet.model.MembershipDoc().apply {
                     this.teamId = teamId
                 }
             }
@@ -241,7 +241,7 @@ class SurveysRepositoryImpl @Inject constructor(
         return submission
     }
 
-    override suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam> {
+    override suspend fun getTeamOwnedSurveys(teamId: String?): List<StepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
 
         val teamSubmissionIds = getTeamSubmissionExamIds(teamId)
@@ -257,7 +257,7 @@ class SurveysRepositoryImpl @Inject constructor(
             .toList()
     }
 
-    override suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam> {
+    override suspend fun getAdoptableTeamSurveys(teamId: String?): List<StepExam> {
         if (teamId.isNullOrEmpty()) return emptyList()
         val excludedIds = getTeamSubmissionExamIds(teamId) +
             examDao.getByTeamIdAndType(teamId, "surveys").mapNotNull { it.sourceSurveyId }
@@ -270,7 +270,7 @@ class SurveysRepositoryImpl @Inject constructor(
             .toList()
     }
 
-    override suspend fun getIndividualSurveys(): List<RealmStepExam> {
+    override suspend fun getIndividualSurveys(): List<StepExam> {
         return examDao.getByType("surveys")
             .filter { !it.isTeamShareAllowed && it.teamId.isNullOrEmpty() }
             .map { it.toRealmModel() }
@@ -295,7 +295,7 @@ class SurveysRepositoryImpl @Inject constructor(
         isTeam: Boolean,
         teamId: String?,
         userId: String?,
-        surveys: List<RealmStepExam>
+        surveys: List<StepExam>
     ): Map<String, SurveyInfo> {
         val surveyIds = surveys.mapNotNull { it.id }
         val submissions = if (isTeam && !teamId.isNullOrEmpty()) {
@@ -338,7 +338,7 @@ class SurveysRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getSurveyFormState(
-        surveys: List<RealmStepExam>,
+        surveys: List<StepExam>,
         teamId: String?
     ): Map<String, SurveyFormState> {
         val surveyIds = surveys.mapNotNull { it.id }
@@ -366,23 +366,23 @@ class SurveysRepositoryImpl @Inject constructor(
         return submissionDao.getPendingSurveys(userId).size
     }
 
-    override suspend fun getSurvey(id: String): RealmStepExam? {
+    override suspend fun getSurvey(id: String): StepExam? {
         return examDao.getById(id)?.toRealmModel()
             ?: examDao.getByType("surveys").firstOrNull { it.name == id }?.toRealmModel()
     }
 
-    override suspend fun getSurveys(): List<RealmStepExam> {
+    override suspend fun getSurveys(): List<StepExam> {
         return examDao.getByType("surveys").map { it.toRealmModel() }
     }
 
-    override suspend fun getSurveys(ascending: Boolean): List<RealmStepExam> {
+    override suspend fun getSurveys(ascending: Boolean): List<StepExam> {
         val entities = examDao.getByType("surveys").sortedBy { it.createdDate }
         return (if (ascending) entities else entities.asReversed()).map { it.toRealmModel() }
     }
 
     override suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray) {
-        val exams = mutableListOf<RealmStepExam>()
-        val questions = mutableListOf<RealmExamQuestion>()
+        val exams = mutableListOf<StepExam>()
+        val questions = mutableListOf<ExamQuestion>()
 
         for (row in jsonArray) {
             var jsonDoc = row.asJsonObject
@@ -390,9 +390,9 @@ class SurveysRepositoryImpl @Inject constructor(
             val id = JsonUtils.getString("_id", jsonDoc)
             if (id.startsWith("_design")) continue
 
-            val exam = RealmStepExam.insertCourseStepsExams("", "", jsonDoc, "")
+            val exam = StepExam.insertCourseStepsExams("", "", jsonDoc, "")
             exams += exam
-            questions += RealmExamQuestion.insertExamQuestions(
+            questions += ExamQuestion.insertExamQuestions(
                 JsonUtils.getJsonArray("questions", jsonDoc),
                 exam.id
             )
@@ -462,7 +462,7 @@ class SurveysRepositoryImpl @Inject constructor(
         return reminderPrefs.contains("reminder_time_$surveyIds")
     }
 
-    override suspend fun getPendingAdoptedSurveys(): List<RealmStepExam> {
+    override suspend fun getPendingAdoptedSurveys(): List<StepExam> {
         return examDao.getPendingAdoptedSurveys().map { it.toRealmModel() }
     }
 }

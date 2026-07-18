@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.Course
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.Tag
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -38,8 +38,8 @@ class CoursesViewModel @Inject constructor(
     private fun processCourses(
         isMyCourseLib: Boolean,
         userId: String?,
-        validCourses: List<RealmMyCourse>,
-        myCourses: List<RealmMyCourse>,
+        validCourses: List<MyCourse>,
+        myCourses: List<MyCourse>,
         map: HashMap<String?, JsonObject>,
         progressMap: HashMap<String?, JsonObject>?,
         tagsMap: Map<String, List<Tag>>

@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.model
 
 import java.io.Serializable
 
-class RealmExamination : Serializable {
+class Examination : Serializable {
     var notes: String? = null
     var diagnosis: String? = null
     var treatments: String? = null

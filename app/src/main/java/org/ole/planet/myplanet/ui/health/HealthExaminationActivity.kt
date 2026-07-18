@@ -22,10 +22,10 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
-import org.ole.planet.myplanet.model.RealmExamination
+import org.ole.planet.myplanet.model.Examination
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
@@ -51,10 +51,10 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
     var userId: String? = null
-    var user: RealmUser? = null
-    private var currentUser: RealmUser? = null
+    var user: UserEntity? = null
+    private var currentUser: UserEntity? = null
     private var pojo: HealthExamination? = null
-    var health: RealmMyHealth? = null
+    var health: MyHealth? = null
     private var customDiag: MutableSet<String?>? = null
     private var mapConditions: HashMap<String?, Boolean>? = null
     var allowSubmission = true
@@ -259,7 +259,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.isSelfExamination = currentUser?._id == pojo?._id
             examination?.date = Date().time
             examination?.planetCode = user?.planetCode
-            val sign = RealmExamination()
+            val sign = Examination()
             sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
             sign.createdBy = currentUser?._id
             examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }

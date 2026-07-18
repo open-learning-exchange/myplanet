@@ -21,7 +21,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 
-class RealmUserEncodeImageTest {
+class UserEntityEncodeImageTest {
 
     @MockK
     lateinit var mockContext: Context
@@ -30,7 +30,7 @@ class RealmUserEncodeImageTest {
     lateinit var mockContentResolver: ContentResolver
 
     private var originalContext: Context? = null
-    private lateinit var realmUser: RealmUser
+    private lateinit var realmUser: UserEntity
 
     @Before
     fun setup() {
@@ -49,7 +49,7 @@ class RealmUserEncodeImageTest {
         mockkStatic(Uri::class)
         mockkStatic("androidx.core.net.UriKt")
 
-        realmUser = RealmUser()
+        realmUser = UserEntity()
     }
 
     @After

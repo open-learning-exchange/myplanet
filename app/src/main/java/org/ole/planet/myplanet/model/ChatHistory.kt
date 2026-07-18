@@ -23,5 +23,5 @@ open class ChatHistory {
     var createdDate: String? = null
     var updatedDate: String? = null
     var lastUsed: Long = 0
-    var conversations: List<RealmConversation>? = null
+    var conversations: List<Conversation>? = null
 }

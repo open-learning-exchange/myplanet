@@ -24,7 +24,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
@@ -38,7 +38,7 @@ class VoicesLabelManagerTest {
     private lateinit var binding: RowNewsBinding
     private lateinit var btnAddLabel: Button
     private lateinit var fbChips: FlexboxLayout
-    private lateinit var voice: RealmNews
+    private lateinit var voice: News
 
     private lateinit var addLabelFn: suspend (String, String) -> Unit
     private lateinit var removeLabelFn: suspend (String, String) -> Unit
@@ -84,9 +84,9 @@ class VoicesLabelManagerTest {
         fbChipsField.isAccessible = true
         fbChipsField.set(binding, fbChips)
 
-        // RealmNews is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
+        // News is a Room entity whose id is a @JvmField (a Java field, not a getter), so it
         // cannot be stubbed with mockk; use a real instance and set its labels per test.
-        voice = RealmNews().apply {
+        voice = News().apply {
             id = "test-id"
             labels = null
         }

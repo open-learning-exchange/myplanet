@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomTeamEntity
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -53,11 +53,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         return "%\"$escaped\"%"
     }
 
-    override suspend fun getAllLibraries(): List<RealmMyLibrary> {
+    override suspend fun getAllLibraries(): List<MyLibrary> {
         return myLibraryDao.getAll()
     }
 
-    override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
+    override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
         val base = when {
             userId != null -> if (isMyCourseLib) {
                 myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
@@ -81,8 +81,8 @@ class ResourcesRepositoryImpl @Inject constructor(
             normalizedQueryParts.all { titleNormal.contains(it) }
         }
 
-        val startsWithQuery = mutableListOf<RealmMyLibrary>()
-        val containsQuery = mutableListOf<RealmMyLibrary>()
+        val startsWithQuery = mutableListOf<MyLibrary>()
+        val containsQuery = mutableListOf<MyLibrary>()
         for (item in matching) {
             val titleNormal = item.titleNormal ?: continue
             if (titleNormal.startsWith(normalizedQuery)) {
@@ -94,7 +94,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return startsWithQuery + containsQuery
     }
 
-    override suspend fun getResourceById(id: String): RealmMyLibrary? {
+    override suspend fun getResourceById(id: String): MyLibrary? {
         return myLibraryDao.getById(id)
     }
 
@@ -124,53 +124,53 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
+    override suspend fun getLibraryItemById(id: String): MyLibrary? {
         return myLibraryDao.getById(id)
     }
 
-    override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
+    override suspend fun getLibraryItemByResourceId(resourceId: String): MyLibrary? {
         return myLibraryDao.getByResourceId(resourceId)
             ?: myLibraryDao.getByUnderscoreId(resourceId)
     }
 
-    override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary> {
+    override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary> {
         if (ids.isEmpty()) return emptyList()
         return myLibraryDao.getByUnderscoreIds(ids.toList())
     }
 
-    override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary> {
+    override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary> {
         if (ids.isEmpty()) return emptyList()
         return myLibraryDao.getByResourceIds(ids.toList())
     }
 
-    override suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getTeamPrivateResources(teamId: String): List<MyLibrary> {
         return myLibraryDao.getTeamPrivate(teamId)
     }
 
-    override suspend fun getPublicLibraryItems(): List<RealmMyLibrary> {
+    override suspend fun getPublicLibraryItems(): List<MyLibrary> {
         return myLibraryDao.getPublic()
     }
 
-    override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
+    override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<MyLibrary> {
         return myLibraryDao.getByLocalAddress(localAddress)
     }
 
-    override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+    override suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         if (userId == null) return emptyList()
         return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
             .filter { it.needToUpdate() }
     }
 
-    override suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
+    override suspend fun getLibraryForSelectedUser(userId: String): List<MyLibrary> {
         return getLibraryListForUser(userId)
     }
 
-    override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
+    override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
         if (userId.isNullOrBlank()) return emptyList()
         return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
 
-    override suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary> {
+    override suspend fun getAllStepResources(stepId: String?): List<MyLibrary> {
         if (stepId == null) return emptyList()
         return myLibraryDao.getByStepId(stepId)
     }
@@ -185,7 +185,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return myLibraryDao.countByTitle(title) > 0
     }
 
-    private suspend fun saveLibraryItem(item: RealmMyLibrary) {
+    private suspend fun saveLibraryItem(item: MyLibrary) {
         myLibraryDao.upsert(item)
     }
 
@@ -199,7 +199,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         val id = UUID.randomUUID().toString()
-        val resource = RealmMyLibrary().apply {
+        val resource = MyLibrary().apply {
             this.id = id
             this.title = title
             this.titleNormal = Utilities.normalizeText(title)
@@ -251,7 +251,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         resourceId: String,
         userId: String,
         isAdd: Boolean,
-    ): RealmMyLibrary? {
+    ): MyLibrary? {
         myLibraryDao.getByResourceId(resourceId)?.let { library ->
             if (isAdd) {
                 library.setUserId(userId)
@@ -269,7 +269,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             ?: getLibraryItemById(resourceId)
     }
 
-    override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
+    override suspend fun updateLibraryItem(id: String, updater: (MyLibrary) -> Unit) {
         val item = myLibraryDao.getById(id) ?: return
         updater(item)
         myLibraryDao.upsert(item)
@@ -293,11 +293,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
+    override fun getRecentResources(userId: String): Flow<List<MyLibrary>> {
         return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
     }
 
-    override fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>> {
+    override fun getPendingDownloads(userId: String): Flow<List<MyLibrary>> {
         return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
     }
 
@@ -345,7 +345,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return array
     }
 
-    override suspend fun downloadResources(resources: List<RealmMyLibrary>): Boolean {
+    override suspend fun downloadResources(resources: List<MyLibrary>): Boolean {
         return try {
             val urls = resources.filter { !it.isResourceOffline() }.mapNotNull { it.resourceRemoteAddress }
             if (urls.isEmpty()) {
@@ -358,11 +358,11 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun downloadResourcesPriority(resources: List<RealmMyLibrary>): Boolean {
+    override suspend fun downloadResourcesPriority(resources: List<MyLibrary>): Boolean {
         return downloadResources(resources)
     }
 
-    override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
+    override suspend fun getAllLibrariesToSync(): List<MyLibrary> {
         return myLibraryDao.getSyncable().filter { it.needToUpdate() }
     }
 
@@ -379,7 +379,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun addAllResourcesToUserLibrary(resources: List<RealmMyLibrary>, userId: String): Result<Unit> {
+    override suspend fun addAllResourcesToUserLibrary(resources: List<MyLibrary>, userId: String): Result<Unit> {
         val resourceIds = resources.mapNotNull { it.resourceId }
         return addResourcesToUserLibrary(resourceIds, userId)
     }
@@ -391,7 +391,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             .map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
     }
 
-    override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
+    override suspend fun getDownloadSuggestionList(userId: String?): List<MyLibrary> {
         val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
 
         if (!targetUserId.isNullOrBlank()) {
@@ -448,7 +448,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFilterFacets(libraries: List<RealmMyLibrary>): Map<String, Set<String>> {
+    override suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>> {
         return mapOf(
             "languages" to libraries.mapNotNull { it.language }.filterNot { it.isBlank() }.toSet(),
             "subjects" to libraries.flatMap { it.subject ?: emptyList() }.toSet(),
@@ -463,8 +463,8 @@ class ResourcesRepositoryImpl @Inject constructor(
             try {
                 val resourceId = JsonUtils.getString("_id", doc)
                 val existing = myLibraryDao.getById(resourceId)
-                val library = RealmMyLibrary.insertMyLibrary(
-                    RealmMyLibrary.Companion.InsertParams(
+                val library = MyLibrary.insertMyLibrary(
+                    MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
                         userId = shelfId,
@@ -489,8 +489,8 @@ class ResourcesRepositoryImpl @Inject constructor(
                 val id = JsonUtils.getString("_id", doc)
                 if (id.startsWith("_design")) return@forEach
                 val existing = myLibraryDao.getById(id)
-                val library = RealmMyLibrary.insertMyLibrary(
-                    RealmMyLibrary.Companion.InsertParams(
+                val library = MyLibrary.insertMyLibrary(
+                    MyLibrary.Companion.InsertParams(
                         doc = doc,
                         spm = sharedPrefManager,
                         existing = existing
@@ -549,7 +549,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
-    override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>> {
+    override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<MyLibrary>> {
         return myLibraryDao.getByCourseId(courseId).groupBy { it.stepId }
     }
 
@@ -562,7 +562,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPendingResourceUploads(): List<RealmMyLibrary> {
+    override suspend fun getPendingResourceUploads(): List<MyLibrary> {
         return myLibraryDao.getPendingUploads()
     }
 

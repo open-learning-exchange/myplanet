@@ -10,8 +10,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -46,7 +46,7 @@ class LoginViewModelTest {
 
     @Test
     fun `loadTeamsAsync publishes teams from repository`() = runTest {
-        val team = RealmMyTeam().apply { _id = "team1"; name = "Team One" }
+        val team = MyTeam().apply { _id = "team1"; name = "Team One" }
         coEvery { teamsRepository.getAllActiveTeams() } returns listOf(team)
 
         val viewModel = createViewModel()
@@ -57,7 +57,7 @@ class LoginViewModelTest {
 
     @Test
     fun `loadTeamsAsync does not reload when teams already present`() = runTest {
-        coEvery { teamsRepository.getAllActiveTeams() } returns listOf(RealmMyTeam())
+        coEvery { teamsRepository.getAllActiveTeams() } returns listOf(MyTeam())
 
         val viewModel = createViewModel()
         viewModel.loadTeamsAsync()
@@ -68,7 +68,7 @@ class LoginViewModelTest {
 
     @Test
     fun `loadTeamsAsync with force reloads even when teams present`() = runTest {
-        coEvery { teamsRepository.getAllActiveTeams() } returns listOf(RealmMyTeam())
+        coEvery { teamsRepository.getAllActiveTeams() } returns listOf(MyTeam())
 
         val viewModel = createViewModel()
         viewModel.loadTeamsAsync()
@@ -79,7 +79,7 @@ class LoginViewModelTest {
 
     @Test
     fun `getTeamMembers publishes members and refreshes saved users`() = runTest {
-        val member = RealmUser().apply { id = "user1" }
+        val member = UserEntity().apply { id = "user1" }
         coEvery { teamsRepository.refreshJoinedMembersForLogin("team1") } returns listOf(member)
 
         val viewModel = createViewModel()

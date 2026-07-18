@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-open class RealmSubmission {
+open class Submission {
     var id: String? = null
     var _id: String? = null
     var _rev: String? = null
@@ -10,8 +10,8 @@ open class RealmSubmission {
     var user: String? = null
     var startTime: Long = 0
     var lastUpdateTime: Long = 0
-    var answers: MutableList<RealmAnswer>? = null
-    var teamObject: RealmTeamReference? = null
+    var answers: MutableList<Answer>? = null
+    var teamObject: TeamReference? = null
     var grade: Long = 0
     var status: String? = null
     var uploaded = false
@@ -19,17 +19,17 @@ open class RealmSubmission {
     var source: String? = null
     var parentCode: String? = null
     var parent: String? = null
-    var membershipDoc: RealmMembershipDoc? = null
+    var membershipDoc: MembershipDoc? = null
     var isUpdated = false
     @Transient
     var submitterName: String = ""
 }
 
-open class RealmMembershipDoc {
+open class MembershipDoc {
     var teamId: String? = null
 }
 
-open class RealmTeamReference {
+open class TeamReference {
     var _id: String? = null
     var name: String? = null
     var type: String? = null

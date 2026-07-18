@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.repository.SurveysRepository
@@ -28,14 +28,14 @@ class SurveysViewModel @Inject constructor(
         DATE_ASC, DATE_DESC, TITLE_ASC, TITLE_DESC
     }
 
-    private var rawSurveys: List<RealmStepExam> = emptyList()
+    private var rawSurveys: List<StepExam> = emptyList()
     private var currentSearchQuery: String = ""
     private var currentSortOption: SortOption = SortOption.DATE_DESC
     private var isTeam: Boolean = false
     private var teamId: String? = null
 
-    private val _surveys = MutableStateFlow<List<RealmStepExam>>(emptyList())
-    val surveys: StateFlow<List<RealmStepExam>> = _surveys.asStateFlow()
+    private val _surveys = MutableStateFlow<List<StepExam>>(emptyList())
+    val surveys: StateFlow<List<StepExam>> = _surveys.asStateFlow()
 
     private val _surveyInfos = MutableStateFlow<Map<String, SurveyInfo>>(emptyMap())
     val surveyInfos: StateFlow<Map<String, SurveyInfo>> = _surveyInfos.asStateFlow()
@@ -126,7 +126,7 @@ class SurveysViewModel @Inject constructor(
         _surveys.value = list
     }
 
-    private fun getSortDate(survey: RealmStepExam): Long {
+    private fun getSortDate(survey: StepExam): Long {
         return if (survey.sourceSurveyId != null) {
             if (survey.adoptionDate > 0) survey.adoptionDate else survey.createdDate
         } else {
@@ -134,12 +134,12 @@ class SurveysViewModel @Inject constructor(
         }
     }
 
-    private fun filter(s: String, list: List<RealmStepExam>): List<RealmStepExam> {
+    private fun filter(s: String, list: List<StepExam>): List<StepExam> {
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(s)
-        val startsWithQuery = mutableListOf<RealmStepExam>()
-        val containsQuery = mutableListOf<RealmStepExam>()
+        val startsWithQuery = mutableListOf<StepExam>()
+        val containsQuery = mutableListOf<StepExam>()
 
         for (item in list) {
             val title = item.name?.let { Utilities.normalizeText(it) } ?: continue

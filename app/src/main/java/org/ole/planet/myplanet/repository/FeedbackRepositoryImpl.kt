@@ -9,7 +9,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class FeedbackRepositoryImpl @Inject constructor(
@@ -54,7 +54,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override suspend fun getFeedback(userModel: RealmUser?): Flow<List<Feedback>> {
+    override suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>> {
         return if (userModel?.isManager() == true) {
             feedbackDao.getAllSortedFlow()
         } else {

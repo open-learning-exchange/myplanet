@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room row for course steps, replacing RealmCourseStep. */
+/** Room row for course steps, replacing CourseStep. */
 @Entity(tableName = "course_steps", indices = [Index("courseId")])
 data class RoomCourseStepEntity(
     @PrimaryKey val id: String,

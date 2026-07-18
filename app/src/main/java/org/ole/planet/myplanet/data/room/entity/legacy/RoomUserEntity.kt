@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room mirror for legacy RealmUser rows during the Realm-to-Room migration. */
+/** Room mirror for legacy UserEntity rows during the Realm-to-Room migration. */
 @Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
 data class RoomUserEntity(
     @PrimaryKey @JvmField val id: String,

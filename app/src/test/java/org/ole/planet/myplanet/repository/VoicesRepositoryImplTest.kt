@@ -23,8 +23,8 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -81,11 +81,11 @@ class VoicesRepositoryImplTest {
 
         val repoWithRealGson = newRepository(Gson())
 
-        val guestNews = RealmNews().apply {
+        val guestNews = News().apply {
             id = "guest_news_id"
             userId = "guest_123"
         }
-        val validNews = RealmNews().apply {
+        val validNews = News().apply {
             id = "valid_news_id"
             _id = "valid_news_id"
             userId = "user_123"
@@ -119,15 +119,15 @@ class VoicesRepositoryImplTest {
     fun `getCommunityVisibleNews filters correctly based on viewableBy and viewIn`() = testScope.runTest {
         val repoWithRealGson = newRepository(Gson())
 
-        val news1 = RealmNews().apply {
+        val news1 = News().apply {
             viewableBy = "community"
             viewIn = null
         }
-        val news2 = RealmNews().apply {
+        val news2 = News().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"user1\"}]"
         }
-        val news3 = RealmNews().apply {
+        val news3 = News().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"user2\"}]"
         }
@@ -142,15 +142,15 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `getNewsByTeamId filters correctly based on viewableBy and viewIn`() = testScope.runTest {
-        val news1 = RealmNews().apply {
+        val news1 = News().apply {
             viewableBy = "teams"
             viewableId = "team1"
         }
-        val news2 = RealmNews().apply {
+        val news2 = News().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team1\"}]"
         }
-        val news3 = RealmNews().apply {
+        val news3 = News().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team2\"}]"
         }
@@ -165,11 +165,11 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `getFilteredNews filters top-level posts by team`() = testScope.runTest {
-        val news1 = RealmNews().apply {
+        val news1 = News().apply {
             viewableBy = "teams"
             viewableId = "team1"
         }
-        val news2 = RealmNews().apply {
+        val news2 = News().apply {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team2\"}]"
         }
@@ -183,8 +183,8 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `deleteNews recursively deletes replies`() = testScope.runTest {
-        val reply1 = RealmNews().apply { id = "reply1_id" }
-        val reply2 = RealmNews().apply { id = "reply2_id" }
+        val reply1 = News().apply { id = "reply1_id" }
+        val reply2 = News().apply { id = "reply2_id" }
 
         coEvery { newsDao.getDirectReplies("newsId") } returns listOf(reply1)
         coEvery { newsDao.getDirectReplies("reply1_id") } returns listOf(reply2)
@@ -199,7 +199,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `addLabel appends label and upserts`() = testScope.runTest {
-        val news = RealmNews().apply {
+        val news = News().apply {
             id = "newsId"
             labels = listOf("existing")
         }
@@ -207,7 +207,7 @@ class VoicesRepositoryImplTest {
 
         repository.addLabel("newsId", "testLabel")
 
-        val slot = slot<RealmNews>()
+        val slot = slot<News>()
         coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
         assertTrue(slot.captured.labels!!.contains("testLabel"))
         assertTrue(slot.captured.labels!!.contains("existing"))
@@ -215,7 +215,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun `removeLabel drops label and upserts`() = testScope.runTest {
-        val news = RealmNews().apply {
+        val news = News().apply {
             id = "newsId"
             labels = listOf("testLabel", "keep")
         }
@@ -223,7 +223,7 @@ class VoicesRepositoryImplTest {
 
         repository.removeLabel("newsId", "testLabel")
 
-        val slot = slot<RealmNews>()
+        val slot = slot<News>()
         coVerify(exactly = 1) { newsDao.upsert(capture(slot)) }
         assertEquals(listOf("keep"), slot.captured.labels)
     }
@@ -231,7 +231,7 @@ class VoicesRepositoryImplTest {
     @Test
     fun `getUserById delegates to userRepository`() = testScope.runTest {
         val testUserId = "test_user_123"
-        val mockUser = mockk<RealmUser>()
+        val mockUser = mockk<UserEntity>()
 
         coEvery { userRepository.getUserById(testUserId) } returns mockUser
 

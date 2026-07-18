@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.model
 
-open class RealmCourseStep {
+open class CourseStep {
     var id: String? = null
     var courseId: String? = null
     var stepTitle: String? = null

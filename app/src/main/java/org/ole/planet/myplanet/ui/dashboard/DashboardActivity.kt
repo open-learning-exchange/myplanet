@@ -53,9 +53,9 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
@@ -97,7 +97,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var isFirstLaunch = false
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
@@ -938,7 +938,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f, tag)
     }
 
-    override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
+    override fun openLibraryDetailFragment(library: MyLibrary?) {
         val f: Fragment = ResourceDetailFragment()
         val b = Bundle()
         b.putString("libraryId", library?.resourceId)
@@ -946,7 +946,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f)
     }
 
-    override fun sendSurvey(current: RealmStepExam?) {
+    override fun sendSurvey(current: StepExam?) {
         val f = SendSurveyFragment()
         val b = Bundle()
         b.putString("surveyId", current?.id)

@@ -6,7 +6,7 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 
 object JsonUtils {
     val gson: Gson by lazy {
@@ -22,7 +22,7 @@ object JsonUtils {
         }
     }
 
-    fun extractSharedTeamName(news: RealmNews?): String {
+    fun extractSharedTeamName(news: News?): String {
         if (news == null) return ""
         val ar = news.parsedViewIn ?: if (!news.viewIn.isNullOrEmpty()) {
             try {

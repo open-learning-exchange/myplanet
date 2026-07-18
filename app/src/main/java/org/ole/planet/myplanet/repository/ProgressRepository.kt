@@ -4,11 +4,11 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.CourseProgress
-import org.ole.planet.myplanet.model.RealmCourseStep
+import org.ole.planet.myplanet.model.CourseStep
 
 interface ProgressRepository {
     suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject>
-    suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int
+    suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int
     suspend fun fetchCourseData(userId: String?): JsonArray
     suspend fun getProgressRecords(userId: String?): List<CourseProgress>
     suspend fun getCompletedCourses(userId: String): List<CourseCompletion>

@@ -8,13 +8,13 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class RealmExamQuestionTest {
+class ExamQuestionTest {
 
     @Test
     fun testInsertExamQuestions_emptyArray() {
         val emptyArray = JsonArray()
 
-        val result = RealmExamQuestion.insertExamQuestions(emptyArray, "exam123")
+        val result = ExamQuestion.insertExamQuestions(emptyArray, "exam123")
 
         assertTrue(result.isEmpty())
     }
@@ -41,7 +41,7 @@ class RealmExamQuestionTest {
 
         questionsArray.add(question1)
 
-        val insertedQuestions = RealmExamQuestion.insertExamQuestions(questionsArray, "exam123")
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questionsArray, "exam123")
 
         assertEquals(1, insertedQuestions.size)
         val insertedQuestion = insertedQuestions[0]
@@ -59,7 +59,7 @@ class RealmExamQuestionTest {
     @Test
     fun testInsertExamQuestions_emptyList() {
         val questions = JsonArray()
-        val result = RealmExamQuestion.insertExamQuestions(questions, "exam1")
+        val result = ExamQuestion.insertExamQuestions(questions, "exam1")
         assertTrue(result.isEmpty())
     }
 
@@ -103,7 +103,7 @@ class RealmExamQuestionTest {
         questions.add(q1)
         questions.add(q2)
 
-        val insertedQuestions = RealmExamQuestion.insertExamQuestions(questions, "examId")
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questions, "examId")
         assertEquals(2, insertedQuestions.size)
 
         val mockQ1 = insertedQuestions[0]
@@ -151,8 +151,8 @@ class RealmExamQuestionTest {
         }
         questions.add(q1)
 
-        val insertedQuestions = RealmExamQuestion.insertExamQuestions(questions, "exam1")
-        val serialized = RealmExamQuestion.serializeQuestions(insertedQuestions)
+        val insertedQuestions = ExamQuestion.insertExamQuestions(questions, "exam1")
+        val serialized = ExamQuestion.serializeQuestions(insertedQuestions)
 
         assertNotNull(serialized)
         assertEquals(1, serialized.size())

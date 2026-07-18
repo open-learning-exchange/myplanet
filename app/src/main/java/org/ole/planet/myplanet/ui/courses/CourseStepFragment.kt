@@ -23,10 +23,10 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
 import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -55,11 +55,11 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
-    private lateinit var step: RealmCourseStep
-    private lateinit var resources: List<RealmMyLibrary>
-    private lateinit var stepExams: List<RealmStepExam>
-    private lateinit var stepSurvey: List<RealmStepExam>
-    var user: RealmUser? = null
+    private lateinit var step: CourseStep
+    private lateinit var resources: List<MyLibrary>
+    private lateinit var stepExams: List<StepExam>
+    private lateinit var stepSurvey: List<StepExam>
+    var user: UserEntity? = null
     private var stepNumber = 0
     private var courseTitle: String? = null
     private var saveInProgress: Job? = null

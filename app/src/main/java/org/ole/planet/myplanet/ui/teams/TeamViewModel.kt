@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.TeamTask
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -150,7 +150,7 @@ class TeamViewModel @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         category: String?,
-        userModel: RealmUser
+        userModel: UserEntity
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {

@@ -10,7 +10,8 @@ import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.utils.JsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
@@ -133,7 +134,7 @@ class RatingsRepositoryImpl @Inject constructor(
             rate = rate,
         )
 
-    private suspend fun findUserForRating(userId: String): RealmUser {
+    private suspend fun findUserForRating(userId: String): UserEntity {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
         val user = userDao.getById(userId)?.toRealmModel()
@@ -143,7 +144,7 @@ class RatingsRepositoryImpl @Inject constructor(
 
     private fun setRatingData(
         ratingObject: Rating,
-        userModel: RealmUser?,
+        userModel: UserEntity?,
         type: String,
         itemId: String,
         title: String,

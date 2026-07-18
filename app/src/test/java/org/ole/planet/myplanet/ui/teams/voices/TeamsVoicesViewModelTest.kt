@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -37,7 +37,7 @@ class TeamsVoicesViewModelTest {
     @Test
     fun `loadTeam fetches team and maps to VoicePostingPolicy`() = runTest(testDispatcher) {
         val teamId = "team123"
-        val mockTeam = mockk<RealmMyTeam>(relaxed = true)
+        val mockTeam = mockk<MyTeam>(relaxed = true)
         coEvery { mockTeam._id } returns teamId
         coEvery { mockTeam.isPublic } returns true
         coEvery { teamsRepository.getTeamByIdOrTeamId(teamId) } returns mockTeam

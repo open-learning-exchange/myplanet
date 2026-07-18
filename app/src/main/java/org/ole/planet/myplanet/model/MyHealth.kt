@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.model
 
-class RealmMyHealth {
-    var profile: RealmMyHealthProfile? = null
+class MyHealth {
+    var profile: MyHealthProfile? = null
     var userKey: String? = null
     var lastExamination: Long = 0
 
-    class RealmMyHealthProfile {
+    class MyHealthProfile {
         var emergencyContactName = ""
         var emergencyContactType = ""
         var emergencyContact = ""

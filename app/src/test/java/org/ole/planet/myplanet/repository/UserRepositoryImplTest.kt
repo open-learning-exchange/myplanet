@@ -32,7 +32,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -119,7 +119,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `getDashboardProfile uses user name if fullName is blank`() = runTest(testDispatcher) {
-        val user = RealmUser().apply { name = "john"; firstName = "  "; lastName = "  " }
+        val user = UserEntity().apply { name = "john"; firstName = "  "; lastName = "  " }
         val spiedRepo = spyk(repository)
         coEvery { spiedRepo.getUserById("123") } returns user
         coEvery { activitiesRepository.getOfflineLoginCount("john") } returns 5
@@ -144,7 +144,7 @@ class UserRepositoryImplTest {
 
     @Test
     fun `getDashboardProfile handles null user name`() = runTest(testDispatcher) {
-        val user = RealmUser().apply { name = null; firstName = "John"; lastName = "Doe" }
+        val user = UserEntity().apply { name = null; firstName = "John"; lastName = "Doe" }
         val spiedRepo = spyk(repository)
         coEvery { spiedRepo.getUserById("123") } returns user
 
@@ -206,9 +206,9 @@ class UserRepositoryImplTest {
         })
         coEvery { apiInterface.getJsonObject("Basic auth", userFetchUrl) } returns userFetchResponse
 
-        // Stub saveUser to return a mocked RealmUser instead of attempting DB operations
+        // Stub saveUser to return a mocked UserEntity instead of attempting DB operations
         val spyRepository = spyk(repository)
-        val mockRealmUser = mockk<RealmUser>(relaxed = true)
+        val mockRealmUser = mockk<UserEntity>(relaxed = true)
         coEvery { spyRepository.saveUser(any(), any(), any()) } returns mockRealmUser
 
         val result = spyRepository.becomeMember(userObj)

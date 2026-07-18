@@ -29,13 +29,13 @@ import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -84,51 +84,51 @@ class CoursesRepositoryImpl @Inject constructor(
         val questions: List<RoomQuestionEntity>
     )
 
-    override suspend fun getAllCourses(): List<RealmMyCourse> {
+    override suspend fun getAllCourses(): List<MyCourse> {
         return mapCourses(courseDao.getAll())
             .filter { !it.courseTitle.isNullOrEmpty() }
     }
 
-    override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
+    override fun getMyCourses(userId: String?, courses: List<MyCourse>): List<MyCourse> {
         if (userId == null) return emptyList()
         return courses.filter { it.userId?.contains(userId) == true }
     }
 
-    override suspend fun getMyCourses(userId: String): List<RealmMyCourse> {
+    override suspend fun getMyCourses(userId: String): List<MyCourse> {
         return getMyCourses(userId, mapCourses(courseDao.getAll()))
     }
 
-    override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
+    override suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>> {
         return courseDao.observeAll().map { courses ->
             mapCourses(courses).filter { it.userId?.contains(userId) == true }
         }
     }
 
-    override suspend fun getCourseById(courseId: String): RealmMyCourse? {
+    override suspend fun getCourseById(courseId: String): MyCourse? {
         if (courseId.isBlank()) return null
         return mapCourse(courseDao.getByCourseId(courseId))
     }
 
-    override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
+    override fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?> {
         return courseDao.observeByCourseId(courseId).map { course ->
             mapCourse(course)
         }
     }
 
-    override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
+    override suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse> {
         if (courseIds.isEmpty()) return emptyList()
         return mapCourses(courseDao.getByCourseIds(courseIds))
     }
 
-    override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
+    override suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary> {
         return getCourseResources(courseId, isOffline = false)
     }
 
-    override suspend fun getCourseOfflineResources(courseId: String?): List<RealmMyLibrary> {
+    override suspend fun getCourseOfflineResources(courseId: String?): List<MyLibrary> {
         return getCourseResources(courseId, isOffline = true)
     }
 
-    override suspend fun getCourseOfflineResources(courseIds: List<String>): List<RealmMyLibrary> {
+    override suspend fun getCourseOfflineResources(courseIds: List<String>): List<MyLibrary> {
         if (courseIds.isEmpty()) {
             return emptyList()
         }
@@ -142,7 +142,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return examDao.getByCourseIdAndType(courseId, "courses").size
     }
 
-    override suspend fun getCourseSteps(courseId: String): List<RealmCourseStep> {
+    override suspend fun getCourseSteps(courseId: String): List<CourseStep> {
         if (courseId.isBlank()) {
             return emptyList()
         }
@@ -175,7 +175,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun getCourseResources(courseId: String?, isOffline: Boolean): List<RealmMyLibrary> {
+    private suspend fun getCourseResources(courseId: String?, isOffline: Boolean): List<MyLibrary> {
         if (courseId.isNullOrEmpty()) {
             return emptyList()
         }
@@ -191,7 +191,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return true
     }
 
-    override suspend fun search(query: String): List<RealmMyCourse> {
+    override suspend fun search(query: String): List<MyCourse> {
         val allCourses = mapCourses(courseDao.getAll())
         if (query.isEmpty()) {
             return allCourses
@@ -206,8 +206,8 @@ class CoursesRepositoryImpl @Inject constructor(
             title != null && normalizedQueryParts.all { title.contains(it) }
         }
 
-        val startsWithQuery = mutableListOf<RealmMyCourse>()
-        val containsQuery = mutableListOf<RealmMyCourse>()
+        val startsWithQuery = mutableListOf<MyCourse>()
+        val containsQuery = mutableListOf<MyCourse>()
 
         for (item in data) {
             val title = item.courseTitleNormal ?: item.courseTitle?.let { Utilities.normalizeText(it) } ?: continue
@@ -226,7 +226,7 @@ class CoursesRepositoryImpl @Inject constructor(
         gradeLevel: String,
         subjectLevel: String,
         tagNames: List<String>
-    ): List<RealmMyCourse> {
+    ): List<MyCourse> {
         val courseIdsWithTags = if (tagNames.isNotEmpty()) {
             val matchingTagIds = tagDao.getByNames(tagNames).map { it.id }
             if (matchingTagIds.isEmpty()) {
@@ -370,11 +370,11 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun getExamObject(
-        exams: Iterable<RealmStepExam>,
+        exams: Iterable<StepExam>,
         ob: JsonObject,
-        questionsByExamId: Map<String, List<RealmExamQuestion>>,
-        submissionsByExamId: Map<String, List<RealmSubmission>>,
-        answersBySubmissionId: Map<String, List<RealmAnswer>>
+        questionsByExamId: Map<String, List<ExamQuestion>>,
+        submissionsByExamId: Map<String, List<Submission>>,
+        answersBySubmissionId: Map<String, List<Answer>>
     ) {
         exams.forEach { exam ->
             exam.id?.let { examId ->
@@ -399,7 +399,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int {
         val processedCount = upsertRoomCoursesFromSync(documents, shelfId, continueOnError = true)
-        RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+        MyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
         flushPendingCourseResources()
         return processedCount
     }
@@ -443,7 +443,7 @@ class CoursesRepositoryImpl @Inject constructor(
         activitiesRepository.logCourseVisit(courseId, title, userId)
     }
 
-    override suspend fun getCurrentProgress(steps: List<RealmCourseStep?>?, userId: String?, courseId: String?): Int {
+    override suspend fun getCurrentProgress(steps: List<CourseStep?>?, userId: String?, courseId: String?): Int {
         return progressRepository.getCurrentProgress(steps, userId, courseId)
     }
 
@@ -489,7 +489,7 @@ class CoursesRepositoryImpl @Inject constructor(
             }
         }
         upsertRoomCoursesFromSync(documentList)
-        RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+        MyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
 
     private suspend fun upsertRoomCoursesFromSync(
@@ -547,7 +547,7 @@ class CoursesRepositoryImpl @Inject constructor(
         val description = JsonUtils.getString("description", doc)
         val baseUrl = UrlUtils.getUrl()
         extractLinks(description).forEach { link ->
-            RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
+            MyCourse.addConcatenatedLink("$baseUrl/$link")
         }
 
         val stepIds = mutableListOf<String>()
@@ -561,7 +561,7 @@ class CoursesRepositoryImpl @Inject constructor(
             val stepJson = stepElement.asJsonObject
             val stepDescription = JsonUtils.getString("description", stepJson)
             extractLinks(stepDescription).forEach { link ->
-                RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
+                MyCourse.addConcatenatedLink("$baseUrl/$link")
             }
             queueCourseResources(courseId, stepId, JsonUtils.getJsonArray("resources", stepJson))
             stepIds.add(stepId)
@@ -719,8 +719,8 @@ class CoursesRepositoryImpl @Inject constructor(
         val libraries = batch.mapNotNull { pending ->
             val resourceId = JsonUtils.getString("_id", pending.doc)
             val existing = myLibraryDao.getById(resourceId)
-            RealmMyLibrary.insertMyLibrary(
-                RealmMyLibrary.Companion.InsertParams(
+            MyLibrary.insertMyLibrary(
+                MyLibrary.Companion.InsertParams(
                     doc = pending.doc,
                     spm = sharedPrefManager,
                     courseId = pending.courseId,
@@ -734,7 +734,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun mapCourses(courses: List<RoomCourseEntity>): List<RealmMyCourse> {
+    private suspend fun mapCourses(courses: List<RoomCourseEntity>): List<MyCourse> {
         if (courses.isEmpty()) return emptyList()
         val courseIds = courses.mapNotNull { it.courseId ?: it.id }.distinct()
         val stepsByCourseId = if (courseIds.isEmpty()) {
@@ -750,7 +750,7 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun mapCourse(course: RoomCourseEntity?): RealmMyCourse? {
+    private suspend fun mapCourse(course: RoomCourseEntity?): MyCourse? {
         if (course == null) return null
         val courseKey = course.courseId ?: course.id
         val steps = if (courseKey.isBlank()) {

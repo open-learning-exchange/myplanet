@@ -16,8 +16,8 @@ import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 
@@ -267,7 +267,7 @@ internal class SubmissionsRepositoryExporter @Inject constructor(
         return currentY
     }
 
-    private fun formatAnswer(answer: RealmAnswer?): String {
+    private fun formatAnswer(answer: Answer?): String {
         if (answer == null) return "No answer provided"
         val value = answer.value
         val choices = answer.valueChoices

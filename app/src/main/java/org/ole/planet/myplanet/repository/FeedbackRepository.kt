@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 
 interface FeedbackRepository {
     fun createFeedback(
@@ -14,7 +14,7 @@ interface FeedbackRepository {
         item: String? = null,
         state: String? = null,
     ): Feedback
-    suspend fun getFeedback(userModel: RealmUser?): Flow<List<Feedback>>
+    suspend fun getFeedback(userModel: UserEntity?): Flow<List<Feedback>>
     suspend fun getPendingFeedback(): List<Feedback>
     suspend fun getFeedbackById(id: String?): Feedback?
     suspend fun closeFeedback(id: String?)

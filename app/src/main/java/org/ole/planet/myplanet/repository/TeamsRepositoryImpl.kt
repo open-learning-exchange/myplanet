@@ -32,9 +32,9 @@ import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamResourceDto
@@ -94,7 +94,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teams.map { team ->
             TeamUploadData(
                 teamId = team._id,
-                serialized = RealmMyTeam.serialize(team, courses, coursesResourcesMap),
+                serialized = MyTeam.serialize(team, courses, coursesResourcesMap),
                 isDeletePending = team.isDeletePending,
                 imageName = team.imageName
             )
@@ -134,10 +134,10 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: RealmUser): Result<String> {
+    override suspend fun createTeamAndAddMember(request: CreateTeamRequest, user: UserEntity): Result<String> {
         return runCatching {
             val teamId = AndroidDecrypter.generateIv()
-            val team = RealmMyTeam().apply {
+            val team = MyTeam().apply {
                 _id = teamId
                 status = "active"
                 createdDate = Date().time
@@ -159,7 +159,7 @@ class TeamsRepositoryImpl @Inject constructor(
                 teamPlanetCode = user.planetCode
                 updated = true
             }
-            val membership = RealmMyTeam().apply {
+            val membership = MyTeam().apply {
                 _id = AndroidDecrypter.generateIv()
                 userId = user._id
                 this.teamId = teamId
@@ -175,13 +175,13 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getAllActiveTeams(): List<RealmMyTeam> {
+    override suspend fun getAllActiveTeams(): List<MyTeam> {
         return teamDao.getAll()
             .filter { it.isRootTeam() && it.status == "active" }
             .map { it.toRealmModel() }
     }
 
-    override suspend fun getMyTeamsFlow(userId: String): Flow<List<RealmMyTeam>> {
+    override suspend fun getMyTeamsFlow(userId: String): Flow<List<MyTeam>> {
         return teamDao.observeAll().map { entities ->
             val teamIds = entities.filter {
                 it.userId == userId &&
@@ -209,7 +209,7 @@ class TeamsRepositoryImpl @Inject constructor(
             .toHashSet()
     }
 
-    private suspend fun getShareableTeams(userId: String?): List<RealmMyTeam> {
+    private suspend fun getShareableTeams(userId: String?): List<MyTeam> {
         val allTeams = teamDao.getAll()
         return if (userId.isNullOrBlank()) {
             allTeams.filter {
@@ -236,7 +236,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return getShareableTeams(userId).mapNotNull { it.toSummary() }
     }
 
-    private suspend fun getShareableEnterprises(): List<RealmMyTeam> {
+    private suspend fun getShareableEnterprises(): List<MyTeam> {
         return teamDao.getAll()
             .filter {
                 it.isRootTeam() &&
@@ -246,7 +246,7 @@ class TeamsRepositoryImpl @Inject constructor(
             .map { it.toRealmModel() }
     }
 
-    private suspend fun mapToTeamDetails(teams: List<RealmMyTeam>, userId: String?): List<TeamDetails> {
+    private suspend fun mapToTeamDetails(teams: List<MyTeam>, userId: String?): List<TeamDetails> {
         val validTeams = teams.filter { !it._id.isNullOrBlank() && it.status != "archived" }
         if (validTeams.isEmpty()) return emptyList()
 
@@ -348,7 +348,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return filtered.mapNotNull { it.toSummary() }
     }
 
-    override suspend fun getTeamResources(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getTeamResources(teamId: String): List<MyLibrary> {
         val resourceIds = getResourceIds(teamId)
         val linkedResources = resourcesRepositoryLazy.get().getLibraryItemsByResourceIds(resourceIds)
         val privateResources = resourcesRepositoryLazy.get().getTeamPrivateResources(teamId)
@@ -379,16 +379,16 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTeamByIdOrTeamId(id: String): RealmMyTeam? {
+    override suspend fun getTeamByIdOrTeamId(id: String): MyTeam? {
         if (id.isBlank()) return null
         return getTeamEntityByAnyId(id)?.toRealmModel()
     }
 
-    override suspend fun getTeamLinks(): List<RealmMyTeam> {
+    override suspend fun getTeamLinks(): List<MyTeam> {
         return teamDao.getByDocType("link").map { it.toRealmModel() }
     }
 
-    override suspend fun getTeamById(teamId: String): RealmMyTeam? {
+    override suspend fun getTeamById(teamId: String): MyTeam? {
         if (teamId.isBlank()) return null
         return teamDao.getById(teamId)?.toRealmModel()
     }
@@ -467,7 +467,7 @@ class TeamsRepositoryImpl @Inject constructor(
         startDate: Long?,
         endDate: Long?,
         sortAscending: Boolean,
-    ): Flow<List<RealmMyTeam>> {
+    ): Flow<List<MyTeam>> {
         return teamDao.observeAll().map { entities ->
             entities.filter {
                 it.teamId == teamId &&
@@ -480,7 +480,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun mapTransactionsToPresentationModel(transactions: List<RealmMyTeam>): List<Transaction> {
+    private fun mapTransactionsToPresentationModel(transactions: List<MyTeam>): List<Transaction> {
         val transactionDataList = mutableListOf<Transaction>()
         var balance = 0
         for (team in transactions) {
@@ -517,7 +517,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
         return runCatching {
             val transactionId = UUID.randomUUID().toString()
-            val transaction = RealmMyTeam().apply {
+            val transaction = MyTeam().apply {
                 _id = transactionId
                 status = "active"
                 this.date = date
@@ -558,8 +558,8 @@ class TeamsRepositoryImpl @Inject constructor(
             addProperty("docType", "report")
             addProperty("updated", true)
         }
-        val reportEntry = RealmMyTeam().apply { _id = reportId }
-        RealmMyTeam.populateTeamFields(doc, reportEntry)
+        val reportEntry = MyTeam().apply { _id = reportId }
+        MyTeam.populateTeamFields(doc, reportEntry)
         teamDao.upsert(reportEntry.requireRoomEntity())
         if (report.imageName != null && report.imageData != null) {
             attachTeamImage(reportId, report.imageName, report.imageData)
@@ -568,7 +568,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
-        val destFile = RealmMyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
+        val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
             destFile.parentFile?.mkdirs()
             destFile.writeBytes(imageData)
@@ -594,7 +594,7 @@ class TeamsRepositoryImpl @Inject constructor(
             addProperty("updated", true)
         }
         updateTeamEntityById(reportId) { report ->
-            RealmMyTeam.populateReportFields(doc, report)
+            MyTeam.populateReportFields(doc, report)
             report.updated = true
             if (report.updatedDate == 0L) {
                 report.updatedDate = timeProvider.now()
@@ -693,7 +693,7 @@ class TeamsRepositoryImpl @Inject constructor(
             return
         }
 
-        val request = RealmMyTeam().apply {
+        val request = MyTeam().apply {
             _id = AndroidDecrypter.generateIv()
             docType = "request"
             createdDate = Date().time
@@ -751,7 +751,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val user = userDao.getById(userId)?.toRealmModel() ?: return
         val teamResources = resources.mapNotNull { resource ->
-            RealmMyTeam().apply {
+            MyTeam().apply {
                 _id = UUID.randomUUID().toString()
                 this.teamId = teamId
                 title = resource.title
@@ -802,7 +802,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamTaskDao.getTasksByTeamId(teamId)
     }
 
-    override suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
+    override suspend fun getReportsFlow(teamId: String): Flow<List<MyTeam>> {
         return teamDao.observeAll().map { entities ->
             entities.filter {
                 it.teamId == teamId &&
@@ -813,7 +813,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun exportReportsAsCsv(reports: List<RealmMyTeam>, teamName: String): String {
+    override suspend fun exportReportsAsCsv(reports: List<MyTeam>, teamName: String): String {
         val csvBuilder = StringBuilder()
         csvBuilder.append("$teamName Financial Report Summary\n\n")
         csvBuilder.append("Start Date, End Date, Created Date, Updated Date, Beginning Balance, Sales, Other Income, Wages, Other Expenses, Profit/Loss, Ending Balance\n")
@@ -1010,7 +1010,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamDao.getById(teamId)?.type
     }
 
-    override suspend fun refreshJoinedMembersForLogin(teamId: String): List<RealmUser> = withContext(dispatcherProvider.io) {
+    override suspend fun refreshJoinedMembersForLogin(teamId: String): List<UserEntity> = withContext(dispatcherProvider.io) {
         val teamMembers = getJoinedMembers(teamId)
         val userList = teamMembers.map {
             User(it.name ?: "", it.name ?: "", "", it.userImage ?: "", "team")
@@ -1025,7 +1025,7 @@ class TeamsRepositoryImpl @Inject constructor(
         teamMembers
     }
 
-    override suspend fun getJoinedMembers(teamId: String): List<RealmUser> {
+    override suspend fun getJoinedMembers(teamId: String): List<UserEntity> {
         val teamMembers = teamDao.getByTeamIdAndDocType(teamId, "membership")
             .mapNotNull { it.userId }
             .distinct()
@@ -1035,7 +1035,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
         data class MemberStats(
-            val member: RealmUser,
+            val member: UserEntity,
             val visitCount: Long,
             val lastVisitTimestamp: Long?,
             val isLeader: Boolean,
@@ -1069,8 +1069,8 @@ class TeamsRepositoryImpl @Inject constructor(
             .mapNotNull { it.userId }
             .toSet()
 
-        val leaders = mutableListOf<RealmUser>()
-        val nonLeaders = mutableListOf<RealmUser>()
+        val leaders = mutableListOf<UserEntity>()
+        val nonLeaders = mutableListOf<UserEntity>()
         members.forEach { member ->
             if (member.id in leaderIds) {
                 leaders.add(member)
@@ -1116,11 +1116,11 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamDao.countByTeamIdAndDocType(teamId, "membership")
     }
 
-    override suspend fun getAssignee(userId: String): RealmUser? {
+    override suspend fun getAssignee(userId: String): UserEntity? {
         return userDao.getById(userId)?.toRealmModel()
     }
 
-    override suspend fun getRequestedMembers(teamId: String): List<RealmUser> {
+    override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
             .mapNotNull { it.userId }
             .distinct()
@@ -1150,7 +1150,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return true
     }
 
-    override suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): RealmUser? {
+    override suspend fun getNextLeaderCandidate(teamId: String, excludeUserId: String?): UserEntity? {
         val members = teamDao.getByTeamIdAndDocType(teamId, "membership").filter {
             !it.isLeader &&
                 it.status != "archived" &&
@@ -1183,7 +1183,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamDao.getById(teamId)?.userId
     }
 
-    override suspend fun getAvailableResourcesToAdd(teamId: String): List<RealmMyLibrary> {
+    override suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary> {
         val existing = getTeamResources(teamId)
         val existingIds = existing.mapNotNull { it._id }
         val allLibraryItems = resourcesRepositoryLazy.get().getPublicLibraryItems()
@@ -1298,8 +1298,8 @@ class TeamsRepositoryImpl @Inject constructor(
         }
 
         val existingTeam = existingTeams?.get(teamId) ?: teamDao.getById(teamId)
-        val model = existingTeam?.toRealmModel() ?: RealmMyTeam().apply { _id = teamId }
-        RealmMyTeam.populateTeamFields(doc, model, true)
+        val model = existingTeam?.toRealmModel() ?: MyTeam().apply { _id = teamId }
+        MyTeam.populateTeamFields(doc, model, true)
         processDescription(model.description)
         val entity = model.requireRoomEntity()
         teamDao.upsert(entity)
@@ -1353,7 +1353,7 @@ class TeamsRepositoryImpl @Inject constructor(
         insertTeamLogs(documentList)
     }
 
-    private suspend fun getCoursesForSerialization(courseIds: List<String>): List<org.ole.planet.myplanet.model.RealmMyCourse> {
+    private suspend fun getCoursesForSerialization(courseIds: List<String>): List<org.ole.planet.myplanet.model.MyCourse> {
         if (courseIds.isEmpty()) return emptyList()
         val stepsByCourseId = courseStepDao.getByCourseIds(courseIds)
             .groupBy { it.courseId }
@@ -1367,7 +1367,7 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamDao.getById(id) ?: teamDao.getByTeamId(id)
     }
 
-    private suspend fun updateTeamEntityById(id: String, updater: (RealmMyTeam) -> Unit): Boolean {
+    private suspend fun updateTeamEntityById(id: String, updater: (MyTeam) -> Unit): Boolean {
         val entity = teamDao.getById(id) ?: return false
         val model = entity.toRealmModel()
         updater(model)
@@ -1391,11 +1391,11 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun RealmMyTeam.requireRoomEntity(): RoomTeamEntity {
+    private fun MyTeam.requireRoomEntity(): RoomTeamEntity {
         return requireNotNull(toRoomEntity()) { "Failed to convert team to Room entity" }
     }
 
-    private fun RealmMyTeam.toSummary(): TeamSummary? {
+    private fun MyTeam.toSummary(): TeamSummary? {
         val id = _id ?: return null
         return TeamSummary(
             _id = id,

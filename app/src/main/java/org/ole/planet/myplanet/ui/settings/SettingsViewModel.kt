@@ -8,7 +8,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -43,8 +43,8 @@ class SettingsViewModel @Inject constructor(
     private val _retryQueueDetailsEvent = Channel<RetryQueueDetails>(Channel.BUFFERED)
     val retryQueueDetailsEvent: Flow<RetryQueueDetails> = _retryQueueDetailsEvent.receiveAsFlow()
 
-    private val _downloadCompleteEvent = Channel<List<RealmMyLibrary>>(Channel.BUFFERED)
-    val downloadCompleteEvent: Flow<List<RealmMyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
+    private val _downloadCompleteEvent = Channel<List<MyLibrary>>(Channel.BUFFERED)
+    val downloadCompleteEvent: Flow<List<MyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
 
     fun isCurrentlyProcessing(): Boolean {
@@ -78,7 +78,7 @@ class SettingsViewModel @Inject constructor(
         }
     }
 
-    fun downloadFiles(libraryList: List<RealmMyLibrary>?) {
+    fun downloadFiles(libraryList: List<MyLibrary>?) {
         viewModelScope.launch {
             var files = libraryList
             try {

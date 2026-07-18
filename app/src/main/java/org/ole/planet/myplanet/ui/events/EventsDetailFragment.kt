@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.Meetup.Companion.getHashMap
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -191,7 +191,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         }, cal.get(Calendar.HOUR_OF_DAY), cal.get(Calendar.MINUTE), true).show()
     }
 
-    private fun setUserList(users: List<RealmUser>) {
+    private fun setUserList(users: List<UserEntity>) {
         listUsers?.adapter = ArrayAdapter(requireActivity(), android.R.layout.simple_list_item_1, users)
         val joinedText = if (users.isEmpty()) {
             """(0) ${getString(R.string.no_members_has_joined_this_meet_up)}"""

@@ -12,7 +12,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -49,8 +49,8 @@ class SurveysViewModelTest {
         createdDate: Long,
         adoptionDate: Long,
         sourceSurveyId: String? = null
-    ): RealmStepExam {
-        val survey = RealmStepExam()
+    ): StepExam {
+        val survey = StepExam()
         survey.id = id
         survey.name = name
         survey.createdDate = createdDate
@@ -59,7 +59,7 @@ class SurveysViewModelTest {
         return survey
     }
 
-    private fun stubLoadSurveys(surveys: List<RealmStepExam>) {
+    private fun stubLoadSurveys(surveys: List<StepExam>) {
         coEvery { surveysRepository.getIndividualSurveys() } returns surveys
         coEvery { userSessionManager.getUserModel() } returns mockk(relaxed = true)
         coEvery { surveysRepository.getSurveyInfos(any(), any(), any(), any()) } returns emptyMap()

@@ -2,12 +2,12 @@ package org.ole.planet.myplanet.ui.chat
 
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 
 data class ChatHistoryScreenData(
-    val currentUser: RealmUser?,
+    val currentUser: UserEntity?,
     val chatHistory: List<ChatHistory>,
-    val newsMessages: List<RealmNews>,
+    val newsMessages: List<News>,
     val shareTargets: ChatShareTargets
 )

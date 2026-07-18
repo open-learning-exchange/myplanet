@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.Feedback
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -37,7 +37,7 @@ class FeedbackListViewModelTest {
         feedbackRepository = mockk()
         userSessionManager = mockk()
 
-        val user = mockk<RealmUser>()
+        val user = mockk<UserEntity>()
         coEvery { userSessionManager.getUserModel() } returns user
         coEvery { feedbackRepository.getFeedback(user) } returns flowOf(emptyList())
 
@@ -55,7 +55,7 @@ class FeedbackListViewModelTest {
 
     @Test
     fun testFeedbackListEmitsDataFromFeedbackRepository() = runTest(testDispatcher) {
-        val user = mockk<RealmUser>()
+        val user = mockk<UserEntity>()
         val feedback1 = mockk<Feedback>()
         val feedback2 = mockk<Feedback>()
         val feedbackList = listOf(feedback1, feedback2)
@@ -77,7 +77,7 @@ class FeedbackListViewModelTest {
 
     @Test
     fun testRefreshFeedbackCancelsPreviousJobAndRetriggersFlowCollection() = runTest(testDispatcher) {
-        val user = mockk<RealmUser>()
+        val user = mockk<UserEntity>()
         val initialFeedback = listOf(mockk<Feedback>())
         val updatedFeedback = listOf(mockk<Feedback>(), mockk<Feedback>())
 
