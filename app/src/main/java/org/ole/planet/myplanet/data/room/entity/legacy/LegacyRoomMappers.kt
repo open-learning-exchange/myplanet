@@ -61,6 +61,16 @@ fun RealmCourseStep.toRoomEntity(): RoomCourseStepEntity? {
     )
 }
 
+fun RoomCourseStepEntity.toRealmModel(): RealmCourseStep {
+    return RealmCourseStep().apply {
+        id = this@toRealmModel.id
+        courseId = this@toRealmModel.courseId
+        stepTitle = this@toRealmModel.stepTitle
+        description = this@toRealmModel.description
+        noOfResources = this@toRealmModel.noOfResources
+    }
+}
+
 fun RealmStepExam.toRoomEntity(): RoomExamEntity? {
     val localId = id ?: return null
     return RoomExamEntity(
