@@ -3,21 +3,21 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.TagDao
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class TagsRepositoryImpl @Inject constructor(
     private val tagDao: TagDao,
 ) : TagsRepository {
 
-    override suspend fun getTags(dbType: String?): List<RealmTag> {
+    override suspend fun getTags(dbType: String?): List<TagEntity> {
         return tagDao.getParentTags(dbType)
     }
 
-    override suspend fun getTagsWithChildren(dbType: String?): Map<RealmTag, List<RealmTag>> {
+    override suspend fun getTagsWithChildren(dbType: String?): Map<TagEntity, List<TagEntity>> {
         val parentTags = getTags(dbType)
         val allTags = tagDao.getAll()
-        val childMap = mutableMapOf<String, MutableList<RealmTag>>()
+        val childMap = mutableMapOf<String, MutableList<TagEntity>>()
 
         for (t in allTags) {
             val attached = t.attachedTo
@@ -38,23 +38,23 @@ class TagsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getTagsForResource(resourceId: String): List<RealmTag> {
+    override suspend fun getTagsForResource(resourceId: String): List<TagEntity> {
         return getLinkedTags("resources", resourceId)
     }
 
-    override suspend fun getTagsForCourse(courseId: String): List<RealmTag> {
+    override suspend fun getTagsForCourse(courseId: String): List<TagEntity> {
         return getLinkedTags("courses", courseId)
     }
 
-    override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<RealmTag>> {
+    override suspend fun getTagsForResources(resourceIds: List<String>): Map<String, List<TagEntity>> {
         return getLinkedTagsBulk("resources", resourceIds)
     }
 
-    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<RealmTag>> {
+    override suspend fun getTagsForCourses(courseIds: List<String>): Map<String, List<TagEntity>> {
         return getLinkedTagsBulk("courses", courseIds)
     }
 
-    private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<RealmTag>> {
+    private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<TagEntity>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
         }
@@ -71,7 +71,7 @@ class TagsRepositoryImpl @Inject constructor(
 
         val parentTagsById = tagDao.getByIds(allTagIds).associateBy { it.id }
 
-        val tagsByLinkId = mutableMapOf<String, MutableList<RealmTag>>()
+        val tagsByLinkId = mutableMapOf<String, MutableList<TagEntity>>()
         val tagsSetByLinkId = mutableMapOf<String, MutableSet<String>>()
         links.forEach { link ->
             link.linkId?.let { linkId ->
@@ -89,7 +89,7 @@ class TagsRepositoryImpl @Inject constructor(
         return tagsByLinkId
     }
 
-    private suspend fun getLinkedTags(db: String, linkId: String): List<RealmTag> {
+    private suspend fun getLinkedTags(db: String, linkId: String): List<TagEntity> {
         val links = tagDao.getByDbAndLinkId(db, linkId)
         if (links.isEmpty()) {
             return emptyList()
@@ -118,8 +118,8 @@ class TagsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun createUnmanagedTag(act: JsonObject): RealmTag {
-        val tag = RealmTag()
+    private fun createUnmanagedTag(act: JsonObject): TagEntity {
+        val tag = TagEntity()
         tag.id = JsonUtils.getString("_id", act)
         tag._rev = JsonUtils.getString("_rev", act)
         tag._id = JsonUtils.getString("_id", act)

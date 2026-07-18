@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 import org.robolectric.RobolectricTestRunner
@@ -78,7 +78,7 @@ class ConstantsTest {
         val classList = Constants.classList
         assertEquals(14, classList.size)
         assertEquals(RealmNews::class.java, classList["news"])
-        assertEquals(RealmTag::class.java, classList["tags"])
+        assertEquals(TagEntity::class.java, classList["tags"])
         assertEquals(Rating::class.java, classList["ratings"])
         assertEquals(RealmMyCourse::class.java, classList["courses"])
         assertEquals(Achievement::class.java, classList["achievements"])

@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<RealmMyCourse>
@@ -41,7 +41,7 @@ interface CoursesRepository {
         userName: String,
         planetCode: String,
         parentCode: String,
-        tags: List<RealmTag>,
+        tags: List<TagEntity>,
         grade: String,
         subject: String
     )
@@ -57,7 +57,7 @@ interface CoursesRepository {
     suspend fun getCourseProgress(userId: String?, courseIds: List<String>): HashMap<String?, JsonObject>
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean
     suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean
-    suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>>
+    suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>>
     suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject>
     suspend fun deleteCourseProgress(courseId: String?)
     fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)

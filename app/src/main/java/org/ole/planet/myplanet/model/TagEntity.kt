@@ -6,13 +6,13 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 
 /**
- * Room replacement for the former Realm `RealmTag` model. Synced (read-only from the server).
+ * Room replacement for the former Realm `TagEntity` model. Synced (read-only from the server).
  * `attachedTo` (formerly `RealmList<String>`) is a plain `List<String>` stored as JSON via the
  * shared [org.ole.planet.myplanet.data.room.Converters]. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.TagDao].
  */
 @Entity(tableName = "tag", indices = [Index("name"), Index("tagId"), Index("db")])
-open class RealmTag {
+open class TagEntity {
     // @JvmField on id/_id so Room does not see ambiguous getId/get_id accessors.
     @PrimaryKey
     @JvmField
@@ -40,7 +40,7 @@ open class RealmTag {
     }
 
     companion object {
-        fun getTagsArray(list: List<RealmTag>): JsonArray {
+        fun getTagsArray(list: List<TagEntity>): JsonArray {
             val array = JsonArray()
             for (t in list) {
                 array.add(t._id)

@@ -126,7 +126,7 @@ wired through `di/RoomModule`.
       `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
       `RoomUploadConfig`. Repo aggregation moved from Realm `average()`/`RealmResults` to
       in-memory over DAO lists. Repo test + model test + UploadManager test updated.
-- [x] **Tag** migrated (synced-only). `RealmTag` Room `@Entity` (@JvmField id/_id; `attachedTo`
+- [x] **Tag** migrated (synced-only). `TagEntity` Room `@Entity` (@JvmField id/_id; `attachedTo`
       `RealmList<String>` → `List<String>?` via `Converters`; `@Index` on name/tagId/db; kept the
       `toTag()`/`getTagsArray` POJO helpers); `TagDao` (parent-tag filter, by-db-and-linkId(s),
       by-ids, by-names, by-db-and-tagIds, upsert); `TagsRepositoryImpl` off `RealmRepository`
@@ -146,7 +146,7 @@ wired through `di/RoomModule`.
       `Meetups` upload config → `RoomUploadConfig` (markUploaded sets meetupId/rev + clears
       `updated` via the repo); `UploadManager.uploadMeetups` uses `uploadRoom`. Model + repo +
       upload-manager + user-repo constructor tests updated. Also fixed a latent Tag-migration
-      fallout: `ResourcesViewModelTest` can no longer mockk `RealmTag.id` (now a `@JvmField`), so
+      fallout: `ResourcesViewModelTest` can no longer mockk `TagEntity.id` (now a `@JvmField`), so
       it uses a real instance.
 - [x] **SearchActivity** migrated (uploaded-only local activity log). `SearchActivity` is now
       a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload

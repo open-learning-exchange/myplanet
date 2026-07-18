@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.model.Download
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
@@ -322,7 +322,7 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-    fun showTagText(list: List<RealmTag>, tvSelected: TextView?) {
+    fun showTagText(list: List<TagEntity>, tvSelected: TextView?) {
         val selected = list.joinToString(separator = ",", prefix = getString(R.string.selected)) { it.name.orEmpty() }
         tvSelected?.text = selected
     }

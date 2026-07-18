@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
 
@@ -54,7 +54,7 @@ object Constants {
 
     private fun initClasses() {
         classList["news"] = RealmNews::class.java
-        classList["tags"] = RealmTag::class.java
+        classList["tags"] = TagEntity::class.java
         classList["ratings"] = Rating::class.java
         classList["courses"] = RealmMyCourse::class.java
         classList["achievements"] = Achievement::class.java

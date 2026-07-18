@@ -33,7 +33,7 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -257,12 +257,12 @@ class CoursesRepositoryImpl @Inject constructor(
         userName: String,
         planetCode: String,
         parentCode: String,
-        tags: List<RealmTag>,
+        tags: List<TagEntity>,
         grade: String,
         subject: String
     ) {
         val filter = JsonObject().apply {
-            add("tags", RealmTag.getTagsArray(tags))
+            add("tags", TagEntity.getTagsArray(tags))
             addProperty("doc.gradeLevel", grade)
             addProperty("doc.subjectLevel", subject)
         }
@@ -534,7 +534,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return submissionsRepository.hasUnfinishedSurveys(courseId, userId)
     }
 
-    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>> {
+    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>> {
         return tagsRepository.getTagsForCourses(courseIds)
     }
 
