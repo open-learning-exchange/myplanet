@@ -96,6 +96,30 @@ fun RealmStepExam.toRoomEntity(): RoomExamEntity? {
     )
 }
 
+fun RoomExamEntity.toRealmModel(): RealmStepExam {
+    return RealmStepExam().apply {
+        id = this@toRealmModel.id
+        _rev = this@toRealmModel._rev
+        createdDate = this@toRealmModel.createdDate
+        updatedDate = this@toRealmModel.updatedDate
+        adoptionDate = this@toRealmModel.adoptionDate
+        createdBy = this@toRealmModel.createdBy
+        totalMarks = this@toRealmModel.totalMarks
+        name = this@toRealmModel.name
+        description = this@toRealmModel.description
+        type = this@toRealmModel.type
+        stepId = this@toRealmModel.stepId
+        courseId = this@toRealmModel.courseId
+        sourcePlanet = this@toRealmModel.sourcePlanet
+        passingPercentage = this@toRealmModel.passingPercentage
+        noOfQuestions = this@toRealmModel.noOfQuestions
+        isFromNation = this@toRealmModel.isFromNation
+        teamId = this@toRealmModel.teamId
+        isTeamShareAllowed = this@toRealmModel.isTeamShareAllowed
+        sourceSurveyId = this@toRealmModel.sourceSurveyId
+    }
+}
+
 fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
     val localId = id ?: return null
     return RoomQuestionEntity(

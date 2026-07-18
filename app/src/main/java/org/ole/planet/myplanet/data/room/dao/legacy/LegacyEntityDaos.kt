@@ -39,7 +39,11 @@ interface CourseStepDao {
 @Dao
 interface ExamDao {
     @Query("SELECT * FROM exams WHERE courseId = :courseId") suspend fun getByCourseId(courseId: String): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE courseId IN (:courseIds)") suspend fun getByCourseIds(courseIds: List<String>): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE courseId = :courseId AND type = :type") suspend fun getByCourseIdAndType(courseId: String, type: String): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE stepId = :stepId") suspend fun getByStepId(stepId: String): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE stepId IN (:stepIds)") suspend fun getByStepIds(stepIds: List<String>): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE stepId = :stepId AND type = :type") suspend fun getByStepIdAndType(stepId: String, type: String): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE sourceSurveyId IS NOT NULL AND _rev IS NULL") suspend fun getPendingAdoptedSurveys(): List<RoomExamEntity>
     @Upsert suspend fun upsertAll(items: List<RoomExamEntity>)
     @Upsert fun upsertAllBlocking(items: List<RoomExamEntity>)

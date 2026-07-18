@@ -236,10 +236,13 @@ wired through `di/RoomModule`.
       `markResourceUploaded`, which updates the library via the DAO then does the team write in a
       Realm transaction. `BaseRecyclerFragment`/`BaseResourceFragment` type checks updated (library
       is no longer a `RealmObject`). Resource/upload/repo tests rewritten to mock `MyLibraryDao`.
-- [x] **CourseStep read paths moved to Room**: `CourseStepDao` now serves per-course, batched
-      course-id, and single-step lookups; course step progress and course-step detail screens hydrate
-      legacy `RealmCourseStep` compatibility objects from `RoomCourseStepEntity` instead of querying
-      Realm. Sync writes were already landing in the Room course-step table.
+- [x] **CourseStep + course exam read paths moved to Room**: `CourseStepDao` now serves
+      per-course, batched course-id, and single-step lookups; course step progress and course-step
+      detail screens hydrate legacy `RealmCourseStep` compatibility objects from
+      `RoomCourseStepEntity` instead of querying Realm. `ExamDao` now serves course/step exam and
+      survey reads for course progress, course-step detail, exam counts, and local-progress cleanup,
+      hydrating legacy `RealmStepExam` compatibility objects from `RoomExamEntity`. Sync writes for
+      both tables were already landing in Room.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
