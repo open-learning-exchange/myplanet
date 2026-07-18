@@ -28,7 +28,10 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -49,6 +52,8 @@ class SubmissionsRepositoryImplTest {
     private val testDispatcher = UnconfinedTestDispatcher()
 
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
+    private val submissionDao: SubmissionDao = mockk(relaxed = true)
+    private val answerDao: AnswerDao = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
@@ -81,8 +86,8 @@ class SubmissionsRepositoryImplTest {
             sharedPrefManager,
             exporter,
             submitPhotosDao,
-            mockk(relaxed = true),
-            mockk(relaxed = true),
+            submissionDao,
+            answerDao,
             examDao,
             questionDao
         ), recordPrivateCalls = true)
@@ -198,10 +203,8 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsByUserId returns correctly`() = runTest {
-        val mockList = listOf(mockk<RealmSubmission>())
-        coEvery {
-            repository["queryList"](RealmSubmission::class.java, true, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns mockList
+        coEvery { submissionDao.getByUserId("test") } returns listOf(RoomSubmissionEntity(id = "submission1", userId = "test"))
+        coEvery { answerDao.getBySubmissionIds(listOf("submission1")) } returns emptyList()
 
         val result = repository.getSubmissionsByUserId("test")
         assertEquals(1, result.size)
@@ -317,9 +320,7 @@ class SubmissionsRepositoryImplTest {
     fun `hasSubmission returns true when match found`() = runTest {
         coEvery { questionDao.countByExamId("stepExamId") } returns 1
 
-        coEvery {
-            repository["count"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns 1L
+        coEvery { submissionDao.countByUserParentAndType("userId", "stepExamId@courseId", "type") } returns 1
 
         val result = repository.hasSubmission("stepExamId", "courseId", "userId", "type")
         assertTrue(result)

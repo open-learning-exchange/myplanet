@@ -248,6 +248,11 @@ wired through `di/RoomModule`.
       unfinished/pending survey metadata, and submission-detail question rows through `ExamDao` and
       `QuestionDao` instead of Realm queries. `RoomQuestionEntity` hydrates legacy
       `RealmExamQuestion` compatibility objects, including correct-choice data for grading display.
+- [x] **Submission list/detail reads moved to Room**: `SubmissionDao` and `AnswerDao` now back
+      submission lookup by id/user/ids, pending-survey lists, pending-offline counts, pending exam
+      result counts, parent/status submission lists, submission item summaries, and completion checks.
+      `RoomSubmissionEntity` and `RoomAnswerEntity` hydrate legacy `RealmSubmission`/`RealmAnswer`
+      compatibility objects with child answers grouped in one DAO batch per submission list.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

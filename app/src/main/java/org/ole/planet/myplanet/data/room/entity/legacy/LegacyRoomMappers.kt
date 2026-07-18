@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
+import io.realm.RealmList
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -184,6 +186,46 @@ fun RealmAnswer.toRoomEntity(): RoomAnswerEntity? {
         questionId = questionId,
         submissionId = submissionId,
     )
+}
+
+fun RoomAnswerEntity.toRealmModel(): RealmAnswer {
+    return RealmAnswer().apply {
+        id = this@toRealmModel.id
+        value = this@toRealmModel.value
+        valueChoices = RealmList<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
+        mistakes = this@toRealmModel.mistakes
+        isPassed = this@toRealmModel.isPassed
+        grade = this@toRealmModel.grade
+        examId = this@toRealmModel.examId
+        questionId = this@toRealmModel.questionId
+        submissionId = this@toRealmModel.submissionId
+    }
+}
+
+fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyList()): RealmSubmission {
+    return RealmSubmission().apply {
+        id = this@toRealmModel.id
+        _id = this@toRealmModel._id
+        _rev = this@toRealmModel._rev
+        parentId = this@toRealmModel.parentId
+        type = this@toRealmModel.type
+        userId = this@toRealmModel.userId
+        user = this@toRealmModel.user
+        startTime = this@toRealmModel.startTime
+        lastUpdateTime = this@toRealmModel.lastUpdateTime
+        this.answers = RealmList<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
+        grade = this@toRealmModel.grade
+        status = this@toRealmModel.status
+        uploaded = this@toRealmModel.uploaded
+        sender = this@toRealmModel.sender
+        source = this@toRealmModel.source
+        parentCode = this@toRealmModel.parentCode
+        parent = this@toRealmModel.parent
+        isUpdated = this@toRealmModel.isUpdated
+        membershipDoc = this@toRealmModel.teamId?.let { teamId ->
+            RealmMembershipDoc().apply { this.teamId = teamId }
+        }
+    }
 }
 
 fun RealmMyTeam.toRoomEntity(): RoomTeamEntity? {

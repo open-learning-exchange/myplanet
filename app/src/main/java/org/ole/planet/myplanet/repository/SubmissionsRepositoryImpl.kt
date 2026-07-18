@@ -72,6 +72,16 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return parentId?.substringBefore("@")
     }
 
+    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<RealmSubmission> {
+        if (rows.isEmpty()) return emptyList()
+        val answersBySubmissionId = answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
+        return rows.map { row -> row.toRealmModel(answersBySubmissionId[row.id].orEmpty()) }
+    }
+
+    private suspend fun hydrateSubmission(row: RoomSubmissionEntity?): RealmSubmission? {
+        return row?.let { hydrateSubmissions(listOf(it)).firstOrNull() }
+    }
+
     override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
         return queryListFlow(RealmSubmission::class.java) {
             equalTo("userId", userId)
@@ -91,12 +101,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
 
     override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
-
-        return queryList(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("status", "pending")
-            equalTo("type", "survey")
-        }
+        return hydrateSubmissions(submissionDao.getPendingSurveys(userId))
     }
 
     private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
@@ -107,12 +112,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
         if (userId == null) return emptyList()
 
-        val pendingSurveys = queryList(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("status", "pending")
-            equalTo("type", "survey")
-            isNull("membershipDoc")
-        }
+        val pendingSurveys = hydrateSubmissions(submissionDao.getUniquePendingSurveyCandidates(userId))
 
         if (pendingSurveys.isEmpty()) {
             return emptyList()
@@ -176,21 +176,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getSubmissionById(id: String): RealmSubmission? {
-        return findByField(RealmSubmission::class.java, "id", id)
+        return hydrateSubmission(submissionDao.getByIdOrRemoteId(id))
     }
 
     override suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission> {
         if (ids.isEmpty()) return emptyList()
 
-        return queryList(RealmSubmission::class.java) {
-            `in`("id", ids.toTypedArray())
-        }
+        return hydrateSubmissions(submissionDao.getByIds(ids))
     }
 
     override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java, ensureLatest = true) {
-            equalTo("userId", userId)
-        }
+        return hydrateSubmissions(submissionDao.getByUserId(userId))
     }
 
     override suspend fun hasSubmission(
@@ -208,28 +204,15 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
 
         val parentId = "$stepExamId@$courseId"
-        return count(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("parentId", parentId)
-            equalTo("type", type)
-        } > 0
+        return submissionDao.countByUserParentAndType(userId, parentId, type) > 0
     }
 
     override suspend fun hasPendingOfflineSubmissions(): Boolean {
-        return count(RealmSubmission::class.java) {
-            beginGroup()
-            equalTo("isUpdated", true)
-            or()
-            isEmpty("_id")
-            endGroup()
-        } > 0
+        return submissionDao.countPendingOfflineSubmissions() > 0
     }
 
     override suspend fun hasPendingExamResults(): Boolean {
-        return count(RealmSubmission::class.java) {
-            equalTo("status", "pending", Case.INSENSITIVE)
-            isNotEmpty("answers")
-        } > 0
+        return submissionDao.countPendingExamResults() > 0
     }
 
     override suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>) {
@@ -261,16 +244,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        var submission = findFirstCopy(RealmSubmission::class.java) {
-            equalTo("id", submissionId)
-                .or()
-                .equalTo("_id", submissionId)
-        }
+        var submission = hydrateSubmission(submissionDao.getByIdOrRemoteId(submissionId))
 
         if (submission == null) {
-            submission = findFirstCopy(RealmSubmission::class.java) {
-                contains("parentId", submissionId)
-            }
+            submission = hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
         }
 
         if (submission == null) {
@@ -345,24 +322,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java) {
-            equalTo("parentId", parentId)
-                .equalTo("userId", userId)
-                .apply {
-                    if (status != null) {
-                        equalTo("status", status)
-                    }
-                }
-                .sort("startTime", Sort.DESCENDING)
-        }
+        return hydrateSubmissions(submissionDao.getByParentUserAndStatus(parentId, userId, status))
     }
 
     override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {
-        return queryList(RealmSubmission::class.java, maxDepth = 0) {
-            equalTo("parentId", parentId)
-                .equalTo("userId", userId)
-                .sort("startTime", Sort.DESCENDING)
-        }.map {
+        return submissionDao.getByParentUserAndStatus(parentId, userId, null).map {
             SubmissionItem(
                 id = it.id,
                 lastUpdateTime = it.lastUpdateTime,
@@ -396,11 +360,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         if (stepId == null) return true
         val exam = examDao.getFirstByStepId(stepId) ?: return true
         return exam.id?.let {
-            count(RealmSubmission::class.java) {
-                equalTo("userId", userId)
-                    .contains("parentId", it)
-                    .notEqualTo("status", "pending")
-            } > 0
+            submissionDao.countCompletedByUserAndExamId(userId, it) > 0
         } ?: false
     }
 
