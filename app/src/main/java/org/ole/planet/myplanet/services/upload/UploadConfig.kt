@@ -2,18 +2,13 @@ package org.ole.planet.myplanet.services.upload
 
 import android.content.Context
 import com.google.gson.JsonObject
-import io.realm.Realm
-import io.realm.RealmObject
-import io.realm.RealmQuery
 import kotlin.reflect.KClass
 
-data class UploadConfig<T : RealmObject>(
+data class UploadConfig<T : Any>(
     val modelClass: KClass<T>,
     val endpoint: String,
 
-    val queryBuilder: ((RealmQuery<T>) -> RealmQuery<T>)? = null,
-
-    val fetchPendingItems: (suspend () -> List<T>)? = null,
+    val fetchPendingItems: suspend () -> List<T>,
 
     val serializer: UploadSerializer<T>,
 
@@ -31,17 +26,9 @@ data class UploadConfig<T : RealmObject>(
     val beforeUpload: (suspend (T) -> Unit)? = null,
     val afterUpload: (suspend (T, UploadedItem) -> Unit)? = null,
 
-    val additionalUpdates: ((Realm, T, UploadedItem) -> Unit)? = null
-) {
-    init {
-        require(queryBuilder != null || fetchPendingItems != null) {
-            "UploadConfig must specify either queryBuilder or fetchPendingItems"
-        }
-    }
-}
+    val additionalUpdates: ((T, UploadedItem) -> Unit)? = null
+)
 
-// Bound is `Any` (not `RealmObject`) so the same serializer types work for both the Realm
-// UploadConfig and the Room RoomUploadConfig upload paths.
 sealed class UploadSerializer<T : Any> {
     data class Simple<T : Any>(
         val serialize: (T) -> JsonObject

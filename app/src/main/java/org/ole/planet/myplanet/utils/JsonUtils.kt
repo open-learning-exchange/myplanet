@@ -6,7 +6,6 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonNull
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser.parseString
-import io.realm.RealmList
 import org.ole.planet.myplanet.model.RealmNews
 
 object JsonUtils {
