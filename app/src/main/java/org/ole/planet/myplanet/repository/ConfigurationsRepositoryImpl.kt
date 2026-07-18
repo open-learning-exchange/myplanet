@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import com.google.gson.JsonObject
@@ -24,7 +23,6 @@ import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
-import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager

@@ -10,7 +10,6 @@ import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -18,9 +17,13 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
@@ -35,7 +38,6 @@ import org.ole.planet.myplanet.utils.TestTimeProvider
 class TeamsRepositoryImplTest {
 
     private lateinit var teamsRepository: TeamsRepositoryImpl
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val uploadManager: UploadManager = mockk(relaxed = true)
@@ -46,6 +48,12 @@ class TeamsRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk()
     private val apiInterfaceMock = mockk<ApiInterface>(relaxed = true)
     private val teamLogDao: TeamLogDao = mockk(relaxed = true)
+    private val teamTaskDao: TeamTaskDao = mockk(relaxed = true)
+    private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val teamDao: TeamDao = mockk(relaxed = true)
+    private val userDao: UserDao = mockk(relaxed = true)
+    private val courseDao: CourseDao = mockk(relaxed = true)
+    private val courseStepDao: CourseStepDao = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -58,7 +66,6 @@ class TeamsRepositoryImplTest {
         every { dispatcherProvider.default } returns testDispatcher
         every { dispatcherProvider.unconfined } returns testDispatcher
 
-        // Mock ServerUrlMapper behavior used in syncTeamActivities
         val serverUrlMapping = mockk<ServerUrlMapper.UrlMapping>(relaxed = true)
         every { serverUrlMapping.primaryUrl } returns "http://primary.com"
         every { serverUrlMapping.alternativeUrl } returns null
@@ -69,8 +76,6 @@ class TeamsRepositoryImplTest {
 
         teamsRepository = TeamsRepositoryImpl(
             activitiesRepository,
-            databaseService,
-            UnconfinedTestDispatcher(),
             userSessionManager,
             uploadManager,
             gson,
@@ -79,11 +84,15 @@ class TeamsRepositoryImplTest {
             serverUrlMapper,
             dispatcherProvider,
             mockUserRepository,
-            mockk(),
+            dagger.Lazy { mockk(relaxed = true) },
             TestTimeProvider(),
             teamLogDao,
-            mockk<TeamTaskDao>(relaxed = true),
-            mockk(relaxed = true)
+            teamTaskDao,
+            myLibraryDao,
+            teamDao,
+            userDao,
+            courseDao,
+            courseStepDao,
         )
     }
 
@@ -107,7 +116,6 @@ class TeamsRepositoryImplTest {
 
         val existingSavedUsers = emptyList<User>()
         every { sharedPrefManager.getSavedUsers() } returns existingSavedUsers
-
         every { sharedPrefManager.setSavedUsers(any()) } returns Unit
 
         val result = spyRepository.refreshJoinedMembersForLogin(teamId)
@@ -124,7 +132,6 @@ class TeamsRepositoryImplTest {
 
     @Test
     fun `test syncTeamActivities uses dispatcherProvider io`() = runTest(testDispatcher) {
-        // We will mock MainApplication object to avoid real network call
         io.mockk.mockkObject(org.ole.planet.myplanet.MainApplication.Companion)
         coEvery { org.ole.planet.myplanet.MainApplication.Companion.isServerReachable(any()) } returns true
 
@@ -136,12 +143,10 @@ class TeamsRepositoryImplTest {
 
         advanceUntilIdle()
 
-        // Verify that the methods on uploadManager were called
         coVerify { uploadManager.uploadResource(null) }
         coVerify { uploadManager.uploadTeams() }
         coVerify { uploadManager.uploadTeamActivities() }
 
-        // Unmock static objects
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
     }
 }

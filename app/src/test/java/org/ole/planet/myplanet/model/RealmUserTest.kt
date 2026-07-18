@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.model
 
 import android.content.Context
-import io.mockk.MockKAnnotations
 import io.mockk.every
-import io.mockk.impl.annotations.MockK
+import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
-import io.realm.Realm
-import io.realm.RealmList
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -24,25 +21,18 @@ import org.ole.planet.myplanet.utils.Utilities
 @OptIn(ExperimentalCoroutinesApi::class)
 class RealmUserTest {
 
-    @MockK
-    lateinit var mockRealm: Realm
-
-    @MockK
-    lateinit var mockContext: Context
-
+    private val mockContext: Context = mockk(relaxed = true)
     private var originalContext: Context? = null
 
     @Before
     fun setup() {
-        MockKAnnotations.init(this)
         Dispatchers.setMain(Dispatchers.Unconfined)
         MainApplication.applicationScope = CoroutineScope(Dispatchers.Unconfined)
         mockkObject(Utilities)
         every { Utilities.toast(any(), any()) } returns Unit
         try {
             originalContext = MainApplication.context
-        } catch (e: Exception) {
-            // UninitializedPropertyAccessException if context was never set
+        } catch (_: Exception) {
         }
         MainApplication.testContext = mockContext
     }
@@ -57,9 +47,7 @@ class RealmUserTest {
     @Test
     fun testIsManagerWithManagerRole() {
         val user = RealmUser()
-        val roles = RealmList<String?>()
-        roles.add("manager")
-        user.rolesList = roles
+        user.rolesList = mutableListOf("manager")
         user.userAdmin = false
         assertTrue(user.isManager())
     }
@@ -67,7 +55,7 @@ class RealmUserTest {
     @Test
     fun testIsManagerWithUserAdminTrue() {
         val user = RealmUser()
-        user.rolesList = RealmList<String?>()
+        user.rolesList = mutableListOf()
         user.userAdmin = true
         assertTrue(user.isManager())
     }
@@ -75,7 +63,7 @@ class RealmUserTest {
     @Test
     fun testIsManagerFalse() {
         val user = RealmUser()
-        user.rolesList = RealmList<String?>()
+        user.rolesList = mutableListOf()
         user.userAdmin = false
         assertFalse(user.isManager())
     }
@@ -91,9 +79,7 @@ class RealmUserTest {
     @Test
     fun testIsManagerCaseInsensitive() {
         val user = RealmUser()
-        val roles = RealmList<String?>()
-        roles.add("MaNaGeR")
-        user.rolesList = roles
+        user.rolesList = mutableListOf("MaNaGeR")
         user.userAdmin = false
         assertTrue(user.isManager())
     }

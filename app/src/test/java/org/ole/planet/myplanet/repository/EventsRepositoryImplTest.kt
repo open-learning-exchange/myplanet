@@ -3,14 +3,9 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,33 +14,29 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventsRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var meetupDao: MeetupDao
+    private lateinit var userDao: UserDao
     private lateinit var repository: EventsRepositoryImpl
 
-    // A silent exception to avoid cluttering test logs with stack traces
     class SilentException(message: String) : Exception(message) {
-        override fun printStackTrace() {
-            // Do nothing
-        }
+        override fun printStackTrace() = Unit
     }
 
     @Before
     fun setup() {
-        databaseService = mockk(relaxed = true)
         meetupDao = mockk(relaxed = true)
-        val timeProvider = SystemTimeProvider()
-        repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher(), timeProvider, meetupDao)
+        userDao = mockk(relaxed = true)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao)
     }
 
     @Test
@@ -73,25 +64,16 @@ class EventsRepositoryImplTest {
 
     @Test
     fun getJoinedMembers() = runTest {
-        val mockRealm = mockk<Realm>(relaxed = true)
-        val mockUserResults = mockk<RealmResults<RealmUser>>(relaxed = true)
-        val mockUserQuery = mockk<RealmQuery<RealmUser>>(relaxed = true)
-
         coEvery { meetupDao.getMembersByMeetupId("meetup1") } returns listOf(
             Meetup().apply { userId = "user1" },
             Meetup().apply { userId = "user2" },
-            Meetup().apply { userId = "user1" } // duplicate
+            Meetup().apply { userId = "user1" }
         )
-
-        every { mockRealm.where(RealmUser::class.java) } returns mockUserQuery
-        every { mockUserQuery.`in`("id", arrayOf("user1", "user2")) } returns mockUserQuery
-        every { mockUserQuery.findAll() } returns mockUserResults
-        every { mockRealm.copyFromRealm(mockUserResults) } returns listOf(RealmUser().apply { id = "user1" }, RealmUser().apply { id = "user2" })
-
-        val operationSlot = slot<Function1<Realm, List<RealmUser>>>()
-        coEvery { databaseService.withRealmAsync(capture(operationSlot)) } answers {
-            operationSlot.captured.invoke(mockRealm)
-        }
+        coEvery { userDao.getAll() } returns listOf(
+            RoomUserEntity(id = "user1"),
+            RoomUserEntity(id = "user2", _id = "remote-user2"),
+            RoomUserEntity(id = "user3")
+        )
 
         val result = repository.getJoinedMembers("meetup1")
 
@@ -108,13 +90,11 @@ class EventsRepositoryImplTest {
         val meetup = Meetup().apply { meetupId = "meetup1" }
         coEvery { meetupDao.getByMeetupId("meetup1") } returns meetup
 
-        // Test joining (userId empty -> currentUserId)
         meetup.userId = ""
         val joinResult = repository.toggleAttendance("meetup1", "user1")
         assertEquals("user1", meetup.userId)
         assertNotNull(joinResult)
 
-        // Test leaving (userId set -> empty)
         meetup.userId = "user1"
         val leaveResult = repository.toggleAttendance("meetup1", "user1")
         assertEquals("", meetup.userId)
@@ -122,7 +102,6 @@ class EventsRepositoryImplTest {
 
         coVerify(atLeast = 1) { meetupDao.upsert(meetup) }
 
-        // Test empty id
         val emptyResult = repository.toggleAttendance("", "user1")
         assertNull(emptyResult)
     }
@@ -153,7 +132,6 @@ class EventsRepositoryImplTest {
         val count = repository.batchInsertMeetups(docs)
         assertEquals(1, count)
 
-        // The only doc is locally-updated, so nothing is upserted.
         coVerify(exactly = 0) { meetupDao.upsertAll(any()) }
     }
 
