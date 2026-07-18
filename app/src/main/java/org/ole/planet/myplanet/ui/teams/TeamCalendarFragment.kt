@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -397,7 +397,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         })
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

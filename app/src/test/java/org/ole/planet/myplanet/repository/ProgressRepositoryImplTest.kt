@@ -27,12 +27,12 @@ import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.model.CourseProgress
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @ExperimentalCoroutinesApi
@@ -86,8 +86,8 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCurrentProgress_EmptyProgress() = testScope.runTest {
         val steps = listOf(
-            RealmCourseStep().apply { id = "step1" },
-            RealmCourseStep().apply { id = "step2" }
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" }
         )
 
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns emptyList()
@@ -100,10 +100,10 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCurrentProgress_GapsInSteps() = testScope.runTest {
         val steps = listOf(
-            RealmCourseStep().apply { id = "step1" },
-            RealmCourseStep().apply { id = "step2" },
-            RealmCourseStep().apply { id = "step3" },
-            RealmCourseStep().apply { id = "step4" }
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" },
+            CourseStep().apply { id = "step3" },
+            CourseStep().apply { id = "step4" }
         )
 
         val progresses = listOf(
@@ -133,8 +133,8 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCurrentProgress_FullyCompleted() = testScope.runTest {
         val steps = listOf(
-            RealmCourseStep().apply { id = "step1" },
-            RealmCourseStep().apply { id = "step2" }
+            CourseStep().apply { id = "step1" },
+            CourseStep().apply { id = "step2" }
         )
 
         val progresses = listOf(
@@ -152,26 +152,26 @@ class ProgressRepositoryImplTest {
     @Test
     fun testFetchCourseData_PopulatesFieldsCorrectly() = testScope.runTest {
         val myCourses = listOf(
-            RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Test Course"
             }
         )
 
         val steps = listOf(
-            RealmCourseStep().apply { courseId = "course1" }
+            CourseStep().apply { courseId = "course1" }
         )
         myCourses[0].courseSteps = steps.toMutableList()
 
         val exams = listOf(
-            RealmStepExam().apply {
+            StepExam().apply {
                 id = "exam1"
                 courseId = "course1"
             }
         )
 
         val submissions = listOf(
-            RealmSubmission().apply {
+            Submission().apply {
                 id = "sub1"
                 userId = "user1"
                 parentId = "course1"
@@ -180,14 +180,14 @@ class ProgressRepositoryImplTest {
         )
 
         val answers = listOf(
-            RealmAnswer().apply {
+            Answer().apply {
                 submissionId = "sub1"
                 questionId = "q1"
                 mistakes = 2
             }
         )
 
-        val question = RealmExamQuestion().apply {
+        val question = ExamQuestion().apply {
             id = "q1"
             examId = "exam1"
         }
@@ -246,8 +246,8 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCourseProgress() = testScope.runTest {
         val courseIds = listOf("course1", "course2")
-        val steps1 = listOf(RealmCourseStep().apply { courseId = "course1" })
-        val steps2 = listOf(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
+        val steps1 = listOf(CourseStep().apply { courseId = "course1" })
+        val steps2 = listOf(CourseStep().apply { courseId = "course2" }, CourseStep().apply { courseId = "course2" })
 
         val progresses1 = listOf(CourseProgress().apply { courseId = "course1"; stepNum = 1 })
 
@@ -287,17 +287,17 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCompletedCourses() = testScope.runTest {
         val myCourses = listOf(
-            RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
-                courseSteps = mutableListOf(RealmCourseStep().apply { courseId = "course1" })
+                courseSteps = mutableListOf(CourseStep().apply { courseId = "course1" })
             },
-            RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course2"
                 courseTitle = "Course 2"
                 courseSteps = mutableListOf(
-                    RealmCourseStep().apply { courseId = "course2" },
-                    RealmCourseStep().apply { courseId = "course2" }
+                    CourseStep().apply { courseId = "course2" },
+                    CourseStep().apply { courseId = "course2" }
                 )
             }
         )
@@ -429,7 +429,7 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetCompletedCourses_nullSteps() = testScope.runTest {
         val myCourses = listOf(
-            RealmMyCourse().apply {
+            MyCourse().apply {
                 courseId = "course1"
                 courseTitle = "Course 1"
                 courseSteps = null

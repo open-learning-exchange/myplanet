@@ -18,18 +18,18 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.TeamTask
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
@@ -196,12 +196,12 @@ class UploadConfigs @Inject constructor(
     )
 
     val AdoptedSurveys = UploadConfig(
-        modelClass = RealmStepExam::class,
+        modelClass = StepExam::class,
         endpoint = "exams",
         fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
             val questions = surveysRepository.getExamQuestions(exam.id ?: "")
-            RealmStepExam.serializeExam(exam, questions)
+            StepExam.serializeExam(exam, questions)
         },
         idExtractor = { it.id }
     )
@@ -249,7 +249,7 @@ class UploadConfigs @Inject constructor(
     // POST/PUT Methods (Phase 4)
 
     val ExamResults = UploadConfig(
-        modelClass = RealmSubmission::class,
+        modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
@@ -262,7 +262,7 @@ class UploadConfigs @Inject constructor(
     )
 
     val Submissions = UploadConfig(
-        modelClass = RealmSubmission::class,
+        modelClass = Submission::class,
         endpoint = "submissions",
         fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
         serializer = UploadSerializer.AsyncContext { submission, context ->
@@ -277,13 +277,13 @@ class UploadConfigs @Inject constructor(
 
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
     // The private-resource team-link creation moves into the repository's markResourceUploaded.
-    fun getResourcesConfig(user: RealmUser?): RoomUploadConfig<RealmMyLibrary> {
+    fun getResourcesConfig(user: UserEntity?): RoomUploadConfig<MyLibrary> {
         return RoomUploadConfig(
             endpoint = "resources",
-            modelClassName = "RealmMyLibrary",
+            modelClassName = "MyLibrary",
             fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
             serializer = UploadSerializer.Simple { library ->
-                RealmMyLibrary.serialize(library, user)
+                MyLibrary.serialize(library, user)
             },
             idExtractor = { it.id },
             markUploaded = { results ->

@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room row for teams, memberships, team resources, and reports formerly stored as RealmMyTeam. */
+/** Room row for teams, memberships, team resources, and reports formerly stored as MyTeam. */
 @Entity(tableName = "teams", indices = [Index("_id"), Index("teamId"), Index("userId"), Index("type"), Index("docType")])
 data class RoomTeamEntity(
     @PrimaryKey @JvmField val id: String,

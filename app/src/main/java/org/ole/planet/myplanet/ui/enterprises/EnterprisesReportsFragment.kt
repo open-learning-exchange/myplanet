@@ -34,8 +34,8 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.DialogAddReportBinding
 import org.ole.planet.myplanet.databinding.FragmentReportsBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -44,7 +44,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class EnterprisesReportsFragment : BaseTeamFragment() {
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
-    private var reports: List<RealmMyTeam> = emptyList()
+    private var reports: List<MyTeam> = emptyList()
     private lateinit var reportsAdapter: EnterprisesReportsAdapter
     private var scrollToLatestReport = false
     private var startTimeStamp: String? = null
@@ -224,12 +224,12 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showEditReportDialog(currentReport: RealmMyTeam) {
+    private fun showEditReportDialog(currentReport: MyTeam) {
         val dialogAddReportBinding = DialogAddReportBinding.inflate(LayoutInflater.from(requireContext()))
         val v: View = dialogAddReportBinding.root
         selectedImageUri = null
         dialogImagePreview = dialogAddReportBinding.reportImagePreview
-        val existingImage = RealmMyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
+        val existingImage = MyTeam.getAttachmentFile(requireContext(), currentReport._id, currentReport.imageName)
         if (existingImage != null && existingImage.exists()) {
             dialogAddReportBinding.reportImagePreview.visibility = View.VISIBLE
             Glide.with(this).load(existingImage).into(dialogAddReportBinding.reportImagePreview)
@@ -305,7 +305,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showDeleteReportDialog(report: RealmMyTeam) {
+    private fun showDeleteReportDialog(report: MyTeam) {
         report._id?.let { reportId ->
             val builder = AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
             builder.setTitle(getString(R.string.delete_report))
@@ -386,14 +386,14 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
-    private fun updatedReportsList(results: List<RealmMyTeam>) {
+    private fun updatedReportsList(results: List<MyTeam>) {
         if (_binding == null) return
         reports = results
         if (scrollToLatestReport && reports.isNotEmpty()) {

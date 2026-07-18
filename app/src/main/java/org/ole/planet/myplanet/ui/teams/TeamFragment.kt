@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -48,7 +48,7 @@ class TeamFragment : Fragment() {
     private val viewModel: TeamViewModel by viewModels()
     var type: String? = null
     private var fromDashboard: Boolean = false
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
 
@@ -146,7 +146,7 @@ class TeamFragment : Fragment() {
 
     private suspend fun createNewTeam(
         name: String, description: String, services: String, rules: String,
-        selectedTeamType: String, userModel: RealmUser, dialog: AlertDialog, failureMessage: String
+        selectedTeamType: String, userModel: UserEntity, dialog: AlertDialog, failureMessage: String
     ) {
         val result = viewModel.createTeam(
             name = name,
@@ -188,7 +188,7 @@ class TeamFragment : Fragment() {
 
     private suspend fun updateExistingTeam(
         team: TeamDetails, name: String, description: String, services: String, rules: String,
-        userModel: RealmUser, dialog: AlertDialog, failureMessage: String
+        userModel: UserEntity, dialog: AlertDialog, failureMessage: String
     ) {
         val teamTypeForValidation = if (type == "enterprise") "enterprise" else "team"
         val excludeTeamId = team._id ?: team.teamId

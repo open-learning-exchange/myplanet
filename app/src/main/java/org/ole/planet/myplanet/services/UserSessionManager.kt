@@ -8,8 +8,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -35,11 +35,11 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    suspend fun getUserModel(): RealmUser? {
+    suspend fun getUserModel(): UserEntity? {
         return userRepository.getUserModel()
     }
 
-    suspend fun saveUserInfoPref(password: String?, user: RealmUser?) {
+    suspend fun saveUserInfoPref(password: String?, user: UserEntity?) {
         withContext(dispatcherProvider.io) {
             SecurePrefs.saveCredentials(context, sharedPrefManager.rawPreferences, user?.name, password)
         }
@@ -92,11 +92,11 @@ class UserSessionManager @Inject constructor(
         }
     }
 
-    fun setResourceOpenCount(item: RealmMyLibrary) {
+    fun setResourceOpenCount(item: MyLibrary) {
         setResourceOpenCount(item, KEY_RESOURCE_OPEN)
     }
 
-    fun setResourceOpenCount(item: RealmMyLibrary, type: String?) {
+    fun setResourceOpenCount(item: MyLibrary, type: String?) {
         val itemTitle = item.title
         val itemResourceId = item.resourceId
 

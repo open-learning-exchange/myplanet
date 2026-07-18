@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -55,7 +55,7 @@ class UploadRepositoryImplTest {
             RoomExamEntity(id = "exam-1", sourceSurveyId = "source-1", type = "surveys")
         )
 
-        val result: List<RealmStepExam> = repository.queryPending(
+        val result: List<StepExam> = repository.queryPending(
             UploadQueryContract(UploadQueryType.AdoptedSurveys)
         )
 

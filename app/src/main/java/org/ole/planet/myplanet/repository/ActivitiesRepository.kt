@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.OfflineActivity
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 
 interface ActivitiesRepository {
     suspend fun getOfflineVisitCount(userId: String): Int
@@ -25,5 +25,5 @@ interface ActivitiesRepository {
     suspend fun hasUserCompletedSync(userId: String): Boolean
     suspend fun insertLoginActivitiesFromSync(docs: List<JsonObject>)
     suspend fun uploadActivities()
-    suspend fun uploadMyPlanetActivities(userModel: RealmUser)
+    suspend fun uploadMyPlanetActivities(userModel: UserEntity)
 }

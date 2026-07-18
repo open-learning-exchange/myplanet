@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -61,7 +61,7 @@ class EventsRepositoryImpl @Inject constructor(
         return meetupDao.getById(id)
     }
 
-    override suspend fun getJoinedMembers(meetupId: String): List<RealmUser> {
+    override suspend fun getJoinedMembers(meetupId: String): List<UserEntity> {
         if (meetupId.isBlank()) {
             return emptyList()
         }

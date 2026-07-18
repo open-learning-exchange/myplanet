@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import java.util.Locale
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmExamQuestion {
+open class ExamQuestion {
     var id: String? = null
     var header: String? = null
     var body: String? = null
@@ -16,7 +16,7 @@ open class RealmExamQuestion {
     var choices: String? = null
     var hasOtherOption: Boolean = false
     var scaleMax: Int = 9
-    private fun setCorrectChoiceArray(array: JsonArray, question: RealmExamQuestion?) {
+    private fun setCorrectChoiceArray(array: JsonArray, question: ExamQuestion?) {
         for (i in 0 until array.size()) {
             question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
         }
@@ -42,10 +42,10 @@ open class RealmExamQuestion {
         }
 
     companion object {
-        fun insertExamQuestions(questions: JsonArray, examId: String?): List<RealmExamQuestion> {
+        fun insertExamQuestions(questions: JsonArray, examId: String?): List<ExamQuestion> {
             if (questions.size() == 0) return emptyList()
 
-            val questionsToInsert = mutableListOf<RealmExamQuestion>()
+            val questionsToInsert = mutableListOf<ExamQuestion>()
 
             for (i in 0 until questions.size()) {
                 val question = questions[i].asJsonObject
@@ -55,7 +55,7 @@ open class RealmExamQuestion {
                     "$examId-${i}"
                 }
 
-                val myQuestion = RealmExamQuestion().apply {
+                val myQuestion = ExamQuestion().apply {
                     this.id = questionId
                     this.examId = examId
                     body = JsonUtils.getString("body", question)
@@ -80,7 +80,7 @@ open class RealmExamQuestion {
             return questionsToInsert
         }
 
-        private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: RealmExamQuestion?) {
+        private fun insertCorrectChoice(array: JsonArray, question: JsonObject, myQuestion: ExamQuestion?) {
             for (a in 0 until array.size()) {
                 val res = array[a].asJsonObject
                 if (question["correctChoice"].isJsonArray) {
@@ -93,7 +93,7 @@ open class RealmExamQuestion {
             }
         }
 
-        fun serializeQuestions(question: List<RealmExamQuestion>): JsonArray {
+        fun serializeQuestions(question: List<ExamQuestion>): JsonArray {
             val array = JsonArray()
             for (que in question) {
                 val `object` = JsonObject()

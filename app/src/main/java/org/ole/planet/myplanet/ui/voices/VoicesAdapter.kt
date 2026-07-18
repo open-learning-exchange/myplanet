@@ -31,10 +31,10 @@ import org.ole.planet.myplanet.callback.OnChatItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.RowNewsBinding
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -50,16 +50,16 @@ import org.ole.planet.myplanet.utils.makeExpandable
 
 class VoicesAdapter(
     var context: Context,
-    private var currentUser: RealmUser?,
-    private var parentNews: RealmNews?,
+    private var currentUser: UserEntity?,
+    private var parentNews: News?,
     private val teamName: String = "",
     private val teamId: String? = null,
     private val isTeamLeaderFn: ((Boolean) -> Unit) -> Unit,
-    private val getUserFn: (String, (RealmUser?) -> Unit) -> Unit,
+    private val getUserFn: (String, (UserEntity?) -> Unit) -> Unit,
     private val getReplyCountFn: (String, (Int) -> Unit) -> (() -> Unit),
     private val deletePostFn: (String) -> Unit,
     private val shareNewsFn: (String, String, String, String, String) -> Unit,
-    private val getLibraryResourceFn: (String, (RealmMyLibrary?) -> Unit) -> Unit,
+    private val getLibraryResourceFn: (String, (MyLibrary?) -> Unit) -> Unit,
     private val onEditAction: (suspend () -> Unit) -> Unit,
     private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?,
     private val labelManager: VoicesLabelManager,
@@ -67,8 +67,8 @@ class VoicesAdapter(
     private val userRepository: UserRepository,
     private val getCommunityLeadersFn: () -> String,
     private val setRepliedNewsIdFn: (String?) -> Unit
-) : ListAdapter<RealmNews, RecyclerView.ViewHolder>(
-    DiffUtils.itemCallback<RealmNews>(
+) : ListAdapter<News, RecyclerView.ViewHolder>(
+    DiffUtils.itemCallback<News>(
         areItemsTheSame = { oldItem, newItem ->
             if (oldItem === newItem) return@itemCallback true
             try {
@@ -108,7 +108,7 @@ class VoicesAdapter(
         val isCurrentUserNull: Boolean
     )
 
-    private fun getRowState(news: RealmNews?): RowState {
+    private fun getRowState(news: News?): RowState {
         return RowState(
             canEdit = canEdit(news),
             canDelete = canDelete(news),
@@ -119,11 +119,11 @@ class VoicesAdapter(
         )
     }
 
-    private var originalList: List<RealmNews> = emptyList()
+    private var originalList: List<News> = emptyList()
 
-    override fun submitList(list: List<RealmNews>?) {
+    override fun submitList(list: List<News>?) {
         originalList = list ?: emptyList()
-        val finalList = mutableListOf<RealmNews>()
+        val finalList = mutableListOf<News>()
         parentNews?.let {
             preParseNews(it)
             finalList.add(it)
@@ -135,9 +135,9 @@ class VoicesAdapter(
         super.submitList(finalList)
     }
 
-    override fun submitList(list: List<RealmNews>?, commitCallback: Runnable?) {
+    override fun submitList(list: List<News>?, commitCallback: Runnable?) {
         originalList = list ?: emptyList()
-        val finalList = mutableListOf<RealmNews>()
+        val finalList = mutableListOf<News>()
         parentNews?.let {
             preParseNews(it)
             finalList.add(it)
@@ -155,10 +155,10 @@ class VoicesAdapter(
     private var fromLogin = false
     private var nonTeamMember = false
     private var recyclerView: RecyclerView? = null
-    private val userCache = object : LinkedHashMap<String, RealmUser?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, RealmUser?>) = size > 128 }
+    private val userCache = object : LinkedHashMap<String, UserEntity?>(64, 0.75f, true) { override fun removeEldestEntry(e: Map.Entry<String, UserEntity?>) = size > 128 }
     private val fetchingUserIds = mutableSetOf<String>()
     private val replyCountCache = mutableMapOf<String, Int>()
-    private val leadersList: List<RealmUser> by lazy {
+    private val leadersList: List<UserEntity> by lazy {
         val raw = getCommunityLeadersFn()
         userRepository.parseLeadersJson(raw)
     }
@@ -190,7 +190,7 @@ class VoicesAdapter(
         }
     }
 
-    fun setCurrentUser(user: RealmUser?) {
+    fun setCurrentUser(user: UserEntity?) {
         if (currentUser !== user) {
             val oldStates = (0 until itemCount).map { getRowState(getItem(it)) }
             currentUser = user
@@ -362,7 +362,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun configureUser(holder: VoicesViewHolder, news: RealmNews): RealmUser? {
+    private fun configureUser(holder: VoicesViewHolder, news: News): UserEntity? {
         val userId = news.userId
         if (userId.isNullOrEmpty()) return null
 
@@ -400,7 +400,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun setMessageAndDate(holder: VoicesViewHolder, news: RealmNews, sharedTeamName: String) {
+    private fun setMessageAndDate(holder: VoicesViewHolder, news: News, sharedTeamName: String) {
         val markdownContentWithLocalPaths = prependBaseUrlToImages(
             news.message,
             "file://$externalFilesDir/ole/",
@@ -422,7 +422,7 @@ class VoicesAdapter(
         holder.binding.tvEdited.visibility = if (news.isEdited) View.VISIBLE else View.GONE
     }
 
-    private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: RealmNews) {
+    private fun configureEditDeleteButtons(holder: VoicesViewHolder, news: News) {
         if (canDelete(news)) {
             holder.binding.imgDelete.setOnClickListener {
                 val pos = holder.bindingAdapterPosition
@@ -464,7 +464,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun handleChat(holder: VoicesViewHolder, news: RealmNews) {
+    private fun handleChat(holder: VoicesViewHolder, news: News) {
         if (news.newsId?.isNotEmpty() == true) {
             val conversations = news.parsedConversations ?: return
             val adapter = holder.chatAdapter
@@ -492,7 +492,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun getCurrentLeader(userModel: RealmUser?, news: RealmNews): RealmUser? {
+    private fun getCurrentLeader(userModel: UserEntity?, news: News): UserEntity? {
         if (userModel == null) {
             for (leader in leadersList) {
                 if (leader.name == news.userName) {
@@ -503,7 +503,7 @@ class VoicesAdapter(
         return null
     }
 
-    fun updateParentNews(news: RealmNews?) {
+    fun updateParentNews(news: News?) {
         parentNews = news
         preParseNews(parentNews)
         submitList(originalList)
@@ -519,10 +519,10 @@ class VoicesAdapter(
         }
     }
 
-    private fun parseConversations(conversations: String?): List<RealmConversation>? {
+    private fun parseConversations(conversations: String?): List<Conversation>? {
         if (conversations.isNullOrEmpty()) return null
         return try {
-            JsonUtils.gson.fromJson(conversations, Array<RealmConversation>::class.java).toList()
+            JsonUtils.gson.fromJson(conversations, Array<Conversation>::class.java).toList()
         } catch (e: Exception) {
             e.printStackTrace()
             null
@@ -539,7 +539,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun preParseNews(news: RealmNews?) {
+    private fun preParseNews(news: News?) {
         news?.let {
             try {
                 if ((it.parsedViewIn == null || it.rawViewIn != it.viewIn) && !TextUtils.isEmpty(it.viewIn)) {
@@ -572,7 +572,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: RealmUser?, currentLeader: RealmUser?) {
+    private fun setMemberClickListeners(holder: VoicesViewHolder, userModel: UserEntity?, currentLeader: UserEntity?) {
         if (!fromLogin) {
             holder.binding.imgUser.setOnClickListener {
                 val model = userModel ?: currentLeader
@@ -592,10 +592,10 @@ class VoicesAdapter(
         return id == currentUser?._id || id == currentUser?.id
     }
 
-    private fun isOwner(news: RealmNews?): Boolean =
+    private fun isOwner(news: News?): Boolean =
         matchesCurrentUser(news?.userId)
 
-    private fun isSharedByCurrentUser(news: RealmNews?): Boolean =
+    private fun isSharedByCurrentUser(news: News?): Boolean =
         matchesCurrentUser(news?.sharedBy)
 
     private fun isAdmin(): Boolean =
@@ -607,19 +607,19 @@ class VoicesAdapter(
     private fun canModerate(): Boolean =
         !fromLogin && (isAdmin() || isTeamLeader())
 
-    private fun canEdit(news: RealmNews?): Boolean =
+    private fun canEdit(news: News?): Boolean =
         !fromLogin && (isOwner(news) || canModerate())
 
-    private fun canDelete(news: RealmNews?): Boolean =
+    private fun canDelete(news: News?): Boolean =
         !fromLogin && (isOwner(news) || isSharedByCurrentUser(news) || canModerate())
 
     private fun canReply(): Boolean =
         isLoggedInAndMember() && !isGuestUser()
 
-    private fun canAddLabel(news: RealmNews?): Boolean =
+    private fun canAddLabel(news: News?): Boolean =
         isLoggedInAndMember() && (isOwner(news) || isTeamLeader())
 
-    private fun canShare(news: RealmNews?): Boolean =
+    private fun canShare(news: News?): Boolean =
         isLoggedInAndMember() && news?.isCommunityNews != true && !isGuestUser()
 
     private fun View.setVisibility(condition: Boolean) {
@@ -637,7 +637,7 @@ class VoicesAdapter(
         binding.btnShowReply.visibility = if (visible) View.VISIBLE else View.GONE
     }
 
-    private fun updateReplyCount(viewHolder: VoicesViewHolder, news: RealmNews?, position: Int) {
+    private fun updateReplyCount(viewHolder: VoicesViewHolder, news: News?, position: Int) {
         val newsId = news?.id ?: return
         val cached = replyCountCache[newsId]
         if (cached != null) {
@@ -655,7 +655,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun getNews(holder: RecyclerView.ViewHolder, position: Int): RealmNews {
+    private fun getNews(holder: RecyclerView.ViewHolder, position: Int): News {
         val news = getItem(position)
         if (parentNews != null && position == 0) {
             (holder.itemView as CardView).setCardBackgroundColor(ContextCompat.getColor(context, R.color.md_blue_50))
@@ -665,7 +665,7 @@ class VoicesAdapter(
         return news
     }
 
-    private fun showHideButtons(news: RealmNews?, holder: RecyclerView.ViewHolder) {
+    private fun showHideButtons(news: News?, holder: RecyclerView.ViewHolder) {
         val viewHolder = holder as VoicesViewHolder
         with(viewHolder.binding) {
             imgEdit.setVisibility(canEdit(news))
@@ -677,7 +677,7 @@ class VoicesAdapter(
 
     private fun shouldShowReplyButton(): Boolean = canReply()
 
-    private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: RealmNews?, position: Int) {
+    private fun showReplyButton(holder: RecyclerView.ViewHolder, finalNews: News?, position: Int) {
         val viewHolder = holder as VoicesViewHolder
         if (shouldShowReplyButton()) {
             viewHolder.binding.btnReply.visibility = if (nonTeamMember) View.GONE else View.VISIBLE
@@ -708,7 +708,7 @@ class VoicesAdapter(
         }
     }
 
-    private fun showShareButton(holder: RecyclerView.ViewHolder, news: RealmNews?) {
+    private fun showShareButton(holder: RecyclerView.ViewHolder, news: News?) {
         val viewHolder = holder as VoicesViewHolder
 
         viewHolder.binding.btnShare.setVisibility(canShare(news))
@@ -766,11 +766,11 @@ class VoicesAdapter(
         }
     }
 
-    private fun getParsedImageUrls(news: RealmNews?): List<JsonObject>? {
+    private fun getParsedImageUrls(news: News?): List<JsonObject>? {
         return news?.parsedImageUrls
     }
 
-    private fun loadImage(binding: RowNewsBinding, news: RealmNews?) {
+    private fun loadImage(binding: RowNewsBinding, news: News?) {
         binding.imgNews.visibility = View.GONE
         binding.llNewsImages.visibility = View.GONE
         binding.llNewsImages.removeAllViews()

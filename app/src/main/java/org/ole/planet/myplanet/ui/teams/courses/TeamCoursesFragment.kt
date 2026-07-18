@@ -17,8 +17,8 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamCourseBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -59,7 +59,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         setupCoursesList()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()
@@ -77,7 +77,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         showAddCourseDialog()
     }
 
-    private fun removeCourseFromTeam(course: RealmMyCourse) {
+    private fun removeCourseFromTeam(course: MyCourse) {
         val courseId = course.courseId ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             teamsRepository.removeCourseFromTeam(teamId, courseId)
@@ -142,7 +142,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         }
     }
 
-    private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<RealmMyCourse>, lv: RecyclerView) {
+    private fun setupCourseListDialog(alertDialog: AlertDialog, courses: List<MyCourse>, lv: RecyclerView) {
         val names = courses.map { it.courseTitle ?: getString(R.string.untitled_course) }
         val adapter = CheckboxAdapter {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
@@ -154,7 +154,7 @@ class TeamCoursesFragment : BaseTeamFragment(), OnTeamPageListener {
         alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
     }
 
-    private fun addCoursesToTeam(courses: List<RealmMyCourse>) {
+    private fun addCoursesToTeam(courses: List<MyCourse>) {
         if (courses.isEmpty()) return
         val courseIds = courses.mapNotNull { it.courseId }
         if (courseIds.isEmpty()) return

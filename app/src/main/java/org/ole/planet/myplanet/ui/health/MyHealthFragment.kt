@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -60,8 +60,8 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    var userModel: RealmUser? = null
-    lateinit var userModelList: List<RealmUser>
+    var userModel: UserEntity? = null
+    lateinit var userModelList: List<UserEntity>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
@@ -353,7 +353,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun getDisplayName(user: RealmUser?): String {
+    private fun getDisplayName(user: UserEntity?): String {
         if (user == null) return getString(R.string.n_a)
 
         val fullName = listOfNotNull(user.firstName, user.middleName, user.lastName)

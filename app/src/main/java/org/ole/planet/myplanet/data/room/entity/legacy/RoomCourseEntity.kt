@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room mirror for courses formerly stored as RealmMyCourse. */
+/** Room mirror for courses formerly stored as MyCourse. */
 @Entity(tableName = "courses", indices = [Index("courseId"), Index("_id"), Index("courseTitleNormal"), Index("gradeLevel"), Index("subjectLevel")])
 data class RoomCourseEntity(
     @PrimaryKey @JvmField val id: String,

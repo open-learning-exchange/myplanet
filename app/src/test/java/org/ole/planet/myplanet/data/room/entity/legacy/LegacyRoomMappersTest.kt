@@ -1,17 +1,17 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 
 class LegacyRoomMappersTest {
     @Test
     fun `user mapper preserves identity roles and admin state`() {
-        val user = RealmUser().apply {
+        val user = UserEntity().apply {
             id = "local-user"
             _id = "remote-user"
             _rev = "2-rev"
@@ -36,15 +36,15 @@ class LegacyRoomMappersTest {
 
     @Test
     fun `course mapper stores member and step ids as Room lists`() {
-        val course = RealmMyCourse().apply {
+        val course = MyCourse().apply {
             id = "course-local"
             courseId = "course-remote"
             courseRev = "1-course"
             courseTitle = "Math"
             description = "Numbers"
             courseSteps = mutableListOf(
-                RealmCourseStep().apply { id = "step-1" },
-                RealmCourseStep().apply { id = "step-2" },
+                CourseStep().apply { id = "step-1" },
+                CourseStep().apply { id = "step-2" },
             )
         }
 
@@ -58,7 +58,7 @@ class LegacyRoomMappersTest {
 
     @Test
     fun `exam mapper preserves survey upload fields`() {
-        val exam = RealmStepExam().apply {
+        val exam = StepExam().apply {
             id = "exam-1"
             _rev = null
             courseId = "course-1"

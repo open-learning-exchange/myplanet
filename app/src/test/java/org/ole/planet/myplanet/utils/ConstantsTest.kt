@@ -17,9 +17,9 @@ import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.TagEntity
@@ -77,13 +77,13 @@ class ConstantsTest {
     fun testClassList() {
         val classList = Constants.classList
         assertEquals(14, classList.size)
-        assertEquals(RealmNews::class.java, classList["news"])
+        assertEquals(News::class.java, classList["news"])
         assertEquals(TagEntity::class.java, classList["tags"])
         assertEquals(Rating::class.java, classList["ratings"])
-        assertEquals(RealmMyCourse::class.java, classList["courses"])
+        assertEquals(MyCourse::class.java, classList["courses"])
         assertEquals(Achievement::class.java, classList["achievements"])
         assertEquals(Feedback::class.java, classList["feedback"])
-        assertEquals(RealmMyTeam::class.java, classList["teams"])
+        assertEquals(MyTeam::class.java, classList["teams"])
         assertEquals(TeamTask::class.java, classList["tasks"])
         assertEquals(Meetup::class.java, classList["meetups"])
         assertEquals(HealthExamination::class.java, classList["health"])

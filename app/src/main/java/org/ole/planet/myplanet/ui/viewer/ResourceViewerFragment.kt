@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -93,7 +93,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var videoLoadingText: TextView? = null
     private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
-    private lateinit var library: RealmMyLibrary
+    private lateinit var library: MyLibrary
     private var pdfText: String = ""
     private var isExtractingText = false
     private var externalFilesDir: File? = null

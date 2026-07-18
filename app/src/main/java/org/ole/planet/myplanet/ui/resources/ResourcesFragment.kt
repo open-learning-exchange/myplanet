@@ -37,9 +37,9 @@ import org.ole.planet.myplanet.callback.OnLibraryItemSelectedListener
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentMyLibraryBinding
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TableDataUpdate
@@ -56,7 +56,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @AndroidEntryPoint
-class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItemSelectedListener,
+class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelectedListener,
     ChipDeletedListener, OnTagClickListener, OnFilterListener, RealtimeSyncMixin {
     private var _binding: FragmentMyLibraryBinding? = null
     private val binding get() = _binding!!
@@ -71,7 +71,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var config: ChipCloudConfig
     private lateinit var adapterLibrary: ResourcesAdapter
     private var tagsMap: Map<String, List<TagEntity>> = emptyMap()
-    var userModel: RealmUser ?= null
+    var userModel: UserEntity ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
     private var isFirstResume = true

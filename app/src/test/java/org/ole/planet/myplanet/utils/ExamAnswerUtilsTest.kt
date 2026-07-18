@@ -5,12 +5,12 @@ import io.mockk.mockk
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.ExamQuestion
 
 class ExamAnswerUtilsTest {
 
-    private fun createQuestion(questionType: String?, choices: List<String>): RealmExamQuestion {
-        val mockQuestion = mockk<RealmExamQuestion>()
+    private fun createQuestion(questionType: String?, choices: List<String>): ExamQuestion {
+        val mockQuestion = mockk<ExamQuestion>()
         every { mockQuestion.type } returns questionType
         every { mockQuestion.getCorrectChoice() } returns choices.toMutableList()
         return mockQuestion

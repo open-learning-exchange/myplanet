@@ -15,7 +15,7 @@ import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -163,7 +163,7 @@ class ChatRepositoryImpl @Inject constructor(
                 aiProvider = JsonUtils.getString("aiProvider", json)
                 val conversationsArray = JsonUtils.getJsonArray("conversations", json)
                 conversations = conversationsArray.map {
-                    JsonUtils.gson.fromJson(it, RealmConversation::class.java)
+                    JsonUtils.gson.fromJson(it, Conversation::class.java)
                 }
                 lastUsed = Date().time
             }
@@ -174,7 +174,7 @@ class ChatRepositoryImpl @Inject constructor(
     private suspend fun addConversation(chatHistoryId: String?, query: String?, response: String?, newRev: String?) {
         if (chatHistoryId == null) return
         val chatHistory = chatDao.findByDocId(chatHistoryId) ?: return
-        val conversation = RealmConversation().apply {
+        val conversation = Conversation().apply {
             this.query = query
             this.response = response
         }

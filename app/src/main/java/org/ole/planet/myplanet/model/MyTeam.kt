@@ -8,7 +8,7 @@ import java.io.File
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmMyTeam {
+open class MyTeam {
     var _id: String? = null
     var _rev: String? = null
     var courses: MutableList<String>? = null
@@ -62,7 +62,7 @@ open class RealmMyTeam {
             )
         }
 
-        fun populateTeamFields(doc: JsonObject, team: RealmMyTeam, includeCourses: Boolean = false) {
+        fun populateTeamFields(doc: JsonObject, team: MyTeam, includeCourses: Boolean = false) {
             val hadLocalChanges = team.updated
 
             team.userId = JsonUtils.getString("userId", doc)
@@ -132,7 +132,7 @@ open class RealmMyTeam {
             }
         }
 
-        fun populateReportFields(doc: JsonObject, team: RealmMyTeam) {
+        fun populateReportFields(doc: JsonObject, team: MyTeam) {
             team.description = JsonUtils.getString("description", doc)
             team.beginningBalance = JsonUtils.getInt("beginningBalance", doc)
             team.sales = JsonUtils.getInt("sales", doc)
@@ -146,7 +146,7 @@ open class RealmMyTeam {
             getFirstAttachmentName(doc)?.let { team.imageName = it }
         }
 
-        fun serialize(team: RealmMyTeam): JsonObject {
+        fun serialize(team: MyTeam): JsonObject {
             val `object` = JsonObject()
 
             JsonUtils.addString(`object`, "_id", team._id)
@@ -212,7 +212,7 @@ open class RealmMyTeam {
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
-        fun serialize(team: RealmMyTeam, courses: List<RealmMyCourse>, coursesResourcesMap: Map<String, Map<String?, List<RealmMyLibrary>>>): JsonObject {
+        fun serialize(team: MyTeam, courses: List<MyCourse>, coursesResourcesMap: Map<String, Map<String?, List<MyLibrary>>>): JsonObject {
             val `object` = serialize(team)
 
             if (!team.courses.isNullOrEmpty()) {
@@ -224,7 +224,7 @@ open class RealmMyTeam {
                     val course = courseMap[courseId]
                     if (course != null) {
                         val courseResources = coursesResourcesMap[courseId] ?: emptyMap()
-                        val courseJson = RealmMyCourse.serialize(course, courseResources)
+                        val courseJson = MyCourse.serialize(course, courseResources)
                         coursesArray.add(courseJson)
                     }
                 }

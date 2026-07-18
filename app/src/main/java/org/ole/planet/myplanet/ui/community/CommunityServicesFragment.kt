@@ -11,8 +11,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentCommunityServicesBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.ui.components.FragmentNavigator.replaceFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.viewer.WebViewActivity
@@ -71,14 +71,14 @@ class CommunityServicesFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
-    private fun setRecyclerView(links: List<RealmMyTeam>) {
+    private fun setRecyclerView(links: List<MyTeam>) {
         val parent = binding?.llServices ?: return
         parent.removeAllViews()
         links.forEach { team ->

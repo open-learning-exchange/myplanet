@@ -4,7 +4,7 @@ import android.text.TextUtils
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmStepExam {
+open class StepExam {
     var id: String? = null
     var _rev: String? = null
     var createdDate: Long = 0
@@ -26,13 +26,13 @@ open class RealmStepExam {
     var sourceSurveyId: String? = null
 
     companion object {
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject): RealmStepExam {
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject): StepExam {
             return insertCourseStepsExams(myCoursesID, stepId, exam, "")
         }
 
-        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): RealmStepExam {
+        fun insertCourseStepsExams(myCoursesID: String?, stepId: String?, exam: JsonObject, parentId: String?): StepExam {
             val examId = JsonUtils.getString("_id", exam)
-            val myExam = RealmStepExam().apply {
+            val myExam = StepExam().apply {
                 id = if (TextUtils.isEmpty(examId)) parentId else examId
             }
             checkIdsAndInsert(myCoursesID, stepId, myExam)
@@ -55,7 +55,7 @@ open class RealmStepExam {
             return myExam
         }
 
-        private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: RealmStepExam?) {
+        private fun checkIdsAndInsert(myCoursesID: String?, stepId: String?, myExam: StepExam?) {
             if (!TextUtils.isEmpty(myCoursesID)) {
                 myExam?.courseId = myCoursesID
             }
@@ -64,7 +64,7 @@ open class RealmStepExam {
             }
         }
 
-        fun serializeExam(exam: RealmStepExam, questions: List<RealmExamQuestion>): JsonObject {
+        fun serializeExam(exam: StepExam, questions: List<ExamQuestion>): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", exam.id)
             if (exam._rev != null) {
@@ -86,7 +86,7 @@ open class RealmStepExam {
             if (exam.teamId != null) {
                 `object`.addProperty("teamId", exam.teamId)
             }
-            `object`.add("questions", RealmExamQuestion.serializeQuestions(questions))
+            `object`.add("questions", ExamQuestion.serializeQuestions(questions))
             return `object`
         }
     }

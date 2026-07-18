@@ -9,9 +9,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @AndroidEntryPoint
 abstract class BaseTeamFragment : BaseVoicesFragment() {
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var teamId: String = ""
         set(value) {
             if (field != value) {
@@ -27,15 +27,15 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
                 _isMemberFlow.value = false
             }
         }
-    var team: RealmMyTeam? = null
+    var team: MyTeam? = null
     @Inject
     lateinit var teamsRepository: TeamsRepository
     @Inject
     lateinit var teamsSyncRepository: TeamsSyncRepository
     @Inject
     open lateinit var dispatcherProvider: DispatcherProvider
-    private val _teamFlow = MutableStateFlow<RealmMyTeam?>(null)
-    val teamFlow: StateFlow<RealmMyTeam?> = _teamFlow.asStateFlow()
+    private val _teamFlow = MutableStateFlow<MyTeam?>(null)
+    val teamFlow: StateFlow<MyTeam?> = _teamFlow.asStateFlow()
     private val _isMemberFlow = MutableStateFlow(false)
     val isMemberFlow: StateFlow<Boolean> = _isMemberFlow.asStateFlow()
 
@@ -50,7 +50,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {}
+    override fun setData(list: List<News?>?) {}
 
     private fun loadTeamDetails() {
         val shouldQueryTeam = shouldQueryTeamFromRealm()

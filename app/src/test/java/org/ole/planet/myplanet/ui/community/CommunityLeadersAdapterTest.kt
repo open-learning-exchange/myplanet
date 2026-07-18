@@ -3,13 +3,13 @@ package org.ole.planet.myplanet.ui.community
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 
 class CommunityLeadersAdapterTest {
 
     @Test
     fun testAreContentsTheSame() {
-        val oldUser = RealmUser().apply {
+        val oldUser = UserEntity().apply {
             id = "1"
             firstName = "John"
             lastName = "Doe"
@@ -17,7 +17,7 @@ class CommunityLeadersAdapterTest {
             name = "John Doe"
         }
 
-        val newUserSame = RealmUser().apply {
+        val newUserSame = UserEntity().apply {
             id = "1"
             firstName = "John"
             lastName = "Doe"
@@ -25,7 +25,7 @@ class CommunityLeadersAdapterTest {
             name = "John Doe"
         }
 
-        val newUserDifferentFirstName = RealmUser().apply {
+        val newUserDifferentFirstName = UserEntity().apply {
             id = "1"
             firstName = "Jane"
             lastName = "Doe"
@@ -33,7 +33,7 @@ class CommunityLeadersAdapterTest {
             name = "John Doe"
         }
 
-        val newUserDifferentLastName = RealmUser().apply {
+        val newUserDifferentLastName = UserEntity().apply {
             id = "1"
             firstName = "John"
             lastName = "Smith"
@@ -41,7 +41,7 @@ class CommunityLeadersAdapterTest {
             name = "John Doe"
         }
 
-        val newUserDifferentEmail = RealmUser().apply {
+        val newUserDifferentEmail = UserEntity().apply {
             id = "1"
             firstName = "John"
             lastName = "Doe"
@@ -49,7 +49,7 @@ class CommunityLeadersAdapterTest {
             name = "John Doe"
         }
 
-        val newUserDifferentName = RealmUser().apply {
+        val newUserDifferentName = UserEntity().apply {
             id = "1"
             firstName = "John"
             lastName = "Doe"
@@ -57,7 +57,7 @@ class CommunityLeadersAdapterTest {
             name = "Jane Doe"
         }
 
-        val callback = org.ole.planet.myplanet.utils.DiffUtils.itemCallback<RealmUser>(
+        val callback = org.ole.planet.myplanet.utils.DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.firstName == newItem.firstName &&

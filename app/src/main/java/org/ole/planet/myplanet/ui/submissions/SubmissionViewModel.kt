@@ -16,8 +16,8 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.flow.stateIn
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -31,7 +31,7 @@ class SubmissionViewModel @Inject constructor(
 ) : ViewModel() {
 
     private data class SubmissionViewData(
-        val submission: RealmSubmission,
+        val submission: Submission,
         val submitterName: String,
     )
 
@@ -45,7 +45,7 @@ class SubmissionViewModel @Inject constructor(
         submissionsRepository.getSubmissionsFlow(uid)
     }.shareIn(viewModelScope, SharingStarted.Lazily, 1)
 
-    private val exams: StateFlow<HashMap<String?, RealmStepExam>> = allSubmissionsFlow.mapLatest { subs ->
+    private val exams: StateFlow<HashMap<String?, StepExam>> = allSubmissionsFlow.mapLatest { subs ->
         HashMap(submissionsRepository.getExamMap(subs))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), hashMapOf())
 

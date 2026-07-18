@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room row for exams and surveys formerly represented by RealmStepExam. */
+/** Room row for exams and surveys formerly represented by StepExam. */
 @Entity(tableName = "exams", indices = [Index("courseId"), Index("stepId"), Index("teamId"), Index("sourceSurveyId")])
 data class RoomExamEntity(
     @PrimaryKey val id: String,

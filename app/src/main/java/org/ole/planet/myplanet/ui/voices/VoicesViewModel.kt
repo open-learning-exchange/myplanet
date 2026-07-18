@@ -17,9 +17,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -39,17 +39,17 @@ class VoicesViewModel @Inject constructor(
     private val _selectedLabel = MutableStateFlow("All")
     val selectedLabel: StateFlow<String> = _selectedLabel.asStateFlow()
 
-    private val _baseNewsList = MutableStateFlow<List<RealmNews?>>(emptyList())
+    private val _baseNewsList = MutableStateFlow<List<News?>>(emptyList())
 
     private val _labels = MutableStateFlow<List<String>>(emptyList())
     val labels: StateFlow<List<String>> = _labels.asStateFlow()
 
-    private val _createNewsSuccess = Channel<RealmNews?>(Channel.BUFFERED)
-    val createNewsSuccess: Flow<RealmNews?> = _createNewsSuccess.receiveAsFlow()
+    private val _createNewsSuccess = Channel<News?>(Channel.BUFFERED)
+    val createNewsSuccess: Flow<News?> = _createNewsSuccess.receiveAsFlow()
 
     private var observeJob: Job? = null
 
-    val filteredNews: StateFlow<List<RealmNews?>> = combine(
+    val filteredNews: StateFlow<List<News?>> = combine(
         _baseNewsList,
         _searchQuery,
         _selectedLabel
@@ -63,7 +63,7 @@ class VoicesViewModel @Inject constructor(
         observeJob?.cancel()
         observeJob = viewModelScope.launch {
             voicesRepository.getCommunityNews(userIdentifier).collect { newsList ->
-                val filtered = newsList.map { it as RealmNews? }
+                val filtered = newsList.map { it as News? }
                 _baseNewsList.value = filtered
                 _labels.value = collectLabels(filtered)
             }
@@ -78,7 +78,7 @@ class VoicesViewModel @Inject constructor(
         _selectedLabel.value = label
     }
 
-    fun createNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>) {
+    fun createNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>) {
         viewModelScope.launch {
             try {
                 val news = voicesRepository.createNews(map, user, imageList)
@@ -90,10 +90,10 @@ class VoicesViewModel @Inject constructor(
     }
 
     private fun filterNews(
-        list: List<RealmNews?>,
+        list: List<News?>,
         query: String,
         selectedLabel: String
-    ): List<RealmNews?> {
+    ): List<News?> {
         val labelFiltered = if (selectedLabel == "All") {
             list
         } else {
@@ -158,7 +158,7 @@ class VoicesViewModel @Inject constructor(
 
     // Note: The following are read-only suspend functions designed to be called directly from
     // the UI's lifecycleScope, avoiding intermediate MutableStateFlow caching for point-in-time reads.
-    suspend fun getUserById(userId: String): RealmUser? {
+    suspend fun getUserById(userId: String): UserEntity? {
         return voicesRepository.getUserById(userId)
     }
 
@@ -170,7 +170,7 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
-    suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
+    suspend fun getLibraryResource(resourceId: String): MyLibrary? {
         return voicesRepository.getLibraryResource(resourceId)
     }
 
@@ -182,7 +182,7 @@ class VoicesViewModel @Inject constructor(
         }
     }
 
-    suspend fun collectLabels(newsList: List<RealmNews?>): List<String> = withContext(dispatcherProvider.default) {
+    suspend fun collectLabels(newsList: List<News?>): List<String> = withContext(dispatcherProvider.default) {
         val allLabels = mutableSetOf<String>()
         allLabels.add("All")
 

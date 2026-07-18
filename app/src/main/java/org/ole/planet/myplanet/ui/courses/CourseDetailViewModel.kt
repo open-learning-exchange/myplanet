@@ -10,9 +10,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.utils.MarkdownUtils
@@ -20,13 +20,13 @@ import org.ole.planet.myplanet.utils.MarkdownUtils
 sealed interface CourseDetailUiState {
     object Loading : CourseDetailUiState
     data class Success(
-        val course: RealmMyCourse,
+        val course: MyCourse,
         val markdownDescription: String,
         val examCount: Int,
-        val resources: List<RealmMyLibrary>,
-        val downloadedResources: List<RealmMyLibrary>,
+        val resources: List<MyLibrary>,
+        val downloadedResources: List<MyLibrary>,
         val ratingSummary: RatingSummary?,
-        val user: RealmUser?
+        val user: UserEntity?
     ) : CourseDetailUiState
     data class Error(val message: String) : CourseDetailUiState
 }

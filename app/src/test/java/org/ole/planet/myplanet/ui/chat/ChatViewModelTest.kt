@@ -19,9 +19,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -94,7 +94,7 @@ class ChatViewModelTest {
 
     @Test
     fun `clearChatState resets selectedChatHistory, selectedId, selectedRev, and selectedAiProvider to their initial values`() {
-        val dummyHistory = listOf(RealmConversation())
+        val dummyHistory = listOf(Conversation())
         viewModel.setSelectedChatHistory(dummyHistory)
         viewModel.setSelectedId("test_id")
         viewModel.setSelectedRev("test_rev")
@@ -124,7 +124,7 @@ class ChatViewModelTest {
 
     @Test
     fun `processChatHistory sets pagination state and returns messages`() {
-        val conversations = listOf(RealmConversation().apply { query = "q1"; response = "r1" })
+        val conversations = listOf(Conversation().apply { query = "q1"; response = "r1" })
         val messages = viewModel.processChatHistory(conversations)
         assertEquals(1, viewModel.allConversations.size)
         assertEquals(1, viewModel.loadedCount)
@@ -133,7 +133,7 @@ class ChatViewModelTest {
 
     @Test
     fun `loadMoreConversations returns older messages and updates loadedCount`() {
-        val conversations = List(25) { RealmConversation().apply { query = "q$it"; response = "r$it" } }
+        val conversations = List(25) { Conversation().apply { query = "q$it"; response = "r$it" } }
         viewModel.processChatHistory(conversations)
         assertEquals(20, viewModel.loadedCount)
         val (messages, hasMore) = viewModel.loadMoreConversations()
@@ -144,7 +144,7 @@ class ChatViewModelTest {
 
     @Test
     fun `clearPaginationState resets allConversations and loadedCount`() {
-        viewModel.processChatHistory(listOf(RealmConversation()))
+        viewModel.processChatHistory(listOf(Conversation()))
         viewModel.clearPaginationState()
         assertTrue(viewModel.allConversations.isEmpty())
         assertEquals(0, viewModel.loadedCount)
@@ -152,12 +152,12 @@ class ChatViewModelTest {
 
     @Test
     fun `loadChatHistoryScreenData fetches all data correctly when no caches are provided`() = runTest {
-        val user = mockk<RealmUser>(relaxed = true)
+        val user = mockk<UserEntity>(relaxed = true)
         val conversation = ChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = RealmNews()
+        val news = News()
         val team = mockk<TeamSummary>(relaxed = true)
 
         coEvery { userRepository.getUserById("user123") } returns user
@@ -223,11 +223,11 @@ class ChatViewModelTest {
     fun `searchChats by full conversation filters by question`() = runTest {
         val chat1 = ChatHistory().apply {
             title = "Chat 1"
-            conversations = listOf(RealmConversation().apply { query = "How is the weather?" })
+            conversations = listOf(Conversation().apply { query = "How is the weather?" })
         }
         val chat2 = ChatHistory().apply {
             title = "Chat 2"
-            conversations = listOf(RealmConversation().apply { query = "Tell me a joke." })
+            conversations = listOf(Conversation().apply { query = "Tell me a joke." })
         }
 
         coEvery { chatRepository.getChatHistoryForUser(any()) } returns listOf(chat1, chat2)
@@ -263,12 +263,12 @@ class ChatViewModelTest {
 
     @Test
     fun `loadChatHistoryScreenData uses cached data and handles nulls gracefully`() = runTest {
-        val cachedUser = mockk<RealmUser>(relaxed = true)
+        val cachedUser = mockk<UserEntity>(relaxed = true)
         val conversation = ChatHistory().apply {
             createdDate = "123"
             updatedDate = "123"
         }
-        val news = RealmNews()
+        val news = News()
 
         coEvery { userRepository.getUserById("user123") } returns cachedUser
         coEvery { cachedUser.planetCode } returns "planet2"

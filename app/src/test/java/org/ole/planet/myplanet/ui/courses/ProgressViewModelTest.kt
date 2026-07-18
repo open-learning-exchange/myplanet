@@ -13,7 +13,7 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -43,7 +43,7 @@ class ProgressViewModelTest {
 
     @Test
     fun loadCourseData_updatesCourseData() = runTest {
-        val user = RealmUser().apply { id = "user_123" }
+        val user = UserEntity().apply { id = "user_123" }
         coEvery { userSessionManager.getUserModel() } returns user
 
         val expectedJsonArray = JsonArray().apply { add("course1") }

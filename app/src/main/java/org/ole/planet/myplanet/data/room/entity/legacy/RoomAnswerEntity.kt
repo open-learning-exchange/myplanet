@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room row for submission answers formerly represented by RealmAnswer. */
+/** Room row for submission answers formerly represented by Answer. */
 @Entity(tableName = "answers", indices = [Index("examId"), Index("questionId"), Index("submissionId")])
 data class RoomAnswerEntity(
     @PrimaryKey val id: String,

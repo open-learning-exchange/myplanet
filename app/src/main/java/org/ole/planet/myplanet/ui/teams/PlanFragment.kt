@@ -16,8 +16,8 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentPlanBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -54,7 +54,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateButtonVisibility(currentTeam: RealmMyTeam) {
+    private fun updateButtonVisibility(currentTeam: MyTeam) {
         isEnterprise = currentTeam.type?.equals("enterprise", ignoreCase = true) == true
 
         binding.btnAddPlan.text = if (isEnterprise) {
@@ -86,7 +86,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: RealmMyTeam) {
+    private fun showCreateTeamDialog(context: Context, activity: FragmentActivity, team: MyTeam) {
         val alertCreateTeamBinding = AlertCreateTeamBinding.inflate(LayoutInflater.from(context))
         setupDialogFields(alertCreateTeamBinding, team)
 
@@ -105,7 +105,7 @@ class PlanFragment : BaseTeamFragment() {
         dialog.show()
     }
 
-    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: RealmMyTeam) {
+    private fun setupDialogFields(binding: AlertCreateTeamBinding, team: MyTeam) {
         binding.spnTeamType.visibility = if (isEnterprise) View.GONE else View.VISIBLE
         binding.etServices.visibility = if (isEnterprise) View.VISIBLE else View.GONE
         binding.etRules.visibility = if (isEnterprise) View.VISIBLE else View.GONE
@@ -134,7 +134,7 @@ class PlanFragment : BaseTeamFragment() {
         binding: AlertCreateTeamBinding,
         activity: FragmentActivity,
         context: Context,
-        team: RealmMyTeam,
+        team: MyTeam,
         dialog: AlertDialog,
     ) {
         val name = binding.etName.text.toString().trim()
@@ -206,7 +206,7 @@ class PlanFragment : BaseTeamFragment() {
         }
     }
 
-    private fun updateUIWithTeamDetails(updatedTeam: RealmMyTeam?) {
+    private fun updateUIWithTeamDetails(updatedTeam: MyTeam?) {
         if (updatedTeam == null) return
         isEnterprise = updatedTeam.type?.equals("enterprise", ignoreCase = true) == true
 
@@ -239,7 +239,7 @@ class PlanFragment : BaseTeamFragment() {
         val formattedDetail = detail.replace("\n", "<br/>")
         return "<b>$title</b><br/>$formattedDetail<br/><br/>"    }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()

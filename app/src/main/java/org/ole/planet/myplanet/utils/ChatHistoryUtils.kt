@@ -2,10 +2,10 @@ package org.ole.planet.myplanet.utils
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonElement
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 
 object ChatHistoryUtils {
-    fun extractSharedViewInIds(sharedNews: List<RealmNews>): Map<String, Set<String>> {
+    fun extractSharedViewInIds(sharedNews: List<News>): Map<String, Set<String>> {
         if (sharedNews.isEmpty()) return emptyMap()
         return sharedNews
             .groupBy { it.newsId }

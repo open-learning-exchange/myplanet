@@ -13,7 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import java.util.UUID
 
-class RealmStepExamTest {
+class StepExamTest {
 
     @Before
     fun setup() {
@@ -51,7 +51,7 @@ class RealmStepExamTest {
             add("questions", JsonArray().apply { add(JsonObject()) })
         }
 
-        val result = RealmStepExam.insertCourseStepsExams("course1", "step1", examJson)
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson)
 
         assertEquals(examId, result.id)
         assertEquals("Test Exam", result.name)
@@ -75,7 +75,7 @@ class RealmStepExamTest {
             add("questions", JsonArray())
         }
 
-        val result = RealmStepExam.insertCourseStepsExams("course1", "step1", examJson, "parent-nation-id")
+        val result = StepExam.insertCourseStepsExams("course1", "step1", examJson, "parent-nation-id")
 
         assertEquals(examId, result.id)
         assertEquals("Nation Exam", result.name)
@@ -85,7 +85,7 @@ class RealmStepExamTest {
 
     @Test
     fun testSerializeExam() {
-        val exam = RealmStepExam().apply {
+        val exam = StepExam().apply {
             id = "exam1"
             _rev = "1-abc"
             name = "Test Exam"
@@ -103,7 +103,7 @@ class RealmStepExamTest {
         }
 
         val questions = listOf(
-            RealmExamQuestion().apply {
+            ExamQuestion().apply {
                 header = "Header"
                 body = "Body"
                 type = "select"
@@ -111,7 +111,7 @@ class RealmStepExamTest {
                 setCorrectChoices(listOf("Choice A"))
             }
         )
-        val json = RealmStepExam.serializeExam(exam, questions)
+        val json = StepExam.serializeExam(exam, questions)
 
         assertEquals("exam1", json.get("_id").asString)
         assertEquals("Test Exam", json.get("name").asString)

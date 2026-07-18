@@ -54,7 +54,7 @@ class TeamTask {
             return task
         }
 
-        fun serialize(task: TeamTask, user: RealmUser?): JsonObject {
+        fun serialize(task: TeamTask, user: UserEntity?): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(task._id)) {
                 `object`.addProperty("_id", task._id)

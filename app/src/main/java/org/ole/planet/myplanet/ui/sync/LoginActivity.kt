@@ -40,8 +40,8 @@ import org.ole.planet.myplanet.callback.OnUserProfileClickListener
 import org.ole.planet.myplanet.databinding.ActivityLoginBinding
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
@@ -75,13 +75,13 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
 
     private lateinit var binding: ActivityLoginBinding
     private var guest = false
-    var users: List<RealmUser>? = null
+    var users: List<UserEntity>? = null
     private var mAdapter: UsersAdapter? = null
     private var exitSnackbar: Snackbar? = null
     private var teamList = ArrayList<String?>()
     private var teamAdapter: ArrayAdapter<String?>? = null
     private var isUserInteracting = false
-    private var cachedTeams: List<RealmMyTeam>? = null
+    private var cachedTeams: List<MyTeam>? = null
     private val loginViewModel: LoginViewModel by viewModels()
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -439,7 +439,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         loginViewModel.loadTeamsAsync()
     }
 
-    private fun setupTeamDropdown(teams: List<RealmMyTeam>?) {
+    private fun setupTeamDropdown(teams: List<MyTeam>?) {
         if (!teams.isNullOrEmpty()) {
             binding.team.visibility = View.VISIBLE
             teamAdapter = ArrayAdapter(this, R.layout.spinner_item_white, teamList)

@@ -12,8 +12,8 @@ import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.UploadQueryType
 import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.repository.UploadRepository
@@ -248,8 +248,8 @@ class UploadCoordinator @Inject constructor(
     ): List<UploadedItem> {
         val updateContract = UploadUpdateContract(
             updateType = when (config.modelClass) {
-                RealmStepExam::class -> UploadUpdateType.Exams
-                RealmSubmission::class -> UploadUpdateType.Submissions
+                StepExam::class -> UploadUpdateType.Exams
+                Submission::class -> UploadUpdateType.Submissions
                 else -> error("Unsupported upload update config: ${config.modelClass.qualifiedName}")
             }
         )

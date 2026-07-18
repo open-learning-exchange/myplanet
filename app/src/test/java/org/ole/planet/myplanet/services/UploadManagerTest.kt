@@ -30,9 +30,9 @@ import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.PersonalsRepository
@@ -163,7 +163,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadAdoptedSurveys delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmStepExam>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.upload<StepExam>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadAdoptedSurveys()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.AdoptedSurveys) }
@@ -225,7 +225,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadSubmissions delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.upload<RealmSubmission>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.upload<Submission>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadSubmissions()
         advanceUntilIdle()
         coVerify { uploadCoordinator.upload(uploadConfigs.Submissions) }
@@ -277,7 +277,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadResource returns early when no resources to upload`() = testScope.runTest {
-        coEvery { uploadCoordinator.uploadRoom<RealmMyLibrary>(any()) } returns UploadResult.Empty
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } returns UploadResult.Empty
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)
@@ -289,7 +289,7 @@ class UploadManagerTest {
     @Test
     fun `uploadResource notifies listener on failure`() = testScope.runTest {
         val errorMessage = "Test error"
-        coEvery { uploadCoordinator.uploadRoom<RealmMyLibrary>(any()) } throws Exception(errorMessage)
+        coEvery { uploadCoordinator.uploadRoom<MyLibrary>(any()) } throws Exception(errorMessage)
         val listener = mockk<OnSuccessListener>(relaxed = true)
 
         uploadManager.uploadResource(listener)

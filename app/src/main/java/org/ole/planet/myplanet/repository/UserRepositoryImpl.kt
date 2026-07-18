@@ -43,10 +43,10 @@ import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmMyHealth.RealmMyHealthProfile
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.MyHealth.MyHealthProfile
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadToShelfService
@@ -94,11 +94,11 @@ class UserRepositoryImpl @Inject constructor(
         return DashboardProfile(fullName, count)
     }
 
-    override suspend fun getUserById(userId: String): RealmUser? {
+    override suspend fun getUserById(userId: String): UserEntity? {
         return userDao.getById(userId)?.toRealmModel()
     }
 
-    override suspend fun getUsersByIds(userIds: List<String>): List<RealmUser> {
+    override suspend fun getUsersByIds(userIds: List<String>): List<UserEntity> {
         if (userIds.isEmpty()) return emptyList()
         val userIdSet = userIds.toSet()
         return userDao.getAll()
@@ -106,35 +106,35 @@ class UserRepositoryImpl @Inject constructor(
             .map { it.toRealmModel() }
     }
 
-    override suspend fun getUserByAnyId(id: String): RealmUser? {
+    override suspend fun getUserByAnyId(id: String): UserEntity? {
         return userDao.getById(id)?.toRealmModel()
     }
 
-    override suspend fun getUserByName(name: String): RealmUser? {
+    override suspend fun getUserByName(name: String): UserEntity? {
         return userDao.getByName(name)?.toRealmModel()
     }
 
-    override suspend fun findUserByName(name: String): RealmUser? {
+    override suspend fun findUserByName(name: String): UserEntity? {
         return userDao.getAll()
             .firstOrNull { it.name.equals(name, ignoreCase = true) }
             ?.toRealmModel()
     }
 
-    override suspend fun getSyncedUsers(): List<RealmUser> {
+    override suspend fun getSyncedUsers(): List<UserEntity> {
         return userDao.getAll()
             .filter { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
             .map { it.toRealmModel() }
     }
 
-    private fun mapToLightweightUser(managedUser: RealmUser): RealmUser {
-        return RealmUser().apply {
+    private fun mapToLightweightUser(managedUser: UserEntity): UserEntity {
+        return UserEntity().apply {
             this.id = managedUser.id
             this.name = managedUser.name
             this.planetCode = managedUser.planetCode
         }
     }
 
-    override suspend fun getUsersForHealthSync(): List<RealmUser> {
+    override suspend fun getUsersForHealthSync(): List<UserEntity> {
         return userDao.getAll()
             .asSequence()
             .filter { !it._id.isNullOrBlank() }
@@ -142,7 +142,7 @@ class UserRepositoryImpl @Inject constructor(
             .toList()
     }
 
-    override suspend fun getSyncedUserByName(name: String): RealmUser? {
+    override suspend fun getSyncedUserByName(name: String): UserEntity? {
         return userDao.getByName(name)
             ?.takeIf { !it._id.isNullOrBlank() && !it.id.startsWith("guest") }
             ?.toRealmModel()
@@ -157,19 +157,19 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createGuestUser(username: String): RealmUser? {
+    override suspend fun createGuestUser(username: String): UserEntity? {
         return saveUser(buildGuestUserJson(username))
     }
 
-    override suspend fun getAllUsers(): List<RealmUser> {
+    override suspend fun getAllUsers(): List<UserEntity> {
         return userDao.getAll().map { it.toRealmModel() }
     }
 
-    override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<RealmUser> {
+    override suspend fun getUsersSortedBy(fieldName: String, descending: Boolean): List<UserEntity> {
         return sortUsers(getAllUsers(), fieldName, descending)
     }
 
-    override suspend fun getPendingSyncUsers(limit: Int): List<RealmUser> {
+    override suspend fun getPendingSyncUsers(limit: Int): List<UserEntity> {
         return userDao.getAll()
             .asSequence()
             .filter { it._id.isNullOrBlank() || it.isUpdated }
@@ -178,7 +178,7 @@ class UserRepositoryImpl @Inject constructor(
             .toList()
     }
 
-    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<RealmUser> {
+    override suspend fun searchUsers(query: String, sortField: String, descending: Boolean): List<UserEntity> {
         val users = if (query.isBlank()) {
             userDao.getAll()
         } else {
@@ -192,14 +192,14 @@ class UserRepositoryImpl @Inject constructor(
         return userDao.getByName(name)?.let { !it._id.orEmpty().startsWith("guest") } == true
     }
 
-    override fun parseLeadersJson(jsonString: String): List<RealmUser> {
-        val leadersList = mutableListOf<RealmUser>()
+    override fun parseLeadersJson(jsonString: String): List<UserEntity> {
+        val leadersList = mutableListOf<UserEntity>()
         try {
             val jsonObject = org.json.JSONObject(jsonString)
             val docsArray = jsonObject.getJSONArray("docs")
             for (i in 0 until docsArray.length()) {
                 val docObject = docsArray.getJSONObject(i)
-                val user = RealmUser()
+                val user = UserEntity()
                 user.name = docObject.getString("name")
                 user.id = if (!docObject.isNull("_id")) {
                     docObject.getString("_id")
@@ -224,7 +224,7 @@ class UserRepositoryImpl @Inject constructor(
         return leadersList
     }
 
-    private fun applyJsonToUser(jsonDoc: JsonObject?, user: RealmUser, settings: SharedPreferences) {
+    private fun applyJsonToUser(jsonDoc: JsonObject?, user: UserEntity, settings: SharedPreferences) {
         if (jsonDoc == null) return
 
         val planetCodes = JsonUtils.getString("planetCode", jsonDoc)
@@ -322,7 +322,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun migrateGuestUser(id: String, userName: String, users: List<RoomUserEntity>): RealmUser? {
+    private suspend fun migrateGuestUser(id: String, userName: String, users: List<RoomUserEntity>): UserEntity? {
         val guestUser = users.firstOrNull {
             it.name == userName && it._id?.startsWith("guest_") == true
         } ?: return null
@@ -334,7 +334,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<RoomUserEntity>? = null): RealmUser? {
+    private suspend fun buildUserFromJson(jsonDoc: JsonObject?, users: List<RoomUserEntity>? = null): UserEntity? {
         if (jsonDoc == null) return null
         return try {
             val availableUsers = users ?: userDao.getAll()
@@ -347,7 +347,7 @@ class UserRepositoryImpl @Inject constructor(
                 } else {
                     null
                 }
-                ?: RealmUser().apply { this.id = id }
+                ?: UserEntity().apply { this.id = id }
 
             applyJsonToUser(jsonDoc, user, settings)
             user
@@ -357,13 +357,13 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun upsertUser(user: RealmUser): RealmUser? {
+    private suspend fun upsertUser(user: UserEntity): UserEntity? {
         val entity = user.toRoomEntity() ?: return null
         userDao.upsert(entity)
         return userDao.getById(entity.id)?.toRealmModel()
     }
 
-    private fun sortUsers(users: List<RealmUser>, fieldName: String, descending: Boolean): List<RealmUser> {
+    private fun sortUsers(users: List<UserEntity>, fieldName: String, descending: Boolean): List<UserEntity> {
         fun value(value: String?) = value.orEmpty().lowercase()
 
         return when (fieldName) {
@@ -417,7 +417,7 @@ class UserRepositoryImpl @Inject constructor(
         jsonDoc: JsonObject?,
         key: String?,
         iv: String?
-    ): RealmUser? {
+    ): UserEntity? {
         if (jsonDoc == null) return null
         val user = buildUserFromJson(jsonDoc) ?: run {
             Log.e("UserRepositoryImpl", "Failed to save user: unable to build user model")
@@ -450,7 +450,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun ensureUserSecurityKeys(userId: String): RealmUser? {
+    override suspend fun ensureUserSecurityKeys(userId: String): UserEntity? {
         val user = getUserById(userId) ?: return null
         if (user.key == null) {
             user.key = AndroidDecrypter.generateKey()
@@ -492,7 +492,7 @@ class UserRepositoryImpl @Inject constructor(
         language: String?,
         gender: String?,
         dob: String?,
-    ): RealmUser? {
+    ): UserEntity? {
         if (userId.isNullOrBlank()) {
             return null
         }
@@ -511,7 +511,7 @@ class UserRepositoryImpl @Inject constructor(
         return upsertUser(user)
     }
 
-    override suspend fun updateUserImage(userId: String?, imagePath: String?): RealmUser? {
+    override suspend fun updateUserImage(userId: String?, imagePath: String?): UserEntity? {
         if (userId.isNullOrBlank()) {
             return null
         }
@@ -547,12 +547,12 @@ class UserRepositoryImpl @Inject constructor(
         upsertUser(model)
     }
 
-    override suspend fun getUserModel(): RealmUser? {
+    override suspend fun getUserModel(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return userDao.getById(userId)?.toRealmModel()
     }
 
-    override suspend fun getUserProfile(): RealmUser? {
+    override suspend fun getUserProfile(): UserEntity? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return userDao.getById(userId)?.toRealmModel()
     }
@@ -653,7 +653,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<RealmUser?> {
+    private suspend fun saveUserToDb(id: String, obj: JsonObject): Result<UserEntity?> {
         return try {
             val userModel = withTimeout(20000) {
                 val response = apiInterface.getJsonObject(
@@ -685,7 +685,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun changeUserSecurity(model: RealmUser, obj: JsonObject) {
+    override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         try {
@@ -708,7 +708,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveKeyIv(model: RealmUser, obj: JsonObject) {
+    override suspend fun saveKeyIv(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
         val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
         val ob = JsonObject()
@@ -757,7 +757,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun replacedUrl(model: RealmUser): String {
+    private fun replacedUrl(model: UserEntity): String {
         val url = UrlUtils.getUrl()
         val password = SecurePrefs.getPassword(context, settings) ?: ""
         val replacedUrl = url.replaceFirst("[^:]+:[^@]+@".toRegex(), "${model.name}:${password}@")
@@ -766,7 +766,7 @@ class UserRepositoryImpl @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    override suspend fun checkIfUserExists(header: String, model: RealmUser): Boolean {
+    override suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean {
         try {
             val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
             val exists = res.body() != null
@@ -777,7 +777,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun processUserAfterCreation(model: RealmUser, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
+    override suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
             val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
@@ -813,7 +813,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun uploadNewUser(model: RealmUser, updateHealthFn: suspend (String, String) -> Unit) {
+    override suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val obj = model.serialize()
             val createResponse = apiInterface.putDoc(null, "application/json", "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}", obj)
@@ -834,7 +834,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun updateExistingUser(header: String, model: RealmUser) {
+    override suspend fun updateExistingUser(header: String, model: UserEntity) {
         try {
             val latestDocResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
 
@@ -866,7 +866,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthRecordsAndAssociatedUsers(
         userId: String,
-        currentUser: RealmUser
+        currentUser: UserEntity
     ): HealthRecord? {
         val mh = healthExaminationDao.getByIdOrUserId(userId) ?: return null
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
@@ -874,7 +874,7 @@ class UserRepositoryImpl @Inject constructor(
             null
         } else {
             try {
-                JsonUtils.gson.fromJson(json, RealmMyHealth::class.java)
+                JsonUtils.gson.fromJson(json, MyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -904,14 +904,14 @@ class UserRepositoryImpl @Inject constructor(
         return HealthRecord(mh, mm, list, userMap)
     }
 
-    override suspend fun getHealthProfile(userId: String): RealmMyHealth? {
+    override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = getUserByAnyId(userId)
         val healthPojo = healthExaminationDao.getByIdOrUserId(userId)
 
         if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
             try {
                 val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                return JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
+                return JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
@@ -938,24 +938,24 @@ class UserRepositoryImpl @Inject constructor(
             upsertUser(this)
         }
 
-        var myHealth: RealmMyHealth? = null
+        var myHealth: MyHealth? = null
         if (!TextUtils.isEmpty(healthPojo.data)) {
             try {
                 val decrypted = AndroidDecrypter.decrypt(healthPojo.data, userModel?.key, userModel?.iv)
-                myHealth = JsonUtils.gson.fromJson(decrypted, RealmMyHealth::class.java)
+                myHealth = JsonUtils.gson.fromJson(decrypted, MyHealth::class.java)
             } catch (e: Exception) {
                 e.printStackTrace()
             }
         }
 
         if (myHealth == null) {
-            myHealth = RealmMyHealth()
+            myHealth = MyHealth()
         }
         if (TextUtils.isEmpty(myHealth.userKey)) {
             myHealth.userKey = AndroidDecrypter.generateKey()
         }
 
-        val profile = myHealth.profile ?: RealmMyHealthProfile().also { myHealth.profile = it }
+        val profile = myHealth.profile ?: MyHealthProfile().also { myHealth.profile = it }
 
         profile.emergencyContactName = (userData["emergencyContactName"] as? String)?.trim() ?: ""
         val newEmergencyContact = (userData["emergencyContact"] as? String)?.trim() ?: ""
@@ -1023,7 +1023,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser? {
+    override suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): UserEntity? {
         try {
             val user = if (username != null) getUserByName(username) else null
             user?.let {
@@ -1253,7 +1253,7 @@ class UserRepositoryImpl @Inject constructor(
                         this.id = id
                         this._id = id
                     }
-                    ?: RealmUser().apply { this.id = id }
+                    ?: UserEntity().apply { this.id = id }
 
                 applyJsonToUser(jsonDoc, user, settings)
                 val entity = user.toRoomEntity() ?: continue
@@ -1273,7 +1273,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
 
-    override suspend fun uploadShelfData(user: RealmUser) {
+    override suspend fun uploadShelfData(user: UserEntity) {
         try {
             val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
             val myLibs = resourcesRepositoryLazy.get().getMyLibIds(user.id ?: "")

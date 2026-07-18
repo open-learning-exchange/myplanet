@@ -16,19 +16,19 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 /**
- * Room replacement for the former Realm `RealmMyLibrary` model (resources).
+ * Room replacement for the former Realm `MyLibrary` model (resources).
  *
  * The multi-valued primitive fields (`userId`, `resourceFor`, `subject`, `level`, `tag`,
  * `languages`, formerly `RealmList<String>`) become `List<String>?` stored as JSON via the shared
  * [org.ole.planet.myplanet.data.room.Converters]. `attachments` (formerly
- * `RealmList<RealmAttachment>`) — a value-object child never queried on its own — becomes an
- * embedded JSON `List<RealmAttachment>`. Shelf membership (`userId` list containment) is queried
+ * `RealmList<Attachment>`) — a value-object child never queried on its own — becomes an
+ * embedded JSON `List<Attachment>`. Shelf membership (`userId` list containment) is queried
  * with `LIKE` on the JSON column (see `MyLibraryDao`). The class name is kept so the wide resources
  * UI/repo surface is untouched; a later rename pass drops the `Realm` prefix. Persistence goes
  * through [org.ole.planet.myplanet.data.room.dao.MyLibraryDao].
  */
 @Entity(tableName = "my_library", indices = [Index("_rev"), Index("titleNormal")])
-open class RealmMyLibrary {
+open class MyLibrary {
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -73,7 +73,7 @@ open class RealmMyLibrary {
     var stepId: String? = null
     var isPrivate: Boolean = false
     var privateFor: String? = null
-    var attachments: List<RealmAttachment>? = null
+    var attachments: List<Attachment>? = null
 
     fun serializeResource(): JsonObject {
         return JsonObject().apply {
@@ -148,7 +148,7 @@ open class RealmMyLibrary {
     }
 
     companion object {
-        fun serialize(personal: RealmMyLibrary, user: RealmUser?): JsonObject {
+        fun serialize(personal: MyLibrary, user: UserEntity?): JsonObject {
             return JsonObject().apply {
                 addProperty("title", personal.title)
                 addProperty("uploadDate", System.currentTimeMillis())
@@ -191,7 +191,7 @@ open class RealmMyLibrary {
             val userId: String? = "",
             val stepId: String? = "",
             val courseId: String? = "",
-            val existing: RealmMyLibrary? = null
+            val existing: MyLibrary? = null
         )
 
         private fun JsonArray?.mergeInto(target: MutableList<String>) {
@@ -210,13 +210,13 @@ open class RealmMyLibrary {
         }
 
         /**
-         * Builds/updates an unmanaged [RealmMyLibrary] from a CouchDB doc, merging into
+         * Builds/updates an unmanaged [MyLibrary] from a CouchDB doc, merging into
          * [InsertParams.existing] when supplied (mirrors the former Realm find-or-create logic).
          */
-        fun insertMyLibrary(params: InsertParams): RealmMyLibrary? {
+        fun insertMyLibrary(params: InsertParams): MyLibrary? {
             if (params.doc.entrySet().isEmpty()) return null
             val resourceId = JsonUtils.getString("_id", params.doc)
-            val resource = params.existing ?: RealmMyLibrary().apply { id = resourceId }
+            val resource = params.existing ?: MyLibrary().apply { id = resourceId }
             val wasPrivate = params.existing?.isPrivate == true
             val hadPrivateFor = params.existing?.privateFor
             val hadRev = params.existing?._rev
@@ -247,7 +247,7 @@ open class RealmMyLibrary {
 
                     attachmentsObj.entrySet().forEach { (key, attachmentValue) ->
                         val attachmentObj = attachmentValue.asJsonObject
-                        val realmAttachment = RealmAttachment().apply {
+                        val realmAttachment = Attachment().apply {
                             id = UUID.randomUUID().toString()
                             name = key
                             contentType = attachmentObj.get("content_type")?.asString
@@ -311,10 +311,10 @@ open class RealmMyLibrary {
 }
 
 /**
- * Value-object attachment embedded (as JSON) in [RealmMyLibrary]. Never persisted or queried on
+ * Value-object attachment embedded (as JSON) in [MyLibrary]. Never persisted or queried on
  * its own, so it is a plain class rather than a Room entity.
  */
-open class RealmAttachment {
+open class Attachment {
     var id: String? = null
     var name: String? = null
     var contentType: String? = null

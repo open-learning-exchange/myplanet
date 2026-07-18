@@ -18,8 +18,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -83,14 +83,14 @@ class UserSessionManagerTest {
 
     @Test
     fun `getUserModel suspending returns model from repository`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>()
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.getUserModel() } returns mockUser
         assertEquals(mockUser, userSessionManager.getUserModel())
     }
 
     @Test
     fun `onLoginAsync invokes callback and logs login on success`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.id } returns "id123"
         every { mockUser.name } returns "test_name"
         every { mockUser.parentCode } returns "pc123"
@@ -130,7 +130,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLogin delegates to onLoginAsync`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getUserModel() } returns mockUser
         userSessionManager.onLogin()
         advanceUntilIdle()
@@ -139,7 +139,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `logoutAsync logs logout successfully`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "test_name"
         coEvery { userRepository.getUserModel() } returns mockUser
 
@@ -159,14 +159,14 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount delegates to logResourceOpen for normal user`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.id } returns "normal_user"
         every { mockUser.name } returns "test_name"
         every { mockUser.parentCode } returns "pc123"
         every { mockUser.planetCode } returns "pl123"
         coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>()
+        val mockLibrary = mockk<MyLibrary>()
         every { mockLibrary.title } returns "test_title"
         every { mockLibrary.resourceId } returns "res123"
 
@@ -187,11 +187,11 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount uses default type`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.id } returns "normal_user"
         coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
 
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
@@ -210,11 +210,11 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount exits early for guest user`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.id } returns "guest_user"
         coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
 
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
@@ -224,7 +224,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLoginAsync invokes onError when callback throws exception`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val exception = RuntimeException("Callback Error")
@@ -240,7 +240,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLoginAsync invokes onError when logLogin throws exception`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getUserModel() } returns mockUser
 
         val exception = RuntimeException("Mock logLogin error")
@@ -266,7 +266,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `logoutAsync handles exception when logLogout throws`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         coEvery { userRepository.getUserModel() } returns mockUser
         coEvery { activitiesRepository.logLogout(any()) } throws RuntimeException("Mock logout error")
 
@@ -278,7 +278,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount handles exception from userRepository`() = testScope.runTest {
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
         coEvery { userRepository.getUserModel() } throws RuntimeException("Mock error")
 
         userSessionManager.setResourceOpenCount(mockLibrary)
@@ -289,11 +289,11 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount handles exception from activitiesRepository`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.id } returns "normal_user"
         coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
         coEvery { activitiesRepository.logResourceOpen(any(), any(), any(), any(), any(), any()) } throws RuntimeException("Mock logResourceOpen error")
 
         userSessionManager.setResourceOpenCount(mockLibrary)

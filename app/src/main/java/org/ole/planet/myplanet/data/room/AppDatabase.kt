@@ -60,8 +60,8 @@ import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLife
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.AppNotification
@@ -114,8 +114,8 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         AppNotification::class,
         Achievement::class,
         HealthExamination::class,
-        RealmNews::class,
-        RealmMyLibrary::class,
+        News::class,
+        MyLibrary::class,
         RoomUserEntity::class,
         RoomCourseEntity::class,
         RoomCourseStepEntity::class,

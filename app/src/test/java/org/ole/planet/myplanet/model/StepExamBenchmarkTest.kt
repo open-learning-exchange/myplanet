@@ -11,7 +11,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.utils.JsonUtils
 
-class RealmStepExamBenchmarkTest {
+class StepExamBenchmarkTest {
 
     @Before
     fun setup() {
@@ -54,7 +54,7 @@ class RealmStepExamBenchmarkTest {
 
         repeat(10) {
             documentList.forEach { jsonDoc ->
-                RealmStepExam.insertCourseStepsExams("", "", jsonDoc)
+                StepExam.insertCourseStepsExams("", "", jsonDoc)
             }
         }
 

@@ -17,8 +17,8 @@ import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -30,7 +30,7 @@ class HealthRepositoryImpl @Inject constructor(
     private val healthExaminationDao: HealthExaminationDao,
     private val userDao: UserDao
 ) : HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, HealthExamination?> {
+    override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
         val userCopy = userDao.getById(userId)?.toRealmModel()
         val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
 
@@ -41,10 +41,10 @@ class HealthRepositoryImpl @Inject constructor(
         return healthExaminationDao.getById(id)
     }
 
-    override suspend fun initHealth(): RealmMyHealth {
+    override suspend fun initHealth(): MyHealth {
         return withContext(dispatcherProvider.default) {
-            val health = RealmMyHealth()
-            val profile = RealmMyHealth.RealmMyHealthProfile()
+            val health = MyHealth()
+            val profile = MyHealth.MyHealthProfile()
             health.lastExamination = Date().time
             health.userKey = AndroidDecrypter.generateKey()
             health.profile = profile
@@ -66,7 +66,7 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: RealmUser?) {
+    override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
         user?.toRoomEntity()?.let { userDao.upsert(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }

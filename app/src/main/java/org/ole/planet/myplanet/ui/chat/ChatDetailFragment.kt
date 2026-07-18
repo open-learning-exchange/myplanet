@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.UserRepository
@@ -62,7 +62,7 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null

@@ -28,14 +28,14 @@ import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.QuestionAnswer
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MembershipDoc
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamReference
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.TeamReference
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -65,42 +65,42 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 
-    private fun RealmSubmission.examIdFromParentId(): String? {
+    private fun Submission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
     }
 
-    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<RealmSubmission> {
+    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<Submission> {
         if (rows.isEmpty()) return emptyList()
         val answersBySubmissionId = answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
         return rows.map { row -> row.toRealmModel(answersBySubmissionId[row.id].orEmpty()) }
     }
 
-    private suspend fun hydrateSubmission(row: RoomSubmissionEntity?): RealmSubmission? {
+    private suspend fun hydrateSubmission(row: RoomSubmissionEntity?): Submission? {
         return row?.let { hydrateSubmissions(listOf(it)).firstOrNull() }
     }
 
-    override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
+    override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
         return submissionDao.observePendingSurveys(userId).map { rows -> rows.map { it.toRealmModel() } }
     }
 
-    override fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
+    override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
         return submissionDao.observeByUserId(userId).map { rows -> rows.map { it.toRealmModel() } }.distinctUntilChanged { old, new ->
             // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
     }
 
-    override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+    override suspend fun getPendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
         return hydrateSubmissions(submissionDao.getPendingSurveys(userId))
     }
 
-    private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
+    private suspend fun getExamsByIds(examIds: List<String>): List<StepExam> {
         if (examIds.isEmpty()) return emptyList()
         return examDao.getByIds(examIds).map { it.toRealmModel() }
     }
 
-    override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
+    override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
 
         val pendingSurveys = hydrateSubmissions(submissionDao.getUniquePendingSurveyCandidates(userId))
@@ -117,7 +117,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val exams = getExamsByIds(examIds)
         val validExamIds = exams.mapNotNull { it.id }.toSet()
 
-        val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
+        val uniqueSurveys = linkedMapOf<String, Submission>()
         pendingSurveys.forEach { submission ->
             val examId = submission.examIdFromParentId()
             if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
@@ -128,7 +128,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
-        submissions: List<RealmSubmission>
+        submissions: List<Submission>
     ): List<String> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }
         if (examIds.isEmpty()) {
@@ -145,8 +145,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun getExamMap(
-        submissions: List<RealmSubmission>
-    ): Map<String?, RealmStepExam> {
+        submissions: List<Submission>
+    ): Map<String?, StepExam> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }.distinct()
         if (examIds.isEmpty()) {
             return emptyMap()
@@ -166,17 +166,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return examDao.getFirstByStepId(stepId)?.noOfQuestions ?: 0
     }
 
-    override suspend fun getSubmissionById(id: String): RealmSubmission? {
+    override suspend fun getSubmissionById(id: String): Submission? {
         return hydrateSubmission(submissionDao.getByIdOrRemoteId(id))
     }
 
-    override suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission> {
+    override suspend fun getSubmissionsByIds(ids: List<String>): List<Submission> {
         if (ids.isEmpty()) return emptyList()
 
         return hydrateSubmissions(submissionDao.getByIds(ids))
     }
 
-    override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
+    override suspend fun getSubmissionsByUserId(userId: String): List<Submission> {
         return hydrateSubmissions(submissionDao.getByUserId(userId))
     }
 
@@ -218,7 +218,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun saveSubmission(submission: RealmSubmission) {
+    override suspend fun saveSubmission(submission: Submission) {
         val submissionEntity = submission.toRoomEntity() ?: return
         val answerEntities = submission.answers?.mapNotNull { it.toRoomEntity() }.orEmpty()
         submissionDao.upsertAll(listOf(submissionEntity))
@@ -300,7 +300,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
-    override fun getNormalizedSubmitterName(submission: RealmSubmission): String? {
+    override fun getNormalizedSubmitterName(submission: Submission): String? {
         return runCatching {
             submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
                 val jsonObject = JsonParser.parseString(userJson).asJsonObject
@@ -309,7 +309,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }.getOrNull()
     }
 
-    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<RealmSubmission> {
+    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<Submission> {
         return hydrateSubmissions(submissionDao.getByParentUserAndStatus(parentId, userId, status))
     }
 
@@ -346,7 +346,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } ?: false
     }
 
-    private suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
+    private suspend fun getSurveysByCourseId(courseId: String): List<StepExam> {
         return examDao.getByCourseIdAndType(courseId, "survey").map { it.toRealmModel() }
     }
 
@@ -392,7 +392,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
-    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): RealmSubmission? {
+    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission? {
         val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
@@ -401,7 +401,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
 
         val now = Date().time
-        val submission = RealmSubmission().apply {
+        val submission = Submission().apply {
             id = UUID.randomUUID().toString()
             parentId = when {
                 !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
@@ -428,12 +428,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             answers = mutableListOf()
 
             if (team != null) {
-                teamObject = RealmTeamReference().apply {
+                teamObject = TeamReference().apply {
                     _id = team._id
                     name = team.name
                     this.type = team.type ?: "team"
                 }
-                membershipDoc = RealmMembershipDoc().apply { this.teamId = teamId }
+                membershipDoc = MembershipDoc().apply { this.teamId = teamId }
                 user = JsonObject().apply {
                     addProperty("age", userDob ?: "")
                     addProperty("gender", userGender ?: "")
@@ -523,7 +523,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getLastPendingSubmission(userId: String?): RealmSubmission? {
+    override suspend fun getLastPendingSubmission(userId: String?): Submission? {
         return hydrateSubmission(submissionDao.getLatestPendingByUser(userId))
     }
 
@@ -532,11 +532,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         submissionDao.updateStatus(submissionId, status)
     }
 
-    override suspend fun getExamByStepId(stepId: String): RealmStepExam? {
+    override suspend fun getExamByStepId(stepId: String): StepExam? {
         return examDao.getFirstByStepId(stepId)?.toRealmModel()
     }
 
-    override suspend fun getExamById(id: String): RealmStepExam? {
+    override suspend fun getExamById(id: String): StepExam? {
         return examDao.getById(id)?.toRealmModel()
     }
 
@@ -555,13 +555,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return submitPhotosDao.getByIds(ids)
     }
 
-    override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
+    override suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission {
         val existing = hydrateSubmission(submissionDao.getLatestPendingByUserAndParent(userId, parentId))
         if (existing != null) {
             return existing
         }
 
-        val submission = RealmSubmission().apply {
+        val submission = Submission().apply {
             id = UUID.randomUUID().toString()
             this.userId = userId
             this.parentId = parentId
@@ -670,12 +670,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     private data class PayloadData(
-        val user: RealmUser?,
-        val exam: RealmStepExam?,
-        val questions: List<RealmExamQuestion>
+        val user: UserEntity?,
+        val exam: StepExam?,
+        val questions: List<ExamQuestion>
     )
 
-    private suspend fun getPayloadData(submission: RealmSubmission): PayloadData {
+    private suspend fun getPayloadData(submission: Submission): PayloadData {
         val user = submission.userId?.let { userDao.getById(it)?.toRealmModel() }
         val examId = submission.examIdFromParentId()
         val exam = examId?.let { examDao.getById(it)?.toRealmModel() }
@@ -683,7 +683,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return PayloadData(user, exam, questions)
     }
 
-    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject {
+    override suspend fun getExamUploadPayload(submission: Submission): JsonObject {
         val `object` = JsonObject()
         val payloadData = getPayloadData(submission)
         val user = payloadData.user
@@ -716,9 +716,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
+        `object`.add("answers", Answer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
         if (exam != null) {
-            `object`.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
+            `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
         } else {
             val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
@@ -731,7 +731,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject {
+    override suspend fun serializeSubmission(submission: Submission, context: Context, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {
@@ -757,9 +757,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
+            jsonObject.add("answers", Answer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
             if (exam != null) {
-                jsonObject.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
+                jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
@@ -779,14 +779,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return jsonObject
     }
 
-    override suspend fun getPendingExamResults(): List<RealmSubmission> {
+    override suspend fun getPendingExamResults(): List<Submission> {
         return submissionDao.getPendingExamResults().map { entity ->
             val answers = answerDao.getBySubmissionId(entity.id)
             entity.toRealmModel(answers)
         }
     }
 
-    override suspend fun getPendingSubmissionsForUpload(): List<RealmSubmission> {
+    override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
         return submissionDao.getPendingSubmissions().map { entity ->
             val answers = answerDao.getBySubmissionId(entity.id)
             entity.toRealmModel(answers)

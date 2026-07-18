@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
-open class RealmUser {
+open class UserEntity {
     var id: String? = null
     var _id: String? = null
     var _rev: String? = null

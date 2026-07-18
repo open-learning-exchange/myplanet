@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
@@ -78,8 +78,8 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getAllLibraries returns list of RealmMyLibrary`() = runTest {
-        val mockLibrary = RealmMyLibrary().apply { title = "Test Library" }
+    fun `getAllLibraries returns list of MyLibrary`() = runTest {
+        val mockLibrary = MyLibrary().apply { title = "Test Library" }
         coEvery { myLibraryDao.getAll() } returns listOf(mockLibrary)
 
         val result = repository.getAllLibraries()
@@ -90,7 +90,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `getLibraryItemById returns correct item`() = runTest {
-        val mockLibrary = RealmMyLibrary().apply { id = "id1"; title = "Item 1" }
+        val mockLibrary = MyLibrary().apply { id = "id1"; title = "Item 1" }
         coEvery { myLibraryDao.getById("id1") } returns mockLibrary
 
         val result = repository.getLibraryItemById("id1")
@@ -100,8 +100,8 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search with empty query returns all public items`() = runTest {
-        val lib1 = RealmMyLibrary().apply { title = "Library 1" }
-        val lib2 = RealmMyLibrary().apply { title = "Library 2" }
+        val lib1 = MyLibrary().apply { title = "Library 1" }
+        val lib2 = MyLibrary().apply { title = "Library 2" }
         coEvery { myLibraryDao.getPublic() } returns listOf(lib1, lib2)
 
         val result = repository.search("", false, null)
@@ -117,8 +117,8 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search with query filters by title`() = runTest {
-        val mathBook = RealmMyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
-        val scienceBook = RealmMyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
+        val mathBook = MyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
+        val scienceBook = MyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
         coEvery { myLibraryDao.getPublic() } returns listOf(mathBook, scienceBook)
 
         val result = repository.search("math", false, null)
@@ -129,7 +129,7 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `getEnrichedLibraries fetches public-not-user items when not my course lib`() = runTest {
-        val lib1 = RealmMyLibrary().apply { id = "1"; resourceId = "r1"; title = "Match" }
+        val lib1 = MyLibrary().apply { id = "1"; resourceId = "r1"; title = "Match" }
         coEvery { myLibraryDao.getPublicNotUserPattern(any()) } returns listOf(lib1)
         coEvery { ratingsRepository.getResourceRatings(any()) } returns HashMap()
         coEvery { tagsRepository.getTagsForResources(any()) } returns emptyMap()
@@ -151,9 +151,9 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search filters query parts and sorts startsWith before contains`() = runTest {
-        val startsWithLib = RealmMyLibrary().apply { title = "Ápple Tree"; titleNormal = "apple tree" }
-        val containsLib = RealmMyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
-        val notMatchLib = RealmMyLibrary().apply { title = "Banana"; titleNormal = "banana" }
+        val startsWithLib = MyLibrary().apply { title = "Ápple Tree"; titleNormal = "apple tree" }
+        val containsLib = MyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
+        val notMatchLib = MyLibrary().apply { title = "Banana"; titleNormal = "banana" }
         coEvery { myLibraryDao.getPublic() } returns listOf(containsLib, notMatchLib, startsWithLib)
 
         val result = repository.search("Apple", false, null)
@@ -165,8 +165,8 @@ class ResourcesRepositoryImplTest {
 
     @Test
     fun `search multi word matches all parts`() = runTest {
-        val matchLib = RealmMyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
-        val notMatchLib = RealmMyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
+        val matchLib = MyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
+        val notMatchLib = MyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
         coEvery { myLibraryDao.getPublic() } returns listOf(matchLib, notMatchLib)
 
         val result = repository.search("Ápple Tree", false, null)

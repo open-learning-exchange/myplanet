@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class RealmUserTest {
+class UserEntityTest {
 
     private val mockContext: Context = mockk(relaxed = true)
     private var originalContext: Context? = null
@@ -46,7 +46,7 @@ class RealmUserTest {
 
     @Test
     fun testIsManagerWithManagerRole() {
-        val user = RealmUser()
+        val user = UserEntity()
         user.rolesList = mutableListOf("manager")
         user.userAdmin = false
         assertTrue(user.isManager())
@@ -54,7 +54,7 @@ class RealmUserTest {
 
     @Test
     fun testIsManagerWithUserAdminTrue() {
-        val user = RealmUser()
+        val user = UserEntity()
         user.rolesList = mutableListOf()
         user.userAdmin = true
         assertTrue(user.isManager())
@@ -62,7 +62,7 @@ class RealmUserTest {
 
     @Test
     fun testIsManagerFalse() {
-        val user = RealmUser()
+        val user = UserEntity()
         user.rolesList = mutableListOf()
         user.userAdmin = false
         assertFalse(user.isManager())
@@ -70,7 +70,7 @@ class RealmUserTest {
 
     @Test
     fun testIsManagerNullRolesAndAdmin() {
-        val user = RealmUser()
+        val user = UserEntity()
         user.rolesList = null
         user.userAdmin = null
         assertFalse(user.isManager())
@@ -78,7 +78,7 @@ class RealmUserTest {
 
     @Test
     fun testIsManagerCaseInsensitive() {
-        val user = RealmUser()
+        val user = UserEntity()
         user.rolesList = mutableListOf("MaNaGeR")
         user.userAdmin = false
         assertTrue(user.isManager())

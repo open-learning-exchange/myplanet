@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.ResourceActivity
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -370,7 +370,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         offlineActivityDao.upsertAll(activities)
     }
 
-    override suspend fun uploadMyPlanetActivities(userModel: RealmUser) {
+    override suspend fun uploadMyPlanetActivities(userModel: UserEntity) {
         apiInterface.postDoc(
             UrlUtils.header,
             "application/json",

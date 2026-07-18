@@ -21,9 +21,9 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.CommunityRepository
@@ -112,7 +112,7 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    private suspend fun syncHealthData(userModel: RealmUser, header: String) {
+    private suspend fun syncHealthData(userModel: UserEntity, header: String) {
         val table =
             "userdb-${userModel.planetCode?.let { Utilities.toHex(it) }}-${userModel.name?.let { Utilities.toHex(it) }}"
         try {
@@ -374,9 +374,9 @@ class TransactionSyncManager @Inject constructor(
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
             if (docId.startsWith("_design")) continue
-            val attachmentName = RealmMyTeam
+            val attachmentName = MyTeam
                 .getFirstAttachmentName(jsonDoc) ?: continue
-            val destFile = RealmMyTeam
+            val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {
                 downloadTeamAttachment(docId, attachmentName, destFile)
@@ -392,7 +392,7 @@ class TransactionSyncManager @Inject constructor(
             val coverFileName = getString("coverFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
             if (coverFileName.isNotEmpty() && hasAttachment) {
-                val destFile = RealmMyCourse
+                val destFile = MyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
                     downloadCourseCover(docId, coverFileName, destFile)

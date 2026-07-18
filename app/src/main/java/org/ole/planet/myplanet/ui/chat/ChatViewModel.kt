@@ -16,8 +16,8 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatMessage
 import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.ChatHistory
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -50,7 +50,7 @@ class ChatViewModel @Inject constructor(
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
-    internal var allConversations: List<RealmConversation> = emptyList()
+    internal var allConversations: List<Conversation> = emptyList()
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE)
     internal var loadedCount = 0
     private var allChats: List<ChatHistory> = emptyList()
@@ -75,11 +75,11 @@ class ChatViewModel @Inject constructor(
     private val _filteredChats = MutableStateFlow<List<ChatHistory>>(emptyList())
     val filteredChats: StateFlow<List<ChatHistory>> = _filteredChats.asStateFlow()
 
-    private var cachedUser: RealmUser? = null
+    private var cachedUser: UserEntity? = null
     private var cachedShareTargets: ChatShareTargets? = null
 
-    private val _selectedChatHistory = MutableStateFlow<List<RealmConversation>?>(null)
-    val selectedChatHistory: StateFlow<List<RealmConversation>?> = _selectedChatHistory.asStateFlow()
+    private val _selectedChatHistory = MutableStateFlow<List<Conversation>?>(null)
+    val selectedChatHistory: StateFlow<List<Conversation>?> = _selectedChatHistory.asStateFlow()
 
     private val _selectedId = MutableStateFlow("")
     val selectedId: StateFlow<String> = _selectedId.asStateFlow()
@@ -210,7 +210,7 @@ class ChatViewModel @Inject constructor(
         return startsWithQuery + containsQuery
     }
 
-    private suspend fun loadCurrentUser(userId: String?): RealmUser? {
+    private suspend fun loadCurrentUser(userId: String?): UserEntity? {
         if (userId.isNullOrEmpty()) {
             return null
         }
@@ -246,7 +246,7 @@ class ChatViewModel @Inject constructor(
         val parsedConversations = withContext(dispatcherProvider.io) {
             if (newsConversations.isNullOrBlank()) return@withContext emptyList()
             try {
-                JsonUtils.gson.fromJson(newsConversations, Array<RealmConversation>::class.java).toList()
+                JsonUtils.gson.fromJson(newsConversations, Array<Conversation>::class.java).toList()
             } catch (e: Exception) {
                 emptyList()
             }
@@ -256,7 +256,7 @@ class ChatViewModel @Inject constructor(
         return buildInitialPage()
     }
 
-    fun processChatHistory(conversations: List<RealmConversation>): List<ChatMessage> {
+    fun processChatHistory(conversations: List<Conversation>): List<ChatMessage> {
         allConversations = conversations
         loadedCount = minOf(PAGE_SIZE, conversations.size)
         return buildInitialPage()
@@ -295,7 +295,7 @@ class ChatViewModel @Inject constructor(
         loadedCount = 0
     }
 
-    fun setSelectedChatHistory(conversations: List<RealmConversation>) {
+    fun setSelectedChatHistory(conversations: List<Conversation>) {
         _selectedChatHistory.value = conversations
     }
 

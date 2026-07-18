@@ -8,9 +8,9 @@ import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.Meetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.TagEntity
@@ -53,13 +53,13 @@ object Constants {
     }
 
     private fun initClasses() {
-        classList["news"] = RealmNews::class.java
+        classList["news"] = News::class.java
         classList["tags"] = TagEntity::class.java
         classList["ratings"] = Rating::class.java
-        classList["courses"] = RealmMyCourse::class.java
+        classList["courses"] = MyCourse::class.java
         classList["achievements"] = Achievement::class.java
         classList["feedback"] = Feedback::class.java
-        classList["teams"] = RealmMyTeam::class.java
+        classList["teams"] = MyTeam::class.java
         classList["tasks"] = TeamTask::class.java
         classList["meetups"] = Meetup::class.java
         classList["health"] = HealthExamination::class.java

@@ -4,9 +4,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
@@ -16,12 +16,12 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class CourseDetailModel(
-    val course: RealmMyCourse,
-    val user: RealmUser?,
+    val course: MyCourse,
+    val user: UserEntity?,
     val ratingSummary: RatingSummary?,
     val examCount: Int,
-    val resources: List<RealmMyLibrary>,
-    val downloadedResources: List<RealmMyLibrary>,
+    val resources: List<MyLibrary>,
+    val downloadedResources: List<MyLibrary>,
     val steps: List<StepItem>
 )
 

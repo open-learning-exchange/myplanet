@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -28,15 +28,15 @@ import org.ole.planet.myplanet.utils.Utilities
 class HealthExaminationAdapter(
     private val context: Context,
     private var mh: HealthExamination,
-    private var userModel: RealmUser?,
-    private var userMap: Map<String, RealmUser>
+    private var userModel: UserEntity?,
+    private var userMap: Map<String, UserEntity>
 ) : ListAdapter<HealthExamination, HealthExaminationViewHolder>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
     private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
     private val colorMultiSelectGrey by lazy { ContextCompat.getColor(context, R.color.multi_select_grey) }
 
-    fun updateData(mh: HealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
+    fun updateData(mh: HealthExamination, userModel: UserEntity?, userMap: Map<String, UserEntity>) {
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap

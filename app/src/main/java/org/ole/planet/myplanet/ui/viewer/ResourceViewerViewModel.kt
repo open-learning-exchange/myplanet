@@ -7,7 +7,7 @@ import java.net.URL
 import javax.inject.Inject
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -53,7 +53,7 @@ class ResourceViewerViewModel @Inject constructor(
         return authSessionUpdaterFactory.create(callback)
     }
 
-    suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
+    suspend fun getLibraryItemById(id: String): MyLibrary? {
         return resourcesRepository.getLibraryItemById(id)
     }
 

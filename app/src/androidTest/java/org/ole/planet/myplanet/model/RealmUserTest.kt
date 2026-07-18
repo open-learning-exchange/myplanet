@@ -32,7 +32,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
-class RealmUserTest {
+class UserEntityTest {
 
     private lateinit var realmConfiguration: RealmConfiguration
     private lateinit var userRepository: UserRepositoryImpl
@@ -105,11 +105,11 @@ class RealmUserTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
-                r.createObject(RealmUser::class.java, "1").apply {
+                r.createObject(UserEntity::class.java, "1").apply {
                     _id = "org.couchdb.user:testuser"
                     name = "testuser"
                 }
-                r.createObject(RealmUser::class.java, "2").apply {
+                r.createObject(UserEntity::class.java, "2").apply {
                     _id = "guest_testuser"
                     name = "testuser"
                 }
@@ -123,7 +123,7 @@ class RealmUserTest {
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
-            val users = verifyRealm.where(RealmUser::class.java).findAll()
+            val users = verifyRealm.where(UserEntity::class.java).findAll()
             assertEquals(1, users.size)
             assertEquals("org.couchdb.user:testuser", users.first()!!._id)
             verifyRealm.close()
@@ -135,11 +135,11 @@ class RealmUserTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
-                r.createObject(RealmUser::class.java, "1").apply {
+                r.createObject(UserEntity::class.java, "1").apply {
                     _id = "guest_testuser"
                     name = "testuser"
                 }
-                r.createObject(RealmUser::class.java, "2").apply {
+                r.createObject(UserEntity::class.java, "2").apply {
                     _id = "org.couchdb.user:testuser"
                     name = "testuser"
                 }
@@ -153,7 +153,7 @@ class RealmUserTest {
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
-            val users = verifyRealm.where(RealmUser::class.java).findAll()
+            val users = verifyRealm.where(UserEntity::class.java).findAll()
             assertEquals(1, users.size)
             assertEquals("org.couchdb.user:testuser", users.first()!!._id)
             verifyRealm.close()
@@ -165,11 +165,11 @@ class RealmUserTest {
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val realm = Realm.getInstance(realmConfiguration)
             realm.executeTransaction { r ->
-                r.createObject(RealmUser::class.java, "1").apply {
+                r.createObject(UserEntity::class.java, "1").apply {
                     _id = "guest_testuser1"
                     name = "testuser1"
                 }
-                r.createObject(RealmUser::class.java, "2").apply {
+                r.createObject(UserEntity::class.java, "2").apply {
                     _id = "org.couchdb.user:testuser2"
                     name = "testuser2"
                 }
@@ -183,7 +183,7 @@ class RealmUserTest {
 
         InstrumentationRegistry.getInstrumentation().runOnMainSync {
             val verifyRealm = Realm.getInstance(realmConfiguration)
-            val users = verifyRealm.where(RealmUser::class.java).findAll()
+            val users = verifyRealm.where(UserEntity::class.java).findAll()
             assertEquals(2, users.size)
             verifyRealm.close()
         }

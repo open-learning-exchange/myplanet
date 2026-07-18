@@ -25,7 +25,7 @@ import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
@@ -105,7 +105,7 @@ class TeamsRepositoryImplTest {
     @Test
     fun `test refreshJoinedMembersForLogin uses getJoinedMembers and saves users`() = runTest(testDispatcher) {
         val teamId = "test_team_id"
-        val mockUser = RealmUser().apply {
+        val mockUser = UserEntity().apply {
             name = "Test User"
             userImage = "http://example.com/image.png"
         }

@@ -10,8 +10,8 @@ import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
@@ -65,7 +65,7 @@ class UploadRepositoryImpl @Inject constructor(
         return apiInterface.getJsonObject(UrlUtils.header, url)
     }
 
-    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<RealmSubmission> {
+    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<Submission> {
         if (rows.isEmpty()) return emptyList()
         val answersBySubmissionId =
             answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
@@ -77,7 +77,7 @@ class UploadRepositoryImpl @Inject constructor(
     ): List<UploadedItemResult> {
         if (succeeded.isEmpty()) return emptyList()
         val existing = examDao.getByIds(succeeded.map { it.localId }).associateBy { it.id }
-        val updated = mutableListOf<RealmStepExam>()
+        val updated = mutableListOf<StepExam>()
         val failed = mutableListOf<UploadedItemResult>()
 
         succeeded.forEach { result ->

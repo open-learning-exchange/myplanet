@@ -18,10 +18,10 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
@@ -85,8 +85,8 @@ class DashboardViewModelTest {
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"
 
-        val firstCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
-        val secondCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+        val firstCoursesFlow = MutableSharedFlow<List<MyCourse>>()
+        val secondCoursesFlow = MutableSharedFlow<List<MyCourse>>()
 
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
@@ -103,26 +103,26 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         // Emit to the first flow - should be ignored because the job was cancelled
-        firstCoursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "Old Course" }))
+        firstCoursesFlow.emit(listOf(MyCourse().apply { courseTitle = "Old Course" }))
         advanceUntilIdle()
 
         val stateAfterFirstEmit = viewModel.uiState.value
         assertEquals(0, stateAfterFirstEmit.courses.size)
 
         // Emit to the second flow - should update state
-        secondCoursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "New Course" }))
+        secondCoursesFlow.emit(listOf(MyCourse().apply { courseTitle = "New Course" }))
         advanceUntilIdle()
 
         val stateAfterSecondEmit = viewModel.uiState.value
         assertEquals(1, stateAfterSecondEmit.courses.size)
-        assertEquals("New Course", (stateAfterSecondEmit.courses[0] as RealmMyCourse).courseTitle)
+        assertEquals("New Course", (stateAfterSecondEmit.courses[0] as MyCourse).courseTitle)
     }
 
     @Test
     fun `constituent jobs are independent and cancellation of one does not cancel others`() = runTest(testDispatcher) {
         val userId = "user1"
 
-        val coursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
+        val coursesFlow = MutableSharedFlow<List<MyCourse>>()
 
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
@@ -135,21 +135,21 @@ class DashboardViewModelTest {
         advanceUntilIdle()
 
         // Even though library job was cancelled, courses flow should still be active and receive updates
-        coursesFlow.emit(listOf(RealmMyCourse().apply { courseTitle = "Active Course" }))
+        coursesFlow.emit(listOf(MyCourse().apply { courseTitle = "Active Course" }))
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
         assertEquals(1, state.courses.size)
-        assertEquals("Active Course", (state.courses[0] as RealmMyCourse).courseTitle)
+        assertEquals("Active Course", (state.courses[0] as MyCourse).courseTitle)
     }
 
     @Test
     fun `loadUserContent updates uiState for users, teams, courses, and offline logins`() = runTest(testDispatcher) {
         val userId = "user1"
 
-        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(RealmMyLibrary().apply { title = "Lib1" })
-        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
-        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
+        coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(MyLibrary().apply { title = "Lib1" })
+        coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(MyCourse().apply { courseTitle = "Course1" }))
+        coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(MyTeam().apply { name = "Team1" }))
         coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)
 
         viewModel.loadUserContent(userId)
@@ -160,18 +160,18 @@ class DashboardViewModelTest {
         assertEquals("John Doe", state.fullName)
         assertEquals(2, state.offlineLogins)
         assertEquals(1, state.courses.size)
-        assertEquals("Course1", (state.courses[0] as RealmMyCourse).courseTitle)
+        assertEquals("Course1", (state.courses[0] as MyCourse).courseTitle)
         assertEquals(1, state.teams.size)
-        assertEquals("Team1", (state.teams[0] as RealmMyTeam).name)
+        assertEquals("Team1", (state.teams[0] as MyTeam).name)
         assertEquals(1, state.library.size)
-        assertEquals("Lib1", (state.library[0] as RealmMyLibrary).title)
+        assertEquals("Lib1", (state.library[0] as MyLibrary).title)
     }
 
     @Test
     fun `loadUsers updates uiState with sorted users`() = runTest(testDispatcher) {
         val users = listOf(
-            RealmUser().apply { name = "User 1" },
-            RealmUser().apply { name = "User 2" }
+            UserEntity().apply { name = "User 1" },
+            UserEntity().apply { name = "User 2" }
         )
 
         coEvery { userRepository.getUsersSortedBy("joinDate", true) } returns users
@@ -181,8 +181,8 @@ class DashboardViewModelTest {
 
         val state = viewModel.uiState.value
         assertEquals(2, state.users.size)
-        assertEquals("User 1", (state.users[0] as RealmUser).name)
-        assertEquals("User 2", (state.users[1] as RealmUser).name)
+        assertEquals("User 1", (state.users[0] as UserEntity).name)
+        assertEquals("User 2", (state.users[1] as UserEntity).name)
     }
 
     @Test

@@ -31,9 +31,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
@@ -166,7 +166,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
-    private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
+    private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
@@ -201,11 +201,11 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
-    private fun renderMyCourses(courses: List<RealmMyCourse>) {
+    private fun renderMyCourses(courses: List<MyCourse>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
-        setCountText(filteredCourses.size, RealmMyCourse::class.java, requireView())
+        setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
         for ((itemCnt, items) in filteredCourses.withIndex()) {
             val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
@@ -215,7 +215,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
-    private suspend fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private suspend fun renderMyTeams(teams: List<MyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
 
@@ -231,7 +231,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             v.tag = ob._id
             flexboxLayout.addView(v, params)
         }
-        setCountText(teams.size, RealmMyTeam::class.java, requireView())
+        setCountText(teams.size, MyTeam::class.java, requireView())
 
         val userId = profileDbHandler.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
@@ -276,7 +276,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         // Update views with survey count if needed
     }
 
-    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
+    private fun myLibraryItemClickAction(textView: TextView, items: MyLibrary?) {
         textView.setOnClickListener {
             items?.let {
                 openResource(it)
@@ -286,10 +286,10 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
         when (c) {
-            RealmMyCourse::class.java -> {
+            MyCourse::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_course))
             }
-            RealmMyTeam::class.java -> {
+            MyTeam::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_team))
             }
         }

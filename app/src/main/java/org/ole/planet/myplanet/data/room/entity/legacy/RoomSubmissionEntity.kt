@@ -4,7 +4,7 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-/** Room row for exam/survey submissions formerly represented by RealmSubmission. */
+/** Room row for exam/survey submissions formerly represented by Submission. */
 @Entity(tableName = "submissions", indices = [Index("_id"), Index("_rev"), Index("parentId"), Index("type"), Index("userId"), Index("isUpdated")])
 data class RoomSubmissionEntity(
     @PrimaryKey @JvmField val id: String,

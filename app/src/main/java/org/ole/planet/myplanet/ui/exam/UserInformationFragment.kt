@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentUserInformationBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.UserSurveyProfile
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -47,7 +47,7 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     lateinit var userRepository: UserRepository
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    var userModel: RealmUser? = null
+    var userModel: UserEntity? = null
     var shouldHideElements: Boolean? = null
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager

@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.callback.OnDiffRefreshListener
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnSurveyAdoptListener
 import org.ole.planet.myplanet.databinding.RowSurveyBinding
-import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
 import org.ole.planet.myplanet.model.SurveyInfo
 import org.ole.planet.myplanet.ui.submissions.SubmissionsAdapter
@@ -25,7 +25,7 @@ class SurveysAdapter(
     private val onAdoptSurveyListener: OnSurveyAdoptListener,
     private val surveyInfoMap: Map<String, SurveyInfo>,
     private val bindingDataMap: Map<String, SurveyFormState>
-) : ListAdapter<RealmStepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
+) : ListAdapter<StepExam, SurveysAdapter.SurveysViewHolder>(DiffUtils.itemCallback(
     { oldItem, newItem -> oldItem.id == newItem.id },
     { oldItem, newItem -> oldItem == newItem }
 )), OnDiffRefreshListener {
@@ -35,7 +35,7 @@ class SurveysAdapter(
 
     private var listener: OnHomeItemClickListener? = null
     private var isTitleAscending = true
-    private var sortStrategy: (List<RealmStepExam>) -> List<RealmStepExam> = { list ->
+    private var sortStrategy: (List<StepExam>) -> List<StepExam> = { list ->
         sortSurveyList(false, list)
     }
 
@@ -47,8 +47,8 @@ class SurveysAdapter(
 
     private fun sortSurveyList(
         isAscend: Boolean,
-        list: List<RealmStepExam>
-    ): List<RealmStepExam> {
+        list: List<StepExam>
+    ): List<StepExam> {
         return if (isAscend) {
             list.sortedBy { it.createdDate }
         } else {
@@ -64,8 +64,8 @@ class SurveysAdapter(
 
     private fun sortSurveyListByName(
         isAscend: Boolean,
-        list: List<RealmStepExam>
-    ): List<RealmStepExam> {
+        list: List<StepExam>
+    ): List<StepExam> {
         return if (isAscend) {
             list.sortedBy { it.name?.lowercase() }
         } else {
@@ -99,7 +99,7 @@ class SurveysAdapter(
             }
         }
 
-        fun bind(exam: RealmStepExam) {
+        fun bind(exam: StepExam) {
             binding.apply {
                 startSurvey.visibility = View.VISIBLE
                 tvTitle.text = exam.name

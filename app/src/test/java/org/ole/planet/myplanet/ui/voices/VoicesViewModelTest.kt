@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -45,13 +45,13 @@ class VoicesViewModelTest {
 
     @Test
     fun `test search and label filter results`() = runTest {
-        val news1 = mockk<RealmNews>(relaxed = true) {
+        val news1 = mockk<News>(relaxed = true) {
             coEvery { message } returns "This is a Test message"
             coEvery { labels } returns listOf("Label1")
             coEvery { userName } returns "User1"
             coEvery { newsTitle } returns "Title1"
         }
-        val news2 = mockk<RealmNews>(relaxed = true) {
+        val news2 = mockk<News>(relaxed = true) {
             coEvery { message } returns "Another Message"
             coEvery { labels } returns listOf("Label2")
             coEvery { userName } returns "User2"
@@ -60,7 +60,7 @@ class VoicesViewModelTest {
 
         coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(news1, news2))
 
-        var result: List<RealmNews?> = emptyList()
+        var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.filteredNews.collect {
                 result = it
@@ -91,22 +91,22 @@ class VoicesViewModelTest {
 
     @Test
     fun `test simultaneous query and label filtering`() = runTest {
-        val news1 = mockk<RealmNews>(relaxed = true) {
+        val news1 = mockk<News>(relaxed = true) {
             coEvery { message } returns "Apple"
             coEvery { labels } returns listOf("Fruit")
         }
-        val news2 = mockk<RealmNews>(relaxed = true) {
+        val news2 = mockk<News>(relaxed = true) {
             coEvery { message } returns "Banana"
             coEvery { labels } returns listOf("Fruit")
         }
-        val news3 = mockk<RealmNews>(relaxed = true) {
+        val news3 = mockk<News>(relaxed = true) {
             coEvery { message } returns "Carrot"
             coEvery { labels } returns listOf("Vegetable")
         }
 
         coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(news1, news2, news3))
 
-        var result: List<RealmNews?> = emptyList()
+        var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.filteredNews.collect {
                 result = it

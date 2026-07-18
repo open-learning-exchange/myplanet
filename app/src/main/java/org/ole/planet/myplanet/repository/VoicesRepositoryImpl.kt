@@ -17,11 +17,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.TeamNotification
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
@@ -57,7 +57,7 @@ class VoicesRepositoryImpl @Inject constructor(
         val ids = updates.mapNotNull { it.id }
         if (ids.isEmpty()) return
         val newsById = newsDao.getByIds(ids).associateBy { it.id }
-        val toUpdate = mutableListOf<RealmNews>()
+        val toUpdate = mutableListOf<News>()
         updates.forEach { update ->
             update.id?.let { id ->
                 newsById[id]?.let { news ->
@@ -74,21 +74,21 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserById(userId: String): RealmUser? {
+    override suspend fun getUserById(userId: String): UserEntity? {
         return userRepositoryLazy.get().getUserById(userId)
     }
 
-    override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
+    override suspend fun getLibraryResource(resourceId: String): MyLibrary? {
         return myLibraryDao.getByUnderscoreId(resourceId)
     }
 
-    override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
+    override suspend fun getNewsWithReplies(newsId: String): Pair<News?, List<News>> {
         val news = newsDao.getById(newsId)
         val replies = newsDao.getReplies(newsId)
         return news to replies
     }
 
-    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<RealmNews> {
+    override suspend fun getCommunityVisibleNews(userIdentifier: String): List<News> {
         return newsDao.getTopLevelMessages().filter { news ->
             isVisibleToUser(news, userIdentifier)
         }
@@ -100,15 +100,15 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun createNews(map: HashMap<String?, String>, user: RealmUser?, imageList: List<String>?): RealmNews {
-        val news = RealmNews.createNews(map, user, imageList)
+    override suspend fun createNews(map: HashMap<String?, String>, user: UserEntity?, imageList: List<String>?): News {
+        val news = News.createNews(map, user, imageList)
         newsDao.upsert(news)
         return news
     }
 
-    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: RealmUser, imageList: List<String>?): Boolean {
+    override suspend fun createTeamNews(newsData: HashMap<String?, String>, user: UserEntity, imageList: List<String>?): Boolean {
         return try {
-            val news = RealmNews.createNews(newsData, user, imageList)
+            val news = News.createNews(newsData, user, imageList)
             newsDao.upsert(news)
             true
         } catch (e: Exception) {
@@ -117,11 +117,11 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getNewsByTeamId(teamId: String): List<RealmNews> {
+    override suspend fun getNewsByTeamId(teamId: String): List<News> {
         return newsDao.getTopLevel().filter { matchesTeam(it, teamId) }
     }
 
-    private fun isVisibleToUser(news: RealmNews, userIdentifier: String): Boolean {
+    private fun isVisibleToUser(news: News, userIdentifier: String): Boolean {
         if (news.viewableBy.equals("community", ignoreCase = true)) {
             return true
         }
@@ -144,14 +144,14 @@ class VoicesRepositoryImpl @Inject constructor(
 
     // Team-discussion visibility: top-level post targeted at the team, either via the
     // viewableBy/viewableId columns or an entry inside the viewIn JSON.
-    private fun matchesTeam(news: RealmNews, teamId: String): Boolean {
+    private fun matchesTeam(news: News, teamId: String): Boolean {
         val byViewable = news.viewableBy.equals("teams", ignoreCase = true) &&
             news.viewableId.equals(teamId, ignoreCase = true)
         val byViewIn = news.viewIn?.contains("\"_id\":\"$teamId\"", ignoreCase = true) == true
         return byViewable || byViewIn
     }
 
-    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<RealmNews>> {
+    override suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>> {
         return newsDao.getTopLevelMessagesFlow()
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
@@ -166,7 +166,7 @@ class VoicesRepositoryImpl @Inject constructor(
             }.flowOn(dispatcherProvider.default)
     }
 
-    override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<RealmNews>> {
+    override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>> {
         return newsDao.getTopLevelFlow()
             .map { allNews -> allNews.filter { matchesTeam(it, teamId) } }
             .distinctUntilChanged { old, new ->
@@ -246,7 +246,7 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getFilteredNews(teamId: String): List<RealmNews> {
+    override suspend fun getFilteredNews(teamId: String): List<News> {
         return newsDao.getTopLevel().filter { matchesTeam(it, teamId) }
     }
 
@@ -296,11 +296,11 @@ class VoicesRepositoryImpl @Inject constructor(
             .distinct()
     }
 
-    override suspend fun getNewsById(id: String): RealmNews? {
+    override suspend fun getNewsById(id: String): News? {
         return newsDao.getById(id)
     }
 
-    override suspend fun postReply(message: String, news: RealmNews, currentUser: RealmUser, imageList: List<String>?) {
+    override suspend fun postReply(message: String, news: News, currentUser: UserEntity, imageList: List<String>?) {
         val newsId = news._id ?: news.id
         val map = HashMap<String?, String>()
         map["message"] = message
@@ -310,7 +310,7 @@ class VoicesRepositoryImpl @Inject constructor(
         map["messageType"] = news.messageType ?: ""
         map["messagePlanetCode"] = news.messagePlanetCode ?: ""
         map["viewIn"] = news.viewIn ?: ""
-        val reply = RealmNews.createNews(map, currentUser, imageList, isReply = true)
+        val reply = News.createNews(map, currentUser, imageList, isReply = true)
         newsDao.upsert(reply)
     }
 
@@ -337,7 +337,7 @@ class VoicesRepositoryImpl @Inject constructor(
         newsDao.upsert(news)
     }
 
-    private fun isCommunitySection(news: RealmNews): Boolean {
+    private fun isCommunitySection(news: News): Boolean {
         news.viewIn?.let { viewInStr ->
             try {
                 val viewInArray = org.json.JSONArray(viewInStr)
@@ -362,7 +362,7 @@ class VoicesRepositoryImpl @Inject constructor(
             .format(dateFormatter)
     }
 
-    override suspend fun getPlanetNewsMessages(planetCode: String?): List<RealmNews> {
+    override suspend fun getPlanetNewsMessages(planetCode: String?): List<News> {
         if (planetCode.isNullOrEmpty()) {
             return emptyList()
         }
@@ -380,9 +380,9 @@ class VoicesRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject): RealmNews {
+    private suspend fun buildNewsFromJson(doc: JsonObject): News {
         val underscoreId = JsonUtils.getString("_id", doc)
-        val news = newsDao.getByUnderscoreId(underscoreId) ?: RealmNews().apply { id = underscoreId }
+        val news = newsDao.getByUnderscoreId(underscoreId) ?: News().apply { id = underscoreId }
         news._rev = JsonUtils.getString("_rev", doc)
         news._id = underscoreId
         news.viewableBy = JsonUtils.getString("viewableBy", doc)
@@ -430,7 +430,7 @@ class VoicesRepositoryImpl @Inject constructor(
         return news
     }
 
-    private fun serializeNews(news: RealmNews): JsonObject {
+    private fun serializeNews(news: News): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("chat", news.chat)
         `object`.addProperty("message", news.message)
@@ -463,7 +463,7 @@ class VoicesRepositoryImpl @Inject constructor(
         return `object`
     }
 
-    private fun addViewIn(`object`: JsonObject, news: RealmNews) {
+    private fun addViewIn(`object`: JsonObject, news: News) {
         if (!TextUtils.isEmpty(news.viewableId)) {
             `object`.addProperty("viewableId", news.viewableId)
             `object`.addProperty("viewableBy", news.viewableBy)

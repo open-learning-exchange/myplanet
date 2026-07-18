@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -71,7 +71,7 @@ class UserProfileFragment : Fragment() {
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    private var model: RealmUser? = null
+    private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null

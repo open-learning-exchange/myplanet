@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.databinding.FragmentAchievementBinding
 import org.ole.planet.myplanet.databinding.LayoutButtonPrimaryBinding
 import org.ole.planet.myplanet.databinding.RowAchievementBinding
 import org.ole.planet.myplanet.model.AchievementData
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 import org.ole.planet.myplanet.utils.FileUtils
@@ -43,7 +43,7 @@ class AchievementFragment : BaseContainerFragment() {
 
     private var _binding: FragmentAchievementBinding? = null
     private val binding get() = _binding!!
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var listener: OnHomeItemClickListener? = null
     private var achievementData: AchievementData? = null
 
@@ -160,7 +160,7 @@ class AchievementFragment : BaseContainerFragment() {
         }
     }
 
-    private fun createAchievementView(ob: JsonObject, resourcesMap: Map<String, RealmMyLibrary>): View {
+    private fun createAchievementView(ob: JsonObject, resourcesMap: Map<String, MyLibrary>): View {
         val binding = RowAchievementBinding.inflate(LayoutInflater.from(requireContext()))
         val desc = getString("description", ob)
         binding.tvDescription.text = desc
@@ -201,7 +201,7 @@ class AchievementFragment : BaseContainerFragment() {
         )
     }
 
-    private fun createResourceButton(lib: RealmMyLibrary): View {
+    private fun createResourceButton(lib: MyLibrary): View {
         val btnBinding = LayoutButtonPrimaryBinding.inflate(LayoutInflater.from(requireContext()))
         btnBinding.root.text = lib.title
         btnBinding.root.setCompoundDrawablesWithIntrinsicBounds(

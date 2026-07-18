@@ -33,9 +33,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RetryOperation
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
@@ -95,8 +95,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        var user: RealmUser? = null
-        private var libraryList: List<RealmMyLibrary>? = null
+        var user: UserEntity? = null
+        private var libraryList: List<MyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
 

@@ -4,7 +4,7 @@ data class CreateExamSubmissionRequest(
     val userId: String?,
     val userDob: String?,
     val userGender: String?,
-    val exam: RealmStepExam,
+    val exam: StepExam,
     val type: String?,
     val teamId: String?
 )

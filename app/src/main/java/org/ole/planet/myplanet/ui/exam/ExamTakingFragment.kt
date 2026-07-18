@@ -36,8 +36,8 @@ import org.ole.planet.myplanet.base.BaseExamFragment
 import org.ole.planet.myplanet.databinding.FragmentExamTakingBinding
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -317,7 +317,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    override fun startExam(question: RealmExamQuestion?) {
+    override fun startExam(question: ExamQuestion?) {
         binding.tvQuestionCount.text = getString(R.string.Q, currentIndex + 1, questions?.size)
         binding.progressBar.max = questions?.size ?: 1
         binding.progressBar.progress = currentIndex + 1
@@ -362,7 +362,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         updateNavButtons()
     }
 
-    private fun loadSavedAnswer(question: RealmExamQuestion?) {
+    private fun loadSavedAnswer(question: ExamQuestion?) {
         val questionId = question?.id ?: return
         val answerData = answerCache[questionId]
 
@@ -404,7 +404,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
     private var selectedRatingButton: Button? = null
     private var dynamicRatingButtons: List<Button> = emptyList()
 
-    private fun setupRatingScale(question: RealmExamQuestion?, oldAnswer: String) {
+    private fun setupRatingScale(question: ExamQuestion?, oldAnswer: String) {
         val scaleMax = (question?.scaleMax ?: 0).let { if (it <= 0) 9 else it }
         binding.llRatingScale.removeAllViews()
         dynamicRatingButtons = emptyList()
@@ -530,7 +530,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun showCheckBoxes(question: RealmExamQuestion?, oldAnswer: String) {
+    private fun showCheckBoxes(question: ExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
 
         for (i in 0 until choices.size()) {
@@ -544,7 +544,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
     }
 
-    private fun selectQuestion(question: RealmExamQuestion?, oldAnswer: String) {
+    private fun selectQuestion(question: ExamQuestion?, oldAnswer: String) {
         val choices = getStringAsJsonArray(question?.choices)
         val isRadio = question?.type != "multiple"
 
@@ -764,7 +764,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         cont.invokeOnCancellation { dialog.dismiss() }
     }
 
-    private fun populateCacheFromSavedAnswers(sub: RealmSubmission?) {
+    private fun populateCacheFromSavedAnswers(sub: Submission?) {
         val answers = sub?.answers ?: return
         answers.forEach { answer ->
             val questionId = answer.questionId ?: return@forEach

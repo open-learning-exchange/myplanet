@@ -1,14 +1,14 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Answer
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MembershipDoc
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 
 /**
  * Conversion helpers used while moving sync/write paths from Realm objects to Room entities.
@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.model.RealmUser
  * classes. These mappers keep the conversion code centralized so each domain can dual-write or
  * fully switch to the corresponding Room DAO without creating ad-hoc field mappings.
  */
-fun RealmUser.toRoomEntity(): RoomUserEntity? {
+fun UserEntity.toRoomEntity(): RoomUserEntity? {
     val localId = id ?: _id ?: return null
     return RoomUserEntity(
         id = localId,
@@ -55,8 +55,8 @@ fun RealmUser.toRoomEntity(): RoomUserEntity? {
     )
 }
 
-fun RoomUserEntity.toRealmModel(): RealmUser {
-    return RealmUser().apply {
+fun RoomUserEntity.toRealmModel(): UserEntity {
+    return UserEntity().apply {
         id = this@toRealmModel.id
         _id = this@toRealmModel._id
         _rev = this@toRealmModel._rev
@@ -91,7 +91,7 @@ fun RoomUserEntity.toRealmModel(): RealmUser {
     }
 }
 
-fun RealmMyCourse.toRoomEntity(): RoomCourseEntity? {
+fun MyCourse.toRoomEntity(): RoomCourseEntity? {
     val localId = id ?: courseId ?: return null
     return RoomCourseEntity(
         id = localId,
@@ -115,8 +115,8 @@ fun RealmMyCourse.toRoomEntity(): RoomCourseEntity? {
     )
 }
 
-fun RoomCourseEntity.toRealmModel(steps: List<RealmCourseStep> = emptyList()): RealmMyCourse {
-    return RealmMyCourse().apply {
+fun RoomCourseEntity.toRealmModel(steps: List<CourseStep> = emptyList()): MyCourse {
+    return MyCourse().apply {
         id = this@toRealmModel.id
         courseId = this@toRealmModel.courseId
         courseRev = this@toRealmModel._rev
@@ -136,7 +136,7 @@ fun RoomCourseEntity.toRealmModel(steps: List<RealmCourseStep> = emptyList()): R
     }
 }
 
-fun RealmCourseStep.toRoomEntity(): RoomCourseStepEntity? {
+fun CourseStep.toRoomEntity(): RoomCourseStepEntity? {
     val localId = id ?: return null
     return RoomCourseStepEntity(
         id = localId,
@@ -147,8 +147,8 @@ fun RealmCourseStep.toRoomEntity(): RoomCourseStepEntity? {
     )
 }
 
-fun RoomCourseStepEntity.toRealmModel(): RealmCourseStep {
-    return RealmCourseStep().apply {
+fun RoomCourseStepEntity.toRealmModel(): CourseStep {
+    return CourseStep().apply {
         id = this@toRealmModel.id
         courseId = this@toRealmModel.courseId
         stepTitle = this@toRealmModel.stepTitle
@@ -157,7 +157,7 @@ fun RoomCourseStepEntity.toRealmModel(): RealmCourseStep {
     }
 }
 
-fun RealmStepExam.toRoomEntity(): RoomExamEntity? {
+fun StepExam.toRoomEntity(): RoomExamEntity? {
     val localId = id ?: return null
     return RoomExamEntity(
         id = localId,
@@ -182,8 +182,8 @@ fun RealmStepExam.toRoomEntity(): RoomExamEntity? {
     )
 }
 
-fun RoomExamEntity.toRealmModel(): RealmStepExam {
-    return RealmStepExam().apply {
+fun RoomExamEntity.toRealmModel(): StepExam {
+    return StepExam().apply {
         id = this@toRealmModel.id
         _rev = this@toRealmModel._rev
         createdDate = this@toRealmModel.createdDate
@@ -206,7 +206,7 @@ fun RoomExamEntity.toRealmModel(): RealmStepExam {
     }
 }
 
-fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
+fun ExamQuestion.toRoomEntity(): RoomQuestionEntity? {
     val localId = id ?: return null
     return RoomQuestionEntity(
         id = localId,
@@ -224,8 +224,8 @@ fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
     )
 }
 
-fun RoomQuestionEntity.toRealmModel(): RealmExamQuestion {
-    return RealmExamQuestion().apply {
+fun RoomQuestionEntity.toRealmModel(): ExamQuestion {
+    return ExamQuestion().apply {
         id = this@toRealmModel.id
         examId = this@toRealmModel.examId
         type = this@toRealmModel.type
@@ -239,7 +239,7 @@ fun RoomQuestionEntity.toRealmModel(): RealmExamQuestion {
     }
 }
 
-fun RealmSubmission.toRoomEntity(): RoomSubmissionEntity? {
+fun Submission.toRoomEntity(): RoomSubmissionEntity? {
     val localId = id ?: _id ?: return null
     return RoomSubmissionEntity(
         id = localId,
@@ -263,7 +263,7 @@ fun RealmSubmission.toRoomEntity(): RoomSubmissionEntity? {
     )
 }
 
-fun RealmAnswer.toRoomEntity(): RoomAnswerEntity? {
+fun Answer.toRoomEntity(): RoomAnswerEntity? {
     val localId = id ?: return null
     return RoomAnswerEntity(
         id = localId,
@@ -278,8 +278,8 @@ fun RealmAnswer.toRoomEntity(): RoomAnswerEntity? {
     )
 }
 
-fun RoomAnswerEntity.toRealmModel(): RealmAnswer {
-    return RealmAnswer().apply {
+fun RoomAnswerEntity.toRealmModel(): Answer {
+    return Answer().apply {
         id = this@toRealmModel.id
         value = this@toRealmModel.value
         valueChoices = mutableListOf<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
@@ -292,8 +292,8 @@ fun RoomAnswerEntity.toRealmModel(): RealmAnswer {
     }
 }
 
-fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyList()): RealmSubmission {
-    return RealmSubmission().apply {
+fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyList()): Submission {
+    return Submission().apply {
         id = this@toRealmModel.id
         _id = this@toRealmModel._id
         _rev = this@toRealmModel._rev
@@ -303,7 +303,7 @@ fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyLis
         user = this@toRealmModel.user
         startTime = this@toRealmModel.startTime
         lastUpdateTime = this@toRealmModel.lastUpdateTime
-        this.answers = mutableListOf<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
+        this.answers = mutableListOf<Answer>().apply { addAll(answers.map { it.toRealmModel() }) }
         grade = this@toRealmModel.grade
         status = this@toRealmModel.status
         uploaded = this@toRealmModel.uploaded
@@ -313,12 +313,12 @@ fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyLis
         parent = this@toRealmModel.parent
         isUpdated = this@toRealmModel.isUpdated
         membershipDoc = this@toRealmModel.teamId?.let { teamId ->
-            RealmMembershipDoc().apply { this.teamId = teamId }
+            MembershipDoc().apply { this.teamId = teamId }
         }
     }
 }
 
-fun RealmMyTeam.toRoomEntity(): RoomTeamEntity? {
+fun MyTeam.toRoomEntity(): RoomTeamEntity? {
     val localId = _id ?: teamId ?: return null
     return RoomTeamEntity(
         id = localId,
@@ -364,8 +364,8 @@ fun RealmMyTeam.toRoomEntity(): RoomTeamEntity? {
     )
 }
 
-fun RoomTeamEntity.toRealmModel(): RealmMyTeam {
-    return RealmMyTeam().apply {
+fun RoomTeamEntity.toRealmModel(): MyTeam {
+    return MyTeam().apply {
         _id = this@toRealmModel._id ?: this@toRealmModel.id
         _rev = this@toRealmModel._rev
         teamId = this@toRealmModel.teamId

@@ -9,15 +9,15 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamCoursesAdapter(
     private val context: Context,
     private val canRemove: Boolean,
-    private val onRemove: (RealmMyCourse) -> Unit = {}
-) : ListAdapter<RealmMyCourse, TeamCoursesAdapter.ViewHolder>(DIFF_CALLBACK) {
+    private val onRemove: (MyCourse) -> Unit = {}
+) : ListAdapter<MyCourse, TeamCoursesAdapter.ViewHolder>(DIFF_CALLBACK) {
     private var listener: OnHomeItemClickListener? = null
 
     init {
@@ -55,7 +55,7 @@ class TeamCoursesAdapter(
     class ViewHolder(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMyCourse>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<MyCourse>(
             { oldItem, newItem -> oldItem.id == newItem.id },
             { oldItem, newItem ->
                 oldItem.courseTitle == newItem.courseTitle &&

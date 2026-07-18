@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.data.room
 import androidx.room.TypeConverter
 import com.google.gson.reflect.TypeToken
 import java.util.Date
-import org.ole.planet.myplanet.model.RealmAttachment
-import org.ole.planet.myplanet.model.RealmConversation
+import org.ole.planet.myplanet.model.Attachment
+import org.ole.planet.myplanet.model.Conversation
 import org.ole.planet.myplanet.utils.JsonUtils
 
 /**
@@ -37,24 +37,24 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromConversationList(value: List<RealmConversation>?): String? {
+    fun fromConversationList(value: List<Conversation>?): String? {
         return value?.let { JsonUtils.gson.toJson(it) }
     }
 
     @TypeConverter
-    fun toConversationList(value: String?): List<RealmConversation>? {
+    fun toConversationList(value: String?): List<Conversation>? {
         if (value.isNullOrBlank()) return null
-        return JsonUtils.gson.fromJson(value, object : TypeToken<List<RealmConversation>>() {}.type)
+        return JsonUtils.gson.fromJson(value, object : TypeToken<List<Conversation>>() {}.type)
     }
 
     @TypeConverter
-    fun fromAttachmentList(value: List<RealmAttachment>?): String? {
+    fun fromAttachmentList(value: List<Attachment>?): String? {
         return value?.let { JsonUtils.gson.toJson(it) }
     }
 
     @TypeConverter
-    fun toAttachmentList(value: String?): List<RealmAttachment>? {
+    fun toAttachmentList(value: String?): List<Attachment>? {
         if (value.isNullOrBlank()) return null
-        return JsonUtils.gson.fromJson(value, object : TypeToken<List<RealmAttachment>>() {}.type)
+        return JsonUtils.gson.fromJson(value, object : TypeToken<List<Attachment>>() {}.type)
     }
 }

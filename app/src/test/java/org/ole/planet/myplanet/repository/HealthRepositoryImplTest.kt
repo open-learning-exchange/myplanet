@@ -24,7 +24,7 @@ import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.model.HealthExamination
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -155,7 +155,7 @@ class HealthRepositoryImplTest {
     fun saveExamination_saves_objects_to_room() = testScope.runTest {
         val examination = HealthExamination()
         val pojo = HealthExamination()
-        val user = RealmUser().apply { id = "user1" }
+        val user = UserEntity().apply { id = "user1" }
 
         repository.saveExamination(examination, pojo, user)
         advanceUntilIdle()
