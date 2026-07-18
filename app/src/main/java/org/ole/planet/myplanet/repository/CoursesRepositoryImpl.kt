@@ -24,6 +24,8 @@ import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
@@ -66,6 +68,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val courseStepDao: CourseStepDao,
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
     private val tagDao: TagDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
@@ -350,72 +354,52 @@ class CoursesRepositoryImpl @Inject constructor(
         val courseTitle = getCourseById(courseId)?.courseTitle
         val stepIds = stepsList.mapNotNull { it.id }
         val allExams = if (stepIds.isEmpty()) emptyList() else examDao.getByStepIds(stepIds).map { it.toRealmModel() }
-        return withRealm { realm ->
-            val max = stepsList.size
-            val title = courseTitle
-            val examsByStepId = allExams.groupBy { it.stepId }
+        val max = stepsList.size
+        val title = courseTitle
+        val examsByStepId = allExams.groupBy { it.stepId }
 
-            val examIds = allExams.mapNotNull { it.id }
-            val questionsByExamId = if (examIds.isNotEmpty()) {
-                val allQuestions = mutableListOf<RealmExamQuestion>()
-                examIds.chunked(1000).forEach { chunk ->
-                    val chunkQuestions = realm.where(RealmExamQuestion::class.java)
-                        .`in`("examId", chunk.toTypedArray())
-                        .findAll()
-                    allQuestions.addAll(chunkQuestions)
-                }
-                allQuestions.groupBy { it.examId ?: "" }
-                    .filterKeys { it.isNotEmpty() }
-            } else {
-                emptyMap()
-            }
-
-            // To eliminate N+1 queries, we fetch all relevant submissions for the user upfront.
-            // We fetch all 'exam' submissions for the user and filter in memory to handle legacy formats
-            // and avoid doubling the query size with multiple ID variants.
-            val examIdsSet = examIds.toSet()
-            val userSubmissions = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("type", "exam")
-                .findAll()
-
-            val relevantSubmissions = userSubmissions.filter { sub ->
-                val pId = sub.parentId
-                val basePId = if (pId?.contains("@") == true) pId.split("@")[0] else pId
-                examIdsSet.contains(basePId)
-            }
-
-            val submissionsByExamId = relevantSubmissions.groupBy { sub ->
-                val pId = sub.parentId
-                if (pId?.contains("@") == true) pId.split("@")[0] else pId ?: ""
-            }.filterKeys { it.isNotEmpty() }
-
-            val submissionIds = relevantSubmissions.mapNotNull { it.id }
-            val answersBySubmissionId = if (submissionIds.isNotEmpty()) {
-                // Realm IN query limit is around 1000 items, so we chunk the list to avoid query length limits.
-                val allAnswers = mutableListOf<RealmAnswer>()
-                submissionIds.chunked(1000).forEach { chunk ->
-                    val chunkAnswers = realm.where(RealmAnswer::class.java)
-                        .`in`("submissionId", chunk.toTypedArray())
-                        .findAll()
-                    allAnswers.addAll(chunkAnswers)
-                }
-                allAnswers.groupBy { it.submissionId ?: "" }
-                    .filterKeys { it.isNotEmpty() }
-            } else {
-                emptyMap()
-            }
-
-            val array = JsonArray()
-            stepsList.forEach { step ->
-                val ob = JsonObject()
-                ob.addProperty("stepId", step.id)
-                val exams = examsByStepId[step.id] ?: emptyList()
-                getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
-                array.add(ob)
-            }
-            CourseProgressData(title, current, max, array)
+        val examIds = allExams.mapNotNull { it.id }
+        val questionsByExamId = if (examIds.isEmpty()) {
+            emptyMap()
+        } else {
+            questionDao.getByExamIds(examIds)
+                .map { it.toRealmModel() }
+                .groupBy { it.examId ?: "" }
+                .filterKeys { it.isNotEmpty() }
         }
+
+        val examIdsSet = examIds.toSet()
+        val relevantSubmissions = submissionDao.getExamSubmissionsByUser(userId)
+            .map { it.toRealmModel() }
+            .filter { sub -> examIdsSet.contains(getParentBaseId(sub.parentId)) }
+
+        val submissionsByExamId = relevantSubmissions.groupBy { sub ->
+            getParentBaseId(sub.parentId).orEmpty()
+        }.filterKeys { it.isNotEmpty() }
+
+        val submissionIds = relevantSubmissions.mapNotNull { it.id }
+        val answersBySubmissionId = if (submissionIds.isEmpty()) {
+            emptyMap()
+        } else {
+            answerDao.getBySubmissionIds(submissionIds)
+                .map { it.toRealmModel() }
+                .groupBy { it.submissionId ?: "" }
+                .filterKeys { it.isNotEmpty() }
+        }
+
+        val array = JsonArray()
+        stepsList.forEach { step ->
+            val ob = JsonObject()
+            ob.addProperty("stepId", step.id)
+            val exams = examsByStepId[step.id] ?: emptyList()
+            getExamObject(exams, ob, questionsByExamId, submissionsByExamId, answersBySubmissionId)
+            array.add(ob)
+        }
+        return CourseProgressData(title, current, max, array)
+    }
+
+    private fun getParentBaseId(parentId: String?): String? {
+        return if (parentId?.contains("@") == true) parentId.split("@")[0] else parentId
     }
 
     private fun getExamObject(
