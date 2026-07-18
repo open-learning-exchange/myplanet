@@ -20,6 +20,10 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -53,6 +57,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val ratingsRepository: RatingsRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
+    private val courseDao: CourseDao,
+    private val courseStepDao: CourseStepDao,
     private val tagDao: TagDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
@@ -587,7 +593,54 @@ class CoursesRepositoryImpl @Inject constructor(
                 throw e
             }
         }
+        upsertRoomCoursesFromSync(documentList)
         RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+    }
+
+    private fun upsertRoomCoursesFromSync(documentList: List<JsonObject>) {
+        val courses = ArrayList<RoomCourseEntity>(documentList.size)
+        val steps = ArrayList<RoomCourseStepEntity>()
+
+        documentList.forEach { doc ->
+            val courseId = JsonUtils.getString("_id", doc)
+            if (courseId.isBlank()) return@forEach
+            val stepIds = mutableListOf<String>()
+            val stepsJson = JsonUtils.getJsonArray("steps", doc)
+            for (i in 0 until stepsJson.size()) {
+                val stepElement = stepsJson[i]
+                val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+                val stepJson = stepElement.asJsonObject
+                stepIds.add(stepId)
+                steps.add(
+                    RoomCourseStepEntity(
+                        id = stepId,
+                        courseId = courseId,
+                        stepTitle = JsonUtils.getString("stepTitle", stepJson),
+                        description = JsonUtils.getString("description", stepJson),
+                        noOfResources = JsonUtils.getJsonArray("resources", stepJson).size(),
+                    )
+                )
+            }
+            courses.add(
+                RoomCourseEntity(
+                    id = courseId,
+                    _id = courseId,
+                    _rev = JsonUtils.getString("_rev", doc),
+                    courseId = courseId,
+                    courseTitle = JsonUtils.getString("courseTitle", doc),
+                    description = JsonUtils.getString("description", doc),
+                    createdDate = JsonUtils.getLong("createdDate", doc),
+                    steps = stepIds,
+                )
+            )
+        }
+
+        if (courses.isEmpty() && steps.isEmpty()) return
+
+        databaseService.room.runInTransaction {
+            if (courses.isNotEmpty()) courseDao.upsertAllBlocking(courses)
+            if (steps.isNotEmpty()) courseStepDao.upsertAllBlocking(steps)
+        }
     }
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
         val certifications = ArrayList<Certification>(jsonArray.size())

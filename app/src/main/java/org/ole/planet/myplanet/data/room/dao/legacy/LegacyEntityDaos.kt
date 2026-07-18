@@ -24,12 +24,14 @@ interface CourseDao {
     @Query("SELECT * FROM courses") suspend fun getAll(): List<RoomCourseEntity>
     @Query("SELECT * FROM courses WHERE courseId = :courseId OR id = :courseId LIMIT 1") suspend fun getByCourseId(courseId: String): RoomCourseEntity?
     @Upsert suspend fun upsertAll(items: List<RoomCourseEntity>)
+    @Upsert fun upsertAllBlocking(items: List<RoomCourseEntity>)
 }
 
 @Dao
 interface CourseStepDao {
     @Query("SELECT * FROM course_steps WHERE courseId = :courseId") suspend fun getByCourseId(courseId: String): List<RoomCourseStepEntity>
     @Upsert suspend fun upsertAll(items: List<RoomCourseStepEntity>)
+    @Upsert fun upsertAllBlocking(items: List<RoomCourseStepEntity>)
 }
 
 @Dao
