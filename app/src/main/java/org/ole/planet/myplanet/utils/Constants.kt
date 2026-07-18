@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.utils
 import android.content.Context
 import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 
 object Constants {
@@ -63,8 +63,8 @@ object Constants {
         classList["tasks"] = RealmTeamTask::class.java
         classList["meetups"] = RealmMeetup::class.java
         classList["health"] = RealmHealthExamination::class.java
-        classList["certifications"] = RealmCertification::class.java
-        classList["team_activities"] = RealmTeamLog::class.java
+        classList["certifications"] = Certification::class.java
+        classList["team_activities"] = TeamLog::class.java
         classList["courses_progress"] = RealmCourseProgress::class.java
         classList["notifications"] = RealmNotification::class.java
     }

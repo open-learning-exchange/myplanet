@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
-import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -587,13 +587,13 @@ class CoursesRepositoryImpl @Inject constructor(
         RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
-        val certifications = ArrayList<RealmCertification>(jsonArray.size())
+        val certifications = ArrayList<Certification>(jsonArray.size())
         for (j in jsonArray) {
             val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (id.startsWith("_design")) continue
             certifications.add(
-                RealmCertification().apply {
+                Certification().apply {
                     _id = id
                     name = JsonUtils.getString("name", jsonDoc)
                     setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))

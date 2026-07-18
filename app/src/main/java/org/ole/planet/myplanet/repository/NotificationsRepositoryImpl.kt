@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmTeamNotification
+import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
@@ -318,7 +318,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         // 1. Fetch all relevant notifications in a single query
         val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
-        val notificationsById = mutableMapOf<String, RealmTeamNotification>()
+        val notificationsById = mutableMapOf<String, TeamNotification>()
         notificationsResult.forEach {
             it.parentId?.let { parentId ->
                 notificationsById[parentId] = it

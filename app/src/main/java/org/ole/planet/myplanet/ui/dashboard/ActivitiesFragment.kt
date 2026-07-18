@@ -18,7 +18,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentActivitiesBinding
-import org.ole.planet.myplanet.model.RealmOfflineActivity
+import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -55,7 +55,7 @@ class ActivitiesFragment : Fragment() {
     }
 
     private fun computeMonthlyCounts(
-        logins: List<RealmOfflineActivity>,
+        logins: List<OfflineActivity>,
         startMillis: Long,
         endMillis: Long
     ): Map<Int, Int> {

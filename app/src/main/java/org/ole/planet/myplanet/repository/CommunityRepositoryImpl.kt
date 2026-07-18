@@ -6,7 +6,7 @@ import javax.inject.Inject
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -17,12 +17,12 @@ class CommunityRepositoryImpl @Inject constructor(
 ) : CommunityRepository {
 
     override suspend fun replaceAll(rows: JsonArray) {
-        val communities = mutableListOf<RealmCommunity>()
+        val communities = mutableListOf<Community>()
         for (j in rows) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
-            val community = RealmCommunity()
+            val community = Community()
             community.id = id
             if (JsonUtils.getString("name", jsonDoc) == "learning") {
                 community.weight = 0
@@ -36,7 +36,7 @@ class CommunityRepositoryImpl @Inject constructor(
         communityDao.replaceAll(communities)
     }
 
-    override suspend fun getAllSorted(): List<RealmCommunity> {
+    override suspend fun getAllSorted(): List<Community> {
         return communityDao.getAllSorted()
     }
 

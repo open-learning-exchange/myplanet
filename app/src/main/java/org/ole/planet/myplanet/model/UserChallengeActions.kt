@@ -5,7 +5,7 @@ import androidx.room.PrimaryKey
 import java.util.UUID
 
 @Entity(tableName = "user_challenge_actions")
-open class RealmUserChallengeActions {
+open class UserChallengeActions {
     @PrimaryKey
     var id: String = UUID.randomUUID().toString()
     var userId: String? = null

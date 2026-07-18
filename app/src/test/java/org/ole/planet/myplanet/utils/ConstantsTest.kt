@@ -12,7 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmHealthExamination
@@ -23,7 +23,7 @@ import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -87,8 +87,8 @@ class ConstantsTest {
         assertEquals(RealmTeamTask::class.java, classList["tasks"])
         assertEquals(RealmMeetup::class.java, classList["meetups"])
         assertEquals(RealmHealthExamination::class.java, classList["health"])
-        assertEquals(RealmCertification::class.java, classList["certifications"])
-        assertEquals(RealmTeamLog::class.java, classList["team_activities"])
+        assertEquals(Certification::class.java, classList["certifications"])
+        assertEquals(TeamLog::class.java, classList["team_activities"])
         assertEquals(RealmCourseProgress::class.java, classList["courses_progress"])
         assertEquals(RealmNotification::class.java, classList["notifications"])
     }

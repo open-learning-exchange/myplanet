@@ -27,7 +27,7 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.SubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
@@ -107,7 +107,7 @@ class UploadConfigs @Inject constructor(
 
     val TeamActivities = RoomUploadConfig(
         endpoint = "team_activities",
-        modelClassName = "RealmTeamLog",
+        modelClassName = "TeamLog",
         fetchPendingItems = { teamLogDao.getPendingUploads() },
         serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
         idExtractor = { it.id },

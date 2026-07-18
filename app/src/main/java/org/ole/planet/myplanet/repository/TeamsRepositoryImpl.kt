@@ -35,7 +35,7 @@ import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmTeamLog
+import org.ole.planet.myplanet.model.TeamLog
 import org.ole.planet.myplanet.model.RealmTeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
@@ -1080,7 +1080,7 @@ class TeamsRepositoryImpl @Inject constructor(
         teamType: String?,
     ) {
         if (teamId.isBlank() || userName.isNullOrBlank()) return
-        val log = RealmTeamLog().apply {
+        val log = TeamLog().apply {
             id = UUID.randomUUID().toString()
             this.teamId = teamId
             user = userName
@@ -1455,9 +1455,9 @@ class TeamsRepositoryImpl @Inject constructor(
         return teamLogDao.getLastVisit(userName, teamId)
     }
 
-    private fun teamLogFromJson(json: JsonObject): RealmTeamLog {
+    private fun teamLogFromJson(json: JsonObject): TeamLog {
         val remoteId = JsonUtils.getString("_id", json)
-        return RealmTeamLog().apply {
+        return TeamLog().apply {
             id = remoteId
             _rev = JsonUtils.getString("_rev", json)
             _id = remoteId
@@ -1471,7 +1471,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun serializeTeamActivities(log: RealmTeamLog, context: Context): JsonObject {
+    override fun serializeTeamActivities(log: TeamLog, context: Context): JsonObject {
         val ob = JsonObject()
         ob.addProperty("user", log.user)
         ob.addProperty("type", log.type)
