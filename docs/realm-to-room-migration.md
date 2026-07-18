@@ -270,6 +270,10 @@ wired through `di/RoomModule`.
       now upsert CouchDB submission docs directly into `SubmissionDao`/`AnswerDao` and no longer
       mirror synced submission payloads into Realm. The old Realm parsing helpers remain only as
       dead legacy code until the final Realm deletion pass.
+- [x] **Submission upload serialization reads moved to Room**: `getExamUploadPayload` and
+      `serializeSubmission` now resolve users, exams, and questions through `UserDao`, `ExamDao`, and
+      `QuestionDao` rather than opening Realm. Submission upload payload generation now uses Room for
+      all migrated metadata dependencies.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
@@ -58,7 +59,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val submissionDao: SubmissionDao,
     private val answerDao: AnswerDao,
     private val examDao: ExamDao,
-    private val questionDao: QuestionDao
+    private val questionDao: QuestionDao,
+    private val userDao: UserDao
 ) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
@@ -817,17 +819,17 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val questions: List<RealmExamQuestion>
     )
 
-    private fun getPayloadData(mRealm: io.realm.Realm, submission: RealmSubmission): PayloadData {
-        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+    private suspend fun getPayloadData(submission: RealmSubmission): PayloadData {
+        val user = submission.userId?.let { userDao.getById(it)?.toRealmModel() }
         val examId = submission.examIdFromParentId()
-        val exam = examId?.let { mRealm.where(RealmStepExam::class.java).equalTo("id", it).findFirst() }
-        val questions = exam?.id?.let { mRealm.where(RealmExamQuestion::class.java).equalTo("examId", it).findAll() } ?: emptyList()
+        val exam = examId?.let { examDao.getById(it)?.toRealmModel() }
+        val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } } ?: emptyList()
         return PayloadData(user, exam, questions)
     }
 
-    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = withRealmAsync { mRealm ->
+    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject {
         val `object` = JsonObject()
-        val payloadData = getPayloadData(mRealm, submission)
+        val payloadData = getPayloadData(submission)
         val user = payloadData.user
         val exam = payloadData.exam
 
@@ -870,14 +872,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } else {
             `object`.add("user", JsonParser.parseString(submission.user))
         }
-        `object`
+        return `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject = withRealmAsync { mRealm ->
+    override suspend fun serializeSubmission(submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {
-            val payloadData = getPayloadData(mRealm, submission)
+            val payloadData = getPayloadData(submission)
             val exam = payloadData.exam
 
             if (!submission._id.isNullOrEmpty()) {
@@ -918,6 +920,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        jsonObject
+        return jsonObject
     }
 }
