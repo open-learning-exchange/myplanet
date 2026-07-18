@@ -28,7 +28,7 @@ interface NotificationsRepository {
     suspend fun getTaskTeamNamesByTaskTitles(taskTitles: List<String>): Map<String, String>
     suspend fun getPendingSyncNotifications(): List<RealmNotification>
     suspend fun markNotificationsSynced(syncResults: List<Pair<String, String?>>)
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insert(doc: JsonObject)
     suspend fun deleteNotifications(ids: Set<String>): Set<String>
 }
