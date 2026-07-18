@@ -380,7 +380,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         try {
             if (pojo == null) {
                 pojo = RealmHealthExamination()
-                pojo?._id = userId
+                pojo?._id = userId.orEmpty()
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time

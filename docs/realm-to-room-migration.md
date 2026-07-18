@@ -195,7 +195,11 @@ wired through `di/RoomModule`.
       `RealmAchievement` is now a Room `@Entity` with JSON-backed `List<String>` fields;
       `AchievementDao` owns initialization, edits, pending-upload reads, upload acknowledgements,
       and sync bulk upserts. Achievement sync now runs outside the legacy Realm transaction path.
-- [ ] Remaining ~29 model domains.
+- [x] **HealthExamination** migrated (synced + custom uploaded health records).
+      `RealmHealthExamination` is now a Room `@Entity`; `HealthExaminationDao` owns profile/id
+      lookups, pending upload reads, upload acknowledgements, user-id fixes after user upload,
+      and sync bulk upserts. Health sync now runs outside the legacy Realm transaction path.
+- [ ] Remaining ~28 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 
