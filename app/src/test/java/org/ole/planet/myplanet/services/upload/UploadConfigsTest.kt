@@ -43,6 +43,7 @@ class UploadConfigsTest {
         feedbackRepository = mockk(relaxed = true),
         ratingsRepository = mockk(relaxed = true),
         eventsRepository = mockk(relaxed = true),
+        resourcesRepository = mockk(relaxed = true),
         apkLogDao = mockk<ApkLogDao>(relaxed = true),
         searchActivityDao = searchActivityDao,
         courseActivityDao = courseActivityDao,

@@ -42,6 +42,7 @@ class VoicesRepositoryImplTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
+    private val myLibraryDao: org.ole.planet.myplanet.data.room.dao.MyLibraryDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
@@ -53,7 +54,8 @@ class VoicesRepositoryImplTest {
                 sharedPrefManager,
                 dagger.Lazy { userRepository },
                 teamNotificationDao,
-                newsDao
+                newsDao,
+                myLibraryDao
             ),
             recordPrivateCalls = true
         )

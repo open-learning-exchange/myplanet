@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.repository.FeedbackRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
@@ -53,6 +54,7 @@ class UploadConfigs @Inject constructor(
     private val feedbackRepository: FeedbackRepository,
     private val ratingsRepository: RatingsRepository,
     private val eventsRepository: EventsRepository,
+    private val resourcesRepository: ResourcesRepository,
     private val apkLogDao: ApkLogDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseActivityDao: CourseActivityDao,
@@ -288,32 +290,25 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-    fun getResourcesConfig(user: RealmUser?): UploadConfig<RealmMyLibrary> {
-        return UploadConfig(
-            modelClass = RealmMyLibrary::class,
+    // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
+    // The private-resource team-link creation moves into the repository's markResourceUploaded.
+    fun getResourcesConfig(user: RealmUser?): RoomUploadConfig<RealmMyLibrary> {
+        return RoomUploadConfig(
             endpoint = "resources",
-            queryBuilder = { query -> query.isNull("_rev") },
+            modelClassName = "RealmMyLibrary",
+            fetchPendingItems = { resourcesRepository.getPendingResourceUploads() },
             serializer = UploadSerializer.Simple { library ->
                 RealmMyLibrary.serialize(library, user)
             },
             idExtractor = { it.id },
-            additionalUpdates = { realm, library, uploadedItem ->
-                val planetCode = user?.planetCode?.takeIf { it.isNotBlank() }
-                    ?: sharedPrefManager.getPlanetCode()
-
-                if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
-                    val teamResource = realm.createObject(
-                        RealmMyTeam::class.java,
-                        UUID.randomUUID().toString()
+            markUploaded = { results ->
+                results.filter { result ->
+                    !resourcesRepository.markResourceUploaded(
+                        result.localId,
+                        result.remoteId,
+                        result.remoteRev,
+                        user?.planetCode
                     )
-                    teamResource.teamId = library.privateFor
-                    teamResource.title = library.title
-                    teamResource.resourceId = uploadedItem.remoteId
-                    teamResource.docType = "resourceLink"
-                    teamResource.updated = true
-                    teamResource.teamType = "local"
-                    teamResource.teamPlanetCode = planetCode
-                    teamResource.sourcePlanet = planetCode
                 }
             }
         )

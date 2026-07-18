@@ -181,7 +181,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
             val user = userRepository.getUserModel()
-            val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
+            val result = uploadCoordinator.uploadRoom(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
                 is UploadResult.Success -> {

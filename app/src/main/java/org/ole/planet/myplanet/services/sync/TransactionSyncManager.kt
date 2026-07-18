@@ -307,6 +307,9 @@ class TransactionSyncManager @Inject constructor(
                 }
                 if (table == "courses") {
                     downloadCourseCoversFromBatch(arr)
+                    // Resources embedded in course steps were queued during the Realm insert;
+                    // persist them to the Room library table now.
+                    coursesRepository.flushPendingCourseResources()
                 }
                 totalDocs += arr.size()
                 skip += arr.size()

@@ -4,9 +4,6 @@ import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Case
-import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import java.util.Calendar
 import java.util.UUID
@@ -18,12 +15,12 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.RealmUser
@@ -46,63 +43,62 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val resourceActivityDao: ResourceActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
-    private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>
+    private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
+    private val myLibraryDao: MyLibraryDao
 ) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
 
+    // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
+    private fun userIdPattern(userId: String): String {
+        val escaped = userId
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        return "%\"$escaped\"%"
+    }
+
     override suspend fun getAllLibraries(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java)
+        return myLibraryDao.getAll()
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<RealmMyLibrary> {
-        return withRealm { realm ->
-            val queryObj = realm.where(RealmMyLibrary::class.java).equalTo("isPrivate", false)
-
-            if (userId != null) {
-                if (isMyCourseLib) {
-                    queryObj.equalTo("userId", userId)
-                } else {
-                    queryObj.not().equalTo("userId", userId)
-                }
-            } else if (isMyCourseLib) {
-                return@withRealm emptyList()
+        val base = when {
+            userId != null -> if (isMyCourseLib) {
+                myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
+            } else {
+                myLibraryDao.getPublicNotUserPattern(userIdPattern(userId))
             }
-
-            if (query.isEmpty()) {
-                val data = queryObj.findAll()
-                return@withRealm realm.copyFromRealm(data)
-            }
-
-            val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
-            val normalizedQuery = Utilities.normalizeText(query)
-
-            normalizedQueryParts.forEach { part ->
-                queryObj.contains("titleNormal", part)
-            }
-            val data = queryObj.findAll()
-
-            val startsWithQuery = mutableListOf<RealmMyLibrary>()
-            val containsQuery = mutableListOf<RealmMyLibrary>()
-
-            for (item in data) {
-                val titleNormal = item.titleNormal ?: continue
-                if (titleNormal.startsWith(normalizedQuery)) {
-                    startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { titleNormal.contains(it) }) {
-                    containsQuery.add(item)
-                }
-            }
-            return@withRealm realm.copyFromRealm(startsWithQuery + containsQuery)
+            isMyCourseLib -> return emptyList()
+            else -> myLibraryDao.getPublic()
         }
+
+        if (query.isEmpty()) {
+            return base
+        }
+
+        val queryParts = query.split(" ").filterNot { it.isEmpty() }
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(query)
+
+        val matching = base.filter { item ->
+            val titleNormal = item.titleNormal ?: return@filter false
+            normalizedQueryParts.all { titleNormal.contains(it) }
+        }
+
+        val startsWithQuery = mutableListOf<RealmMyLibrary>()
+        val containsQuery = mutableListOf<RealmMyLibrary>()
+        for (item in matching) {
+            val titleNormal = item.titleNormal ?: continue
+            if (titleNormal.startsWith(normalizedQuery)) {
+                startsWithQuery.add(item)
+            } else {
+                containsQuery.add(item)
+            }
+        }
+        return startsWithQuery + containsQuery
     }
 
     override suspend fun getResourceById(id: String): RealmMyLibrary? {
-        return withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("id", id)
-                .findFirst()
-                ?.let { realm.copyFromRealm(it) }
-        }
+        return myLibraryDao.getById(id)
     }
 
     override suspend fun updateLocalResource(
@@ -117,82 +113,55 @@ class ResourcesRepositoryImpl @Inject constructor(
         levels: List<String>?
     ): Result<Unit> {
         return runCatching {
-            executeTransaction { realm ->
-                val resource = realm.where(RealmMyLibrary::class.java)
-                    .equalTo("id", resourceId)
-                    .findFirst()
-                if (resource == null) return@executeTransaction
-
-                resource.title = title
-                resource.titleNormal = Utilities.normalizeText(title)
-                resource.author = author
-                resource.year = year
-                resource.description = description
-                resource.publisher = publisher
-                resource.linkToLicense = linkToLicense
-                resource.subject?.clear()
-                subjects?.forEach { resource.subject?.add(it) }
-                resource.level?.clear()
-                levels?.forEach { resource.level?.add(it) }
-            }
+            val resource = myLibraryDao.getById(resourceId) ?: return@runCatching
+            resource.title = title
+            resource.titleNormal = Utilities.normalizeText(title)
+            resource.author = author
+            resource.year = year
+            resource.description = description
+            resource.publisher = publisher
+            resource.linkToLicense = linkToLicense
+            resource.subject = subjects?.toList() ?: emptyList()
+            resource.level = levels?.toList() ?: emptyList()
+            myLibraryDao.upsert(resource)
         }
     }
 
     override suspend fun getLibraryItemById(id: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "id", id, true)
+        return myLibraryDao.getById(id)
     }
 
     override suspend fun getLibraryItemByResourceId(resourceId: String): RealmMyLibrary? {
-        return findByField(RealmMyLibrary::class.java, "resourceId", resourceId)
-            ?: findByField(RealmMyLibrary::class.java, "_id", resourceId)
+        return myLibraryDao.getByResourceId(resourceId)
+            ?: myLibraryDao.getByUnderscoreId(resourceId)
     }
 
     override suspend fun getLibraryItemsByIds(ids: Collection<String>): List<RealmMyLibrary> {
         if (ids.isEmpty()) return emptyList()
-
-        return queryList(RealmMyLibrary::class.java) {
-            this.`in`("_id", ids.toTypedArray())
-        }
+        return myLibraryDao.getByUnderscoreIds(ids.toList())
     }
 
     override suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<RealmMyLibrary> {
         if (ids.isEmpty()) return emptyList()
-        return queryList(RealmMyLibrary::class.java) {
-            this.`in`("resourceId", ids.toTypedArray())
-        }
+        return myLibraryDao.getByResourceIds(ids.toList())
     }
 
     override suspend fun getTeamPrivateResources(teamId: String): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", true)
-            equalTo("privateFor", teamId)
-        }
+        return myLibraryDao.getTeamPrivate(teamId)
     }
 
     override suspend fun getPublicLibraryItems(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("isPrivate", false)
-        }
+        return myLibraryDao.getPublic()
     }
 
     override suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("resourceLocalAddress", localAddress)
-        }
+        return myLibraryDao.getByLocalAddress(localAddress)
     }
 
     override suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
         if (userId == null) return emptyList()
-
-        return withRealm { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", false)
-                .equalTo("userId", userId)
-                .findAll()
-
-            val filtered = results.filter { it.needToUpdate() }
-            realm.copyFromRealm(filtered)
-        }
+        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
+            .filter { it.needToUpdate() }
     }
 
     override suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
@@ -200,40 +169,27 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyLibrary(userId: String?): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java, ensureLatest = true) {
-            equalTo("userId", userId)
-        }
+        if (userId.isNullOrBlank()) return emptyList()
+        return myLibraryDao.getForUserPattern(userIdPattern(userId))
     }
 
     override suspend fun getAllStepResources(stepId: String?): List<RealmMyLibrary> {
         if (stepId == null) return emptyList()
-
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("stepId", stepId)
-        }
+        return myLibraryDao.getByStepId(stepId)
     }
 
     override suspend fun countLibrariesNeedingUpdate(userId: String?): Int {
         if (userId == null) return 0
-
-        return withRealm { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", false)
-                .equalTo("userId", userId)
-                .findAll()
-
-            results.count { it.needToUpdate() }
-        }
+        return myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
+            .count { it.needToUpdate() }
     }
 
     override suspend fun resourceTitleExists(title: String): Boolean {
-        return count(RealmMyLibrary::class.java) {
-            equalTo("title", title, io.realm.Case.INSENSITIVE)
-        } > 0
+        return myLibraryDao.countByTitle(title) > 0
     }
 
     private suspend fun saveLibraryItem(item: RealmMyLibrary) {
-        save(item)
+        myLibraryDao.upsert(item)
     }
 
     override suspend fun saveLocalResource(
@@ -261,11 +217,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.language = request.language
             this.mediaType = request.mediaType
             this.resourceType = request.resourceType
-            this.subject = request.subjects?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
-            this.setUserId(RealmList())
-            this.level = request.levels?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
+            this.subject = request.subjects?.toList() ?: emptyList()
+            this.userId = emptyList()
+            this.level = request.levels?.toList() ?: emptyList()
             this.createdDate = Calendar.getInstance().timeInMillis
-            this.resourceFor = request.resourceFor?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
+            this.resourceFor = request.resourceFor?.toList() ?: emptyList()
             this.resourceLocalAddress = request.resourceUrl
             this.resourceOffline = true
             this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
@@ -280,7 +236,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         saveLibraryItem(resource)
 
         if (!request.isPrivateTeamResource) {
-            markResourceAdded(request.userId, resource.id ?: "")
+            markResourceAdded(request.userId, resource.id)
         }
 
         if (request.teamId != null) {
@@ -299,16 +255,13 @@ class ResourcesRepositoryImpl @Inject constructor(
         userId: String,
         isAdd: Boolean,
     ): RealmMyLibrary? {
-        executeTransaction { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceId", resourceId)
-                .findFirst()?.let { library ->
-                    if (isAdd) {
-                        library.setUserId(userId)
-                    } else {
-                        library.removeUserId(userId)
-                    }
-                }
+        myLibraryDao.getByResourceId(resourceId)?.let { library ->
+            if (isAdd) {
+                library.setUserId(userId)
+            } else {
+                library.removeUserId(userId)
+            }
+            myLibraryDao.upsert(library)
         }
         if (isAdd) {
             activitiesRepository.markResourceAdded(userId, resourceId)
@@ -320,7 +273,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun updateLibraryItem(id: String, updater: (RealmMyLibrary) -> Unit) {
-        update(RealmMyLibrary::class.java, "id", id, updater)
+        val item = myLibraryDao.getById(id) ?: return
+        updater(item)
+        myLibraryDao.upsert(item)
     }
 
     override suspend fun markResourceOfflineByUrl(url: String) {
@@ -331,37 +286,26 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     private suspend fun markResourceOfflineByLocalAddress(localAddress: String) {
-        executeTransaction { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("resourceLocalAddress", localAddress)
-                .findAll()
-            results.forEach { library ->
-                library.resourceOffline = true
-                library.downloadedRev = library._rev
-            }
+        val results = myLibraryDao.getByLocalAddress(localAddress)
+        results.forEach { library ->
+            library.resourceOffline = true
+            library.downloadedRev = library._rev
+        }
+        if (results.isNotEmpty()) {
+            myLibraryDao.upsertAll(results)
         }
     }
 
     override fun getRecentResources(userId: String): Flow<List<RealmMyLibrary>> {
-        return queryListFlow(RealmMyLibrary::class.java) {
-            equalTo("userId", userId)
-                .sort("createdDate", Sort.DESCENDING)
-                .limit(10)
-        }
+        return myLibraryDao.getRecentForUserPatternFlow(userIdPattern(userId))
     }
 
     override fun getPendingDownloads(userId: String): Flow<List<RealmMyLibrary>> {
-        return queryListFlow(RealmMyLibrary::class.java) {
-            equalTo("userId", userId)
-                .equalTo("resourceOffline", false)
-                .isNotNull("resourceLocalAddress")
-        }
+        return myLibraryDao.getPendingDownloadsForUserPatternFlow(userIdPattern(userId))
     }
 
     override suspend fun markAllResourcesOffline(isOffline: Boolean) {
-        executeTransaction { realm ->
-            realm.where(RealmMyLibrary::class.java).findAll().setValue("resourceOffline", isOffline)
-        }
+        myLibraryDao.setAllOffline(isOffline)
     }
 
     override suspend fun saveSearchActivity(
@@ -424,24 +368,17 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAllLibrariesToSync(): List<RealmMyLibrary> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("resourceOffline", false)
-        }.filter { it.needToUpdate() }
+        return myLibraryDao.getSyncable().filter { it.needToUpdate() }
     }
 
     override suspend fun addResourcesToUserLibrary(resourceIds: List<String>, userId: String): Result<Unit> {
         return runCatching {
             if (resourceIds.isEmpty() || userId.isBlank()) return@runCatching
 
-            executeTransaction { realm ->
-                val libraryItems = realm.where(RealmMyLibrary::class.java)
-                    .`in`("resourceId", resourceIds.toTypedArray())
-                    .not().equalTo("userId", userId)
-                    .findAll()
-
-                libraryItems.forEach { libraryItem ->
-                    libraryItem.setUserId(userId)
-                }
+            val libraryItems = myLibraryDao.getByResourceIdsNotUserPattern(resourceIds, userIdPattern(userId))
+            libraryItems.forEach { it.setUserId(userId) }
+            if (libraryItems.isNotEmpty()) {
+                myLibraryDao.upsertAll(libraryItems)
             }
             removedLogDao.deleteByTypeUserAndDocs("resources", userId, resourceIds)
         }
@@ -463,48 +400,28 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getDownloadSuggestionList(userId: String?): List<RealmMyLibrary> {
         val targetUserId = userId ?: sharedPrefManager.getUserId().ifEmpty { null }
 
-        return withRealm { realm ->
-            if (!targetUserId.isNullOrBlank()) {
-                val userLibraries = realm.where(RealmMyLibrary::class.java)
-                    .equalTo("isPrivate", false)
-                    .equalTo("userId", targetUserId)
-                    .findAll()
-
-                val userLibrariesNeedingUpdate = userLibraries.filter { it.needToUpdate() }
-                if (userLibrariesNeedingUpdate.isNotEmpty()) {
-                    return@withRealm realm.copyFromRealm(userLibrariesNeedingUpdate)
-                }
+        if (!targetUserId.isNullOrBlank()) {
+            val userLibrariesNeedingUpdate = myLibraryDao.getPublicForUserPattern(userIdPattern(targetUserId))
+                .filter { it.needToUpdate() }
+            if (userLibrariesNeedingUpdate.isNotEmpty()) {
+                return userLibrariesNeedingUpdate
             }
-
-            val results = realm.where(RealmMyLibrary::class.java)
-                .equalTo("isPrivate", false)
-                .findAll()
-
-            val filtered = results.filter { it.needToUpdate() }
-            realm.copyFromRealm(filtered)
         }
+
+        return myLibraryDao.getPublic().filter { it.needToUpdate() }
     }
 
     override suspend fun removeDeletedResources(currentIds: List<String?>) {
         val validCurrentIds = currentIds.filterNotNull().toSet()
-        executeTransaction { realm ->
-            val query = realm.where(RealmMyLibrary::class.java)
-                .isNotNull("_rev")
-                .notEqualTo("_rev", "")
-                .equalTo("isPrivate", false)
-
-            if (validCurrentIds.isNotEmpty()) {
-                query.not().`in`("resourceId", validCurrentIds.toTypedArray())
-            }
-
-            query.findAll().deleteAllFromRealm()
+        if (validCurrentIds.isNotEmpty()) {
+            myLibraryDao.deleteStalePublicNotIn(validCurrentIds.toList())
+        } else {
+            myLibraryDao.deleteAllStalePublic()
         }
     }
 
     override suspend fun getMyLibIds(userId: String): JsonArray {
-        val libs = queryList(RealmMyLibrary::class.java) {
-            equalTo("userId", userId)
-        }
+        val libs = myLibraryDao.getForUserPattern(userIdPattern(userId))
         val jsonArray = JsonArray()
         libs.forEach { jsonArray.add(it.id) }
         return jsonArray
@@ -548,63 +465,52 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
         var processedCount = 0
-        try {
-            withRealm { realm ->
-                realm.executeTransaction { realmTx ->
-                    documents.forEach { doc ->
-                        try {
-                            RealmMyLibrary.insertMyLibrary(RealmMyLibrary.Companion.InsertParams(doc = doc, mRealm = realmTx, spm = sharedPrefManager, userId = shelfId))
-                            processedCount++
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
+        documents.forEach { doc ->
+            try {
+                val resourceId = JsonUtils.getString("_id", doc)
+                val existing = myLibraryDao.getById(resourceId)
+                val library = RealmMyLibrary.insertMyLibrary(
+                    RealmMyLibrary.Companion.InsertParams(
+                        doc = doc,
+                        spm = sharedPrefManager,
+                        userId = shelfId,
+                        existing = existing
+                    )
+                )
+                if (library != null) {
+                    myLibraryDao.upsert(library)
+                    processedCount++
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
-        } catch (e: Exception) {
-            e.printStackTrace()
         }
         return processedCount
     }
 
     override suspend fun batchInsertResources(documents: List<JsonObject>): List<String> {
-        return try {
-            withRealm { realm ->
-                val savedIds = mutableListOf<String>()
-                val chunkSize = 50
-                documents.chunked(chunkSize).forEach { chunk ->
-                    realm.executeTransaction { realmTx ->
-                        val chunkDocuments = JsonArray()
-                        chunk.forEach { doc ->
-                            val wrapper = JsonObject()
-                            wrapper.add("doc", doc)
-                            chunkDocuments.add(wrapper)
-                        }
-                    savedIds.addAll(RealmMyLibrary.save(chunkDocuments, realmTx, sharedPrefManager))
-                    }
+        val savedIds = mutableListOf<String>()
+        documents.forEach { doc ->
+            try {
+                val id = JsonUtils.getString("_id", doc)
+                if (id.startsWith("_design")) return@forEach
+                val existing = myLibraryDao.getById(id)
+                val library = RealmMyLibrary.insertMyLibrary(
+                    RealmMyLibrary.Companion.InsertParams(
+                        doc = doc,
+                        spm = sharedPrefManager,
+                        existing = existing
+                    )
+                )
+                if (library != null) {
+                    myLibraryDao.upsert(library)
+                    savedIds.add(id)
                 }
-                savedIds
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            withRealm { realm ->
-                val savedIds = mutableListOf<String>()
-                documents.forEach { doc ->
-                    try {
-                        realm.executeTransaction { realmTx ->
-                            val singleDocArray = JsonArray()
-                            val wrapper = JsonObject()
-                            wrapper.add("doc", doc)
-                            singleDocArray.add(wrapper)
-                        savedIds.addAll(RealmMyLibrary.save(singleDocArray, realmTx, sharedPrefManager))
-                        }
-                    } catch (e2: Exception) {
-                        e2.printStackTrace()
-                    }
-                }
-                savedIds
+            } catch (e: Exception) {
+                e.printStackTrace()
             }
         }
+        return savedIds
     }
 
     private suspend fun getResourceRatingsBulk(ids: List<String>, userId: String?): Map<String?, JsonObject> {
@@ -625,13 +531,10 @@ class ResourcesRepositoryImpl @Inject constructor(
     override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
         val allLibraryItems = if (isMyCourseLib) {
             getMyLibrary(modelId)
+        } else if (modelId != null) {
+            myLibraryDao.getPublicNotUserPattern(userIdPattern(modelId))
         } else {
-            queryList(RealmMyLibrary::class.java, ensureLatest = true) {
-                equalTo("isPrivate", false)
-                if (modelId != null) {
-                    not().equalTo("userId", modelId)
-                }
-            }
+            myLibraryDao.getPublic()
         }
 
         val allResourceIds = allLibraryItems.mapNotNull { it.resourceId ?: it.id }
@@ -641,35 +544,64 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         return allLibraryItems.map { library ->
             val resourceId = library.resourceId ?: library.id
-            val rating = resourceId?.let { map[it] }
-            val tags = resourceId?.let { tagsMap[it] } ?: emptyList()
+            val rating = map[resourceId]
+            val tags = tagsMap[resourceId] ?: emptyList()
             LibraryWithMetadata(library, rating, tags)
         }
     }
 
     override suspend fun getResourceTitlesMap(): Map<String, String> {
-        return withRealm { realm ->
-            realm.where(RealmMyLibrary::class.java)
-                .isNotNull("resourceId")
-                .findAll()
-                .associate { (it.resourceId ?: "") to (it.title ?: "") }
-        }
+        return myLibraryDao.getWithResourceId()
+            .associate { (it.resourceId ?: "") to (it.title ?: "") }
     }
 
     override suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>> {
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("courseId", courseId)
-        }.groupBy { it.stepId }
+        return myLibraryDao.getByCourseId(courseId).groupBy { it.stepId }
     }
 
     override suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>) {
         if (resourceIds.isEmpty()) return
-        executeTransaction { realm ->
-            val results = realm.where(RealmMyLibrary::class.java)
-                .`in`("resourceId", resourceIds.toTypedArray())
-                .equalTo("resourceOffline", true)
-                .findAll()
-            results.forEach { it.resourceOffline = false }
+        val results = myLibraryDao.getOfflineByResourceIds(resourceIds.toList())
+        results.forEach { it.resourceOffline = false }
+        if (results.isNotEmpty()) {
+            myLibraryDao.upsertAll(results)
         }
+    }
+
+    override suspend fun getPendingResourceUploads(): List<RealmMyLibrary> {
+        return myLibraryDao.getPendingUploads()
+    }
+
+    override suspend fun markResourceUploaded(
+        localId: String,
+        remoteId: String,
+        remoteRev: String,
+        planetCode: String?
+    ): Boolean {
+        val library = myLibraryDao.getById(localId) ?: return false
+        library._id = remoteId
+        library._rev = remoteRev
+        myLibraryDao.upsert(library)
+
+        // Private resources also create a local team-resource link (still a Realm model).
+        if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
+            val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
+                ?: sharedPrefManager.getPlanetCode()
+            executeTransaction { realm ->
+                val teamResource = realm.createObject(
+                    org.ole.planet.myplanet.model.RealmMyTeam::class.java,
+                    UUID.randomUUID().toString()
+                )
+                teamResource.teamId = library.privateFor
+                teamResource.title = library.title
+                teamResource.resourceId = remoteId
+                teamResource.docType = "resourceLink"
+                teamResource.updated = true
+                teamResource.teamType = "local"
+                teamResource.teamPlanetCode = resolvedPlanetCode
+                teamResource.sourcePlanet = resolvedPlanetCode
+            }
+        }
+        return true
     }
 }

@@ -27,6 +27,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.AppPreferences
@@ -72,28 +73,33 @@ class TeamsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val teamLogDao: TeamLogDao,
     private val teamTaskDao: TeamTaskDao,
+    private val myLibraryDao: MyLibraryDao,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId)
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
+        // Resources (courseId -> stepId -> items) now live in Room; fetch them once via the DAO.
+        val courseIds = withRealm { realm ->
+            realm.where(RealmMyTeam::class.java)
+                .equalTo("updated", true)
+                .findAll()
+                .flatMap { it.courses ?: emptyList() }
+                .distinct()
+        }
+        val coursesResourcesMap = if (courseIds.isNotEmpty()) {
+            myLibraryDao.getByCourseIds(courseIds)
+                .groupBy { it.courseId ?: "" }
+                .mapValues { (_, items) -> items.groupBy { it.stepId } }
+        } else {
+            emptyMap()
+        }
+
         return withRealm { realm ->
             val teams = realm.where(RealmMyTeam::class.java)
                 .equalTo("updated", true)
                 .findAll()
-
-            val courseIds = teams.flatMap { it.courses ?: emptyList() }.distinct()
-            val coursesResourcesMap = if (courseIds.isNotEmpty()) {
-                val libraryItems = realm.where(RealmMyLibrary::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .findAll()
-                realm.copyFromRealm(libraryItems)
-                    .groupBy { it.courseId ?: "" }
-                    .mapValues { (_, items) -> items.groupBy { it.stepId } }
-            } else {
-                emptyMap()
-            }
 
             teams.map { team ->
                 TeamUploadData(

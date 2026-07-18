@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.data.room
 import androidx.room.TypeConverter
 import com.google.gson.reflect.TypeToken
 import java.util.Date
+import org.ole.planet.myplanet.model.RealmAttachment
 import org.ole.planet.myplanet.model.RealmConversation
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -44,5 +45,16 @@ class Converters {
     fun toConversationList(value: String?): List<RealmConversation>? {
         if (value.isNullOrBlank()) return null
         return JsonUtils.gson.fromJson(value, object : TypeToken<List<RealmConversation>>() {}.type)
+    }
+
+    @TypeConverter
+    fun fromAttachmentList(value: List<RealmAttachment>?): String? {
+        return value?.let { JsonUtils.gson.toJson(it) }
+    }
+
+    @TypeConverter
+    fun toAttachmentList(value: String?): List<RealmAttachment>? {
+        if (value.isNullOrBlank()) return null
+        return JsonUtils.gson.fromJson(value, object : TypeToken<List<RealmAttachment>>() {}.type)
     }
 }
