@@ -98,6 +98,8 @@ interface ResourcesRepository {
     suspend fun getResourceTitlesMap(): Map<String, String>
     suspend fun markResourcesAsNotOffline(resourceIds: Collection<String>)
     suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<RealmMyLibrary>>
+    suspend fun getPendingResourceUploads(): List<RealmMyLibrary>
+    suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
 }
 
 sealed class ResourceUrlsResponse {

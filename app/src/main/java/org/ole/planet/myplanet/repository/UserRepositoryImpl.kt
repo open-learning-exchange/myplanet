@@ -75,6 +75,7 @@ class UserRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
     private val meetupDao: MeetupDao,
+    private val myLibraryDao: org.ole.planet.myplanet.data.room.dao.MyLibraryDao,
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
@@ -1194,13 +1195,7 @@ class UserRepositoryImpl @Inject constructor(
         }?.flatten()?.distinct()?.toTypedArray() ?: emptyArray()
 
         val resources = if (resourceIds.isNotEmpty()) {
-            withRealm { realm ->
-                realm.copyFromRealm(
-                    realm.where(RealmMyLibrary::class.java)
-                        .`in`("id", resourceIds)
-                        .findAll()
-                )
-            }
+            myLibraryDao.getByIds(resourceIds.toList())
         } else {
             emptyList()
         }

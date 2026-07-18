@@ -92,10 +92,12 @@ class ResourcesViewModelTest {
 
     @Test
     fun `getLibraryListModels maps enriched libraries to ResourceListModels`() = runTest {
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true) {
-            every { id } returns "lib1"
-            every { title } returns "Library 1"
-            every { isResourceOffline() } returns true
+        // RealmMyLibrary is a Room entity whose id is a @JvmField and whose isResourceOffline() is
+        // @Ignore'd — neither can be stubbed with mockk; use a real instance.
+        val mockLibrary = RealmMyLibrary().apply {
+            id = "lib1"
+            title = "Library 1"
+            resourceOffline = true
         }
         val mockRating = mockk<JsonObject>(relaxed = true)
         // TagEntity is a Room entity whose id is a @JvmField (a Java field, not a getter), so it

@@ -299,7 +299,7 @@ abstract class BaseResourceFragment : Fragment() {
         homeItemClickListener = null
     }
 
-    fun removeFromShelf(`object`: RealmObject) {
+    fun removeFromShelf(`object`: Any) {
         lifecycleScope.launch {
             val userId = profileDbHandler.getUserModel()?.id
             if (userId.isNullOrEmpty()) {

@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
@@ -55,8 +56,21 @@ class CoursesRepositoryImpl @Inject constructor(
     private val tagDao: TagDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
-    private val removedLogDao: RemovedLogDao
+    private val removedLogDao: RemovedLogDao,
+    private val myLibraryDao: MyLibraryDao
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
+
+    // Resources embedded in synced course steps are collected during the (Realm) course-insert
+    // transaction and flushed to the Room library table afterwards (DAO calls can't nest in a
+    // Realm transaction). See flushPendingCourseResources().
+    private val pendingCourseResources =
+        java.util.Collections.synchronizedList(mutableListOf<PendingCourseResource>())
+
+    private data class PendingCourseResource(
+        val doc: JsonObject,
+        val courseId: String?,
+        val stepId: String?
+    )
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
         return queryList(RealmMyCourse::class.java, maxDepth = 0) {
@@ -111,11 +125,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseIds.isEmpty()) {
             return emptyList()
         }
-        return queryList(RealmMyLibrary::class.java) {
-            `in`("courseId", courseIds.toTypedArray())
-            equalTo("resourceOffline", false)
-            isNotNull("resourceLocalAddress")
-        }
+        return myLibraryDao.getOfflineResourcesForCourses(courseIds)
     }
 
     override suspend fun getCourseExamCount(courseId: String?): Int {
@@ -168,11 +178,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseId.isNullOrEmpty()) {
             return emptyList()
         }
-        return queryList(RealmMyLibrary::class.java) {
-            equalTo("courseId", courseId)
-            equalTo("resourceOffline", isOffline)
-            isNotNull("resourceLocalAddress")
-        }
+        return myLibraryDao.getCourseResources(courseId, isOffline)
     }
 
 
@@ -477,11 +483,8 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
         val step = findFirstCopy(RealmCourseStep::class.java) { equalTo("id", stepId) }
             ?: throw IllegalStateException("Step not found")
+        val resources = myLibraryDao.getByStepId(stepId)
         val intermediate = withRealm { realm ->
-            val resources = realm.where(RealmMyLibrary::class.java)
-                .equalTo("stepId", stepId)
-                .findAll()
-                .let { realm.copyFromRealm(it) }
             val stepExams = realm.where(RealmStepExam::class.java)
                 .equalTo("stepId", stepId)
                 .equalTo("type", "courses")
@@ -697,9 +700,35 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
         resources.forEach { resource ->
-            if (mRealm != null) {
-                RealmMyLibrary.insertMyLibrary(RealmMyLibrary.Companion.InsertParams(doc = resource.asJsonObject, mRealm = mRealm, spm = spm, courseId = myCoursesID, stepId = stepId))
-            }
+            // Resources live in Room now; queue them and flush after this Realm transaction.
+            pendingCourseResources.add(
+                PendingCourseResource(resource.asJsonObject, myCoursesID, stepId)
+            )
+        }
+    }
+
+    override suspend fun flushPendingCourseResources() {
+        val batch: List<PendingCourseResource>
+        synchronized(pendingCourseResources) {
+            if (pendingCourseResources.isEmpty()) return
+            batch = ArrayList(pendingCourseResources)
+            pendingCourseResources.clear()
+        }
+        val libraries = batch.mapNotNull { pending ->
+            val resourceId = JsonUtils.getString("_id", pending.doc)
+            val existing = myLibraryDao.getById(resourceId)
+            RealmMyLibrary.insertMyLibrary(
+                RealmMyLibrary.Companion.InsertParams(
+                    doc = pending.doc,
+                    spm = sharedPrefManager,
+                    courseId = pending.courseId,
+                    stepId = pending.stepId,
+                    existing = existing
+                )
+            )
+        }
+        if (libraries.isNotEmpty()) {
+            myLibraryDao.upsertAll(libraries)
         }
     }
 }

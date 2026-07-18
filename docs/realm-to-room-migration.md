@@ -215,7 +215,28 @@ wired through `di/RoomModule`.
       team-chat counts moved to `NewsDao`; `VoicesAdapter` drops Realm-only `isValid` liveness
       checks (POJOs are always valid). Repo/label-manager tests rewritten to mock `NewsDao` (and
       use real `RealmNews` instances since `id` is now a `@JvmField`).
-- [ ] Remaining ~27 model domains.
+- [x] **MyLibrary / Resources** migrated (synced + uploaded — the largest, most-coupled domain,
+      queried across 5 repos). `RealmMyLibrary` is now a Room `@Entity` (class name kept; `@JvmField`
+      id/_id; the six `RealmList<String>` fields → `List<String>?`; `attachments`
+      `RealmList<RealmAttachment>` → embedded JSON `List<RealmAttachment>` with `RealmAttachment` now
+      a plain value class + a `Converters` type converter; `isResourceOffline()` `@Ignore`d and the
+      duplicate list-setter dropped to resolve Room accessor ambiguity; the Realm-managed
+      `insertMyLibrary(...,Realm,...)`/`save(...)` companions replaced with pure factories that
+      merge into a passed-in `existing`). `MyLibraryDao` (~30 queries). **Key decision:** shelf
+      membership (formerly a `RealmList<String>` `equalTo`) is matched with `userId LIKE :pattern
+      ESCAPE '\'` where the repo builds `%"<escaped-id>"%` so the quotes delimit exact entries.
+      `ResourcesRepositoryImpl` fully rewritten onto the DAO (title/facet filtering in-memory);
+      `CoursesRepositoryImpl`, `TeamsRepositoryImpl`, `VoicesRepositoryImpl`, `UserRepositoryImpl`
+      moved their library reads to the DAO (keeping `RealmRepository` for their still-Realm models).
+      **Sync coupling:** resources embedded in synced course steps can't be DAO-written inside the
+      Realm course transaction, so they're queued during `bulkInsertFromSync` and flushed via
+      `flushPendingCourseResources()` (called after the courses batch in `TransactionSyncManager`),
+      preserving the find-and-merge semantics. **Upload:** `getResourcesConfig` → `RoomUploadConfig`;
+      the private-resource team-link creation (a still-Realm `RealmMyTeam`) moves into
+      `markResourceUploaded`, which updates the library via the DAO then does the team write in a
+      Realm transaction. `BaseRecyclerFragment`/`BaseResourceFragment` type checks updated (library
+      is no longer a `RealmObject`). Resource/upload/repo tests rewritten to mock `MyLibraryDao`.
+- [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

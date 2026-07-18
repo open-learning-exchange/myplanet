@@ -73,7 +73,8 @@ class TeamsRepositoryBenchmarkTest {
             resourcesRepositoryLazy,
             TestTimeProvider(),
             teamLogDao,
-            mockk<TeamTaskDao>(relaxed = true)
+            mockk<TeamTaskDao>(relaxed = true),
+            mockk(relaxed = true)
         )
     }
 

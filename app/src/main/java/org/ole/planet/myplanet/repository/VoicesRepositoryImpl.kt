@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.data.findCopyByField
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyLibrary
@@ -39,7 +39,8 @@ class VoicesRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val userRepositoryLazy: dagger.Lazy<UserRepository>,
     private val teamNotificationDao: TeamNotificationDao,
-    private val newsDao: NewsDao
+    private val newsDao: NewsDao,
+    private val myLibraryDao: MyLibraryDao
 ) : RealmRepository(databaseService, realmDispatcher), VoicesRepository {
     private val concatenatedLinks = ArrayList<String>()
 
@@ -83,9 +84,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
-        return withRealm { realm ->
-            realm.findCopyByField(RealmMyLibrary::class.java, "_id", resourceId)
-        }
+        return myLibraryDao.getByUnderscoreId(resourceId)
     }
 
     override suspend fun getNewsWithReplies(newsId: String): Pair<RealmNews?, List<RealmNews>> {
@@ -497,11 +496,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getPrivateImageUrlsCreatedAfter(timestamp: Long): List<String> {
-        val imageList = queryList(RealmMyLibrary::class.java, maxDepth = 0) {
-            equalTo("isPrivate", true)
-                .greaterThan("createdDate", timestamp)
-                .equalTo("mediaType", "image")
-        }
-        return imageList.mapNotNull { it.resourceRemoteAddress }
+        return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
+            .mapNotNull { it.resourceRemoteAddress }
     }
 }

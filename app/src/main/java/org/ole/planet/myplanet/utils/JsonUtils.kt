@@ -55,7 +55,7 @@ object JsonUtils {
         if (el is JsonNull) "" else el.asString
     }
 
-    fun getAsJsonArray(list: RealmList<String>?): JsonArray {
+    fun getAsJsonArray(list: List<String>?): JsonArray {
         val array = JsonArray()
         list?.forEach { s -> array.add(s) }
         return array
