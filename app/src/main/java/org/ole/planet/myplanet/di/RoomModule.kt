@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -150,5 +151,10 @@ object RoomModule {
     @Provides
     fun provideRemovedLogDao(database: AppDatabase): RemovedLogDao {
         return database.removedLogDao()
+    }
+
+    @Provides
+    fun provideTeamTaskDao(database: AppDatabase): TeamTaskDao {
+        return database.teamTaskDao()
     }
 }

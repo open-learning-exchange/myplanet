@@ -252,7 +252,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        uploadCoordinator.upload(uploadConfigs.TeamTask)
+        uploadCoordinator.uploadRoom(uploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {

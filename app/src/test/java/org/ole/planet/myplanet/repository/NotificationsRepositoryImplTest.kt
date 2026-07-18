@@ -19,6 +19,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.RealmNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
@@ -37,7 +38,7 @@ class NotificationsRepositoryImplTest {
         userRepository = mockk(relaxed = true)
         teamsRepository = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(databaseService, testDispatcher, userRepository, teamsRepository,
-            TestTimeProvider(), mockk(relaxed = true)
+            TestTimeProvider(), mockk(relaxed = true), mockk<TeamTaskDao>(relaxed = true)
         )
     }
 

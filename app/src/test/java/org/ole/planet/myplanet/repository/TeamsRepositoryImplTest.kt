@@ -20,6 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.User
@@ -80,7 +81,8 @@ class TeamsRepositoryImplTest {
             mockUserRepository,
             mockk(),
             TestTimeProvider(),
-            teamLogDao
+            teamLogDao,
+            mockk<TeamTaskDao>(relaxed = true)
         )
     }
 
