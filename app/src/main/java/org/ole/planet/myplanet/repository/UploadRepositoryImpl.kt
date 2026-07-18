@@ -1,83 +1,99 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
-import io.realm.RealmObject
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.utils.RealmUtils
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
+    private val examDao: ExamDao,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
+) : UploadRepository {
 
-    override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
-        return withRealmAsync { realm ->
-            val query = realm.where(config.modelClass.java)
-            val filteredQuery = config.queryBuilder(query)
-            val results = filteredQuery.findAll()
-            realm.copyFromRealm(results)
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun <T : Any> queryPending(config: UploadQueryContract<T>): List<T> {
+        return when (config.queryType) {
+            UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys()
+                .map { it.toRealmModel() } as List<T>
+
+            UploadQueryType.ExamResults -> hydrateSubmissions(submissionDao.getPendingExamResults()) as List<T>
+
+            UploadQueryType.CompletedSubmissions -> hydrateSubmissions(submissionDao.getPendingSubmissions()) as List<T>
         }
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadUpdateContract<T>, succeeded: List<UploadedItemResult>): List<UploadedItemResult> {
-        val failedLocally = mutableListOf<UploadedItemResult>()
-        executeTransaction { realm ->
-            val localIds = succeeded.map { it.localId }
-            val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
-
-            val itemsById = mutableMapOf<String, T>()
-            if (localIds.isNotEmpty()) {
-                val query = realm.where(config.modelClass.java)
-                localIds.chunked(1000).forEachIndexed { index, chunk ->
-                    if (index > 0) query.or()
-                    query.`in`(idFieldName, chunk.toTypedArray())
-                }
-                val results = query.findAll()
-                results.forEach { item ->
-                    val localId = config.idExtractor(item) ?: ""
-                    itemsById[localId] = item
-                }
-            }
-
-            succeeded.forEach { uploadedItem ->
-                try {
-                    val item = itemsById[uploadedItem.localId]
-
-                    item?.let {
-                        RealmUtils.setRealmField(it, "_id", uploadedItem.remoteId)
-                        RealmUtils.setRealmField(it, "_rev", uploadedItem.remoteRev)
-                        config.additionalUpdates?.invoke(realm, it, uploadedItem)
-                    } ?: run {
-                        failedLocally.add(uploadedItem)
-                    }
-                } catch (e: Exception) {
-                    Log.e("UploadRepositoryImpl", "Failed to update item ${uploadedItem.localId}", e)
-                    failedLocally.add(uploadedItem)
-                }
+    override suspend fun markUploaded(
+        config: UploadUpdateContract,
+        succeeded: List<UploadedItemResult>
+    ): List<UploadedItemResult> {
+        return when (config.updateType) {
+            UploadUpdateType.Exams -> markExamsUploaded(succeeded)
+            UploadUpdateType.Submissions -> succeeded.filter { result ->
+                submissionDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
             }
         }
-        return failedLocally
     }
 
-    override suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+    override suspend fun postUpload(
+        url: String,
+        serializedData: JsonObject
+    ): Response<JsonObject> {
         return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
     }
 
-    override suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+    override suspend fun putUpload(
+        url: String,
+        serializedData: JsonObject
+    ): Response<JsonObject> {
         return apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
     }
 
     override suspend fun fetchExistingDoc(url: String): Response<JsonObject> {
         return apiInterface.getJsonObject(UrlUtils.header, url)
+    }
+
+    private suspend fun hydrateSubmissions(rows: List<RoomSubmissionEntity>): List<RealmSubmission> {
+        if (rows.isEmpty()) return emptyList()
+        val answersBySubmissionId =
+            answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
+        return rows.map { row -> row.toRealmModel(answersBySubmissionId[row.id].orEmpty()) }
+    }
+
+    private suspend fun markExamsUploaded(
+        succeeded: List<UploadedItemResult>
+    ): List<UploadedItemResult> {
+        if (succeeded.isEmpty()) return emptyList()
+        val existing = examDao.getByIds(succeeded.map { it.localId }).associateBy { it.id }
+        val updated = mutableListOf<RealmStepExam>()
+        val failed = mutableListOf<UploadedItemResult>()
+
+        succeeded.forEach { result ->
+            val exam = existing[result.localId]?.toRealmModel()
+            if (exam == null) {
+                failed += result
+            } else {
+                exam._rev = result.remoteRev
+                updated += exam
+            }
+        }
+
+        if (updated.isNotEmpty()) {
+            examDao.upsertAll(updated.mapNotNull { it.toRoomEntity() })
+        }
+
+        return failed
     }
 }

@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
 import org.ole.planet.myplanet.model.TeamLog
 
 interface TeamsSyncRepository {
@@ -16,9 +15,9 @@ interface TeamsSyncRepository {
     suspend fun insertTeamLog(json: JsonObject)
     suspend fun insertTeamLogs(logs: List<JsonObject>)
     fun serializeTeamActivities(log: TeamLog, context: Context): JsonObject
-    fun insertMyTeam(realm: Realm, doc: JsonObject)
+    suspend fun insertMyTeam(doc: JsonObject)
     suspend fun batchInsertMyTeams(documents: List<JsonObject>): Int
-    fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray)
+    suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray)
     suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray)
 }

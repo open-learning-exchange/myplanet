@@ -10,21 +10,17 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Realm
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSyncListener
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
@@ -37,7 +33,6 @@ import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.RealmRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
@@ -61,8 +56,6 @@ import org.ole.planet.myplanet.utils.Utilities
 @Singleton
 class TransactionSyncManager @Inject constructor(
     private val apiInterface: ApiInterface,
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @param:ApplicationContext private val context: Context,
     private val voicesRepository: VoicesRepository,
     private val chatRepository: ChatRepository,
@@ -84,7 +77,7 @@ class TransactionSyncManager @Inject constructor(
     private val surveysRepository: SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher) {
+) {
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
@@ -271,31 +264,27 @@ class TransactionSyncManager @Inject constructor(
                     "health" -> timedBatchInsert(table, arr.size()) {
                         healthRepository.bulkInsertFromSync(arr)
                     }
+                    "courses" -> timedBatchInsert(table, arr.size()) {
+                        val insertStartTime = SystemClock.elapsedRealtime()
+                        coursesRepository.bulkInsertFromSync(arr)
+                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                        Log.d("SyncPerf", "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items")
+                    }
                     else -> {
-                        // Use async transaction to avoid blocking (ANR-safe)
-                        executeTransaction { mRealm: Realm ->
-                            val insertStartTime = SystemClock.elapsedRealtime()
-                            when (table) {
-                                "exams" -> surveysRepository.bulkInsertExamsFromSync(mRealm, arr)
-                                "submissions" -> submissionsRepository.bulkInsertFromSync(mRealm, arr)
-                                "courses" -> coursesRepository.bulkInsertFromSync(mRealm, arr)
-                                "teams" -> teamsSyncRepository.get().bulkInsertFromSync(mRealm, arr)
-                                else -> Log.e("SyncPerf", "Unknown table: $table")
-                            }
-                            val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
-                            if (table == "courses") {
-                                Log.d(
-                                    "SyncPerf",
-                                    "    $table insertDuration: ${insertDuration}ms for ${arr.size()} items"
-                                )
-                            }
-                            SyncTimeLogger.logRealmOperation(
-                                "insert_batch",
-                                table,
-                                insertDuration,
-                                arr.size()
-                            )
+                        val insertStartTime = SystemClock.elapsedRealtime()
+                        when (table) {
+                            "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
+                            "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
+                            "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
+                            else -> Log.e("SyncPerf", "Unknown table: $table")
                         }
+                        val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
+                        SyncTimeLogger.logRealmOperation(
+                            "insert_batch",
+                            table,
+                            insertDuration,
+                            arr.size()
+                        )
                     }
                 }
 
@@ -307,7 +296,7 @@ class TransactionSyncManager @Inject constructor(
                 }
                 if (table == "courses") {
                     downloadCourseCoversFromBatch(arr)
-                    // Resources embedded in course steps were queued during the Realm insert;
+                    // Resources embedded in course steps were queued during course upserts;
                     // persist them to the Room library table now.
                     coursesRepository.flushPendingCourseResources()
                 }

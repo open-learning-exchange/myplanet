@@ -10,7 +10,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmObject
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
@@ -200,11 +199,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val snapshot = selectedItems?.toList() ?: return
         val courseIdsToDelete = mutableListOf<String>()
         for (item in snapshot) {
-            val `object` = item as RealmObject
-            if (deleteProgress && `object` is RealmMyCourse) {
-                `object`.courseId?.let { courseIdsToDelete.add(it) }
+            if (deleteProgress && item is RealmMyCourse) {
+                item.courseId?.let { courseIdsToDelete.add(it) }
             }
-            removeFromShelf(`object`)
+            removeFromShelf(item)
         }
 
         if (courseIdsToDelete.isNotEmpty()) {

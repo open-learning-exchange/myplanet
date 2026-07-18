@@ -198,9 +198,7 @@ class UploadConfigs @Inject constructor(
     val AdoptedSurveys = UploadConfig(
         modelClass = RealmStepExam::class,
         endpoint = "exams",
-        queryBuilder = { query ->
-            query.isNotNull("sourceSurveyId").isNull("_rev")
-        },
+        fetchPendingItems = { surveysRepository.getPendingAdoptedSurveys() },
         serializer = UploadSerializer.Async { exam ->
             val questions = surveysRepository.getExamQuestions(exam.id ?: "")
             RealmStepExam.serializeExam(exam, questions)
@@ -253,18 +251,12 @@ class UploadConfigs @Inject constructor(
     val ExamResults = UploadConfig(
         modelClass = RealmSubmission::class,
         endpoint = "submissions",
-        queryBuilder = { query ->
-            query.equalTo("type", "exam")
-                .isNotNull("parentId").isNotNull("userId")
-                .beginGroup()
-                .isNull("_id").or().isEmpty("_id")
-                .endGroup()
-        },
+        fetchPendingItems = { submissionsRepository.getPendingExamResults() },
         serializer = UploadSerializer.Async { submission ->
             submissionsRepository.getExamUploadPayload(submission)
         },
         idExtractor = { it.id },
-        dbIdExtractor = { it._id },  // Enables POST/PUT logic
+        dbIdExtractor = { it._id },
         filterGuests = true,
         guestUserIdExtractor = { it.userId }
     )
@@ -272,20 +264,13 @@ class UploadConfigs @Inject constructor(
     val Submissions = UploadConfig(
         modelClass = RealmSubmission::class,
         endpoint = "submissions",
-        queryBuilder = { query ->
-            query.equalTo("status", "complete")
-                .beginGroup()
-                    .equalTo("isUpdated", true)
-                    .or()
-                    .isEmpty("_id")
-                .endGroup()
-        },
+        fetchPendingItems = { submissionsRepository.getPendingSubmissionsForUpload() },
         serializer = UploadSerializer.AsyncContext { submission, context ->
             submissionsRepository.serializeSubmission(submission, context, sharedPrefManager.getPlanetCode(), sharedPrefManager.getParentCode())
         },
         idExtractor = { it.id },
-        dbIdExtractor = { it._id },  // Enables POST/PUT logic
-        additionalUpdates = { _, submission, _ ->
+        dbIdExtractor = { it._id },
+        additionalUpdates = { submission, _ ->
             submission.isUpdated = false
         }
     )

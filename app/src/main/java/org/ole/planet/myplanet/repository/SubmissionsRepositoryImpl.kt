@@ -6,7 +6,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.RealmList
+
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -433,7 +433,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             this.type = type
             startTime = now
             lastUpdateTime = now
-            answers = RealmList()
+            answers = mutableListOf()
 
             if (team != null) {
                 teamObject = RealmTeamReference().apply {
@@ -577,13 +577,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             type = "survey"
             startTime = Date().time
             lastUpdateTime = startTime
-            answers = RealmList()
+            answers = mutableListOf()
         }
         saveSubmission(submission)
         return submission
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+    override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -724,7 +724,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.mutableListOf()))
         if (exam != null) {
             `object`.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
         } else {
@@ -765,7 +765,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.mutableListOf()))
             if (exam != null) {
                 jsonObject.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {
@@ -785,5 +785,19 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             e.printStackTrace()
         }
         return jsonObject
+    }
+
+    override suspend fun getPendingExamResults(): List<RealmSubmission> {
+        return submissionDao.getPendingExamResults().map { entity ->
+            val answers = answerDao.getBySubmissionId(entity.id)
+            entity.toRealmModel(answers)
+        }
+    }
+
+    override suspend fun getPendingSubmissionsForUpload(): List<RealmSubmission> {
+        return submissionDao.getPendingSubmissions().map { entity ->
+            val answers = answerDao.getBySubmissionId(entity.id)
+            entity.toRealmModel(answers)
+        }
     }
 }
