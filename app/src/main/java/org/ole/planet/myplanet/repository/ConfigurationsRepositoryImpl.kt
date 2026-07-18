@@ -12,7 +12,6 @@ import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.async
@@ -21,13 +20,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.NetworkResult
 import org.ole.planet.myplanet.data.api.ApiClient
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -46,14 +44,12 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
     private val apiInterface: ApiInterface,
     @param:ApplicationScope private val serviceScope: CoroutineScope,
-    @param:AppPreferences private val preferences: SharedPreferences,
     private val sharedPrefManager: SharedPrefManager,
-    databaseService: DatabaseService,
+    private val appDatabase: AppDatabase,
     private val serverUrlMapper: ServerUrlMapper,
     private val dispatcherProvider: DispatcherProvider,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val timeProvider: TimeProvider
-) : RealmRepository(databaseService, realmDispatcher), ConfigurationsRepository {
+) : ConfigurationsRepository {
     private val serverAvailabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
     override suspend fun checkHealth(): String {
@@ -203,7 +199,9 @@ class ConfigurationsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun clearAllData() {
-        executeTransaction { it.deleteAll() }
+        withContext(dispatcherProvider.io) {
+            appDatabase.clearAllTables()
+        }
     }
 
     override suspend fun checkServerAvailability(url: String): Boolean {

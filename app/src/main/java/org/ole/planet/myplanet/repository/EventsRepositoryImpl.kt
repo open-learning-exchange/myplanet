@@ -4,10 +4,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmUser
@@ -15,11 +14,10 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class EventsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val timeProvider: TimeProvider,
-    private val meetupDao: MeetupDao
-) : RealmRepository(databaseService, realmDispatcher), EventsRepository {
+    private val meetupDao: MeetupDao,
+    private val userDao: UserDao
+) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
         return meetupDao.getByTeamId(teamId)
@@ -73,13 +71,12 @@ class EventsRepositoryImpl @Inject constructor(
         if (memberIds.isEmpty()) {
             return emptyList()
         }
-        // RealmUser is still on Realm, so resolve members through the Realm store.
-        return withRealmAsync { realm ->
-            val users = realm.where(RealmUser::class.java)
-                .`in`("id", memberIds.toTypedArray())
-                .findAll()
-            realm.copyFromRealm(users)
-        }
+        val memberIdSet = memberIds.toSet()
+        return userDao.getAll()
+            .filter { user ->
+                memberIdSet.contains(user.id) || user._id?.let(memberIdSet::contains) == true
+            }
+            .map { it.toRealmModel() }
     }
 
     override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): Meetup? {

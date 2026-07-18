@@ -4,17 +4,17 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
 import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyHealth
@@ -26,14 +26,12 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
-    private val healthExaminationDao: HealthExaminationDao
-) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
+    private val healthExaminationDao: HealthExaminationDao,
+    private val userDao: UserDao
+) : HealthRepository {
     override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, HealthExamination?> {
-        val userCopy = findByField(RealmUser::class.java, "_id", userId)
-            ?: findByField(RealmUser::class.java, "id", userId)
+        val userCopy = userDao.getById(userId)?.toRealmModel()
         val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
 
         return Pair(userCopy, pojoCopy)
@@ -69,7 +67,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: RealmUser?) {
-        user?.let { save(it) }
+        user?.toRoomEntity()?.let { userDao.upsert(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }
     }

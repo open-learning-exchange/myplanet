@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
-    alias(libs.plugins.realm.android)
 }
 android {
     compileSdk = 37
@@ -67,7 +66,6 @@ android {
             ]
         }
         doNotStrip "**/libpl_droidsonroids_gif.so"
-        doNotStrip "**/librealm-jni.so"
     }
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17

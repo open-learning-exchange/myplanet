@@ -9,21 +9,19 @@ import java.util.Calendar
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomTeamEntity
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
@@ -33,8 +31,6 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val activitiesRepository: ActivitiesRepository,
     private val sharedPrefManager: SharedPrefManager,
     private val ratingsRepository: RatingsRepository,
@@ -42,10 +38,11 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val searchActivityDao: SearchActivityDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val removedLogDao: RemovedLogDao,
-    private val teamsRepositoryLazy: dagger.Lazy<TeamsRepository>,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
-    private val myLibraryDao: MyLibraryDao
-) : RealmRepository(databaseService, realmDispatcher), ResourcesRepository {
+    private val myLibraryDao: MyLibraryDao,
+    private val userDao: UserDao,
+    private val teamDao: TeamDao
+) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
     private fun userIdPattern(userId: String): String {
@@ -354,9 +351,7 @@ class ResourcesRepositoryImpl @Inject constructor(
             if (urls.isEmpty()) {
                 return false
             }
-            withContext(databaseService.ioDispatcher) {
-                DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
-            }
+            DownloadUtils.openPriorityDownloadService(context, ArrayList(urls))
             true
         } catch (e: Exception) {
             false
@@ -390,8 +385,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val user = findByField(RealmUser::class.java, "id", userId)
-        val userName = user?.name ?: return flowOf(emptySet())
+        val userName = userDao.getById(userId)?.name ?: return flowOf(emptySet())
 
         return resourceActivityDao.observeByUserAndType(userName, "resource_opened")
             .map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
@@ -587,20 +581,19 @@ class ResourcesRepositoryImpl @Inject constructor(
         if (library.isPrivate && !library.privateFor.isNullOrBlank()) {
             val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
                 ?: sharedPrefManager.getPlanetCode()
-            executeTransaction { realm ->
-                val teamResource = realm.createObject(
-                    org.ole.planet.myplanet.model.RealmMyTeam::class.java,
-                    UUID.randomUUID().toString()
+            teamDao.upsert(
+                RoomTeamEntity(
+                    id = UUID.randomUUID().toString(),
+                    teamId = library.privateFor,
+                    title = library.title,
+                    resourceId = remoteId,
+                    sourcePlanet = resolvedPlanetCode,
+                    teamType = "local",
+                    teamPlanetCode = resolvedPlanetCode,
+                    docType = "resourceLink",
+                    isUpdated = true,
                 )
-                teamResource.teamId = library.privateFor
-                teamResource.title = library.title
-                teamResource.resourceId = remoteId
-                teamResource.docType = "resourceLink"
-                teamResource.updated = true
-                teamResource.teamType = "local"
-                teamResource.teamPlanetCode = resolvedPlanetCode
-                teamResource.sourcePlanet = resolvedPlanetCode
-            }
+            )
         }
         return true
     }

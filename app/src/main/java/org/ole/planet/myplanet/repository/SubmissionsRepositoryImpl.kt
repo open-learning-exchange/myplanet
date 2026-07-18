@@ -724,7 +724,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.mutableListOf()))
+        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
         if (exam != null) {
             `object`.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
         } else {
@@ -765,7 +765,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.mutableListOf()))
+            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
             if (exam != null) {
                 jsonObject.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {

@@ -5,12 +5,10 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
@@ -20,10 +18,8 @@ data class CachedMyLifeItem(
     var isVisible: Boolean,
     var weight: Int
 )
-
 class LifeRepositoryImpl @Inject constructor(
     private val myLifeDao: MyLifeDao,
-    @RealmDispatcher private val realmDispatcher: CoroutineDispatcher,
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     @ApplicationScope private val appScope: CoroutineScope
@@ -79,7 +75,7 @@ class LifeRepositoryImpl @Inject constructor(
                 null
             }
             if (cached != null) {
-                appScope.launch(realmDispatcher) {
+                appScope.launch {
                     val storedItems = getMyLifeByUserId(userId, ensureLatest = false)
                     if (storedItems.isNotEmpty()) {
                         cacheMyLifeItems(userId, storedItems)
