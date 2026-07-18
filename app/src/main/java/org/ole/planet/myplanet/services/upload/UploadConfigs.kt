@@ -6,6 +6,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -54,6 +55,7 @@ class UploadConfigs @Inject constructor(
     private val apkLogDao: ApkLogDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseActivityDao: CourseActivityDao,
+    private val courseProgressDao: CourseProgressDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val submitPhotosDao: SubmitPhotosDao,
     private val newsLogDao: NewsLogDao,
@@ -72,14 +74,17 @@ class UploadConfigs @Inject constructor(
         }
     )
 
-    val CourseProgress = UploadConfig(
-        modelClass = RealmCourseProgress::class,
+    val CourseProgress = RoomUploadConfig(
         endpoint = "courses_progress",
-        queryBuilder = { query -> query.isNull("_id") },
-        filterGuests = true,
-        guestUserIdExtractor = { it.userId },
+        modelClassName = "RealmCourseProgress",
+        fetchPendingItems = { courseProgressDao.getPendingUploads() },
         serializer = UploadSerializer.Simple(RealmCourseProgress::serializeProgress),
-        idExtractor = { it.id }
+        idExtractor = { it.id },
+        markUploaded = { results ->
+            results.filter { result ->
+                courseProgressDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
+            }
+        }
     )
 
     val TeamTask = UploadConfig(

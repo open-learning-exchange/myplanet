@@ -2,13 +2,13 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Realm
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -25,17 +25,15 @@ class ProgressRepositoryImpl @Inject constructor(
     @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
-    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
+    private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
+    private val courseProgressDao: CourseProgressDao
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
         val courseIdsArray = courseIds.toTypedArray()
         val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
             `in`("courseId", courseIdsArray)
         }
-        val allProgresses = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseProgress::class.java) {
-            equalTo("userId", userId)
-            `in`("courseId", courseIdsArray)
-        }
+        val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
         val stepsByCourseId = allSteps.groupBy { it.courseId }
         val progressesByCourseId = allProgresses.groupBy { it.courseId }
@@ -92,10 +90,7 @@ class ProgressRepositoryImpl @Inject constructor(
     override suspend fun getCurrentProgress(
         steps: List<RealmCourseStep?>?, userId: String?, courseId: String?
     ): Int {
-        val progresses = queryList(RealmCourseProgress::class.java) {
-            equalTo("userId", userId)
-            equalTo("courseId", courseId)
-        }
+        val progresses = courseProgressDao.getByUserAndCourse(userId, courseId)
         return calculateCurrentProgress(steps, progresses)
     }
 
@@ -154,9 +149,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
-        return queryList(RealmCourseProgress::class.java) {
-            equalTo("userId", userId)
-        }
+        return courseProgressDao.getByUser(userId)
     }
 
     override suspend fun getCompletedCourses(userId: String): List<CourseCompletion> {
@@ -200,120 +193,92 @@ class ProgressRepositoryImpl @Inject constructor(
         stepNum: Int,
         passed: Boolean?
     ) {
-        executeTransaction { realm ->
-            var courseProgress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", courseId)
-                .equalTo("userId", userId)
-                .equalTo("stepNum", stepNum)
-                .findFirst()
-            if (courseProgress == null) {
-                courseProgress =
-                    realm.createObject(RealmCourseProgress::class.java, UUID.randomUUID().toString())
-                courseProgress.createdDate = Date().time
+        val now = Date().time
+        val courseProgress = courseProgressDao.findByCourseUserAndStep(courseId, userId, stepNum)
+            ?: RealmCourseProgress().apply {
+                id = UUID.randomUUID().toString()
+                createdDate = now
             }
-            courseProgress?.courseId = courseId
-            courseProgress?.stepNum = stepNum
-            if (passed != null) {
-                courseProgress?.passed = passed
-            }
-            courseProgress?.createdOn = planetCode
-            courseProgress?.updatedDate = Date().time
-            courseProgress?.parentCode = parentCode
-            courseProgress?.userId = userId
+        courseProgress.courseId = courseId
+        courseProgress.stepNum = stepNum
+        if (passed != null) {
+            courseProgress.passed = passed
         }
+        courseProgress.createdOn = planetCode
+        courseProgress.updatedDate = now
+        courseProgress.parentCode = parentCode
+        courseProgress.userId = userId
+        courseProgressDao.upsert(courseProgress)
     }
 
     override suspend fun hasUserCompletedSync(userId: String): Boolean = withContext(dispatcherProvider.io) {
         activitiesRepositoryLazy.get().hasUserCompletedSync(userId)
     }
 
-    private fun insertCourseProgress(
-        mRealm: Realm,
-        act: JsonObject?,
+    private fun courseProgressFromJson(
+        act: JsonObject,
         existingProgress: RealmCourseProgress?,
         localRecord: RealmCourseProgress?
-    ) {
+    ): RealmCourseProgress {
         val docId = JsonUtils.getString("_id", act)
-        val courseId = JsonUtils.getString("courseId", act)
-        val userId = JsonUtils.getString("userId", act)
-        val stepNum = JsonUtils.getInt("stepNum", act)
+        val localPassed = localRecord?.passed ?: false
+        val courseProgress = existingProgress
+            ?: localRecord
+            ?: RealmCourseProgress().apply { id = docId }
 
-        var courseProgress = existingProgress
-        if (courseProgress == null) {
-            val localPassed = localRecord?.passed ?: false
-            localRecord?.deleteFromRealm()
-
-            courseProgress = mRealm.createObject(RealmCourseProgress::class.java, docId)
-            // Preserve a locally-confirmed passed=true in case the server hasn't caught up yet.
-            if (localPassed) courseProgress.passed = true
+        courseProgress.id = docId
+        courseProgress._id = docId
+        courseProgress._rev = JsonUtils.getString("_rev", act)
+        if (courseProgress.passed != true) {
+            courseProgress.passed = JsonUtils.getBoolean("passed", act) || localPassed
         }
-        courseProgress?._id = docId
-        courseProgress?._rev = JsonUtils.getString("_rev", act)
-        if (courseProgress?.passed != true) {
-            courseProgress?.passed = JsonUtils.getBoolean("passed", act)
-        }
-        courseProgress?.stepNum = stepNum
-        courseProgress?.userId = userId
-        courseProgress?.parentCode = JsonUtils.getString("parentCode", act)
-        courseProgress?.courseId = courseId
-        courseProgress?.createdOn = JsonUtils.getString("createdOn", act)
-        courseProgress?.createdDate = JsonUtils.getLong("createdDate", act)
-        courseProgress?.updatedDate = JsonUtils.getLong("updatedDate", act)
+        courseProgress.stepNum = JsonUtils.getInt("stepNum", act)
+        courseProgress.userId = JsonUtils.getString("userId", act)
+        courseProgress.parentCode = JsonUtils.getString("parentCode", act)
+        courseProgress.courseId = JsonUtils.getString("courseId", act)
+        courseProgress.createdOn = JsonUtils.getString("createdOn", act)
+        courseProgress.createdDate = JsonUtils.getLong("createdDate", act)
+        courseProgress.updatedDate = JsonUtils.getLong("updatedDate", act)
+        return courseProgress
     }
 
     override suspend fun insertCourseProgressFromSync(docs: List<JsonObject>) {
-        val docIds = ArrayList<String>()
-        val courseIds = mutableSetOf<String>()
-        val userIds = mutableSetOf<String>()
-        val stepNums = mutableSetOf<Int>()
+        val docIds = docs.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }.distinct()
+        val courseIds = docs.map { JsonUtils.getString("courseId", it) }.filter { it.isNotEmpty() }.distinct()
+        val userIds = docs.map { JsonUtils.getString("userId", it) }.filter { it.isNotEmpty() }.distinct()
+        val stepNums = docs.map { JsonUtils.getInt("stepNum", it) }.distinct()
 
-        docs.forEach { jsonDoc ->
-            docIds.add(JsonUtils.getString("_id", jsonDoc))
-            courseIds.add(JsonUtils.getString("courseId", jsonDoc))
-            userIds.add(JsonUtils.getString("userId", jsonDoc))
-            stepNums.add(JsonUtils.getInt("stepNum", jsonDoc))
+        val existingProgresses = if (docIds.isNotEmpty()) {
+            courseProgressDao.getByIds(docIds).associateBy { it.id }
+        } else {
+            emptyMap()
         }
 
-        executeTransaction { realm ->
-            val existingProgresses = if (docIds.isNotEmpty()) {
-                realm.where(RealmCourseProgress::class.java)
-                    .`in`("id", docIds.toTypedArray())
-                    .findAll()
-                    .associateBy { it.id }
+        val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
+            courseProgressDao.getByCourseUsersAndSteps(courseIds, userIds, stepNums)
+        } else {
+            emptyList()
+        }
+
+        val localRecordsByKey = localRecords.groupBy { Triple(it.courseId, it.userId, it.stepNum) }
+
+        val progress = docs.map { act ->
+            val docId = JsonUtils.getString("_id", act)
+            val courseId = JsonUtils.getString("courseId", act)
+            val userId = JsonUtils.getString("userId", act)
+            val stepNum = JsonUtils.getInt("stepNum", act)
+            val existingProgress = existingProgresses[docId]
+            val localRecord = if (existingProgress == null) {
+                localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
+                    ?.find { it._id == null || it._id == docId }
             } else {
-                emptyMap()
+                null
             }
+            courseProgressFromJson(act, existingProgress, localRecord)
+        }
 
-            val localRecords = if (courseIds.isNotEmpty() && userIds.isNotEmpty() && stepNums.isNotEmpty()) {
-                realm.where(RealmCourseProgress::class.java)
-                    .`in`("courseId", courseIds.toTypedArray())
-                    .`in`("userId", userIds.toTypedArray())
-                    .`in`("stepNum", stepNums.toTypedArray())
-                    .findAll()
-            } else {
-                emptyList()
-            }
-
-            val localRecordsByKey = localRecords
-                .filter { it.isValid }
-                .groupBy { Triple(it.courseId, it.userId, it.stepNum) }
-
-            docs.forEach { act ->
-                val docId = JsonUtils.getString("_id", act)
-                val courseId = JsonUtils.getString("courseId", act)
-                val userId = JsonUtils.getString("userId", act)
-                val stepNum = JsonUtils.getInt("stepNum", act)
-
-                val existingProgress = existingProgresses[docId]
-
-                // Find local record manually instead of querying Realm again
-                val localRecord = if (existingProgress == null) {
-                    localRecordsByKey[Triple<String?, String?, Int>(courseId, userId, stepNum)]
-                        ?.find { it._id == null || it._id == docId }
-                } else null
-
-                insertCourseProgress(realm, act, existingProgress, localRecord)
-            }
+        if (progress.isNotEmpty()) {
+            courseProgressDao.upsertAll(progress)
         }
     }
 

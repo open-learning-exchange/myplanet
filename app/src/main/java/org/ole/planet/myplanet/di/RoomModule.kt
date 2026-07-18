@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
@@ -149,5 +150,10 @@ object RoomModule {
     @Provides
     fun provideOfflineActivityDao(database: AppDatabase): OfflineActivityDao {
         return database.offlineActivityDao()
+    }
+
+    @Provides
+    fun provideCourseProgressDao(database: AppDatabase): CourseProgressDao {
+        return database.courseProgressDao()
     }
 }

@@ -19,10 +19,10 @@ import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmCourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -52,7 +52,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val certificationDao: CertificationDao,
     private val tagDao: TagDao,
-    private val searchActivityDao: SearchActivityDao
+    private val searchActivityDao: SearchActivityDao,
+    private val courseProgressDao: CourseProgressDao
 ) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
 
     override suspend fun getAllCourses(): List<RealmMyCourse> {
@@ -484,13 +485,7 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun updateCourseProgress(courseId: String?, stepNum: Int, passed: Boolean) {
         if (courseId.isNullOrEmpty()) return
-        executeTransaction { realm ->
-            val progress = realm.where(RealmCourseProgress::class.java)
-                .equalTo("courseId", courseId)
-                .equalTo("stepNum", stepNum)
-                .findFirst()
-            progress?.passed = passed
-        }
+        courseProgressDao.updatePassedByCourseAndStep(courseId, stepNum, passed)
     }
 
     override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {

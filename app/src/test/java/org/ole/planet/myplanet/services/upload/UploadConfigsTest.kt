@@ -10,6 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -25,6 +26,7 @@ import org.ole.planet.myplanet.repository.UploadedItemResult
 class UploadConfigsTest {
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
     private val courseActivityDao: CourseActivityDao = mockk(relaxed = true)
+    private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val newsLogDao: NewsLogDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
@@ -43,6 +45,7 @@ class UploadConfigsTest {
         apkLogDao = mockk<ApkLogDao>(relaxed = true),
         searchActivityDao = searchActivityDao,
         courseActivityDao = courseActivityDao,
+        courseProgressDao = courseProgressDao,
         resourceActivityDao = resourceActivityDao,
         submitPhotosDao = submitPhotosDao,
         newsLogDao = newsLogDao,

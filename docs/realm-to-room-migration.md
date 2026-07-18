@@ -175,7 +175,11 @@ wired through `di/RoomModule`.
       `RealmOfflineActivity` is now a Room `@Entity`; `OfflineActivityDao` owns offline login
       counts/flows, last-login lookups, pending upload reads, upload acknowledgements, and sync
       upserts with the existing `_id` plus `loginTime`/`user` fallback dedupe behavior.
-- [ ] Migrate the remaining ~9 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **CourseProgress** migrated (uploaded + synced progress records). `RealmCourseProgress` is
+      now a Room `@Entity`; `CourseProgressDao` owns user/course progress reads, completion
+      records, save/update paths, pending upload reads, upload acknowledgements, and sync upserts
+      that preserve locally-passed steps when server progress lags.
+- [ ] Migrate the remaining ~8 uploadable models to `RoomUploadConfig` + the synced-only domains.
 - [ ] Remaining ~32 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
