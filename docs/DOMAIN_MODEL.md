@@ -79,7 +79,7 @@ Important fields:
 - `courseId` + `stepId` — if the resource belongs to a course step, these are set; a resource can exist both in the general library and inside a course step
 - `tag` — list of tag IDs linking to `RealmTag`; used for filtering
 
-Resources are rated (1–5 stars) via `RealmRating`. The `type` field on a rating is `"resource"` or `"course"` to distinguish what's being rated.
+Resources are rated (1–5 stars) via `Rating`. The `type` field on a rating is `"resource"` or `"course"` to distinguish what's being rated.
 
 ### Tags
 
@@ -227,11 +227,11 @@ The app computes an overall progress percentage from these records when displayi
 
 ### Achievements
 
-`RealmAchievement` is a learner's personal profile of accomplishments. They can record goals (`goals`), a purpose statement, personal achievements, references, links, and upload a resume. This is self-authored content, not auto-generated from course completions.
+`Achievement` is a learner's personal profile of accomplishments. They can record goals (`goals`), a purpose statement, personal achievements, references, links, and upload a resume. This is self-authored content, not auto-generated from course completions.
 
 ### Ratings
 
-`RealmRating` captures a learner's star rating and optional comment for a resource or course. Ratings are tied to the item via `item` (the resource/course ID) and `type` (`"resource"` or `"course"`). Aggregate rating data (average, count) is denormalized onto `RealmMyLibrary` (`averageRating`, `timesRated`) for display performance.
+`Rating` captures a learner's star rating and optional comment for a resource or course. Ratings are tied to the item via `item` (the resource/course ID) and `type` (`"resource"` or `"course"`). Aggregate rating data (average, count) is denormalized onto `RealmMyLibrary` (`averageRating`, `timesRated`) for display performance.
 
 ### Health Records
 
@@ -260,9 +260,9 @@ RealmUser (learner)
 │   └── learner progress → RealmCourseProgress (one per step)
 │
 ├── saves resource to library → RealmMyLibrary (userId list)
-│   └── learner rates → RealmRating (type = "resource")
+│   └── learner rates → Rating (type = "resource")
 │
-├── rates course → RealmRating (type = "course")
+├── rates course → Rating (type = "course")
 │
 ├── joins → RealmMyTeam (team or enterprise)
 │   ├── has tasks → RealmTeamTask
@@ -280,7 +280,7 @@ RealmUser (learner)
 │
 ├── earns certifications → Certification (groups courses)
 │
-└── writes achievements → RealmAchievement
+└── writes achievements → Achievement
 ```
 
 ---

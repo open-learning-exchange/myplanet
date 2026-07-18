@@ -10,7 +10,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -21,7 +21,7 @@ class RatingsRepositoryImpl @Inject constructor(
     private val ratingDao: RatingDao,
 ) : RealmRepository(databaseService, realmDispatcher), RatingsRepository {
     // Still extends RealmRepository for RealmUser lookups (RealmUser is not migrated yet);
-    // RealmRating itself is now stored in Room via ratingDao.
+    // Rating itself is now stored in Room via ratingDao.
 
     override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
         val ratings = ratingDao.getByType(type)
@@ -83,7 +83,7 @@ class RatingsRepositoryImpl @Inject constructor(
         val existingRating = ratingDao.findByTypeUserItem(type, resolvedUserId, itemId)
 
         if (existingRating == null || existingRating.id.isBlank()) {
-            val newRating = RealmRating().apply {
+            val newRating = Rating().apply {
                 id = UUID.randomUUID().toString()
             }
             setRatingData(newRating, resolvedUser, type, itemId, title, rating, comment)
@@ -102,7 +102,7 @@ class RatingsRepositoryImpl @Inject constructor(
     override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
         val entities = documentList.map { act ->
-            RealmRating().apply {
+            Rating().apply {
                 _rev = JsonUtils.getString("_rev", act)
                 _id = JsonUtils.getString("_id", act)
                 id = JsonUtils.getString("_id", act)
@@ -123,7 +123,7 @@ class RatingsRepositoryImpl @Inject constructor(
         ratingDao.upsertAll(entities)
     }
 
-    override suspend fun getPendingRatingUploads(): List<RealmRating> {
+    override suspend fun getPendingRatingUploads(): List<Rating> {
         return ratingDao.getPendingUploads()
     }
 
@@ -131,7 +131,7 @@ class RatingsRepositoryImpl @Inject constructor(
         return ratingDao.markUploaded(id) > 0
     }
 
-    private fun RealmRating.toRatingEntry(): RatingEntry =
+    private fun Rating.toRatingEntry(): RatingEntry =
         RatingEntry(
             id = id,
             comment = comment,
@@ -148,7 +148,7 @@ class RatingsRepositoryImpl @Inject constructor(
     }
 
     private fun setRatingData(
-        ratingObject: RealmRating,
+        ratingObject: Rating,
         userModel: RealmUser?,
         type: String,
         itemId: String,
@@ -178,7 +178,7 @@ class RatingsRepositoryImpl @Inject constructor(
     }
 
     private fun aggregateRatings(
-        ratings: Iterable<RealmRating>,
+        ratings: Iterable<Rating>,
         userId: String?
     ): Map<String?, RatingAggregation> {
         val aggregationMap = LinkedHashMap<String?, RatingAggregation>()

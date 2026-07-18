@@ -13,7 +13,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-class RealmRatingTest {
+class RatingTest {
 
     @MockK
     lateinit var mockContext: Context
@@ -39,7 +39,7 @@ class RealmRatingTest {
 
     @Test
     fun testSerializeRating() {
-        val rating = RealmRating().apply {
+        val rating = Rating().apply {
             _id = "test_id"
             _rev = "test_rev"
             user = "{ \"_id\": \"test_user_id\" }"
@@ -54,7 +54,7 @@ class RealmRatingTest {
             planetCode = "test_planet_code"
         }
 
-        val serialized = RealmRating.serializeRating(rating)
+        val serialized = Rating.serializeRating(rating)
 
         assertEquals("test_id", serialized.get("_id").asString)
         assertEquals("test_rev", serialized.get("_rev").asString)

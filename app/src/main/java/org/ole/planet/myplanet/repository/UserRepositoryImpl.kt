@@ -38,7 +38,7 @@ import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
-import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.RealmMeetup
@@ -1122,10 +1122,10 @@ class UserRepositoryImpl @Inject constructor(
         return activitiesRepositoryLazy.get().hasUserSyncAction(userId)
     }
 
-    override suspend fun initializeAchievement(achievementId: String): RealmAchievement? {
+    override suspend fun initializeAchievement(achievementId: String): Achievement? {
         val existing = achievementDao.getById(achievementId)
         if (existing != null) return existing
-        val achievement = RealmAchievement().apply { _id = achievementId }
+        val achievement = Achievement().apply { _id = achievementId }
         achievementDao.upsert(achievement)
         return achievement
     }
@@ -1217,7 +1217,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAchievementsForUpload(): List<JsonObject> {
-        return achievementDao.getPendingUploads().map { RealmAchievement.serialize(it) }
+        return achievementDao.getPendingUploads().map { Achievement.serialize(it) }
     }
 
     override suspend fun getSavedUsers(): List<User> = sharedPrefManager.getSavedUsers()
@@ -1283,13 +1283,13 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray) {
-        val achievements = ArrayList<RealmAchievement>(jsonArray.size())
+        val achievements = ArrayList<Achievement>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                achievements.add(RealmAchievement.fromJson(jsonDoc))
+                achievements.add(Achievement.fromJson(jsonDoc))
             }
         }
         achievementDao.upsertAll(achievements)

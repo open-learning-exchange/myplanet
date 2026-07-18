@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.RealmFeedback
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -232,7 +232,7 @@ class UploadManagerTest {
 
     @Test
     fun `uploadRating delegates to uploadCoordinator`() = testScope.runTest {
-        coEvery { uploadCoordinator.uploadRoom<RealmRating>(any()) } returns UploadResult.Success(1, emptyList())
+        coEvery { uploadCoordinator.uploadRoom<Rating>(any()) } returns UploadResult.Success(1, emptyList())
         uploadManager.uploadRating()
         advanceUntilIdle()
         coVerify { uploadCoordinator.uploadRoom(uploadConfigs.Rating) }

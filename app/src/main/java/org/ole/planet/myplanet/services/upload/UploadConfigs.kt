@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.NewsLog
-import org.ole.planet.myplanet.model.RealmRating
+import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -323,9 +323,9 @@ class UploadConfigs @Inject constructor(
     // Guest filtering is folded into getPendingRatingUploads()'s DAO query.
     val Rating = RoomUploadConfig(
         endpoint = "ratings",
-        modelClassName = "RealmRating",
+        modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple(RealmRating::serializeRating),
+        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Rating::serializeRating),
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

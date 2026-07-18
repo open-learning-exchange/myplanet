@@ -41,8 +41,8 @@ import org.ole.planet.myplanet.databinding.EditAttachementBinding
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
+import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.Achievement.Companion.createReference
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
@@ -65,7 +65,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
 
     var user: RealmUser? = null
-    private var achievement: RealmAchievement? = null
+    private var achievement: Achievement? = null
     private var referenceArray: JsonArray? = null
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
