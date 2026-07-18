@@ -7,24 +7,20 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
 import io.realm.Realm
-import io.realm.RealmQuery
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
@@ -44,13 +40,11 @@ import org.ole.planet.myplanet.services.SharedPrefManager
 @ExperimentalCoroutinesApi
 class SubmissionsRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var teamsRepositoryProvider: Provider<TeamsRepository>
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var exporter: SubmissionsRepositoryExporter
-    private val testDispatcher = UnconfinedTestDispatcher()
 
     private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
@@ -62,7 +56,6 @@ class SubmissionsRepositoryImplTest {
 
     @Before
     fun setUp() {
-        databaseService = mockk(relaxed = true)
         val teamsRepo = mockk<TeamsRepository>(relaxed = true)
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
@@ -71,17 +64,7 @@ class SubmissionsRepositoryImplTest {
         sharedPrefManager = mockk(relaxed = true)
         exporter = mockk(relaxed = true)
 
-        every { databaseService.ioDispatcher } returns testDispatcher
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            val realm = mockk<Realm>(relaxed = true)
-            transactionSlot.captured.invoke(realm)
-        }
-
         repository = spyk(SubmissionsRepositoryImpl(
-            databaseService,
-            testDispatcher,
             teamsRepositoryProvider,
             surveysRepositoryProvider,
             context,
@@ -156,20 +139,12 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getUniquePendingSurveys returns list when exams exist`() = runTest {
-        val mockSub1 = mockk<RealmSubmission>(relaxed = true).apply {
-            every { parentId } returns "exam1@course1"
-        }
-        val mockSub2 = mockk<RealmSubmission>(relaxed = true).apply {
-            every { parentId } returns "exam2@course1"
-        }
-
-        coEvery {
-            repository["queryList"](RealmSubmission::class.java, false, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns listOf(mockSub1, mockSub2)
-
-        coEvery {
-            repository["getExamsByIds"](any<List<String>>())
-        } returns emptyList<RealmStepExam>()
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            RoomSubmissionEntity(id = "sub1", parentId = "exam1@course1"),
+            RoomSubmissionEntity(id = "sub2", parentId = "exam2@course1"),
+        )
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub2")) } returns emptyList()
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns emptyList()
 
         val result = repository.getUniquePendingSurveys("user")
         assertEquals(0, result.size)
@@ -244,7 +219,7 @@ class SubmissionsRepositoryImplTest {
     fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
         repository.insertSubmission(submission)
-        coVerify(exactly = 0) { databaseService.executeTransactionAsync(any()) }
+        verify(exactly = 0) { submissionDao.upsertAllBlocking(any()) }
     }
 
     @Test
