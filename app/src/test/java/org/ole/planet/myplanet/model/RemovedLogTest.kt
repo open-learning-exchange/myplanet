@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.model
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class RealmRemovedLogTest {
+class RemovedLogTest {
     @Test
     fun `removed log stores resource removal data`() {
-        val log = RealmRemovedLog().apply {
+        val log = RemovedLog().apply {
             id = "log1"
             type = "resources"
             userId = "user1"

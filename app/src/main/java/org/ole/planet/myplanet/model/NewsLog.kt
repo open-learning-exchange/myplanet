@@ -11,7 +11,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils
     tableName = "news_log",
     indices = [Index("_id"), Index("_rev")]
 )
-open class RealmNewsLog {
+open class NewsLog {
     @PrimaryKey
     @JvmField
     var id: String = ""
@@ -24,7 +24,7 @@ open class RealmNewsLog {
     var androidId: String? = null
 
     companion object {
-        fun serialize(log: RealmNewsLog): JsonObject {
+        fun serialize(log: NewsLog): JsonObject {
             val ob = JsonObject()
             ob.addProperty("user", log.userId)
             ob.addProperty("type", log.type)

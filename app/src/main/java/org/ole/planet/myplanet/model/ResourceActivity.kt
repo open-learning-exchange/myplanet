@@ -8,7 +8,7 @@ import androidx.room.PrimaryKey
     tableName = "resource_activity",
     indices = [Index("_rev"), Index("type"), Index("user")]
 )
-open class RealmResourceActivity {
+open class ResourceActivity {
     @PrimaryKey
     @JvmField
     var id: String = ""

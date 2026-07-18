@@ -126,23 +126,45 @@ wired through `di/RoomModule`.
       `RealmRepository` only for still-Realm `RealmUser` lookups; upload config ->
       `RoomUploadConfig`. Repo aggregation moved from Realm `average()`/`RealmResults` to
       in-memory over DAO lists. Repo test + model test + UploadManager test updated.
-- [x] **SearchActivity** migrated (uploaded-only local activity log). `RealmSearchActivity` is now
+- [x] **Tag** migrated (synced-only). `RealmTag` Room `@Entity` (@JvmField id/_id; `attachedTo`
+      `RealmList<String>` → `List<String>?` via `Converters`; `@Index` on name/tagId/db; kept the
+      `toTag()`/`getTagsArray` POJO helpers); `TagDao` (parent-tag filter, by-db-and-linkId(s),
+      by-ids, by-names, by-db-and-tagIds, upsert); `TagsRepositoryImpl` off `RealmRepository`
+      entirely (child aggregation, linked-tag resolution, and sync `insert` all via the DAO).
+      Sync `"tags"` dispatch moved to the outer suspend `when` (drop `bulkInsertFromSync`).
+      `CoursesRepositoryImpl.filterCourses` now resolves tag→course links via `TagDao` before the
+      Realm course query (injects `tagDao`). First proven **`RealmList<String>` → JSON `List`**
+      mapping. Repo test rewritten to mock `TagDao`; `CoursesRepositoryImplTest` constructor updated.
+- [x] **Meetup** migrated (synced + uploaded, cross-repo). `RealmMeetup` Room `@Entity`
+      (non-null PK `id`; `@Index` on meetupId/teamId/userId; all-scalar fields, no converters);
+      the Realm `insert`/`insertList`/`getMyMeetUpIds(realm,…)` companions replaced with pure
+      `fromJson(...)` + `getMyMeetUpIds(List)`. `MeetupDao` (by-team/meetupId/id/user, members,
+      by-meetupIds, pending-uploads, upsert). `EventsRepositoryImpl` off the generic Realm API
+      (keeps `RealmRepository` only to resolve `RealmUser` members, which is still Realm);
+      `CommunityRepositoryImpl` now fully off `RealmRepository` (sync insert merges via the DAO);
+      `UserRepositoryImpl.getShelfData` fetches meetup ids via `MeetupDao` before its Realm block.
+      `Meetups` upload config → `RoomUploadConfig` (markUploaded sets meetupId/rev + clears
+      `updated` via the repo); `UploadManager.uploadMeetups` uses `uploadRoom`. Model + repo +
+      upload-manager + user-repo constructor tests updated. Also fixed a latent Tag-migration
+      fallout: `ResourcesViewModelTest` can no longer mockk `RealmTag.id` (now a `@JvmField`), so
+      it uses a real instance.
+- [x] **SearchActivity** migrated (uploaded-only local activity log). `SearchActivity` is now
       a Room `@Entity`; `SearchActivityDao` owns pending upload lookup, inserts, and upload
       acknowledgements; course/resource search logging now writes through the DAO; upload config
       uses `RoomUploadConfig`.
-- [x] **CourseActivity** migrated (uploaded-only course visit log). `RealmCourseActivity` is now
+- [x] **CourseActivity** migrated (uploaded-only course visit log). `CourseActivity` is now
       a Room `@Entity`; `CourseActivityDao` owns visit inserts, pending upload lookup, and upload
       acknowledgements; course visit logging writes through the DAO; upload config uses
       `RoomUploadConfig`.
-- [x] **ResourceActivity** migrated (uploaded + local read paths). `RealmResourceActivity` is
+- [x] **ResourceActivity** migrated (uploaded + local read paths). `ResourceActivity` is
       now a Room `@Entity`; `ResourceActivityDao` owns resource-open/sync inserts, counts,
       most-opened lookups, opened-resource observation, pending upload lookup, and upload
       acknowledgements; both regular and sync upload configs use `RoomUploadConfig`.
-- [x] **SubmitPhotos** migrated (uploaded photo submissions). `RealmSubmitPhotos` is now a
+- [x] **SubmitPhotos** migrated (uploaded photo submissions). `SubmitPhotos` is now a
       Room `@Entity`; `SubmitPhotosDao` owns photo inserts, pending lookup, id lookups, and
       upload acknowledgements; repository/photo uploader paths use the DAO, and the legacy upload
       config is Room-capable.
-- [x] **NewsLog** migrated (uploaded-only activity log). `RealmNewsLog` is now a Room
+- [x] **NewsLog** migrated (uploaded-only activity log). `NewsLog` is now a Room
       `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
       config uses `RoomUploadConfig`.
 - [x] **TeamActivities / TeamLog** migrated (uploaded + synced team visit log). `RealmTeamLog` is
@@ -157,7 +179,7 @@ wired through `di/RoomModule`.
       now a Room `@Entity`; `CourseProgressDao` owns user/course progress reads, completion
       records, save/update paths, pending upload reads, upload acknowledgements, and sync upserts
       that preserve locally-passed steps when server progress lags.
-- [x] **RemovedLog** migrated (local shelf tombstones). `RealmRemovedLog` is now a Room
+- [x] **RemovedLog** migrated (local shelf tombstones). `RemovedLog` is now a Room
       `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
       courses are re-added, and shelf merge filtering for removed resources/courses.
 - [x] **TeamTask** migrated (uploaded + synced task rows). `RealmTeamTask` is now a Room

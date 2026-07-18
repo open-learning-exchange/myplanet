@@ -27,10 +27,10 @@ import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmCourseActivity
+import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmResourceActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -74,7 +74,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceRemoved(userId: String, resourceId: String) {
         removedLogDao.insert(
-            RealmRemovedLog().apply {
+            RemovedLog().apply {
                 id = UUID.randomUUID().toString()
                 docId = resourceId
                 this.userId = userId
@@ -89,7 +89,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val createdOn = user?.planetCode
 
         courseActivityDao.insert(
-            RealmCourseActivity().apply {
+            CourseActivity().apply {
                 id = UUID.randomUUID().toString()
                 type = "visit"
                 this.title = title
@@ -150,7 +150,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         type: String?
     ) {
         resourceActivityDao.insert(
-            RealmResourceActivity().apply {
+            ResourceActivity().apply {
                 id = UUID.randomUUID().toString()
                 user = userName
                 this.parentCode = parentCode
@@ -237,7 +237,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val createdOn = user.planetCode
 
         resourceActivityDao.insert(
-            RealmResourceActivity().apply {
+            ResourceActivity().apply {
                 id = UUID.randomUUID().toString()
                 this.user = userName
                 _rev = null
@@ -408,7 +408,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 }
 
-internal fun serializeResourceActivities(activity: RealmResourceActivity): JsonObject {
+internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject {
     val ob = JsonObject()
     ob.addProperty("user", activity.user)
     ob.addProperty("resourceId", activity.resourceId)

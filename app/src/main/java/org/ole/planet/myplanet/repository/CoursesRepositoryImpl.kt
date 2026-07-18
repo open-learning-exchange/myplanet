@@ -27,8 +27,8 @@ import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
@@ -266,7 +266,7 @@ class CoursesRepositoryImpl @Inject constructor(
             addProperty("doc.subjectLevel", subject)
         }
         searchActivityDao.insert(
-            RealmSearchActivity(
+            SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
                 time = Calendar.getInstance().timeInMillis,
@@ -307,7 +307,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     .findFirst()
                 course?.removeUserId(userId)
             }
-            removedLogDao.insert(RealmRemovedLog().apply {
+            removedLogDao.insert(RemovedLog().apply {
                 id = UUID.randomUUID().toString()
                 type = "courses"
                 this.userId = userId

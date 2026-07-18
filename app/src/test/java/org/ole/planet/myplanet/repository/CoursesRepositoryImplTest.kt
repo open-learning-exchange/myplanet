@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -178,7 +178,7 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `saveSearchActivity writes course search activity to Room`() = runTest {
-        val savedActivity = slot<RealmSearchActivity>()
+        val savedActivity = slot<SearchActivity>()
 
         repository.saveSearchActivity(
             searchText = "algebra",

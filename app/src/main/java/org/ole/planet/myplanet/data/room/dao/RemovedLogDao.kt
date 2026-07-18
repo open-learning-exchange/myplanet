@@ -4,7 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import org.ole.planet.myplanet.model.RealmRemovedLog
+import org.ole.planet.myplanet.model.RemovedLog
 
 @Dao
 interface RemovedLogDao {
@@ -18,5 +18,5 @@ interface RemovedLogDao {
     suspend fun getRemovedDocIds(type: String, userId: String?): List<String?>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insert(log: RealmRemovedLog)
+    suspend fun insert(log: RemovedLog)
 }
