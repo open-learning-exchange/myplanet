@@ -6,6 +6,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -16,7 +17,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
-import org.ole.planet.myplanet.utils.JsonUtils
 
 @ExperimentalCoroutinesApi
 class HealthRepositoryImplTest {
@@ -41,7 +41,6 @@ class HealthRepositoryImplTest {
     @Before
     fun setUp() {
         every { dispatcherProvider.default } returns testDispatcher
-
         repository = HealthRepositoryImpl(
             mockApiInterface,
             dispatcherProvider,
@@ -62,6 +61,7 @@ class HealthRepositoryImplTest {
 
         val result = repository.initHealth()
         advanceUntilIdle()
+
         assertNotNull(result)
         assertEquals("test_key", result.userKey)
         assertNotNull(result.profile)
@@ -101,7 +101,6 @@ class HealthRepositoryImplTest {
     @Test
     fun getExaminationById_returns_examination() = testScope.runTest {
         val examination = HealthExamination().apply { _id = "exam1" }
-
         coEvery { healthExaminationDao.getById("exam1") } returns examination
 
         val result = repository.getExaminationById("exam1")
@@ -156,7 +155,7 @@ class HealthRepositoryImplTest {
     fun saveExamination_saves_objects_to_room() = testScope.runTest {
         val examination = HealthExamination()
         val pojo = HealthExamination()
-        val user = org.ole.planet.myplanet.model.RealmUser().apply { id = "user1" }
+        val user = RealmUser().apply { id = "user1" }
 
         repository.saveExamination(examination, pojo, user)
         advanceUntilIdle()
@@ -194,43 +193,44 @@ class HealthRepositoryImplTest {
 
     @Test
     fun getExaminationConditions_returns_map_for_valid_json() = testScope.runTest {
-        mockkObject(JsonUtils)
-        val examination = HealthExamination()
-        examination.conditions = "{"Fever": true, "Cough": false}"
-
-        val jsonObject = JsonObject()
-        jsonObject.addProperty("Fever", true)
-        jsonObject.addProperty("Cough", false)
-
-        every { JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java) } returns jsonObject
-        every { JsonUtils.getBoolean("Fever", jsonObject) } returns true
-        every { JsonUtils.getBoolean("Cough", jsonObject) } returns false
+        val examination = HealthExamination().apply {
+            conditions = "{\"Fever\": true, \"Cough\": false}"
+        }
 
         val result = repository.getExaminationConditions(examination)
         advanceUntilIdle()
 
         assertEquals(2, result.size)
-        assertTrue(result["Fever"] == true)
-        assertFalse(result["Cough"] == true)
+        assertEquals(true, result["Fever"])
+        assertEquals(false, result["Cough"])
     }
 
     @Test
     fun bulkInsertFromSync_inserts_non_design_docs() = testScope.runTest {
-        mockkObject(HealthExamination.Companion)
         val jsonArray = JsonArray().apply {
             add(JsonObject().apply {
-                add("doc", JsonObject().apply { addProperty("_id", "exam1") })
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "exam1")
+                    addProperty("_rev", "1-a")
+                    addProperty("temperature", 98.6f)
+                    add("conditions", JsonObject().apply { addProperty("Fever", true) })
+                })
             })
             add(JsonObject().apply {
                 add("doc", JsonObject().apply { addProperty("_id", "_design/skip") })
             })
         }
-        val mapped = HealthExamination().apply { _id = "exam1" }
-        every { HealthExamination.fromJson(any()) } returns mapped
 
         repository.bulkInsertFromSync(jsonArray)
         advanceUntilIdle()
 
-        coVerify(exactly = 1) { healthExaminationDao.upsertAll(match { it.size == 1 && it.first()._id == "exam1" }) }
+        coVerify(exactly = 1) {
+            healthExaminationDao.upsertAll(match {
+                it.size == 1 &&
+                    it.first()._id == "exam1" &&
+                    it.first()._rev == "1-a" &&
+                    it.first().conditions?.contains("Fever") == true
+            })
+        }
     }
 }
