@@ -5,9 +5,7 @@ import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
@@ -15,7 +13,6 @@ import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.CourseProgress
@@ -27,8 +24,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class ProgressRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
@@ -38,7 +33,7 @@ class ProgressRepositoryImpl @Inject constructor(
     private val submissionDao: SubmissionDao,
     private val answerDao: AnswerDao,
     private val questionDao: QuestionDao
-) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
+) : ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
         val allSteps = if (courseIds.isEmpty()) {
             emptyList()

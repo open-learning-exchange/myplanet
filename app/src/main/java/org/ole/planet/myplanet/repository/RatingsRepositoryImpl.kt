@@ -6,22 +6,18 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.RatingDao
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val gson: Gson,
     private val ratingDao: RatingDao,
-) : RealmRepository(databaseService, realmDispatcher), RatingsRepository {
-    // Still extends RealmRepository for RealmUser lookups (RealmUser is not migrated yet);
-    // Rating itself is now stored in Room via ratingDao.
+    private val userDao: UserDao,
+) : RatingsRepository {
 
     override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
         val ratings = ratingDao.getByType(type)
@@ -141,8 +137,7 @@ class RatingsRepositoryImpl @Inject constructor(
     private suspend fun findUserForRating(userId: String): RealmUser {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
-        val user = findByField(RealmUser::class.java, "id", userId)
-            ?: findByField(RealmUser::class.java, "_id", userId)
+        val user = userDao.getById(userId)?.toRealmModel()
 
         return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
     }
