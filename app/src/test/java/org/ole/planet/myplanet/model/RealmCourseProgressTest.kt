@@ -3,11 +3,11 @@ package org.ole.planet.myplanet.model
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class RealmCourseProgressTest {
+class CourseProgressTest {
 
     @Test
     fun testSerializeProgress() {
-        val progress = RealmCourseProgress().apply {
+        val progress = CourseProgress().apply {
             userId = "user123"
             parentCode = "parentCode123"
             courseId = "courseId123"
@@ -18,7 +18,7 @@ class RealmCourseProgressTest {
             updatedDate = 1672617600000L
         }
 
-        val jsonObject = RealmCourseProgress.serializeProgress(progress)
+        val jsonObject = CourseProgress.serializeProgress(progress)
 
         assertEquals("user123", jsonObject.get("userId").asString)
         assertEquals("parentCode123", jsonObject.get("parentCode").asString)

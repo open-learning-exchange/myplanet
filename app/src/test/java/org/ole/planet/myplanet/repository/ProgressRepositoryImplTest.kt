@@ -22,7 +22,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
@@ -95,8 +95,8 @@ class ProgressRepositoryImplTest {
 
         // Steps 1 and 3 are present, 2 is missing. The gap is at step 2, so progress should be 1.
         val progresses = listOf(
-            RealmCourseProgress().apply { stepNum = 1 },
-            RealmCourseProgress().apply { stepNum = 3 }
+            CourseProgress().apply { stepNum = 1 },
+            CourseProgress().apply { stepNum = 3 }
         )
 
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses
@@ -107,9 +107,9 @@ class ProgressRepositoryImplTest {
 
         // Now test where 1, 2, 3 are present, 4 is missing, to ensure it doesn't just always return 1
         val progresses2 = listOf(
-            RealmCourseProgress().apply { stepNum = 1 },
-            RealmCourseProgress().apply { stepNum = 2 },
-            RealmCourseProgress().apply { stepNum = 3 }
+            CourseProgress().apply { stepNum = 1 },
+            CourseProgress().apply { stepNum = 2 },
+            CourseProgress().apply { stepNum = 3 }
         )
 
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses2
@@ -127,8 +127,8 @@ class ProgressRepositoryImplTest {
         )
 
         val progresses = listOf(
-            RealmCourseProgress().apply { stepNum = 1 },
-            RealmCourseProgress().apply { stepNum = 2 }
+            CourseProgress().apply { stepNum = 1 },
+            CourseProgress().apply { stepNum = 2 }
         )
 
         coEvery { courseProgressDao.getByUserAndCourse("user1", "course1") } returns progresses
@@ -187,7 +187,7 @@ class ProgressRepositoryImplTest {
             repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
         } returns steps
 
-        coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(RealmCourseProgress().apply {
+        coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(CourseProgress().apply {
             stepNum = 1
             courseId = "course1"
         })
@@ -232,7 +232,7 @@ class ProgressRepositoryImplTest {
         val steps1 = listOf(RealmCourseStep().apply { courseId = "course1" })
         val steps2 = listOf(RealmCourseStep().apply { courseId = "course2" }, RealmCourseStep().apply { courseId = "course2" })
 
-        val progresses1 = listOf(RealmCourseProgress().apply { courseId = "course1"; stepNum = 1 })
+        val progresses1 = listOf(CourseProgress().apply { courseId = "course1"; stepNum = 1 })
 
         coEvery {
             repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
@@ -254,8 +254,8 @@ class ProgressRepositoryImplTest {
     @Test
     fun testGetProgressRecords() = testScope.runTest {
         val progresses = listOf(
-            RealmCourseProgress().apply { userId = "user1"; courseId = "course1" },
-            RealmCourseProgress().apply { userId = "user1"; courseId = "course2" }
+            CourseProgress().apply { userId = "user1"; courseId = "course1" },
+            CourseProgress().apply { userId = "user1"; courseId = "course2" }
         )
 
         coEvery { courseProgressDao.getByUser("user1") } returns progresses
@@ -283,8 +283,8 @@ class ProgressRepositoryImplTest {
         )
 
         val progresses = listOf(
-            RealmCourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
-            RealmCourseProgress().apply { courseId = "course2"; stepNum = 1; passed = true }
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true },
+            CourseProgress().apply { courseId = "course2"; stepNum = 1; passed = true }
         )
 
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses
@@ -380,7 +380,7 @@ class ProgressRepositoryImplTest {
             addProperty("stepNum", 1)
             addProperty("passed", false)
         }
-        val existingProgress = RealmCourseProgress().apply {
+        val existingProgress = CourseProgress().apply {
             id = "local1"
             _id = null
             passed = true
@@ -414,7 +414,7 @@ class ProgressRepositoryImplTest {
         )
 
         val progresses = listOf(
-            RealmCourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
+            CourseProgress().apply { courseId = "course1"; stepNum = 1; passed = true }
         )
 
         coEvery { mockCoursesRepository.getMyCourses("user1") } returns myCourses

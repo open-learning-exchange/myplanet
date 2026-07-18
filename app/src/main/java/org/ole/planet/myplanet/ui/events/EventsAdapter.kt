@@ -6,14 +6,14 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemMeetupBinding
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EventsAdapter(
-    private val onMeetupClick: ((RealmMeetup) -> Unit)? = null
-) : ListAdapter<RealmMeetup, EventsAdapter.EventsViewHolder>(
-    DiffUtils.itemCallback<RealmMeetup>(
+    private val onMeetupClick: ((Meetup) -> Unit)? = null
+) : ListAdapter<Meetup, EventsAdapter.EventsViewHolder>(
+    DiffUtils.itemCallback<Meetup>(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
         areContentsTheSame = { oldItem, newItem -> oldItem.id == newItem.id && oldItem.title == newItem.title && oldItem.description == newItem.description && oldItem.startDate == newItem.startDate && oldItem.endDate == newItem.endDate && oldItem.startTime == newItem.startTime && oldItem.endTime == newItem.endTime && oldItem.meetupLocation == newItem.meetupLocation && oldItem.meetupLink == newItem.meetupLink && oldItem.recurring == newItem.recurring && oldItem.creator == newItem.creator },
         getChangePayload = { oldItem, newItem ->

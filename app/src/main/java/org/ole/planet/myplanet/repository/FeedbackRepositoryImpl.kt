@@ -8,7 +8,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 
@@ -24,8 +24,8 @@ class FeedbackRepositoryImpl @Inject constructor(
         message: String,
         item: String?,
         state: String?,
-    ): RealmFeedback {
-        val feedback = RealmFeedback()
+    ): Feedback {
+        val feedback = Feedback()
         feedback.id = UUID.randomUUID().toString()
         if (state != null) {
             feedback.title = "Question regarding /$state"
@@ -54,7 +54,7 @@ class FeedbackRepositoryImpl @Inject constructor(
         return feedback
     }
 
-    override suspend fun getFeedback(userModel: RealmUser?): Flow<List<RealmFeedback>> {
+    override suspend fun getFeedback(userModel: RealmUser?): Flow<List<Feedback>> {
         return if (userModel?.isManager() == true) {
             feedbackDao.getAllSortedFlow()
         } else {
@@ -62,11 +62,11 @@ class FeedbackRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getPendingFeedback(): List<RealmFeedback> {
+    override suspend fun getPendingFeedback(): List<Feedback> {
         return feedbackDao.getPending()
     }
 
-    override suspend fun getFeedbackById(id: String?): RealmFeedback? {
+    override suspend fun getFeedbackById(id: String?): Feedback? {
         return id?.let { feedbackDao.findById(it) }
     }
 
@@ -89,24 +89,24 @@ class FeedbackRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveFeedback(feedback: RealmFeedback) {
+    override suspend fun saveFeedback(feedback: Feedback) {
         feedbackDao.upsert(feedback)
     }
 
     override suspend fun insertFromJson(jsonObject: JsonObject) {
-        feedbackDao.upsert(mapToRealmFeedback(jsonObject))
+        feedbackDao.upsert(mapToFeedback(jsonObject))
     }
 
     override suspend fun insertFeedbackList(jsonObjects: List<JsonObject>) {
-        feedbackDao.upsertAll(jsonObjects.map { mapToRealmFeedback(it) })
+        feedbackDao.upsertAll(jsonObjects.map { mapToFeedback(it) })
     }
 
     override suspend fun markFeedbackUploaded(id: String): Boolean {
         return feedbackDao.markUploaded(id) > 0
     }
 
-    private fun mapToRealmFeedback(act: JsonObject): RealmFeedback {
-        return RealmFeedback().apply {
+    private fun mapToFeedback(act: JsonObject): Feedback {
+        return Feedback().apply {
             id = JsonUtils.getString("_id", act)
             _id = JsonUtils.getString("_id", act)
             title = JsonUtils.getString("title", act)

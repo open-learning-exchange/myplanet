@@ -13,7 +13,7 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 
-class RealmFeedbackTest {
+class FeedbackTest {
 
     @Before
     fun setup() {
@@ -31,7 +31,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testSetMessagesJsonArray() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
         val jsonArray = JsonArray()
         val obj = JsonObject()
         obj.addProperty("message", "Test message")
@@ -43,7 +43,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testSetMessagesString() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
         val messageString = "[{\"message\":\"Test message\"}]"
         feedback.messages = messageString
         assertEquals(messageString, feedback.messages)
@@ -51,7 +51,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testMessageListEmpty() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
         feedback.messages = ""
         assertNull(feedback.messageList)
 
@@ -61,7 +61,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testMessageListWithElements() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
         val messageString = """
             [
               {"message": "msg0", "user": "user0", "time": "time0"},
@@ -83,7 +83,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testMessageEmpty() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
         feedback.messages = ""
         assertEquals("", feedback.message)
 
@@ -93,7 +93,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testMessageWithElements() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
         val messageString = """
             [
               {"message": "First message", "user": "user0", "time": "time0"},
@@ -106,7 +106,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testSerializeFeedback() {
-        val feedback = RealmFeedback().apply {
+        val feedback = Feedback().apply {
             title = "Test Title"
             source = "Test Source"
             status = "Open"
@@ -124,7 +124,7 @@ class RealmFeedbackTest {
         val messageString = "[{\"message\":\"Test message\"}]"
         feedback.messages = messageString
 
-        val serialized = RealmFeedback.serializeFeedback(feedback)
+        val serialized = Feedback.serializeFeedback(feedback)
 
         assertEquals("Test Title", serialized.get("title").asString)
         assertEquals("Test Source", serialized.get("source").asString)
@@ -147,7 +147,7 @@ class RealmFeedbackTest {
 
     @Test
     fun testSerializeFeedbackWithInvalidMessagesException() {
-        val feedback = RealmFeedback()
+        val feedback = Feedback()
 
         feedback.messages = "invalid json"
 
@@ -158,7 +158,7 @@ class RealmFeedbackTest {
             }
         }
 
-        val jsonObject = RealmFeedback.serializeFeedback(feedback)
+        val jsonObject = Feedback.serializeFeedback(feedback)
 
         // When an exception is thrown, the "messages" property is not added
         assertNull(jsonObject.get("messages"))

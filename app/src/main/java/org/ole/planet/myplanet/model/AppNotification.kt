@@ -7,7 +7,7 @@ import java.util.Date
 import java.util.UUID
 
 @Entity(tableName = "notifications", indices = [Index("userId"), Index("type")])
-class RealmNotification {
+class AppNotification {
     @PrimaryKey
     var id: String = UUID.randomUUID().toString()
     var userId: String = ""

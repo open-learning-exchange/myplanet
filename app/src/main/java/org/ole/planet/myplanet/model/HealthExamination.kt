@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "health_examinations", indices = [Index("userId")])
-class RealmHealthExamination {
+class HealthExamination {
     @PrimaryKey
     var _id: String = ""
     var userId: String? = null
@@ -49,8 +49,8 @@ class RealmHealthExamination {
     }
 
     companion object {
-        fun fromJson(act: JsonObject?): RealmHealthExamination {
-            val myHealth = RealmHealthExamination()
+        fun fromJson(act: JsonObject?): HealthExamination {
+            val myHealth = HealthExamination()
             myHealth._id = JsonUtils.getString("_id", act)
             myHealth.data = JsonUtils.getString("data", act)
             myHealth.userId = JsonUtils.getString("_id", act)
@@ -75,7 +75,7 @@ class RealmHealthExamination {
             return myHealth
         }
 
-        fun serialize(health: RealmHealthExamination): JsonObject {
+        fun serialize(health: HealthExamination): JsonObject {
             val `object` = JsonObject()
             if (!TextUtils.isEmpty(health.userId)) `object`.addProperty("_id", health.userId)
             if (!TextUtils.isEmpty(health._rev)) `object`.addProperty("_rev", health._rev)

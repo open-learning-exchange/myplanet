@@ -11,7 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.RetryDao
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
@@ -34,7 +34,7 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `enqueue inserts a created operation`() = runTest {
-        val insertedSlot = slot<RealmRetryOperation>()
+        val insertedSlot = slot<RetryOperation>()
         coEvery { retryDao.insert(capture(insertedSlot)) } returns Unit
 
         val retryFailure = RetryFailure("itemId", "test error", 500)
@@ -52,14 +52,14 @@ class RetryRepositoryImplTest {
         assertEquals("testDbId", op.dbId)
         assertEquals("TestClass", op.modelClassName)
         assertEquals("testUserId", op.userId)
-        assertEquals(RealmRetryOperation.STATUS_PENDING, op.status)
+        assertEquals(RetryOperation.STATUS_PENDING, op.status)
         assertEquals(1, op.attemptCount)
         assertEquals(500, op.httpCode)
     }
 
     @Test
     fun `updateAttempt updates operation fields`() = runTest {
-        val operation = RealmRetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
+        val operation = RetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.findById("opId") } returns operation
 
         repository.updateAttempt("opId", RetryFailure("itemId", "Test Error", 503))
@@ -73,46 +73,46 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `updateAttempt changes status to abandoned when max attempts reached`() = runTest {
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 4; maxAttempts = 5; status = RealmRetryOperation.STATUS_PENDING
+        val operation = RetryOperation().apply {
+            attemptCount = 4; maxAttempts = 5; status = RetryOperation.STATUS_PENDING
         }
         coEvery { retryDao.findById("opId") } returns operation
 
         repository.updateAttempt("opId", RetryFailure("itemId", "Unknown error", null))
 
         assertEquals(5, operation.attemptCount)
-        assertEquals(RealmRetryOperation.STATUS_ABANDONED, operation.status)
+        assertEquals(RetryOperation.STATUS_ABANDONED, operation.status)
     }
 
     @Test
     fun `markInProgress updates status`() = runTest {
-        val operation = RealmRetryOperation().apply { status = RealmRetryOperation.STATUS_PENDING }
+        val operation = RetryOperation().apply { status = RetryOperation.STATUS_PENDING }
         coEvery { retryDao.findById("opId") } returns operation
 
         repository.markInProgress("opId")
 
-        assertEquals(RealmRetryOperation.STATUS_IN_PROGRESS, operation.status)
+        assertEquals(RetryOperation.STATUS_IN_PROGRESS, operation.status)
         coVerify { retryDao.update(operation) }
     }
 
     @Test
     fun `markCompleted updates status and timestamp`() = runTest {
-        val operation = RealmRetryOperation().apply {
-            status = RealmRetryOperation.STATUS_PENDING; lastAttemptTime = 0
+        val operation = RetryOperation().apply {
+            status = RetryOperation.STATUS_PENDING; lastAttemptTime = 0
         }
         coEvery { retryDao.findById("opId") } returns operation
 
         repository.markCompleted("opId")
 
-        assertEquals(RealmRetryOperation.STATUS_COMPLETED, operation.status)
+        assertEquals(RetryOperation.STATUS_COMPLETED, operation.status)
         assert(operation.lastAttemptTime > 0)
         coVerify { retryDao.update(operation) }
     }
 
     @Test
     fun `markFailed updates status to pending when attempts remain`() = runTest {
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 1; maxAttempts = 5; status = RealmRetryOperation.STATUS_IN_PROGRESS
+        val operation = RetryOperation().apply {
+            attemptCount = 1; maxAttempts = 5; status = RetryOperation.STATUS_IN_PROGRESS
         }
         coEvery { retryDao.findById("opId") } returns operation
 
@@ -121,26 +121,26 @@ class RetryRepositoryImplTest {
         assertEquals(2, operation.attemptCount)
         assertEquals("Fail reason", operation.errorMessage)
         assertEquals(404, operation.httpCode)
-        assertEquals(RealmRetryOperation.STATUS_PENDING, operation.status)
+        assertEquals(RetryOperation.STATUS_PENDING, operation.status)
         assert(operation.nextRetryTime > 0)
     }
 
     @Test
     fun `markFailed updates status to abandoned when max attempts reached`() = runTest {
-        val operation = RealmRetryOperation().apply {
-            attemptCount = 4; maxAttempts = 5; status = RealmRetryOperation.STATUS_IN_PROGRESS
+        val operation = RetryOperation().apply {
+            attemptCount = 4; maxAttempts = 5; status = RetryOperation.STATUS_IN_PROGRESS
         }
         coEvery { retryDao.findById("opId") } returns operation
 
         repository.markFailed("opId", "Fail reason", 500)
 
         assertEquals(5, operation.attemptCount)
-        assertEquals(RealmRetryOperation.STATUS_ABANDONED, operation.status)
+        assertEquals(RetryOperation.STATUS_ABANDONED, operation.status)
     }
 
     @Test
     fun `getPending returns dao result for current time`() = runTest {
-        val operation1 = RealmRetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
+        val operation1 = RetryOperation().apply { attemptCount = 1; maxAttempts = 5 }
         coEvery { retryDao.getPending(timeProvider.now()) } returns listOf(operation1)
 
         val pending = repository.getPending()
@@ -160,7 +160,7 @@ class RetryRepositoryImplTest {
 
     @Test
     fun `getExistingOperation returns dao result`() = runTest {
-        val operation = RealmRetryOperation()
+        val operation = RetryOperation()
         coEvery { retryDao.findExisting("item123", "typeA") } returns operation
 
         val result = repository.getExistingOperation("item123", "typeA")

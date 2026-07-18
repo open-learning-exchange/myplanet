@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.HealthRepository
@@ -24,9 +24,9 @@ import org.ole.planet.myplanet.utils.JsonUtils
 data class HealthExaminationState(
     val isLoading: Boolean = true,
     val user: RealmUser? = null,
-    val pojo: RealmHealthExamination? = null,
+    val pojo: HealthExamination? = null,
     val health: RealmMyHealth? = null,
-    val examination: RealmHealthExamination? = null
+    val examination: HealthExamination? = null
 )
 
 @HiltViewModel
@@ -50,9 +50,9 @@ class HealthExaminationViewModel @Inject constructor(
             _state.value = _state.value.copy(isLoading = true)
 
             var user: RealmUser? = null
-            var pojo: RealmHealthExamination? = null
+            var pojo: HealthExamination? = null
             var health: RealmMyHealth? = null
-            var examination: RealmHealthExamination? = null
+            var examination: HealthExamination? = null
 
             withContext(dispatcherProvider.io) {
                 if (userId != null) {
@@ -92,7 +92,7 @@ class HealthExaminationViewModel @Inject constructor(
         }
     }
 
-    fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
+    fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: RealmUser?) {
         if (_isSaving.value) return
 
         viewModelScope.launch {

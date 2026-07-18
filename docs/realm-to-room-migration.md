@@ -73,18 +73,18 @@ wired through `di/RoomModule`.
       `DictionaryActivity`; legacy `RealmDictionary` is now a plain compatibility DTO). First proven template (raw-Realm activity).
 - [x] Realm transition config: `DatabaseService` now uses `deleteRealmIfMigrationNeeded()` so a
       model leaving the Realm schema recreates the Realm file instead of crashing (drop-and-resync).
-- [x] **Life** domain migrated end-to-end (`RealmMyLife` is now a Room `@Entity`, `MyLifeDao`,
+- [x] **Life** domain migrated end-to-end (`MyLife` is now a Room `@Entity`, `MyLifeDao`,
       `LifeRepositoryImpl` off `RealmRepository`, both Life test files ported). First proven
       *repository* template (in-place model conversion, class name kept so UI is untouched).
-- [x] **Personals** domain migrated end-to-end (`RealmMyPersonal` now a Room `@Entity` with
+- [x] **Personals** domain migrated end-to-end (`Personal` now a Room `@Entity` with
       `@JvmField` on `id`/`_id` to avoid Room's ambiguous-accessor error, `PersonalDao` with a
       reactive `Flow` query, `PersonalsRepositoryImpl` off `RealmRepository`, test ported).
-- [x] **Retry** domain migrated end-to-end (`RealmRetryOperation` now a Room `@Entity`;
+- [x] **Retry** domain migrated end-to-end (`RetryOperation` now a Room `@Entity`;
       Realm-based `createFromRetryFailure` factory replaced with a pure one; `RetryDao` with
       status-filtered queries/updates; `RetryRepositoryImpl` off `RealmRepository`; test ported).
 - [x] **Community** domain migrated (`Community` now a Room `@Entity`; `CommunityDao` with a
       `@Transaction replaceAll`; `CommunityRepositoryImpl` keeps `RealmRepository` only for the
-      still-Realm `RealmMeetup` insert, using `CommunityDao` for community rows). First proven
+      still-Realm `Meetup` insert, using `CommunityDao` for community rows). First proven
       *coexistence-within-one-repo* template. Dropped a Realm-only `isValid` check in the sync UI.
 - [x] **Upload framework made Room-capable**: added `RoomUploadConfig<T: Any>` + a parallel
       `UploadCoordinator.uploadRoom()` path (DB-agnostic: `fetchPendingItems` + DAO `markUploaded`),
@@ -114,7 +114,7 @@ wired through `di/RoomModule`.
       value-object child lists. (Child types that ARE queried independently — courseSteps,
       answers, attachments, examQuestions — will instead need their own tables.) Both Chat test
       files ported to mock `ChatDao`.
-- [x] **Feedback** migrated (both uploaded AND synced). `RealmFeedback` Room `@Entity`
+- [x] **Feedback** migrated (both uploaded AND synced). `Feedback` Room `@Entity`
       (@JvmField id/_id; messages JSON string; @Ignore on computed messageList/message);
       `FeedbackDao` with two reactive `Flow` queries; `FeedbackRepositoryImpl` off
       `RealmRepository`; `Feedback` upload config -> `RoomUploadConfig` (markUploaded sets
@@ -135,7 +135,7 @@ wired through `di/RoomModule`.
       `CoursesRepositoryImpl.filterCourses` now resolves tag→course links via `TagDao` before the
       Realm course query (injects `tagDao`). First proven **`RealmList<String>` → JSON `List`**
       mapping. Repo test rewritten to mock `TagDao`; `CoursesRepositoryImplTest` constructor updated.
-- [x] **Meetup** migrated (synced + uploaded, cross-repo). `RealmMeetup` Room `@Entity`
+- [x] **Meetup** migrated (synced + uploaded, cross-repo). `Meetup` Room `@Entity`
       (non-null PK `id`; `@Index` on meetupId/teamId/userId; all-scalar fields, no converters);
       the Realm `insert`/`insertList`/`getMyMeetUpIds(realm,…)` companions replaced with pure
       `fromJson(...)` + `getMyMeetUpIds(List)`. `MeetupDao` (by-team/meetupId/id/user, members,
@@ -175,19 +175,19 @@ wired through `di/RoomModule`.
       `OfflineActivity` is now a Room `@Entity`; `OfflineActivityDao` owns offline login
       counts/flows, last-login lookups, pending upload reads, upload acknowledgements, and sync
       upserts with the existing `_id` plus `loginTime`/`user` fallback dedupe behavior.
-- [x] **CourseProgress** migrated (uploaded + synced progress records). `RealmCourseProgress` is
+- [x] **CourseProgress** migrated (uploaded + synced progress records). `CourseProgress` is
       now a Room `@Entity`; `CourseProgressDao` owns user/course progress reads, completion
       records, save/update paths, pending upload reads, upload acknowledgements, and sync upserts
       that preserve locally-passed steps when server progress lags.
 - [x] **RemovedLog** migrated (local shelf tombstones). `RemovedLog` is now a Room
       `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
       courses are re-added, and shelf merge filtering for removed resources/courses.
-- [x] **TeamTask** migrated (uploaded + synced task rows). `RealmTeamTask` is now a Room
+- [x] **TeamTask** migrated (uploaded + synced task rows). `TeamTask` is now a Room
       `@Entity`; `TeamTaskDao` owns task flows, due-task notification lookups, title/id lookups,
       sync upserts, pending-upload reads, and upload acknowledgements; task repository and
       notification lookups use the DAO, and the upload config now uses `RoomUploadConfig`.
 - [ ] Migrate the remaining ~7 uploadable models to `RoomUploadConfig` + the synced-only domains.
-- [x] **Notification** migrated (synced local notification rows). `RealmNotification` is now a
+- [x] **Notification** migrated (synced local notification rows). `AppNotification` is now a
       Room `@Entity`; `NotificationDao` owns unread counts, read/sync marking, list filters,
       deletes, single-doc upserts, and sync bulk upserts. Notification sync now runs outside the
       legacy Realm transaction path.
@@ -196,7 +196,7 @@ wired through `di/RoomModule`.
       `AchievementDao` owns initialization, edits, pending-upload reads, upload acknowledgements,
       and sync bulk upserts. Achievement sync now runs outside the legacy Realm transaction path.
 - [x] **HealthExamination** migrated (synced + custom uploaded health records).
-      `RealmHealthExamination` is now a Room `@Entity`; `HealthExaminationDao` owns profile/id
+      `HealthExamination` is now a Room `@Entity`; `HealthExaminationDao` owns profile/id
       lookups, pending upload reads, upload acknowledgements, user-id fixes after user upload,
       and sync bulk upserts. Health sync now runs outside the legacy Realm transaction path.
 - [ ] Remaining ~28 model domains.

@@ -37,17 +37,17 @@ import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.CourseActivity
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.model.NewsLog
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
@@ -55,7 +55,7 @@ import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TeamNotification
 import org.ole.planet.myplanet.model.TeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.UserChallengeActions
 
 /**
@@ -68,19 +68,19 @@ import org.ole.planet.myplanet.model.UserChallengeActions
 @Database(
     entities = [
         DictionaryEntity::class,
-        RealmMyLife::class,
-        RealmMyPersonal::class,
-        RealmRetryOperation::class,
+        MyLife::class,
+        Personal::class,
+        RetryOperation::class,
         Community::class,
         ApkLog::class,
         UserChallengeActions::class,
         TeamNotification::class,
         Certification::class,
         ChatHistory::class,
-        RealmFeedback::class,
+        Feedback::class,
         Rating::class,
         RealmTag::class,
-        RealmMeetup::class,
+        Meetup::class,
         SearchActivity::class,
         CourseActivity::class,
         ResourceActivity::class,
@@ -88,12 +88,12 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         NewsLog::class,
         TeamLog::class,
         OfflineActivity::class,
-        RealmCourseProgress::class,
+        CourseProgress::class,
         RemovedLog::class,
-        RealmTeamTask::class,
-        RealmNotification::class,
+        TeamTask::class,
+        AppNotification::class,
         Achievement::class,
-        RealmHealthExamination::class,
+        HealthExamination::class,
     ],
     version = 1,
     exportSchema = false,

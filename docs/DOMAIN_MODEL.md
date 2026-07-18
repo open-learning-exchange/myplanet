@@ -35,7 +35,7 @@ The app is designed for **low-connectivity environments**. Everything a learner 
 
 Learners are the primary users of myPlanet. They browse and download resources, enrol in courses, take exams, complete surveys, join teams, and post in community discussions. Most of what the app does is built for them.
 
-Their activity is tracked across courses (`RealmCourseProgress`), exams (`RealmSubmission`), and resource views (via activity logs).
+Their activity is tracked across courses (`CourseProgress`), exams (`RealmSubmission`), and resource views (via activity logs).
 
 ### Managers (Coaches / Administrators)
 
@@ -97,11 +97,11 @@ How they connect:
 - Resources attached to a specific step have both `courseId` and `stepId` set on their `RealmMyLibrary` record.
 - Exams and surveys are both optional per step, not guaranteed — a step can have zero, one, or more of each attached. Both share the same `RealmStepExam` model and are distinguished by the `type` field: `"courses"` for exams, `"surveys"` for surveys. When present, a `RealmStepExam` carries both `courseId` and `stepId`. `CoursesRepositoryImpl.getCourseStepData()` queries these separately — `stepExams` (`type = "courses"`) and `stepSurvey` (`type = "surveys"`) — both returned as `List<RealmStepExam>` that can be empty. `getCourseExamCount()` counts however many exam-type `RealmStepExam` rows exist for a course, with no constraint tying that count to the number of steps; there's no equivalent `getCourseSurveyCount()` helper for surveys.
 
-A learner's membership in a course is tracked by the `userId` list on `RealmMyCourse` — joining a course adds the learner's ID to that list. Progress through steps is tracked by `RealmCourseProgress` records (one per step, per learner).
+A learner's membership in a course is tracked by the `userId` list on `RealmMyCourse` — joining a course adds the learner's ID to that list. Progress through steps is tracked by `CourseProgress` records (one per step, per learner).
 
 **Certifications:** `Certification` is a static reference list synced down from the server — it just maps a certification `name` to a list of `courseIds`. It has no `userId` and no completion/progress field; nothing in the codebase marks a certification as "earned" by a learner.
 
-Course completion itself is tracked separately and per-learner: `ProgressRepositoryImpl.getCompletedCourses(userId)` (`ProgressRepositoryImpl.kt:156-185`) checks `RealmCourseProgress` and counts a course complete once every one of its steps has a `passed = true` record. The dashboard (`BellDashboardFragment.showBadges()`) renders one star-icon badge per completed course in a row on the profile card. `isCourseCertified(courseId)` — a `Certification` lookup with **no** `userId` parameter — is then used only to recolor that already-rendered badge: bright if the completed course happens to belong to some certification's `courseIds` list, dim grey otherwise. So "certification" in this app is a label on a course, surfaced as a color cue on a learner's completion badge — not a separate achievement a learner unlocks.
+Course completion itself is tracked separately and per-learner: `ProgressRepositoryImpl.getCompletedCourses(userId)` (`ProgressRepositoryImpl.kt:156-185`) checks `CourseProgress` and counts a course complete once every one of its steps has a `passed = true` record. The dashboard (`BellDashboardFragment.showBadges()`) renders one star-icon badge per completed course in a row on the profile card. `isCourseCertified(courseId)` — a `Certification` lookup with **no** `userId` parameter — is then used only to recolor that already-rendered badge: bright if the completed course happens to belong to some certification's `courseIds` list, dim grey otherwise. So "certification" in this app is a label on a course, surfaced as a color cue on a learner's completion badge — not a separate achievement a learner unlocks.
 
 ---
 
@@ -149,11 +149,11 @@ A **team** is a group of learners who collaborate on tasks, share courses and re
 Teams have:
 - **Members** — learners who belong to the team, tracked via `RealmMyTeam` records linking `userId` to `teamId`
 - **Leader** — one member with `isLeader = true` on their team record
-- **Tasks** (`RealmTeamTask`) — action items assigned to members with deadlines
+- **Tasks** (`TeamTask`) — action items assigned to members with deadlines
 - **Courses** — a list of course IDs the team has added (`courses` on `RealmMyTeam`)
 - **Resources** — linked via `resourceId`
 - **Surveys** — team-scoped surveys where `RealmStepExam.teamId` is set
-- **Meetups** (`RealmMeetup`) — scheduled events on the team calendar
+- **Meetups** (`Meetup`) — scheduled events on the team calendar
 - **News/discussions** — `RealmNews` records with `viewableBy = "team"` and `viewableId = teamId`
 - **Join requests** — stored in `requests` on the `RealmMyTeam` record, visible to the leader
 
@@ -207,11 +207,11 @@ The same `RealmNews` model is also used for **team chat** (inside `TeamDetailFra
 
 ### Meetups
 
-**Meetups** are scheduled events. They can be community-level or team-scoped. A meetup (`RealmMeetup`) has a title, description, start/end dates and times, location, category, and recurrence pattern. Team meetups carry a `teamId`.
+**Meetups** are scheduled events. They can be community-level or team-scoped. A meetup (`Meetup`) has a title, description, start/end dates and times, location, category, and recurrence pattern. Team meetups carry a `teamId`.
 
 ### Feedback
 
-Learners can submit feedback about the app or content via `FeedbackFragment`. Feedback (`RealmFeedback`) is synced to the server and can be viewed and responded to.
+Learners can submit feedback about the app or content via `FeedbackFragment`. Feedback (`Feedback`) is synced to the server and can be viewed and responded to.
 
 ---
 
@@ -219,7 +219,7 @@ Learners can submit feedback about the app or content via `FeedbackFragment`. Fe
 
 ### Course Progress
 
-`RealmCourseProgress` tracks a learner's progress through a course step-by-step. One record exists per learner per step:
+`CourseProgress` tracks a learner's progress through a course step-by-step. One record exists per learner per step:
 - `userId` + `courseId` + `stepNum` identify the record
 - `passed` — `true` once the learner has passed the step (including any embedded exam)
 
@@ -235,7 +235,7 @@ The app computes an overall progress percentage from these records when displayi
 
 ### Health Records
 
-`RealmHealthExamination` stores data recorded during community health screenings. The vital-sign and demographic fields — temperature, pulse, blood pressure, height, weight, vision, hearing, age, gender, and medical conditions (`conditions`) — are stored in plain Realm columns.
+`HealthExamination` stores data recorded during community health screenings. The vital-sign and demographic fields — temperature, pulse, blood pressure, height, weight, vision, hearing, age, gender, and medical conditions (`conditions`) — are stored in plain Realm columns.
 
 The sensitive free-text fields (observations, diagnosis, treatments, medications, immunizations, allergies, x-rays, lab tests, referrals) are serialized into a single JSON blob in the `data` field and encrypted with the subject's key before storage — `AndroidDecrypter` using `user.key` / `user.iv`. So encryption here is partial by design: the free-text clinical detail in `data` is encrypted at rest, while the vitals, dates, and codes are not.
 
@@ -243,7 +243,7 @@ Whether an exam was self-administered or entered by someone else is tracked by t
 
 ### Notifications
 
-`RealmNotification` holds in-app notifications — task deadlines, new survey assignments, sync events, etc. Notifications have a `type`, a `relatedId` pointing to the relevant entity, and a `link` for deep navigation.
+`AppNotification` holds in-app notifications — task deadlines, new survey assignments, sync events, etc. Notifications have a `type`, a `relatedId` pointing to the relevant entity, and a `link` for deep navigation.
 
 ---
 
@@ -257,7 +257,7 @@ RealmUser (learner)
 │   │   └── has exam/survey → RealmStepExam
 │   │       └── learner submits → RealmSubmission
 │   │           └── contains answers → RealmAnswer
-│   └── learner progress → RealmCourseProgress (one per step)
+│   └── learner progress → CourseProgress (one per step)
 │
 ├── saves resource to library → RealmMyLibrary (userId list)
 │   └── learner rates → Rating (type = "resource")
@@ -265,8 +265,8 @@ RealmUser (learner)
 ├── rates course → Rating (type = "course")
 │
 ├── joins → RealmMyTeam (team or enterprise)
-│   ├── has tasks → RealmTeamTask
-│   ├── has meetups → RealmMeetup
+│   ├── has tasks → TeamTask
+│   ├── has meetups → Meetup
 │   ├── has discussions → RealmNews (viewableBy = "team")
 │   ├── has surveys → RealmStepExam (teamId set)
 │   │   └── learner submits → RealmSubmission
@@ -276,7 +276,7 @@ RealmUser (learner)
 │
 ├── completes standalone survey → RealmSubmission (type = "survey")
 │
-├── records health data → RealmHealthExamination
+├── records health data → HealthExamination
 │
 ├── earns certifications → Certification (groups courses)
 │

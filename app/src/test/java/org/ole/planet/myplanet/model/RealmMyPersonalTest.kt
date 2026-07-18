@@ -13,7 +13,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-class RealmMyPersonalTest {
+class PersonalTest {
 
     private lateinit var mockContext: Context
 
@@ -34,7 +34,7 @@ class RealmMyPersonalTest {
 
     @Test
     fun testSerialize() {
-        val personal = RealmMyPersonal().apply {
+        val personal = Personal().apply {
             title = "My Personal Title"
             date = 1600000000000L
             path = "http://example.com/file.pdf"
@@ -49,7 +49,7 @@ class RealmMyPersonalTest {
         every { NetworkUtils.getDeviceName() } returns "device_name"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom_device_name"
 
-        val serialized = RealmMyPersonal.serialize(personal, mockContext)
+        val serialized = Personal.serialize(personal, mockContext)
 
         assertEquals("My Personal Title", serialized.get("title").asString)
         assertTrue(serialized.has("uploadDate"))
@@ -71,14 +71,14 @@ class RealmMyPersonalTest {
 
     @Test
     fun testSerialize_withNullValues() {
-        val personal = RealmMyPersonal() // all nullable fields are null by default
+        val personal = Personal() // all nullable fields are null by default
 
         every { FileUtils.getFileNameFromUrl(null) } returns ""
         every { NetworkUtils.getUniqueIdentifier() } returns "unique_id"
         every { NetworkUtils.getDeviceName() } returns "device_name"
         every { NetworkUtils.getCustomDeviceName(any()) } returns "custom_device_name"
 
-        val serialized = RealmMyPersonal.serialize(personal, mockContext)
+        val serialized = Personal.serialize(personal, mockContext)
 
         assertTrue(serialized.get("title").isJsonNull)
         assertTrue(serialized.has("uploadDate"))

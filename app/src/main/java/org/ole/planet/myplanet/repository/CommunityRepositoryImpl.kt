@@ -7,7 +7,7 @@ import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.model.Community
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.utils.JsonUtils
 
 class CommunityRepositoryImpl @Inject constructor(
@@ -67,7 +67,7 @@ class CommunityRepositoryImpl @Inject constructor(
             if (existing?.updated == true) {
                 null
             } else {
-                RealmMeetup.fromJson(meetupDoc, "", existing)
+                Meetup.fromJson(meetupDoc, "", existing)
             }
         }
         if (meetupsToInsert.isNotEmpty()) {

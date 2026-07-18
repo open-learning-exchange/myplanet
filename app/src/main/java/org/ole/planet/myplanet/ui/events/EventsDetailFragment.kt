@@ -21,8 +21,8 @@ import java.util.HashMap
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEventsDetailBinding
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMeetup.Companion.getHashMap
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.Meetup.Companion.getHashMap
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
@@ -201,7 +201,7 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         tvJoined?.text = String.format(getString(R.string.joined_members_colon) + " %s", joinedText)
     }
 
-    private fun setUpData(meetup: RealmMeetup) {
+    private fun setUpData(meetup: Meetup) {
         binding.meetupTitle.text = meetup.title
         val map: HashMap<String, String> = getHashMap(meetup)
         val items = map.map { EventsDescriptionAdapter.DescriptionItem(it.key, it.value) }

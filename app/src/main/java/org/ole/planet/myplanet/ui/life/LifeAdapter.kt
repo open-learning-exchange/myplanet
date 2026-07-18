@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
@@ -34,9 +34,9 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
-    private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
-    private val reorderCallback: (List<RealmMyLife>) -> Unit
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
+    private val visibilityCallback: (MyLife, Boolean) -> Unit,
+    private val reorderCallback: (List<MyLife>) -> Unit
+) : ListAdapter<MyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
     private val hide = 0.5f
     private val show = 1f
 
@@ -128,7 +128,7 @@ class LifeAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMyLife>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<MyLife>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )

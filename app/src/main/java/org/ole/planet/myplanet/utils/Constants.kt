@@ -4,18 +4,18 @@ import android.content.Context
 import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.Certification
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.RealmTag
 import org.ole.planet.myplanet.model.TeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 
 object Constants {
     const val HTTP_PROTOCOL = "http://"
@@ -58,15 +58,15 @@ object Constants {
         classList["ratings"] = Rating::class.java
         classList["courses"] = RealmMyCourse::class.java
         classList["achievements"] = Achievement::class.java
-        classList["feedback"] = RealmFeedback::class.java
+        classList["feedback"] = Feedback::class.java
         classList["teams"] = RealmMyTeam::class.java
-        classList["tasks"] = RealmTeamTask::class.java
-        classList["meetups"] = RealmMeetup::class.java
-        classList["health"] = RealmHealthExamination::class.java
+        classList["tasks"] = TeamTask::class.java
+        classList["meetups"] = Meetup::class.java
+        classList["health"] = HealthExamination::class.java
         classList["certifications"] = Certification::class.java
         classList["team_activities"] = TeamLog::class.java
-        classList["courses_progress"] = RealmCourseProgress::class.java
-        classList["notifications"] = RealmNotification::class.java
+        classList["courses_progress"] = CourseProgress::class.java
+        classList["notifications"] = AppNotification::class.java
     }
 
     fun showBetaFeature(s: String, context: Context): Boolean {

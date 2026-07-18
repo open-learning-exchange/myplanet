@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 import java.util.UUID
 
 /**
- * Room replacement for the former Realm `RealmRetryOperation` model. Persistence goes through
+ * Room replacement for the former Realm `RetryOperation` model. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.RetryDao]; the class name is kept because the retry
  * worker/queue and settings screen use it as a plain data holder.
  */
@@ -14,7 +14,7 @@ import java.util.UUID
     tableName = "retry_operation",
     indices = [Index("uploadType"), Index("itemId"), Index("status")]
 )
-open class RealmRetryOperation {
+open class RetryOperation {
     @PrimaryKey
     var id: String = ""
 
@@ -61,8 +61,8 @@ open class RealmRetryOperation {
             dbId: String?,
             modelClassName: String,
             userId: String?
-        ): RealmRetryOperation {
-            return RealmRetryOperation().apply {
+        ): RetryOperation {
+            return RetryOperation().apply {
                 id = UUID.randomUUID().toString()
                 this.uploadType = uploadType
                 itemId = failure.itemId

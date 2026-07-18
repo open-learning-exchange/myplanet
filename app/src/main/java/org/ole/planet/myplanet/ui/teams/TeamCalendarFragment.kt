@@ -36,7 +36,7 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
 import org.ole.planet.myplanet.model.MeetupCreationParams
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.events.EventsAdapter
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -52,8 +52,8 @@ class TeamCalendarFragment : BaseTeamFragment() {
     private lateinit var start: Calendar
     private lateinit var end: Calendar
     private lateinit var clickedCalendar: Calendar
-    private lateinit var calendarEventsMap: MutableMap<CalendarDay, RealmMeetup>
-    private var meetupList: List<RealmMeetup> = emptyList()
+    private lateinit var calendarEventsMap: MutableMap<CalendarDay, Meetup>
+    private var meetupList: List<Meetup> = emptyList()
     private val eventDates: MutableList<Calendar> = mutableListOf()
     private var addMeetupDialog: AlertDialog? = null
     private var meetupDialog: AlertDialog? = null
@@ -272,7 +272,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         setupCalendarClickListener()
     }
 
-    private fun showEditMeetupDialog(meetup: RealmMeetup) {
+    private fun showEditMeetupDialog(meetup: Meetup) {
         val dialogBinding = AddMeetupBinding.inflate(layoutInflater)
         dialogBinding.tvTitle.text = getString(R.string.edit_meetup)
         dialogBinding.etTitle.setText(meetup.title)
@@ -432,7 +432,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
     }
 
-    private fun showMeetupDialog(meetupList: List<RealmMeetup>) {
+    private fun showMeetupDialog(meetupList: List<Meetup>) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.meetup_dialog, null)
         val recyclerView = dialogView.findViewById<RecyclerView>(R.id.rvMeetups)
         val dialogTitle = dialogView.findViewById< TextView>(R.id.tvTitle)
