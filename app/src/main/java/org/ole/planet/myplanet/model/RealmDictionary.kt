@@ -1,10 +1,11 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
-
-open class RealmDictionary(
-    @PrimaryKey var id: String = "",
+/**
+ * Legacy dictionary DTO kept for source compatibility while dictionary persistence lives in Room
+ * via `DictionaryEntity`/`DictionaryDao`.
+ */
+data class RealmDictionary(
+    var id: String = "",
     var word: String = "",
     var meaning: String = "",
     var synonym: String = "",
@@ -13,4 +14,4 @@ open class RealmDictionary(
     var definition: String = "",
     var language: String = "",
     var antonym: String = ""
-) : RealmObject()
+)

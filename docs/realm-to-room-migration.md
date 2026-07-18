@@ -70,7 +70,7 @@ wired through `di/RoomModule`.
 - [x] Room deps added (coexisting with Realm).
 - [x] Foundation: `Converters`, `AppDatabase`, `RoomModule`.
 - [x] **Dictionary** domain migrated end-to-end (`DictionaryEntity`, `DictionaryDao`,
-      `DictionaryActivity`). First proven template (raw-Realm activity).
+      `DictionaryActivity`; legacy `RealmDictionary` is now a plain compatibility DTO). First proven template (raw-Realm activity).
 - [x] Realm transition config: `DatabaseService` now uses `deleteRealmIfMigrationNeeded()` so a
       model leaving the Realm schema recreates the Realm file instead of crashing (drop-and-resync).
 - [x] **Life** domain migrated end-to-end (`RealmMyLife` is now a Room `@Entity`, `MyLifeDao`,
