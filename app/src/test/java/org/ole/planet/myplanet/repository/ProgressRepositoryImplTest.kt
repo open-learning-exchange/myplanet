@@ -21,6 +21,8 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
@@ -40,6 +42,7 @@ class ProgressRepositoryImplTest {
     private val databaseService: DatabaseService = mockk(relaxed = true)
     private lateinit var mockCoursesRepository: CoursesRepository
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
+    private val courseStepDao: CourseStepDao = mockk(relaxed = true)
 
     @Before
     fun setUp() {
@@ -52,7 +55,8 @@ class ProgressRepositoryImplTest {
             dispatcherProvider,
             { mockCoursesRepository },
             { mockk(relaxed = true) },
-            courseProgressDao
+            courseProgressDao,
+            courseStepDao
         ), recordPrivateCalls = true)
     }
 
@@ -183,9 +187,9 @@ class ProgressRepositoryImplTest {
 
         coEvery { mockCoursesRepository.getMyCourses(any()) } returns myCourses
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
-        } returns steps
+        coEvery { courseStepDao.getByCourseIds(listOf("course1")) } returns steps.mapIndexed { index, step ->
+            RoomCourseStepEntity(id = step.id ?: "step$index", courseId = step.courseId)
+        }
 
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", listOf("course1")) } returns listOf(CourseProgress().apply {
             stepNum = 1
@@ -234,9 +238,9 @@ class ProgressRepositoryImplTest {
 
         val progresses1 = listOf(CourseProgress().apply { courseId = "course1"; stepNum = 1 })
 
-        coEvery {
-            repository invoke "queryList" withArguments listOf(RealmCourseStep::class.java, any<Function1<RealmQuery<RealmCourseStep>, Unit>>())
-        } returns steps1 + steps2
+        coEvery { courseStepDao.getByCourseIds(courseIds) } returns (steps1 + steps2).mapIndexed { index, step ->
+            RoomCourseStepEntity(id = step.id ?: "step$index", courseId = step.courseId)
+        }
 
         coEvery { courseProgressDao.getByUserAndCourseIds("user1", courseIds) } returns progresses1
 
@@ -307,7 +311,8 @@ class ProgressRepositoryImplTest {
             dispatcherProvider,
             { mockCoursesRepository },
             { activitiesRepo },
-            courseProgressDao
+            courseProgressDao,
+            courseStepDao
         )
 
         coEvery { activitiesRepo.hasUserCompletedSync("user1") } returns true

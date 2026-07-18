@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
@@ -153,8 +154,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseId.isBlank()) {
             return emptyList()
         }
-        val course = getCourseById(courseId)
-        return course?.courseSteps?.toList() ?: emptyList()
+        return courseStepDao.getByCourseId(courseId).map { it.toRealmModel() }
     }
 
     override suspend fun markCoursesAdded(courseIds: List<String>, userId: String?): Result<Boolean> {
@@ -493,7 +493,7 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getCourseStepData(stepId: String, userId: String?): CourseStepData {
-        val step = findFirstCopy(RealmCourseStep::class.java) { equalTo("id", stepId) }
+        val step = courseStepDao.getById(stepId)?.toRealmModel()
             ?: throw IllegalStateException("Step not found")
         val resources = myLibraryDao.getByStepId(stepId)
         val intermediate = withRealm { realm ->

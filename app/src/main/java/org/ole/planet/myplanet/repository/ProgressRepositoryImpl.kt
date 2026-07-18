@@ -9,6 +9,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -26,12 +28,14 @@ class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
-    private val courseProgressDao: CourseProgressDao
+    private val courseProgressDao: CourseProgressDao,
+    private val courseStepDao: CourseStepDao
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
-        val courseIdsArray = courseIds.toTypedArray()
-        val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
-            `in`("courseId", courseIdsArray)
+        val allSteps = if (courseIds.isEmpty()) {
+            emptyList()
+        } else {
+            courseStepDao.getByCourseIds(courseIds).map { it.toRealmModel() }
         }
         val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
