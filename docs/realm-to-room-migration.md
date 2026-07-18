@@ -268,8 +268,8 @@ wired through `di/RoomModule`.
       upload serialization paths for submissions.
 - [x] **Submission sync inserts moved to Room-only**: `bulkInsertFromSync` and `insertSubmission`
       now upsert CouchDB submission docs directly into `SubmissionDao`/`AnswerDao` and no longer
-      mirror synced submission payloads into Realm. The old Realm parsing helpers remain only as
-      dead legacy code until the final Realm deletion pass.
+      mirror synced submission payloads into Realm. The old Realm parsing helpers for synced
+      submission inserts have been deleted.
 - [x] **Submission upload serialization reads moved to Room**: `getExamUploadPayload` and
       `serializeSubmission` now resolve users, exams, and questions through `UserDao`, `ExamDao`, and
       `QuestionDao` rather than opening Realm. Submission upload payload generation now uses Room for

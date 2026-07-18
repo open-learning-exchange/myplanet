@@ -7,7 +7,6 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import java.util.Date
 import java.util.UUID
@@ -581,16 +580,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return submission
     }
 
-    private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {
-        val submission = if (sub == null || (sub.status == "complete" && (sub.type == "exam" || sub.type == "survey"))) {
-            mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-        } else {
-            sub
-        }
-        submission.lastUpdateTime = Date().time
-        return submission
-    }
-
     override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
@@ -682,134 +671,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             if (localUserId.startsWith("org.couchdb.user:")) localUserId else "org.couchdb.user:$localUserId"
         } else {
             userId
-        }
-    }
-
-    private fun insertSubmissionInternal(mRealm: io.realm.Realm, submission: JsonObject) {
-        if (submission.has("_attachments")) {
-            return
-        }
-
-        val id = JsonUtils.getString("_id", submission)
-
-        try {
-            var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
-            val isNewSubmission = sub == null
-            val hadLocalChanges = !isNewSubmission && sub.isUpdated
-            val serverStatus = JsonUtils.getString("status", submission)
-            val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
-                (sub.status == "complete" || sub.status == "requires grading")
-            val skipOverwrite = hadLocalChanges || isStatusDowngrade
-
-            if (sub == null) {
-                sub = mRealm.createObject(RealmSubmission::class.java, id)
-            }
-
-            updateBasicFields(sub, id, serverStatus, skipOverwrite, submission)
-            updateTeam(mRealm, sub, submission)
-            updateMembership(mRealm, sub, submission)
-            updateUserId(sub, submission)
-            updateAnswers(mRealm, sub, submission, skipOverwrite)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun updateBasicFields(
-        sub: RealmSubmission?,
-        id: String,
-        serverStatus: String,
-        skipOverwrite: Boolean,
-        submission: JsonObject
-    ) {
-        sub?._id = id
-        if (!skipOverwrite) {
-            sub?.status = serverStatus
-            sub?.isUpdated = false
-        }
-        sub?._rev = JsonUtils.getString("_rev", submission)
-        sub?.grade = JsonUtils.getLong("grade", submission)
-        sub?.type = JsonUtils.getString("type", submission)
-        sub?.uploaded = JsonUtils.getString("_rev", submission).isNotEmpty()
-        sub?.startTime = JsonUtils.getLong("startTime", submission)
-        sub?.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
-        sub?.parentId = JsonUtils.getString("parentId", submission)
-        sub?.sender = JsonUtils.getString("sender", submission)
-        sub?.source = JsonUtils.getString("source", submission)
-        sub?.parentCode = JsonUtils.getString("parentCode", submission)
-        sub?.parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
-        sub?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
-    }
-
-    private fun updateTeam(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
-        if (submission.has("team") && submission.get("team").isJsonObject) {
-            val teamJson = submission.getAsJsonObject("team")
-            val teamRef = mRealm.createObject(RealmTeamReference::class.java)
-            teamRef._id = JsonUtils.getString("_id", teamJson)
-            teamRef.name = JsonUtils.getString("name", teamJson)
-            teamRef.type = JsonUtils.getString("type", teamJson)
-            sub?.teamObject = teamRef
-        }
-    }
-
-    private fun updateMembership(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
-        val userJson = JsonUtils.getJsonObject("user", submission)
-        if (userJson.has("membershipDoc")) {
-            val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
-            if (membershipJson.entrySet().isNotEmpty()) {
-                val membership = mRealm.createObject(RealmMembershipDoc::class.java)
-                membership.teamId = JsonUtils.getString("teamId", membershipJson)
-                sub?.membershipDoc = membership
-            }
-        }
-    }
-
-    private fun updateUserId(sub: RealmSubmission?, submission: JsonObject) {
-        val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
-        sub?.userId = if (userId.contains("@")) {
-            val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            if (us[0].startsWith("org.couchdb.user:")) us[0] else "org.couchdb.user:${us[0]}"
-        } else {
-            userId
-        }
-    }
-
-    private fun updateAnswers(
-        mRealm: io.realm.Realm,
-        sub: RealmSubmission?,
-        submission: JsonObject,
-        skipOverwrite: Boolean
-    ) {
-        if (!skipOverwrite && submission.has("answers")) {
-            val answersArray = submission.get("answers").asJsonArray
-            sub?.answers = io.realm.RealmList<RealmAnswer>()
-
-            val unmanagedAnswers = mutableListOf<RealmAnswer>()
-            for (i in 0 until answersArray.size()) {
-                val answerJson = answersArray[i].asJsonObject
-                val realmAnswer = RealmAnswer()
-                realmAnswer.id = UUID.randomUUID().toString()
-
-                realmAnswer.value = JsonUtils.getString("value", answerJson)
-                realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
-                realmAnswer.isPassed = JsonUtils.getBoolean("passed", answerJson)
-                realmAnswer.submissionId = sub?._id
-                realmAnswer.examId = sub?.parentId
-
-                val examIdPart = sub?.parentId?.split("@")?.get(0) ?: sub?.parentId
-                realmAnswer.questionId = if (answerJson.has("questionId")) {
-                    JsonUtils.getString("questionId", answerJson)
-                } else {
-                    "$examIdPart-$i"
-                }
-
-                unmanagedAnswers.add(realmAnswer)
-            }
-
-            if (unmanagedAnswers.isNotEmpty()) {
-                val managedAnswers = mRealm.copyToRealmOrUpdate(unmanagedAnswers)
-                sub?.answers?.addAll(managedAnswers)
-            }
         }
     }
 
