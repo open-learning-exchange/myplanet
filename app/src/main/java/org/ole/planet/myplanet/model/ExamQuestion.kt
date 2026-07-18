@@ -17,33 +17,37 @@ open class ExamQuestion(
     @ColumnInfo(name = "question") var body: String? = null,
     var type: String? = null,
     var examId: String? = null,
-    @Ignore private var correctChoice: MutableList<String>? = null,
+    // Persisted as a JSON list column (via the List<String> converter). Formerly a Room mirror
+    // column; keeping it persisted preserves exam grading after a DB round-trip. Exposed through
+    // getCorrectChoice()/setCorrectChoices() so callers are unaffected by the field name.
+    var correctChoiceList: List<String>? = null,
     var marks: String? = null,
     var choices: String? = null,
     var hasOtherOption: Boolean = false,
     var scaleMax: Int = 9
 ) {
     private fun setCorrectChoiceArray(array: JsonArray, question: ExamQuestion?) {
+        if (question == null) return
+        val list = question.correctChoiceList?.toMutableList() ?: mutableListOf()
         for (i in 0 until array.size()) {
-            question?.correctChoice?.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
+            list.add(JsonUtils.getString(array, i).lowercase(Locale.getDefault()))
         }
+        question.correctChoiceList = list
     }
 
     fun getCorrectChoice(): List<String>? {
-        return correctChoice
+        return correctChoiceList
     }
 
     fun setCorrectChoices(choices: List<String>?) {
-        correctChoice = mutableListOf<String>().apply {
-            choices.orEmpty().forEach { add(it) }
-        }
+        correctChoiceList = choices?.toList()
     }
 
     @get:Ignore
     val correctChoiceArray: JsonArray
         get() {
             val array = JsonArray()
-            for (s in correctChoice ?: emptyList()){
+            for (s in correctChoiceList ?: emptyList()){
                 array.add(s)
             }
             return array
@@ -92,11 +96,10 @@ open class ExamQuestion(
             for (a in 0 until array.size()) {
                 val res = array[a].asJsonObject
                 if (question["correctChoice"].isJsonArray) {
-                    myQuestion?.correctChoice = mutableListOf()
+                    myQuestion?.correctChoiceList = mutableListOf()
                     myQuestion?.setCorrectChoiceArray(JsonUtils.getJsonArray("correctChoice", question), myQuestion)
                 } else if (JsonUtils.getString("correctChoice", question) == JsonUtils.getString("id", res)) {
-                    myQuestion?.correctChoice = mutableListOf()
-                    myQuestion?.correctChoice?.add(JsonUtils.getString("res", res))
+                    myQuestion?.correctChoiceList = listOf(JsonUtils.getString("res", res))
                 }
             }
         }

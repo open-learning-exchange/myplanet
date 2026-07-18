@@ -124,7 +124,7 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         Answer::class,
         MyTeam::class,
     ],
-    version = 4,
+    version = 5,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
