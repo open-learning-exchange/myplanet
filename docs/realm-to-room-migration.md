@@ -274,6 +274,10 @@ wired through `di/RoomModule`.
       `serializeSubmission` now resolve users, exams, and questions through `UserDao`, `ExamDao`, and
       `QuestionDao` rather than opening Realm. Submission upload payload generation now uses Room for
       all migrated metadata dependencies.
+- [x] **Submissions repository detached from `RealmRepository`**: the remaining submission-detail
+      user lookup now uses `UserDao`, and `SubmissionsRepositoryImpl` no longer extends the Realm
+      repository base or injects a Realm dispatcher. Submission code still accepts legacy model types at
+      its public boundary, but its migrated data access no longer depends on the generic Realm helpers.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

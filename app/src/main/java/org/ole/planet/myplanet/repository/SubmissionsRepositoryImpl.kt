@@ -12,11 +12,9 @@ import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.distinctUntilChanged
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
@@ -27,7 +25,6 @@ import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.data.room.entity.legacy.toRoomEntity
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.QuestionAnswer
@@ -47,8 +44,6 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @ApplicationContext private val context: Context,
@@ -60,7 +55,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     private val examDao: ExamDao,
     private val questionDao: QuestionDao,
     private val userDao: UserDao
-) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
+) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
         return exporter.generateSubmissionPdf(context, submissionId)
@@ -250,7 +245,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val user = submission.userId?.let { findByField(RealmUser::class.java, "id", it) }
+        val user = submission.userId?.let { userDao.getById(it)?.toRealmModel() }
 
         val questions = examId?.let { questionDao.getByExamId(it).map { question -> question.toRealmModel() } } ?: emptyList()
 
