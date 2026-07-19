@@ -13,9 +13,12 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -198,6 +201,9 @@ class TransactionSyncManager @Inject constructor(
             val authHeader = UrlUtils.header
 
             while (true) {
+                // Bail out cleanly if the worker was stopped (e.g. network constraint lost)
+                // so we propagate cancellation instead of hammering the server mid-shutdown.
+                currentCoroutineContext().ensureActive()
                 batchNumber++
                 if (useCheckpoint) {
                     sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
@@ -312,6 +318,11 @@ class TransactionSyncManager @Inject constructor(
                 }
                 totalDocs += arr.size()
                 skip += arr.size()
+                // Persist progress immediately after a batch is committed so an interruption
+                // resumes past it rather than re-processing the just-inserted page.
+                if (useCheckpoint) {
+                    sharedPrefManager.rawPreferences.edit().putInt(checkpointKey, skip).commit()
+                }
                 val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
                 Log.d("SyncPerf", "    $table batch $batchNumber: ${arr.size()} docs in ${batchDuration}ms (total: $totalDocs)")
                 // Show progress for slow syncs
@@ -330,6 +341,12 @@ class TransactionSyncManager @Inject constructor(
             val totalDuration = SystemClock.elapsedRealtime() - syncStartTime
             Log.d("SyncPerf", "  ✓ Completed $table sync: $totalDocs docs in ${totalDuration}ms")
             totalDocs
+        } catch (e: CancellationException) {
+            // Worker was stopped (network lost / process shutdown). Progress is checkpointed;
+            // let cancellation propagate so WorkManager reschedules cleanly.
+            val stopDuration = SystemClock.elapsedRealtime() - syncStartTime
+            Log.d("SyncPerf", "  ⏸ Interrupted $table sync after ${stopDuration}ms; will resume from checkpoint")
+            throw e
         } catch (e: Exception) {
             e.printStackTrace()
             val failDuration = SystemClock.elapsedRealtime() - syncStartTime
