@@ -370,7 +370,11 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun insertNewsList(docs: List<JsonObject>) {
-        val newsList = docs.map { buildNewsFromJson(it) }
+        // Pre-fetch existing rows in one query instead of a getByUnderscoreId per doc (an N+1
+        // that ran serially inside the sync write lock for hundreds of news items).
+        val underscoreIds = docs.map { JsonUtils.getString("_id", it) }.filter { it.isNotEmpty() }
+        val existing = newsDao.getByUnderscoreIds(underscoreIds).associateBy { it._id }
+        val newsList = docs.map { buildNewsFromJson(it, existing) }
         newsDao.upsertAll(newsList)
         saveConcatenatedLinksToPrefs()
     }
@@ -380,9 +384,10 @@ class VoicesRepositoryImpl @Inject constructor(
         saveConcatenatedLinksToPrefs()
     }
 
-    private suspend fun buildNewsFromJson(doc: JsonObject): News {
+    private suspend fun buildNewsFromJson(doc: JsonObject, existing: Map<String?, News>? = null): News {
         val underscoreId = JsonUtils.getString("_id", doc)
-        val news = newsDao.getByUnderscoreId(underscoreId) ?: News().apply { id = underscoreId }
+        val news = (existing?.get(underscoreId) ?: newsDao.getByUnderscoreId(underscoreId))
+            ?: News().apply { id = underscoreId }
         news._rev = JsonUtils.getString("_rev", doc)
         news._id = underscoreId
         news.viewableBy = JsonUtils.getString("viewableBy", doc)

@@ -15,6 +15,9 @@ interface NewsDao {
     @Query("SELECT * FROM news WHERE _id = :underscoreId LIMIT 1")
     suspend fun getByUnderscoreId(underscoreId: String): News?
 
+    @Query("SELECT * FROM news WHERE _id IN (:underscoreIds)")
+    suspend fun getByUnderscoreIds(underscoreIds: List<String>): List<News>
+
     @Query("SELECT * FROM news")
     suspend fun getAll(): List<News>
 
