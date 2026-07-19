@@ -646,7 +646,13 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 answers.add(
                     Answer(
                         id = "$id-$i",
-                        value = valueElement?.takeIf { !it.isJsonArray && !it.isJsonNull }?.asString,
+                        value = valueElement?.let {
+                            when {
+                                it.isJsonNull || it.isJsonArray -> null
+                                it.isJsonPrimitive -> it.asString
+                                else -> it.toString()
+                            }
+                        },
                         valueChoices = valueChoices,
                         mistakes = JsonUtils.getInt("mistakes", answerJson),
                         isPassed = JsonUtils.getBoolean("passed", answerJson),
