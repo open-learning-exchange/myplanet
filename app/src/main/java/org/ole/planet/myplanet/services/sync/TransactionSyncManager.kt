@@ -17,6 +17,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -78,6 +80,12 @@ class TransactionSyncManager @Inject constructor(
     @ApplicationScope private val applicationScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider
 ) {
+    // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
+    // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
+    // same inserts that take ~1ms/doc uncontended balloon to >100ms/doc under contention. This
+    // mutex serializes only the DB-write portion of each batch; network fetches still overlap.
+    private val dbWriteMutex = Mutex()
+
     suspend fun authenticate(): Boolean {
         try {
             val targetUrl = "${UrlUtils.getUrl()}/tablet_users/_all_docs"
@@ -272,11 +280,13 @@ class TransactionSyncManager @Inject constructor(
                     }
                     else -> {
                         val insertStartTime = SystemClock.elapsedRealtime()
-                        when (table) {
-                            "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
-                            "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
-                            "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
-                            else -> Log.e("SyncPerf", "Unknown table: $table")
+                        dbWriteMutex.withLock {
+                            when (table) {
+                                "exams" -> surveysRepository.bulkInsertExamsFromSync(arr)
+                                "submissions" -> submissionsRepository.bulkInsertFromSync(arr)
+                                "teams" -> teamsSyncRepository.get().bulkInsertFromSync(arr)
+                                else -> Log.e("SyncPerf", "Unknown table: $table")
+                            }
                         }
                         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
                         SyncTimeLogger.logRealmOperation(
@@ -330,7 +340,7 @@ class TransactionSyncManager @Inject constructor(
 
     private suspend fun timedBatchInsert(table: String, batchSize: Int, insert: suspend () -> Unit) {
         val insertStartTime = SystemClock.elapsedRealtime()
-        insert()
+        dbWriteMutex.withLock { insert() }
         val insertDuration = SystemClock.elapsedRealtime() - insertStartTime
         SyncTimeLogger.logRealmOperation(
             "insert_batch",
