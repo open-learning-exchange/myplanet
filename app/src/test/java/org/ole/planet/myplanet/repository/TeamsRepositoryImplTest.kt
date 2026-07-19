@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -54,6 +55,7 @@ class TeamsRepositoryImplTest {
     private val userDao: UserDao = mockk(relaxed = true)
     private val courseDao: CourseDao = mockk(relaxed = true)
     private val courseStepDao: CourseStepDao = mockk(relaxed = true)
+    private val appDatabase: AppDatabase = mockk(relaxed = true)
 
     private val testDispatcher = StandardTestDispatcher()
 
@@ -93,6 +95,7 @@ class TeamsRepositoryImplTest {
             userDao,
             courseDao,
             courseStepDao,
+            appDatabase,
         )
     }
 

@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
+import androidx.room.withTransaction
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -71,6 +73,7 @@ class TeamsRepositoryImpl @Inject constructor(
     private val userDao: UserDao,
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
+    private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId)
@@ -1319,8 +1322,14 @@ class TeamsRepositoryImpl @Inject constructor(
             .filter { (it._id ?: it.id) in ids }
             .associateBy { it._id ?: it.id }
             .toMutableMap()
-        documentList.forEach { jsonDoc ->
-            insertMyTeam(jsonDoc, existingTeams)
+        // Wrap the whole batch in a single Room transaction. insertMyTeam upserts one row at a
+        // time (it also runs per-doc membership/request dedup deletes), so without this each of
+        // the ~1000 docs in a heavy-table sync page would commit — and fsync — on its own,
+        // turning one page into minutes of work. One transaction => one commit for the page.
+        appDatabase.withTransaction {
+            documentList.forEach { jsonDoc ->
+                insertMyTeam(jsonDoc, existingTeams)
+            }
         }
     }
 
