@@ -43,17 +43,11 @@
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <androidx.cardview.widget.CardView
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            app:cardCornerRadius="8dp"
-            app:cardElevation="2dp"
-            app:cardUseCompatPadding="true">
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:orientation="vertical">
+            android:orientation="vertical">
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
@@ -92,11 +86,11 @@
                     android:layout_width="match_parent"
                     android:layout_height="0dp"
                     android:layout_weight="1"
-                    android:background="@color/card_bg" />
+                    android:background="@color/secondary_bg" />
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="?attr/actionBarSize"
-                    android:background="@color/colorPrimary"
+                    android:background="@color/secondary_bg"
                     android:orientation="horizontal"
                     android:padding="8dp">
 
@@ -109,7 +103,8 @@
                         android:gravity="center"
                         android:minWidth="100dp"
                         android:text="@string/previous"
-                        android:textColor="@color/md_white_1000"
+                        android:textColor="@color/daynight_textColor"
+                        android:drawableTint="@color/daynight_textColor"
                         app:drawableLeftCompat="@drawable/ic_left_arrow" />
                     <View
                         android:layout_width="0dp"
@@ -125,7 +120,8 @@
                         android:gravity="center"
                         android:minWidth="100dp"
                         android:text="@string/next"
-                        android:textColor="@color/md_white_1000"
+                        android:textColor="@color/daynight_textColor"
+                        android:drawableTint="@color/daynight_textColor"
                         app:drawableRightCompat="@drawable/ic_right_arrow" />
                     <TextView
                         android:id="@+id/finish_step"
@@ -137,7 +133,8 @@
                         android:gravity="center"
                         android:minWidth="100dp"
                         android:text="@string/finish"
-                        android:textColor="@color/md_white_1000"
+                        android:textColor="@color/daynight_textColor"
+                        android:drawableTint="@color/daynight_textColor"
                         android:visibility="gone" />
                 </LinearLayout>
                 <LinearLayout
@@ -167,7 +164,6 @@
                         android:textSize="@dimen/text_size_mid"
                         android:visibility="gone" />
                 </LinearLayout>
-            </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>
