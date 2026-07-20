@@ -28,6 +28,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -141,6 +142,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
     abstract fun feedbackDao(): FeedbackDao
     abstract fun ratingDao(): RatingDao
+    abstract fun tagDao(): TagDao
+    abstract fun meetupDao(): MeetupDao
     abstract fun searchActivityDao(): SearchActivityDao
     abstract fun courseActivityDao(): CourseActivityDao
     abstract fun resourceActivityDao(): ResourceActivityDao

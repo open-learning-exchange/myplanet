@@ -11,10 +11,8 @@ import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
-import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -54,7 +52,6 @@ import retrofit2.Response
  * Robolectric supplies working `android.util.Log`/`SystemClock` shadows that syncDb relies on.
  */
 @RunWith(RobolectricTestRunner::class)
-@OptIn(ExperimentalCoroutinesApi::class)
 class TransactionSyncManagerCheckpointTest {
 
     private lateinit var transactionSyncManager: TransactionSyncManager
@@ -65,7 +62,9 @@ class TransactionSyncManagerCheckpointTest {
     private val editor: SharedPreferences.Editor = mockk()
     private val putValues = mutableListOf<Int>()
 
-    private val testDispatcher = UnconfinedTestDispatcher()
+    // Plain Dispatchers.Unconfined + runBlocking (no TestDispatcher/runTest): syncDb only needs
+    // its withContext(io) to run inline, and this avoids runTest's uncaught-exception detector
+    // flagging the CancellationException/RuntimeException these tests deliberately drive.
     private val dispatcherProvider: DispatcherProvider = mockk()
 
     private fun rowsResponse(count: Int): Response<JsonObject> {
@@ -96,8 +95,8 @@ class TransactionSyncManagerCheckpointTest {
         every { SyncTimeLogger.logRealmOperation(any(), any(), any(), any()) } returns Unit
         every { SyncTimeLogger.logDetail(any(), any()) } returns Unit
 
-        every { dispatcherProvider.io } returns testDispatcher
-        every { dispatcherProvider.main } returns testDispatcher
+        every { dispatcherProvider.io } returns Dispatchers.Unconfined
+        every { dispatcherProvider.main } returns Dispatchers.Unconfined
 
         every { sharedPrefManager.rawPreferences } returns prefs
         every { prefs.getInt(any(), any()) } returns 0
@@ -129,7 +128,7 @@ class TransactionSyncManagerCheckpointTest {
             mockk<SurveysRepository>(relaxed = true),
             // syncDb confines its work to dispatcherProvider.io, not this scope; a throwaway
             // scope is enough and keeps each test isolated (no shared leaked-exception state).
-            CoroutineScope(testDispatcher),
+            CoroutineScope(Dispatchers.Unconfined),
             dispatcherProvider
         )
     }
@@ -141,7 +140,7 @@ class TransactionSyncManagerCheckpointTest {
     }
 
     @Test
-    fun `checkpoint persists the committed batch boundary`() = runTest(testDispatcher) {
+    fun `checkpoint persists the committed batch boundary`() = runBlocking {
         coEvery { apiInterface.findDocs(any(), any(), any(), any()) } returnsMany
             listOf(rowsResponse(20), rowsResponse(0))
         coEvery { ratingsRepository.insertRatingsFromSync(any()) } returns Unit
