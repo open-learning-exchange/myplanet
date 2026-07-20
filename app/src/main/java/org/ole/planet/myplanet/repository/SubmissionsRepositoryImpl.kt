@@ -738,10 +738,12 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        if (TextUtils.isEmpty(submission.user)) {
-            `object`.add("user", user?.serialize())
-        } else {
-            `object`.add("user", JsonParser.parseString(submission.user))
+        // Prefer the fresh user record (attachment-free, current data) so the upload never
+        // depends on the persisted blob, whose _attachments are stripped for storage safety.
+        val freshUser = user?.serialize()
+        when {
+            freshUser != null -> `object`.add("user", freshUser)
+            !TextUtils.isEmpty(submission.user) -> `object`.add("user", JsonParser.parseString(submission.user))
         }
         return `object`
     }
@@ -779,8 +781,11 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            if (!submission.user.isNullOrEmpty()) {
-                val userJson = JsonParser.parseString(submission.user).asJsonObject
+            // Prefer the fresh user record (attachment-free, current data) over the persisted
+            // blob, whose _attachments are stripped for storage safety.
+            val userJson = payloadData.user?.serialize()
+                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
+            if (userJson != null) {
                 if (submission.membershipDoc != null) {
                     val membershipJson = JsonObject()
                     membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")

@@ -7,6 +7,7 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
@@ -32,7 +33,9 @@ import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
 class SubmissionsRepositoryImplTest {
@@ -345,6 +348,48 @@ class SubmissionsRepositoryImplTest {
         assertTrue(result)
         coVerify { answerDao.upsertAll(match { it.single().submissionId == "submission1" && it.single().value == "answer text" }) }
         coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "complete", any()) }
+    }
+
+    @Test
+    fun `serializeSubmission uploads fresh user data instead of the stored blob`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        // Fresh user record from Room (attachment-free, current) must win over the persisted
+        // blob, whose _attachments were stripped for storage safety.
+        val freshUser = mockk<UserEntity>()
+        every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
+        coEvery { userDao.getById("u1") } returns freshUser
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            user = "{\"_id\":\"stored_user\"}"
+        }
+
+        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+
+        assertEquals("fresh_user", result.getAsJsonObject("user").get("_id").asString)
+    }
+
+    @Test
+    fun `serializeSubmission falls back to stored user blob when no fresh user exists`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        coEvery { userDao.getById(any()) } returns null
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            user = "{\"_id\":\"stored_user\"}"
+        }
+
+        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+
+        assertEquals("stored_user", result.getAsJsonObject("user").get("_id").asString)
     }
 
     @Test
