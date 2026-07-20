@@ -1338,5 +1338,7 @@
     <string name="save_changes">परिवर्तनहरू सुरक्षित गर्नुहोस्</string>
     <string name="resource_updated">स्रोत अद्यावधिक गरियो</string>
     <string name="failed_to_update_resource">स्रोत अद्यावधिक गर्न असफल भयो</string>
+    <string name="join_team_first">यो च्याट साझा गर्न कृपया एउटा टोलीमा सामेल हुनुहोस्।</string>
+    <string name="join_enterprise_first">यो च्याट साझा गर्न कृपया एउटा संस्थामा सामेल हुनुहोस्।</string>
 
 </resources>

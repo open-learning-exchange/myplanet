@@ -1338,5 +1338,7 @@
     <string name="save_changes">Kaydi isbedelada</string>
     <string name="resource_updated">Kheyraadka waa la cusboonaysiiyay</string>
     <string name="failed_to_update_resource">Cusbooneysiin kheyraadka waxay ku guuldareysatay</string>
+    <string name="join_team_first">Fadlan ku biir koox si aad u wadaagto wada sheekaysigan</string>
+    <string name="join_enterprise_first">Fadlan ku biir shirkad si aad u wadaagto wada sheekaysigan</string>
 
 </resources>

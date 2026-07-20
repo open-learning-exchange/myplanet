@@ -1341,5 +1341,7 @@
     <string name="save_changes">Guardar cambios</string>
     <string name="resource_updated">Recurso actualizado</string>
     <string name="failed_to_update_resource">Error al actualizar el recurso</string>
+    <string name="join_team_first">Únete a un equipo para compartir este chat</string>
+    <string name="join_enterprise_first">Únete a una empresa para compartir este chat</string>
 
 </resources>

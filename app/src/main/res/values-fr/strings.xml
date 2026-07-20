@@ -1342,5 +1342,7 @@
     <string name="save_changes">Enregistrer les modifications</string>
     <string name="resource_updated">Ressource mise à jour</string>
     <string name="failed_to_update_resource">Échec de la mise à jour de la ressource</string>
+    <string name="join_team_first">Veuillez rejoindre une équipe pour partager cette conversation</string>
+    <string name="join_enterprise_first">Veuillez rejoindre une entreprise pour partager cette conversation</string>
 
 </resources>

@@ -1354,5 +1354,7 @@
     <string name="save_changes">حفظ التغييرات</string>
     <string name="resource_updated">تم تحديث المورد</string>
     <string name="failed_to_update_resource">فشل تحديث المورد</string>
+    <string name="join_team_first">يرجى الانضمام إلى فريق لمشاركة هذه المحادثة</string>
+    <string name="join_enterprise_first">يرجى الانضمام إلى مؤسسة لمشاركة هذه المحادثة</string>
 
 </resources>

@@ -1338,5 +1338,7 @@
     <string name="save_changes">Save Changes</string>
     <string name="resource_updated">Resource updated</string>
     <string name="failed_to_update_resource">Failed to update resource</string>
+    <string name="join_team_first">Please join a Team to share this chat</string>
+    <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
 
 </resources>
