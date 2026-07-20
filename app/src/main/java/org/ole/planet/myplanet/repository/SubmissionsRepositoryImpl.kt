@@ -605,9 +605,14 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             val id = JsonUtils.getString("_id", submission)
             if (id.isBlank()) return@forEach
             val serverStatus = JsonUtils.getString("status", submission)
+            // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
+            // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
+            // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
+            // Read membershipDoc first, then strip — the two keys are independent.
             val userJson = JsonUtils.getJsonObject("user", submission)
-            val teamJson = JsonUtils.getJsonObject("team", submission)
             val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
+            userJson.remove("_attachments")
+            val teamJson = JsonUtils.getJsonObject("team", submission)
             val userId = normalizeSubmissionUserId(JsonUtils.getString("_id", userJson))
             submissions.add(
                 Submission(

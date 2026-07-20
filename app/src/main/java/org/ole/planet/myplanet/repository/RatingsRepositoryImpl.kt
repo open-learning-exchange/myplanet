@@ -97,6 +97,11 @@ class RatingsRepositoryImpl @Inject constructor(
     override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
         if (documentList.isEmpty()) return
         val entities = documentList.map { act ->
+            // The embedded user object can carry base64 `_attachments` (e.g. a profile photo)
+            // that bloat the stored blob past SQLite's ~2MB CursorWindow limit, crashing later
+            // `SELECT *` reads with SQLiteBlobTooBigException. Attachments aren't needed to
+            // round-trip a rating on upload, so drop them before persisting.
+            val userObject = JsonUtils.getJsonObject("user", act).apply { remove("_attachments") }
             Rating().apply {
                 _rev = JsonUtils.getString("_rev", act)
                 _id = JsonUtils.getString("_id", act)
@@ -108,8 +113,8 @@ class RatingsRepositoryImpl @Inject constructor(
                 rate = JsonUtils.getInt("rate", act)
                 isUpdated = false
                 comment = JsonUtils.getString("comment", act)
-                user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", act))
-                userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", act))
+                user = JsonUtils.gson.toJson(userObject)
+                userId = JsonUtils.getString("_id", userObject)
                 parentCode = JsonUtils.getString("parentCode", act)
                 planetCode = JsonUtils.getString("planetCode", act)
                 createdOn = JsonUtils.getString("createdOn", act)

@@ -212,6 +212,63 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `bulkInsertFromSync stores JsonObject answer value as its json string`() = runTest {
+        val answers = JsonArray().apply {
+            add(JsonObject().apply {
+                add("value", JsonObject().apply { addProperty("text", "nested") })
+                addProperty("questionId", "q1")
+            })
+        }
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "sub_object_answer")
+                    add("answers", answers)
+                })
+            })
+        }
+
+        // Regression: previously getAsString() on a JsonObject value threw
+        // UnsupportedOperationException and failed the entire submissions sync.
+        repository.bulkInsertFromSync(jsonArray)
+
+        verify {
+            answerDao.upsertAllBlocking(
+                match { list -> list.single().value == "{\"text\":\"nested\"}" }
+            )
+        }
+    }
+
+    @Test
+    fun `bulkInsertFromSync stores array answer value as valueChoices not value`() = runTest {
+        val answers = JsonArray().apply {
+            add(JsonObject().apply {
+                add("value", JsonArray().apply { add("a"); add("b") })
+                addProperty("questionId", "q1")
+            })
+        }
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "sub_array_answer")
+                    add("answers", answers)
+                })
+            })
+        }
+
+        repository.bulkInsertFromSync(jsonArray)
+
+        verify {
+            answerDao.upsertAllBlocking(
+                match { list ->
+                    val answer = list.single()
+                    answer.value == null && answer.valueChoices?.size == 2
+                }
+            )
+        }
+    }
+
+    @Test
     fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
         repository.insertSubmission(submission)

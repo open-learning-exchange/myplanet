@@ -190,4 +190,30 @@ class RatingsRepositoryImplTest {
         assertEquals("rating1", savedSlot.captured[0].id)
         assertEquals("user1", savedSlot.captured[0].userId)
     }
+
+    @Test
+    fun `insertRatingsFromSync strips user attachments to avoid oversized rows`() = runTest {
+        val savedSlot = slot<List<Rating>>()
+        coEvery { ratingDao.upsertAll(capture(savedSlot)) } returns Unit
+
+        val docs = listOf(
+            JsonObject().apply {
+                addProperty("_id", "rating1")
+                add("user", JsonObject().apply {
+                    addProperty("_id", "user1")
+                    add("_attachments", JsonObject().apply {
+                        add("img.png", JsonObject().apply { addProperty("data", "AAAA") })
+                    })
+                })
+            }
+        )
+        repository.insertRatingsFromSync(docs)
+
+        val storedUser = savedSlot.captured[0].user
+        assertNotNull(storedUser)
+        // Regression: a base64 _attachments blob could push a row past SQLite's ~2MB
+        // CursorWindow limit and crash getByType with SQLiteBlobTooBigException.
+        org.junit.Assert.assertFalse(storedUser!!.contains("_attachments"))
+        assertEquals("user1", savedSlot.captured[0].userId)
+    }
 }
