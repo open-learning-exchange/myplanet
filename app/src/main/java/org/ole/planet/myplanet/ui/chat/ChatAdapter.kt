@@ -21,7 +21,7 @@ import org.ole.planet.myplanet.utils.Utilities
 class ChatAdapter(
     val context: Context,
     private val recyclerView: RecyclerView,
-    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)
 ) : ListAdapter<ChatMessage, RecyclerView.ViewHolder>(
     DiffUtils.itemCallback(
         { old, new -> old.message == new.message && old.viewType == new.viewType },
@@ -60,7 +60,7 @@ class ChatAdapter(
         private val copyToClipboard: (String) -> Unit,
         val context: Context,
         private val recyclerView: RecyclerView,
-        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?
+        private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)
     ) : RecyclerView.ViewHolder(textAiMessageBinding.root) {
         internal var cancelAnimation: (() -> Unit)? = null
 

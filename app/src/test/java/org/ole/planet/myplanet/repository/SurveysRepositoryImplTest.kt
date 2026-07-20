@@ -1,4 +1,7 @@
 package org.ole.planet.myplanet.repository
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.ExamQuestion
 
 import android.app.Application
 import android.content.Context
@@ -20,13 +23,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -87,7 +87,7 @@ class SurveysRepositoryImplTest {
 
     @Test
     fun `getExamQuestions filters by examId`() = runTest {
-        coEvery { questionDao.getByExamId("exam1") } returns listOf(RoomQuestionEntity(id = "q1", examId = "exam1"))
+        coEvery { questionDao.getByExamId("exam1") } returns listOf(ExamQuestion(id = "q1", examId = "exam1"))
 
         val result = repository.getExamQuestions("exam1")
 
@@ -96,7 +96,7 @@ class SurveysRepositoryImplTest {
 
     @Test
     fun `getSurveys returns all surveys`() = runTest {
-        coEvery { examDao.getByType("surveys") } returns listOf(RoomExamEntity(id = "survey1", type = "surveys"))
+        coEvery { examDao.getByType("surveys") } returns listOf(StepExam(id = "survey1", type = "surveys"))
 
         val result = repository.getSurveys()
 
@@ -106,8 +106,8 @@ class SurveysRepositoryImplTest {
     @Test
     fun `getSurveySubmissionCount uses pending surveys dao query`() = runTest {
         coEvery { submissionDao.getPendingSurveys("user1") } returns listOf(
-            RoomSubmissionEntity(id = "sub1"),
-            RoomSubmissionEntity(id = "sub2")
+            Submission(id = "sub1"),
+            Submission(id = "sub2")
         )
 
         val count = repository.getSurveySubmissionCount("user1")

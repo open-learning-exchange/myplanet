@@ -1,4 +1,7 @@
 package org.ole.planet.myplanet.model
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
 import android.util.Base64
 import androidx.core.net.toUri
@@ -14,39 +17,40 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
-open class UserEntity {
-    var id: String? = null
-    var _id: String? = null
-    var _rev: String? = null
-    var name: String? = null
-    var rolesList: MutableList<String?>? = null
-    var userAdmin: Boolean? = null
-    var joinDate: Long = 0
-    var firstName: String? = null
-    var lastName: String? = null
-    var middleName: String? = null
-    var email: String? = null
-    var planetCode: String? = null
-    var parentCode: String? = null
-    var phoneNumber: String? = null
-    var password_scheme: String? = null
-    var iterations: String? = null
-    var derived_key: String? = null
-    var level: String? = null
-    var language: String? = null
-    var gender: String? = null
-    var salt: String? = null
-    var dob: String? = null
-    var age: String? = null
-    var birthPlace: String? = null
-    var userImage: String? = null
-    var key: String? = null
-    var iv: String? = null
-    var password: String? = null
-    var isUpdated = false
-    var isShowTopbar = false
-    var isArchived = false
-
+@Entity(tableName = "users", indices = [Index("_id"), Index("name"), Index("planetCode")])
+open class UserEntity(
+    @PrimaryKey @JvmField var id: String = "",
+    @JvmField var _id: String? = null,
+    @JvmField var _rev: String? = null,
+    var name: String? = null,
+    var rolesList: List<String>? = null,
+    var userAdmin: Boolean? = null,
+    var joinDate: Long = 0,
+    var firstName: String? = null,
+    var lastName: String? = null,
+    var middleName: String? = null,
+    var email: String? = null,
+    var planetCode: String? = null,
+    var parentCode: String? = null,
+    var phoneNumber: String? = null,
+    var password_scheme: String? = null,
+    var iterations: String? = null,
+    var derived_key: String? = null,
+    var level: String? = null,
+    var language: String? = null,
+    var gender: String? = null,
+    var salt: String? = null,
+    var dob: String? = null,
+    var age: String? = null,
+    var birthPlace: String? = null,
+    var userImage: String? = null,
+    var key: String? = null,
+    var iv: String? = null,
+    var password: String? = null,
+    var isUpdated: Boolean = false,
+    var isShowTopbar: Boolean = false,
+    var isArchived: Boolean = false
+) {
     fun serialize(): JsonObject {
         val jsonObject = JsonObject()
         if (_id?.isNotEmpty() == true) {
@@ -132,7 +136,7 @@ open class UserEntity {
         return ar
     }
 
-    fun setRoles(roles: MutableList<String?>?) {
+    fun setRoles(roles: List<String>?) {
         rolesList = roles
     }
 

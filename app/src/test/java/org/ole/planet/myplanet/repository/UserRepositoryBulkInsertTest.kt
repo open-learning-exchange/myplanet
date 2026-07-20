@@ -7,7 +7,7 @@ import io.mockk.mockk
 import io.mockk.coVerify
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 
 class UserRepositoryBulkInsertTest {
     @Test

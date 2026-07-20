@@ -12,10 +12,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.utils.UrlUtils
 
@@ -52,7 +51,7 @@ class UploadRepositoryImplTest {
     @Test
     fun `queryPending returns adopted surveys from exam dao`() = runTest {
         coEvery { examDao.getPendingAdoptedSurveys() } returns listOf(
-            RoomExamEntity(id = "exam-1", sourceSurveyId = "source-1", type = "surveys")
+            StepExam(id = "exam-1", sourceSurveyId = "source-1", type = "surveys")
         )
 
         val result: List<StepExam> = repository.queryPending(

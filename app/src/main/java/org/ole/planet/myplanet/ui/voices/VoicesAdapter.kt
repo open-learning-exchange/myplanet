@@ -61,7 +61,7 @@ class VoicesAdapter(
     private val shareNewsFn: (String, String, String, String, String) -> Unit,
     private val getLibraryResourceFn: (String, (MyLibrary?) -> Unit) -> Unit,
     private val onEditAction: (suspend () -> Unit) -> Unit,
-    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit)?,
+    private val onAnimateTyping: (String, (String) -> Unit, () -> Unit) -> (() -> Unit),
     private val labelManager: VoicesLabelManager,
     private val voicesRepository: VoicesRepository,
     private val userRepository: UserRepository,

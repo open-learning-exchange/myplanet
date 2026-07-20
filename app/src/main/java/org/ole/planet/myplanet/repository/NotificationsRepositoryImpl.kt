@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.TeamNotification

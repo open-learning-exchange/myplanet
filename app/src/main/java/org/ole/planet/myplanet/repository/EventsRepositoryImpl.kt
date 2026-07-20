@@ -5,8 +5,7 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.UserEntity
@@ -76,7 +75,7 @@ class EventsRepositoryImpl @Inject constructor(
             .filter { user ->
                 memberIdSet.contains(user.id) || user._id?.let(memberIdSet::contains) == true
             }
-            .map { it.toRealmModel() }
+            .map { it }
     }
 
     override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): Meetup? {

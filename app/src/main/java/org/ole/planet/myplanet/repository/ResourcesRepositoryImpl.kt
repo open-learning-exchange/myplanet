@@ -16,10 +16,10 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
-import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
-import org.ole.planet.myplanet.data.room.entity.legacy.RoomTeamEntity
+import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -198,9 +198,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             return Result.failure(Exception("Resource title already exists"))
         }
 
-        val id = UUID.randomUUID().toString()
+        val _id = UUID.randomUUID().toString()
         val resource = MyLibrary().apply {
-            this.id = id
+            this._id = id
             this.title = title
             this.titleNormal = Utilities.normalizeText(title)
             this.addedBy = request.addedBy
@@ -327,7 +327,7 @@ class ResourcesRepositoryImpl @Inject constructor(
 
         searchActivityDao.insert(
             SearchActivity(
-                id = UUID.randomUUID().toString(),
+                _id = UUID.randomUUID().toString(),
                 user = userName,
                 time = Calendar.getInstance().timeInMillis,
                 createdOn = planetCode,
@@ -486,9 +486,9 @@ class ResourcesRepositoryImpl @Inject constructor(
         val savedIds = mutableListOf<String>()
         documents.forEach { doc ->
             try {
-                val id = JsonUtils.getString("_id", doc)
-                if (id.startsWith("_design")) return@forEach
-                val existing = myLibraryDao.getById(id)
+                val _id = JsonUtils.getString("_id", doc)
+                if (_id.startsWith("_design")) return@forEach
+                val existing = myLibraryDao.getById(_id)
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
@@ -498,7 +498,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                 )
                 if (library != null) {
                     myLibraryDao.upsert(library)
-                    savedIds.add(id)
+                    savedIds.add(_id)
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -582,8 +582,8 @@ class ResourcesRepositoryImpl @Inject constructor(
             val resolvedPlanetCode = planetCode?.takeIf { it.isNotBlank() }
                 ?: sharedPrefManager.getPlanetCode()
             teamDao.upsert(
-                RoomTeamEntity(
-                    id = UUID.randomUUID().toString(),
+                MyTeam(
+                    _id = UUID.randomUUID().toString(),
                     teamId = library.privateFor,
                     title = library.title,
                     resourceId = remoteId,
@@ -591,7 +591,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     teamType = "local",
                     teamPlanetCode = resolvedPlanetCode,
                     docType = "resourceLink",
-                    isUpdated = true,
+                    updated = true,
                 )
             )
         }
