@@ -12,7 +12,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.TagDao
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class TagsRepositoryImplTest {
@@ -29,7 +29,7 @@ class TagsRepositoryImplTest {
 
     @Test
     fun `getTags delegates to getParentTags`() = runTest {
-        val mockResult = listOf(RealmTag().apply { name = "Tag1" })
+        val mockResult = listOf(TagEntity().apply { name = "Tag1" })
         coEvery { tagDao.getParentTags("resources") } returns mockResult
 
         val result = repository.getTags("resources")
@@ -39,27 +39,27 @@ class TagsRepositoryImplTest {
 
     @Test
     fun `getTagsWithChildren correctly maps children to parent tags`() = runTest {
-        val parentTag1 = RealmTag().apply {
+        val parentTag1 = TagEntity().apply {
             id = "parent1"
             name = "Parent 1"
         }
-        val parentTag2 = RealmTag().apply {
+        val parentTag2 = TagEntity().apply {
             id = "parent2"
             name = "Parent 2"
         }
-        val childlessParentTag = RealmTag().apply {
+        val childlessParentTag = TagEntity().apply {
             id = "parent3"
             name = "Parent 3"
         }
-        val child1 = RealmTag().apply {
+        val child1 = TagEntity().apply {
             name = "Child1"
             attachedTo = listOf("parent1")
         }
-        val child2 = RealmTag().apply {
+        val child2 = TagEntity().apply {
             name = "Child2"
             attachedTo = listOf("parent1", "parent2")
         }
-        val unattachedChild = RealmTag().apply {
+        val unattachedChild = TagEntity().apply {
             name = "UnattachedChild"
         }
 
@@ -92,12 +92,12 @@ class TagsRepositoryImplTest {
     fun `getTagsForResource resolves linked tags through tagId lookup`() = runTest {
         val resourceId = "res1"
         val tagId = "tag1"
-        val linkTag = RealmTag().apply {
+        val linkTag = TagEntity().apply {
             db = "resources"
             linkId = resourceId
             this.tagId = tagId
         }
-        val parentTag = RealmTag().apply { id = tagId; name = "Parent Tag" }
+        val parentTag = TagEntity().apply { id = tagId; name = "Parent Tag" }
 
         coEvery { tagDao.getByDbAndLinkId("resources", resourceId) } returns listOf(linkTag)
         coEvery { tagDao.getByIds(listOf(tagId)) } returns listOf(parentTag)
@@ -111,18 +111,18 @@ class TagsRepositoryImplTest {
     @Test
     fun `getTagsForResources returns correct per-resource tag map`() = runTest {
         val resourceIds = listOf("res1", "res2")
-        val linkTag1 = RealmTag().apply {
+        val linkTag1 = TagEntity().apply {
             db = "resources"
             linkId = "res1"
             tagId = "tag1"
         }
-        val linkTag2 = RealmTag().apply {
+        val linkTag2 = TagEntity().apply {
             db = "resources"
             linkId = "res2"
             tagId = "tag2"
         }
-        val parentTag1 = RealmTag().apply { id = "tag1"; name = "Parent Tag 1" }
-        val parentTag2 = RealmTag().apply { id = "tag2"; name = "Parent Tag 2" }
+        val parentTag1 = TagEntity().apply { id = "tag1"; name = "Parent Tag 1" }
+        val parentTag2 = TagEntity().apply { id = "tag2"; name = "Parent Tag 2" }
 
         coEvery { tagDao.getByDbAndLinkIds("resources", resourceIds) } returns
             listOf(linkTag1, linkTag2)
@@ -160,7 +160,7 @@ class TagsRepositoryImplTest {
 
     @Test
     fun `getTagsForResource returns empty list when tags have no tagIds`() = runTest {
-        val linkWithoutTagId = RealmTag().apply {
+        val linkWithoutTagId = TagEntity().apply {
             db = "resources"
             linkId = "res1"
             tagId = null
@@ -172,7 +172,7 @@ class TagsRepositoryImplTest {
 
     @Test
     fun `getTagsForResources returns empty map when tags have no tagIds`() = runTest {
-        val linkWithoutTagId = RealmTag().apply {
+        val linkWithoutTagId = TagEntity().apply {
             db = "resources"
             linkId = "res1"
             tagId = null

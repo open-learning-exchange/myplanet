@@ -12,7 +12,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "achievements")
-class RealmAchievement {
+class Achievement {
     var achievements: List<String>? = null
     var references: List<String>? = null
     var links: List<String>? = null
@@ -103,8 +103,8 @@ class RealmAchievement {
             return array
         }
 
-        fun fromJson(act: JsonObject): RealmAchievement {
-            return RealmAchievement().apply {
+        fun fromJson(act: JsonObject): Achievement {
+            return Achievement().apply {
                 _id = JsonUtils.getString("_id", act)
                 _rev = JsonUtils.getString("_rev", act)
                 purpose = JsonUtils.getString("purpose", act)
@@ -124,7 +124,7 @@ class RealmAchievement {
             }
         }
 
-        fun serialize(sub: RealmAchievement): JsonObject {
+        fun serialize(sub: Achievement): JsonObject {
             val `object` = JsonObject()
             `object`.addProperty("_id", sub._id)
             if (!TextUtils.isEmpty(sub._rev)) `object`.addProperty("_rev", sub._rev)

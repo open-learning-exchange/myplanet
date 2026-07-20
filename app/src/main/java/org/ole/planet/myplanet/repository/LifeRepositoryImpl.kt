@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 data class CachedMyLifeItem(
@@ -35,7 +35,7 @@ class LifeRepositoryImpl @Inject constructor(
         myLifeDao.updateVisibility(myLifeId, isVisible)
     }
 
-    override suspend fun updateMyLifeListOrder(list: List<RealmMyLife>) {
+    override suspend fun updateMyLifeListOrder(list: List<MyLife>) {
         val userId = list.firstOrNull()?.userId
         val idToIndex = list.mapIndexed { index, item -> item._id to index }.toMap()
         val ids = idToIndex.keys.filter { it.isNotEmpty() }
@@ -61,15 +61,15 @@ class LifeRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<RealmMyLife> {
+    override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
         return myLifeDao.getByUserId(userId)
     }
 
-    override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<RealmMyLife> {
+    override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
         return myLifeDao.getVisibleByUserId(userId)
     }
 
-    override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<RealmMyLife>): List<RealmMyLife> {
+    override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
         if (json != null) {
             val cached: List<CachedMyLifeItem>? = try {
@@ -86,7 +86,7 @@ class LifeRepositoryImpl @Inject constructor(
                     }
                 }
                 return cached.filter { it.isVisible }.map { item ->
-                    RealmMyLife(item.imageId, userId, item.title).apply {
+                    MyLife(item.imageId, userId, item.title).apply {
                         isVisible = item.isVisible
                         weight = item.weight
                     }
@@ -107,17 +107,17 @@ class LifeRepositoryImpl @Inject constructor(
         return visibleItems
     }
 
-    private fun cacheMyLifeItems(userId: String, items: List<RealmMyLife>) {
+    private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
         val cached = items.map { CachedMyLifeItem(it.imageId, it.title, it.isVisible, it.weight) }
         sharedPrefManager.rawPreferences.edit { putString("$MY_LIFE_CACHE_PREFIX$userId", gson.toJson(cached)) }
     }
 
-    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<RealmMyLife>) {
+    override suspend fun seedMyLifeIfEmpty(userId: String?, items: List<MyLife>) {
         val existing = myLifeDao.countByUserId(userId)
         if (existing == 0) {
             var weight = 1
             val newItems = items.map { item ->
-                RealmMyLife().apply {
+                MyLife().apply {
                     _id = UUID.randomUUID().toString()
                     title = item.title
                     imageId = item.imageId

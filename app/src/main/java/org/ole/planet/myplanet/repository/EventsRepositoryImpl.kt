@@ -9,7 +9,7 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.MeetupCreationParams
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -21,7 +21,7 @@ class EventsRepositoryImpl @Inject constructor(
     private val meetupDao: MeetupDao
 ) : RealmRepository(databaseService, realmDispatcher), EventsRepository {
 
-    override suspend fun getMeetupsForTeam(teamId: String): List<RealmMeetup> {
+    override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
         return meetupDao.getByTeamId(teamId)
     }
 
@@ -51,14 +51,14 @@ class EventsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getMeetupById(meetupId: String): RealmMeetup? {
+    override suspend fun getMeetupById(meetupId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
         return meetupDao.getByMeetupId(meetupId)
     }
 
-    override suspend fun getMeetupByLocalId(id: String): RealmMeetup? {
+    override suspend fun getMeetupByLocalId(id: String): Meetup? {
         if (id.isBlank()) return null
         return meetupDao.getById(id)
     }
@@ -82,7 +82,7 @@ class EventsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): RealmMeetup? {
+    override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
@@ -108,7 +108,7 @@ class EventsRepositoryImpl @Inject constructor(
                 if (existing?.updated == true) {
                     null
                 } else {
-                    RealmMeetup.fromJson(meetupDoc, "", existing)
+                    Meetup.fromJson(meetupDoc, "", existing)
                 }
             }
             if (meetupsToInsert.isNotEmpty()) {
@@ -123,7 +123,7 @@ class EventsRepositoryImpl @Inject constructor(
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
         val gson = Gson()
-        val meetup = RealmMeetup().apply {
+        val meetup = Meetup().apply {
             id = "${UUID.randomUUID()}"
             title = params.title
             meetupLink = params.meetupLink
@@ -162,7 +162,7 @@ class EventsRepositoryImpl @Inject constructor(
         return meetupDao.getByUserId(userId).mapNotNull { it.meetupId }
     }
 
-    override suspend fun getPendingMeetupUploads(): List<RealmMeetup> {
+    override suspend fun getPendingMeetupUploads(): List<Meetup> {
         return meetupDao.getPendingUploads()
     }
 

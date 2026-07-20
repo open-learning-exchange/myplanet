@@ -12,7 +12,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnFeedbackSubmittedListener
 import org.ole.planet.myplanet.databinding.FragmentFeedbackListBinding
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
@@ -77,7 +77,7 @@ class FeedbackListFragment : Fragment(), OnFeedbackSubmittedListener, RealtimeSy
         refreshFeedbackListData()
     }
 
-    private fun updatedFeedbackList(updatedList: List<RealmFeedback>?) {
+    private fun updatedFeedbackList(updatedList: List<Feedback>?) {
         if (_binding == null) return
         feedbackAdapter.submitList(updatedList) {
             binding.rvFeedback.scrollToPosition(0)

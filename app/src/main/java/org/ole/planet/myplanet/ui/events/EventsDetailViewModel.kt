@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.EventsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -22,8 +22,8 @@ class EventsDetailViewModel @Inject constructor(
     private val _user = MutableStateFlow<RealmUser?>(null)
     val user: StateFlow<RealmUser?> = _user.asStateFlow()
 
-    private val _meetup = MutableStateFlow<RealmMeetup?>(null)
-    val meetup: StateFlow<RealmMeetup?> = _meetup.asStateFlow()
+    private val _meetup = MutableStateFlow<Meetup?>(null)
+    val meetup: StateFlow<Meetup?> = _meetup.asStateFlow()
 
     private val _members = MutableStateFlow<List<RealmUser>>(emptyList())
     val members: StateFlow<List<RealmUser>> = _members.asStateFlow()

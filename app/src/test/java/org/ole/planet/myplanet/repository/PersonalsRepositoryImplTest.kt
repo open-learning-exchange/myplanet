@@ -20,7 +20,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class PersonalsRepositoryImplTest {
@@ -64,7 +64,7 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `savePersonalResource sets id and properties before saving`() = runTest {
-        val savedObjectSlot = slot<RealmMyPersonal>()
+        val savedObjectSlot = slot<Personal>()
         coEvery { personalDao.insert(capture(savedObjectSlot)) } returns Unit
 
         repository.savePersonalResource(
@@ -96,7 +96,7 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `getPersonalResources returns flow of personals for valid userId`() = runTest {
-        val expectedList = listOf(RealmMyPersonal())
+        val expectedList = listOf(Personal())
         coEvery { personalDao.getByUserIdFlow("user1") } returns flowOf(expectedList)
 
         val result = repository.getPersonalResources("user1").first()
@@ -115,8 +115,8 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `updatePersonalResource calls updater on matched _id and id`() = runTest {
-        val personalByDocId = RealmMyPersonal().apply { title = "Old" }
-        val personalById = RealmMyPersonal().apply { title = "Old" }
+        val personalByDocId = Personal().apply { title = "Old" }
+        val personalById = Personal().apply { title = "Old" }
         coEvery { personalDao.findByDocId("test-id") } returns personalByDocId
         coEvery { personalDao.findById("test-id") } returns personalById
 
@@ -135,7 +135,7 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `getPendingPersonalUploads queries correctly`() = runTest {
-        coEvery { personalDao.getPendingUploads("user1") } returns listOf(RealmMyPersonal(), RealmMyPersonal())
+        coEvery { personalDao.getPendingUploads("user1") } returns listOf(Personal(), Personal())
 
         val results = repository.getPendingPersonalUploads("user1")
 
@@ -145,7 +145,7 @@ class PersonalsRepositoryImplTest {
 
     @Test
     fun `updatePersonalAfterSync updates fields properly`() = runTest {
-        val personal = RealmMyPersonal()
+        val personal = Personal()
         coEvery { personalDao.findById("test-id") } returns personal
 
         repository.updatePersonalAfterSync("test-id", "new-id", "rev-1")

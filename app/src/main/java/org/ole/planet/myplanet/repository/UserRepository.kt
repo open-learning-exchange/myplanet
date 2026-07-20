@@ -5,7 +5,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
-import org.ole.planet.myplanet.model.RealmAchievement
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.RealmUser
@@ -91,7 +91,7 @@ interface UserRepository {
     suspend fun authenticateUser(username: String?, password: String?, isManagerMode: Boolean): RealmUser?
     suspend fun hasAtLeastOneUser(): Boolean
     suspend fun hasUserSyncAction(userId: String?): Boolean
-    suspend fun initializeAchievement(achievementId: String): RealmAchievement?
+    suspend fun initializeAchievement(achievementId: String): Achievement?
     suspend fun updateAchievement(
         achievementId: String,
         header: String,

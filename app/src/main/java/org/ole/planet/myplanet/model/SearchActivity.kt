@@ -13,7 +13,7 @@ import org.ole.planet.myplanet.utils.VersionUtils
     tableName = "search_activity",
     indices = [Index("_rev"), Index("type"), Index("user")]
 )
-open class RealmSearchActivity(
+open class SearchActivity(
     @PrimaryKey
     @JvmField
     var id: String = "",

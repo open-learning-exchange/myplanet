@@ -23,17 +23,17 @@ import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
-import org.ole.planet.myplanet.model.RealmCertification
+import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -257,17 +257,17 @@ class CoursesRepositoryImpl @Inject constructor(
         userName: String,
         planetCode: String,
         parentCode: String,
-        tags: List<RealmTag>,
+        tags: List<TagEntity>,
         grade: String,
         subject: String
     ) {
         val filter = JsonObject().apply {
-            add("tags", RealmTag.getTagsArray(tags))
+            add("tags", TagEntity.getTagsArray(tags))
             addProperty("doc.gradeLevel", grade)
             addProperty("doc.subjectLevel", subject)
         }
         searchActivityDao.insert(
-            RealmSearchActivity(
+            SearchActivity(
                 id = UUID.randomUUID().toString(),
                 user = userName,
                 time = Calendar.getInstance().timeInMillis,
@@ -308,7 +308,7 @@ class CoursesRepositoryImpl @Inject constructor(
                     .findFirst()
                 course?.removeUserId(userId)
             }
-            removedLogDao.insert(RealmRemovedLog().apply {
+            removedLogDao.insert(RemovedLog().apply {
                 id = UUID.randomUUID().toString()
                 type = "courses"
                 this.userId = userId
@@ -534,7 +534,7 @@ class CoursesRepositoryImpl @Inject constructor(
         return submissionsRepository.hasUnfinishedSurveys(courseId, userId)
     }
 
-    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<RealmTag>> {
+    override suspend fun getCourseTagsBulk(courseIds: List<String>): Map<String, List<TagEntity>> {
         return tagsRepository.getTagsForCourses(courseIds)
     }
 
@@ -587,13 +587,13 @@ class CoursesRepositoryImpl @Inject constructor(
         RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
-        val certifications = ArrayList<RealmCertification>(jsonArray.size())
+        val certifications = ArrayList<Certification>(jsonArray.size())
         for (j in jsonArray) {
             val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (id.startsWith("_design")) continue
             certifications.add(
-                RealmCertification().apply {
+                Certification().apply {
                     _id = id
                     name = JsonUtils.getString("name", jsonDoc)
                     setCourseIds(JsonUtils.getJsonArray("courseIds", jsonDoc))

@@ -13,22 +13,22 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.ApkLog
+import org.ole.planet.myplanet.model.CourseActivity
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNewsLog
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmSearchActivity
+import org.ole.planet.myplanet.model.NewsLog
+import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.SubmitPhotos
+import org.ole.planet.myplanet.model.TeamLog
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.EventsRepository
@@ -65,9 +65,9 @@ class UploadConfigs @Inject constructor(
 ) {
     val NewsActivities = RoomUploadConfig(
         endpoint = "myplanet_activities",
-        modelClassName = "RealmNewsLog",
+        modelClassName = "NewsLog",
         fetchPendingItems = { newsLogDao.getPendingUploads() },
-        serializer = UploadSerializer.Simple(RealmNewsLog::serialize),
+        serializer = UploadSerializer.Simple(NewsLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -78,9 +78,9 @@ class UploadConfigs @Inject constructor(
 
     val CourseProgress = RoomUploadConfig(
         endpoint = "courses_progress",
-        modelClassName = "RealmCourseProgress",
+        modelClassName = "CourseProgress",
         fetchPendingItems = { courseProgressDao.getPendingUploads() },
-        serializer = UploadSerializer.Simple(RealmCourseProgress::serializeProgress),
+        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.CourseProgress::serializeProgress),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -91,11 +91,11 @@ class UploadConfigs @Inject constructor(
 
     val TeamTask = RoomUploadConfig(
         endpoint = "tasks",
-        modelClassName = "RealmTeamTask",
+        modelClassName = "TeamTask",
         fetchPendingItems = { teamTaskDao.getPendingUploads() },
         serializer = UploadSerializer.Async { task ->
             val user = userRepository.getUserById(task.assignee ?: "")
-            RealmTeamTask.serialize(task, user)
+            org.ole.planet.myplanet.model.TeamTask.serialize(task, user)
         },
         idExtractor = { it.id },
         markUploaded = { results ->
@@ -107,7 +107,7 @@ class UploadConfigs @Inject constructor(
 
     val TeamActivities = RoomUploadConfig(
         endpoint = "team_activities",
-        modelClassName = "RealmTeamLog",
+        modelClassName = "TeamLog",
         fetchPendingItems = { teamLogDao.getPendingUploads() },
         serializer = UploadSerializer.WithContext { log, context -> teamsSyncRepository.get().serializeTeamActivities(log, context) },
         idExtractor = { it.id },
@@ -120,7 +120,7 @@ class UploadConfigs @Inject constructor(
 
     val SearchActivity = RoomUploadConfig(
         endpoint = "search_activities",
-        modelClassName = "RealmSearchActivity",
+        modelClassName = "SearchActivity",
         fetchPendingItems = { searchActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple { it.serialize() },
         idExtractor = { it.id },
@@ -137,7 +137,7 @@ class UploadConfigs @Inject constructor(
 
     val ResourceActivities = RoomUploadConfig(
         endpoint = "resource_activities",
-        modelClassName = "RealmResourceActivity",
+        modelClassName = "ResourceActivity",
         fetchPendingItems = { resourceActivityDao.getPendingUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
@@ -150,7 +150,7 @@ class UploadConfigs @Inject constructor(
 
     val ResourceActivitiesSync = RoomUploadConfig(
         endpoint = "admin_activities",
-        modelClassName = "RealmResourceActivity",
+        modelClassName = "ResourceActivity",
         fetchPendingItems = { resourceActivityDao.getPendingSyncUploads() },
         serializer = UploadSerializer.Simple { org.ole.planet.myplanet.repository.serializeResourceActivities(it) },
         idExtractor = { it.id },
@@ -163,9 +163,9 @@ class UploadConfigs @Inject constructor(
 
     val CourseActivities = RoomUploadConfig(
         endpoint = "course_activities",
-        modelClassName = "RealmCourseActivity",
+        modelClassName = "CourseActivity",
         fetchPendingItems = { courseActivityDao.getPendingUploads() },
-        serializer = UploadSerializer.Simple(RealmCourseActivity::serializeSerialize),
+        serializer = UploadSerializer.Simple(CourseActivity::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -181,9 +181,9 @@ class UploadConfigs @Inject constructor(
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
     val Meetups = RoomUploadConfig(
         endpoint = "meetups",
-        modelClassName = "RealmMeetup",
+        modelClassName = "Meetup",
         fetchPendingItems = { eventsRepository.getPendingMeetupUploads() },
-        serializer = UploadSerializer.Simple(RealmMeetup::serialize),
+        serializer = UploadSerializer.Simple(Meetup::serialize),
         idExtractor = { it.id },
         responseHandler = ResponseHandler.Custom("id", "rev"),
         markUploaded = { results ->
@@ -209,9 +209,9 @@ class UploadConfigs @Inject constructor(
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
     val Feedback = RoomUploadConfig(
         endpoint = "feedback",
-        modelClassName = "RealmFeedback",
+        modelClassName = "Feedback",
         fetchPendingItems = { feedbackRepository.getPendingFeedback() },
-        serializer = UploadSerializer.Simple(RealmFeedback::serializeFeedback),
+        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Feedback::serializeFeedback),
         idExtractor = { it.id },
         markUploaded = { results ->
             // Mark each uploaded feedback; rows that no longer exist are reported as failures.
@@ -222,9 +222,9 @@ class UploadConfigs @Inject constructor(
     // Migrated to Room: uses the database-agnostic RoomUploadConfig path in UploadCoordinator.
     val CrashLog = RoomUploadConfig(
         endpoint = "apk_logs",
-        modelClassName = "RealmApkLog",
+        modelClassName = "ApkLog",
         fetchPendingItems = { apkLogDao.getPending() },
-        serializer = UploadSerializer.WithContext(RealmApkLog::serialize),
+        serializer = UploadSerializer.WithContext(ApkLog::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             // A row is "pending" until it has a _rev; set it here. Rows that no longer exist
@@ -235,9 +235,9 @@ class UploadConfigs @Inject constructor(
 
     val SubmitPhotos = RoomUploadConfig(
         endpoint = "submissions",
-        modelClassName = "RealmSubmitPhotos",
+        modelClassName = "SubmitPhotos",
         fetchPendingItems = { submitPhotosDao.getUnuploaded() },
-        serializer = UploadSerializer.Simple(RealmSubmitPhotos::serializeRealmSubmitPhotos),
+        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.SubmitPhotos::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
@@ -323,9 +323,9 @@ class UploadConfigs @Inject constructor(
     // Guest filtering is folded into getPendingRatingUploads()'s DAO query.
     val Rating = RoomUploadConfig(
         endpoint = "ratings",
-        modelClassName = "RealmRating",
+        modelClassName = "Rating",
         fetchPendingItems = { ratingsRepository.getPendingRatingUploads() },
-        serializer = UploadSerializer.Simple(RealmRating::serializeRating),
+        serializer = UploadSerializer.Simple(org.ole.planet.myplanet.model.Rating::serializeRating),
         idExtractor = { it.id },
         dbIdExtractor = { it._id }, // Enables POST/PUT logic
         markUploaded = { results ->

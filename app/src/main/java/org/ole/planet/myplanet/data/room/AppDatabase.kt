@@ -31,32 +31,32 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmApkLog
-import org.ole.planet.myplanet.model.RealmCertification
-import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmCommunity
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmCourseProgress
-import org.ole.planet.myplanet.model.RealmFeedback
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyLife
-import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmNewsLog
-import org.ole.planet.myplanet.model.RealmNotification
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmRating
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RealmResourceActivity
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmSearchActivity
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmTag
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamLog
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.ApkLog
+import org.ole.planet.myplanet.model.Certification
+import org.ole.planet.myplanet.model.ChatHistory
+import org.ole.planet.myplanet.model.Community
+import org.ole.planet.myplanet.model.CourseActivity
+import org.ole.planet.myplanet.model.CourseProgress
+import org.ole.planet.myplanet.model.Feedback
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.Meetup
+import org.ole.planet.myplanet.model.MyLife
+import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.model.NewsLog
+import org.ole.planet.myplanet.model.AppNotification
+import org.ole.planet.myplanet.model.OfflineActivity
+import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.model.ResourceActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.model.SubmitPhotos
+import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.TeamNotification
+import org.ole.planet.myplanet.model.TeamLog
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserChallengeActions
 
 /**
  * Room database that is progressively replacing the legacy Realm store.
@@ -68,32 +68,32 @@ import org.ole.planet.myplanet.model.RealmUserChallengeActions
 @Database(
     entities = [
         DictionaryEntity::class,
-        RealmMyLife::class,
-        RealmMyPersonal::class,
-        RealmRetryOperation::class,
-        RealmCommunity::class,
-        RealmApkLog::class,
-        RealmUserChallengeActions::class,
-        RealmTeamNotification::class,
-        RealmCertification::class,
-        RealmChatHistory::class,
-        RealmFeedback::class,
-        RealmRating::class,
-        RealmTag::class,
-        RealmMeetup::class,
-        RealmSearchActivity::class,
-        RealmCourseActivity::class,
-        RealmResourceActivity::class,
-        RealmSubmitPhotos::class,
-        RealmNewsLog::class,
-        RealmTeamLog::class,
-        RealmOfflineActivity::class,
-        RealmCourseProgress::class,
-        RealmRemovedLog::class,
-        RealmTeamTask::class,
-        RealmNotification::class,
-        RealmAchievement::class,
-        RealmHealthExamination::class,
+        MyLife::class,
+        Personal::class,
+        RetryOperation::class,
+        Community::class,
+        ApkLog::class,
+        UserChallengeActions::class,
+        TeamNotification::class,
+        Certification::class,
+        ChatHistory::class,
+        Feedback::class,
+        Rating::class,
+        TagEntity::class,
+        Meetup::class,
+        SearchActivity::class,
+        CourseActivity::class,
+        ResourceActivity::class,
+        SubmitPhotos::class,
+        NewsLog::class,
+        TeamLog::class,
+        OfflineActivity::class,
+        CourseProgress::class,
+        RemovedLog::class,
+        TeamTask::class,
+        AppNotification::class,
+        Achievement::class,
+        HealthExamination::class,
     ],
     version = 1,
     exportSchema = false,

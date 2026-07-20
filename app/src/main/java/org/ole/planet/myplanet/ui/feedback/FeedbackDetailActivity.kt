@@ -21,7 +21,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityFeedbackDetailBinding
 import org.ole.planet.myplanet.model.FeedbackReply
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
@@ -32,7 +32,7 @@ class FeedbackDetailActivity : AppCompatActivity() {
     private lateinit var activityFeedbackDetailBinding: ActivityFeedbackDetailBinding
     private var replyAdapter: FeedbackReplyAdapter? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
-    private var feedback: RealmFeedback? = null
+    private var feedback: Feedback? = null
     private lateinit var feedbackId: String
     private val viewModel: FeedbackDetailViewModel by viewModels()
 

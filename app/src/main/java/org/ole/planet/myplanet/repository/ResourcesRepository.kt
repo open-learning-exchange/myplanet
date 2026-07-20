@@ -4,12 +4,12 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 
 data class LibraryWithMetadata(
     val library: RealmMyLibrary,
     val rating: JsonObject?,
-    val tags: List<RealmTag>
+    val tags: List<TagEntity>
 )
 
 data class LocalResourceRequest(
@@ -59,7 +59,7 @@ interface ResourcesRepository {
         searchText: String,
         planetCode: String,
         parentCode: String,
-        tags: List<RealmTag>,
+        tags: List<TagEntity>,
         subjects: Set<String>,
         languages: Set<String>,
         levels: Set<String>,

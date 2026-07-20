@@ -10,7 +10,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedbackRepositoryImplTest {
@@ -26,8 +26,8 @@ class FeedbackRepositoryImplTest {
 
     @Test
     fun getPendingFeedback_returnsOnlyUnuploadedFeedback() = runTest {
-        val feedback1 = RealmFeedback().apply { isUploaded = false }
-        val feedback2 = RealmFeedback().apply { isUploaded = false }
+        val feedback1 = Feedback().apply { isUploaded = false }
+        val feedback2 = Feedback().apply { isUploaded = false }
         coEvery { feedbackDao.getPending() } returns listOf(feedback1, feedback2)
 
         val result = repository.getPendingFeedback()

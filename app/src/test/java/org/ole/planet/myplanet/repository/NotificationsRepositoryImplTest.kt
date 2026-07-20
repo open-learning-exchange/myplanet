@@ -17,7 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.utils.TestTimeProvider
 
 @ExperimentalCoroutinesApi
@@ -43,7 +43,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `test default property values`() {
-        val notification = RealmNotification()
+        val notification = AppNotification()
         assertNotNull(notification.id)
         assertEquals("", notification.userId)
         assertEquals("", notification.message)
@@ -82,7 +82,7 @@ class NotificationsRepositoryImplTest {
             addProperty("time", 123456789L)
         }
         coEvery { notificationDao.getById("testId") } returns null
-        val upsertSlot = slot<RealmNotification>()
+        val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
@@ -101,7 +101,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `insert updates existing notification`() = runTest {
-        val existing = RealmNotification().apply { id = "testId" }
+        val existing = AppNotification().apply { id = "testId" }
         val jsonObject = JsonObject().apply {
             addProperty("_id", "testId")
             addProperty("user", "updatedUser")
@@ -111,7 +111,7 @@ class NotificationsRepositoryImplTest {
             addProperty("time", 987654321L)
         }
         coEvery { notificationDao.getById("testId") } returns existing
-        val upsertSlot = slot<RealmNotification>()
+        val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)
@@ -127,7 +127,7 @@ class NotificationsRepositoryImplTest {
 
     @Test
     fun `insert preserves read status if needsSync is true`() = runTest {
-        val existing = RealmNotification().apply {
+        val existing = AppNotification().apply {
             id = "testId"
             isRead = true
             needsSync = true
@@ -137,7 +137,7 @@ class NotificationsRepositoryImplTest {
             addProperty("status", "unread")
         }
         coEvery { notificationDao.getById("testId") } returns existing
-        val upsertSlot = slot<RealmNotification>()
+        val upsertSlot = slot<AppNotification>()
         coEvery { notificationDao.upsert(capture(upsertSlot)) } returns Unit
 
         repository.insert(jsonObject)

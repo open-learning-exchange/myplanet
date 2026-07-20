@@ -27,12 +27,12 @@ import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
-import org.ole.planet.myplanet.model.RealmCourseActivity
-import org.ole.planet.myplanet.model.RealmOfflineActivity
-import org.ole.planet.myplanet.model.RealmRemovedLog
-import org.ole.planet.myplanet.model.RealmResourceActivity
+import org.ole.planet.myplanet.model.CourseActivity
+import org.ole.planet.myplanet.model.OfflineActivity
+import org.ole.planet.myplanet.model.RemovedLog
+import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.model.RealmUserChallengeActions
+import org.ole.planet.myplanet.model.UserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -64,7 +64,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return offlineActivityDao.countByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
-    override suspend fun getOfflineLogins(userName: String): Flow<List<RealmOfflineActivity>> {
+    override suspend fun getOfflineLogins(userName: String): Flow<List<OfflineActivity>> {
         return offlineActivityDao.observeByUserNameAndType(userName, UserSessionManager.KEY_LOGIN)
     }
 
@@ -74,7 +74,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     override suspend fun markResourceRemoved(userId: String, resourceId: String) {
         removedLogDao.insert(
-            RealmRemovedLog().apply {
+            RemovedLog().apply {
                 id = UUID.randomUUID().toString()
                 docId = resourceId
                 this.userId = userId
@@ -89,7 +89,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val createdOn = user?.planetCode
 
         courseActivityDao.insert(
-            RealmCourseActivity().apply {
+            CourseActivity().apply {
                 id = UUID.randomUUID().toString()
                 type = "visit"
                 this.title = title
@@ -112,7 +112,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         planetCode: String?
     ) {
         offlineActivityDao.insert(
-            RealmOfflineActivity().apply {
+            OfflineActivity().apply {
                 id = UUID.randomUUID().toString()
                 this.userId = userId
                 this.userName = userName
@@ -150,7 +150,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         type: String?
     ) {
         resourceActivityDao.insert(
-            RealmResourceActivity().apply {
+            ResourceActivity().apply {
                 id = UUID.randomUUID().toString()
                 user = userName
                 this.parentCode = parentCode
@@ -217,7 +217,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
 
     override suspend fun recordSyncUserChallengeAction(userId: String) {
-        val action = RealmUserChallengeActions().apply {
+        val action = UserChallengeActions().apply {
             id = UUID.randomUUID().toString()
             this.userId = userId
             actionType = "sync"
@@ -237,7 +237,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val createdOn = user.planetCode
 
         resourceActivityDao.insert(
-            RealmResourceActivity().apply {
+            ResourceActivity().apply {
                 id = UUID.randomUUID().toString()
                 this.user = userName
                 _rev = null
@@ -252,9 +252,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
 
     private fun activityFromJson(
         json: JsonObject,
-        existingActivitiesMap: MutableMap<String, RealmOfflineActivity>,
-        fallbackActivitiesMap: MutableMap<String, RealmOfflineActivity>
-    ): RealmOfflineActivity {
+        existingActivitiesMap: MutableMap<String, OfflineActivity>,
+        fallbackActivitiesMap: MutableMap<String, OfflineActivity>
+    ): OfflineActivity {
         val serverId = JsonUtils.getString("_id", json)
         val loginTime = JsonUtils.getLong("loginTime", json)
         val userName = JsonUtils.getString("user", json)
@@ -262,7 +262,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val fallbackKey = "${loginTime}_${userName}"
         val activity = existingActivitiesMap[serverId]
             ?: fallbackActivitiesMap[fallbackKey]
-            ?: RealmOfflineActivity().apply { id = serverId }
+            ?: OfflineActivity().apply { id = serverId }
 
         activity._rev = JsonUtils.getString("_rev", json)
         activity._id = serverId
@@ -291,7 +291,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
         return userChallengeActionsDao.countByUserAndType(userId, "sync") > 0
     }
 
-    private fun serializeLoginActivities(activity: RealmOfflineActivity, context: Context): JsonObject {
+    private fun serializeLoginActivities(activity: OfflineActivity, context: Context): JsonObject {
         val ob = JsonObject()
         ob.addProperty("user", activity.userName)
         ob.addProperty("type", activity.type)
@@ -408,7 +408,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     }
 }
 
-internal fun serializeResourceActivities(activity: RealmResourceActivity): JsonObject {
+internal fun serializeResourceActivities(activity: ResourceActivity): JsonObject {
     val ob = JsonObject()
     ob.addProperty("user", activity.user)
     ob.addProperty("resourceId", activity.resourceId)

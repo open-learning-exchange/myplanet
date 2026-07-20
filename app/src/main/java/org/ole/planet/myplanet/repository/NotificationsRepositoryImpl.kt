@@ -14,10 +14,10 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmNotification
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmTeamNotification
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamNotification
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -71,7 +71,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     this.isRead = false
                     this.createdAt = Date()
                 }
-            } ?: RealmNotification().apply {
+            } ?: AppNotification().apply {
                 this.id = notificationId
                 this.userId = userId
                 this.type = "resource"
@@ -102,7 +102,7 @@ class NotificationsRepositoryImpl @Inject constructor(
                     this.isRead = false
                     this.createdAt = Date()
                 }
-            } ?: RealmNotification().apply {
+            } ?: AppNotification().apply {
                 this.id = notificationId
                 this.userId = userId
                 this.type = "storage"
@@ -318,7 +318,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         // 1. Fetch all relevant notifications in a single query
         val notificationsResult = teamNotificationDao.getByTypeAndParentIds("chat", teamIds)
-        val notificationsById = mutableMapOf<String, RealmTeamNotification>()
+        val notificationsById = mutableMapOf<String, TeamNotification>()
         notificationsResult.forEach {
             it.parentId?.let { parentId ->
                 notificationsById[parentId] = it
@@ -354,7 +354,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         return notificationMap
     }
 
-    override suspend fun getPendingSyncNotifications(): List<RealmNotification> {
+    override suspend fun getPendingSyncNotifications(): List<AppNotification> {
         return notificationDao.getPendingSyncNotifications()
     }
 
@@ -365,9 +365,9 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    private fun parseNotification(doc: JsonObject): RealmNotification? {
+    private fun parseNotification(doc: JsonObject): AppNotification? {
         val id = doc.get("_id")?.asString ?: return null
-        return RealmNotification().apply {
+        return AppNotification().apply {
             this.id = id
             userId = doc.get("user")?.asString ?: ""
             message = doc.get("message")?.asString ?: ""

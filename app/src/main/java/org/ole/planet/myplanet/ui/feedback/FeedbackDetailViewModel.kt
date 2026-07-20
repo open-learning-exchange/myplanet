@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 
 @HiltViewModel
@@ -19,8 +19,8 @@ class FeedbackDetailViewModel @Inject constructor(
     private val feedbackRepository: FeedbackRepository
 ) : ViewModel() {
 
-    private val _feedback = MutableStateFlow<RealmFeedback?>(null)
-    val feedback: StateFlow<RealmFeedback?> = _feedback.asStateFlow()
+    private val _feedback = MutableStateFlow<Feedback?>(null)
+    val feedback: StateFlow<Feedback?> = _feedback.asStateFlow()
 
     private val _events = MutableSharedFlow<FeedbackDetailEvent>(extraBufferCapacity = 1)
     val events: SharedFlow<FeedbackDetailEvent> = _events.asSharedFlow()

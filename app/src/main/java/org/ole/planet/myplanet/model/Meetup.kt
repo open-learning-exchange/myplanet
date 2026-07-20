@@ -10,13 +10,13 @@ import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 /**
- * Room replacement for the former Realm `RealmMeetup` model. Meetups are both synced (pulled from
+ * Room replacement for the former Realm `Meetup` model. Meetups are both synced (pulled from
  * the server) and uploaded (locally created/edited meetups). All fields are simple scalars, so no
  * type converters are required. Persistence goes through
  * [org.ole.planet.myplanet.data.room.dao.MeetupDao].
  */
 @Entity(tableName = "meetup", indices = [Index("meetupId"), Index("teamId"), Index("userId")])
-open class RealmMeetup {
+open class Meetup {
     @PrimaryKey
     var id: String = ""
     var userId: String? = null
@@ -47,8 +47,8 @@ open class RealmMeetup {
          * Builds an unmanaged meetup from a CouchDB document. When [existingMeetup] is supplied its
          * local-only fields (created date, recurring number, sync/source metadata) are preserved.
          */
-        fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: RealmMeetup?): RealmMeetup {
-            val meetup = RealmMeetup()
+        fun fromJson(meetupDoc: JsonObject, userId: String?, existingMeetup: Meetup?): Meetup {
+            val meetup = Meetup()
             meetup.id = JsonUtils.getString("_id", meetupDoc)
             meetup.meetupId = JsonUtils.getString("_id", meetupDoc)
             meetup.userId = userId
@@ -79,7 +79,7 @@ open class RealmMeetup {
             return meetup
         }
 
-        fun getMyMeetUpIds(meetups: List<RealmMeetup>): JsonArray {
+        fun getMyMeetUpIds(meetups: List<Meetup>): JsonArray {
             val ids = JsonArray()
             for (meetup in meetups) {
                 ids.add(meetup.meetupId)
@@ -87,7 +87,7 @@ open class RealmMeetup {
             return ids
         }
 
-        fun getHashMap(meetups: RealmMeetup): HashMap<String, String> {
+        fun getHashMap(meetups: Meetup): HashMap<String, String> {
             val map = HashMap<String, String>()
             map["Meetup Title"] = checkNull(meetups.title)
             map["Created By"] = checkNull(meetups.creator)
@@ -120,7 +120,7 @@ open class RealmMeetup {
             return s.orEmpty()
         }
 
-        fun serialize(meetup: RealmMeetup): JsonObject {
+        fun serialize(meetup: Meetup): JsonObject {
             val `object` = JsonObject()
             if (!meetup.meetupId.isNullOrEmpty()) `object`.addProperty("_id", meetup.meetupId)
             if (!meetup.meetupIdRev.isNullOrEmpty()) `object`.addProperty("_rev", meetup.meetupIdRev)

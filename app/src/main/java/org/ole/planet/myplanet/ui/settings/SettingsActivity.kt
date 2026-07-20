@@ -34,7 +34,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -133,8 +133,8 @@ class SettingsActivity : AppCompatActivity() {
                         appendLine("Details:")
                         pendingOps.take(10).forEach { op ->
                             val statusIcon = when (op.status) {
-                                RealmRetryOperation.STATUS_IN_PROGRESS -> "🔄"
-                                RealmRetryOperation.STATUS_PENDING -> "⏸"
+                                RetryOperation.STATUS_IN_PROGRESS -> "🔄"
+                                RetryOperation.STATUS_PENDING -> "⏸"
                                 else -> "❓"
                             }
                             appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")

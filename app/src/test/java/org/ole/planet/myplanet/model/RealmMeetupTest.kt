@@ -18,7 +18,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(application = Application::class)
-class RealmMeetupTest {
+class MeetupTest {
 
     @Before
     fun setup() {
@@ -57,7 +57,7 @@ class RealmMeetupTest {
             add("link", linkObj)
         }
 
-        val meetup = RealmMeetup.fromJson(meetupDoc, userId, null)
+        val meetup = Meetup.fromJson(meetupDoc, userId, null)
 
         assertEquals("meetup1", meetup.id)
         assertEquals("meetup1", meetup.meetupId)
@@ -88,11 +88,11 @@ class RealmMeetupTest {
             addProperty("title", "Updated Meetup")
         }
 
-        val existingMeetup = RealmMeetup()
+        val existingMeetup = Meetup()
         existingMeetup.createdDate = 12345L
         existingMeetup.sync = "synced"
 
-        val meetup = RealmMeetup.fromJson(meetupDoc, userId, existingMeetup)
+        val meetup = Meetup.fromJson(meetupDoc, userId, existingMeetup)
 
         assertEquals("meetup1", meetup.meetupId)
         assertEquals(userId, meetup.userId)
@@ -108,17 +108,17 @@ class RealmMeetupTest {
             addProperty("_id", "meetup1")
         }
 
-        val meetup = RealmMeetup.fromJson(meetupDoc, "", null)
+        val meetup = Meetup.fromJson(meetupDoc, "", null)
 
         assertEquals("", meetup.userId)
     }
 
     @Test
     fun `getMyMeetUpIds returns json array of ids`() {
-        val meetup1 = RealmMeetup().apply { meetupId = "id1" }
-        val meetup2 = RealmMeetup().apply { meetupId = "id2" }
+        val meetup1 = Meetup().apply { meetupId = "id1" }
+        val meetup2 = Meetup().apply { meetupId = "id2" }
 
-        val result = RealmMeetup.getMyMeetUpIds(listOf(meetup1, meetup2))
+        val result = Meetup.getMyMeetUpIds(listOf(meetup1, meetup2))
 
         assertEquals(2, result.size())
         assertEquals("id1", result[0].asString)
@@ -127,13 +127,13 @@ class RealmMeetupTest {
 
     @Test
     fun `getMyMeetUpIds with empty list returns empty array`() {
-        val result = RealmMeetup.getMyMeetUpIds(emptyList())
+        val result = Meetup.getMyMeetUpIds(emptyList())
         assertEquals(0, result.size())
     }
 
     @Test
     fun `getHashMap extracts correct map values`() {
-        val meetup = mockk<RealmMeetup>()
+        val meetup = mockk<Meetup>()
         every { meetup.title } returns "Test Title"
         every { meetup.creator } returns "Test Creator"
         every { meetup.category } returns "Tech"
@@ -150,7 +150,7 @@ class RealmMeetupTest {
         val expectedStartDate = TimeUtils.getFormattedDate(1600000000000)
         val expectedEndDate = TimeUtils.getFormattedDate(1600003600000)
 
-        val map = RealmMeetup.getHashMap(meetup)
+        val map = Meetup.getHashMap(meetup)
 
         assertEquals("Test Title", map["Meetup Title"])
         assertEquals("Test Creator", map["Created By"])
@@ -166,12 +166,12 @@ class RealmMeetupTest {
 
     @Test
     fun `getHashMap handles null values properly`() {
-        val meetup = mockk<RealmMeetup>(relaxed = true)
+        val meetup = mockk<Meetup>(relaxed = true)
         every { meetup.title } returns null
         every { meetup.creator } returns null
         every { meetup.day } returns "[]" // valid empty array to avoid JSONException console pollution
 
-        val map = RealmMeetup.getHashMap(meetup)
+        val map = Meetup.getHashMap(meetup)
 
         assertEquals("", map["Meetup Title"])
         assertEquals("", map["Created By"])
@@ -180,7 +180,7 @@ class RealmMeetupTest {
 
     @Test
     fun `serialize creates correct JsonObject`() {
-        val meetup = RealmMeetup().apply {
+        val meetup = Meetup().apply {
             meetupId = "meetup1"
             meetupIdRev = "rev1"
             title = "Test Meetup"
@@ -202,7 +202,7 @@ class RealmMeetupTest {
             link = """{"some":"data"}"""
         }
 
-        val jsonObject = RealmMeetup.serialize(meetup)
+        val jsonObject = Meetup.serialize(meetup)
 
         assertEquals("meetup1", jsonObject.get("_id").asString)
         assertEquals("rev1", jsonObject.get("_rev").asString)
@@ -227,13 +227,13 @@ class RealmMeetupTest {
 
     @Test
     fun `serialize skips null or empty id and link`() {
-        val meetup = RealmMeetup().apply {
+        val meetup = Meetup().apply {
             meetupId = ""
             meetupIdRev = null
             link = null
         }
 
-        val jsonObject = RealmMeetup.serialize(meetup)
+        val jsonObject = Meetup.serialize(meetup)
 
         assertEquals(false, jsonObject.has("_id"))
         assertEquals(false, jsonObject.has("_rev"))

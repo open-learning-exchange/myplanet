@@ -16,7 +16,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
-import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
@@ -71,7 +71,7 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
 
 fun SyncActivity.onChangeServerUrl() {
     val selected = spnCloud.selectedItem
-    if (selected is RealmCommunity) {
+    if (selected is Community) {
         val config = ServerConfigUtils.getCommunityConfig(selected, getString(R.string.https_protocol))
         serverUrl.setText(config.localDomain)
         protocolCheckIn.check(R.id.radio_https)

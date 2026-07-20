@@ -2,7 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.RetryDao
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -21,7 +21,7 @@ class RetryRepositoryImpl @Inject constructor(
         modelClassName: String,
         userId: String?
     ) {
-        val operation = RealmRetryOperation.createFromRetryFailure(
+        val operation = RetryOperation.createFromRetryFailure(
             uploadType, failure, payload, endpoint,
             httpMethod, dbId, modelClassName, userId
         )
@@ -35,12 +35,12 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.findById(operationId)?.let { op ->
             op.attemptCount += 1
             op.lastAttemptTime = timeProvider.now()
-            op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
+            op.nextRetryTime = RetryOperation.calculateNextRetryTime(op.attemptCount)
             op.errorMessage = failure.message
             op.httpCode = failure.httpCode
 
             if (op.attemptCount >= op.maxAttempts) {
-                op.status = RealmRetryOperation.STATUS_ABANDONED
+                op.status = RetryOperation.STATUS_ABANDONED
             }
             retryDao.update(op)
         }
@@ -48,14 +48,14 @@ class RetryRepositoryImpl @Inject constructor(
 
     override suspend fun markInProgress(operationId: String) {
         retryDao.findById(operationId)?.let { op ->
-            op.status = RealmRetryOperation.STATUS_IN_PROGRESS
+            op.status = RetryOperation.STATUS_IN_PROGRESS
             retryDao.update(op)
         }
     }
 
     override suspend fun markCompleted(operationId: String) {
         retryDao.findById(operationId)?.let { op ->
-            op.status = RealmRetryOperation.STATUS_COMPLETED
+            op.status = RetryOperation.STATUS_COMPLETED
             op.lastAttemptTime = timeProvider.now()
             retryDao.update(op)
         }
@@ -69,16 +69,16 @@ class RetryRepositoryImpl @Inject constructor(
             op.httpCode = httpCode
 
             if (op.attemptCount >= op.maxAttempts) {
-                op.status = RealmRetryOperation.STATUS_ABANDONED
+                op.status = RetryOperation.STATUS_ABANDONED
             } else {
-                op.status = RealmRetryOperation.STATUS_PENDING
-                op.nextRetryTime = RealmRetryOperation.calculateNextRetryTime(op.attemptCount)
+                op.status = RetryOperation.STATUS_PENDING
+                op.nextRetryTime = RetryOperation.calculateNextRetryTime(op.attemptCount)
             }
             retryDao.update(op)
         }
     }
 
-    override suspend fun getPending(): List<RealmRetryOperation> {
+    override suspend fun getPending(): List<RetryOperation> {
         return retryDao.getPending(timeProvider.now())
     }
 
@@ -95,7 +95,7 @@ class RetryRepositoryImpl @Inject constructor(
         retryDao.resetPendingRetryTime(timeProvider.now())
     }
 
-    override suspend fun getExistingOperation(itemId: String, uploadType: String): RealmRetryOperation? {
+    override suspend fun getExistingOperation(itemId: String, uploadType: String): RetryOperation? {
         return retryDao.findExisting(itemId, uploadType)
     }
 

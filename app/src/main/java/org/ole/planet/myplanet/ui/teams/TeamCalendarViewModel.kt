@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.MeetupCreationParams
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.repository.EventsRepository
 
 @HiltViewModel
@@ -20,8 +20,8 @@ class TeamCalendarViewModel @Inject constructor(
     private val eventsRepository: EventsRepository
 ) : ViewModel() {
 
-    private val _meetups = MutableStateFlow<List<RealmMeetup>>(emptyList())
-    val meetups: StateFlow<List<RealmMeetup>> = _meetups.asStateFlow()
+    private val _meetups = MutableStateFlow<List<Meetup>>(emptyList())
+    val meetups: StateFlow<List<Meetup>> = _meetups.asStateFlow()
 
     private val _createMeetupResult = MutableSharedFlow<Boolean>()
     val createMeetupResult: SharedFlow<Boolean> = _createMeetupResult.asSharedFlow()

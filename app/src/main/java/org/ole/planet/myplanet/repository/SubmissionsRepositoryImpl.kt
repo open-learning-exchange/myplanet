@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
+import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.RealmTeamReference
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.SubmissionDetail
@@ -442,7 +442,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         photoPath: String?
     ) {
         submitPhotosDao.insert(
-            RealmSubmitPhotos().apply {
+            SubmitPhotos().apply {
                 id = UUID.randomUUID().toString()
                 this.submissionId = submissionId
                 this.examId = examId
@@ -661,7 +661,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
     override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
         return submitPhotosDao.getUnuploaded().map { photo ->
-            Pair(photo.id, RealmSubmitPhotos.serializeRealmSubmitPhotos(photo))
+            Pair(photo.id, SubmitPhotos.serialize(photo))
         }
     }
 
@@ -669,7 +669,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
-    override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
+    override suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
         return submitPhotosDao.getByIds(ids)
     }

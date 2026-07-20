@@ -15,8 +15,8 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.utils.AndroidDecrypter
@@ -31,7 +31,7 @@ class HealthRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val healthExaminationDao: HealthExaminationDao
 ) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
+    override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, HealthExamination?> {
         val userCopy = findByField(RealmUser::class.java, "_id", userId)
             ?: findByField(RealmUser::class.java, "id", userId)
         val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
@@ -39,7 +39,7 @@ class HealthRepositoryImpl @Inject constructor(
         return Pair(userCopy, pojoCopy)
     }
 
-    override suspend fun getExaminationById(id: String): RealmHealthExamination? {
+    override suspend fun getExaminationById(id: String): HealthExamination? {
         return healthExaminationDao.getById(id)
     }
 
@@ -54,11 +54,11 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUpdatedHealthExaminations(): List<RealmHealthExamination> {
+    override suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
         return healthExaminationDao.getUpdated()
     }
 
-    override suspend fun getUpdatedHealthForUser(userId: String): List<RealmHealthExamination> {
+    override suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
         return healthExaminationDao.getUpdatedForUser(userId)
     }
 
@@ -68,7 +68,7 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
+    override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: RealmUser?) {
         user?.let { save(it) }
         pojo?.let { healthExaminationDao.upsert(it) }
         examination?.let { healthExaminationDao.upsert(it) }
@@ -79,19 +79,19 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
-        val examinations = ArrayList<RealmHealthExamination>(jsonArray.size())
+        val examinations = ArrayList<HealthExamination>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                examinations.add(RealmHealthExamination.fromJson(jsonDoc))
+                examinations.add(HealthExamination.fromJson(jsonDoc))
             }
         }
         healthExaminationDao.upsertAll(examinations)
     }
 
-    override suspend fun getExaminationConditions(examination: RealmHealthExamination?): Map<String, Boolean> {
+    override suspend fun getExaminationConditions(examination: HealthExamination?): Map<String, Boolean> {
         return withContext(dispatcherProvider.default) {
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
@@ -108,7 +108,7 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?> {
+    override suspend fun uploadHealthData(myHealths: List<HealthExamination>): Map<String, String?> {
         val uploadedHealths = mutableMapOf<String, String?>()
         val semaphore = Semaphore(5)
         supervisorScope {

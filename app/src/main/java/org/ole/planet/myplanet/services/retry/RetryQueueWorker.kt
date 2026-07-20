@@ -25,7 +25,7 @@ import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.withTimeout
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.UrlUtils
 
 @HiltWorker
@@ -149,7 +149,7 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperation(operation: RealmRetryOperation): Boolean {
+    private suspend fun processOperation(operation: RetryOperation): Boolean {
         return try {
             // Timeout for individual operation (30 seconds)
             withTimeout(30_000L) {
@@ -166,7 +166,7 @@ class RetryQueueWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processOperationInternal(operation: RealmRetryOperation): Boolean {
+    private suspend fun processOperationInternal(operation: RetryOperation): Boolean {
         return try {
             retryQueue.markInProgress(operation.id)
 

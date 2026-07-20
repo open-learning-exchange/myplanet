@@ -12,7 +12,7 @@ import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmCourseProgress
+import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -95,7 +95,7 @@ class ProgressRepositoryImpl @Inject constructor(
     }
 
     private fun calculateCurrentProgress(
-        steps: List<RealmCourseStep?>?, progresses: List<RealmCourseProgress>
+        steps: List<RealmCourseStep?>?, progresses: List<CourseProgress>
     ): Int {
         val stepsSize = steps?.size ?: 0
         val completed = BooleanArray(stepsSize + 1)
@@ -148,7 +148,7 @@ class ProgressRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getProgressRecords(userId: String?): List<RealmCourseProgress> {
+    override suspend fun getProgressRecords(userId: String?): List<CourseProgress> {
         return courseProgressDao.getByUser(userId)
     }
 
@@ -195,7 +195,7 @@ class ProgressRepositoryImpl @Inject constructor(
     ) {
         val now = Date().time
         val courseProgress = courseProgressDao.findByCourseUserAndStep(courseId, userId, stepNum)
-            ?: RealmCourseProgress().apply {
+            ?: CourseProgress().apply {
                 id = UUID.randomUUID().toString()
                 createdDate = now
             }
@@ -217,14 +217,14 @@ class ProgressRepositoryImpl @Inject constructor(
 
     private fun courseProgressFromJson(
         act: JsonObject,
-        existingProgress: RealmCourseProgress?,
-        localRecord: RealmCourseProgress?
-    ): RealmCourseProgress {
+        existingProgress: CourseProgress?,
+        localRecord: CourseProgress?
+    ): CourseProgress {
         val docId = JsonUtils.getString("_id", act)
         val localPassed = localRecord?.passed ?: false
         val courseProgress = existingProgress
             ?: localRecord
-            ?: RealmCourseProgress().apply { id = docId }
+            ?: CourseProgress().apply { id = docId }
 
         courseProgress.id = docId
         courseProgress._id = docId

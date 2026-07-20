@@ -6,22 +6,22 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 
 @Dao
 interface FeedbackDao {
     @Query("SELECT * FROM feedback ORDER BY openTime DESC")
-    fun getAllSortedFlow(): Flow<List<RealmFeedback>>
+    fun getAllSortedFlow(): Flow<List<Feedback>>
 
     // `IS` so a null owner matches null rows, mirroring Realm equalTo(null).
     @Query("SELECT * FROM feedback WHERE owner IS :owner ORDER BY openTime DESC")
-    fun getByOwnerFlow(owner: String?): Flow<List<RealmFeedback>>
+    fun getByOwnerFlow(owner: String?): Flow<List<Feedback>>
 
     @Query("SELECT * FROM feedback WHERE isUploaded = 0")
-    suspend fun getPending(): List<RealmFeedback>
+    suspend fun getPending(): List<Feedback>
 
     @Query("SELECT * FROM feedback WHERE id = :id LIMIT 1")
-    suspend fun findById(id: String): RealmFeedback?
+    suspend fun findById(id: String): Feedback?
 
     @Query("UPDATE feedback SET status = 'Closed' WHERE id = :id")
     suspend fun closeById(id: String)
@@ -31,11 +31,11 @@ interface FeedbackDao {
     suspend fun markUploaded(id: String): Int
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(item: RealmFeedback)
+    suspend fun upsert(item: Feedback)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsertAll(items: List<RealmFeedback>)
+    suspend fun upsertAll(items: List<Feedback>)
 
     @Update
-    suspend fun update(item: RealmFeedback)
+    suspend fun update(item: Feedback)
 }

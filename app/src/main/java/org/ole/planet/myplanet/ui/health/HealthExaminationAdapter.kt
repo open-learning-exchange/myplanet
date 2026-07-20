@@ -16,7 +16,7 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
-import org.ole.planet.myplanet.model.RealmHealthExamination
+import org.ole.planet.myplanet.model.HealthExamination
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -27,16 +27,16 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(
     private val context: Context,
-    private var mh: RealmHealthExamination,
+    private var mh: HealthExamination,
     private var userModel: RealmUser?,
     private var userMap: Map<String, RealmUser>
-) : ListAdapter<RealmHealthExamination, HealthExaminationViewHolder>(diffCallback) {
+) : ListAdapter<HealthExamination, HealthExaminationViewHolder>(diffCallback) {
     private val displayNameCache = mutableMapOf<String, String>()
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
     private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
     private val colorMultiSelectGrey by lazy { ContextCompat.getColor(context, R.color.multi_select_grey) }
 
-    fun updateData(mh: RealmHealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
+    fun updateData(mh: HealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap
@@ -117,7 +117,7 @@ class HealthExaminationAdapter(
         dialog.show()
     }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: RealmHealthExamination?) {
+    private fun showConditions(tvCondition: TextView, realmExamination: HealthExamination?) {
         val conditionsMap = JsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
         val keys = conditionsMap.keySet()
         val conditions = StringBuilder()
@@ -141,7 +141,7 @@ class HealthExaminationAdapter(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-        private val diffCallback = DiffUtils.itemCallback<RealmHealthExamination>(
+        private val diffCallback = DiffUtils.itemCallback<HealthExamination>(
             { oldItem, newItem -> oldItem._id == newItem._id },
             { oldItem, newItem -> oldItem == newItem }
         )
