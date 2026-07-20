@@ -33,6 +33,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
@@ -698,15 +699,23 @@ class ChatDetailFragment : Fragment() {
         if (this::messageTextWatcher.isInitialized) {
             binding.editGchatMessage.removeTextChangedListener(messageTextWatcher)
         }
-        if (sharedPrefManager.isAlternativeUrl()) {
-            sharedPrefManager.setAlternativeUrl("")
-            sharedPrefManager.setProcessedAlternativeUrl("")
-            sharedPrefManager.setIsAlternativeUrl(false)
-        }
+        clearAlternativeUrlIfPrimaryRestored()
         loadingJob?.cancel()
         speechRecognizer?.destroy()
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun clearAlternativeUrlIfPrimaryRestored() {
+        if (!sharedPrefManager.isAlternativeUrl()) return
+        val primaryUrl = serverUrl
+        MainApplication.applicationScope.launch(dispatcherProvider.io) {
+            if (isServerReachable(primaryUrl)) {
+                sharedPrefManager.setAlternativeUrl("")
+                sharedPrefManager.setProcessedAlternativeUrl("")
+                sharedPrefManager.setIsAlternativeUrl(false)
+            }
+        }
     }
 
     private fun buildContextPrefix(): String {
