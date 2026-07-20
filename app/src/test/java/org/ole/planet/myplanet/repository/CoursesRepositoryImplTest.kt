@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.repository
 
+import com.google.gson.JsonParser
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -15,7 +18,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -30,6 +35,7 @@ class CoursesRepositoryImplTest {
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
 
     private val mockRealm: Realm = mockk(relaxed = true)
     private lateinit var repository: CoursesRepositoryImpl
@@ -53,7 +59,8 @@ class CoursesRepositoryImplTest {
             tagsRepository,
             ratingsRepository,
             sharedPrefManager,
-            mockk(relaxed = true)
+            mockk(relaxed = true),
+            searchActivityDao
         )
     }
 
@@ -162,5 +169,33 @@ class CoursesRepositoryImplTest {
         val result = repository.getCoursesByIds(listOf("id1", "id2"))
         assertEquals(2, result.size)
         verify { mockQuery.`in`("courseId", arrayOf("id1", "id2")) }
+    }
+
+    @Test
+    fun `saveSearchActivity writes course search activity to Room`() = runTest {
+        val savedActivity = slot<RealmSearchActivity>()
+
+        repository.saveSearchActivity(
+            searchText = "algebra",
+            userName = "learner",
+            planetCode = "planet",
+            parentCode = "parent",
+            tags = emptyList(),
+            grade = "6",
+            subject = "math"
+        )
+
+        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        assertTrue(savedActivity.captured.id.isNotBlank())
+        assertEquals("learner", savedActivity.captured.user)
+        assertEquals("planet", savedActivity.captured.createdOn)
+        assertEquals("parent", savedActivity.captured.parentCode)
+        assertEquals("algebra", savedActivity.captured.text)
+        assertEquals("courses", savedActivity.captured.type)
+
+        val filter = JsonParser.parseString(savedActivity.captured.filter).asJsonObject
+        assertEquals("6", filter["doc.gradeLevel"].asString)
+        assertEquals("math", filter["doc.subjectLevel"].asString)
+        assertTrue(filter.getAsJsonArray("tags").isEmpty)
     }
 }

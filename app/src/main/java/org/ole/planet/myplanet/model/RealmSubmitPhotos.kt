@@ -1,12 +1,15 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
 
-open class RealmSubmitPhotos : RealmObject() {
+@Entity(tableName = "submit_photos")
+open class RealmSubmitPhotos {
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var _rev: String? = null
     var submissionId: String? = null

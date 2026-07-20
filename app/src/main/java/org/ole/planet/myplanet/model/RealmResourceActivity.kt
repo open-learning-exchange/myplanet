@@ -1,12 +1,18 @@
 package org.ole.planet.myplanet.model
 
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 
-open class RealmResourceActivity : RealmObject() {
+@Entity(
+    tableName = "resource_activity",
+    indices = [Index("_rev"), Index("type"), Index("user")]
+)
+open class RealmResourceActivity {
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var createdOn: String? = null
     var _rev: String? = null
@@ -14,7 +20,6 @@ open class RealmResourceActivity : RealmObject() {
     var title: String? = null
     var resourceId: String? = null
     var parentCode: String? = null
-    @Index
     var type: String? = null
     var user: String? = null
     var androidId: String? = null

@@ -1,23 +1,27 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.utils.NetworkUtils
 
-open class RealmCourseActivity : RealmObject() {
+@Entity(
+    tableName = "course_activity",
+    indices = [Index("_rev"), Index("courseId"), Index("type")]
+)
+open class RealmCourseActivity {
     @PrimaryKey
-    var id: String? = null
+    @JvmField
+    var id: String = ""
+    @JvmField
     var _id: String? = null
     var createdOn: String? = null
     var _rev: String? = null
     var time: Long = 0
     var title: String? = null
-    @Index
     var courseId: String? = null
     var parentCode: String? = null
-    @Index
     var type: String? = null
     var user: String? = null
 

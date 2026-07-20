@@ -1,16 +1,23 @@
 package org.ole.planet.myplanet.model
 
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import io.realm.annotations.PrimaryKey
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.VersionUtils
 
+@Entity(
+    tableName = "search_activity",
+    indices = [Index("_rev"), Index("type"), Index("user")]
+)
 open class RealmSearchActivity(
     @PrimaryKey
+    @JvmField
     var id: String = "",
+    @JvmField
     var _id: String = "",
     var _rev: String = "",
     var text: String = "",
@@ -20,7 +27,7 @@ open class RealmSearchActivity(
     var filter: String = "",
     var createdOn: String = "",
     var parentCode: String = ""
-) : RealmObject() {
+) {
     fun serialize(): JsonObject {
         val obj = JsonObject()
         obj.addProperty("text", text)

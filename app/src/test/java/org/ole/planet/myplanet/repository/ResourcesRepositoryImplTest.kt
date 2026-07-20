@@ -2,10 +2,13 @@ package org.ole.planet.myplanet.repository
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.gson.JsonParser
 import dagger.Lazy
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.slot
 import io.mockk.verify
 import io.realm.Realm
 import io.realm.RealmQuery
@@ -20,7 +23,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmSearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -36,6 +42,8 @@ class ResourcesRepositoryImplTest {
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
+    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
 
@@ -65,6 +73,8 @@ class ResourcesRepositoryImplTest {
             sharedPrefManager,
             ratingsRepository,
             tagsRepository,
+            searchActivityDao,
+            resourceActivityDao,
             teamsRepositoryLazy,
             teamsSyncRepositoryLazy
         )
@@ -270,5 +280,37 @@ class ResourcesRepositoryImplTest {
         verify { mockQuery.contains("titleNormal", "tree") }
         assertEquals(1, result.size)
         assertEquals(matchLib, result[0])
+    }
+
+    @Test
+    fun `saveSearchActivity writes resource search activity to Room`() = runTest {
+        val savedActivity = slot<RealmSearchActivity>()
+
+        repository.saveSearchActivity(
+            userName = "learner",
+            searchText = "physics",
+            planetCode = "planet",
+            parentCode = "parent",
+            tags = emptyList(),
+            subjects = setOf("science"),
+            languages = setOf("en"),
+            levels = setOf("beginner"),
+            mediums = setOf("video")
+        )
+
+        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        assertTrue(savedActivity.captured.id.isNotBlank())
+        assertEquals("learner", savedActivity.captured.user)
+        assertEquals("planet", savedActivity.captured.createdOn)
+        assertEquals("parent", savedActivity.captured.parentCode)
+        assertEquals("physics", savedActivity.captured.text)
+        assertEquals("resources", savedActivity.captured.type)
+
+        val filter = JsonParser.parseString(savedActivity.captured.filter).asJsonObject
+        assertEquals(listOf("science"), filter.getAsJsonArray("subjects").map { it.asString })
+        assertEquals(listOf("en"), filter.getAsJsonArray("language").map { it.asString })
+        assertEquals(listOf("beginner"), filter.getAsJsonArray("level").map { it.asString })
+        assertEquals(listOf("video"), filter.getAsJsonArray("mediaType").map { it.asString })
+        assertTrue(filter.getAsJsonArray("tags").isEmpty)
     }
 }

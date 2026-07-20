@@ -25,6 +25,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -44,6 +45,7 @@ class SubmissionsRepositoryImplTest {
     private lateinit var exporter: SubmissionsRepositoryExporter
     private val testDispatcher = UnconfinedTestDispatcher()
 
+    private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
@@ -72,7 +74,8 @@ class SubmissionsRepositoryImplTest {
             surveysRepositoryProvider,
             context,
             sharedPrefManager,
-            exporter
+            exporter,
+            submitPhotosDao
         ), recordPrivateCalls = true)
     }
 

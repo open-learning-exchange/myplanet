@@ -19,6 +19,9 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
@@ -27,7 +30,6 @@ import org.ole.planet.myplanet.model.RealmOfflineActivity
 import org.ole.planet.myplanet.model.RealmRemovedLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.model.RealmUserChallengeActions
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -46,7 +48,9 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
     private val timeProvider: TimeProvider,
-    private val userChallengeActionsDao: UserChallengeActionsDao
+    private val userChallengeActionsDao: UserChallengeActionsDao,
+    private val courseActivityDao: CourseActivityDao,
+    private val resourceActivityDao: ResourceActivityDao
 ) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return queryList(RealmOfflineActivity::class.java) {
@@ -93,19 +97,21 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val parentCode = user?.parentCode
         val createdOn = user?.planetCode
 
-        executeTransaction { realm ->
-            val activity = realm.createObject(RealmCourseActivity::class.java, UUID.randomUUID().toString())
-            activity.type = "visit"
-            activity.title = title
-            activity.courseId = courseId
-            activity.time = Date().time
-            activity.user = userId
+        courseActivityDao.insert(
+            RealmCourseActivity().apply {
+                id = UUID.randomUUID().toString()
+                type = "visit"
+                this.title = title
+                this.courseId = courseId
+                time = Date().time
+                this.user = userId
 
-            if (user != null) {
-                activity.parentCode = parentCode
-                activity.createdOn = createdOn
+                if (user != null) {
+                    this.parentCode = parentCode
+                    this.createdOn = createdOn
+                }
             }
-        }
+        )
     }
 
     override suspend fun logLogin(
@@ -160,53 +166,45 @@ class ActivitiesRepositoryImpl @Inject constructor(
         resourceId: String?,
         type: String?
     ) {
-        executeTransaction { realm ->
-            val offlineActivities =
-                realm.createObject(RealmResourceActivity::class.java, "${UUID.randomUUID()}")
-            offlineActivities.user = userName
-            offlineActivities.parentCode = parentCode
-            offlineActivities.createdOn = planetCode
-            offlineActivities.type = type
-            offlineActivities.title = title
-            offlineActivities.resourceId = resourceId
-            offlineActivities.time = Date().time
-        }
+        resourceActivityDao.insert(
+            RealmResourceActivity().apply {
+                id = UUID.randomUUID().toString()
+                user = userName
+                this.parentCode = parentCode
+                createdOn = planetCode
+                this.type = type
+                this.title = title
+                this.resourceId = resourceId
+                time = Date().time
+            }
+        )
     }
 
     override suspend fun getResourceOpenCount(userName: String, type: String): Long {
-        return count(RealmResourceActivity::class.java) {
-            equalTo("user", userName)
-            equalTo("type", type)
-        }
+        return resourceActivityDao.countByUserAndType(userName, type)
     }
 
     override suspend fun getMostOpenedResource(userName: String, type: String): Pair<String, Int>? {
-        return withRealm { realm ->
-            val activities = realm.where(RealmResourceActivity::class.java)
-                .equalTo("user", userName)
-                .equalTo("type", type)
-                .findAll()
+        val activities = resourceActivityDao.getByUserAndType(userName, type)
+        if (activities.isEmpty()) {
+            return null
+        }
 
-            if (activities.isEmpty()) {
-                return@withRealm null
+        val resourceCounts = activities
+            .groupBy { it.resourceId }
+            .mapValues { entry ->
+                val count = entry.value.size
+                val title = entry.value.first().title
+                Pair(count, title)
             }
+            .filterValues { it.second != null }
 
-            val resourceCounts = activities
-                .groupBy { it.resourceId }
-                .mapValues { entry ->
-                    val count = entry.value.size
-                    val title = entry.value.first().title
-                    Pair(count, title)
-                }
-                .filterValues { it.second != null }
+        val maxEntry = resourceCounts.maxByOrNull { it.value.first }
 
-            val maxEntry = resourceCounts.maxByOrNull { it.value.first }
-
-            if (maxEntry == null || maxEntry.value.first == 0) {
-                null
-            } else {
-                Pair(maxEntry.value.second ?: "", maxEntry.value.first)
-            }
+        return if (maxEntry == null || maxEntry.value.first == 0) {
+            null
+        } else {
+            Pair(maxEntry.value.second ?: "", maxEntry.value.first)
         }
     }
 
@@ -262,16 +260,18 @@ class ActivitiesRepositoryImpl @Inject constructor(
         val parentCode = user.parentCode
         val createdOn = user.planetCode
 
-        executeTransaction { realm ->
-            val activities = realm.createObject(RealmResourceActivity::class.java, UUID.randomUUID().toString())
-            activities.user = userName
-            activities._rev = null
-            activities._id = null
-            activities.parentCode = parentCode
-            activities.createdOn = createdOn
-            activities.type = "sync"
-            activities.time = Date().time
-        }
+        resourceActivityDao.insert(
+            RealmResourceActivity().apply {
+                id = UUID.randomUUID().toString()
+                this.user = userName
+                _rev = null
+                _id = null
+                this.parentCode = parentCode
+                this.createdOn = createdOn
+                type = "sync"
+                time = Date().time
+            }
+        )
     }
 
     private fun insertActivityInternal(
