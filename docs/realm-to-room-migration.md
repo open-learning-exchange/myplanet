@@ -167,8 +167,23 @@ wired through `di/RoomModule`.
 - [x] **NewsLog** migrated (uploaded-only activity log). `RealmNewsLog` is now a Room
       `@Entity`; `NewsLogDao` owns pending lookup, inserts, and upload acknowledgements; upload
       config uses `RoomUploadConfig`.
-- [ ] Migrate the remaining ~10 uploadable models to `RoomUploadConfig` + the synced-only domains.
-- [ ] Remaining ~32 model domains.
+- [x] **TeamActivities / TeamLog** migrated (uploaded + synced team visit log). `RealmTeamLog` is
+      now a Room `@Entity`; `TeamLogDao` owns visit counts, last-visit lookups, sync upserts,
+      pending uploads, and upload acknowledgements; team activity sync now runs outside the legacy
+      Realm transaction path and upload config uses `RoomUploadConfig`.
+- [x] **OfflineActivity / login activities** migrated (custom uploaded + synced login log).
+      `RealmOfflineActivity` is now a Room `@Entity`; `OfflineActivityDao` owns offline login
+      counts/flows, last-login lookups, pending upload reads, upload acknowledgements, and sync
+      upserts with the existing `_id` plus `loginTime`/`user` fallback dedupe behavior.
+- [x] **CourseProgress** migrated (uploaded + synced progress records). `RealmCourseProgress` is
+      now a Room `@Entity`; `CourseProgressDao` owns user/course progress reads, completion
+      records, save/update paths, pending upload reads, upload acknowledgements, and sync upserts
+      that preserve locally-passed steps when server progress lags.
+- [x] **RemovedLog** migrated (local shelf tombstones). `RealmRemovedLog` is now a Room
+      `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
+      courses are re-added, and shelf merge filtering for removed resources/courses.
+- [ ] Migrate the remaining ~8 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [ ] Remaining ~31 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

@@ -15,19 +15,23 @@ import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.ChatDao
 import org.ole.planet.myplanet.data.room.dao.CommunityDao
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
+import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.RetryDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
+import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -137,5 +141,25 @@ object RoomModule {
     @Provides
     fun provideNewsLogDao(database: AppDatabase): NewsLogDao {
         return database.newsLogDao()
+    }
+
+    @Provides
+    fun provideTeamLogDao(database: AppDatabase): TeamLogDao {
+        return database.teamLogDao()
+    }
+
+    @Provides
+    fun provideOfflineActivityDao(database: AppDatabase): OfflineActivityDao {
+        return database.offlineActivityDao()
+    }
+
+    @Provides
+    fun provideCourseProgressDao(database: AppDatabase): CourseProgressDao {
+        return database.courseProgressDao()
+    }
+
+    @Provides
+    fun provideRemovedLogDao(database: AppDatabase): RemovedLogDao {
+        return database.removedLogDao()
     }
 }
