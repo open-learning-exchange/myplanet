@@ -924,6 +924,7 @@
     <string name="ob_desc4_3">🎯 Personnalisé : Adaptez votre parcours d\'apprentissage.</string>
     <string name="ob_desc4_4">📚 Interactif : Engagez-vous avec des vidéos, des livres, des jeux.</string>
     <string name="ob_desc4_5">Commencez votre parcours d\'apprentissage illimité avec myPlanet!</string>
+    <string name="onboarding_server_prep_hint">Avant de vous connecter, vous aurez besoin de l\'adresse du serveur Planet et du code PIN. Demandez à l\'administrateur de votre communauté si vous ne les avez pas encore.</string>
     <string name="recycler_chat_label">conversations</string>
     <string name="completed_course">cours terminé</string>
     <string name="menu">menu latéral</string>
@@ -1337,6 +1338,10 @@
         <item>En cours</item>
         <item>Terminé</item>
     </string-array>
+    <string name="edit_resource">Modifier la ressource</string>
+    <string name="save_changes">Enregistrer les modifications</string>
+    <string name="resource_updated">Ressource mise à jour</string>
+    <string name="failed_to_update_resource">Échec de la mise à jour de la ressource</string>
 
     <string name="open_link_with">Ouvrir le lien avec</string>
     <string name="just_once">Une seule fois</string>

@@ -14,6 +14,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 import javax.net.SocketFactory
+import okhttp3.Dispatcher
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.api.RetryInterceptor
@@ -54,9 +55,15 @@ object NetworkModule {
             .serializeNulls()
             .create()
     }
+    
+    private const val MAX_REQUESTS_PER_HOST = 20
 
     private fun buildOkHttpClient(connect: Long, read: Long, write: Long, retryInterceptor: RetryInterceptor? = null): OkHttpClient {
+        val dispatcher = Dispatcher().apply {
+            maxRequestsPerHost = MAX_REQUESTS_PER_HOST
+        }
         val builder = OkHttpClient.Builder()
+            .dispatcher(dispatcher)
             .connectTimeout(connect, TimeUnit.SECONDS)
             .readTimeout(read, TimeUnit.SECONDS)
             .writeTimeout(write, TimeUnit.SECONDS)

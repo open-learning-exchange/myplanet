@@ -12,7 +12,6 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.RadioButton
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.gson.JsonObject
@@ -20,9 +19,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
 import javax.inject.Inject
-import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
@@ -32,10 +29,8 @@ import org.ole.planet.myplanet.model.UserSurveyProfile
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.SubmissionUploadExecutor
-import org.ole.planet.myplanet.services.UploadManager
+import org.ole.planet.myplanet.services.SubmissionsUploader
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.Utilities
 
@@ -52,13 +47,9 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
     var userModel: RealmUser? = null
     var shouldHideElements: Boolean? = null
     @Inject
-    lateinit var uploadManager: UploadManager
-    @Inject
-    lateinit var submissionUploadExecutor: SubmissionUploadExecutor
-    @Inject
-    lateinit var serverUrlMapper: ServerUrlMapper
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
+    @Inject
+    lateinit var submissionsUploader: SubmissionsUploader
     private var syncStartTime: Long = 0L
 
     companion object {
@@ -309,87 +300,13 @@ class UserInformationFragment : BaseDialogFragment(), View.OnClickListener {
             return
         } else {
             Log.d("UserInformationFragment", "Team survey detected, starting server check and upload process")
+            submissionsUploader.checkAvailableServer(syncStartTime)
+
             Utilities.toast(activity, getString(R.string.thank_you_for_taking_this_survey))
-            checkAvailableServer()
             val activity = requireActivity()
-            if (activity is AppCompatActivity) {
+            if (activity is androidx.appcompat.app.AppCompatActivity) {
                 FragmentNavigator.popBackStack(activity.supportFragmentManager)
             }
-        }
-    }
-
-    private fun checkAvailableServer() {
-        Log.d("UserInformationFragment", "checkAvailableServer started, syncStartTime: $syncStartTime")
-        val updateUrl = sharedPrefManager.getServerUrl()
-        Log.d("UserInformationFragment", "Server URL: $updateUrl")
-        val mapping = serverUrlMapper.processUrl(updateUrl)
-
-        // Capture syncStartTime before launching coroutine to preserve it across lifecycle changes
-        val capturedSyncStartTime = syncStartTime
-
-        // Use ApplicationScope to survive fragment lifecycle - this upload must complete even after UI is destroyed
-        submissionUploadExecutor.execute {
-            Log.d("UserInformationFragment", "ApplicationScope coroutine started, will not be cancelled by fragment lifecycle")
-            Log.d("UserInformationFragment", "Starting server reachability checks (15s timeout each)")
-            val checkStartTime = SystemClock.elapsedRealtime()
-
-            val primaryCheck = async {
-                try {
-                    Log.d("UserInformationFragment", "Checking primary URL: ${mapping.primaryUrl}")
-                    val result = withTimeoutOrNull(15000) {
-                        MainApplication.isServerReachable(mapping.primaryUrl)
-                    } ?: false
-                    Log.d("UserInformationFragment", "Primary check result: $result")
-                    result
-                } catch (e: Exception) {
-                    Log.e("UserInformationFragment", "Primary check failed", e)
-                    false
-                }
-            }
-
-            val alternativeCheck = async {
-                try {
-                    Log.d("UserInformationFragment", "Checking alternative URL: ${mapping.alternativeUrl}")
-                    val result = withTimeoutOrNull(15000) {
-                        mapping.alternativeUrl?.let { MainApplication.isServerReachable(it) } == true
-                    } ?: false
-                    Log.d("UserInformationFragment", "Alternative check result: $result")
-                    result
-                } catch (e: Exception) {
-                    Log.e("UserInformationFragment", "Alternative check failed", e)
-                    false
-                }
-            }
-
-            val primaryAvailable = primaryCheck.await()
-            val alternativeAvailable = alternativeCheck.await()
-            val checkDuration = SystemClock.elapsedRealtime() - checkStartTime
-            Log.d("UserInformationFragment", "Server checks completed in ${checkDuration}ms. Primary: $primaryAvailable, Alternative: $alternativeAvailable")
-
-            if (primaryAvailable || alternativeAvailable) {
-                Log.d("UserInformationFragment", "Server is reachable, proceeding with upload")
-                if (!primaryAvailable) {
-                    mapping.alternativeUrl?.let { alternativeUrl ->
-                        val uri = updateUrl.toUri()
-                        val editor = sharedPrefManager.rawPreferences.edit()
-                        serverUrlMapper.updateUrlPreferences(editor, uri, alternativeUrl, mapping.primaryUrl, sharedPrefManager.rawPreferences)
-                    }
-                }
-                uploadSubmissionsWithTiming(capturedSyncStartTime)
-            } else {
-                Log.w("UserInformationFragment", "No server reachable, upload skipped. Total time since button click: ${SystemClock.elapsedRealtime() - capturedSyncStartTime}ms")
-            }
-        }
-    }
-
-    private suspend fun uploadSubmissionsWithTiming(capturedSyncStartTime: Long) {
-        try {
-            Log.d("UserInformationFragment", "About to call uploadSubmissions with capturedSyncStartTime: $capturedSyncStartTime")
-            uploadManager.uploadAdoptedSurveys()
-            uploadManager.uploadSubmissions(capturedSyncStartTime)
-        } catch (e: Exception) {
-            Log.e("UserInformationFragment", "Error during upload", e)
-            e.printStackTrace()
         }
     }
 

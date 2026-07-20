@@ -16,6 +16,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.DatabaseService
@@ -193,6 +194,9 @@ class VoicesRepositoryImpl @Inject constructor(
             equalTo("docType", "message", Case.INSENSITIVE)
             sort("time", Sort.DESCENDING)
         }
+        .distinctUntilChanged { old, new ->
+            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
+        }
         .flowOn(realmDispatcher) // Realm async queries require a Looper thread.
 
         return allNewsFlow.map { allNews ->
@@ -217,7 +221,11 @@ class VoicesRepositoryImpl @Inject constructor(
             contains("viewIn", "\"_id\":\"$teamId\"", Case.INSENSITIVE)
             endGroup()
             sort("time", Sort.DESCENDING)
-        }.flowOn(dispatcherProvider.default)
+        }
+        .distinctUntilChanged { old, new ->
+            old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
+        }
+        .flowOn(dispatcherProvider.default)
     }
 
     override suspend fun shareNewsToCommunity(newsId: String, userId: String, planetCode: String, parentCode: String, teamName: String): Result<Unit> {

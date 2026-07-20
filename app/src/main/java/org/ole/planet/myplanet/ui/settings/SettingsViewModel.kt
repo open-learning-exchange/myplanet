@@ -59,23 +59,27 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearRetryQueue() {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val cleared = retryQueue.safeClearQueue()
             _clearRetryQueueEvent.send(cleared)
         }
     }
 
+    private suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val pendingCount = retryQueue.getPendingCount()
+        val pendingOps = retryQueue.getPendingOperations()
+        val isProcessing = retryQueue.isCurrentlyProcessing()
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
+    }
+
     fun fetchRetryQueueDetails() {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val pendingCount = retryQueue.getPendingCount()
-            val pendingOps = retryQueue.getPendingOperations()
-            val isProcessing = retryQueue.isCurrentlyProcessing()
-            _retryQueueDetailsEvent.send(RetryQueueDetails(pendingCount, pendingOps, isProcessing))
+        viewModelScope.launch {
+            _retryQueueDetailsEvent.send(getRetryQueueSnapshot())
         }
     }
 
     fun downloadFiles(libraryList: List<RealmMyLibrary>?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             var files = libraryList
             try {
                 files = libraryList ?: resourcesRepository.getAllLibrariesToSync()

@@ -2,9 +2,9 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
     private val steps = mutableListOf<String>()
@@ -15,25 +15,20 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
         private const val COURSE_DETAIL_ID = 0L
     }
 
+    private sealed interface StepItem
+    private object HeaderItem : StepItem
+    private data class StepEntry(val id: String) : StepItem
+
     fun submitList(newSteps: List<String>) {
-        val diffCallback = object : DiffUtil.Callback() {
-            override fun getOldListSize(): Int = steps.size + 1 // +1 for the course detail fragment
-            override fun getNewListSize(): Int = newSteps.size + 1
+        val oldWithHeader: List<StepItem> = listOf(HeaderItem) + steps.map(::StepEntry)
+        val newWithHeader: List<StepItem> = listOf(HeaderItem) + newSteps.map(::StepEntry)
 
-            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                if (oldItemPosition == 0 && newItemPosition == 0) return true
-                if (oldItemPosition == 0 || newItemPosition == 0) return false
-                return steps[oldItemPosition - 1] == newSteps[newItemPosition - 1]
-            }
-
-            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                if (oldItemPosition == 0 && newItemPosition == 0) return true
-                if (oldItemPosition == 0 || newItemPosition == 0) return false
-                return steps[oldItemPosition - 1] == newSteps[newItemPosition - 1]
-            }
-        }
-
-        val diffResult = DiffUtil.calculateDiff(diffCallback)
+        val diffResult = DiffUtils.calculateDiff(
+            oldWithHeader,
+            newWithHeader,
+            areItemsTheSame = { a, b -> a == b },
+            areContentsTheSame = { a, b -> a == b }
+        )
 
         newSteps.forEach { stepId ->
             if (!itemIds.containsKey(stepId)) {

@@ -9,14 +9,10 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
-import io.realm.RealmObject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.ItemMyLifeBinding
-import org.ole.planet.myplanet.model.RealmMeetup
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -98,25 +94,26 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         }
     }
 
-    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: RealmObject?) {
+    fun setTextViewProperties(textViewArray: Array<TextView?>, itemCnt: Int, obj: DashboardItem?) {
         textViewArray[itemCnt] = TextView(context)
         textViewArray[itemCnt]?.setPadding(20, 10, 20, 10)
         textViewArray[itemCnt]?.textAlignment = View.TEXT_ALIGNMENT_CENTER
         textViewArray[itemCnt]?.gravity = Gravity.CENTER_VERTICAL or Gravity.CENTER_HORIZONTAL
-        when (obj) {
-            is RealmMyLibrary -> {
+        when (obj?.type) {
+            ItemType.LIBRARY -> {
                 textViewArray[itemCnt]?.text = obj.title
             }
-            is RealmMyCourse -> {
+            ItemType.COURSE -> {
                 textViewArray[itemCnt]?.let {
-                    handleClick(obj.courseId, obj.courseTitle, TakeCourseFragment(), it)
+                    handleClick(obj.id, obj.title, TakeCourseFragment(), it)
                 }
             }
-            is RealmMeetup -> {
+            ItemType.MEETUP -> {
                 textViewArray[itemCnt]?.let {
-                    handleClick(obj.meetupId, obj.title, EventsDetailFragment(), it)
+                    handleClick(obj.id, obj.title, EventsDetailFragment(), it)
                 }
             }
+            else -> {}
         }
     }
 
@@ -125,12 +122,12 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         setBackgroundColor(textView, itemCnt)
     }
 
-    fun getLayout(itemCnt: Int, obj: RealmObject, surveyCount: Int? = null): View {
+    fun getLayout(itemCnt: Int, obj: DashboardItem, surveyCount: Int? = null): View {
         val itemMyLifeBinding = ItemMyLifeBinding.inflate(LayoutInflater.from(activity))
         val v = itemMyLifeBinding.root
         setBackgroundColor(v, itemCnt)
 
-        val title = (obj as RealmMyLife).title
+        val title = obj.title
         val imageResId = imageResourceMap[obj.imageId] ?: R.drawable.ic_myhealth
         itemMyLifeBinding.img.setImageResource(imageResId)
         itemMyLifeBinding.tvName.text = title

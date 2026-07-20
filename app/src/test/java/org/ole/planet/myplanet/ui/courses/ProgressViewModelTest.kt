@@ -38,7 +38,7 @@ class ProgressViewModelTest {
 
     @Before
     fun setUp() {
-        viewModel = ProgressViewModel(progressRepository, userSessionManager, dispatcherProvider)
+        viewModel = ProgressViewModel(progressRepository, userSessionManager)
     }
 
     @Test

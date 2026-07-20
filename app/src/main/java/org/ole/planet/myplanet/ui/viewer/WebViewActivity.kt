@@ -19,6 +19,7 @@ import android.webkit.WebResourceResponse
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.addCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -32,6 +33,7 @@ import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityWebViewBinding
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
+import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.WebViewSafety
 
 class WebViewActivity : AppCompatActivity() {
@@ -39,22 +41,7 @@ class WebViewActivity : AppCompatActivity() {
     private var fromDeepLink = false
     private lateinit var link: String
     private val trustedHosts by lazy {
-        listOfNotNull(
-            BuildConfig.PLANET_LEARNING_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_GUATEMALA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SANPABLO_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SANPABLO_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EARTH_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_SOMALIA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_VI_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_XELA_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_URIUR_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_URIUR_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_RUIRU_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EMBAKASI_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_EMBAKASI_CLONE_URL.takeIf { it.isNotEmpty() },
-            BuildConfig.PLANET_CAMBRIDGE_URL.takeIf { it.isNotEmpty() }
-        )
+        ServerConfigUtils.getTrustedServerHosts()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -79,6 +66,16 @@ class WebViewActivity : AppCompatActivity() {
 
         activityWebViewBinding.contentWebView.finish.setOnClickListener { finish() }
         setWebClient()
+
+        onBackPressedDispatcher.addCallback(this) {
+            val webView = activityWebViewBinding.contentWebView.wv
+            if (webView.canGoBack()) {
+                webView.goBack()
+            } else {
+                isEnabled = false
+                onBackPressedDispatcher.onBackPressed()
+            }
+        }
 
         if (resourceId != null) {
             val directory = File(getExternalFilesDir(null), "ole/$resourceId")
@@ -283,7 +280,6 @@ class WebViewActivity : AppCompatActivity() {
                 if (view.url?.startsWith("file://") == false && view.url?.endsWith("/eng/") == true) {
                     finish()
                 }
-                activityWebViewBinding.contentWebView.pBar.incrementProgressBy(newProgress)
                 if (newProgress == 100 && activityWebViewBinding.contentWebView.pBar.isShown) {
                     activityWebViewBinding.contentWebView.pBar.visibility = View.GONE
                 }

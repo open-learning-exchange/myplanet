@@ -28,6 +28,7 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Date
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -181,22 +182,36 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 ThemeMode.FOLLOW_SYSTEM -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
+        
+        private const val REACHABILITY_CACHE_TTL_MS = 30_000L
+        private val reachabilityCache = ConcurrentHashMap<String, Pair<Boolean, Long>>()
 
         suspend fun isServerReachable(
             urlString: String,
             ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
         ): Boolean {
             if (urlString.isBlank()) return false
+
+            reachabilityCache[urlString]?.let { (reachable, checkedAt) ->
+                if (System.currentTimeMillis() - checkedAt < REACHABILITY_CACHE_TTL_MS) {
+                    return reachable
+                }
+            }
+
             val serverUrlMapper = coreDependenciesEntryPoint.serverUrlMapper()
             val mapping = serverUrlMapper.processUrl(urlString)
             val urlsToTry = mutableListOf(urlString)
             mapping.alternativeUrl?.let { urlsToTry.add(it) }
 
+            var reachable = false
             for (url in urlsToTry) {
-                val reachable = tryConnect(url, ioDispatcher)
-                if (reachable) return true
+                if (tryConnect(url, ioDispatcher)) {
+                    reachable = true
+                    break
+                }
             }
-            return false
+            reachabilityCache[urlString] = reachable to System.currentTimeMillis()
+            return reachable
         }
 
         private suspend fun tryConnect(
@@ -341,6 +356,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     private suspend fun setupAnrWatchdog() {
         withContext(dispatcherProvider.default) {
             anrWatchdog = ANRWatchdog(
+                scope = applicationScope,
                 timeout = 5000L,
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {

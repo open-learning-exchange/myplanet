@@ -14,6 +14,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
+import kotlin.time.Duration.Companion.milliseconds
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.ole.planet.myplanet.MainApplication
@@ -21,7 +22,6 @@ import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.retry.RetryQueueWorker
 import org.ole.planet.myplanet.services.sync.HeavyTableSyncWorker
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -161,12 +161,12 @@ class ServerReachabilityWorker @AssistedInject constructor(
         val mapping = serverUrlMapper.processUrl(updateUrl)
 
         try {
-            val primaryAvailable = withTimeoutOrNull(15000) {
+            val primaryAvailable = withTimeoutOrNull(15000.milliseconds) {
                 isServerReachable(mapping.primaryUrl)
             } ?: false
 
             val alternativeAvailable = if (mapping.alternativeUrl != null) {
-                withTimeoutOrNull(15000) {
+                withTimeoutOrNull(15000.milliseconds) {
                     isServerReachable(mapping.alternativeUrl)
                 } ?: false
             } else {
@@ -189,14 +189,17 @@ class ServerReachabilityWorker @AssistedInject constructor(
 
     private suspend fun uploadSubmissions() {
         try {
-            if (submissionsRepository.hasPendingOfflineSubmissions()) {
-                withContext(dispatcherProvider.io) {
-                    uploadManager.uploadSubmissions()
+            val syncAlreadyRunning = MainApplication.isSyncRunning.get()
+            if (!syncAlreadyRunning) {
+                if (submissionsRepository.hasPendingOfflineSubmissions()) {
+                    withContext(dispatcherProvider.io) {
+                        uploadManager.uploadSubmissions()
+                    }
                 }
+                uploadExamResultWrapper()
             }
-            uploadExamResultWrapper()
             HeavyTableSyncWorker.scheduleIfPending(applicationContext, sharedPrefManager)
-            if (!MainApplication.isSyncRunning.get()) {
+            if (!syncAlreadyRunning) {
                 RetryQueueWorker.triggerImmediateRetry(applicationContext)
             }
         } catch (e: Exception) {
@@ -210,10 +213,8 @@ class ServerReachabilityWorker @AssistedInject constructor(
         }
 
         try {
-            val successListener = object : OnSuccessListener {
-                override fun onSuccess(success: String?) {
-                    // No UI updates required for background sync completion.
-                }
+            val successListener = OnSuccessListener {
+                // No UI updates required for background sync completion.
             }
             uploadManager.uploadExamResult(successListener)
         } catch (e: Exception) {

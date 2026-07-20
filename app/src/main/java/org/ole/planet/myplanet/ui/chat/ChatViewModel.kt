@@ -4,11 +4,12 @@ import androidx.annotation.VisibleForTesting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.text.Normalizer
-import java.util.Locale
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -22,8 +23,10 @@ import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
@@ -31,7 +34,8 @@ class ChatViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val teamsRepository: TeamsRepository,
     private val voicesRepository: VoicesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ViewModel() {
     private data class PrecomputedChat(
         val chat: RealmChatHistory,
@@ -51,6 +55,19 @@ class ChatViewModel @Inject constructor(
     internal var loadedCount = 0
     private var allChats: List<RealmChatHistory> = emptyList()
     private var precomputedChats: List<PrecomputedChat> = emptyList()
+
+    private val _refreshChatSignal = MutableSharedFlow<Unit>()
+    val refreshChatSignal: SharedFlow<Unit> = _refreshChatSignal.asSharedFlow()
+
+    init {
+        viewModelScope.launch {
+            realtimeSyncManager.dataUpdateFlow.collect { update ->
+                if (update.table == "chats" && update.shouldRefreshUI) {
+                    _refreshChatSignal.emit(Unit)
+                }
+            }
+        }
+    }
 
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
@@ -111,21 +128,17 @@ class ChatViewModel @Inject constructor(
     private fun buildPrecomputedChats(chats: List<RealmChatHistory>): List<PrecomputedChat> {
         return chats.map { chat ->
             val title = if (chat.conversations != null && chat.conversations?.isNotEmpty() == true) {
-                chat.conversations?.get(0)?.query?.let { normalizeText(it) }
+                chat.conversations?.get(0)?.query?.let { Utilities.normalizeText(it) }
             } else {
-                chat.title?.let { normalizeText(it) }
+                chat.title?.let { Utilities.normalizeText(it) }
             }
-            val queries = chat.conversations?.map { it?.query?.let { q -> normalizeText(q) } } ?: emptyList()
-            val responses = chat.conversations?.map { it?.response?.let { r -> normalizeText(r) } } ?: emptyList()
+            val queries = chat.conversations?.map { it?.query?.let { q -> Utilities.normalizeText(q) } } ?: emptyList()
+            val responses = chat.conversations?.map { it?.response?.let { r -> Utilities.normalizeText(r) } } ?: emptyList()
 
             PrecomputedChat(chat, title, queries, responses)
         }
     }
 
-    private fun normalizeText(str: String): String {
-        return Normalizer.normalize(str.lowercase(Locale.getDefault()), Normalizer.Form.NFD)
-            .replace(DIACRITICS_REGEX, "")
-    }
 
     fun searchChats(query: String, isFullSearch: Boolean, isQuestion: Boolean) {
         if (query.isBlank()) {
@@ -147,8 +160,8 @@ class ChatViewModel @Inject constructor(
     private fun fullConvoSearch(s: String, isQuestion: Boolean): List<RealmChatHistory> {
         var conversation: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(s)
         val inTitleStartQuery = mutableListOf<RealmChatHistory>()
         val inTitleContainsQuery = mutableListOf<RealmChatHistory>()
         val startsWithQuery = mutableListOf<RealmChatHistory>()
@@ -180,8 +193,8 @@ class ChatViewModel @Inject constructor(
     private fun searchByTitle(s: String): List<RealmChatHistory> {
         var title: String?
         val queryParts = s.split(" ").filterNot { it.isEmpty() }
-        val normalizedQueryParts = queryParts.map { normalizeText(it) }
-        val normalizedQuery = normalizeText(s)
+        val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+        val normalizedQuery = Utilities.normalizeText(s)
         val startsWithQuery = mutableListOf<RealmChatHistory>()
         val containsQuery = mutableListOf<RealmChatHistory>()
 

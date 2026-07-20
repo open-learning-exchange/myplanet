@@ -24,8 +24,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.utils.SystemTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class EventsRepositoryImplTest {
@@ -43,7 +45,8 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         databaseService = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher())
+        val timeProvider = SystemTimeProvider()
+        repository = EventsRepositoryImpl(databaseService, UnconfinedTestDispatcher(), timeProvider)
     }
 
     @Test
@@ -237,12 +240,14 @@ class EventsRepositoryImplTest {
             transactionSlot.captured.invoke(mockRealm)
         }
 
-        val meetup = RealmMeetup()
-        every { mockRealm.copyToRealmOrUpdate(meetup) } returns meetup
+        val params = MeetupCreationParams(
+            "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
+        )
+        every { mockRealm.copyToRealmOrUpdate(any<RealmMeetup>()) } returns RealmMeetup()
 
-        val result = repository.createMeetup(meetup)
+        val result = repository.createMeetup(params)
         assertTrue(result)
-        verify { mockRealm.copyToRealmOrUpdate(meetup) }
+        verify { mockRealm.copyToRealmOrUpdate(any<RealmMeetup>()) }
     }
 
     @Test
@@ -251,9 +256,11 @@ class EventsRepositoryImplTest {
         val transactionSlot = slot<Function1<Realm, Unit>>()
         coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } throws SilentException("Test Exception")
 
-        val meetup = RealmMeetup()
+        val params = MeetupCreationParams(
+            "title", "link", "desc", "loc", "start", "end", null, "planet", "user", 1L, 2L, "teamId"
+        )
 
-        val result = repository.createMeetup(meetup)
+        val result = repository.createMeetup(params)
         assertFalse(result)
     }
 }

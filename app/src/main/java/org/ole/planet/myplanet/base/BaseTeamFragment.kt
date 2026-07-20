@@ -44,7 +44,7 @@ abstract class BaseTeamFragment : BaseVoicesFragment() {
         teamId = requireArguments().getString("id", "")
 
         lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             loadTeamDetails()
         }
     }

@@ -1,16 +1,14 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.Case
+import io.realm.RealmList
 import io.realm.Sort
 import java.io.File
-import java.text.Normalizer
 import java.util.Calendar
-import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
@@ -32,6 +30,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
@@ -69,24 +68,68 @@ class ResourcesRepositoryImpl @Inject constructor(
             }
 
             val queryParts = query.split(" ").filterNot { it.isEmpty() }
-            queryParts.forEach { part ->
-                queryObj.contains("titleNormal", normalizeText(part), Case.INSENSITIVE)
+            val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
+            val normalizedQuery = Utilities.normalizeText(query)
+
+            normalizedQueryParts.forEach { part ->
+                queryObj.contains("titleNormal", part)
             }
             val data = queryObj.findAll()
-            val normalizedQueryParts = queryParts.map { normalizeText(it) }
-            val normalizedQuery = normalizeText(query)
+
             val startsWithQuery = mutableListOf<RealmMyLibrary>()
             val containsQuery = mutableListOf<RealmMyLibrary>()
 
             for (item in data) {
-                val title = item.title?.let { normalizeText(it) } ?: continue
-                if (title.startsWith(normalizedQuery, ignoreCase = true)) {
+                val titleNormal = item.titleNormal ?: continue
+                if (titleNormal.startsWith(normalizedQuery)) {
                     startsWithQuery.add(item)
-                } else if (normalizedQueryParts.all { title.contains(it, ignoreCase = true) }) {
+                } else if (normalizedQueryParts.all { titleNormal.contains(it) }) {
                     containsQuery.add(item)
                 }
             }
-            realm.copyFromRealm(startsWithQuery + containsQuery)
+            return@withRealm realm.copyFromRealm(startsWithQuery + containsQuery)
+        }
+    }
+
+    override suspend fun getResourceById(id: String): RealmMyLibrary? {
+        return withRealm { realm ->
+            realm.where(RealmMyLibrary::class.java)
+                .equalTo("id", id)
+                .findFirst()
+                ?.let { realm.copyFromRealm(it) }
+        }
+    }
+
+    override suspend fun updateLocalResource(
+        resourceId: String,
+        title: String,
+        author: String,
+        year: String,
+        description: String,
+        publisher: String,
+        linkToLicense: String,
+        subjects: List<String>?,
+        levels: List<String>?
+    ): Result<Unit> {
+        return runCatching {
+            executeTransaction { realm ->
+                val resource = realm.where(RealmMyLibrary::class.java)
+                    .equalTo("id", resourceId)
+                    .findFirst()
+                if (resource == null) return@executeTransaction
+
+                resource.title = title
+                resource.titleNormal = Utilities.normalizeText(title)
+                resource.author = author
+                resource.year = year
+                resource.description = description
+                resource.publisher = publisher
+                resource.linkToLicense = linkToLicense
+                resource.subject?.clear()
+                subjects?.forEach { resource.subject?.add(it) }
+                resource.level?.clear()
+                levels?.forEach { resource.level?.add(it) }
+            }
         }
     }
 
@@ -201,7 +244,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         val resource = RealmMyLibrary().apply {
             this.id = id
             this.title = title
-            this.titleNormal = normalizeText(title)
+            this.titleNormal = Utilities.normalizeText(title)
             this.addedBy = request.addedBy
             this.author = request.author
             this.resourceId = id
@@ -213,11 +256,11 @@ class ResourcesRepositoryImpl @Inject constructor(
             this.language = request.language
             this.mediaType = request.mediaType
             this.resourceType = request.resourceType
-            this.subject = request.subjects
-            this.setUserId(io.realm.RealmList())
-            this.level = request.levels
+            this.subject = request.subjects?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
+            this.setUserId(RealmList())
+            this.level = request.levels?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.createdDate = Calendar.getInstance().timeInMillis
-            this.resourceFor = request.resourceFor
+            this.resourceFor = request.resourceFor?.let { RealmList(*it.toTypedArray()) } ?: RealmList()
             this.resourceLocalAddress = request.resourceUrl
             this.resourceOffline = true
             this.filename = request.resourceUrl?.let { it.substring(it.lastIndexOf("/")) }
@@ -631,17 +674,6 @@ class ResourcesRepositoryImpl @Inject constructor(
                 .equalTo("resourceOffline", true)
                 .findAll()
             results.forEach { it.resourceOffline = false }
-        }
-    }
-
-    companion object {
-        private val DIACRITICS_REGEX = Regex("\\p{InCombiningDiacriticalMarks}+")
-
-        @VisibleForTesting
-        internal fun normalizeText(str: String): String {
-            return Normalizer.normalize(str, Normalizer.Form.NFD)
-                .replace(DIACRITICS_REGEX, "")
-                .lowercase(Locale.ROOT)
         }
     }
 }

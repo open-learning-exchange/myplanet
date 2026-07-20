@@ -6,7 +6,6 @@ import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
 import io.realm.RealmObject
 import java.io.IOException
-import java.lang.reflect.Field
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -310,30 +309,6 @@ class UploadCoordinator @Inject constructor(
             remoteRev = getString(revField, responseBody),
             response = responseBody
         )
-    }
-
-    private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
-        try {
-            var clazz: Class<*>? = obj.javaClass
-            var field: Field? = null
-
-            while (clazz != null && field == null) {
-                try {
-                    field = clazz.getDeclaredField(fieldName)
-                } catch (e: NoSuchFieldException) {
-                    clazz = clazz.superclass
-                }
-            }
-
-            if (field != null) {
-                field.isAccessible = true
-                field.set(obj, value)
-            } else {
-                Log.w(TAG, "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
-            }
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to set field $fieldName: ${e.message}")
-        }
     }
 
 }

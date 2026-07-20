@@ -923,6 +923,7 @@
     <string name="ob_desc4_3">🎯 व्यक्तिगत: तपाईंको शिक्षा मार्गलाई समायोजित गर्नुहोस्।</string>
     <string name="ob_desc4_4">📚 इन्टर्याक्टिभ: भिडियो, पुस्तकहरू, खेलहरूसँग संलग्न हुनुहोस्।</string>
     <string name="ob_desc4_5">मेरो प्ल्यानेटसँग असीमित शिक्षा यात्रा सुरु गर्नुहोस्!</string>
+    <string name="onboarding_server_prep_hint">साइन इन गर्नु अघि, तपाईंलाई आफ्नो Planet सर्भर ठेगाना र PIN आवश्यक पर्नेछ। यदि तपाईंसँग अझै छैन भने आफ्नो सामुदायिक प्रशासकलाई सोध्नुहोस्।</string>
     <string name="recycler_chat_label">चर्चाहरू</string>
     <string name="completed_course">समाप्त पाठ्यक्रम</string>
     <string name="menu">साइड मेนู</string>
@@ -1333,6 +1334,10 @@
         <item>प्रगतिमा</item>
         <item>पूरा भएको</item>
     </string-array>
+    <string name="edit_resource">स्रोत सम्पादन गर्नुहोस्</string>
+    <string name="save_changes">परिवर्तनहरू सुरक्षित गर्नुहोस्</string>
+    <string name="resource_updated">स्रोत अद्यावधिक गरियो</string>
+    <string name="failed_to_update_resource">स्रोत अद्यावधिक गर्न असफल भयो</string>
 
     <string name="open_link_with">यससँग लिङ्क खोल्नुहोस्</string>
     <string name="just_once">एक पटक मात्र</string>
