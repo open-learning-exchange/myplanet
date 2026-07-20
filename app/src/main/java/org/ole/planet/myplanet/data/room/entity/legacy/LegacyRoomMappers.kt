@@ -1,8 +1,10 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
+import io.realm.RealmList
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.RealmMembershipDoc
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmStepExam
@@ -34,6 +36,23 @@ fun RealmUser.toRoomEntity(): RoomUserEntity? {
     )
 }
 
+fun RoomUserEntity.toRealmModel(): RealmUser {
+    return RealmUser().apply {
+        id = this@toRealmModel.id
+        _id = this@toRealmModel._id
+        _rev = this@toRealmModel._rev
+        name = this@toRealmModel.name
+        firstName = this@toRealmModel.firstName
+        lastName = this@toRealmModel.lastName
+        rolesList = RealmList<String?>().apply { addAll(this@toRealmModel.rolesList.orEmpty()) }
+        planetCode = this@toRealmModel.planetCode
+        parentCode = this@toRealmModel.parentCode
+        userAdmin = this@toRealmModel.isUserAdmin
+        joinDate = this@toRealmModel.joined
+        isUpdated = this@toRealmModel.updated > 0
+    }
+}
+
 fun RealmMyCourse.toRoomEntity(): RoomCourseEntity? {
     val localId = id ?: courseId ?: return null
     return RoomCourseEntity(
@@ -61,6 +80,16 @@ fun RealmCourseStep.toRoomEntity(): RoomCourseStepEntity? {
     )
 }
 
+fun RoomCourseStepEntity.toRealmModel(): RealmCourseStep {
+    return RealmCourseStep().apply {
+        id = this@toRealmModel.id
+        courseId = this@toRealmModel.courseId
+        stepTitle = this@toRealmModel.stepTitle
+        description = this@toRealmModel.description
+        noOfResources = this@toRealmModel.noOfResources
+    }
+}
+
 fun RealmStepExam.toRoomEntity(): RoomExamEntity? {
     val localId = id ?: return null
     return RoomExamEntity(
@@ -86,6 +115,30 @@ fun RealmStepExam.toRoomEntity(): RoomExamEntity? {
     )
 }
 
+fun RoomExamEntity.toRealmModel(): RealmStepExam {
+    return RealmStepExam().apply {
+        id = this@toRealmModel.id
+        _rev = this@toRealmModel._rev
+        createdDate = this@toRealmModel.createdDate
+        updatedDate = this@toRealmModel.updatedDate
+        adoptionDate = this@toRealmModel.adoptionDate
+        createdBy = this@toRealmModel.createdBy
+        totalMarks = this@toRealmModel.totalMarks
+        name = this@toRealmModel.name
+        description = this@toRealmModel.description
+        type = this@toRealmModel.type
+        stepId = this@toRealmModel.stepId
+        courseId = this@toRealmModel.courseId
+        sourcePlanet = this@toRealmModel.sourcePlanet
+        passingPercentage = this@toRealmModel.passingPercentage
+        noOfQuestions = this@toRealmModel.noOfQuestions
+        isFromNation = this@toRealmModel.isFromNation
+        teamId = this@toRealmModel.teamId
+        isTeamShareAllowed = this@toRealmModel.isTeamShareAllowed
+        sourceSurveyId = this@toRealmModel.sourceSurveyId
+    }
+}
+
 fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
     val localId = id ?: return null
     return RoomQuestionEntity(
@@ -98,6 +151,19 @@ fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
         grade = marks?.toIntOrNull() ?: 0,
         order = 0,
     )
+}
+
+fun RoomQuestionEntity.toRealmModel(): RealmExamQuestion {
+    return RealmExamQuestion().apply {
+        id = this@toRealmModel.id
+        examId = this@toRealmModel.examId
+        type = this@toRealmModel.type
+        body = this@toRealmModel.question
+        header = this@toRealmModel.question
+        choices = this@toRealmModel.choices?.firstOrNull()
+        setCorrectChoices(this@toRealmModel.correctChoice)
+        marks = this@toRealmModel.grade.toString()
+    }
 }
 
 fun RealmSubmission.toRoomEntity(): RoomSubmissionEntity? {
@@ -137,6 +203,46 @@ fun RealmAnswer.toRoomEntity(): RoomAnswerEntity? {
         questionId = questionId,
         submissionId = submissionId,
     )
+}
+
+fun RoomAnswerEntity.toRealmModel(): RealmAnswer {
+    return RealmAnswer().apply {
+        id = this@toRealmModel.id
+        value = this@toRealmModel.value
+        valueChoices = RealmList<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
+        mistakes = this@toRealmModel.mistakes
+        isPassed = this@toRealmModel.isPassed
+        grade = this@toRealmModel.grade
+        examId = this@toRealmModel.examId
+        questionId = this@toRealmModel.questionId
+        submissionId = this@toRealmModel.submissionId
+    }
+}
+
+fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyList()): RealmSubmission {
+    return RealmSubmission().apply {
+        id = this@toRealmModel.id
+        _id = this@toRealmModel._id
+        _rev = this@toRealmModel._rev
+        parentId = this@toRealmModel.parentId
+        type = this@toRealmModel.type
+        userId = this@toRealmModel.userId
+        user = this@toRealmModel.user
+        startTime = this@toRealmModel.startTime
+        lastUpdateTime = this@toRealmModel.lastUpdateTime
+        this.answers = RealmList<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
+        grade = this@toRealmModel.grade
+        status = this@toRealmModel.status
+        uploaded = this@toRealmModel.uploaded
+        sender = this@toRealmModel.sender
+        source = this@toRealmModel.source
+        parentCode = this@toRealmModel.parentCode
+        parent = this@toRealmModel.parent
+        isUpdated = this@toRealmModel.isUpdated
+        membershipDoc = this@toRealmModel.teamId?.let { teamId ->
+            RealmMembershipDoc().apply { this.teamId = teamId }
+        }
+    }
 }
 
 fun RealmMyTeam.toRoomEntity(): RoomTeamEntity? {

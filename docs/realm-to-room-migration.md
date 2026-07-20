@@ -236,6 +236,61 @@ wired through `di/RoomModule`.
       `markResourceUploaded`, which updates the library via the DAO then does the team write in a
       Realm transaction. `BaseRecyclerFragment`/`BaseResourceFragment` type checks updated (library
       is no longer a `RealmObject`). Resource/upload/repo tests rewritten to mock `MyLibraryDao`.
+- [x] **CourseStep + course exam read paths moved to Room**: `CourseStepDao` now serves
+      per-course, batched course-id, and single-step lookups; course step progress and course-step
+      detail screens hydrate legacy `RealmCourseStep` compatibility objects from
+      `RoomCourseStepEntity` instead of querying Realm. `ExamDao` now serves course/step exam and
+      survey reads for course progress, course-step detail, exam counts, and local-progress cleanup,
+      hydrating legacy `RealmStepExam` compatibility objects from `RoomExamEntity`. Sync writes for
+      both tables were already landing in Room.
+- [x] **Submission survey/exam metadata reads moved to Room**: `SubmissionsRepositoryImpl` now
+      resolves survey titles/maps, exam question counts, bulk-survey parent ids, step completion,
+      unfinished/pending survey metadata, and submission-detail question rows through `ExamDao` and
+      `QuestionDao` instead of Realm queries. `RoomQuestionEntity` hydrates legacy
+      `RealmExamQuestion` compatibility objects, including correct-choice data for grading display.
+- [x] **Submission list/detail reads moved to Room**: `SubmissionDao` and `AnswerDao` now back
+      submission lookup by id/user/ids, pending-survey lists, pending-offline counts, pending exam
+      result counts, parent/status submission lists, submission item summaries, and completion checks.
+      `RoomSubmissionEntity` and `RoomAnswerEntity` hydrate legacy `RealmSubmission`/`RealmAnswer`
+      compatibility objects with child answers grouped in one DAO batch per submission list.
+- [x] **Submission write helpers moved to Room**: `saveSubmission`, `markSubmissionComplete`,
+      `deleteExamSubmissions`, and `getOrCreateSubmission` now use `SubmissionDao`/`AnswerDao`
+      instead of Realm transactions. This keeps survey-response creation, completion marking, and
+      local exam-submission cleanup on the same Room tables used by the read paths.
+- [x] **Submission flows and creation moved to Room**: pending-survey and all-submission `Flow`
+      streams now come from `SubmissionDao` `Flow`s, `createExamSubmission` builds unmanaged
+      compatibility submissions and persists through Room, and simple status/exam lookup helpers
+      (`getLastPendingSubmission`, `updateSubmissionStatus`, `getExamByStepId`, `getExamById`) now
+      use Room DAOs.
+- [x] **Exam answer saves moved to Room**: `saveExamAnswer` now reads/upserts answers through
+      `AnswerDao`, updates submission status/timestamps through `SubmissionDao`, and removes pending
+      survey orphans through Room when a survey is completed. Realm remains only in deeper legacy
+      upload serialization paths for submissions.
+- [x] **Submission sync inserts moved to Room-only**: `bulkInsertFromSync` and `insertSubmission`
+      now upsert CouchDB submission docs directly into `SubmissionDao`/`AnswerDao` and no longer
+      mirror synced submission payloads into Realm. The old Realm parsing helpers for synced
+      submission inserts have been deleted.
+- [x] **Submission upload serialization reads moved to Room**: `getExamUploadPayload` and
+      `serializeSubmission` now resolve users, exams, and questions through `UserDao`, `ExamDao`, and
+      `QuestionDao` rather than opening Realm. Submission upload payload generation now uses Room for
+      all migrated metadata dependencies.
+- [x] **Submissions repository detached from `RealmRepository`**: the remaining submission-detail
+      user lookup now uses `UserDao`, and `SubmissionsRepositoryImpl` no longer extends the Realm
+      repository base or injects a Realm dispatcher. Submission code still accepts legacy model types at
+      its public boundary, but its migrated data access no longer depends on the generic Realm helpers.
+- [x] **Progress submission mistake aggregation moved to Room**: `ProgressRepositoryImpl.fetchCourseData`
+      now reads exam submissions, answers, and questions through `SubmissionDao`, `AnswerDao`, and
+      `QuestionDao` instead of querying Realm inside the per-course loop. This removes the remaining
+      Realm submission/answer/question reads from progress reporting.
+- [x] **Submission PDF export moved to Room**: `SubmissionsRepositoryExporter` now reads submissions,
+      answers, exams, and questions through `SubmissionDao`, `AnswerDao`, `ExamDao`, and `QuestionDao`
+      instead of opening Realm while rendering single-submission and bulk-submission PDFs.
+- [x] **Per-course step progress details moved to Room**: `CoursesRepositoryImpl.getCourseProgress`
+      now builds step-level exam completion data from `ExamDao`, `QuestionDao`, `SubmissionDao`, and
+      `AnswerDao` instead of opening Realm for exam questions, submissions, and answers.
+- [x] **Course progress deletion moved to Room**: `CoursesRepositoryImpl.deleteCourseProgress`
+      now resolves course exams through `ExamDao` and deletes matching local exam submissions plus
+      answers through `SubmissionDao`/`AnswerDao` instead of a Realm transaction.
 - [ ] Remaining ~26 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.

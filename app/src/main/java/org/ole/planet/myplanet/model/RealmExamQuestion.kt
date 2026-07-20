@@ -33,6 +33,12 @@ open class RealmExamQuestion : RealmObject() {
         return correctChoice
     }
 
+    fun setCorrectChoices(choices: List<String>?) {
+        correctChoice = RealmList<String>().apply {
+            choices.orEmpty().forEach { add(it) }
+        }
+    }
+
     val correctChoiceArray: JsonArray
         get() {
             val array = JsonArray()

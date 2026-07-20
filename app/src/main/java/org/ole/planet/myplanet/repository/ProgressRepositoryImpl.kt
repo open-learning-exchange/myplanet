@@ -9,6 +9,12 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CourseCompletion
 import org.ole.planet.myplanet.model.RealmAnswer
@@ -26,12 +32,18 @@ class ProgressRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val coursesRepositoryLazy: dagger.Lazy<CoursesRepository>,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>,
-    private val courseProgressDao: CourseProgressDao
+    private val courseProgressDao: CourseProgressDao,
+    private val courseStepDao: CourseStepDao,
+    private val examDao: ExamDao,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
+    private val questionDao: QuestionDao
 ) : RealmRepository(databaseService, realmDispatcher), ProgressRepository {
     override suspend fun getCourseProgress(courseIds: List<String>, userId: String?): HashMap<String?, JsonObject> {
-        val courseIdsArray = courseIds.toTypedArray()
-        val allSteps = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmCourseStep::class.java) {
-            `in`("courseId", courseIdsArray)
+        val allSteps = if (courseIds.isEmpty()) {
+            emptyList()
+        } else {
+            courseStepDao.getByCourseIds(courseIds).map { it.toRealmModel() }
         }
         val allProgresses = if (courseIds.isEmpty()) emptyList() else courseProgressDao.getByUserAndCourseIds(userId, courseIds)
 
@@ -54,13 +66,17 @@ class ProgressRepositoryImpl @Inject constructor(
         val mycourses = coursesRepositoryLazy.get().getMyCourses(userId ?: "")
         val arr = JsonArray()
         val courseIds = mycourses.mapNotNull { it.courseId }
-        val courseIdsArray = courseIds.toTypedArray()
         val courseProgress = getCourseProgress(courseIds, userId)
 
-        val allExams = if (courseIdsArray.isEmpty()) emptyList() else queryList(RealmStepExam::class.java) {
-            `in`("courseId", courseIdsArray)
+        val allExams = if (courseIds.isEmpty()) {
+            emptyList()
+        } else {
+            examDao.getByCourseIds(courseIds).map { it.toRealmModel() }
         }
         val examsByCourseId = allExams.groupBy { it.courseId }
+        val submissionsByCourseId = submissionDao.getExamSubmissionsByUser(userId)
+            .map { it.toRealmModel() }
+            .groupBy { submission -> courseIds.firstOrNull { courseId -> submission.parentId?.contains(courseId) == true } }
 
         mycourses.forEach { course ->
             val obj = JsonObject()
@@ -68,13 +84,7 @@ class ProgressRepositoryImpl @Inject constructor(
             obj.addProperty("courseId", course.courseId)
             obj.add("progress", courseProgress[course.courseId])
 
-            val submissions = course.courseId?.let { courseId ->
-                queryList(RealmSubmission::class.java) {
-                    equalTo("userId", userId)
-                    equalTo("type", "exam")
-                    contains("parentId", courseId)
-                }
-            }
+            val submissions = submissionsByCourseId[course.courseId].orEmpty()
 
             val exams = examsByCourseId[course.courseId] ?: emptyList()
             val examIds: List<String> = exams.mapNotNull { it.id }
@@ -116,15 +126,11 @@ class ProgressRepositoryImpl @Inject constructor(
     private suspend fun submissionMap(
         submissions: List<RealmSubmission>, examIds: List<String>, obj: JsonObject
     ) {
-        val submissionIds = submissions.mapNotNull { it.id }.toTypedArray()
-        val allAnswers = if (submissionIds.isEmpty()) emptyList() else queryList(RealmAnswer::class.java) {
-            `in`("submissionId", submissionIds)
-        }
+        val submissionIds = submissions.mapNotNull { it.id }
+        val allAnswers = if (submissionIds.isEmpty()) emptyList() else answerDao.getBySubmissionIds(submissionIds).map { it.toRealmModel() }
 
-        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct().toTypedArray()
-        val allQuestions = if (questionIds.isEmpty()) emptyList() else queryList(RealmExamQuestion::class.java) {
-            `in`("id", questionIds)
-        }
+        val questionIds = allAnswers.mapNotNull { it.questionId }.distinct()
+        val allQuestions = if (questionIds.isEmpty()) emptyList() else questionDao.getByIds(questionIds).map { it.toRealmModel() }
         val questionsMap = allQuestions.associateBy { it.id }
 
         val answersBySubmissionId = allAnswers.groupBy { it.submissionId }
