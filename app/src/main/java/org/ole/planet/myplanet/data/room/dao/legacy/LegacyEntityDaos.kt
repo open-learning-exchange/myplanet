@@ -17,6 +17,13 @@ import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1")
     suspend fun getById(id: String): RoomUserEntity?
+    @Query("SELECT * FROM users") suspend fun getAll(): List<RoomUserEntity>
+    @Query("SELECT * FROM users WHERE name = :name LIMIT 1") suspend fun getByName(name: String): RoomUserEntity?
+    @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%' OR firstName LIKE '%' || :query || '%' OR lastName LIKE '%' || :query || '%'") suspend fun search(query: String): List<RoomUserEntity>
+    @Query("SELECT COUNT(*) FROM users") suspend fun count(): Int
+    @Query("SELECT COUNT(*) FROM users WHERE planetCode = :planetCode") suspend fun countByPlanetCode(planetCode: String): Int
+    @Query("DELETE FROM users WHERE id = :id") suspend fun deleteById(id: String): Int
+    @Upsert suspend fun upsert(item: RoomUserEntity)
     @Upsert suspend fun upsertAll(items: List<RoomUserEntity>)
 }
 
@@ -24,8 +31,13 @@ interface UserDao {
 interface CourseDao {
     @Query("SELECT * FROM courses") suspend fun getAll(): List<RoomCourseEntity>
     @Query("SELECT * FROM courses WHERE courseId = :courseId OR id = :courseId LIMIT 1") suspend fun getByCourseId(courseId: String): RoomCourseEntity?
+    @Query("SELECT * FROM courses WHERE courseId IN (:courseIds)") suspend fun getByCourseIds(courseIds: List<String>): List<RoomCourseEntity>
+    @Query("SELECT * FROM courses") fun observeAll(): Flow<List<RoomCourseEntity>>
+    @Query("SELECT * FROM courses WHERE courseId = :courseId OR id = :courseId LIMIT 1") fun observeByCourseId(courseId: String): Flow<RoomCourseEntity?>
+    @Query("DELETE FROM courses WHERE courseId = :courseId") suspend fun deleteByCourseId(courseId: String): Int
     @Upsert suspend fun upsertAll(items: List<RoomCourseEntity>)
     @Upsert fun upsertAllBlocking(items: List<RoomCourseEntity>)
+    @Upsert suspend fun upsert(item: RoomCourseEntity)
 }
 
 @Dao
@@ -49,6 +61,14 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE stepId IN (:stepIds)") suspend fun getByStepIds(stepIds: List<String>): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE stepId = :stepId AND type = :type") suspend fun getByStepIdAndType(stepId: String, type: String): List<RoomExamEntity>
     @Query("SELECT * FROM exams WHERE sourceSurveyId IS NOT NULL AND _rev IS NULL") suspend fun getPendingAdoptedSurveys(): List<RoomExamEntity>
+    @Query("SELECT * FROM exams") suspend fun getAll(): List<RoomExamEntity>
+    @Query("SELECT * FROM exams") fun observeAll(): Flow<List<RoomExamEntity>>
+    @Query("SELECT * FROM exams WHERE type = :type") suspend fun getByType(type: String): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE type = :type") fun observeByType(type: String): Flow<List<RoomExamEntity>>
+    @Query("SELECT * FROM exams WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<RoomExamEntity>
+    @Query("SELECT * FROM exams WHERE teamId = :teamId AND type = :type") suspend fun getByTeamIdAndType(teamId: String, type: String): List<RoomExamEntity>
+    @Query("DELETE FROM exams WHERE id = :id") suspend fun deleteById(id: String): Int
+    @Upsert suspend fun upsert(item: RoomExamEntity)
     @Upsert suspend fun upsertAll(items: List<RoomExamEntity>)
     @Upsert fun upsertAllBlocking(items: List<RoomExamEntity>)
 }
@@ -68,6 +88,8 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE id = :id OR _id = :id LIMIT 1") suspend fun getByIdOrRemoteId(id: String): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE id IN (:ids)") suspend fun getByIds(ids: List<String>): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId") suspend fun getByUserId(userId: String): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId = :teamId") suspend fun getByUserIdAndTeamId(userId: String, teamId: String): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE userId = :userId AND teamId IS NULL") suspend fun getByUserIdWithoutTeam(userId: String): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId") fun observeByUserId(userId: String): Flow<List<RoomSubmissionEntity>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun getPendingSurveys(userId: String): List<RoomSubmissionEntity>
@@ -78,6 +100,8 @@ interface SubmissionDao {
     @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND parentId = :parentId AND type = :type") suspend fun countByUserParentAndType(userId: String?, parentId: String, type: String): Int
     @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND parentId LIKE '%' || :examId || '%' AND status != 'pending'") suspend fun countCompletedByUserAndExamId(userId: String?, examId: String): Int
     @Query("SELECT * FROM submissions WHERE parentId = :parentId AND userId = :userId AND (:status IS NULL OR status = :status) ORDER BY startTime DESC") suspend fun getByParentUserAndStatus(parentId: String?, userId: String?, status: String?): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<RoomSubmissionEntity>
+    @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND teamId = :teamId") suspend fun getByParentIdsAndTeamId(parentIds: List<String>, teamId: String): List<RoomSubmissionEntity>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): RoomSubmissionEntity?
     @Query("SELECT * FROM submissions WHERE parentId LIKE '%' || :parentIdFragment || '%' LIMIT 1") suspend fun getFirstByParentIdContaining(parentIdFragment: String): RoomSubmissionEntity?
@@ -108,6 +132,18 @@ interface AnswerDao {
 @Dao
 interface TeamDao {
     @Query("SELECT * FROM teams WHERE _id = :teamId OR teamId = :teamId LIMIT 1") suspend fun getByTeamId(teamId: String): RoomTeamEntity?
+    @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): RoomTeamEntity?
     @Query("SELECT * FROM teams WHERE userId = :userId") suspend fun getByUserId(userId: String): List<RoomTeamEntity>
+    @Query("SELECT * FROM teams") suspend fun getAll(): List<RoomTeamEntity>
+    @Query("SELECT * FROM teams") fun observeAll(): Flow<List<RoomTeamEntity>>
+    @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<RoomTeamEntity>
+    @Query("SELECT * FROM teams WHERE docType = :docType") fun observeByDocType(docType: String): Flow<List<RoomTeamEntity>>
+    @Query("SELECT * FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun getByTeamIdAndDocType(teamId: String, docType: String): List<RoomTeamEntity>
+    @Query("SELECT * FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType LIMIT 1") suspend fun getByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): RoomTeamEntity?
+    @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
+    @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
+    @Query("DELETE FROM teams WHERE _id = :id") suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Upsert suspend fun upsertAll(items: List<RoomTeamEntity>)
+    @Upsert suspend fun upsert(item: RoomTeamEntity)
 }

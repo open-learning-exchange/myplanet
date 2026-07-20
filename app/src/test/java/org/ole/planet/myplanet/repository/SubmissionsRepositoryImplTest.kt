@@ -10,7 +10,6 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.realm.Realm
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -195,8 +194,7 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `bulkInsertFromSync processes array correctly`() {
-        val realm = mockk<Realm>(relaxed = true)
+    fun `bulkInsertFromSync processes array correctly`() = runTest {
         val jsonArray = JsonArray().apply {
             add(JsonObject().apply {
                 add("doc", JsonObject().apply {
@@ -210,7 +208,7 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        repository.bulkInsertFromSync(realm, jsonArray)
+        repository.bulkInsertFromSync(jsonArray)
 
         verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
     }

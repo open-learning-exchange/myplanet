@@ -6,18 +6,14 @@ import dagger.Lazy
 import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.model.NotificationPayload
 import org.ole.planet.myplanet.model.AppNotification
-import org.ole.planet.myplanet.model.RealmStepExam
 import org.ole.planet.myplanet.model.TeamNotification
-import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.model.TaskNotificationResult
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -26,19 +22,16 @@ import org.ole.planet.myplanet.utils.TimeProvider
 private const val STORAGE_WARNING_AVAILABLE_PERCENT = 10
 
 class NotificationsRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val userRepository: Lazy<UserRepository>,
     private val teamsRepository: Lazy<TeamsRepository>,
     private val timeProvider: TimeProvider,
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
     private val teamTaskDao: TeamTaskDao,
-    private val newsDao: NewsDao
-) : RealmRepository(databaseService, realmDispatcher), NotificationsRepository {
-    override suspend fun refresh() {
-        withRealm { it.refresh() }
-    }
+    private val newsDao: NewsDao,
+    private val examDao: ExamDao
+) : NotificationsRepository {
+    override suspend fun refresh() = Unit
 
     override suspend fun markNotificationAsRead(notificationId: String, userId: String?) {
         if (notificationId.startsWith("summary_")) {
@@ -160,7 +153,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getSurveyId(relatedId: String?): String? {
         return relatedId?.let {
-            findByField(RealmStepExam::class.java, "name", it)?.id
+            examDao.getAll().firstOrNull { exam -> exam.name == it }?.id
         }
     }
 

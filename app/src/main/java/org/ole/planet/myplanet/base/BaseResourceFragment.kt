@@ -19,7 +19,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmObject
 import javax.inject.Inject
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch

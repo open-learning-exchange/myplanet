@@ -4,7 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.RealmObject
+
 import java.io.IOException
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -12,8 +12,12 @@ import javax.inject.Singleton
 import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.repository.UploadQueryType
 import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.repository.UploadRepository
+import org.ole.planet.myplanet.repository.UploadUpdateType
 import org.ole.planet.myplanet.repository.UploadUpdateContract
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
@@ -33,7 +37,7 @@ class UploadCoordinator @Inject constructor(
         private const val TAG = "UploadCoordinator"
     }
 
-    suspend fun <T : RealmObject> upload(
+    suspend fun <T : Any> upload(
         config: UploadConfig<T>
     ): UploadResult<Int> = withContext(dispatcherProvider.io) {
         try {
@@ -94,20 +98,10 @@ class UploadCoordinator @Inject constructor(
         }
     }
 
-    private suspend fun <T : RealmObject> queryItemsToUpload(
+    private suspend fun <T : Any> queryItemsToUpload(
         config: UploadConfig<T>
     ): List<PreparedUpload<T>> {
-        val items = if (config.fetchPendingItems != null) {
-            config.fetchPendingItems.invoke()
-        } else if (config.queryBuilder != null) {
-            val queryContract = UploadQueryContract<T>(
-                modelClass = config.modelClass,
-                queryBuilder = config.queryBuilder
-            )
-            uploadRepository.queryPending(queryContract)
-        } else {
-            emptyList()
-        }
+        val items = config.fetchPendingItems.invoke()
 
         val tempResults = items.mapNotNull { copiedItem ->
             if (config.filterGuests && config.guestUserIdExtractor != null) {
@@ -155,7 +149,7 @@ class UploadCoordinator @Inject constructor(
         }
     }
 
-    private suspend fun <T : RealmObject> uploadBatch(
+    private suspend fun <T : Any> uploadBatch(
         batch: List<PreparedUpload<T>>,
         config: UploadConfig<T>
     ): Pair<List<UploadedItem>, List<UploadError>> {
@@ -248,21 +242,16 @@ class UploadCoordinator @Inject constructor(
         return succeeded to failed
     }
 
-    private suspend fun <T : RealmObject> updateDatabaseBatch(
+    private suspend fun <T : Any> updateDatabaseBatch(
         succeeded: List<UploadedItem>,
         config: UploadConfig<T>
     ): List<UploadedItem> {
-        val mappedAdditionalUpdates: ((io.realm.Realm, T, UploadedItemResult) -> Unit)? = config.additionalUpdates?.let { original ->
-            { realm, item, result ->
-                val uploadedItem = UploadedItem(result.localId, result.remoteId, result.remoteRev, result.response)
-                original(realm, item, uploadedItem)
+        val updateContract = UploadUpdateContract(
+            updateType = when (config.modelClass) {
+                RealmStepExam::class -> UploadUpdateType.Exams
+                RealmSubmission::class -> UploadUpdateType.Submissions
+                else -> error("Unsupported upload update config: ${config.modelClass.qualifiedName}")
             }
-        }
-
-        val updateContract = UploadUpdateContract<T>(
-            modelClass = config.modelClass,
-            idExtractor = config.idExtractor,
-            additionalUpdates = mappedAdditionalUpdates
         )
 
         val itemResults = succeeded.map {
@@ -278,7 +267,7 @@ class UploadCoordinator @Inject constructor(
         return failedLocally
     }
 
-    private suspend fun <T : RealmObject> queueRetryableFailures(
+    private suspend fun <T : Any> queueRetryableFailures(
         config: UploadConfig<T>,
         errors: List<UploadError>,
         preparedUploads: List<PreparedUpload<T>>

@@ -54,10 +54,12 @@ interface SubmissionsRepository {
     suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String)
     suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission
     suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos>
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun bulkInsertFromSync(jsonArray: JsonArray)
     suspend fun insertSubmission(submission: JsonObject)
     suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject
     suspend fun serializeSubmission(submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject
     suspend fun generateSubmissionPdf(submissionId: String): File?
     suspend fun generateMultipleSubmissionsPdf(submissionIds: List<String>, examTitle: String): File?
+    suspend fun getPendingExamResults(): List<RealmSubmission>
+    suspend fun getPendingSubmissionsForUpload(): List<RealmSubmission>
 }

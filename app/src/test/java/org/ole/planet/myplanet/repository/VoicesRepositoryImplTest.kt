@@ -14,14 +14,13 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.model.RealmNews
@@ -36,19 +35,16 @@ class VoicesRepositoryImplTest {
     private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
-    private val databaseService: DatabaseService = mockk(relaxed = true)
     private val gson: Gson = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamNotificationDao: TeamNotificationDao = mockk(relaxed = true)
     private val newsDao: NewsDao = mockk(relaxed = true)
-    private val myLibraryDao: org.ole.planet.myplanet.data.room.dao.MyLibraryDao = mockk(relaxed = true)
+    private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
 
     private fun newRepository(gsonInstance: Gson): VoicesRepositoryImpl {
         return spyk(
             VoicesRepositoryImpl(
-                databaseService,
-                UnconfinedTestDispatcher(),
                 dispatcherProvider,
                 gsonInstance,
                 sharedPrefManager,
@@ -239,7 +235,8 @@ class VoicesRepositoryImplTest {
 
         coEvery { userRepository.getUserById(testUserId) } returns mockUser
 
-        val user = repository.getUserById(testUserId)
-        assertEquals(mockUser, user)
+        val result = repository.getUserById(testUserId)
+
+        assertEquals(mockUser, result)
     }
 }

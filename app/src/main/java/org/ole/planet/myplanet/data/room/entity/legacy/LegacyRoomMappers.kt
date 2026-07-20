@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.data.room.entity.legacy
 
-import io.realm.RealmList
 import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -27,12 +26,32 @@ fun RealmUser.toRoomEntity(): RoomUserEntity? {
         name = name,
         firstName = firstName,
         lastName = lastName,
+        middleName = middleName,
         rolesList = rolesList?.mapNotNull { it },
         planetCode = planetCode,
         parentCode = parentCode,
         isUserAdmin = userAdmin == true,
         joined = joinDate,
         updated = 0,
+        email = email,
+        phoneNumber = phoneNumber,
+        password_scheme = password_scheme,
+        iterations = iterations,
+        derived_key = derived_key,
+        level = level,
+        language = language,
+        gender = gender,
+        salt = salt,
+        dob = dob,
+        age = age,
+        birthPlace = birthPlace,
+        userImage = userImage,
+        key = key,
+        iv = iv,
+        password = password,
+        isUpdated = isUpdated,
+        isShowTopbar = isShowTopbar,
+        isArchived = isArchived,
     )
 }
 
@@ -44,12 +63,31 @@ fun RoomUserEntity.toRealmModel(): RealmUser {
         name = this@toRealmModel.name
         firstName = this@toRealmModel.firstName
         lastName = this@toRealmModel.lastName
-        rolesList = RealmList<String?>().apply { addAll(this@toRealmModel.rolesList.orEmpty()) }
+        middleName = this@toRealmModel.middleName
+        rolesList = mutableListOf<String?>().apply { addAll(this@toRealmModel.rolesList.orEmpty()) }
         planetCode = this@toRealmModel.planetCode
         parentCode = this@toRealmModel.parentCode
         userAdmin = this@toRealmModel.isUserAdmin
         joinDate = this@toRealmModel.joined
-        isUpdated = this@toRealmModel.updated > 0
+        isUpdated = this@toRealmModel.isUpdated
+        email = this@toRealmModel.email
+        phoneNumber = this@toRealmModel.phoneNumber
+        password_scheme = this@toRealmModel.password_scheme
+        iterations = this@toRealmModel.iterations
+        derived_key = this@toRealmModel.derived_key
+        level = this@toRealmModel.level
+        language = this@toRealmModel.language
+        gender = this@toRealmModel.gender
+        salt = this@toRealmModel.salt
+        dob = this@toRealmModel.dob
+        age = this@toRealmModel.age
+        birthPlace = this@toRealmModel.birthPlace
+        userImage = this@toRealmModel.userImage
+        key = this@toRealmModel.key
+        iv = this@toRealmModel.iv
+        password = this@toRealmModel.password
+        isShowTopbar = this@toRealmModel.isShowTopbar
+        isArchived = this@toRealmModel.isArchived
     }
 }
 
@@ -61,12 +99,41 @@ fun RealmMyCourse.toRoomEntity(): RoomCourseEntity? {
         _rev = courseRev,
         courseId = courseId,
         courseTitle = courseTitle,
+        courseTitleNormal = courseTitleNormal,
         description = description,
         userId = userId?.filterNotNull(),
+        languageOfInstruction = languageOfInstruction,
+        memberLimit = memberLimit,
+        method = method,
+        gradeLevel = gradeLevel,
+        subjectLevel = subjectLevel,
         createdDate = createdDate,
         updatedDate = 0,
+        coverFileName = coverFileName,
+        numberOfSteps = getNumberOfSteps(),
         steps = courseSteps?.mapNotNull { it.id },
     )
+}
+
+fun RoomCourseEntity.toRealmModel(steps: List<RealmCourseStep> = emptyList()): RealmMyCourse {
+    return RealmMyCourse().apply {
+        id = this@toRealmModel.id
+        courseId = this@toRealmModel.courseId
+        courseRev = this@toRealmModel._rev
+        courseTitle = this@toRealmModel.courseTitle
+        courseTitleNormal = this@toRealmModel.courseTitleNormal
+        description = this@toRealmModel.description
+        languageOfInstruction = this@toRealmModel.languageOfInstruction
+        memberLimit = this@toRealmModel.memberLimit
+        method = this@toRealmModel.method
+        gradeLevel = this@toRealmModel.gradeLevel
+        subjectLevel = this@toRealmModel.subjectLevel
+        createdDate = this@toRealmModel.createdDate
+        coverFileName = this@toRealmModel.coverFileName
+        setNumberOfSteps(this@toRealmModel.numberOfSteps)
+        courseSteps = steps.toMutableList()
+        this@toRealmModel.userId?.forEach { uid -> setUserId(uid) }
+    }
 }
 
 fun RealmCourseStep.toRoomEntity(): RoomCourseStepEntity? {
@@ -145,11 +212,15 @@ fun RealmExamQuestion.toRoomEntity(): RoomQuestionEntity? {
         id = localId,
         examId = examId,
         type = type,
+        header = header,
         question = body ?: header,
-        choices = choices?.let { listOf(it) },
+        choices = choices,
         correctChoice = getCorrectChoice()?.filterNotNull(),
         grade = marks?.toIntOrNull() ?: 0,
         order = 0,
+        hasOtherOption = hasOtherOption,
+        scaleMax = scaleMax,
+        marks = marks,
     )
 }
 
@@ -159,10 +230,12 @@ fun RoomQuestionEntity.toRealmModel(): RealmExamQuestion {
         examId = this@toRealmModel.examId
         type = this@toRealmModel.type
         body = this@toRealmModel.question
-        header = this@toRealmModel.question
-        choices = this@toRealmModel.choices?.firstOrNull()
+        header = this@toRealmModel.header ?: this@toRealmModel.question
+        choices = this@toRealmModel.choices
         setCorrectChoices(this@toRealmModel.correctChoice)
-        marks = this@toRealmModel.grade.toString()
+        marks = this@toRealmModel.marks ?: this@toRealmModel.grade.toString()
+        hasOtherOption = this@toRealmModel.hasOtherOption
+        scaleMax = this@toRealmModel.scaleMax
     }
 }
 
@@ -209,7 +282,7 @@ fun RoomAnswerEntity.toRealmModel(): RealmAnswer {
     return RealmAnswer().apply {
         id = this@toRealmModel.id
         value = this@toRealmModel.value
-        valueChoices = RealmList<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
+        valueChoices = mutableListOf<String>().apply { addAll(this@toRealmModel.valueChoices.orEmpty()) }
         mistakes = this@toRealmModel.mistakes
         isPassed = this@toRealmModel.isPassed
         grade = this@toRealmModel.grade
@@ -230,7 +303,7 @@ fun RoomSubmissionEntity.toRealmModel(answers: List<RoomAnswerEntity> = emptyLis
         user = this@toRealmModel.user
         startTime = this@toRealmModel.startTime
         lastUpdateTime = this@toRealmModel.lastUpdateTime
-        this.answers = RealmList<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
+        this.answers = mutableListOf<RealmAnswer>().apply { addAll(answers.map { it.toRealmModel() }) }
         grade = this@toRealmModel.grade
         status = this@toRealmModel.status
         uploaded = this@toRealmModel.uploaded
@@ -256,12 +329,81 @@ fun RealmMyTeam.toRoomEntity(): RoomTeamEntity? {
         name = name,
         type = type,
         description = description,
+        requests = requests,
+        sourcePlanet = sourcePlanet,
+        limit = limit,
         status = status,
+        teamType = teamType,
+        teamPlanetCode = teamPlanetCode,
+        userPlanetCode = userPlanetCode,
+        parentCode = parentCode,
         docType = docType,
+        title = title,
+        route = route,
+        services = services,
+        createdBy = createdBy,
+        rules = rules,
         courses = courses?.filterNotNull(),
+        resourceId = resourceId,
         createdDate = createdDate,
         updatedDate = updatedDate,
         isLeader = isLeader,
         isUpdated = updated,
+        isPublic = isPublic,
+        isDeletePending = isDeletePending,
+        amount = amount,
+        date = date,
+        beginningBalance = beginningBalance,
+        sales = sales,
+        otherIncome = otherIncome,
+        wages = wages,
+        otherExpenses = otherExpenses,
+        startDate = startDate,
+        endDate = endDate,
+        imageName = imageName,
     )
+}
+
+fun RoomTeamEntity.toRealmModel(): RealmMyTeam {
+    return RealmMyTeam().apply {
+        _id = this@toRealmModel._id ?: this@toRealmModel.id
+        _rev = this@toRealmModel._rev
+        teamId = this@toRealmModel.teamId
+        userId = this@toRealmModel.userId
+        name = this@toRealmModel.name
+        type = this@toRealmModel.type
+        description = this@toRealmModel.description
+        requests = this@toRealmModel.requests
+        sourcePlanet = this@toRealmModel.sourcePlanet
+        limit = this@toRealmModel.limit
+        status = this@toRealmModel.status
+        teamType = this@toRealmModel.teamType
+        teamPlanetCode = this@toRealmModel.teamPlanetCode
+        userPlanetCode = this@toRealmModel.userPlanetCode
+        parentCode = this@toRealmModel.parentCode
+        docType = this@toRealmModel.docType
+        title = this@toRealmModel.title
+        route = this@toRealmModel.route
+        services = this@toRealmModel.services
+        createdBy = this@toRealmModel.createdBy
+        rules = this@toRealmModel.rules
+        courses = this@toRealmModel.courses?.toMutableList()
+        resourceId = this@toRealmModel.resourceId
+        createdDate = this@toRealmModel.createdDate
+        updatedDate = this@toRealmModel.updatedDate
+        isLeader = this@toRealmModel.isLeader
+        updated = this@toRealmModel.isUpdated
+        isPublic = this@toRealmModel.isPublic
+        isDeletePending = this@toRealmModel.isDeletePending
+        amount = this@toRealmModel.amount
+        date = this@toRealmModel.date
+        beginningBalance = this@toRealmModel.beginningBalance
+        sales = this@toRealmModel.sales
+        otherIncome = this@toRealmModel.otherIncome
+        wages = this@toRealmModel.wages
+        otherExpenses = this@toRealmModel.otherExpenses
+        startDate = this@toRealmModel.startDate
+        endDate = this@toRealmModel.endDate
+        imageName = this@toRealmModel.imageName
+    }
 }

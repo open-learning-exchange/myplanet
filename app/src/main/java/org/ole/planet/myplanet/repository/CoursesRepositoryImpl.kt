@@ -3,50 +3,43 @@ package org.ole.planet.myplanet.repository
 import android.util.Base64
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
-import io.realm.Case
-import io.realm.Realm
-import io.realm.RealmList
 import java.util.Calendar
 import java.util.HashMap
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.CourseProgressData
-import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.data.room.dao.TagDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
 import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
 import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
 import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
-import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity
 import org.ole.planet.myplanet.data.room.entity.legacy.toRealmModel
-import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
-import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
-import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.Certification
+import org.ole.planet.myplanet.model.CourseProgressData
+import org.ole.planet.myplanet.model.CourseStepData
+import org.ole.planet.myplanet.model.RealmAnswer
 import org.ole.planet.myplanet.model.RealmCourseStep
 import org.ole.planet.myplanet.model.RealmExamQuestion
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.RealmStepExam
+import org.ole.planet.myplanet.model.RealmSubmission
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmStepExam.Companion.insertCourseStepsExams
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
@@ -55,8 +48,6 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class CoursesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val progressRepository: ProgressRepository,
     private val activitiesRepository: ActivitiesRepository,
     private val submissionsRepository: SubmissionsRepository,
@@ -75,11 +66,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
     private val myLibraryDao: MyLibraryDao
-) : RealmRepository(databaseService, realmDispatcher), CoursesRepository {
+) : CoursesRepository {
 
-    // Resources embedded in synced course steps are collected during the (Realm) course-insert
-    // transaction and flushed to the Room library table afterwards (DAO calls can't nest in a
-    // Realm transaction). See flushPendingCourseResources().
     private val pendingCourseResources =
         java.util.Collections.synchronizedList(mutableListOf<PendingCourseResource>())
 
@@ -89,10 +77,16 @@ class CoursesRepositoryImpl @Inject constructor(
         val stepId: String?
     )
 
+    private data class ParsedCourseSyncPayload(
+        val course: RoomCourseEntity,
+        val steps: List<RoomCourseStepEntity>,
+        val exams: List<RoomExamEntity>,
+        val questions: List<RoomQuestionEntity>
+    )
+
     override suspend fun getAllCourses(): List<RealmMyCourse> {
-        return queryList(RealmMyCourse::class.java, maxDepth = 0) {
-            isNotEmpty("courseTitle")
-        }
+        return mapCourses(courseDao.getAll())
+            .filter { !it.courseTitle.isNullOrEmpty() }
     }
 
     override fun getMyCourses(userId: String?, courses: List<RealmMyCourse>): List<RealmMyCourse> {
@@ -101,33 +95,29 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyCourses(userId: String): List<RealmMyCourse> {
-        return queryList(RealmMyCourse::class.java) {
-            equalTo("userId", userId)
-        }
+        return getMyCourses(userId, mapCourses(courseDao.getAll()))
     }
 
     override suspend fun getMyCoursesFlow(userId: String): Flow<List<RealmMyCourse>> {
-        return queryListFlow(RealmMyCourse::class.java) {
-            equalTo("userId", userId)
+        return courseDao.observeAll().map { courses ->
+            mapCourses(courses).filter { it.userId?.contains(userId) == true }
         }
     }
 
     override suspend fun getCourseById(courseId: String): RealmMyCourse? {
         if (courseId.isBlank()) return null
-        return findByField(RealmMyCourse::class.java, "courseId", courseId)
+        return mapCourse(courseDao.getByCourseId(courseId))
     }
 
     override fun getCourseByCourseIdFlow(courseId: String): Flow<RealmMyCourse?> {
-        return queryListFlow(RealmMyCourse::class.java) {
-            equalTo("courseId", courseId)
-        }.map { it.firstOrNull() }
+        return courseDao.observeByCourseId(courseId).map { course ->
+            mapCourse(course)
+        }
     }
 
     override suspend fun getCoursesByIds(courseIds: List<String>): List<RealmMyCourse> {
         if (courseIds.isEmpty()) return emptyList()
-        return queryList(RealmMyCourse::class.java) {
-            `in`("courseId", courseIds.toTypedArray())
-        }
+        return mapCourses(courseDao.getByCourseIds(courseIds))
     }
 
     override suspend fun getCourseOnlineResources(courseId: String?): List<RealmMyLibrary> {
@@ -164,27 +154,24 @@ class CoursesRepositoryImpl @Inject constructor(
             val validCourseIds = courseIds.filter { it.isNotBlank() }
             if (validCourseIds.isEmpty()) return@runCatching false
 
-            var courseFound = false
-            executeTransaction { realm ->
-                validCourseIds.chunked(1000).forEach { chunk ->
-                    val courses = realm.where(RealmMyCourse::class.java)
-                        .`in`("courseId", chunk.toTypedArray())
-                        .findAll()
-
-                    if (courses.isNotEmpty()) {
-                        courses.forEach { course -> course.setUserId(userId) }
-                        courseFound = true
-                    }
-                }
+            val courses = courseDao.getByCourseIds(validCourseIds)
+            if (courses.isEmpty()) {
+                return@runCatching false
             }
 
-            if (!userId.isNullOrBlank() && courseFound) {
+            courseDao.upsertAll(
+                courses.map { course ->
+                    course.copy(userId = mergeUserIds(course.userId, userId))
+                }
+            )
+
+            if (!userId.isNullOrBlank()) {
                 validCourseIds.chunked(1000).forEach { chunk ->
                     removedLogDao.deleteByTypeUserAndDocs("courses", userId, chunk)
                 }
             }
 
-            courseFound
+            true
         }
     }
 
@@ -194,7 +181,6 @@ class CoursesRepositoryImpl @Inject constructor(
         }
         return myLibraryDao.getCourseResources(courseId, isOffline)
     }
-
 
     internal fun matchesAllParts(title: String, parts: List<String>): Boolean {
         for (part in parts) {
@@ -206,19 +192,20 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun search(query: String): List<RealmMyCourse> {
+        val allCourses = mapCourses(courseDao.getAll())
         if (query.isEmpty()) {
-            return queryList(RealmMyCourse::class.java)
+            return allCourses
         }
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val data = queryList(RealmMyCourse::class.java) {
-            queryParts.forEach { part ->
-                contains("courseTitleNormal", Utilities.normalizeText(part), Case.INSENSITIVE)
-            }
+        val data = allCourses.filter { course ->
+            val title = course.courseTitleNormal ?: course.courseTitle?.let { Utilities.normalizeText(it) }
+            title != null && normalizedQueryParts.all { title.contains(it) }
         }
+
         val startsWithQuery = mutableListOf<RealmMyCourse>()
         val containsQuery = mutableListOf<RealmMyCourse>()
 
@@ -251,25 +238,19 @@ class CoursesRepositoryImpl @Inject constructor(
             null
         }
 
-        return withRealm { realm ->
-            var query = realm.where(RealmMyCourse::class.java)
-            if (searchText.isNotEmpty()) {
-                query = query.contains("courseTitle", searchText, io.realm.Case.INSENSITIVE)
-            }
-            if (gradeLevel.isNotEmpty()) {
-                query = query.equalTo("gradeLevel", gradeLevel)
-            }
-            if (subjectLevel.isNotEmpty()) {
-                query = query.equalTo("subjectLevel", subjectLevel)
-            }
-            courseIdsWithTags?.let {
-                query = query.`in`("courseId", it.toTypedArray())
-            }
-            query = query.isNotEmpty("courseTitle")
-
-            val results = query.sort("courseTitle", io.realm.Sort.ASCENDING).findAll()
-            realm.copyFromRealm(results, 0)
+        if (tagNames.isNotEmpty() && courseIdsWithTags.isNullOrEmpty()) {
+            return emptyList()
         }
+
+        return mapCourses(courseDao.getAll())
+            .asSequence()
+            .filter { !it.courseTitle.isNullOrEmpty() }
+            .filter { searchText.isEmpty() || it.courseTitle?.contains(searchText, ignoreCase = true) == true }
+            .filter { gradeLevel.isEmpty() || it.gradeLevel == gradeLevel }
+            .filter { subjectLevel.isEmpty() || it.subjectLevel == subjectLevel }
+            .filter { courseIdsWithTags == null || courseIdsWithTags.contains(it.courseId) }
+            .sortedBy { it.courseTitle?.lowercase() ?: "" }
+            .toList()
     }
 
     override suspend fun saveSearchActivity(
@@ -304,17 +285,8 @@ class CoursesRepositoryImpl @Inject constructor(
         return runCatching {
             if (courseId.isBlank() || userId.isBlank()) return@runCatching
 
-            executeTransaction { realm ->
-                val course = realm.where(RealmMyCourse::class.java)
-                    .equalTo("courseId", courseId)
-                    .findFirst()
-
-                course?.let {
-                    if (it.userId?.contains(userId) == false) {
-                        it.setUserId(userId)
-                    }
-
-                }
+            courseDao.getByCourseId(courseId)?.let { course ->
+                courseDao.upsert(course.copy(userId = mergeUserIds(course.userId, userId)))
             }
             removedLogDao.deleteByTypeUserAndDoc("courses", userId, courseId)
         }
@@ -322,11 +294,9 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
         return runCatching {
-            executeTransaction { realm ->
-                val course = realm.where(RealmMyCourse::class.java)
-                    .equalTo("courseId", courseId)
-                    .findFirst()
-                course?.removeUserId(userId)
+            courseDao.getByCourseId(courseId)?.let { course ->
+                val updatedUserIds = course.userId.orEmpty().toMutableList().apply { remove(userId) }
+                courseDao.upsert(course.copy(userId = updatedUserIds))
             }
             removedLogDao.insert(RemovedLog().apply {
                 id = UUID.randomUUID().toString()
@@ -342,10 +312,7 @@ class CoursesRepositoryImpl @Inject constructor(
         if (userId.isNullOrBlank() || courseId.isNullOrBlank()) {
             return false
         }
-        return queryList(RealmMyCourse::class.java) {
-            equalTo("courseId", courseId)
-            equalTo("userId", userId)
-        }.isNotEmpty()
+        return courseDao.getByCourseId(courseId)?.userId?.contains(userId) == true
     }
 
     override suspend fun getCourseProgress(courseId: String, userId: String?): CourseProgressData {
@@ -431,23 +398,9 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun batchInsertMyCourses(shelfId: String?, documents: List<JsonObject>): Int {
-        var processedCount = 0
-        try {
-            withRealm { realm ->
-                realm.executeTransaction { realmTx ->
-                    documents.forEach { doc ->
-                        try {
-                            insertMyCourse(shelfId ?: "", doc, realmTx, sharedPrefManager)
-                            processedCount++
-                        } catch (e: Exception) {
-                            e.printStackTrace()
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        val processedCount = upsertRoomCoursesFromSync(documents, shelfId, continueOnError = true)
+        RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
+        flushPendingCourseResources()
         return processedCount
     }
 
@@ -477,15 +430,9 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyCourseIds(userId: String): JsonArray {
-        return withRealm { realm ->
-            val myCourses = realm.where(RealmMyCourse::class.java)
-                .equalTo("userId", userId)
-                .findAll()
-
-            val ids = JsonArray()
-            myCourses.asSequence().mapNotNull { it.courseId }.forEach { ids.add(it) }
-            ids
-        }
+        val ids = JsonArray()
+        getMyCourses(userId).mapNotNull { it.courseId }.forEach { ids.add(it) }
+        return ids
     }
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
@@ -532,87 +479,127 @@ class CoursesRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: Realm, jsonArray: JsonArray) {
+    override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
+            val jsonDoc = JsonUtils.getJsonObject("doc", j.asJsonObject)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
                 documentList.add(jsonDoc)
-            }
-        }
-        documentList.forEach { jsonDoc ->
-            val startedTransaction = !realm.isInTransaction
-            if (startedTransaction) {
-                realm.beginTransaction()
-            }
-            try {
-                insertMyCourse("", jsonDoc, realm, sharedPrefManager)
-                if (startedTransaction) {
-                    realm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && realm.isInTransaction) {
-                    realm.cancelTransaction()
-                }
-                throw e
             }
         }
         upsertRoomCoursesFromSync(documentList)
         RealmMyCourse.saveConcatenatedLinksToPrefs(sharedPrefManager)
     }
 
-    private fun upsertRoomCoursesFromSync(documentList: List<JsonObject>) {
+    private suspend fun upsertRoomCoursesFromSync(
+        documentList: List<JsonObject>,
+        shelfId: String? = null,
+        continueOnError: Boolean = false
+    ): Int {
+        if (documentList.isEmpty()) return 0
+
+        val existingCourses = courseDao.getByCourseIds(
+            documentList.mapNotNull { JsonUtils.getString("_id", it).takeIf(String::isNotBlank) }
+        ).associateBy { it.courseId ?: it.id }
+
         val courses = ArrayList<RoomCourseEntity>(documentList.size)
         val steps = ArrayList<RoomCourseStepEntity>()
         val exams = ArrayList<RoomExamEntity>()
         val questions = ArrayList<RoomQuestionEntity>()
+        var processedCount = 0
 
         documentList.forEach { doc ->
-            val courseId = JsonUtils.getString("_id", doc)
-            if (courseId.isBlank()) return@forEach
-            val stepIds = mutableListOf<String>()
-            val stepsJson = JsonUtils.getJsonArray("steps", doc)
-            for (i in 0 until stepsJson.size()) {
-                val stepElement = stepsJson[i]
-                val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
-                val stepJson = stepElement.asJsonObject
-                stepIds.add(stepId)
-                steps.add(
-                    RoomCourseStepEntity(
-                        id = stepId,
-                        courseId = courseId,
-                        stepTitle = JsonUtils.getString("stepTitle", stepJson),
-                        description = JsonUtils.getString("description", stepJson),
-                        noOfResources = JsonUtils.getJsonArray("resources", stepJson).size(),
-                    )
-                )
-                collectRoomExam(stepJson, "exam", courseId, stepId, exams, questions)
-                collectRoomExam(stepJson, "survey", courseId, stepId, exams, questions)
+            try {
+                val payload = buildCoursePayload(doc, shelfId, existingCourses)
+                if (payload != null) {
+                    processedCount++
+                    courses.add(payload.course)
+                    steps.addAll(payload.steps)
+                    exams.addAll(payload.exams)
+                    questions.addAll(payload.questions)
+                }
+            } catch (e: Exception) {
+                if (!continueOnError) throw e
+                e.printStackTrace()
             }
-            courses.add(
-                RoomCourseEntity(
-                    id = courseId,
-                    _id = courseId,
-                    _rev = JsonUtils.getString("_rev", doc),
+        }
+
+        if (courses.isEmpty() && steps.isEmpty() && exams.isEmpty() && questions.isEmpty()) return processedCount
+
+        if (courses.isNotEmpty()) courseDao.upsertAll(courses)
+        if (steps.isNotEmpty()) courseStepDao.upsertAll(steps)
+        if (exams.isNotEmpty()) examDao.upsertAll(exams)
+        if (questions.isNotEmpty()) questionDao.upsertAll(questions)
+        return processedCount
+    }
+
+    private fun buildCoursePayload(
+        doc: JsonObject,
+        shelfId: String?,
+        existingCourses: Map<String, RoomCourseEntity>
+    ): ParsedCourseSyncPayload? {
+        val courseId = JsonUtils.getString("_id", doc)
+        if (courseId.isBlank()) return null
+
+        val existingCourse = existingCourses[courseId]
+        val title = JsonUtils.getString("courseTitle", doc)
+        val description = JsonUtils.getString("description", doc)
+        val baseUrl = UrlUtils.getUrl()
+        extractLinks(description).forEach { link ->
+            RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
+        }
+
+        val stepIds = mutableListOf<String>()
+        val parsedSteps = ArrayList<RoomCourseStepEntity>()
+        val parsedExams = ArrayList<RoomExamEntity>()
+        val parsedQuestions = ArrayList<RoomQuestionEntity>()
+        val stepsJson = JsonUtils.getJsonArray("steps", doc)
+        for (i in 0 until stepsJson.size()) {
+            val stepElement = stepsJson[i]
+            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
+            val stepJson = stepElement.asJsonObject
+            val stepDescription = JsonUtils.getString("description", stepJson)
+            extractLinks(stepDescription).forEach { link ->
+                RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
+            }
+            queueCourseResources(courseId, stepId, JsonUtils.getJsonArray("resources", stepJson))
+            stepIds.add(stepId)
+            parsedSteps.add(
+                RoomCourseStepEntity(
+                    id = stepId,
                     courseId = courseId,
-                    courseTitle = JsonUtils.getString("courseTitle", doc),
-                    description = JsonUtils.getString("description", doc),
-                    createdDate = JsonUtils.getLong("createdDate", doc),
-                    steps = stepIds,
+                    stepTitle = JsonUtils.getString("stepTitle", stepJson),
+                    description = stepDescription,
+                    noOfResources = JsonUtils.getJsonArray("resources", stepJson).size(),
                 )
             )
+            collectRoomExam(stepJson, "exam", courseId, stepId, parsedExams, parsedQuestions)
+            collectRoomExam(stepJson, "survey", courseId, stepId, parsedExams, parsedQuestions)
         }
 
-        if (courses.isEmpty() && steps.isEmpty() && exams.isEmpty() && questions.isEmpty()) return
+        val course = RoomCourseEntity(
+            id = existingCourse?.id ?: courseId,
+            _id = courseId,
+            _rev = JsonUtils.getString("_rev", doc),
+            courseId = courseId,
+            courseTitle = title,
+            courseTitleNormal = Utilities.normalizeText(title),
+            description = description,
+            userId = mergeUserIds(existingCourse?.userId, shelfId),
+            languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc),
+            memberLimit = JsonUtils.getInt("memberLimit", doc),
+            method = JsonUtils.getString("method", doc),
+            gradeLevel = JsonUtils.getString("gradeLevel", doc),
+            subjectLevel = JsonUtils.getString("subjectLevel", doc),
+            createdDate = JsonUtils.getLong("createdDate", doc),
+            updatedDate = existingCourse?.updatedDate ?: 0,
+            coverFileName = JsonUtils.getString("coverFileName", doc).ifEmpty { null },
+            numberOfSteps = stepIds.size,
+            steps = stepIds,
+        )
 
-        databaseService.room.runInTransaction {
-            if (courses.isNotEmpty()) courseDao.upsertAllBlocking(courses)
-            if (steps.isNotEmpty()) courseStepDao.upsertAllBlocking(steps)
-            if (exams.isNotEmpty()) examDao.upsertAllBlocking(exams)
-            if (questions.isNotEmpty()) questionDao.upsertAllBlocking(questions)
-        }
+        return ParsedCourseSyncPayload(course, parsedSteps, parsedExams, parsedQuestions)
     }
 
     private fun collectRoomExam(
@@ -657,15 +644,24 @@ class CoursesRepositoryImpl @Inject constructor(
                     id = questionId,
                     examId = examId,
                     type = JsonUtils.getString("type", questionJson),
+                    header = JsonUtils.getString("title", questionJson),
                     question = JsonUtils.getString("body", questionJson).ifBlank { JsonUtils.getString("title", questionJson) },
-                    choices = JsonUtils.getJsonArray("choices", questionJson).map { it.toString() },
-                    correctChoice = JsonUtils.getJsonArray("correctChoice", questionJson).map { it.asString },
+                    choices = if (questionJson.has("choices")) {
+                        JsonUtils.gson.toJson(JsonUtils.getJsonArray("choices", questionJson))
+                    } else {
+                        "[]"
+                    },
+                    correctChoice = extractCorrectChoices(questionJson),
                     grade = JsonUtils.getString("marks", questionJson).toIntOrNull() ?: 0,
                     order = i,
+                    hasOtherOption = JsonUtils.getBoolean("hasOtherOption", questionJson),
+                    scaleMax = JsonUtils.getInt("scaleMax", questionJson).let { if (it <= 0) 9 else it },
+                    marks = JsonUtils.getString("marks", questionJson),
                 )
             )
         }
     }
+
     override suspend fun insertCertificationsFromSync(jsonArray: JsonArray) {
         val certifications = ArrayList<Certification>(jsonArray.size())
         for (j in jsonArray) {
@@ -683,104 +679,33 @@ class CoursesRepositoryImpl @Inject constructor(
         certificationDao.upsertAll(certifications)
     }
 
-    private fun insertMyCourse(shelfId: String, doc: JsonObject, realmTx: Realm, spm: SharedPrefManager) {
-        val id = JsonUtils.getString("_id", doc)
-        var myMyCoursesDB = realmTx.where(RealmMyCourse::class.java).equalTo("id", id).findFirst()
-        if (myMyCoursesDB == null) {
-            myMyCoursesDB = realmTx.createObject(RealmMyCourse::class.java, id)
-        }
-        myMyCoursesDB?.setUserId(shelfId)
-        myMyCoursesDB?.courseId = JsonUtils.getString("_id", doc)
-        myMyCoursesDB?.courseRev = JsonUtils.getString("_rev", doc)
-        myMyCoursesDB?.languageOfInstruction = JsonUtils.getString("languageOfInstruction", doc)
-        val title = JsonUtils.getString("courseTitle", doc)
-        myMyCoursesDB?.courseTitle = title
-        myMyCoursesDB?.courseTitleNormal = title.let { Utilities.normalizeText(it) }
-        myMyCoursesDB?.memberLimit = JsonUtils.getInt("memberLimit", doc)
-        val description = JsonUtils.getString("description", doc)
-        myMyCoursesDB?.description = description
-        val links = extractLinks(description)
-        val baseUrl = UrlUtils.getUrl()
-        for (link in links) {
-            RealmMyCourse.addConcatenatedLink("$baseUrl/$link")
-        }
-        myMyCoursesDB?.method = JsonUtils.getString("method", doc)
-        myMyCoursesDB?.gradeLevel = JsonUtils.getString("gradeLevel", doc)
-        myMyCoursesDB?.subjectLevel = JsonUtils.getString("subjectLevel", doc)
-        myMyCoursesDB?.createdDate = JsonUtils.getLong("createdDate", doc)
-        myMyCoursesDB?.coverFileName = JsonUtils.getString("coverFileName", doc).ifEmpty { null }
-        val courseStepsJsonArray = JsonUtils.getJsonArray("steps", doc)
-        val stepsSize = courseStepsJsonArray.size()
-        myMyCoursesDB?.setNumberOfSteps(stepsSize)
-        val courseStepsList = mutableListOf<RealmCourseStep>()
-        val examCache = HashMap<String, RealmStepExam>()
-        val examIds = mutableListOf<String>()
-        for (i in 0 until stepsSize) {
-            val stepJson = courseStepsJsonArray[i].asJsonObject
-            if (stepJson.has("exam")) {
-                val id = JsonUtils.getString("_id", stepJson.getAsJsonObject("exam"))
-                if (id.isNotEmpty()) examIds.add(id)
-            }
-            if (stepJson.has("survey")) {
-                val id = JsonUtils.getString("_id", stepJson.getAsJsonObject("survey"))
-                if (id.isNotEmpty()) examIds.add(id)
-            }
-        }
-        examIds.chunked(900).forEach { chunk ->
-            if (chunk.isNotEmpty()) {
-                realmTx.where(RealmStepExam::class.java).`in`("id", chunk.toTypedArray()).findAll().forEach {
-                    it.id?.let { id -> examCache[id] = it }
-                }
-            }
-        }
-
-        for (i in 0 until stepsSize) {
-            val stepElement = courseStepsJsonArray[i]
-            val stepId = Base64.encodeToString(stepElement.toString().toByteArray(), Base64.NO_WRAP)
-            val stepJson = stepElement.asJsonObject
-            val step = RealmCourseStep()
-            step.id = stepId
-            step.stepTitle = JsonUtils.getString("stepTitle", stepJson)
-            val stepDescription = JsonUtils.getString("description", stepJson)
-            step.description = stepDescription
-            val stepLinks = extractLinks(stepDescription)
-            for (stepLink in stepLinks) {
-                RealmMyCourse.addConcatenatedLink("$baseUrl/$stepLink")
-            }
-            insertCourseStepsAttachments(myMyCoursesDB?.courseId, stepId, JsonUtils.getJsonArray("resources", stepJson), realmTx, spm)
-            insertExam(stepJson, realmTx, stepId, i + 1, myMyCoursesDB, examCache)
-            insertSurvey(stepJson, realmTx, stepId, i + 1, myMyCoursesDB, examCache)
-            step.noOfResources = JsonUtils.getJsonArray("resources", stepJson).size()
-            step.courseId = myMyCoursesDB?.courseId
-            courseStepsList.add(step)
-        }
-        myMyCoursesDB?.courseSteps = RealmList()
-        myMyCoursesDB?.courseSteps?.addAll(courseStepsList)
-    }
-
-    private fun insertExam(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, course: RealmMyCourse?, examCache: HashMap<String, RealmStepExam>? = null) {
-        if (stepContainer.has("exam")) {
-            val obj = stepContainer.getAsJsonObject("exam")
-            obj.addProperty("stepNumber", i)
-            insertCourseStepsExams(course?.courseId, stepId, obj, "", mRealm, examCache)
-        }
-    }
-
-    private fun insertSurvey(stepContainer: JsonObject, mRealm: Realm, stepId: String, i: Int, course: RealmMyCourse?, examCache: HashMap<String, RealmStepExam>? = null) {
-        if (stepContainer.has("survey")) {
-            val obj = stepContainer.getAsJsonObject("survey")
-            obj.addProperty("stepNumber", i)
-            obj.addProperty("createdDate", course?.createdDate)
-            insertCourseStepsExams(course?.courseId, stepId, obj, "", mRealm, examCache)
-        }
-    }
-
-    private fun insertCourseStepsAttachments(myCoursesID: String?, stepId: String?, resources: JsonArray, mRealm: Realm?, spm: SharedPrefManager) {
+    private fun queueCourseResources(courseId: String?, stepId: String?, resources: JsonArray) {
         resources.forEach { resource ->
-            // Resources live in Room now; queue them and flush after this Realm transaction.
             pendingCourseResources.add(
-                PendingCourseResource(resource.asJsonObject, myCoursesID, stepId)
+                PendingCourseResource(resource.asJsonObject, courseId, stepId)
             )
+        }
+    }
+
+    private fun extractCorrectChoices(questionJson: JsonObject): List<String> {
+        val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
+        if (correctChoiceArray.size() > 0) {
+            return correctChoiceArray.map { it.asString }
+        }
+
+        val correctChoice = JsonUtils.getString("correctChoice", questionJson)
+        if (correctChoice.isBlank()) {
+            return emptyList()
+        }
+
+        val choices = JsonUtils.getJsonArray("choices", questionJson)
+        return choices.mapNotNull { choiceElement ->
+            val choice = choiceElement.asJsonObject
+            if (JsonUtils.getString("id", choice) == correctChoice) {
+                JsonUtils.getString("res", choice).ifBlank { null }
+            } else {
+                null
+            }
         }
     }
 
@@ -807,5 +732,40 @@ class CoursesRepositoryImpl @Inject constructor(
         if (libraries.isNotEmpty()) {
             myLibraryDao.upsertAll(libraries)
         }
+    }
+
+    private suspend fun mapCourses(courses: List<RoomCourseEntity>): List<RealmMyCourse> {
+        if (courses.isEmpty()) return emptyList()
+        val courseIds = courses.mapNotNull { it.courseId ?: it.id }.distinct()
+        val stepsByCourseId = if (courseIds.isEmpty()) {
+            emptyMap()
+        } else {
+            courseStepDao.getByCourseIds(courseIds)
+                .groupBy { it.courseId ?: "" }
+                .mapValues { entry -> entry.value.map { it.toRealmModel() } }
+        }
+        return courses.map { course ->
+            val courseKey = course.courseId ?: course.id
+            course.toRealmModel(stepsByCourseId[courseKey].orEmpty())
+        }
+    }
+
+    private suspend fun mapCourse(course: RoomCourseEntity?): RealmMyCourse? {
+        if (course == null) return null
+        val courseKey = course.courseId ?: course.id
+        val steps = if (courseKey.isBlank()) {
+            emptyList()
+        } else {
+            courseStepDao.getByCourseId(courseKey).map { it.toRealmModel() }
+        }
+        return course.toRealmModel(steps)
+    }
+
+    private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
+        val merged = existingUserIds.orEmpty().toMutableList()
+        if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
+            merged.add(newUserId)
+        }
+        return merged.takeIf { it.isNotEmpty() }
     }
 }

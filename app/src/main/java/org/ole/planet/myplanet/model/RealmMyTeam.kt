@@ -4,24 +4,16 @@ import android.content.Context
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import io.realm.Realm
-import io.realm.RealmList
-import io.realm.RealmObject
-import io.realm.annotations.Index
-import io.realm.annotations.PrimaryKey
 import java.io.File
 import org.ole.planet.myplanet.utils.FileUtils.getOlePath
 import org.ole.planet.myplanet.utils.JsonUtils
 
-open class RealmMyTeam : RealmObject() {
-    @PrimaryKey
+open class RealmMyTeam {
     var _id: String? = null
     var _rev: String? = null
-    var courses: RealmList<String>? = null
-    @Index
+    var courses: MutableList<String>? = null
     var teamId: String? = null
     var name: String? = null
-    @Index
     var userId: String? = null
     var description: String? = null
     var requests: String? = null
@@ -34,7 +26,6 @@ open class RealmMyTeam : RealmObject() {
     var teamPlanetCode: String? = null
     var userPlanetCode: String? = null
     var parentCode: String? = null
-    @Index
     var docType: String? = null
     var title: String? = null
     var route: String? = null
@@ -133,10 +124,10 @@ open class RealmMyTeam : RealmObject() {
             if (hadLocalChanges) {
                 val mergedCourses = serverCourseIds.toMutableSet()
                 mergedCourses.addAll(localCourses)
-                team.courses = RealmList()
+                team.courses = mutableListOf()
                 team.courses?.addAll(mergedCourses)
             } else {
-                team.courses = RealmList()
+                team.courses = mutableListOf()
                 team.courses?.addAll(serverCourseIds)
             }
         }
@@ -221,67 +212,25 @@ open class RealmMyTeam : RealmObject() {
             return JsonParser.parseString(JsonUtils.gson.toJson(`object`)).asJsonObject
         }
 
-        fun serialize(team: RealmMyTeam, realm: Realm, coursesResourcesMap: Map<String, Map<String?, List<RealmMyLibrary>>>): JsonObject {
+        fun serialize(team: RealmMyTeam, courses: List<RealmMyCourse>, coursesResourcesMap: Map<String, Map<String?, List<RealmMyLibrary>>>): JsonObject {
             val `object` = serialize(team)
 
             if (!team.courses.isNullOrEmpty()) {
                 val coursesArray = JsonArray()
 
-                val courseIds = team.courses?.toTypedArray() ?: emptyArray()
+                val courseMap = courses.associateBy { it.courseId }
 
-                if (courseIds.isNotEmpty()) {
-                    val courses = realm.where(RealmMyCourse::class.java)
-                        .`in`("courseId", courseIds)
-                        .findAll()
-
-                    val courseMap = courses.associateBy { it.courseId }
-
-                    team.courses?.forEach { courseId ->
-                        val course = courseMap[courseId]
-                        if (course != null) {
-                            val courseResources = coursesResourcesMap[courseId] ?: emptyMap()
-                            val courseJson = RealmMyCourse.serialize(course, courseResources)
-                            coursesArray.add(courseJson)
-                        }
+                team.courses?.forEach { courseId ->
+                    val course = courseMap[courseId]
+                    if (course != null) {
+                        val courseResources = coursesResourcesMap[courseId] ?: emptyMap()
+                        val courseJson = RealmMyCourse.serialize(course, courseResources)
+                        coursesArray.add(courseJson)
                     }
                 }
                 `object`.add("courses", coursesArray)
             }
             return `object`
-        }
-    }
-
-    fun isMyTeam(userID: String?, mRealm: Realm): Boolean {
-        return mRealm.where(RealmMyTeam::class.java)
-            .equalTo("userId", userID)
-            .equalTo("teamId", _id)
-            .equalTo("docType", "membership")
-            .count() > 0
-    }
-
-    fun leave(user: RealmUser?, mRealm: Realm) {
-        val teams = mRealm.where(RealmMyTeam::class.java)
-            .equalTo("userId", user?.id)
-            .equalTo("teamId", this._id)
-            .equalTo("docType", "membership")
-            .findAll()
-
-        if (!teams.isEmpty()) {
-            val startedTransaction = !mRealm.isInTransaction
-            if (startedTransaction) {
-                mRealm.beginTransaction()
-            }
-            try {
-                teams.deleteAllFromRealm()
-                if (startedTransaction) {
-                    mRealm.commitTransaction()
-                }
-            } catch (e: Exception) {
-                if (startedTransaction && mRealm.isInTransaction) {
-                    mRealm.cancelTransaction()
-                }
-                throw e
-            }
         }
     }
 }

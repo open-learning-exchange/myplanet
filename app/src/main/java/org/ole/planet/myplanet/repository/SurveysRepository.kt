@@ -29,11 +29,12 @@ interface SurveysRepository {
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
     suspend fun getSurvey(id: String): RealmStepExam?
     suspend fun getSurveys(): List<RealmStepExam>
-    suspend fun getSurveys(orderBy: String, sort: io.realm.Sort): List<RealmStepExam>
-    fun bulkInsertExamsFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun getSurveys(ascending: Boolean = false): List<RealmStepExam>
+    suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray)
     fun dueRemindersFlow(): Flow<List<String>>
     suspend fun scheduleSurveyReminder(surveyIds: String, timeUnit: TimeUnit, value: Int)
     suspend fun setLastSurveyDialogShown(time: Long)
     suspend fun getLastSurveyDialogShown(): Long
     suspend fun isReminderScheduled(surveyIds: String): Boolean
+    suspend fun getPendingAdoptedSurveys(): List<RealmStepExam>
 }

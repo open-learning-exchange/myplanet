@@ -9,7 +9,6 @@ import java.io.IOException
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -17,14 +16,12 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
-import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.LoginActivityData
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.model.CourseActivity
@@ -42,10 +39,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 
 class ActivitiesRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     @ApplicationContext private val context: Context,
-    private val teamsRepository: Lazy<TeamsRepository>,
     private val userRepository: Lazy<UserRepository>,
     private val apiInterface: ApiInterface,
     private val sharedPrefManager: SharedPrefManager,
@@ -55,7 +49,7 @@ class ActivitiesRepositoryImpl @Inject constructor(
     private val resourceActivityDao: ResourceActivityDao,
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao
-) : RealmRepository(databaseService, realmDispatcher), ActivitiesRepository {
+) : ActivitiesRepository {
     override suspend fun getOfflineVisitCount(userId: String): Int {
         return offlineActivityDao.countByUserIdAndType(userId, UserSessionManager.KEY_LOGIN)
     }

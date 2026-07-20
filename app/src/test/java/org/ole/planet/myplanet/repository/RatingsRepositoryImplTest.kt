@@ -4,57 +4,41 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.RatingDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.model.Rating
-import org.ole.planet.myplanet.model.RealmUser
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RatingsRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var ratingDao: RatingDao
+    private lateinit var userDao: UserDao
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
 
     @Before
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
-        databaseService = mockk(relaxed = true)
         ratingDao = mockk(relaxed = true)
+        userDao = mockk(relaxed = true)
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(
-            databaseService,
-            UnconfinedTestDispatcher(),
-            gson,
-            ratingDao
-        )
+        repository = RatingsRepositoryImpl(gson, ratingDao, userDao)
     }
 
-    // Mocks the RealmUser lookup used by findUserForRating (RealmUser is still on Realm).
-    private fun mockUserLookup(user: RealmUser?) {
-        val realm = mockk<io.realm.Realm>(relaxed = true)
-        val userQuery = mockk<io.realm.RealmQuery<RealmUser>>(relaxed = true)
-        every { realm.where(RealmUser::class.java) } returns userQuery
-        every { userQuery.equalTo(any<String>(), any<String>()) } returns userQuery
-        every { userQuery.findFirst() } returns user
-        if (user != null) every { realm.copyFromRealm(user) } returns user
-        coEvery { databaseService.withRealmAsync<Any?>(any()) } answers {
-            firstArg<(io.realm.Realm) -> Any?>().invoke(realm)
-        }
+    private fun mockUserLookup(user: RoomUserEntity?) {
+        coEvery { userDao.getById(any()) } returns user
     }
 
     @Test
@@ -138,7 +122,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `submitRating inserts new rating if not exists`() = runTest {
-        mockUserLookup(RealmUser().apply { id = "user1"; _id = "user1" })
+        mockUserLookup(RoomUserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns null
         val savedSlot = slot<Rating>()
         coEvery { ratingDao.upsert(capture(savedSlot)) } returns Unit
@@ -158,7 +142,7 @@ class RatingsRepositoryImplTest {
 
     @Test
     fun `submitRating updates existing rating if it exists`() = runTest {
-        mockUserLookup(RealmUser().apply { id = "user1"; _id = "user1" })
+        mockUserLookup(RoomUserEntity(id = "user1", _id = "user1", parentCode = "parent", planetCode = "planet"))
         val existingRating = Rating().apply { id = "existing_id"; rate = 3 }
         coEvery { ratingDao.findByTypeUserItem("course", "user1", "course1") } returns existingRating
         coEvery { ratingDao.findById("existing_id") } returns existingRating
