@@ -45,7 +45,6 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
@@ -90,6 +89,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
+    private var lastHandledDownloadCompletion = 0L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -160,24 +160,24 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         initArrays()
         hideButton()
 
-        collectWhenStarted(viewModel.downloadComplete) { completed ->
-            if (completed) {
+        collectWhenStarted(viewModel.downloadCompletedAt) { completedAt ->
+            if (completedAt > lastHandledDownloadCompletion) {
+                lastHandledDownloadCompletion = completedAt
                 refreshResourcesData()
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                broadcastService.events.collect { intent ->
-                    if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                        val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            intent.getParcelableExtra("download", Download::class.java)
-                        } else {
-                            @Suppress("DEPRECATION")
-                            intent.getParcelableExtra("download")
-                        }
-                        if (download?.completeAll == true) {
-                            viewModel.notifyDownloadComplete()
-                        }
+                broadcastService.latestDownloadProgress.collect { intent ->
+                    intent ?: return@collect
+                    val download = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        intent.getParcelableExtra("download", Download::class.java)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        intent.getParcelableExtra("download")
+                    }
+                    if (download?.completeAll == true) {
+                        viewModel.notifyDownloadComplete()
                     }
                 }
             }

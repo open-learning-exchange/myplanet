@@ -53,7 +53,6 @@ import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
-import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.autoSynFeature
 import org.ole.planet.myplanet.utils.DialogUtils.getUpdateDialog
@@ -760,10 +759,12 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     }
 
     open fun registerReceiver() {
-        collectWhenStarted(broadcastService.events) { intent ->
-            if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
-                broadcastReceiver.onReceive(this@SyncActivity, intent)
-            }
+        // Served from latestDownloadProgress (not `events`) so this activity still sees the
+        // latest download state if it resubscribes after missing the last emission - `events`
+        // has no replay and would otherwise lose that update forever.
+        collectWhenStarted(broadcastService.latestDownloadProgress) { intent ->
+            intent ?: return@collectWhenStarted
+            broadcastReceiver.onReceive(this@SyncActivity, intent)
         }
     }
 

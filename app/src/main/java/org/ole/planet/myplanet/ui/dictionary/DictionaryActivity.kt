@@ -89,13 +89,14 @@ class DictionaryActivity : BaseActivity() {
     }
 
     override fun registerReceiver() {
+        // Served from latestDownloadProgress (not `events`) so this activity still sees the
+        // latest download state if it resubscribes after missing the last emission - `events`
+        // has no replay and would otherwise lose that update forever.
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                broadcastService.events.collect { intent ->
-                    if (isActive) {
-                        when (intent.action) {
-                            "message_progress" -> receiver.onReceive(this@DictionaryActivity, intent)
-                        }
+                broadcastService.latestDownloadProgress.collect { intent ->
+                    if (isActive && intent != null) {
+                        receiver.onReceive(this@DictionaryActivity, intent)
                     }
                 }
             }

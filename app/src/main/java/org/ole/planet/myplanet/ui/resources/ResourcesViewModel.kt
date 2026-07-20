@@ -23,8 +23,14 @@ class ResourcesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _downloadComplete = MutableStateFlow(false)
-    val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
+    // A monotonically increasing "last completed at" timestamp rather than a true/false pulse:
+    // toggling a StateFlow true-then-false with no suspension in between can be conflated away
+    // entirely by a collector that isn't actively resumed at that exact moment, silently
+    // dropping the completion signal. A value that never repeats can't be missed that way -
+    // collectors compare it against the last timestamp they handled instead of reacting to a
+    // transient flip.
+    private val _downloadCompletedAt = MutableStateFlow(0L)
+    val downloadCompletedAt: StateFlow<Long> = _downloadCompletedAt.asStateFlow()
 
     private val _openedResourceIds = MutableStateFlow<Set<String>>(emptySet())
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
@@ -32,8 +38,7 @@ class ResourcesViewModel @Inject constructor(
     private var observeOpenedResourcesJob: Job? = null
 
     fun notifyDownloadComplete() {
-        _downloadComplete.value = true
-        _downloadComplete.value = false
+        _downloadCompletedAt.value = System.currentTimeMillis()
     }
 
     fun observeOpenedResourceIds(userId: String) {

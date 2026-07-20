@@ -273,10 +273,21 @@ abstract class BaseResourceFragment : Fragment() {
                 broadcastService.events.collect { intent ->
                     if (isActive) {
                         when (intent.action) {
-                            DashboardActivity.MESSAGE_PROGRESS -> broadcastReceiver.onReceive(requireContext(), intent)
                             "ACTION_NETWORK_CHANGED" -> receiver.onReceive(requireContext(), intent)
                             DownloadService.RESOURCE_NOT_FOUND_ACTION -> resourceNotFoundReceiver.onReceive(requireContext(), intent)
                         }
+                    }
+                }
+            }
+        }
+        // MESSAGE_PROGRESS is served from latestDownloadProgress (not `events`) so a fragment
+        // whose view was recreated or briefly stopped right as a download finished still sees
+        // the latest state on resubscribe, instead of losing that update forever.
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                broadcastService.latestDownloadProgress.collect { intent ->
+                    if (isActive && intent != null) {
+                        broadcastReceiver.onReceive(requireContext(), intent)
                     }
                 }
             }
