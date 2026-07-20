@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.model.RealmCourseActivity
 import org.ole.planet.myplanet.model.RealmNewsLog
 import org.ole.planet.myplanet.model.RealmResourceActivity
@@ -49,7 +50,8 @@ class UploadConfigsTest {
         resourceActivityDao = resourceActivityDao,
         submitPhotosDao = submitPhotosDao,
         newsLogDao = newsLogDao,
-        teamLogDao = teamLogDao
+        teamLogDao = teamLogDao,
+        teamTaskDao = mockk<TeamTaskDao>(relaxed = true)
     )
 
     @Test

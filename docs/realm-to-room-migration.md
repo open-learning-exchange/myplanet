@@ -70,7 +70,7 @@ wired through `di/RoomModule`.
 - [x] Room deps added (coexisting with Realm).
 - [x] Foundation: `Converters`, `AppDatabase`, `RoomModule`.
 - [x] **Dictionary** domain migrated end-to-end (`DictionaryEntity`, `DictionaryDao`,
-      `DictionaryActivity`). First proven template (raw-Realm activity).
+      `DictionaryActivity`; legacy `RealmDictionary` is now a plain compatibility DTO). First proven template (raw-Realm activity).
 - [x] Realm transition config: `DatabaseService` now uses `deleteRealmIfMigrationNeeded()` so a
       model leaving the Realm schema recreates the Realm file instead of crashing (drop-and-resync).
 - [x] **Life** domain migrated end-to-end (`RealmMyLife` is now a Room `@Entity`, `MyLifeDao`,
@@ -182,8 +182,24 @@ wired through `di/RoomModule`.
 - [x] **RemovedLog** migrated (local shelf tombstones). `RealmRemovedLog` is now a Room
       `@Entity`; `RemovedLogDao` owns add/remove tombstone writes, bulk cleanup when resources or
       courses are re-added, and shelf merge filtering for removed resources/courses.
-- [ ] Migrate the remaining ~8 uploadable models to `RoomUploadConfig` + the synced-only domains.
-- [ ] Remaining ~31 model domains.
+- [x] **TeamTask** migrated (uploaded + synced task rows). `RealmTeamTask` is now a Room
+      `@Entity`; `TeamTaskDao` owns task flows, due-task notification lookups, title/id lookups,
+      sync upserts, pending-upload reads, and upload acknowledgements; task repository and
+      notification lookups use the DAO, and the upload config now uses `RoomUploadConfig`.
+- [ ] Migrate the remaining ~7 uploadable models to `RoomUploadConfig` + the synced-only domains.
+- [x] **Notification** migrated (synced local notification rows). `RealmNotification` is now a
+      Room `@Entity`; `NotificationDao` owns unread counts, read/sync marking, list filters,
+      deletes, single-doc upserts, and sync bulk upserts. Notification sync now runs outside the
+      legacy Realm transaction path.
+- [x] **Achievement** migrated (synced + custom uploaded profile achievement docs).
+      `RealmAchievement` is now a Room `@Entity` with JSON-backed `List<String>` fields;
+      `AchievementDao` owns initialization, edits, pending-upload reads, upload acknowledgements,
+      and sync bulk upserts. Achievement sync now runs outside the legacy Realm transaction path.
+- [x] **HealthExamination** migrated (synced + custom uploaded health records).
+      `RealmHealthExamination` is now a Room `@Entity`; `HealthExaminationDao` owns profile/id
+      lookups, pending upload reads, upload acknowledgements, user-id fixes after user upload,
+      and sync bulk upserts. Health sync now runs outside the legacy Realm transaction path.
+- [ ] Remaining ~28 model domains.
 - [ ] Migrate 39 Realm-based test files.
 - [ ] Remove Realm; full `assembleDefaultDebug` + `testDefaultDebugUnitTest` green.
 

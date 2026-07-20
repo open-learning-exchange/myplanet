@@ -28,6 +28,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.CreateTeamRequest
@@ -70,13 +71,10 @@ class TeamsRepositoryImpl @Inject constructor(
     private val resourcesRepositoryLazy: dagger.Lazy<ResourcesRepository>,
     private val timeProvider: TimeProvider,
     private val teamLogDao: TeamLogDao,
+    private val teamTaskDao: TeamTaskDao,
 ) : RealmRepository(databaseService, realmDispatcher), TeamsRepository, TeamsSyncRepository {
     override fun getTasksFlow(userId: String?): Flow<List<RealmTeamTask>> {
-        return queryListFlow(RealmTeamTask::class.java) {
-            notEqualTo("status", "archived")
-                .equalTo("completed", false)
-                .equalTo("assignee", userId)
-        }
+        return teamTaskDao.getOpenTasksForUser(userId)
     }
 
     override suspend fun getTeamsForUpload(): List<TeamUploadData> {
@@ -484,7 +482,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getTaskTeamInfo(taskId: String): Triple<String, String, String>? {
-        val task = findByField(RealmTeamTask::class.java, "id", taskId)
+        val task = teamTaskDao.getById(taskId)
 
         return task?.let {
             val linkJson = org.json.JSONObject(it.link ?: "{}")
@@ -965,33 +963,18 @@ class TeamsRepositoryImpl @Inject constructor(
         end: Long,
     ): List<RealmTeamTask> {
         if (userId.isBlank() || start > end) return emptyList()
-        return queryList(RealmTeamTask::class.java) {
-            equalTo("completed", false)
-            equalTo("assignee", userId)
-            equalTo("isNotified", false)
-            between("deadline", start, end)
-        }
+        return teamTaskDao.getPendingTasksForUser(userId, start, end)
     }
 
     override suspend fun markTasksNotified(taskIds: Collection<String>) {
         if (taskIds.isEmpty()) return
         val validIds = taskIds.mapNotNull { it.takeIf(String::isNotBlank) }.distinct()
         if (validIds.isEmpty()) return
-        executeTransaction { realm ->
-            val tasks = realm.where(RealmTeamTask::class.java)
-                .`in`("id", validIds.toTypedArray())
-                .findAll()
-            tasks.forEach { task ->
-                task.isNotified = true
-            }
-        }
+        teamTaskDao.markTasksNotified(validIds)
     }
 
     override suspend fun getTasksByTeamId(teamId: String): Flow<List<RealmTeamTask>> {
-        return queryListFlow(RealmTeamTask::class.java) {
-            equalTo("teamId", teamId)
-            notEqualTo("status", "archived")
-        }
+        return teamTaskDao.getTasksByTeamId(teamId)
     }
 
     override suspend fun getReportsFlow(teamId: String): Flow<List<RealmMyTeam>> {
@@ -1018,7 +1001,7 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun deleteTask(taskId: String) {
-        delete(RealmTeamTask::class.java, "id", taskId)
+        teamTaskDao.deleteById(taskId)
     }
 
     private suspend fun upsertTask(task: RealmTeamTask) {
@@ -1033,7 +1016,7 @@ class TeamsRepositoryImpl @Inject constructor(
             }
             task.sync = gson.toJson(syncObj)
         }
-        save(task)
+        teamTaskDao.upsert(task)
     }
 
     override suspend fun createTask(
@@ -1062,27 +1045,30 @@ class TeamsRepositoryImpl @Inject constructor(
         deadline: Long,
         assigneeId: String?
     ) {
-        update(RealmTeamTask::class.java, "id", taskId) { task ->
+        teamTaskDao.getById(taskId)?.let { task ->
             task.title = title
             task.description = description
             task.deadline = deadline
             task.assignee = assigneeId
             task.isUpdated = true
+            teamTaskDao.upsert(task)
         }
     }
 
     override suspend fun assignTask(taskId: String, assigneeId: String?) {
-        update(RealmTeamTask::class.java, "id", taskId) { task ->
+        teamTaskDao.getById(taskId)?.let { task ->
             task.assignee = assigneeId
             task.isUpdated = true
+            teamTaskDao.upsert(task)
         }
     }
 
     override suspend fun setTaskCompletion(taskId: String, completed: Boolean) {
-        update(RealmTeamTask::class.java, "id", taskId) { task ->
+        teamTaskDao.getById(taskId)?.let { task ->
             task.completed = completed
             task.completedTime = if (completed) Date().time else 0
             task.isUpdated = true
+            teamTaskDao.upsert(task)
         }
     }
 
@@ -1630,19 +1616,17 @@ class TeamsRepositoryImpl @Inject constructor(
             insertMyTeam(realm, jsonDoc, existingTeams)
         }
     }
-    override fun bulkInsertTasksFromSync(realm: Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
+    override suspend fun bulkInsertTasksFromSync(jsonArray: JsonArray) {
+        val tasks = ArrayList<RealmTeamTask>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
+                tasks.add(RealmTeamTask.fromJson(jsonDoc))
             }
         }
-        documentList.forEach { jsonDoc ->
-            RealmTeamTask.insert(realm, jsonDoc)
-        }
+        teamTaskDao.upsertAll(tasks)
     }
     override suspend fun bulkInsertTeamActivitiesFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())

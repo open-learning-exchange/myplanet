@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.AppDatabase
+import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.data.room.dao.UserChallengeActionsDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
@@ -18,8 +19,10 @@ import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.DictionaryDao
 import org.ole.planet.myplanet.data.room.dao.FeedbackDao
+import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.MyLifeDao
+import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.PersonalDao
@@ -32,6 +35,7 @@ import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
+import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -161,5 +165,25 @@ object RoomModule {
     @Provides
     fun provideRemovedLogDao(database: AppDatabase): RemovedLogDao {
         return database.removedLogDao()
+    }
+
+    @Provides
+    fun provideTeamTaskDao(database: AppDatabase): TeamTaskDao {
+        return database.teamTaskDao()
+    }
+
+    @Provides
+    fun provideNotificationDao(database: AppDatabase): NotificationDao {
+        return database.notificationDao()
+    }
+
+    @Provides
+    fun provideAchievementDao(database: AppDatabase): AchievementDao {
+        return database.achievementDao()
+    }
+
+    @Provides
+    fun provideHealthExaminationDao(database: AppDatabase): HealthExaminationDao {
+        return database.healthExaminationDao()
     }
 }
