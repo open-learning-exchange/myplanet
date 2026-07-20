@@ -38,6 +38,7 @@ interface SubmissionsRepository {
     suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail?
     fun getNormalizedSubmitterName(submission: Submission): String?
     suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String? = null): List<Submission>
+    suspend fun getLatestSubmissionByParentId(parentId: String, status: String): Submission?
     suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem>
     suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?)
     suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean

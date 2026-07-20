@@ -309,12 +309,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return hydrateSubmissions(submissionDao.getByParentUserAndStatus(parentId, userId, status))
     }
 
-    override suspend fun getLatestSubmissionByParentId(parentId: String, status: String): RealmSubmission? {
-        return queryList(RealmSubmission::class.java) {
-            equalTo("parentId", parentId)
-                .equalTo("status", status)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-        }.firstOrNull()
+    override suspend fun getLatestSubmissionByParentId(parentId: String, status: String): Submission? {
+        return hydrateSubmission(submissionDao.getLatestByParentIdAndStatus(parentId, status))
     }
 
     override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {

@@ -103,6 +103,7 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND teamId = :teamId") suspend fun getByParentIdsAndTeamId(parentIds: List<String>, teamId: String): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND parentId = :parentId AND status = 'pending' ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestPendingByUserAndParent(userId: String?, parentId: String): Submission?
+    @Query("SELECT * FROM submissions WHERE parentId = :parentId AND status = :status ORDER BY lastUpdateTime DESC LIMIT 1") suspend fun getLatestByParentIdAndStatus(parentId: String, status: String): Submission?
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' ORDER BY startTime DESC LIMIT 1") suspend fun getLatestPendingByUser(userId: String?): Submission?
     @Query("SELECT * FROM submissions WHERE parentId LIKE '%' || :parentIdFragment || '%' LIMIT 1") suspend fun getFirstByParentIdContaining(parentIdFragment: String): Submission?
     @Query("SELECT * FROM submissions WHERE parentId IN (:parentIds) AND type != 'survey' AND uploaded = 0") suspend fun getUnuploadedNonSurveyByParentIds(parentIds: List<String>): List<Submission>

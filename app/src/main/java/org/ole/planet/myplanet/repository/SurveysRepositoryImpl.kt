@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
@@ -38,6 +39,8 @@ import org.ole.planet.myplanet.utils.TimeUtils.getFormattedDateWithTime
 
 class SurveysRepositoryImpl @Inject constructor(
     @param:ApplicationContext private val context: Context,
+    private val apiInterface: ApiInterface,
+    private val serverUrlMapper: ServerUrlMapper,
     private val userSessionManager: UserSessionManager,
     private val sharedPrefManager: SharedPrefManager,
     private val dispatcherProvider: DispatcherProvider,
@@ -462,5 +465,55 @@ class SurveysRepositoryImpl @Inject constructor(
 
     override suspend fun getPendingAdoptedSurveys(): List<StepExam> {
         return examDao.getPendingAdoptedSurveys().map { it }
+    }
+
+    override suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
+        return withContext(dispatcherProvider.io) {
+            fetchPublicSurveyFrom(baseUrl, teamId, surveyId)
+                ?: alternativeServerFor(baseUrl)?.let { fetchPublicSurveyFrom(it, teamId, surveyId) }
+        }
+    }
+
+    override suspend fun submitPublicSurvey(baseUrl: String, teamId: String, surveyId: String, answers: JsonArray, respondent: JsonObject?): Boolean {
+        return withContext(dispatcherProvider.io) {
+            submitPublicSurveyTo(baseUrl, teamId, surveyId, answers, respondent) ||
+                (alternativeServerFor(baseUrl)?.let { submitPublicSurveyTo(it, teamId, surveyId, answers, respondent) } == true)
+        }
+    }
+
+    override suspend fun saveSurveyFromPublicApi(surveyDoc: JsonObject) {
+        // The Room bulk-insert consumes _all_docs-shaped rows ({ "doc": <exam> }).
+        val syncRow = JsonObject().apply { add("doc", surveyDoc) }
+        bulkInsertExamsFromSync(JsonArray().apply { add(syncRow) })
+    }
+
+    // e.g. http://192.168.1.73 (LAN primary) falls back to https://uriur.planet.gt (clone)
+    private fun alternativeServerFor(baseUrl: String): String? {
+        return serverUrlMapper.processUrl(baseUrl.trimEnd('/')).alternativeUrl
+    }
+
+    private suspend fun fetchPublicSurveyFrom(baseUrl: String, teamId: String, surveyId: String): JsonObject? {
+        return try {
+            val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId"
+            val response = apiInterface.getJsonObject(null, url)
+            if (response.isSuccessful) response.body() else null
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+
+    private suspend fun submitPublicSurveyTo(baseUrl: String, teamId: String, surveyId: String, answers: JsonArray, respondent: JsonObject?): Boolean {
+        return try {
+            val url = "${baseUrl.trimEnd('/')}/api/public/surveys/$teamId/$surveyId/submissions"
+            val body = JsonObject().apply {
+                add("answers", answers)
+                respondent?.let { add("user", it) }
+            }
+            apiInterface.postDoc(null, "application/json", url, body).isSuccessful
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
     }
 }

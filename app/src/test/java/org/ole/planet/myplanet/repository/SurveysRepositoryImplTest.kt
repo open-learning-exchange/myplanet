@@ -46,6 +46,8 @@ class SurveysRepositoryImplTest {
     private lateinit var sharedPreferences: SharedPreferences
     private lateinit var sharedPreferencesEditor: SharedPreferences.Editor
     private val timeProvider = TestTimeProvider(currentTime = 1_700_000_000_000L)
+    private val apiInterface: org.ole.planet.myplanet.data.api.ApiInterface = mockk(relaxed = true)
+    private val serverUrlMapper: org.ole.planet.myplanet.services.sync.ServerUrlMapper = mockk(relaxed = true)
     private val examDao: ExamDao = mockk(relaxed = true)
     private val questionDao: QuestionDao = mockk(relaxed = true)
     private val submissionDao: SubmissionDao = mockk(relaxed = true)
@@ -69,6 +71,8 @@ class SurveysRepositoryImplTest {
 
         repository = SurveysRepositoryImpl(
             context,
+            apiInterface,
+            serverUrlMapper,
             userSessionManager,
             sharedPrefManager,
             dispatcherProvider,
