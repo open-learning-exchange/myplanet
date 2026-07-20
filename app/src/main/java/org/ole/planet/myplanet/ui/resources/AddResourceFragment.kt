@@ -260,9 +260,11 @@ class AddResourceFragment : BottomSheetDialogFragment() {
 
     private fun addResource(path: String?) {
         if (type == 0) {
-            startActivity(Intent(activity, AddResourceActivity::class.java)
+            val intent = Intent(activity, AddResourceActivity::class.java)
                 .putExtra("resource_local_url", path)
-                .putExtra("teamId", teamId))
+                .putExtra("teamId", teamId)
+            (parentFragment as? ResourcesFragment)?.addResourceLauncher?.launch(intent)
+                ?: startActivity(intent)
         } else {
             viewLifecycleOwner.lifecycleScope.launch {
                 val userModel = userSessionManager.getUserModel() ?: return@launch

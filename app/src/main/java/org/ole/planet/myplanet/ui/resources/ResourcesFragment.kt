@@ -90,6 +90,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
 
+    internal val addResourceLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            refreshResourcesData()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
     }
@@ -586,7 +594,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onResume() {
         super.onResume()
-        refreshResourcesData()
         selectAll.isChecked = false
     }
 
