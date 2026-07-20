@@ -9,10 +9,15 @@ import io.realm.log.LogLevel
 import io.realm.log.RealmLog
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
-class DatabaseService(context: Context, private val dispatcherProvider: DispatcherProvider) {
+class DatabaseService(
+    context: Context,
+    private val dispatcherProvider: DispatcherProvider,
+    val room: AppDatabase,
+) {
     val ioDispatcher: CoroutineDispatcher = dispatcherProvider.io
     private val realmDispatcher: CoroutineDispatcher = dispatcherProvider.io.limitedParallelism(4)
 
@@ -101,7 +106,24 @@ class DatabaseService(context: Context, private val dispatcherProvider: Dispatch
         }
     }
 
+    suspend fun <T> withRoomAsync(operation: suspend (AppDatabase) -> T): T {
+        return withContext(ioDispatcher) {
+            operation(room)
+        }
+    }
+
+    suspend fun <T> executeRoomTransactionAsync(operation: (AppDatabase) -> T): T {
+        return withContext(ioDispatcher) {
+            room.runInTransaction<T> {
+                operation(room)
+            }
+        }
+    }
+
     suspend fun clearAll() {
+        withContext(ioDispatcher) {
+            room.clearAllTables()
+        }
         executeTransactionAsync { it.deleteAll() }
     }
 

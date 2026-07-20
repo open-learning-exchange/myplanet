@@ -9,6 +9,7 @@ import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
@@ -18,8 +19,12 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabaseService(@ApplicationContext context: Context, dispatcherProvider: DispatcherProvider): DatabaseService {
-        return DatabaseService(context, dispatcherProvider)
+    fun provideDatabaseService(
+        @ApplicationContext context: Context,
+        dispatcherProvider: DispatcherProvider,
+        appDatabase: AppDatabase,
+    ): DatabaseService {
+        return DatabaseService(context, dispatcherProvider, appDatabase)
     }
 
     @Provides

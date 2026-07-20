@@ -33,6 +33,22 @@ import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomAnswerEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomCourseStepEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomExamEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomQuestionEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomSubmissionEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomTeamEntity
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.model.Certification
@@ -100,8 +116,16 @@ import org.ole.planet.myplanet.model.UserChallengeActions
         HealthExamination::class,
         RealmNews::class,
         RealmMyLibrary::class,
+        RoomUserEntity::class,
+        RoomCourseEntity::class,
+        RoomCourseStepEntity::class,
+        RoomExamEntity::class,
+        RoomQuestionEntity::class,
+        RoomSubmissionEntity::class,
+        RoomAnswerEntity::class,
+        RoomTeamEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = false,
 )
 @TypeConverters(Converters::class)
@@ -135,4 +159,12 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun healthExaminationDao(): HealthExaminationDao
     abstract fun newsDao(): NewsDao
     abstract fun myLibraryDao(): MyLibraryDao
+    abstract fun userDao(): UserDao
+    abstract fun courseDao(): CourseDao
+    abstract fun courseStepDao(): CourseStepDao
+    abstract fun examDao(): ExamDao
+    abstract fun questionDao(): QuestionDao
+    abstract fun submissionDao(): SubmissionDao
+    abstract fun answerDao(): AnswerDao
+    abstract fun teamDao(): TeamDao
 }

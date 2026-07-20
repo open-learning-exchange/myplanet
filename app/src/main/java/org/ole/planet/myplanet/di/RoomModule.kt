@@ -38,6 +38,14 @@ import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
+import org.ole.planet.myplanet.data.room.dao.legacy.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseDao
+import org.ole.planet.myplanet.data.room.dao.legacy.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.legacy.ExamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.legacy.TeamDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -198,4 +206,45 @@ object RoomModule {
     fun provideHealthExaminationDao(database: AppDatabase): HealthExaminationDao {
         return database.healthExaminationDao()
     }
+
+    @Provides
+    fun provideUserDao(database: AppDatabase): UserDao {
+        return database.userDao()
+    }
+
+    @Provides
+    fun provideCourseDao(database: AppDatabase): CourseDao {
+        return database.courseDao()
+    }
+
+    @Provides
+    fun provideCourseStepDao(database: AppDatabase): CourseStepDao {
+        return database.courseStepDao()
+    }
+
+    @Provides
+    fun provideExamDao(database: AppDatabase): ExamDao {
+        return database.examDao()
+    }
+
+    @Provides
+    fun provideQuestionDao(database: AppDatabase): QuestionDao {
+        return database.questionDao()
+    }
+
+    @Provides
+    fun provideSubmissionDao(database: AppDatabase): SubmissionDao {
+        return database.submissionDao()
+    }
+
+    @Provides
+    fun provideAnswerDao(database: AppDatabase): AnswerDao {
+        return database.answerDao()
+    }
+
+    @Provides
+    fun provideTeamDao(database: AppDatabase): TeamDao {
+        return database.teamDao()
+    }
 }
+

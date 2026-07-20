@@ -29,6 +29,8 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
 import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
+import org.ole.planet.myplanet.data.room.dao.legacy.UserDao
+import org.ole.planet.myplanet.data.room.entity.legacy.RoomUserEntity
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.di.AppPreferences
@@ -79,7 +81,8 @@ class UserRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
-    private val healthExaminationDao: HealthExaminationDao
+    private val healthExaminationDao: HealthExaminationDao,
+    private val userDao: UserDao
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
         val user = getUserById(userId)
@@ -139,6 +142,26 @@ class UserRepositoryImpl @Inject constructor(
                 mapToLightweightUser(managedUser)
             }
         }
+    }
+
+    private fun JsonObject.toRoomUserEntity(): RoomUserEntity? {
+        val remoteId = JsonUtils.getString("_id", this)
+        if (remoteId.isBlank()) return null
+        val roles = JsonUtils.getJsonArray("roles", this).map { it.asString }
+        return RoomUserEntity(
+            id = remoteId,
+            _id = remoteId,
+            _rev = JsonUtils.getString("_rev", this),
+            name = JsonUtils.getString("name", this),
+            firstName = JsonUtils.getString("firstName", this),
+            lastName = JsonUtils.getString("lastName", this),
+            rolesList = roles,
+            planetCode = JsonUtils.getString("planetCode", this),
+            parentCode = JsonUtils.getString("parentCode", this),
+            isUserAdmin = JsonUtils.getBoolean("isUserAdmin", this),
+            joined = JsonUtils.getLong("joinDate", this),
+            updated = 0,
+        )
     }
 
     override suspend fun getSyncedUserByName(name: String): RealmUser? {
@@ -1304,6 +1327,8 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
+        val roomUsers = documentList.mapNotNull { it.toRoomUserEntity() }
+
         executeTransaction { realm ->
             val existingUsersMap = if (ids.isNotEmpty()) {
                 realm.where(RealmUser::class.java).`in`("_id", ids.toTypedArray()).findAll()
@@ -1334,6 +1359,9 @@ class UserRepositoryImpl @Inject constructor(
                     err.printStackTrace()
                 }
             }
+        }
+        if (roomUsers.isNotEmpty()) {
+            userDao.upsertAll(roomUsers)
         }
     }
 
