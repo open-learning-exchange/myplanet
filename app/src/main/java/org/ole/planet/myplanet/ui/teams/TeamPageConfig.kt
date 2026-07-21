@@ -7,6 +7,7 @@ import org.ole.planet.myplanet.ui.enterprises.EnterprisesFinancesFragment
 import org.ole.planet.myplanet.ui.enterprises.EnterprisesReportsFragment
 import org.ole.planet.myplanet.ui.surveys.SurveyFragment
 import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
+import org.ole.planet.myplanet.ui.teams.leaderboard.TeamLeaderboardFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
@@ -50,6 +51,10 @@ sealed class TeamPageConfig(val id: String, @StringRes val titleRes: Int) {
 
     object CoursesPage : TeamPageConfig("COURSES", R.string.courses) {
         override fun createFragment() = TeamCoursesFragment()
+    }
+
+    object LeaderboardPage : TeamPageConfig("LEADERBOARD", R.string.leaderboard) {
+        override fun createFragment() = TeamLeaderboardFragment()
     }
 
     object FinancesPage : TeamPageConfig("FINANCES", R.string.finances) {
