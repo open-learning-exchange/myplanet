@@ -16,6 +16,7 @@ fun TextView.makeExpandable(
     collapseLabel: String = context.getString(R.string.show_less)
 ) {
     var isExpanded = false
+    setLinkTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.mainColor))
 
     fun refresh() {
         text = fullText

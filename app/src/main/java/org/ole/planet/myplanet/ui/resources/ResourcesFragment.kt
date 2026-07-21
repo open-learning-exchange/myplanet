@@ -74,7 +74,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     var userModel: RealmUser ?= null
     var map: HashMap<String?, JsonObject>? = null
     private var confirmation: AlertDialog? = null
-    private var isFirstResume = true
     private var allResourceModels: List<ResourceListModel> = emptyList()
 
     private var lastSearchQuery: String? = null
@@ -90,6 +89,14 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     
     private lateinit var realtimeSyncHelper: RealtimeSyncHelper
     private var refreshJob: Job? = null
+
+    internal val addResourceLauncher = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            refreshResourcesData()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -159,6 +166,10 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
         setupEventListeners()
         initArrays()
         hideButton()
+
+        childFragmentManager.setFragmentResultListener("resource_added", viewLifecycleOwner) { _, _ ->
+            refreshResourcesData()
+        }
 
         collectWhenStarted(viewModel.downloadComplete) { completed ->
             if (completed) {
@@ -583,10 +594,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
 
     override fun onResume() {
         super.onResume()
-        if (isFirstResume) {
-            refreshResourcesData()
-            isFirstResume = false
-        }
         selectAll.isChecked = false
     }
 
@@ -596,7 +603,6 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
     }
 
     override fun onDestroyView() {
-        isFirstResume = true
         if (confirmation?.isShowing == true) {
             confirmation?.dismiss()
         }
