@@ -7,7 +7,6 @@
     android:background="@color/light_dark"
     tools:context=".ui.notifications.NotificationsFragment">
 
-    <!-- Normal filter bar -->
     <LinearLayout
         android:id="@+id/ltTopBar"
         android:layout_width="match_parent"
@@ -29,12 +28,10 @@
             android:textColor="@color/bg_white"
             android:textAllCaps="false"
             app:layout_constraintEnd_toEndOf="parent" />
-
         <View
             android:layout_width="0dp"
             android:layout_height="0dp"
             android:layout_weight="1" />
-
         <Spinner
             android:id="@+id/status"
             android:layout_width="120dp"
@@ -44,7 +41,6 @@
             app:backgroundTint="@color/daynight_textColor" />
     </LinearLayout>
 
-    <!-- Selection mode bar — overlays at same position as ltTopBar; only one visible at a time -->
     <LinearLayout
         android:id="@+id/ltBulkActionBar"
         android:layout_width="match_parent"
@@ -96,7 +92,6 @@
             android:contentDescription="@string/cancel_selection" />
     </LinearLayout>
 
-    <!-- Barrier sits below whichever bar is currently visible -->
     <androidx.constraintlayout.widget.Barrier
         android:id="@+id/headerBarrier"
         android:layout_width="wrap_content"
