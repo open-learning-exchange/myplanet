@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import com.bumptech.glide.Glide
 
 @AndroidEntryPoint
 class MyHealthFragment : Fragment() {
@@ -102,7 +103,6 @@ class MyHealthFragment : Fragment() {
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        binding.txtDob.hint = "dd-MM-yyyy"
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -293,9 +293,14 @@ class MyHealthFragment : Fragment() {
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
             binding.txtFullName.text = getDisplayName(currentUser)
+            Glide.with(this@MyHealthFragment)
+                .load(currentUser.userImage)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.userImage)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
+            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
 
             val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(uid, currentUser)
 

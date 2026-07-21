@@ -14,12 +14,10 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.model.SubmissionItem
 import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class SubmissionListViewModel @Inject constructor(
-    private val submissionsRepository: SubmissionsRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val submissionsRepository: SubmissionsRepository
 ) : ViewModel() {
 
     private val _submissions = MutableStateFlow<List<SubmissionItem>>(emptyList())
@@ -32,7 +30,7 @@ class SubmissionListViewModel @Inject constructor(
     val exportFile: SharedFlow<File?> = _exportFile.asSharedFlow()
 
     private fun launchExport(action: suspend () -> File?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             try {
                 _exportProgress.value = true
                 val file = action()
@@ -56,7 +54,7 @@ class SubmissionListViewModel @Inject constructor(
     }
 
     fun loadSubmissions(parentId: String?, userId: String?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val items = submissionsRepository.getSubmissionItems(parentId, userId)
             _submissions.value = items
         }

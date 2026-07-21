@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.TestDispatcherProvider
 
 @ExperimentalCoroutinesApi
 class RequestsViewModelTest {
@@ -26,8 +25,7 @@ class RequestsViewModelTest {
     private lateinit var teamsRepository: TeamsRepository
     private lateinit var teamsSyncRepository: TeamsSyncRepository
     private lateinit var userSessionManager: UserSessionManager
-    private lateinit var testDispatcherProvider: TestDispatcherProvider
-    private lateinit var viewModel: RequestsViewModel
+        private lateinit var viewModel: RequestsViewModel
     private val testDispatcher = StandardTestDispatcher()
 
     @Before
@@ -36,8 +34,7 @@ class RequestsViewModelTest {
         teamsRepository = mockk()
         teamsSyncRepository = mockk()
         userSessionManager = mockk()
-        testDispatcherProvider = TestDispatcherProvider(testDispatcher)
-        viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager, testDispatcherProvider)
+                viewModel = RequestsViewModel(teamsRepository, teamsSyncRepository, userSessionManager)
     }
 
     @After

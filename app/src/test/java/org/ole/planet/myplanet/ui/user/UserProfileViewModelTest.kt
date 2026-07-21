@@ -54,7 +54,7 @@ class UserProfileViewModelTest {
         coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
         coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository, dispatcherProvider)
+        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository)
     }
 
     @Test

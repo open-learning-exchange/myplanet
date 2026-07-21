@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.repository
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.ole.planet.myplanet.model.AchievementData
+import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmMyHealth
 import org.ole.planet.myplanet.model.RealmUser
@@ -17,6 +19,7 @@ interface UserRepository {
     suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>)
 
     suspend fun getUserById(userId: String): RealmUser?
+    suspend fun getDashboardProfile(userId: String): DashboardProfile
     suspend fun getUsersByIds(userIds: List<String>): List<RealmUser>
     suspend fun getUserByAnyId(id: String): RealmUser?
     suspend fun getUserByName(name: String): RealmUser?
@@ -70,7 +73,7 @@ interface UserRepository {
         payload: JsonObject
     )
 
-    suspend fun createMember(user: JsonObject): Pair<Boolean, String>
+    suspend fun createMember(user: MemberInfo): Pair<Boolean, String>
 
     suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String>
 
@@ -79,7 +82,7 @@ interface UserRepository {
         userId: String,
         currentUser: RealmUser
     ): HealthRecord?
-    suspend fun getUserModelSuspending(): RealmUser?
+    suspend fun getUserModel(): RealmUser?
     suspend fun getUserProfile(): RealmUser?
     suspend fun getUserImageUrl(): String?
     suspend fun getActiveUserIdSuspending(): String

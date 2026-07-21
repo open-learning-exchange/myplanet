@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.AddMeetupBinding
 import org.ole.planet.myplanet.databinding.FragmentEnterpriseCalendarBinding
+import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.RealmMeetup
 import org.ole.planet.myplanet.model.RealmNews
 import org.ole.planet.myplanet.ui.events.EventsAdapter

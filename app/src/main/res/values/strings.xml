@@ -923,6 +923,7 @@
     <string name="ob_desc4_3">🎯 Personalized: Tailor your learning path.</string>
     <string name="ob_desc4_4">📚 Interactive: Engage with videos, books, games.</string>
     <string name="ob_desc4_5">Begin your limitless learning journey with myPlanet!</string>
+    <string name="onboarding_server_prep_hint">Before you sign in, you\'ll need your Planet server address and PIN. Ask your community administrator if you don\'t have them yet.</string>
     <string name="recycler_chat_label">conversations</string>
     <string name="completed_course">completed course</string>
     <string name="menu">side menu</string>
@@ -1233,6 +1234,12 @@
     <string name="courses_loading">Loading courses…</string>
     <string name="error">Error: %1$s</string>
     <string name="select_open_with">Open</string>
+    <string name="open_link_with">Open link with</string>
+    <string name="just_once">Just once</string>
+    <string name="always">Always</string>
+    <string name="survey_load_failed">Couldn\'t load the survey. Please try again.</string>
+    <string name="survey_submitted">Survey submitted. Thank you!</string>
+    <string name="survey_submit_failed">Couldn\'t submit the survey. Please try again.</string>
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
     <string name="no_results_for_filter">No results match your current filter</string>

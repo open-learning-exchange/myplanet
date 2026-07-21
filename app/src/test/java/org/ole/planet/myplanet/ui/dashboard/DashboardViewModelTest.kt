@@ -18,11 +18,11 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.RealmMyCourse
 import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -46,7 +46,6 @@ class DashboardViewModelTest {
     private val submissionsRepository = mockk<SubmissionsRepository>()
     private val notificationsRepository = mockk<NotificationsRepository>()
     private val surveysRepository = mockk<SurveysRepository>()
-    private val activitiesRepository = mockk<ActivitiesRepository>()
     private val progressRepository = mockk<ProgressRepository>()
     private val voicesRepository = mockk<VoicesRepository>()
     private val dispatcherProvider = mockk<DispatcherProvider>(relaxed = true)
@@ -70,7 +69,6 @@ class DashboardViewModelTest {
             submissionsRepository,
             notificationsRepository,
             surveysRepository,
-            activitiesRepository,
             progressRepository,
             voicesRepository,
             dispatcherProvider
@@ -85,13 +83,11 @@ class DashboardViewModelTest {
     @Test
     fun `loadUserContent replaces existing collectors when called multiple times`() = runTest(testDispatcher) {
         val userId = "user1"
-        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
         val firstCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
         val secondCoursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
 
-        coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { resourcesRepository.getMyLibrary(userId) } returns emptyList()
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
@@ -124,12 +120,10 @@ class DashboardViewModelTest {
     @Test
     fun `constituent jobs are independent and cancellation of one does not cancel others`() = runTest(testDispatcher) {
         val userId = "user1"
-        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
         val coursesFlow = MutableSharedFlow<List<RealmMyCourse>>()
 
-        coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount(any()) } returns 0
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 0)
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(emptyList())
 
         // Library throws CancellationException, simulating its job being cancelled
@@ -151,13 +145,11 @@ class DashboardViewModelTest {
     @Test
     fun `loadUserContent updates uiState for users, teams, courses, and offline logins`() = runTest(testDispatcher) {
         val userId = "user1"
-        val user = RealmUser().apply { name = "John Doe"; firstName = "John"; lastName = "Doe" }
 
         coEvery { resourcesRepository.getMyLibrary(userId) } returns listOf(RealmMyLibrary().apply { title = "Lib1" })
         coEvery { coursesRepository.getMyCoursesFlow(userId) } returns flowOf(listOf(RealmMyCourse().apply { courseTitle = "Course1" }))
         coEvery { teamsRepository.getMyTeamsFlow(userId) } returns flowOf(listOf(RealmMyTeam().apply { name = "Team1" }))
-        coEvery { userRepository.getUserById(userId) } returns user
-        coEvery { activitiesRepository.getOfflineLoginCount("John Doe") } returns 2
+        coEvery { userRepository.getDashboardProfile(userId) } returns DashboardProfile("John Doe", 2)
 
         viewModel.loadUserContent(userId)
 

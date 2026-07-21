@@ -5,6 +5,7 @@ import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -24,7 +25,6 @@ import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamSummary
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
-import kotlinx.coroutines.flow.MutableSharedFlow
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager

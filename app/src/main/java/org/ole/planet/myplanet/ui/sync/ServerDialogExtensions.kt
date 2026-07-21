@@ -13,7 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.DialogServerUrlBinding
 import org.ole.planet.myplanet.model.RealmCommunity
@@ -72,11 +71,15 @@ fun SyncActivity.performSync(dialog: MaterialDialog) {
 fun SyncActivity.onChangeServerUrl() {
     val selected = spnCloud.selectedItem
     if (selected is RealmCommunity && selected.isValid) {
-        serverUrl.setText(selected.localDomain)
+        val config = ServerConfigUtils.getCommunityConfig(selected, getString(R.string.https_protocol))
+        serverUrl.setText(config.localDomain)
         protocolCheckIn.check(R.id.radio_https)
-        prefData.getServerProtocol().ifEmpty { getString(R.string.https_protocol) }
-        serverPassword.setText(if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else "")
-        serverPassword.isEnabled = selected.weight != 0
+        val currentProtocol = prefData.getServerProtocol()
+        if (currentProtocol.isEmpty()) {
+            prefData.setServerProtocol(config.protocol)
+        }
+        serverPassword.setText(config.pin)
+        serverPassword.isEnabled = config.isPinEnabled
     }
 }
 

@@ -28,7 +28,6 @@ import org.ole.planet.myplanet.model.RealmMyLibrary
 import org.ole.planet.myplanet.model.RealmMyTeam
 import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -71,7 +70,6 @@ class DashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
@@ -158,20 +156,11 @@ class DashboardViewModel @Inject constructor(
 
         profileJob?.cancel()
         profileJob = viewModelScope.launch(dispatcherProvider.main) {
-            val (fullName, offlineLogins) = withContext(dispatcherProvider.io) {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-
-                val count = if (userName != null) {
-                    activitiesRepository.getOfflineLoginCount(userName)
-                } else {
-                    0
-                }
-                Pair(fullName, count)
+            val profile = withContext(dispatcherProvider.io) {
+                userRepository.getDashboardProfile(userId)
             }
 
-            _uiState.update { it.copy(fullName = fullName, offlineLogins = offlineLogins) }
+            _uiState.update { it.copy(fullName = profile.fullName, offlineLogins = profile.offlineLogins) }
         }
     }
 

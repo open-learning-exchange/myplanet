@@ -23,6 +23,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -30,7 +31,9 @@ import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.AchievementData
+import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
+import org.ole.planet.myplanet.model.MemberInfo
 import org.ole.planet.myplanet.model.RealmAchievement
 import org.ole.planet.myplanet.model.RealmHealthExamination
 import org.ole.planet.myplanet.model.RealmMeetup.Companion.getMyMeetUpIds
@@ -46,11 +49,13 @@ import org.ole.planet.myplanet.services.UploadToShelfService
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.VersionUtils
 
 class UserRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -67,6 +72,19 @@ class UserRepositoryImpl @Inject constructor(
     private val dispatcherProvider: DispatcherProvider,
     private val activitiesRepositoryLazy: dagger.Lazy<ActivitiesRepository>
 ) : RealmRepository(databaseService, realmDispatcher), UserRepository, UserSyncRepository {
+    override suspend fun getDashboardProfile(userId: String): DashboardProfile {
+        val user = getUserById(userId)
+        val userName = user?.name
+        val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
+
+        val count = if (userName != null) {
+            activitiesRepositoryLazy.get().getOfflineLoginCount(userName)
+        } else {
+            0
+        }
+        return DashboardProfile(fullName, count)
+    }
+
     override suspend fun getUserById(userId: String): RealmUser? {
         return findByField(RealmUser::class.java, "id", userId)
     }
@@ -578,7 +596,7 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUserModelSuspending(): RealmUser? {
+    override suspend fun getUserModel(): RealmUser? {
         val userId = sharedPrefManager.getUserId().takeUnless { it.isBlank() } ?: return null
         return withRealm { realm ->
             realm.where(RealmUser::class.java)
@@ -602,8 +620,32 @@ class UserRepositoryImpl @Inject constructor(
         return getUserProfile()?.userImage
     }
 
-    override suspend fun createMember(user: JsonObject): Pair<Boolean, String> {
-        return becomeMember(user)
+    override suspend fun createMember(user: MemberInfo): Pair<Boolean, String> {
+        val obj = JsonObject().apply {
+            addProperty("name", user.username)
+            addProperty("firstName", user.fName)
+            addProperty("lastName", user.lName)
+            addProperty("middleName", user.mName)
+            addProperty("password", user.password)
+            addProperty("isUserAdmin", false)
+            addProperty("joinDate", Calendar.getInstance().timeInMillis)
+            addProperty("email", user.email)
+            addProperty("planetCode", sharedPrefManager.getPlanetCode())
+            addProperty("parentCode", sharedPrefManager.getParentCode())
+            addProperty("language", user.language)
+            addProperty("level", user.level)
+            addProperty("phoneNumber", user.phoneNumber)
+            addProperty("birthDate", user.birthDate)
+            addProperty("gender", user.gender)
+            addProperty("type", "user")
+            addProperty("betaEnabled", false)
+            addProperty("androidId", NetworkUtils.getUniqueIdentifier())
+            addProperty("uniqueAndroidId", VersionUtils.getAndroidId(MainApplication.context))
+            addProperty("customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context))
+            val roles = JsonArray().apply { add("learner") }
+            add("roles", roles)
+        }
+        return becomeMember(obj)
     }
 
     override suspend fun becomeMember(obj: JsonObject): Pair<Boolean, String> {
@@ -878,7 +920,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getActiveUserIdSuspending(): String {
-        return getUserModelSuspending()?.id ?: ""
+        return getUserModel()?.id ?: ""
     }
 
     override suspend fun getHealthRecordsAndAssociatedUsers(
@@ -1395,6 +1437,41 @@ class UserRepositoryImpl @Inject constructor(
             )
         } catch (e: Throwable) {
             e.printStackTrace()
+        }
+    }
+
+    override suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String> {
+        val shelvesWithData = mutableListOf<String>()
+        val keysObject = JsonObject().apply {
+            add("keys", com.google.gson.Gson().fromJson(com.google.gson.Gson().toJson(shelfIds), JsonArray::class.java))
+        }
+
+        val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
+            apiInterface.findDocs(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
+        }?.body()
+
+        response?.let { responseBody ->
+            val rows = org.ole.planet.myplanet.utils.JsonUtils.getJsonArray("rows", responseBody)
+            for (i in 0 until rows.size()) {
+                val row = rows[i].asJsonObject
+                if (row.has("doc")) {
+                    val doc = org.ole.planet.myplanet.utils.JsonUtils.getJsonObject("doc", row)
+                    val shelfId = org.ole.planet.myplanet.utils.JsonUtils.getString("_id", doc)
+
+                    if (hasShelfDataUltraFast(doc)) {
+                        shelvesWithData.add(shelfId)
+                    }
+                }
+            }
+        }
+        return shelvesWithData
+    }
+
+    private fun hasShelfDataUltraFast(shelfDoc: JsonObject): Boolean {
+        return listOf("resourceIds", "courseIds", "meetupIds", "teamIds").any { key ->
+            shelfDoc.has(key) && shelfDoc.get(key).let { element ->
+                element.isJsonArray && element.asJsonArray.size() > 0
+            }
         }
     }
 

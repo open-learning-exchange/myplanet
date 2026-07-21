@@ -50,7 +50,6 @@ import kotlin.math.ceil
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
@@ -70,6 +69,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
+import org.ole.planet.myplanet.ui.onboarding.OnboardingActivity
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
@@ -86,6 +86,7 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -180,14 +181,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             registerSystemNotificationReceiver()
             checkIfShouldShowNotifications()
 
-            val validUrls = listOf(
-                "https://${BuildConfig.PLANET_GUATEMALA_URL}",
-                "http://${BuildConfig.PLANET_XELA_URL}",
-                "http://${BuildConfig.PLANET_URIUR_URL}",
-                "http://${BuildConfig.PLANET_SANPABLO_URL}",
-                "http://${BuildConfig.PLANET_EMBAKASI_URL}",
-                "https://${BuildConfig.PLANET_VI_URL}"
-            )
+            val validUrls = ServerConfigUtils.getChallengeServerUrls()
             val isGuest = user?.id?.startsWith("guest") == true
             dashboardViewModel.evaluateChallengeDialog(
                 user?.id,
@@ -357,14 +351,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun handleInitialFragment() {
-        if (intent != null && intent.hasExtra("fragmentToOpen")) {
-            val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
+        var fragmentToOpen = intent?.getStringExtra("fragmentToOpen")
+        var contentId = intent?.getStringExtra("contentId")
+
+        if (fragmentToOpen == null) {
+            val pendingSection = prefData.getRawString(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+            if (pendingSection.isNotEmpty()) {
+                fragmentToOpen = pendingSection
+                contentId = prefData.getRawString(OnboardingActivity.DEEP_LINK_ID_KEY).ifEmpty { null }
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_ID_KEY)
             }
-        } else {
-            openCallFragment(BellDashboardFragment())
-            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+        }
+
+        when (fragmentToOpen) {
+            "feedbackList" -> openMyFragment(FeedbackListFragment())
+            "courses" -> openCallFragment(CoursesFragment())
+            "resources" -> openCallFragment(ResourcesFragment())
+            "teams" -> openCallFragment(TeamFragment())
+            "surveys" -> openCallFragment(SurveyFragment())
+            else -> {
+                openCallFragment(BellDashboardFragment())
+                binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            }
         }
     }
 

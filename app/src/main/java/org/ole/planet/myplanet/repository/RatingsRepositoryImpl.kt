@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.Gson
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
 import java.util.UUID
@@ -12,7 +11,6 @@ import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.di.RealmDispatcher
 import org.ole.planet.myplanet.model.RealmRating
 import org.ole.planet.myplanet.model.RealmUser
-import org.ole.planet.myplanet.utils.JsonUtils
 
 class RatingsRepositoryImpl @Inject constructor(
     databaseService: DatabaseService,
@@ -210,18 +208,12 @@ class RatingsRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
-        for (j in jsonArray) {
-            var jsonDoc = j.asJsonObject
-            jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
-            val id = JsonUtils.getString("_id", jsonDoc)
-            if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
+    override suspend fun insertRatingsFromSync(documentList: List<JsonObject>) {
+        if (documentList.isEmpty()) return
+        executeTransaction { realm ->
+            documentList.forEach { jsonDoc ->
+                RealmRating.insert(realm, jsonDoc)
             }
-        }
-        documentList.forEach { jsonDoc ->
-            RealmRating.insert(realm, jsonDoc)
         }
     }
 }
