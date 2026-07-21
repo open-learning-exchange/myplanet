@@ -50,124 +50,124 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="@color/colorPrimary"
-                    android:padding="8dp">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/colorPrimary"
+                android:padding="8dp">
 
-                    <TextView
-                        android:id="@+id/tv_step"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_vertical"
-                        android:layout_weight="1"
-                        android:text="@string/step"
-                        android:textAllCaps="true"
-                        android:textColor="@color/md_white_1000"
-                        android:textSize="@dimen/text_size_mid"
-                        android:textStyle="bold" />
-                    <Button
-                        android:id="@+id/btn_remove"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="@drawable/buttonyellow"
-                        android:minHeight="@dimen/_40dp"
-                        android:text="@string/remove" />
-                </LinearLayout>
-
-                <ProgressBar
-                    android:id="@+id/course_step_progress_bar"
-                    style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-                    android:layout_width="match_parent"
-                    android:layout_height="4dp"
-                    android:progress="0"
-                    android:progressTint="@color/colorAccent" />
-                <androidx.viewpager2.widget.ViewPager2
-                    android:id="@+id/viewPager2"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
+                <TextView
+                    android:id="@+id/tv_step"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
                     android:layout_weight="1"
-                    android:background="@color/secondary_bg" />
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="@color/secondary_bg"
-                    android:orientation="horizontal"
-                    android:padding="8dp">
+                    android:text="@string/step"
+                    android:textAllCaps="true"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:textStyle="bold" />
+                <Button
+                    android:id="@+id/btn_remove"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/buttonyellow"
+                    android:minHeight="@dimen/_40dp"
+                    android:text="@string/remove" />
+            </LinearLayout>
 
-                    <TextView
-                        android:id="@+id/previous_step"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:background="?attr/selectableItemBackground"
-                        android:gravity="center"
-                        android:minWidth="100dp"
-                        android:text="@string/previous"
-                        android:textColor="@color/daynight_textColor"
-                        android:drawableTint="@color/daynight_textColor"
-                        app:drawableLeftCompat="@drawable/ic_left_arrow" />
-                    <View
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1" />
-                    <TextView
-                        android:id="@+id/next_step"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginStart="@dimen/padding_normal"
-                        android:background="?attr/selectableItemBackground"
-                        android:gravity="center"
-                        android:minWidth="100dp"
-                        android:text="@string/next"
-                        android:textColor="@color/daynight_textColor"
-                        android:drawableTint="@color/daynight_textColor"
-                        app:drawableRightCompat="@drawable/ic_right_arrow" />
-                    <TextView
-                        android:id="@+id/finish_step"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_marginStart="@dimen/padding_normal"
-                        android:background="?attr/selectableItemBackground"
-                        android:gravity="center"
-                        android:minWidth="100dp"
-                        android:text="@string/finish"
-                        android:textColor="@color/daynight_textColor"
-                        android:drawableTint="@color/daynight_textColor"
-                        android:visibility="gone" />
-                </LinearLayout>
+            <ProgressBar
+                android:id="@+id/course_step_progress_bar"
+                style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+                android:layout_width="match_parent"
+                android:layout_height="4dp"
+                android:progress="0"
+                android:progressTint="@color/colorAccent" />
+            <androidx.viewpager2.widget.ViewPager2
+                android:id="@+id/viewPager2"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:background="@color/secondary_bg" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/secondary_bg"
+                android:orientation="horizontal"
+                android:padding="8dp">
 
-                <LinearLayout
-                    android:id="@+id/ll_progress"
-                    android:layout_width="match_parent"
-                    android:layout_height="?attr/actionBarSize"
-                    android:background="@color/colorPrimary"
-                    android:padding="8dp"
-                    android:visibility="gone">
+                <TextView
+                    android:id="@+id/previous_step"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:minWidth="100dp"
+                    android:text="@string/previous"
+                    android:textColor="@color/daynight_textColor"
+                    android:drawableTint="@color/daynight_textColor"
+                    app:drawableLeftCompat="@drawable/ic_left_arrow" />
+                <View
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1" />
+                <TextView
+                    android:id="@+id/next_step"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/padding_normal"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:minWidth="100dp"
+                    android:text="@string/next"
+                    android:textColor="@color/daynight_textColor"
+                    android:drawableTint="@color/daynight_textColor"
+                    app:drawableRightCompat="@drawable/ic_right_arrow" />
+                <TextView
+                    android:id="@+id/finish_step"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginStart="@dimen/padding_normal"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:minWidth="100dp"
+                    android:text="@string/finish"
+                    android:textColor="@color/daynight_textColor"
+                    android:drawableTint="@color/daynight_textColor"
+                    android:visibility="gone" />
+            </LinearLayout>
 
-                    <androidx.appcompat.widget.AppCompatSeekBar
-                        android:id="@+id/course_progress"
-                        style="@style/Seekbar"
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:layout_weight="1"
-                        android:background="@color/bg_white"
-                        android:padding="8dp" />
-                    <TextView
-                        android:id="@+id/tv_percentage_complete"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center"
-                        android:gravity="center"
-                        android:padding="@dimen/padding_normal"
-                        android:textColor="@color/md_white_1000"
-                        android:textSize="@dimen/text_size_mid"
-                        android:visibility="gone" />
-                </LinearLayout>
+            <LinearLayout
+                android:id="@+id/ll_progress"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@color/colorPrimary"
+                android:padding="8dp"
+                android:visibility="gone">
+
+                <androidx.appcompat.widget.AppCompatSeekBar
+                    android:id="@+id/course_progress"
+                    style="@style/Seekbar"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_weight="1"
+                    android:background="@color/bg_white"
+                    android:padding="8dp" />
+                <TextView
+                    android:id="@+id/tv_percentage_complete"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="@dimen/padding_normal"
+                    android:textColor="@color/md_white_1000"
+                    android:textSize="@dimen/text_size_mid"
+                    android:visibility="gone" />
+            </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 </FrameLayout>
