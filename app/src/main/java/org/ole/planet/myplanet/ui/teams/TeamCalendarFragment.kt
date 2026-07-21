@@ -120,6 +120,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             if (selectedDates.contains(clickedCalendar)) {
                 selectedDates.remove(clickedCalendar)
             }
+            binding.calendarView.selectedDates = eventDates.toList()
         }
     }
 
