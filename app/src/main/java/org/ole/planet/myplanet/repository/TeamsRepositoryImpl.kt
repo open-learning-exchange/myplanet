@@ -1397,7 +1397,10 @@ class TeamsRepositoryImpl @Inject constructor(
                 .equalTo("docType", "membership")
                 .equalTo("isLeader", true)
                 .findAll()
-            currentLeaders.forEach { it.isLeader = false }
+            currentLeaders.forEach {
+                it.isLeader = false
+                it.updated = true
+            }
 
             val newLeader = realm.where(RealmMyTeam::class.java)
                 .equalTo("teamId", teamId)
@@ -1407,6 +1410,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
             if (newLeader != null) {
                 newLeader.isLeader = true
+                newLeader.updated = true
                 success = true
             }
         }
