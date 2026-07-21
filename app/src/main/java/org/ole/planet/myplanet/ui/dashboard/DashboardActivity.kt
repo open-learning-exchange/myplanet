@@ -83,6 +83,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -244,18 +245,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val insetsController = WindowCompat.getInsetsController(window, binding.root)
-        insetsController.isAppearanceLightStatusBars = true
-        insetsController.isAppearanceLightNavigationBars = true
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.myToolbar.updatePadding(top = insets.top)
-            view.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
