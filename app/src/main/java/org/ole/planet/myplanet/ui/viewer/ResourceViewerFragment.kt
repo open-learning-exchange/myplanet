@@ -89,6 +89,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
+    private var streamingHttpDataSourceFactory: DefaultHttpDataSource.Factory? = null
     private var videoLoadingOverlay: View? = null
     private var videoLoadingText: TextView? = null
     private var noisyReceiverRegistered = false
@@ -298,6 +299,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setUserAgent("ExoPlayer")
             .setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(requestProperties)
+        streamingHttpDataSourceFactory = httpDataSourceFactory
 
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
@@ -490,7 +492,11 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             val url = filePath ?: run {
                 return@launch
             }
-            streamVideoFromUrl(url, auth)
+            if (exoPlayer == null) {
+                streamVideoFromUrl(url, auth)
+            } else {
+                streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
+            }
             if (isOnline) {
                 withContext(dispatcherProvider.io) {
                     if (!FileUtils.checkFileExist(requireContext(), url)) {
@@ -515,6 +521,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
+        streamingHttpDataSourceFactory = null
         if (noisyReceiverRegistered) {
             requireContext().unregisterReceiver(audioBecomingNoisyReceiver)
             noisyReceiverRegistered = false
