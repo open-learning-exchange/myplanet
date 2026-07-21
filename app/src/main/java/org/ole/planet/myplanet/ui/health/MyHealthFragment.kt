@@ -103,7 +103,6 @@ class MyHealthFragment : Fragment() {
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        binding.txtDob.hint = "dd-MM-yyyy"
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -301,7 +300,7 @@ class MyHealthFragment : Fragment() {
                 .into(binding.userImage)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
+            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
 
             val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(uid, currentUser)
 
