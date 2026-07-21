@@ -45,8 +45,15 @@ class ProgressRepositoryImpl @Inject constructor(
             val progressObject = JsonObject()
             val steps = stepsByCourseId[courseId] ?: emptyList()
             val progresses = progressesByCourseId[courseId] ?: emptyList()
+            val current = calculateCurrentProgress(steps, progresses)
             progressObject.addProperty("max", steps.size)
-            progressObject.addProperty("current", calculateCurrentProgress(steps, progresses))
+            progressObject.addProperty("current", current)
+            val completedAt = if (steps.isNotEmpty() && current >= steps.size) {
+                progresses.filter { it.stepNum in 1..steps.size }.maxOfOrNull { it.createdDate } ?: 0L
+            } else {
+                0L
+            }
+            progressObject.addProperty("completedAt", completedAt)
             map[courseId] = progressObject
         }
         return map

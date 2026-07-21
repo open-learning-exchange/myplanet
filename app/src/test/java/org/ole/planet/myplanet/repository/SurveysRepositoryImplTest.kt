@@ -380,6 +380,50 @@ class SurveysRepositoryImplTest {
     }
 
     @Test
+    fun `getTeamSurveyCompletionTimestamps groups distinct completed surveys by user`() = runTest {
+        val exam = RealmStepExam().apply { id = "survey1"; type = "surveys"; teamId = "team1" }
+
+        // getTeamOwnedSurveys (called internally) issues two RealmStepExam queries: one for the
+        // adopted-source-survey-id exclusion set, one for the final team-owned survey list.
+        // Distinct query/result mocks per call site avoid ambiguity from generic type erasure
+        // when mixed with the RealmSubmission mocks below (any<RealmResults<T>>() cannot
+        // distinguish RealmResults<RealmStepExam> from RealmResults<RealmSubmission> at runtime).
+        val adoptedIdsExamQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
+        val adoptedIdsExamResults = mockk<RealmResults<RealmStepExam>>(relaxed = true)
+        val finalExamQuery = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
+        val finalExamResults = mockk<RealmResults<RealmStepExam>>(relaxed = true)
+        every { mockRealm.where(RealmStepExam::class.java) } returnsMany listOf(adoptedIdsExamQuery, finalExamQuery)
+        every { adoptedIdsExamQuery.findAll() } returns adoptedIdsExamResults
+        every { finalExamQuery.findAll() } returns finalExamResults
+        every { mockRealm.copyFromRealm(adoptedIdsExamResults) } returns emptyList()
+        every { mockRealm.copyFromRealm(finalExamResults) } returns listOf(exam)
+
+        // Two RealmSubmission queries happen: one inside getTeamSubmissionExamIds (used by
+        // getTeamOwnedSurveys), one direct query in getTeamSurveyCompletionCounts itself.
+        val examIdsSubmissionQuery = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
+        val examIdsSubmissionResults = mockk<RealmResults<RealmSubmission>>(relaxed = true)
+        val countsSubmissionQuery = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
+        val countsSubmissionResults = mockk<RealmResults<RealmSubmission>>(relaxed = true)
+        every { mockRealm.where(RealmSubmission::class.java) } returnsMany listOf(examIdsSubmissionQuery, countsSubmissionQuery)
+        every { examIdsSubmissionQuery.findAll() } returns examIdsSubmissionResults
+        every { countsSubmissionQuery.findAll() } returns countsSubmissionResults
+        every { mockRealm.copyFromRealm(examIdsSubmissionResults) } returns emptyList()
+
+        val completedSubmission = RealmSubmission().apply {
+            parentId = "survey1"
+            status = "complete"
+            userId = "alice"
+            startTime = 1_700_000_000_000L
+            lastUpdateTime = 1_700_000_500_000L
+        }
+        every { mockRealm.copyFromRealm(countsSubmissionResults) } returns listOf(completedSubmission)
+
+        val result = repository.getTeamSurveyCompletionTimestamps("team1")
+
+        assertEquals(mapOf("alice" to listOf(1_700_000_500_000L)), result)
+    }
+
+    @Test
     fun `getAdoptableTeamSurveys returns expected exams`() = runTest {
         val exam = RealmStepExam().apply { id = "survey2"; type = "surveys"; isTeamShareAllowed = true }
 

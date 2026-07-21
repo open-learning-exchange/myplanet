@@ -14,6 +14,7 @@ interface SurveysRepository {
     suspend fun getSurveySubmissionCount(userId: String?): Int
     suspend fun getTeamOwnedSurveys(teamId: String?): List<RealmStepExam>
     suspend fun getAdoptableTeamSurveys(teamId: String?): List<RealmStepExam>
+    suspend fun getTeamSurveyCompletionTimestamps(teamId: String?): Map<String, List<Long>>
     suspend fun getIndividualSurveys(): List<RealmStepExam>
     suspend fun getSurveyInfos(
         isTeam: Boolean,

@@ -55,4 +55,23 @@
     <color name="field_fill">#E8EEF5</color>
     <color name="md_blue_100">#BBDEFB</color>
     <color name="md_blue_200">#90CAF9</color>
+
+    <!-- Team leaderboard redesign tokens -->
+    <color name="leaderboard_page_bg">#FAF7F2</color>
+    <color name="leaderboard_surface_alt">#F4EFE6</color>
+    <color name="leaderboard_border">#E8E2D5</color>
+    <color name="leaderboard_divider">#EDE7DA</color>
+    <color name="leaderboard_ink_1">#1A1814</color>
+    <color name="leaderboard_ink_2">#4A453E</color>
+    <color name="leaderboard_ink_3">#807868</color>
+    <color name="leaderboard_blue_50">#E3F2FD</color>
+    <color name="spark_green">#7CB342</color>
+    <color name="spark_green_dark">#558B2F</color>
+    <color name="tile_courses">#F57C00</color>
+    <color name="medal_gold_bg">#FBC02D</color>
+    <color name="medal_gold_fg">#5C4200</color>
+    <color name="medal_silver_bg">#B9BDC4</color>
+    <color name="medal_silver_fg">#3E434B</color>
+    <color name="medal_bronze_bg">#C98A5B</color>
+    <color name="medal_bronze_fg">#4E2E14</color>
 </resources>
