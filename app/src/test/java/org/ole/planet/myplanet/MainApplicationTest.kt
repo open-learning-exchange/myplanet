@@ -6,6 +6,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainApplicationTest {
-
     private lateinit var mockContext: Context
     private lateinit var mockEntryPoint: CoreDependenciesEntryPoint
     private lateinit var mockServerUrlMapper: ServerUrlMapper
@@ -66,5 +66,33 @@ class MainApplicationTest {
 
         // Since invalid_url will throw an exception or return false
         assertFalse(result == true)
+    }
+
+    @Test
+    fun `isPrimaryServerReachable returns false for invalid URL`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+
+        var result: Boolean? = null
+
+        launch(testDispatcher) {
+            result = MainApplication.isPrimaryServerReachable("invalid_url", testDispatcher)
+        }
+
+        advanceUntilIdle()
+
+        assertFalse(result == true)
+    }
+
+    @Test
+    fun `isPrimaryServerReachable never consults the alternative URL mapping`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+
+        launch(testDispatcher) {
+            MainApplication.isPrimaryServerReachable("invalid_url", testDispatcher)
+        }
+
+        advanceUntilIdle()
+
+        verify(exactly = 0) { mockServerUrlMapper.processUrl(any()) }
     }
 }

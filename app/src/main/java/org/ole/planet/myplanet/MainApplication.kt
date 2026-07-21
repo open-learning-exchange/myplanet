@@ -214,6 +214,14 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             return reachable
         }
 
+        suspend fun isPrimaryServerReachable(
+            urlString: String,
+            ioDispatcher: CoroutineDispatcher = coreDependenciesEntryPoint.dispatcherProvider().io
+        ): Boolean {
+            if (urlString.isBlank()) return false
+            return tryConnect(urlString, ioDispatcher)
+        }
+
         private suspend fun tryConnect(
             urlString: String,
             ioDispatcher: CoroutineDispatcher
