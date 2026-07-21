@@ -62,6 +62,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         DialogUtils.CustomProgressDialog(this)
     }
 
+    private var lastHandledCompletionId = 0L
     var broadcastReceiver: BroadcastReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             if (intent.action == DashboardActivity.MESSAGE_PROGRESS) {
@@ -73,6 +74,12 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
                 }
                 val fromSync = intent.getBooleanExtra("fromSync", false)
                 if (!fromSync) {
+                    if (download?.completeAll == true) {
+                        if (download.completionId != 0L && download.completionId == lastHandledCompletionId) {
+                            return
+                        }
+                        lastHandledCompletionId = download.completionId
+                    }
                     checkDownloadResult(download)
                 }
             }

@@ -177,7 +177,7 @@ class ResourcesFragment : BaseRecyclerFragment<RealmMyLibrary?>(), OnLibraryItem
                         intent.getParcelableExtra("download")
                     }
                     if (download?.completeAll == true) {
-                        viewModel.notifyDownloadComplete()
+                        viewModel.notifyDownloadComplete(download.completionId)
                     }
                 }
             }

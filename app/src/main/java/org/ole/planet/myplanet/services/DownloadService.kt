@@ -473,6 +473,9 @@ class DownloadService : Service() {
             fileUrl = originalDownloadUrl.ifEmpty { url }
             progress = 100
             completeAll = (remaining == 0) || (isCurrentDownloadPriority && remainingPriority == 0)
+            if (completeAll) {
+                completionId = Download.nextCompletionId()
+            }
         }
 
         sendIntent(download, fromSync)

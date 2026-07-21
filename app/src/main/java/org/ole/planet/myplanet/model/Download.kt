@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.model
 
 import android.os.Parcel
 import android.os.Parcelable
+import java.util.concurrent.atomic.AtomicLong
 
 class Download() : Parcelable {
     var fileName: String? = null
@@ -12,6 +13,7 @@ class Download() : Parcelable {
     var failed: Boolean = false
     var message: String? = null
     var fileUrl: String? = null
+    var completionId: Long = 0L
 
     constructor(parcel: Parcel) : this() {
         fileName = parcel.readString()
@@ -22,6 +24,7 @@ class Download() : Parcelable {
         failed = parcel.readByte() != 0.toByte()
         message = parcel.readString()
         fileUrl = parcel.readString()
+        completionId = parcel.readLong()
     }
 
     override fun writeToParcel(parcel: Parcel, flags: Int) {
@@ -33,6 +36,7 @@ class Download() : Parcelable {
         parcel.writeByte(if (failed) 1 else 0)
         parcel.writeString(message)
         parcel.writeString(fileUrl)
+        parcel.writeLong(completionId)
     }
 
     override fun describeContents(): Int {
@@ -40,6 +44,10 @@ class Download() : Parcelable {
     }
 
     companion object CREATOR : Parcelable.Creator<Download> {
+        private val completionIdGenerator = AtomicLong(0)
+
+        fun nextCompletionId(): Long = completionIdGenerator.incrementAndGet()
+
         override fun createFromParcel(parcel: Parcel): Download {
             return Download(parcel)
         }

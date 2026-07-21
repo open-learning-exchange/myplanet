@@ -36,8 +36,15 @@ class ResourcesViewModel @Inject constructor(
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
 
     private var observeOpenedResourcesJob: Job? = null
+    private var lastCompletionId = 0L
 
-    fun notifyDownloadComplete() {
+    fun notifyDownloadComplete(completionId: Long = 0L) {
+        if (completionId != 0L) {
+            if (completionId == lastCompletionId) {
+                return
+            }
+            lastCompletionId = completionId
+        }
         _downloadCompletedAt.value = System.currentTimeMillis()
     }
 

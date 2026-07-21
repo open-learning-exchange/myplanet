@@ -158,6 +158,9 @@ class DownloadWorker @AssistedInject constructor(
             progress = if (success) 100 else 0
             failed = !success
             completeAll = isComplete
+            if (isComplete) {
+                completionId = Download.nextCompletionId()
+            }
             if (!success) {
                 message = context.getString(R.string.download_failed)
             }
