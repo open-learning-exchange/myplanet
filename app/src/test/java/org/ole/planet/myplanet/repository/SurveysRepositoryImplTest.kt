@@ -111,6 +111,8 @@ class SurveysRepositoryImplTest {
             context,
             databaseService,
             UnconfinedTestDispatcher(),
+            mockk(relaxed = true),
+            mockk(relaxed = true),
             userSessionManager,
             sharedPrefManager,
             dispatcherProvider,

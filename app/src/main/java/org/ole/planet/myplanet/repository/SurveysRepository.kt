@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
+import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.RealmExamQuestion
@@ -36,4 +37,7 @@ interface SurveysRepository {
     suspend fun setLastSurveyDialogShown(time: Long)
     suspend fun getLastSurveyDialogShown(): Long
     suspend fun isReminderScheduled(surveyIds: String): Boolean
+    suspend fun fetchPublicSurvey(baseUrl: String, teamId: String, surveyId: String): JsonObject?
+    suspend fun saveSurveyFromPublicApi(surveyDoc: JsonObject)
+    suspend fun submitPublicSurvey(baseUrl: String, teamId: String, surveyId: String, answers: JsonArray, respondent: JsonObject? = null): Boolean
 }

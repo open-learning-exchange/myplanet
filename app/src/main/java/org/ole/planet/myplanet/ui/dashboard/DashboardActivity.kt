@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
+import org.ole.planet.myplanet.ui.onboarding.OnboardingActivity
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
@@ -82,6 +83,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -243,18 +245,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val insetsController = WindowCompat.getInsetsController(window, binding.root)
-        insetsController.isAppearanceLightStatusBars = true
-        insetsController.isAppearanceLightNavigationBars = true
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.myToolbar.updatePadding(top = insets.top)
-            view.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -350,14 +343,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun handleInitialFragment() {
-        if (intent != null && intent.hasExtra("fragmentToOpen")) {
-            val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
+        var fragmentToOpen = intent?.getStringExtra("fragmentToOpen")
+        var contentId = intent?.getStringExtra("contentId")
+
+        if (fragmentToOpen == null) {
+            val pendingSection = prefData.getRawString(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+            if (pendingSection.isNotEmpty()) {
+                fragmentToOpen = pendingSection
+                contentId = prefData.getRawString(OnboardingActivity.DEEP_LINK_ID_KEY).ifEmpty { null }
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_ID_KEY)
             }
-        } else {
-            openCallFragment(BellDashboardFragment())
-            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+        }
+
+        when (fragmentToOpen) {
+            "feedbackList" -> openMyFragment(FeedbackListFragment())
+            "courses" -> openCallFragment(CoursesFragment())
+            "resources" -> openCallFragment(ResourcesFragment())
+            "teams" -> openCallFragment(TeamFragment())
+            "surveys" -> openCallFragment(SurveyFragment())
+            else -> {
+                openCallFragment(BellDashboardFragment())
+                binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            }
         }
     }
 

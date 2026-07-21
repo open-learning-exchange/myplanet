@@ -195,6 +195,7 @@ class AddResourceActivity : AppCompatActivity() {
                 )
                 if (result.isSuccess) {
                     toast(this@AddResourceActivity, getString(R.string.resource_updated))
+                    setResult(RESULT_OK)
                     finish()
                 } else {
                     toast(this@AddResourceActivity, getString(R.string.failed_to_update_resource))
@@ -234,6 +235,7 @@ class AddResourceActivity : AppCompatActivity() {
                     getString(R.string.added_to_my_library)
                 }
                 toast(this@AddResourceActivity, message)
+                setResult(RESULT_OK)
                 finish()
             } else {
                 binding.tlTitle.error = getString(R.string.resource_title_already_exists)
