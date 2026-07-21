@@ -1339,4 +1339,10 @@
     <string name="resource_updated">Kheyraadka waa la cusboonaysiiyay</string>
     <string name="failed_to_update_resource">Cusbooneysiin kheyraadka waxay ku guuldareysatay</string>
 
+    <string name="open_link_with">Ku fur xiriirka adigoo isticmaalaya</string>
+    <string name="just_once">Hal mar kaliya</string>
+    <string name="always">Mar walba</string>
+    <string name="survey_load_failed">Sahanka lama soo rarin. Fadlan isku day mar kale.</string>
+    <string name="survey_submitted">Sahanka waa la gudbiyay. Mahadsanid!</string>
+    <string name="survey_submit_failed">Sahanka lama gudbin. Fadlan isku day mar kale.</string>
 </resources>

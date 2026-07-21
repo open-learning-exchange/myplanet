@@ -358,6 +358,14 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }
     }
 
+    override suspend fun getLatestSubmissionByParentId(parentId: String, status: String): RealmSubmission? {
+        return queryList(RealmSubmission::class.java) {
+            equalTo("parentId", parentId)
+                .equalTo("status", status)
+                .sort("lastUpdateTime", Sort.DESCENDING)
+        }.firstOrNull()
+    }
+
     override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {
         return queryList(RealmSubmission::class.java, maxDepth = 0) {
             equalTo("parentId", parentId)
