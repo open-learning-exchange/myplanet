@@ -61,7 +61,9 @@
             android:layout_height="wrap_content"
             android:clickable="false"
             android:focusable="false"
-            android:text="@string/select_all" />
+            android:text="@string/select_all"
+            android:textColor="@color/daynight_textColor"
+            android:buttonTint="@color/daynight_textColor" />
     </LinearLayout>
 
     <View

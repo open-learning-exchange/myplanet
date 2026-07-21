@@ -1342,4 +1342,10 @@
     <string name="resource_updated">Recurso actualizado</string>
     <string name="failed_to_update_resource">Error al actualizar el recurso</string>
 
+    <string name="open_link_with">Abrir enlace con</string>
+    <string name="just_once">Solo una vez</string>
+    <string name="always">Siempre</string>
+    <string name="survey_load_failed">No se pudo cargar la encuesta. Inténtalo de nuevo.</string>
+    <string name="survey_submitted">Encuesta enviada. ¡Gracias!</string>
+    <string name="survey_submit_failed">No se pudo enviar la encuesta. Inténtalo de nuevo.</string>
 </resources>
