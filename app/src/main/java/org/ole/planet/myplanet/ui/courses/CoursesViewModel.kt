@@ -74,11 +74,7 @@ class CoursesViewModel @Inject constructor(
                     val (map, progressMap) = coroutineScope {
                         val ratingsDeferred = async { coursesRepository.getCourseRatings(userId) }
                         val progressDeferred = async {
-                            if (isMyCourseLib) {
-                                coursesRepository.getCourseProgress(userId, allCourseIds)
-                            } else {
-                                null
-                            }
+                            coursesRepository.getCourseProgress(userId, allCourseIds)
                         }
                         Pair(ratingsDeferred.await(), progressDeferred.await())
                     }
