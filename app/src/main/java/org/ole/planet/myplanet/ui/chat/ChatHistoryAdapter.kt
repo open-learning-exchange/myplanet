@@ -194,11 +194,14 @@ class ChatHistoryAdapter(
             } else {
                 context.getString(R.string.join_enterprise_first)
             }
-            AlertDialog.Builder(context)
+            val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
                 .setTitle(section)
                 .setMessage(message)
                 .setPositiveButton(android.R.string.ok, null)
-                .show()
+                .create()
+
+            dialog.window?.setBackgroundDrawable(daynightGreyColor.toDrawable())
+            dialog.show()
             return
         }
 
