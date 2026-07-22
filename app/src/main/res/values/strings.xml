@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="share">Share</string>
+    <string name="p2p_title">P2P Resource Sharing</string>
+    <string name="send_resource">Send Resource</string>
+    <string name="receive_resource">Receive Resource</string>
+    <string name="status_idle">Status: Idle</string>
+    <string name="available_peers">Available Peers:</string>
+    <string name="p2p_permission_required">Permissions required for P2P sharing</string>
+    <string name="status_discovering">Status: Discovering…</string>
+    <string name="status_discovery_failed">Status: Discovery failed (%1$d)</string>
+    <string name="file_not_found_locally">File not found locally</string>
+    <string name="status_sending">Status: Sending %1$s…</string>
+    <string name="status_sent_success">Status: Sent successfully!</string>
+    <string name="status_send_failed">Status: Send failed</string>
+    <string name="status_waiting_receive">Status: Waiting to receive…</string>
+    <string name="status_received_imported">Status: Received and imported!</string>
+    <string name="status_receive_failed">Status: Receive failed</string>
+    <string name="imported_resource">Imported: %1$s</string>
+    <string name="status_connecting">Status: Connecting to %1$s…</string>
+    <string name="status_connection_failed">Status: Connection failed (%1$d)</string>
     <string name="resource_not_found">Resource not found</string>
     <string name="resource_not_found_message">The requested resource could not be found</string>
     <string name="community_earnings">Community total earnings: **$%1$d** /$500</string>

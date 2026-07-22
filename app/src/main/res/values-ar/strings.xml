@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="share">مشاركة</string>
+    <string name="p2p_title">مشاركة الموارد P2P</string>
+    <string name="send_resource">إرسال مورد</string>
+    <string name="receive_resource">استلام مورد</string>
+    <string name="status_idle">الحالة: خامل</string>
+    <string name="available_peers">الأجهزة المتاحة:</string>
+    <string name="p2p_permission_required">الأذونات مطلوبة لمشاركة P2P</string>
+    <string name="status_discovering">الحالة: جارٍ الاكتشاف…</string>
+    <string name="status_discovery_failed">الحالة: فشل الاكتشاف (%1$d)</string>
+    <string name="file_not_found_locally">الملف غير موجود محلياً</string>
+    <string name="status_sending">الحالة: جارٍ إرسال %1$s…</string>
+    <string name="status_sent_success">الحالة: تم الإرسال بنجاح!</string>
+    <string name="status_send_failed">الحالة: فشل الإرسال</string>
+    <string name="status_waiting_receive">الحالة: في انتظار الاستلام…</string>
+    <string name="status_received_imported">الحالة: تم الاستلام والاستيراد!</string>
+    <string name="status_receive_failed">الحالة: فشل الاستلام</string>
+    <string name="imported_resource">تم استيراد: %1$s</string>
+    <string name="status_connecting">الحالة: جارٍ الاتصال بـ %1$s…</string>
+    <string name="status_connection_failed">الحالة: فشل الاتصال (%1$d)</string>
     <string name="resource_not_found">لم يتم العثور على المورد</string>
     <string name="resource_not_found_message">لا يمكن العثور على المورد المطلوب.</string>
     <string name="community_earnings">إجمالي أرباح المجتمع: **$%1$d** /$500</string>

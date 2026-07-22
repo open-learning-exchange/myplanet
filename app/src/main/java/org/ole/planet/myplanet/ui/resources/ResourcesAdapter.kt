@@ -130,6 +130,16 @@ class ResourcesAdapter(
             val isOffline = library.isOffline || locallyOfflineIds.contains(model.item.id) || model.isLocallyOffline
             holder.rowLibraryBinding.ivDownloaded.visibility =
                 if (isOffline || isResourceOpened) View.INVISIBLE else View.VISIBLE
+
+            if (isOffline) {
+                holder.rowLibraryBinding.ivShare.visibility = View.VISIBLE
+                holder.rowLibraryBinding.ivShare.setOnClickListener {
+                    listener?.onShareClicked(library)
+                }
+            } else {
+                holder.rowLibraryBinding.ivShare.visibility = View.GONE
+            }
+
             holder.rowLibraryBinding.ivDownloaded.contentDescription =
                 if (isOffline) {
                     context.getString(R.string.view)
