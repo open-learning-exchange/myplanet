@@ -144,6 +144,7 @@ interface TeamDao {
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
     @Query("DELETE FROM teams WHERE _id = :id") suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Upsert suspend fun upsertAll(items: List<MyTeam>)
     @Upsert suspend fun upsert(item: MyTeam)
