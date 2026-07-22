@@ -196,6 +196,7 @@ dependencies {
     implementation(libs.glide)
     ksp(libs.glide.ksp)
     implementation(libs.photoView)
+    implementation(libs.zxing.embedded)
     implementation(libs.fab)
     implementation(libs.mpAndroidChart)
     implementation(libs.circular.progress.view)

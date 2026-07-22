@@ -3,10 +3,13 @@ package org.ole.planet.myplanet.ui.sync
 import android.Manifest
 import android.content.DialogInterface
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.drawable.AnimationDrawable
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.TextUtils
 import android.util.Log
 import android.view.ContextThemeWrapper
@@ -21,13 +24,18 @@ import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SwitchCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import com.afollestad.materialdialogs.DialogAction
 import com.afollestad.materialdialogs.MaterialDialog
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanIntentResult
+import com.journeyapps.barcodescanner.ScanOptions
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import java.util.Date
@@ -37,6 +45,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.MainApplication.Companion.context
@@ -139,6 +148,32 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     open lateinit var broadcastService: BroadcastService
+
+    private val qrScanLauncher = registerForActivityResult(ScanContract()) { result ->
+        handleQrScanResult(result)
+    }
+
+    private val requestQrCameraPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            startQrScan()
+        } else if (!shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
+            AlertDialog.Builder(this, R.style.AlertDialogTheme)
+                .setTitle(R.string.permission_required)
+                .setMessage(R.string.camera_permission_required)
+                .setPositiveButton(R.string.settings) { dialog, _ ->
+                    dialog.dismiss()
+                    startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null))
+                    )
+                }
+                .setNegativeButton(R.string.cancel) { dialog, _ -> dialog.dismiss() }
+                .show()
+        } else {
+            Utilities.toast(this, getString(R.string.camera_permission_required))
+        }
+    }
 
     @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -681,6 +716,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         binding.clearData.setOnClickListener {
             clearDataDialog(getString(R.string.are_you_sure_you_want_to_clear_data), false)
         }
+        binding.btnScanQr.setOnClickListener { launchQrScanner() }
 
         showAdditionalServers = false
         if (serverListAddresses.isNotEmpty() && prefData.getServerUrl().isNotEmpty()) {
@@ -689,12 +725,76 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
         neutralAction.setOnClickListener { onNeutralButtonClick(dialog) }
 
-        dialog.setOnDismissListener { serverDialogBinding = null }
+        currentDialog = dialog
+        dialog.setOnDismissListener {
+            serverDialogBinding = null
+            currentDialog = null
+        }
         dialog.show()
         sync(binding)
         if (!prefData.getManualConfig()) {
             dialog.getActionButton(DialogAction.NEUTRAL).text = getString(R.string.show_more)
         }
+    }
+
+    private fun launchQrScanner() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+            startQrScan()
+        } else {
+            requestQrCameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
+    private fun startQrScan() {
+        qrScanLauncher.launch(
+            ScanOptions()
+                .setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                .setPrompt(getString(R.string.scan_server_qr_prompt))
+                .setBeepEnabled(true)
+                .setOrientationLocked(false)
+        )
+    }
+
+    private fun handleQrScanResult(result: ScanIntentResult) {
+        val contents = result.contents ?: return
+        val payload = try {
+            Json.decodeFromString<ServerQrPayload>(contents)
+        } catch (e: Exception) {
+            Utilities.toast(this, getString(R.string.qr_scan_invalid))
+            return
+        }
+        val rawUrl = payload.url.trim()
+        val pin = payload.pin.trim()
+        if (rawUrl.isEmpty() || pin.isEmpty()) {
+            Utilities.toast(this, getString(R.string.qr_scan_invalid))
+            return
+        }
+
+        val binding = serverDialogBinding
+        val dialog = currentDialog
+        if (binding == null || dialog == null) {
+            Utilities.toast(this, getString(R.string.qr_scan_invalid))
+            return
+        }
+
+        if (!binding.manualConfiguration.isChecked) {
+            binding.manualConfiguration.isChecked = true
+            prefData.setManualConfig(true)
+            showConfigurationUIElements(binding, true, dialog)
+        }
+
+        val useHttps = when {
+            rawUrl.startsWith("http://", ignoreCase = true) -> false
+            rawUrl.startsWith("https://", ignoreCase = true) -> true
+            else -> !payload.protocol.equals("http", ignoreCase = true)
+        }
+        binding.radioHttps.isChecked = useHttps
+        binding.radioHttp.isChecked = !useHttps
+        prefData.setServerProtocol(getString(if (useHttps) R.string.https_protocol else R.string.http_protocol))
+
+        serverUrl.setText(ServerConfigUtils.removeProtocol(rawUrl))
+        serverPassword.setText(pin)
+        Utilities.toast(this, getString(R.string.qr_scan_success))
     }
     fun continueSync(dialog: MaterialDialog, url: String, isAlternativeUrl: Boolean, defaultUrl: String) {
         runOnUiThread {
@@ -817,3 +917,10 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
     }
 }
+
+@Serializable
+private data class ServerQrPayload(
+    val url: String,
+    val pin: String,
+    val protocol: String = "https"
+)

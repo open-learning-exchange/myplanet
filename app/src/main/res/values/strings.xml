@@ -28,6 +28,10 @@
     <string name="err_msg_login">Username and/or password do not match</string>
     <string name="hint_serverURL">planet ip</string>
     <string name="hint_serverPin">server pin</string>
+    <string name="scan_qr_code">Scan QR Code</string>
+    <string name="scan_server_qr_prompt">Point your camera at the server QR code</string>
+    <string name="qr_scan_invalid">Invalid QR code. Please check the details manually.</string>
+    <string name="qr_scan_success">Server details filled in from QR code. Review and tap Sync or Save.</string>
     <string name="radio_http">http</string>
     <string name="radio_https">https</string>
     <string name="title_activity_dashboard">Dashboard</string>
