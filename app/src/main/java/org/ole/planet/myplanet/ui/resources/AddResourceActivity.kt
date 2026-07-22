@@ -77,16 +77,12 @@ class AddResourceActivity : AppCompatActivity() {
                 prefillFields(resourceId)
             }
         }
-        setupPrivateResourceCheckbox()
+        binding.cbPrivateResource.isVisible = teamId != null
+        binding.cbPrivateResource.isChecked = teamId != null
         lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
             binding.tvAddedBy.text = userModel?.name
         }
-    }
-
-    private fun setupPrivateResourceCheckbox() {
-        binding.cbPrivateResource.isVisible = teamId != null
-        binding.cbPrivateResource.isChecked = teamId != null
     }
 
     private fun initializeViews() {
