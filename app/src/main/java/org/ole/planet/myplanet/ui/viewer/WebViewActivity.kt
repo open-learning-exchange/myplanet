@@ -82,7 +82,6 @@ class WebViewActivity : AppCompatActivity() {
             val indexFile = File(directory, "index.html")
 
             if (indexFile.exists()) {
-                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
             }
         } else {
