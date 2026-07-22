@@ -75,7 +75,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
             }
         }
         date = Calendar.getInstance()
-        updateToDateState(false)
+        toDateEnabled = false
         binding.tvFromDateCalendar.setOnClickListener {
             showDatePickerDialog(isFromDate = true)
         }
@@ -106,7 +106,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         binding.btnReset.setOnClickListener {
             binding.tvFromDateCalendar.setText("")
             binding.etToDate.setText("")
-            updateToDateState(false)
+            toDateEnabled = false
             currentStartDate = null
             currentEndDate = null
             isAsc = false
@@ -141,7 +141,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                             binding.etToDate.setText("")
                         }
                     }
-                    updateToDateState(true)
+                    toDateEnabled = true
                 } else {
                     binding.etToDate.setText(formattedDate)
                 }
@@ -171,12 +171,14 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         return dateFormat.format(this.time)
     }
 
-    private fun updateToDateState(enabled: Boolean) {
-        binding.etToDate.isEnabled = enabled
-        binding.tvToDateCalendarIcon.isEnabled = enabled
-        binding.etToDate.alpha = if (enabled) 1.0f else 0.5f
-        binding.tvToDateCalendarIcon.alpha = if (enabled) 1.0f else 0.5f
-    }
+    private var toDateEnabled: Boolean
+        get() = binding.etToDate.isEnabled
+        set(value) {
+            binding.etToDate.isEnabled = value
+            binding.tvToDateCalendarIcon.isEnabled = value
+            binding.etToDate.alpha = if (value) 1.0f else 0.5f
+            binding.tvToDateCalendarIcon.alpha = if (value) 1.0f else 0.5f
+        }
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
