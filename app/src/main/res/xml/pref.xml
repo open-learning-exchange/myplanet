@@ -5,6 +5,9 @@
         android:key="dark_mode"
         android:title="@string/dark_mode" />
     <Preference
+        android:key="text_size"
+        android:title="@string/text_size" />
+    <Preference
         android:key="reset_app"
         android:title="@string/reset_app" />
     <Preference

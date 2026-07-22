@@ -211,6 +211,12 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
+            val textSize = findPreference<Preference>("text_size")
+            textSize?.setOnPreferenceClickListener {
+                textSizeChanger(requireActivity())
+                true
+            }
+
             // Show Available space under the "Freeup Space" preference.
             val spacePreference = findPreference<Preference>("freeup_space")
             if (spacePreference != null) {
@@ -396,6 +402,35 @@ class SettingsActivity : AppCompatActivity() {
                             else -> "en"
                         }
                         LocaleUtils.setLocale(context, selectedLanguage)
+                        (context as Activity).recreate()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+
+                val dialog = builder.create()
+                dialog.show()
+            }
+
+            fun textSizeChanger(context: Context) {
+                val scales = floatArrayOf(0.85f, 1.0f, 1.15f)
+                val options = arrayOf(
+                    context.getString(R.string.text_size_small),
+                    context.getString(R.string.text_size_medium),
+                    context.getString(R.string.text_size_large)
+                )
+                val currentScale = LocaleUtils.getTextScale(context)
+                var checkedItem = 1
+                for (i in scales.indices) {
+                    if (scales[i] == currentScale) {
+                        checkedItem = i
+                        break
+                    }
+                }
+
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.select_text_size))
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                        LocaleUtils.setTextScale(context, scales[which])
                         (context as Activity).recreate()
                         dialog.dismiss()
                     }
