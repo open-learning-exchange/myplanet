@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.health
 
 import android.app.DatePickerDialog
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.view.MenuItem
 import android.view.View
 import android.widget.ArrayAdapter
@@ -30,6 +31,7 @@ class AddHealthActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityAddHealthBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)

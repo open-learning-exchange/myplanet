@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.surveys
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.util.Log
 import android.view.View
 import android.widget.Toast
@@ -56,6 +57,7 @@ class PublicSurveyActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityPublicSurveyBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)

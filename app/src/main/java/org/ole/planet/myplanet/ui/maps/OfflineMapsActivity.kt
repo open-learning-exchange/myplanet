@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.maps
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.preference.PreferenceManager
 import org.ole.planet.myplanet.databinding.ActivityOfflineMapsBinding
@@ -14,6 +15,7 @@ class OfflineMapsActivity : AppCompatActivity() {
     private lateinit var activityOfflineMapsBinding: ActivityOfflineMapsBinding
     public override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         Configuration.getInstance().load(this, PreferenceManager.getDefaultSharedPreferences(this))
         activityOfflineMapsBinding = ActivityOfflineMapsBinding.inflate(layoutInflater)
         setContentView(activityOfflineMapsBinding.root)

@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.ui.health
 
 import android.content.DialogInterface
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.text.TextUtils
 import android.view.MenuItem
 import android.view.View
@@ -72,6 +73,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityHealthExaminationBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdgeWithKeyboard(this, binding.root)

@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.os.Environment
 import android.util.Log
 import android.view.MenuItem
@@ -17,6 +18,7 @@ class ResourceViewerActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         binding = ActivityResourceViewerBinding.inflate(layoutInflater)
         setContentView(binding.root)
         EdgeToEdgeUtils.setupEdgeToEdge(this, binding.root)

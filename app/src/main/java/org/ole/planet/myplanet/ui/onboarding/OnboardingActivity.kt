@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.view.View
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -44,6 +45,7 @@ class OnboardingActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         if (!isTaskRoot) {
             val chooserUri = webLinkForAppChooser(intent)
             if (chooserUri != null) {

@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.ui.resources
 import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
@@ -56,6 +57,7 @@ class AddResourceActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         binding = ActivityAddResourceBinding.inflate(layoutInflater)
         setContentView(binding.root)

@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
 import android.os.Process
 import android.provider.Settings
 import android.util.Log
@@ -28,6 +30,11 @@ import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 abstract class BasePermissionActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+    }
     @Inject
     open lateinit var sharedPrefManager: SharedPrefManager
     @Inject
