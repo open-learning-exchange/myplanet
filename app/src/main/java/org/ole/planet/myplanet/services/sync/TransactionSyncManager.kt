@@ -23,6 +23,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
@@ -378,7 +379,7 @@ class TransactionSyncManager @Inject constructor(
         return docs
     }
 
-    private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) {
+    private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -390,13 +391,13 @@ class TransactionSyncManager @Inject constructor(
                     FileUtils.getOlePath(context) + "cv/$resumeFileName"
                 )
                 if (!destFile.exists()) {
-                    downloadCvAttachment(docId, destFile)
+                    launch { downloadCvAttachment(docId, destFile) }
                 }
             }
         }
     }
 
-    private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) {
+    private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -406,12 +407,12 @@ class TransactionSyncManager @Inject constructor(
             val destFile = MyTeam
                 .getAttachmentFile(context, docId, attachmentName) ?: continue
             if (!destFile.exists()) {
-                downloadTeamAttachment(docId, attachmentName, destFile)
+                launch { downloadTeamAttachment(docId, attachmentName, destFile) }
             }
         }
     }
 
-    private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) {
+    private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) = coroutineScope {
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -422,7 +423,7 @@ class TransactionSyncManager @Inject constructor(
                 val destFile = MyCourse
                     .getCoverImageFile(context, docId, coverFileName) ?: continue
                 if (!destFile.exists()) {
-                    downloadCourseCover(docId, coverFileName, destFile)
+                    launch { downloadCourseCover(docId, coverFileName, destFile) }
                 }
             }
         }
