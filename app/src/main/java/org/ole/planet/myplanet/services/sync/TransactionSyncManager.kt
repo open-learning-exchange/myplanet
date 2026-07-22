@@ -17,6 +17,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -378,11 +379,11 @@ class TransactionSyncManager @Inject constructor(
         return docs
     }
 
-    private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) {
-        for (j in arr) {
+    private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        arr.mapNotNull { j ->
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
-            if (docId.startsWith("_design")) continue
+            if (docId.startsWith("_design")) return@mapNotNull null
             val resumeFileName = getString("resumeFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has("resume.pdf") == true
             if (resumeFileName.isNotEmpty() && hasAttachment) {
@@ -390,42 +391,42 @@ class TransactionSyncManager @Inject constructor(
                     FileUtils.getOlePath(context) + "cv/$resumeFileName"
                 )
                 if (!destFile.exists()) {
-                    downloadCvAttachment(docId, destFile)
-                }
-            }
-        }
+                    async { downloadCvAttachment(docId, destFile) }
+                } else null
+            } else null
+        }.awaitAll()
     }
 
-    private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) {
-        for (j in arr) {
+    private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        arr.mapNotNull { j ->
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
-            if (docId.startsWith("_design")) continue
+            if (docId.startsWith("_design")) return@mapNotNull null
             val attachmentName = MyTeam
-                .getFirstAttachmentName(jsonDoc) ?: continue
+                .getFirstAttachmentName(jsonDoc) ?: return@mapNotNull null
             val destFile = MyTeam
-                .getAttachmentFile(context, docId, attachmentName) ?: continue
+                .getAttachmentFile(context, docId, attachmentName) ?: return@mapNotNull null
             if (!destFile.exists()) {
-                downloadTeamAttachment(docId, attachmentName, destFile)
-            }
-        }
+                async { downloadTeamAttachment(docId, attachmentName, destFile) }
+            } else null
+        }.awaitAll()
     }
 
-    private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) {
-        for (j in arr) {
+    private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) = coroutineScope {
+        arr.mapNotNull { j ->
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
-            if (docId.startsWith("_design")) continue
+            if (docId.startsWith("_design")) return@mapNotNull null
             val coverFileName = getString("coverFileName", jsonDoc)
             val hasAttachment = jsonDoc.getAsJsonObject("_attachments")?.has(coverFileName) == true
             if (coverFileName.isNotEmpty() && hasAttachment) {
                 val destFile = MyCourse
-                    .getCoverImageFile(context, docId, coverFileName) ?: continue
+                    .getCoverImageFile(context, docId, coverFileName) ?: return@mapNotNull null
                 if (!destFile.exists()) {
-                    downloadCourseCover(docId, coverFileName, destFile)
-                }
-            }
-        }
+                    async { downloadCourseCover(docId, coverFileName, destFile) }
+                } else null
+            } else null
+        }.awaitAll()
     }
 
     private suspend fun downloadCourseCover(docId: String, coverFileName: String, destFile: File) {
