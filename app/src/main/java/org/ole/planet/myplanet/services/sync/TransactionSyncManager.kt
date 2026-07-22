@@ -17,6 +17,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
@@ -396,19 +397,21 @@ class TransactionSyncManager @Inject constructor(
         }
     }
 
-    private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) {
-        for (j in arr) {
+    private suspend fun downloadTeamAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        arr.mapNotNull { j ->
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
-            if (docId.startsWith("_design")) continue
+            if (docId.startsWith("_design")) return@mapNotNull null
             val attachmentName = MyTeam
-                .getFirstAttachmentName(jsonDoc) ?: continue
+                .getFirstAttachmentName(jsonDoc) ?: return@mapNotNull null
             val destFile = MyTeam
-                .getAttachmentFile(context, docId, attachmentName) ?: continue
+                .getAttachmentFile(context, docId, attachmentName) ?: return@mapNotNull null
             if (!destFile.exists()) {
-                downloadTeamAttachment(docId, attachmentName, destFile)
+                async { downloadTeamAttachment(docId, attachmentName, destFile) }
+            } else {
+                null
             }
-        }
+        }.awaitAll()
     }
 
     private suspend fun downloadCourseCoversFromBatch(arr: JsonArray) {
