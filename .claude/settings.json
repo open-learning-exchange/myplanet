@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "treehouses": {
+      "source": {
+        "source": "github",
+        "repo": "dogi/kotlin-importing"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "kotlin-importing@treehouses": true
+  }
+}
