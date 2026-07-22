@@ -1,54 +1,49 @@
 package org.ole.planet.myplanet.utils
 
-import android.app.Activity
+import android.graphics.Color
 import android.view.View
-import android.view.Window
+import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 
 object EdgeToEdgeUtils {
+    private const val TRANSPARENT_SCRIM = Color.TRANSPARENT
+
     /**
-     * Sets up edge-to-edge display with transparent system bars and proper window insets handling
-     * Works across all supported SDK versions (26-36)
+     * Sets up edge-to-edge display with transparent system bars and proper window insets handling.
+     * Works across all supported SDK versions (26-36).
      * @param activity The activity to apply edge-to-edge to
      * @param rootView The root view that should handle window insets
      * @param lightStatusBar Whether to use light status bar icons (default: true)
      * @param lightNavigationBar Whether to use light navigation bar icons (default: true)
      */
     fun setupEdgeToEdge(
-        activity: Activity,
+        activity: ComponentActivity,
         rootView: View,
         lightStatusBar: Boolean = true,
         lightNavigationBar: Boolean = true
     ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
+        configureEdgeToEdge(activity, lightStatusBar, lightNavigationBar)
 
-        // Set up window insets listener
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
-            WindowInsetsCompat.CONSUMED
+            windowInsets
         }
     }
 
     /**
-     * Extension function to set transparent system bars with proper SDK handling
-     */
-    private fun Window.setTransparentSystemBars() {
-        WindowCompat.setDecorFitsSystemWindows(this, false)
-    }
-
-    /**
-     * Sets up edge-to-edge with keyboard handling
+     * Sets up edge-to-edge with keyboard handling.
      */
     fun setupEdgeToEdgeWithKeyboard(
-        activity: Activity,
+        activity: ComponentActivity,
         rootView: View,
         lightStatusBar: Boolean = true,
         lightNavigationBar: Boolean = true
     ) {
-        configureEdgeToEdge(activity, rootView, lightStatusBar, lightNavigationBar)
+        configureEdgeToEdge(activity, lightStatusBar, lightNavigationBar)
 
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
             val systemBarsInsets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -60,20 +55,24 @@ object EdgeToEdgeUtils {
                 systemBarsInsets.right,
                 maxOf(systemBarsInsets.bottom, imeInsets.bottom)
             )
-            WindowInsetsCompat.CONSUMED
+            windowInsets
         }
     }
 
     private fun configureEdgeToEdge(
-        activity: Activity,
-        rootView: View,
+        activity: ComponentActivity,
         lightStatusBar: Boolean,
         lightNavigationBar: Boolean
     ) {
-        activity.window.setTransparentSystemBars()
+        activity.enableEdgeToEdge(
+            statusBarStyle = systemBarStyle(lightStatusBar),
+            navigationBarStyle = systemBarStyle(lightNavigationBar)
+        )
+    }
 
-        val controller = WindowCompat.getInsetsController(activity.window, rootView)
-        controller.isAppearanceLightStatusBars = lightStatusBar
-        controller.isAppearanceLightNavigationBars = lightNavigationBar
+    private fun systemBarStyle(useDarkIcons: Boolean): SystemBarStyle = if (useDarkIcons) {
+        SystemBarStyle.light(TRANSPARENT_SCRIM, TRANSPARENT_SCRIM)
+    } else {
+        SystemBarStyle.dark(TRANSPARENT_SCRIM)
     }
 }
