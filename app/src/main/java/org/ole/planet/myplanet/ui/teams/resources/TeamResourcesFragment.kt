@@ -24,8 +24,8 @@ import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.databinding.FragmentTeamResourceBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamResourceDto
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
@@ -58,7 +58,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         showLibraryList()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
@@ -151,7 +151,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         fragment.show(childFragmentManager, "AddResourceFragment")
     }
 
-    private fun listSetting(alertDialog: AlertDialog, libraries: List<RealmMyLibrary>, lv: RecyclerView) {
+    private fun listSetting(alertDialog: AlertDialog, libraries: List<MyLibrary>, lv: RecyclerView) {
         val names = libraries.map { it.title ?: "" }
         val adapter = CheckboxAdapter {
             alertDialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = (lv.adapter as CheckboxAdapter).selectedItemsList.isNotEmpty()
@@ -177,7 +177,7 @@ class TeamResourcesFragment : BaseTeamFragment(), OnTeamPageListener, OnResource
         }
     }
 
-    private fun handleResourceRemoval(resource: RealmMyLibrary, position: Int) {
+    private fun handleResourceRemoval(resource: MyLibrary, position: Int) {
         val resourceId = resource.id ?: resource.resourceId
         if (resourceId.isNullOrBlank()) {
             onResourceUpdateFailed(R.string.failed_to_remove_resource)

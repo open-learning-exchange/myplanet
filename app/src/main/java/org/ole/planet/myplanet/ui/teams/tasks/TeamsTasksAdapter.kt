@@ -11,7 +11,7 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.RowTaskBinding
-import org.ole.planet.myplanet.model.RealmTeamTask
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.ui.teams.tasks.TeamsTasksAdapter.TeamsTasksViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -19,7 +19,7 @@ import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 class TeamsTasksAdapter(
     private val context: Context,
     var nonTeamMember: Boolean
-) : ListAdapter<RealmTeamTask, TeamsTasksViewHolder>(DIFF_CALLBACK) {
+) : ListAdapter<TeamTask, TeamsTasksViewHolder>(DIFF_CALLBACK) {
     private val assigneeCache: MutableMap<String, String> = mutableMapOf()
     private var listener: OnTaskCompletedListener? = null
     fun setListener(listener: OnTaskCompletedListener?) {
@@ -101,7 +101,7 @@ class TeamsTasksAdapter(
         }
     }
 
-    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: RealmTeamTask) {
+    private fun showAssignee(binding: RowTaskBinding, realmTeamTask: TeamTask) {
         val assigneeId = realmTeamTask.assignee
         if (assigneeId.isNullOrEmpty()) {
             binding.assignee.setText(R.string.no_assignee)
@@ -119,7 +119,7 @@ class TeamsTasksAdapter(
     class TeamsTasksViewHolder(val binding: RowTaskBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmTeamTask>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<TeamTask>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.title == new.title &&

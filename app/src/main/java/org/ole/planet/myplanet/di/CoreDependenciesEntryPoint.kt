@@ -4,7 +4,7 @@ import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.ApkLogDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -15,8 +15,8 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 interface CoreDependenciesEntryPoint {
     @ApplicationScope fun applicationScope(): CoroutineScope
     fun sharedPrefManager(): SharedPrefManager
-    fun databaseService(): DatabaseService
     fun userSessionManager(): UserSessionManager
     fun serverUrlMapper(): ServerUrlMapper
     fun dispatcherProvider(): DispatcherProvider
+    fun apkLogDao(): ApkLogDao
 }

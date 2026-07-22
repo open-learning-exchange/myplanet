@@ -18,7 +18,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityPublicSurveyBinding
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
@@ -183,7 +183,7 @@ class PublicSurveyActivity : AppCompatActivity() {
 
     // The public API expects one entry per question: a string for text/rating answers,
     // a {id, text} object for select, and an array of those objects for selectMultiple.
-    private suspend fun buildPublicAnswers(submission: RealmSubmission): JsonArray {
+    private suspend fun buildPublicAnswers(submission: Submission): JsonArray {
         val questions = surveysRepository.getExamQuestions(surveyId)
         val answersByQuestion = submission.answers?.associateBy { it.questionId }.orEmpty()
         val payload = JsonArray()

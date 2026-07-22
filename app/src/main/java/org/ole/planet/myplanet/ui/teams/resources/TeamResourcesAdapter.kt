@@ -9,15 +9,15 @@ import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnResourcesUpdateListener
 import org.ole.planet.myplanet.databinding.RowTeamResourceBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamResourcesAdapter(
     private val context: Context,
     private val canRemoveResources: Boolean,
     private val updateListener: OnResourcesUpdateListener,
-    private val onRemoveResource: (RealmMyLibrary, Int) -> Unit,
-) : ListAdapter<RealmMyLibrary, TeamResourcesAdapter.ViewHolderTeamResources>(ITEM_CALLBACK) {
+    private val onRemoveResource: (MyLibrary, Int) -> Unit,
+) : ListAdapter<MyLibrary, TeamResourcesAdapter.ViewHolderTeamResources>(ITEM_CALLBACK) {
 
     private var listener: OnHomeItemClickListener? = null
 
@@ -69,7 +69,7 @@ class TeamResourcesAdapter(
     class ViewHolderTeamResources(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private val ITEM_CALLBACK = DiffUtils.itemCallback<RealmMyLibrary>(
+        private val ITEM_CALLBACK = DiffUtils.itemCallback<MyLibrary>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem -> oldItem.title == newItem.title && oldItem.description == newItem.description }
         )

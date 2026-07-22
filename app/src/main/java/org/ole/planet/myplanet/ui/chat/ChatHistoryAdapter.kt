@@ -17,12 +17,12 @@ import org.ole.planet.myplanet.databinding.AddNoteDialogBinding
 import org.ole.planet.myplanet.databinding.ChatShareDialogBinding
 import org.ole.planet.myplanet.databinding.GrandChildRecyclerviewDialogBinding
 import org.ole.planet.myplanet.databinding.RowChatHistoryBinding
+import org.ole.planet.myplanet.model.ChatHistory
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.RealmChatHistory
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TeamSummary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamsSelectionAdapter
 import org.ole.planet.myplanet.utils.ChatHistoryUtils.extractSharedViewInIds
 import org.ole.planet.myplanet.utils.DiffUtils
@@ -30,12 +30,12 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 class ChatHistoryAdapter(
     private val context: Context,
-    chatHistoryList: List<RealmChatHistory>,
-    private var currentUser: RealmUser?,
-    private var newsList: List<RealmNews>,
+    chatHistoryList: List<ChatHistory>,
+    private var currentUser: UserEntity?,
+    private var newsList: List<News>,
     private var shareTargets: ChatShareTargets,
-    private val onShareChat: (HashMap<String?, String>, RealmChatHistory) -> Unit,
-) : ListAdapter<RealmChatHistory, ChatHistoryAdapter.ViewHolderChat>(
+    private val onShareChat: (HashMap<String?, String>, ChatHistory) -> Unit,
+) : ListAdapter<ChatHistory, ChatHistoryAdapter.ViewHolderChat>(
     DiffUtils.itemCallback(
         areItemsTheSame = { oldItem, newItem ->
             val oldId = oldItem._id
@@ -62,7 +62,7 @@ class ChatHistoryAdapter(
         submitList(chatHistoryList)
     }
 
-    fun updateCachedData(user: RealmUser?, sharedNews: List<RealmNews>) {
+    fun updateCachedData(user: UserEntity?, sharedNews: List<News>) {
         currentUser = user
         newsList = sharedNews
         cachedSharedViewInIds = extractSharedViewInIds(sharedNews)
@@ -88,7 +88,7 @@ class ChatHistoryAdapter(
         return ViewHolderChat(rowChatHistoryBinding)
     }
 
-    fun updateChatHistory(newChatHistory: List<RealmChatHistory>) {
+    fun updateChatHistory(newChatHistory: List<ChatHistory>) {
         submitList(newChatHistory)
     }
 
@@ -125,7 +125,7 @@ class ChatHistoryAdapter(
         bindShareChat(holder, item)
     }
 
-    private fun bindShareChat(holder: ViewHolderChat, item: RealmChatHistory) {
+    private fun bindShareChat(holder: ViewHolderChat, item: ChatHistory) {
         holder.rowChatHistoryBinding.shareChat.setImageResource(R.drawable.baseline_share_24)
 
         holder.rowChatHistoryBinding.shareChat.setOnClickListener {
@@ -187,7 +187,7 @@ class ChatHistoryAdapter(
         return cachedSharedViewInIds[chatId] ?: emptySet()
     }
 
-    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: RealmChatHistory, sharedIds: Set<String> = emptySet()) {
+    private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: ChatHistory, sharedIds: Set<String> = emptySet()) {
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 
@@ -215,7 +215,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun showEditTextAndShareButton(team: TeamSummary? = null, section: String, chatHistory: RealmChatHistory) {
+    private fun showEditTextAndShareButton(team: TeamSummary? = null, section: String, chatHistory: ChatHistory) {
         val addNoteDialogBinding = AddNoteDialogBinding.inflate(LayoutInflater.from(context))
         val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
         builder.setView(addNoteDialogBinding.root)
@@ -250,7 +250,7 @@ class ChatHistoryAdapter(
         dialog.show()
     }
 
-    private fun serializeConversation(conversation: RealmConversation): HashMap<String?, String> {
+    private fun serializeConversation(conversation: Conversation): HashMap<String?, String> {
         val conversationMap = HashMap<String?, String>()
         conversationMap["query"] = conversation.query ?: ""
         conversationMap["response"] = conversation.response ?: ""

@@ -23,9 +23,9 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -43,9 +43,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     @Inject
     lateinit var coursesRepository: CoursesRepository
     private var courseId: String? = null
-    private var userModel: RealmUser? = null
-    private var currentCourse: RealmMyCourse? = null
-    lateinit var steps: List<RealmCourseStep?>
+    private var userModel: UserEntity? = null
+    private var currentCourse: MyCourse? = null
+    lateinit var steps: List<CourseStep?>
     var position = 0
     private var currentStep = 0
     private var cachedCourseProgress: Int? = null
@@ -79,7 +79,7 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
 
         viewLifecycleOwner.lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
-            val course: RealmMyCourse? = courseId?.let { coursesRepository.getCourseById(it) }
+            val course: MyCourse? = courseId?.let { coursesRepository.getCourseById(it) }
             binding.loadingIndicator.visibility = View.GONE
             if (course == null) {
                 Toast.makeText(requireContext(), getString(R.string.failed_to_load_course), Toast.LENGTH_LONG).show()

@@ -40,12 +40,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnTeamPageListener
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
 import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
-import org.ole.planet.myplanet.di.RealmDispatcherProvider
-import org.ole.planet.myplanet.model.RealmApkLog
+import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
 import org.ole.planet.myplanet.services.NetworkMonitorWorker
@@ -76,14 +75,11 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
     lateinit var workerFactory: HiltWorkerFactory
 
     @Inject
-    lateinit var realmDispatcherProvider: RealmDispatcherProvider
-
-    @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
     @Inject
-    lateinit var databaseServiceProvider: Provider<DatabaseService>
-    val databaseService: DatabaseService by lazy { databaseServiceProvider.get() }
+    lateinit var appDatabaseProvider: Provider<AppDatabase>
+    val appDatabase: AppDatabase by lazy { appDatabaseProvider.get() }
 
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
@@ -138,36 +134,37 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
-                saveLogToRealm(type, error, "${Date().time}")
+                saveLogToRoom(type, error, "${Date().time}")
             }
         }
 
         // A report for a failure that may kill the process (crash/ANR) must be persisted
-        // to a plain file before this runs: the Realm write below waits on the shared
-        // write lock and dispatcher, so it can be lost if the process dies first.
-        suspend fun saveLogToRealm(type: String, error: String, time: String): Boolean {
+        // to a plain file before this runs: the Room write below can still be lost
+        // if the process dies before the coroutine persists the row.
+        suspend fun saveLogToRoom(type: String, error: String, time: String): Boolean {
             val entryPoint = EntryPointAccessors.fromApplication(
                 context,
                 CoreDependenciesEntryPoint::class.java
             )
             val userSessionManager = entryPoint.userSessionManager()
             val spm = entryPoint.sharedPrefManager()
+            val apkLogDao = entryPoint.apkLogDao()
             return try {
-                val databaseService = (context.applicationContext as MainApplication).databaseService
                 val model = userSessionManager.getUserModel()
-                databaseService.executeTransactionAsync { r ->
-                    val log = r.createObject(RealmApkLog::class.java, "${UUID.randomUUID()}")
-                    log.parentCode = spm.getParentCode()
-                    log.createdOn = spm.getPlanetCode()
-                    model?.let { log.userId = it.id }
-                    log.time = time
-                    log.page = ""
-                    log.version = getVersionName(context)
-                    log.type = type
+                val log = ApkLog().apply {
+                    id = "${UUID.randomUUID()}"
+                    parentCode = spm.getParentCode()
+                    createdOn = spm.getPlanetCode()
+                    model?.let { userId = it.id }
+                    this.time = time
+                    page = ""
+                    version = getVersionName(context)
+                    this.type = type
                     if (error.isNotEmpty()) {
-                        log.error = error
+                        this.error = error
                     }
                 }
+                apkLogDao.insert(log)
                 true
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -256,9 +253,9 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
             val error = e.stackTraceToString()
-            val pendingFile = CrashLogStore.save(context, RealmApkLog.ERROR_TYPE_CRASH, error)
+            val pendingFile = CrashLogStore.save(context, ApkLog.ERROR_TYPE_CRASH, error)
             applicationScope.launch {
-                if (saveLogToRealm(RealmApkLog.ERROR_TYPE_CRASH, error, "${Date().time}")) {
+                if (saveLogToRoom(ApkLog.ERROR_TYPE_CRASH, error, "${Date().time}")) {
                     pendingFile?.delete()
                 }
             }
@@ -271,7 +268,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         }
     }
 
-    private var mainThreadRealm: io.realm.Realm? = null
     private var isFirstLaunch = true
     private lateinit var anrWatchdog: ANRWatchdog
 
@@ -281,7 +277,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         init(sharedPrefManager)
         setupCriticalProperties()
         LocaleUtils.preload(this)
-        warmUpMainThreadRealm()
         performDeferredInitialization()
         setupStrictMode()
         registerExceptionHandler()
@@ -312,7 +307,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 CrashLogStore.loadPendingLogs(this@MainApplication)
             }
             for (pending in pendingLogs) {
-                if (saveLogToRealm(pending.type, pending.error, pending.time)) {
+                if (saveLogToRoom(pending.type, pending.error, pending.time)) {
                     withContext(dispatcherProvider.io) { pending.file.delete() }
                 }
             }
@@ -333,16 +328,10 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         ).applicationScope()
     }
 
-    private fun warmUpMainThreadRealm() {
-        try {
-            mainThreadRealm = databaseService.createManagedRealmInstance()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
     private suspend fun initializeDatabaseConnection() {
-        databaseService.withRealmAsync { }
+        withContext(dispatcherProvider.io) {
+            appDatabase.openHelper.writableDatabase
+        }
     }
 
     private fun setupStrictMode() {
@@ -371,7 +360,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                         val error = "ANR detected! Duration: ${duration}ms\n $message"
                         val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error)
                         applicationScope.launch {
-                            if (saveLogToRealm(ANR_LOG_TYPE, error, "${Date().time}")) {
+                            if (saveLogToRoom(ANR_LOG_TYPE, error, "${Date().time}")) {
                                 pendingFile?.delete()
                             }
                         }
@@ -536,8 +525,6 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         if (::anrWatchdog.isInitialized) {
             anrWatchdog.stop()
         }
-        mainThreadRealm?.close()
-        mainThreadRealm = null
         super.onTerminate()
         stopListenNetworkState()
     }

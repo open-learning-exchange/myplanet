@@ -9,7 +9,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.ole.planet.myplanet.model.RealmMeetup
+import org.ole.planet.myplanet.model.Meetup
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
@@ -21,7 +21,7 @@ class EventsAdapterTest {
     private lateinit var context: Context
     private lateinit var adapter: EventsAdapter
 
-    private var clickedMeetup: RealmMeetup? = null
+    private var clickedMeetup: Meetup? = null
 
     @Before
     fun setup() {
@@ -33,7 +33,7 @@ class EventsAdapterTest {
 
     @Test
     fun `test adapter item binding and partial payload diff`() {
-        val oldMeetup = RealmMeetup().apply {
+        val oldMeetup = Meetup().apply {
             id = "1"
             title = "Old Title"
             description = "Old Desc"
@@ -64,7 +64,7 @@ class EventsAdapterTest {
         assertEquals("Old Desc", holder.binding.tvDescription.text.toString())
         assertEquals("Old Location", holder.binding.tvLocation.text.toString())
 
-        val newMeetup = RealmMeetup().apply {
+        val newMeetup = Meetup().apply {
             id = "1"
             title = "New Title"
             description = "Old Desc"
