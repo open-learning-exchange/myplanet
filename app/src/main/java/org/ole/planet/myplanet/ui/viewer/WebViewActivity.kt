@@ -78,10 +78,19 @@ class WebViewActivity : AppCompatActivity() {
         }
 
         if (resourceId != null) {
-            val directory = File(getExternalFilesDir(null), "ole/$resourceId")
+            val baseDir = File(getExternalFilesDir(null), "ole")
+            val directory = File(baseDir, resourceId)
             val indexFile = File(directory, "index.html")
 
-            if (indexFile.exists()) {
+            val isSafe = try {
+                val canonicalBase = baseDir.canonicalPath
+                val canonicalDir = directory.canonicalPath
+                canonicalDir.startsWith(canonicalBase + File.separator) || canonicalDir == canonicalBase
+            } catch (e: Exception) {
+                false
+            }
+
+            if (isSafe && indexFile.exists()) {
                 requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
             }
@@ -153,7 +162,19 @@ class WebViewActivity : AppCompatActivity() {
 
     private fun setupAssetLoader(): WebViewAssetLoader? {
         val resourceId = intent.getStringExtra("RESOURCE_ID") ?: return null
-        val directory = File(getExternalFilesDir(null), "ole/$resourceId")
+        val baseDir = File(getExternalFilesDir(null), "ole")
+        val directory = File(baseDir, resourceId)
+
+        val isSafe = try {
+            val canonicalBase = baseDir.canonicalPath
+            val canonicalDir = directory.canonicalPath
+            canonicalDir.startsWith(canonicalBase + File.separator) || canonicalDir == canonicalBase
+        } catch (e: Exception) {
+            false
+        }
+
+        if (!isSafe) return null
+
         val externalPathHandler = WebViewAssetLoader.PathHandler { path ->
             try {
                 val file = File(directory, path)
