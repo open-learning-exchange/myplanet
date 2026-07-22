@@ -2,7 +2,9 @@ package org.ole.planet.myplanet.utils
 
 import java.util.Locale
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -116,5 +118,64 @@ class AndroidDecrypterTest {
 
         val result = AndroidDecrypter.androidDecrypter(userId, password, expectedHash, salt)
         assertTrue(result)
+    }
+
+    @Test
+    fun testDecryptWithNullParams() {
+        assertNull(AndroidDecrypter.decrypt(null, "key", "iv"))
+        assertNull(AndroidDecrypter.decrypt("encrypted", null, "iv"))
+        assertNull(AndroidDecrypter.decrypt("encrypted", "key", null))
+    }
+
+    @Test
+    fun testDecryptWithInvalidEncryptedString() {
+        assertNull(AndroidDecrypter.decrypt("invalid_encrypted_data", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "abcdef0123456789abcdef0123456789"))
+    }
+
+    @Test
+    fun testAndroidDecrypterWithNullDbPwdKeyValue() {
+        assertFalse(AndroidDecrypter.androidDecrypter("user", "pwd", null, "salt"))
+    }
+
+    @Test
+    fun testAndroidDecrypterWithIncorrectPassword() {
+        val userId = "testUser"
+        val password = "password123"
+        val salt = "someSalt"
+
+        val p = de.rtner.security.auth.spi.PBKDF2Parameters("HmacSHA1", "utf-8", salt.toByteArray(), 10)
+        val dk = de.rtner.security.auth.spi.PBKDF2Engine(p).deriveKey(password, 20)
+        val expectedHash = de.rtner.misc.BinTools.bin2hex(dk).lowercase(Locale.ROOT)
+
+        assertFalse(AndroidDecrypter.androidDecrypter(userId, "wrongPassword", expectedHash, salt))
+    }
+
+    @Test
+    fun testAndroidDecrypterWithInvalidHexDbPwd() {
+        assertFalse(AndroidDecrypter.androidDecrypter("user", "pwd", "invalid_hex", "salt"))
+    }
+
+    @Test
+    fun testGenerateIv() {
+        val iv = AndroidDecrypter.generateIv()
+        assertNotNull(iv)
+        assertEquals(32, iv.length) // 16 bytes = 32 hex characters
+    }
+
+    @Test
+    fun testGenerateKey() {
+        val key = AndroidDecrypter.generateKey()
+        assertNotNull(key)
+        assertEquals(64, key?.length) // 32 bytes = 64 hex characters
+    }
+
+    @Test
+    fun testHexStringToByteArray() {
+        val bytes = AndroidDecrypter.hexStringToByteArray("0a1b2c3d")
+        assertEquals(4, bytes.size)
+        assertEquals(0x0a.toByte(), bytes[0])
+        assertEquals(0x1b.toByte(), bytes[1])
+        assertEquals(0x2c.toByte(), bytes[2])
+        assertEquals(0x3d.toByte(), bytes[3])
     }
 }
