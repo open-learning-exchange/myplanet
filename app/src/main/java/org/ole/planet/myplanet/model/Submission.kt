@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.model
+
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index

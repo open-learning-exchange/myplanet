@@ -12,6 +12,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.Feedback
@@ -20,7 +21,6 @@ import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.News
-import org.ole.planet.myplanet.model.AppNotification
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TeamLog

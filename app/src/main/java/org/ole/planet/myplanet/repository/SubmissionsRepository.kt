@@ -9,9 +9,9 @@ import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.model.SubmitPhotos
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmitPhotos
 
 interface SubmissionsRepository {
     fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>>

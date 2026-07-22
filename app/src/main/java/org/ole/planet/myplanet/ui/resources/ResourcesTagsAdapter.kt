@@ -12,8 +12,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.RowNavigationChildAdapterBinding
 import org.ole.planet.myplanet.databinding.RowNavigationParentAdapterBinding
-import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagData
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class ResourcesTagsAdapter(

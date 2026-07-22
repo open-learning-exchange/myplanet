@@ -22,8 +22,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
-import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.UserEntity

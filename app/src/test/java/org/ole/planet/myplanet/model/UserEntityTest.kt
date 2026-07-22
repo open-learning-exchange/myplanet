@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.model
-import org.ole.planet.myplanet.model.UserEntity
 
 import android.content.Context
 import io.mockk.every
@@ -17,6 +16,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)

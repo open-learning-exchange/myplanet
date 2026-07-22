@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.repository
 
-import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.model.RetryOperation
 
 interface RetryRepository {
     suspend fun enqueue(

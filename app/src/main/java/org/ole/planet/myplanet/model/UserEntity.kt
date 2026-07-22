@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.model
-import androidx.room.Entity
-import androidx.room.Index
-import androidx.room.PrimaryKey
 
 import android.util.Base64
 import androidx.core.net.toUri
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser

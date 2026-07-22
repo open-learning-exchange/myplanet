@@ -1,7 +1,4 @@
 package org.ole.planet.myplanet.repository
-import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.ExamQuestion
 
 import android.app.Application
 import android.content.Context
@@ -27,6 +24,9 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider

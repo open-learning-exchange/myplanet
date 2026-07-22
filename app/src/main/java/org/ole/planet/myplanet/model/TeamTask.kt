@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.model
 
 import android.text.TextUtils
-import com.google.gson.JsonObject
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.google.gson.JsonObject
 import org.ole.planet.myplanet.utils.JsonUtils
 
 @Entity(tableName = "team_tasks", indices = [Index("teamId")])

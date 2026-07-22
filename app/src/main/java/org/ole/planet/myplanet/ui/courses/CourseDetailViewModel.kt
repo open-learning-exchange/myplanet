@@ -12,8 +12,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.utils.MarkdownUtils
 

@@ -2,8 +2,8 @@ package org.ole.planet.myplanet.repository
 
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.RetryDao
-import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.model.RetryFailure
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.utils.TimeProvider
 
 class RetryRepositoryImpl @Inject constructor(

@@ -1,6 +1,4 @@
 package org.ole.planet.myplanet.model
-import org.ole.planet.myplanet.model.StepExam
-import org.ole.planet.myplanet.model.ExamQuestion
 
 import android.text.TextUtils
 import com.google.gson.JsonArray
@@ -8,12 +6,14 @@ import com.google.gson.JsonObject
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.util.UUID
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
 
 class StepExamTest {
 

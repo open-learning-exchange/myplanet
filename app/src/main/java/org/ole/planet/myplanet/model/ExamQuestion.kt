@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.model
+
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
-
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Locale

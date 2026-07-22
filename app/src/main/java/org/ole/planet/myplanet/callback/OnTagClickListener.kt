@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.callback
 
-import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagData
+import org.ole.planet.myplanet.model.TagEntity
 
 interface OnTagClickListener {
     fun onTagClicked(tag: TagEntity)

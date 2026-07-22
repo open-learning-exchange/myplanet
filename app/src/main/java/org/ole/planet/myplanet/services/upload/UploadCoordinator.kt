@@ -4,7 +4,6 @@ import android.content.Context
 import android.util.Log
 import com.google.gson.JsonObject
 import dagger.hilt.android.qualifiers.ApplicationContext
-
 import java.io.IOException
 import java.util.concurrent.CancellationException
 import javax.inject.Inject
@@ -14,11 +13,9 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
-import org.ole.planet.myplanet.repository.UploadQueryType
-import org.ole.planet.myplanet.repository.UploadQueryContract
 import org.ole.planet.myplanet.repository.UploadRepository
-import org.ole.planet.myplanet.repository.UploadUpdateType
 import org.ole.planet.myplanet.repository.UploadUpdateContract
+import org.ole.planet.myplanet.repository.UploadUpdateType
 import org.ole.planet.myplanet.repository.UploadedItemResult
 import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.utils.DispatcherProvider

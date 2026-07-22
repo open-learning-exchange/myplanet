@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.repository
-import org.ole.planet.myplanet.model.UserEntity
 
 import com.google.gson.JsonObject
 import io.mockk.coEvery
@@ -19,6 +18,7 @@ import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)

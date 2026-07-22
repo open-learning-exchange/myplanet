@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.services.upload
 
 import dagger.Lazy
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
@@ -19,7 +18,6 @@ import org.ole.planet.myplanet.model.CourseProgress
 import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.ResourceActivity

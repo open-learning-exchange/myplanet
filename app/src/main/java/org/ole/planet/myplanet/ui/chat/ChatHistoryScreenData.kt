@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.ui.chat
 
-import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.ChatHistory
+import org.ole.planet.myplanet.model.ChatShareTargets
 import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.UserEntity
 

@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.repository
-import org.ole.planet.myplanet.model.UserEntity
 
 import com.google.gson.Gson
 import com.google.gson.JsonObject
@@ -18,6 +17,7 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Rating
+import org.ole.planet.myplanet.model.UserEntity
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RatingsRepositoryImplTest {

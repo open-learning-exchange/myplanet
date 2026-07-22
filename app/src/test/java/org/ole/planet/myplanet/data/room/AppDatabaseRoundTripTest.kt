@@ -1,5 +1,4 @@
 package org.ole.planet.myplanet.data.room
-import org.ole.planet.myplanet.model.UserEntity
 
 import android.app.Application
 import androidx.room.Room
@@ -13,9 +12,10 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.model.Attachment
 import org.ole.planet.myplanet.model.Conversation
-import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.UserEntity
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config

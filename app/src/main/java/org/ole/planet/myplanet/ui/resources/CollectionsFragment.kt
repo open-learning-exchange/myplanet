@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnTagClickListener
 import org.ole.planet.myplanet.databinding.FragmentCollectionsBinding
-import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagData
+import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.utils.KeyboardUtils
 import org.ole.planet.myplanet.utils.textChanges

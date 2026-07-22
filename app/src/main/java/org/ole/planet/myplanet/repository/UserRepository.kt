@@ -2,14 +2,14 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.AchievementData
 import org.ole.planet.myplanet.model.DashboardProfile
 import org.ole.planet.myplanet.model.HealthRecord
 import org.ole.planet.myplanet.model.MemberInfo
-import org.ole.planet.myplanet.model.Achievement
 import org.ole.planet.myplanet.model.MyHealth
-import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.UserEntity
 
 interface UserRepository {
     suspend fun getSavedUsers(): List<User>
