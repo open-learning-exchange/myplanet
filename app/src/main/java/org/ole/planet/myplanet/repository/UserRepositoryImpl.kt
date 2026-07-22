@@ -1260,7 +1260,9 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        usersToDelete.forEach { userDao.deleteById(it) }
+        if (usersToDelete.isNotEmpty()) {
+            userDao.deleteByIds(usersToDelete.toList())
+        }
         if (usersToUpsert.isNotEmpty()) {
             userDao.upsertAll(usersToUpsert)
         }
