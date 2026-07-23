@@ -51,15 +51,16 @@ object ExamAnswerUtils {
     }
 
     private fun checkSelectAnswer(ans: String, correctChoices: List<String>?): Boolean {
-        return correctChoices?.contains(ans.lowercase(Locale.getDefault())) == true
+        val normalizedAns = ans.lowercase(Locale.getDefault())
+        return correctChoices?.any { it.lowercase(Locale.getDefault()) == normalizedAns } == true
     }
 
     private fun checkMultipleSelectAnswer(
         listAns: Map<String, String>?,
         correctChoices: List<String>?
     ): Boolean {
-        val selectedAns = listAns?.values?.toTypedArray()
-        val correctChoicesArray = correctChoices?.toTypedArray()
+        val selectedAns = listAns?.values?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
+        val correctChoicesArray = correctChoices?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
         return isEqual(selectedAns, correctChoicesArray)
     }
 

@@ -646,6 +646,7 @@ class CoursesRepositoryImpl @Inject constructor(
                                         hasOtherOption = JsonUtils.getBoolean("hasOtherOption", questionJson),
                     scaleMax = JsonUtils.getInt("scaleMax", questionJson).let { if (it <= 0) 9 else it },
                     marks = JsonUtils.getString("marks", questionJson),
+                    correctChoiceList = extractCorrectChoices(questionJson),
                 )
             )
         }
@@ -677,24 +678,23 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun extractCorrectChoices(questionJson: JsonObject): List<String> {
-        val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
-        if (correctChoiceArray.size() > 0) {
-            return correctChoiceArray.map { it.asString }
-        }
-
-        val correctChoice = JsonUtils.getString("correctChoice", questionJson)
-        if (correctChoice.isBlank()) {
-            return emptyList()
-        }
-
         val choices = JsonUtils.getJsonArray("choices", questionJson)
-        return choices.mapNotNull { choiceElement ->
-            val choice = choiceElement.asJsonObject
-            if (JsonUtils.getString("id", choice) == correctChoice) {
-                JsonUtils.getString("res", choice).ifBlank { null }
-            } else {
-                null
+        fun resolveChoiceValue(raw: String): String {
+            val matchedChoice = choices.firstOrNull {
+                it.isJsonObject && JsonUtils.getString("id", it.asJsonObject) == raw
+            }?.asJsonObject ?: return raw
+
+            return JsonUtils.getString("res", matchedChoice).ifBlank {
+                JsonUtils.getString("text", matchedChoice).ifBlank { raw }
             }
+        }
+
+        val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
+        return if (correctChoiceArray.size() > 0) {
+            correctChoiceArray.map { resolveChoiceValue(it.asString) }
+        } else {
+            val correctChoice = JsonUtils.getString("correctChoice", questionJson)
+            if (correctChoice.isBlank()) emptyList() else listOf(resolveChoiceValue(correctChoice))
         }
     }
 

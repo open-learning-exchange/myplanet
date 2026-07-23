@@ -40,7 +40,6 @@ import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
-    private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
     private val exporter: SubmissionsRepositoryExporter,
@@ -110,7 +109,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
 
         val exams = getExamsByIds(examIds)
-        val validExamIds = exams.mapNotNull { it.id }.toSet()
+        val validExamIds = exams.map { it.id }.toSet()
 
         val uniqueSurveys = linkedMapOf<String, Submission>()
         pendingSurveys.forEach { submission ->
@@ -214,9 +213,8 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     }
 
     override suspend fun saveSubmission(submission: Submission) {
-        val submissionEntity = submission ?: return
-        val answerEntities = submission.answers?.mapNotNull { it }.orEmpty()
-        submissionDao.upsertAll(listOf(submissionEntity))
+        val answerEntities = submission.answers?.map { it }.orEmpty()
+        submissionDao.upsertAll(listOf(submission))
         if (answerEntities.isNotEmpty()) {
             answerDao.upsertAll(answerEntities)
         }
@@ -340,9 +338,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
         val exam = examDao.getFirstByStepId(stepId) ?: return true
-        return exam.id?.let {
+        return exam.id.let {
             submissionDao.countCompletedByUserAndExamId(userId, it) > 0
-        } ?: false
+        }
     }
 
     private suspend fun getSurveysByCourseId(courseId: String): List<StepExam> {
@@ -391,7 +389,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         )
     }
 
-    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission? {
+    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission {
         val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
@@ -403,7 +401,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val submission = Submission().apply {
             id = UUID.randomUUID().toString()
             parentId = when {
-                !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                exam.id.isNotEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
                     "${exam.id}@${exam.courseId}"
                 } else {
                     exam.id
@@ -411,7 +409,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                 else -> null
             }
             parent = JsonObject().apply {
-                addProperty("_id", exam.id ?: "")
+                addProperty("_id", exam.id)
                 addProperty("name", exam.name ?: "")
                 addProperty("courseId", exam.courseId ?: "")
                 addProperty("sourcePlanet", exam.sourcePlanet ?: "")
@@ -452,7 +450,10 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         val submissionId = submissionRow?.id
         val questionId = question.id
 
-        if (submissionRow != null && !questionId.isNullOrBlank()) {
+        val ansForCheck = ExamAnswerUtils.getChoiceTextById(question, ans)
+        val listAnsForCheck = listAns?.keys?.associateWith { it }
+
+        if (submissionRow != null && questionId.isNotBlank()) {
             val existing = answerDao.getBySubmissionAndQuestion(submissionRow.id, questionId)
             val valueChoices: List<String>?
             val value: String?
@@ -462,10 +463,9 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
                     value = otherText
                     valueChoices = listOf("""{"id":"other","text":"$otherText"}""")
                 } else {
-                    val choiceText = ExamAnswerUtils.getChoiceTextById(question, ans)
-                    value = choiceText
+                    value = ansForCheck
                     valueChoices = if (ans.isNotEmpty()) {
-                        listOf("""{"id":"$ans","text":"$choiceText"}""")
+                        listOf("""{"id":"$ans","text":"$ansForCheck"}""")
                     } else {
                         emptyList()
                     }
@@ -485,7 +485,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             }
 
             val isCorrect = if (type == "exam") {
-                ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
+                ExamAnswerUtils.checkCorrectAnswer(ansForCheck, listAnsForCheck, question)
             } else {
                 true
             }
@@ -516,7 +516,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
 
         return if (type == "exam") {
-            ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
+            ExamAnswerUtils.checkCorrectAnswer(ansForCheck, listAnsForCheck, question)
         } else {
             true
         }
