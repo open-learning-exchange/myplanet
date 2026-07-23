@@ -861,6 +861,7 @@ class TeamsRepositoryImpl @Inject constructor(
             this.teamId = teamId
             assignee = assigneeId
             isUpdated = true
+            status = "active"
         }
         upsertTask(teamTask)
     }
