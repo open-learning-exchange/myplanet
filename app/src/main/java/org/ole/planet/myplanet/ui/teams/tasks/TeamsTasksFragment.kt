@@ -32,9 +32,9 @@ import org.ole.planet.myplanet.callback.OnTaskCompletedListener
 import org.ole.planet.myplanet.databinding.AlertTaskBinding
 import org.ole.planet.myplanet.databinding.AlertUsersSpinnerBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamsTasksBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.teams.TeamViewModel
 import org.ole.planet.myplanet.ui.user.UserArrayAdapter
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
@@ -92,10 +92,10 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         return binding.root
     }
 
-    private fun showTaskAlert(t: RealmTeamTask?) {
+    private fun showTaskAlert(t: TeamTask?) {
         val alertTaskBinding = AlertTaskBinding.inflate(layoutInflater)
         datePicker = alertTaskBinding.tvPick
-        var selectedAssignee: RealmUser? = null
+        var selectedAssignee: UserEntity? = null
         teamsTasksViewModel.clearDeadline()
 
         if (t != null) {
@@ -177,8 +177,8 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
         alertDialog.window?.setBackgroundDrawableResource(R.color.card_bg)
     }
-    private fun showMemberSelectionDialog(filteredUserList: List<RealmUser>, onAssigneeSelected: (RealmUser) -> Unit) {
-        var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
+    private fun showMemberSelectionDialog(filteredUserList: List<UserEntity>, onAssigneeSelected: (UserEntity) -> Unit) {
+        var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
         val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
         val adapter = UserArrayAdapter { selectedUser ->
@@ -204,7 +204,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
             .show()
     }
 
-    private fun updateAssigneeUI(alertTaskBinding: AlertTaskBinding, user: RealmUser) {
+    private fun updateAssigneeUI(alertTaskBinding: AlertTaskBinding, user: UserEntity) {
         val displayName = user.getFullName().ifBlank {
             user.name ?: getString(R.string.no_assignee)
         }
@@ -212,7 +212,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         alertTaskBinding.tvAssignMember.setTextColor(requireContext().getColor(R.color.daynight_textColor))
     }
 
-    private fun createOrUpdateTask(task: String, desc: String, teamTask: RealmTeamTask?, assigneeId: String? = null) {
+    private fun createOrUpdateTask(task: String, desc: String, teamTask: TeamTask?, assigneeId: String? = null) {
         viewLifecycleOwner.lifecycleScope.launch {
             val deadlineMillis = teamsTasksViewModel.getDeadlineMillis()
 
@@ -278,19 +278,19 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    private fun allTasks(tasks: List<RealmTeamTask>): List<RealmTeamTask> {
-        return tasks.sortedWith(compareBy<RealmTeamTask> { it.completed }.thenByDescending { it.deadline })
+    private fun allTasks(tasks: List<TeamTask>): List<TeamTask> {
+        return tasks.sortedWith(compareBy<TeamTask> { it.completed }.thenByDescending { it.deadline })
     }
 
-    private fun completedTasks(tasks: List<RealmTeamTask>): List<RealmTeamTask> {
+    private fun completedTasks(tasks: List<TeamTask>): List<TeamTask> {
         return tasks.filter { it.completed }.sortedByDescending { it.deadline }
     }
 
-    private fun myTasks(tasks: List<RealmTeamTask>): List<RealmTeamTask> {
+    private fun myTasks(tasks: List<TeamTask>): List<TeamTask> {
         return tasks.filter { !it.completed && it.assignee == user?.id }.sortedByDescending { it.deadline }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
@@ -345,18 +345,18 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    override fun onCheckChange(realmTeamTask: RealmTeamTask?, completed: Boolean) {
+    override fun onCheckChange(realmTeamTask: TeamTask?, completed: Boolean) {
         val taskId = realmTeamTask?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             teamsRepository.setTaskCompletion(taskId, completed)
         }
     }
 
-    override fun onEdit(task: RealmTeamTask?) {
+    override fun onEdit(task: TeamTask?) {
         showTaskAlert(task)
     }
 
-    override fun onDelete(task: RealmTeamTask?) {
+    override fun onDelete(task: TeamTask?) {
         val taskId = task?.id ?: return
         viewLifecycleOwner.lifecycleScope.launch {
             teamsRepository.deleteTask(taskId)
@@ -364,7 +364,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
         }
     }
 
-    override fun onClickMore(realmTeamTask: RealmTeamTask?) {
+    override fun onClickMore(realmTeamTask: TeamTask?) {
         if (realmTeamTask?.completed == true) {
             Toast.makeText(context, R.string.cannot_assign_completed_task, Toast.LENGTH_SHORT).show()
             return
@@ -379,7 +379,7 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 return@launch
             }
 
-            var dialogSelectedItem: RealmUser? = filteredUserList.firstOrNull()
+            var dialogSelectedItem: UserEntity? = filteredUserList.firstOrNull()
 
             val alertUsersSpinnerBinding = AlertUsersSpinnerBinding.inflate(LayoutInflater.from(requireActivity()))
             val adapter = UserArrayAdapter { selectedUser ->

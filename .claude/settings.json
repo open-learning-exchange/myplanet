@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "dogi": {
+      "source": {
+        "source": "github",
+        "repo": "dogi/kotlin-importing"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "kotlin-importing@dogi": true
+  }
+}

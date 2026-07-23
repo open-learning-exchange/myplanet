@@ -1344,4 +1344,10 @@
     <string name="join_team_first">Únete a un equipo para compartir este chat</string>
     <string name="join_enterprise_first">Únete a una empresa para compartir este chat</string>
 
+    <string name="open_link_with">Abrir enlace con</string>
+    <string name="just_once">Solo una vez</string>
+    <string name="always">Siempre</string>
+    <string name="survey_load_failed">No se pudo cargar la encuesta. Inténtalo de nuevo.</string>
+    <string name="survey_submitted">Encuesta enviada. ¡Gracias!</string>
+    <string name="survey_submit_failed">No se pudo enviar la encuesta. Inténtalo de nuevo.</string>
 </resources>

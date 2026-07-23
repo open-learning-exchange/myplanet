@@ -14,10 +14,10 @@ fun EditText.textChanges(): Flow<CharSequence?> {
             override fun afterTextChanged(s: Editable?) = Unit
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                trySend(s)
+                trySend(s?.toString())
             }
         }
         addTextChangedListener(listener)
         awaitClose { removeTextChangedListener(listener) }
-    }.onStart { emit(text) }
+    }.onStart { emit(text?.toString()) }
 }

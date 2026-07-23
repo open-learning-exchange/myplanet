@@ -7,14 +7,14 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = null) :
-    ListAdapter<RealmUser, HealthUsersAdapter.ViewHolder>(
-        DiffUtils.itemCallback<RealmUser>(
+class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = null) :
+    ListAdapter<UserEntity, HealthUsersAdapter.ViewHolder>(
+        DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.name == new.name &&
@@ -32,7 +32,7 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
     ) {
 
     class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(user: RealmUser, clickListener: ((RealmUser) -> Unit)?) {
+        fun bind(user: UserEntity, clickListener: ((UserEntity) -> Unit)?) {
             bindName(user)
             bindDate(user)
             bindImage(user)
@@ -41,15 +41,15 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
             }
         }
 
-        fun bindName(user: RealmUser) {
+        fun bindName(user: UserEntity) {
             binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
         }
 
-        fun bindDate(user: RealmUser) {
+        fun bindDate(user: UserEntity) {
             binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
         }
 
-        fun bindImage(user: RealmUser) {
+        fun bindImage(user: UserEntity) {
             if (!TextUtils.isEmpty(user.userImage)) {
                 ImageUtils.loadProfileImage(user.userImage, binding.ivUser, avatarSize)
             } else {

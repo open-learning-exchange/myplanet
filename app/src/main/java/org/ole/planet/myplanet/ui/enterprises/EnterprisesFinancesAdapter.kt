@@ -16,7 +16,7 @@ import com.bumptech.glide.Glide
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowFinanceBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
@@ -54,7 +54,7 @@ class EnterprisesFinancesAdapter(
     }
 
     private fun bindFinanceImage(binding: RowFinanceBinding, item: Transaction) {
-        val imageFile = RealmMyTeam.getAttachmentFile(context, item.id, item.imageName)
+        val imageFile = MyTeam.getAttachmentFile(context, item.id, item.imageName)
         if (imageFile != null && imageFile.exists()) {
             binding.financeImage.visibility = View.VISIBLE
             Glide.with(context)

@@ -532,7 +532,7 @@ class CoursesAdapter(
         private fun updateProgressViews(position: Int) {
             val course = getItem(position) ?: return
             val progress = progressMap?.get(course.courseId)
-            if (progress != null) {
+            if (progress != null && course.isMyCourse) {
                 rowCourseBinding.courseProgress.max = getInt("max", progress)
                 val currentProgress = getInt("current", progress)
                 rowCourseBinding.courseProgress.progress = currentProgress

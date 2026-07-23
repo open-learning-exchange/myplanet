@@ -23,9 +23,9 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.NewsUpdateData
@@ -85,7 +85,7 @@ class UploadManager @Inject constructor(
 ) : FileUploader(apiInterface, scope) {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(uploadConfigs.NewsActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
     }
 
     private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
@@ -137,7 +137,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    private fun createImage(user: RealmUser?, imgObject: JsonObject?): JsonObject {
+    private fun createImage(user: UserEntity?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
         `object`.addProperty("createdDate", timeProvider.now())
@@ -160,11 +160,11 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        uploadCoordinator.upload(uploadConfigs.CourseProgress)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {
-        return when (val result = uploadCoordinator.upload(uploadConfigs.Feedback)) {
+        return when (val result = uploadCoordinator.uploadRoom(uploadConfigs.Feedback)) {
             is UploadResult.Success -> true
             is UploadResult.PartialSuccess -> result.failed.isEmpty()
             is UploadResult.Failure -> false
@@ -181,7 +181,7 @@ class UploadManager @Inject constructor(
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
             val user = userRepository.getUserModel()
-            val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
+            val result = uploadCoordinator.uploadRoom(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
                 is UploadResult.Success -> {
@@ -229,7 +229,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
+    suspend fun uploadMyPersonal(personal: Personal): String {
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
@@ -252,7 +252,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        uploadCoordinator.upload(uploadConfigs.TeamTask)
+        uploadCoordinator.uploadRoom(uploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
@@ -347,7 +347,7 @@ class UploadManager @Inject constructor(
         val retryable = exception != null || (httpCode != null && httpCode >= 500)
         if (!retryable) return
         retryQueue.queueFailedOperation(
-            uploadType = "RealmMyTeam",
+            uploadType = "MyTeam",
             error = UploadError(
                 itemId = teamData.teamId ?: "",
                 exception = exception ?: Exception("Upload failed: HTTP $httpCode"),
@@ -358,12 +358,12 @@ class UploadManager @Inject constructor(
             endpoint = "teams",
             httpMethod = httpMethod,
             dbId = dbId,
-            modelClassName = "RealmMyTeam"
+            modelClassName = "MyTeam"
         )
     }
 
     private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String): String {
-        val imageFile = RealmMyTeam
+        val imageFile = MyTeam
             .getAttachmentFile(context, teamId, imageName) ?: return rev
         if (!imageFile.exists()) return rev
         return try {
@@ -408,11 +408,11 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities() {
-        uploadCoordinator.upload(uploadConfigs.TeamActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.TeamActivities)
     }
 
     suspend fun uploadRating() {
-        uploadCoordinator.upload(uploadConfigs.Rating)
+        uploadCoordinator.uploadRoom(uploadConfigs.Rating)
     }
 
     suspend fun uploadNews() {
@@ -518,7 +518,7 @@ class UploadManager @Inject constructor(
         val retryable = exception != null || (httpCode != null && httpCode >= 500)
         if (!retryable) return
         retryQueue.queueFailedOperation(
-            uploadType = "RealmNews",
+            uploadType = "News",
             error = UploadError(
                 itemId = news.id ?: "",
                 exception = exception ?: Exception("Upload failed: HTTP $httpCode"),
@@ -529,16 +529,16 @@ class UploadManager @Inject constructor(
             endpoint = "news",
             httpMethod = httpMethod,
             dbId = news._id,
-            modelClassName = "RealmNews"
+            modelClassName = "News"
         )
     }
 
     suspend fun uploadCrashLog() {
-        uploadCoordinator.upload(uploadConfigs.CrashLog)
+        uploadCoordinator.uploadRoom(uploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(uploadConfigs.SearchActivity)
+        uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
@@ -547,15 +547,15 @@ class UploadManager @Inject constructor(
         } else {
             uploadConfigs.ResourceActivities
         }
-        uploadCoordinator.upload(config)
+        uploadCoordinator.uploadRoom(config)
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(uploadConfigs.CourseActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
-        uploadCoordinator.upload(uploadConfigs.Meetups)
+        uploadCoordinator.uploadRoom(uploadConfigs.Meetups)
     }
 
     suspend fun uploadAdoptedSurveys() {

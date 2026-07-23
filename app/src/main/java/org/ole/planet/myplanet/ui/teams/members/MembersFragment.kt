@@ -20,8 +20,8 @@ import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.callback.OnMemberActionListener
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.databinding.FragmentCombinedMembersBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.JoinedMemberData
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -66,7 +66,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvMembers.layoutManager = GridLayoutManager(activity, columns)
         binding.rvMembers.adapter = membersAdapter
 
-        val initialUser = RealmUser()
+        val initialUser = UserEntity()
         requestsAdapter = RequestsAdapter(requireActivity(), initialUser) { reqUser, isAccepted ->
             requestsViewModel.respondToRequest(teamId, reqUser, isAccepted)
         }.apply { setTeamId(teamId) }
@@ -74,7 +74,7 @@ class MembersFragment : BaseTeamFragment() {
         binding.rvRequests.adapter = requestsAdapter
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val resolvedUser = userSessionManager.getUserModel() ?: RealmUser()
+            val resolvedUser = userSessionManager.getUserModel() ?: UserEntity()
             requestsAdapter?.setUser(resolvedUser)
             membersAdapter?.setUserId(resolvedUser.id)
         }
@@ -177,7 +177,7 @@ class MembersFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()
