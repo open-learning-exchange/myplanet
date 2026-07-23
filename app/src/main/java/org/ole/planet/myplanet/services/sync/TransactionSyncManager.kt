@@ -380,6 +380,7 @@ class TransactionSyncManager @Inject constructor(
     }
 
     private suspend fun downloadCvAttachmentsFromBatch(arr: JsonArray) = coroutineScope {
+        val inProgress = mutableSetOf<String>()
         for (j in arr) {
             val jsonDoc = getJsonObject("doc", j.asJsonObject)
             val docId = getString("_id", jsonDoc)
@@ -390,7 +391,7 @@ class TransactionSyncManager @Inject constructor(
                 val destFile = File(
                     FileUtils.getOlePath(context) + "cv/$resumeFileName"
                 )
-                if (!destFile.exists()) {
+                if (!destFile.exists() && inProgress.add(resumeFileName)) {
                     launch { downloadCvAttachment(docId, destFile) }
                 }
             }
