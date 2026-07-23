@@ -7,10 +7,10 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.FragmentMembersBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 
 abstract class BaseMemberFragment : BaseTeamFragment() {
-    abstract val list: List<RealmUser?>
+    abstract val list: List<UserEntity?>
     abstract val adapter: ListAdapter<*, *>?
     abstract val layoutManager: RecyclerView.LayoutManager?
     private var _binding: FragmentMembersBinding? = null

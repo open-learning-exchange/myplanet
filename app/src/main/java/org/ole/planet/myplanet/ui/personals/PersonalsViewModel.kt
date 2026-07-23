@@ -10,7 +10,7 @@ import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -20,12 +20,12 @@ class PersonalsViewModel @Inject constructor(
     private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
-    val personals: StateFlow<List<RealmMyPersonal>> = flow {
+    val personals: StateFlow<List<Personal>> = flow {
         val user = userSessionManager.getUserModel()
         emitAll(personalsRepository.getPersonalResources(user?.id))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    fun updatePersonalResource(id: String, updater: (RealmMyPersonal) -> Unit) {
+    fun updatePersonalResource(id: String, updater: (Personal) -> Unit) {
         viewModelScope.launch {
             personalsRepository.updatePersonalResource(id, updater)
         }

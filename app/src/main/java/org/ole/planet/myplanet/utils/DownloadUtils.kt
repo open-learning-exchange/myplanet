@@ -19,7 +19,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DownloadResourceUpdateEntryPoint
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.DownloadWorker
@@ -128,7 +128,7 @@ object DownloadUtils {
             .setAutoCancel(true)
             .build()
     }
-    fun downloadAllFiles(dbMyLibrary: List<RealmMyLibrary?>): ArrayList<String> {
+    fun downloadAllFiles(dbMyLibrary: List<MyLibrary?>): ArrayList<String> {
         return ArrayList(dbMyLibrary.map { UrlUtils.getUrl(it) })
     }
 

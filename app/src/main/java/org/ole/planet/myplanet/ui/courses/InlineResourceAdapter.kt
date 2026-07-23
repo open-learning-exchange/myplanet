@@ -26,7 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -36,9 +36,9 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
     private val dispatcherProvider: DispatcherProvider,
-    private val onResourceClick: (RealmMyLibrary) -> Unit
-) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
-    DiffUtils.itemCallback<RealmMyLibrary>(
+    private val onResourceClick: (MyLibrary) -> Unit
+) : ListAdapter<MyLibrary, InlineResourceAdapter.ViewHolder>(
+    DiffUtils.itemCallback<MyLibrary>(
         areItemsTheSame = { old, new -> old.id == new.id },
         areContentsTheSame = { old, new ->
             old.resourceLocalAddress == new.resourceLocalAddress &&
@@ -81,7 +81,7 @@ class InlineResourceAdapter(
         }
     }
 
-    override fun onCurrentListChanged(previousList: MutableList<RealmMyLibrary>, currentList: MutableList<RealmMyLibrary>) {
+    override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
         textCache.clear()
         bitmapCache.evictAll()
@@ -153,7 +153,7 @@ class InlineResourceAdapter(
         }
     }
 
-    private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: RealmMyLibrary) {
+    private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: MyLibrary) {
         val binding = holder.binding
         val isDownloaded = resource.isResourceOffline() ||
             FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))

@@ -10,13 +10,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmObject
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -34,7 +33,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
-    var resources: List<RealmMyLibrary>? = null
+    var resources: List<MyLibrary>? = null
     var courseLib: String? = null
     private var isAddInProgress = false
 
@@ -50,10 +49,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             courseLib = it.getString("courseLib")
             @Suppress("UNCHECKED_CAST")
             resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
+                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<MyLibrary>
             } else {
                 @Suppress("DEPRECATION")
-                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+                it.getSerializable("resources") as? ArrayList<MyLibrary>
             }
         }
     }
@@ -121,9 +120,9 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val courseIds = mutableListOf<String>()
 
         itemsToAdd.forEach { item ->
-            when (val realmObject = item as? RealmObject) {
-                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
-                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+            when (item) {
+                is MyLibrary -> item.resourceId?.let(resourceIds::add)
+                is MyCourse -> item.courseId?.let(courseIds::add)
                 else -> {}
             }
         }
@@ -200,11 +199,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         val snapshot = selectedItems?.toList() ?: return
         val courseIdsToDelete = mutableListOf<String>()
         for (item in snapshot) {
-            val `object` = item as RealmObject
-            if (deleteProgress && `object` is RealmMyCourse) {
-                `object`.courseId?.let { courseIdsToDelete.add(it) }
+            if (deleteProgress && item is MyCourse) {
+                item.courseId?.let { courseIdsToDelete.add(it) }
             }
-            removeFromShelf(`object`)
+            item?.let { removeFromShelf(it) }
         }
 
         if (courseIdsToDelete.isNotEmpty()) {

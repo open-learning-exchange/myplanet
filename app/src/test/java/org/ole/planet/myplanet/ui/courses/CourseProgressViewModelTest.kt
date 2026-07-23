@@ -9,7 +9,7 @@ import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.model.CourseProgressData
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -32,7 +32,7 @@ class CourseProgressViewModelTest {
     fun `loadProgress sets courseProgress value correctly`() = runTest {
         val courseId = "id"
         val userId = "userId"
-        val user = RealmUser()
+        val user = UserEntity()
         user._id = userId
         coEvery { userSessionManager.getUserModel() } returns user
 
@@ -48,7 +48,7 @@ class CourseProgressViewModelTest {
     fun `calling loadProgress twice only invokes coursesRepository once`() = runTest {
         val courseId = "id"
         val userId = "userId"
-        val user = RealmUser()
+        val user = UserEntity()
         user._id = userId
         coEvery { userSessionManager.getUserModel() } returns user
 

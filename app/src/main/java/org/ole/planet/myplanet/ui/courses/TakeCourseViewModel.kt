@@ -7,9 +7,9 @@ import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 
@@ -17,9 +17,9 @@ sealed interface TakeCourseUiState {
     object Loading : TakeCourseUiState
     object NotFound : TakeCourseUiState
     data class Success(
-        val course: RealmMyCourse,
-        val steps: List<RealmCourseStep>,
-        val userModel: RealmUser?,
+        val course: MyCourse,
+        val steps: List<CourseStep>,
+        val userModel: UserEntity?,
         val courseProgress: Int
     ) : TakeCourseUiState
 }

@@ -29,8 +29,8 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseVoicesFragment
 import org.ole.planet.myplanet.databinding.FragmentVoicesBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.VoicesLabelManager
@@ -48,7 +48,7 @@ class VoicesFragment : BaseVoicesFragment() {
     private var _binding: FragmentVoicesBinding? = null
     private var shouldScrollToTopNextUpdate = false
     private val binding get() = _binding!!
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private val voicesViewModel: VoicesViewModel by viewModels()
 
     @Inject
@@ -177,7 +177,7 @@ class VoicesFragment : BaseVoicesFragment() {
     private val currentEmptyStateSource: String
         get() = if (etSearch.text.isNotEmpty() || voicesViewModel.selectedLabel.value != "All") "news_filtered" else "news"
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<News?>?) {
         if (!isAdded || list == null) return
 
         if (binding.rvNews.adapter == null) {
@@ -196,7 +196,7 @@ class VoicesFragment : BaseVoicesFragment() {
         showNoData(binding.tvMessage, list.filterNotNull().size, currentEmptyStateSource)
     }
 
-    private fun downloadResourcesForNews(list: List<RealmNews?>) {
+    private fun downloadResourcesForNews(list: List<News?>) {
         val resourceIds = mutableSetOf<String>()
         list.forEach { news ->
             if ((news?.imagesArray?.size() ?: 0) > 0) {
@@ -215,8 +215,8 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun sortNews(list: List<RealmNews?>): List<RealmNews?> {
-        val updatedListAsMutable: MutableList<RealmNews?> = list.toMutableList()
+    private fun sortNews(list: List<News?>): List<News?> {
+        val updatedListAsMutable: MutableList<News?> = list.toMutableList()
         Trace.beginSection("VoicesFragment.sort")
         return try {
             updatedListAsMutable.sortedWith(compareByDescending { news ->
@@ -227,7 +227,7 @@ class VoicesFragment : BaseVoicesFragment() {
         }
     }
 
-    private fun setupVoicesAdapter(sortedList: List<RealmNews>) {
+    private fun setupVoicesAdapter(sortedList: List<News>) {
         val labelManager = VoicesLabelManager(
             context = requireActivity(),
             scope = viewLifecycleOwner.lifecycleScope,
@@ -288,7 +288,7 @@ class VoicesFragment : BaseVoicesFragment() {
         binding.rvNews.adapter = adapterNews
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: News?) {
         val fromLogin = arguments?.getBoolean("fromLogin")
         if (fromLogin == false) {
             val bundle = Bundle()

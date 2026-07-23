@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.RowNewsBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
@@ -23,7 +23,7 @@ class VoicesLabelManager(
     private val addLabelFn: suspend (String, String) -> Unit,
     private val removeLabelFn: suspend (String, String) -> Unit
 ) {
-    fun setupAddLabelMenu(binding: RowNewsBinding, voice: RealmNews?, canManageLabels: Boolean) {
+    fun setupAddLabelMenu(binding: RowNewsBinding, voice: News?, canManageLabels: Boolean) {
         binding.btnAddLabel.setOnClickListener(null)
         binding.btnAddLabel.isEnabled = canManageLabels
         if (!canManageLabels) {
@@ -60,7 +60,7 @@ class VoicesLabelManager(
         }
     }
 
-    fun showChips(binding: RowNewsBinding, voice: RealmNews, canManageLabels: Boolean) {
+    fun showChips(binding: RowNewsBinding, voice: News, canManageLabels: Boolean) {
         binding.fbChips.removeAllViews()
 
         for (label in voice.labels ?: emptyList()) {
@@ -96,7 +96,7 @@ class VoicesLabelManager(
 
     private fun updateAddLabelVisibility(
         binding: RowNewsBinding,
-        voice: RealmNews?,
+        voice: News?,
         canManageLabels: Boolean,
     ) {
         if (!canManageLabels) {

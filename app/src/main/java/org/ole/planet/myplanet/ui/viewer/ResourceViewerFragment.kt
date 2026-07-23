@@ -58,7 +58,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
 import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -89,11 +89,12 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     private var auth: String = ""
 
     private var exoPlayer: ExoPlayer? = null
+    private var streamingHttpDataSourceFactory: DefaultHttpDataSource.Factory? = null
     private var videoLoadingOverlay: View? = null
     private var videoLoadingText: TextView? = null
     private var noisyReceiverRegistered = false
     private lateinit var audioRecorder: AudioRecorder
-    private lateinit var library: RealmMyLibrary
+    private lateinit var library: MyLibrary
     private var pdfText: String = ""
     private var isExtractingText = false
     private var externalFilesDir: File? = null
@@ -298,6 +299,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             .setUserAgent("ExoPlayer")
             .setAllowCrossProtocolRedirects(true)
             .setDefaultRequestProperties(requestProperties)
+        streamingHttpDataSourceFactory = httpDataSourceFactory
 
         val mediaSource: MediaSource = ProgressiveMediaSource.Factory(httpDataSourceFactory)
             .createMediaSource(MediaItem.fromUri(uri))
@@ -490,7 +492,11 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             val url = filePath ?: run {
                 return@launch
             }
-            streamVideoFromUrl(url, auth)
+            if (exoPlayer == null) {
+                streamVideoFromUrl(url, auth)
+            } else {
+                streamingHttpDataSourceFactory?.setDefaultRequestProperties(hashMapOf("Cookie" to auth))
+            }
             if (isOnline) {
                 withContext(dispatcherProvider.io) {
                     if (!FileUtils.checkFileExist(requireContext(), url)) {
@@ -515,6 +521,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         authSessionUpdater?.stop()
         exoPlayer?.release()
         exoPlayer = null
+        streamingHttpDataSourceFactory = null
         if (noisyReceiverRegistered) {
             requireContext().unregisterReceiver(audioBecomingNoisyReceiver)
             noisyReceiverRegistered = false

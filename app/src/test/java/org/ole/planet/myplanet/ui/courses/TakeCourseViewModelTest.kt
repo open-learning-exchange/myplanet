@@ -14,9 +14,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -37,10 +37,10 @@ class TakeCourseViewModelTest {
     private val courseId = "course_1"
 
     private fun stubCourseLoad(
-        course: RealmMyCourse? = RealmMyCourse().apply { courseId = this@TakeCourseViewModelTest.courseId },
-        steps: List<RealmCourseStep> = emptyList(),
+        course: MyCourse? = MyCourse().apply { courseId = this@TakeCourseViewModelTest.courseId },
+        steps: List<CourseStep> = emptyList(),
         currentProgress: Int = 0,
-        user: RealmUser? = RealmUser().apply { id = "user_1" }
+        user: UserEntity? = UserEntity().apply { id = "user_1" }
     ) {
         coEvery { userSessionManager.getUserModel() } returns user
         coEvery { coursesRepository.getCourseById(courseId) } returns course
@@ -113,7 +113,7 @@ class TakeCourseViewModelTest {
         val otherCourseId = "course_2"
         stubCourseLoad()
         coEvery { coursesRepository.getCourseById(otherCourseId) } returns
-            RealmMyCourse().apply { courseId = otherCourseId }
+            MyCourse().apply { courseId = otherCourseId }
         coEvery { coursesRepository.getCourseSteps(otherCourseId) } returns emptyList()
         coEvery { coursesRepository.getCourseProgress(any(), listOf(otherCourseId)) } returns
             hashMapOf<String?, JsonObject>()

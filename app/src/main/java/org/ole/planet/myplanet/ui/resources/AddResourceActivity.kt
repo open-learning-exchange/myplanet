@@ -24,7 +24,7 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -43,7 +43,7 @@ class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityAddResourceBinding
-    var userModel: RealmUser? = null
+    var userModel: UserEntity? = null
     var subjects: MutableList<String>? = null
     var levels: MutableList<String>? = null
     private var resourceFor: MutableList<String>? = null
@@ -195,6 +195,7 @@ class AddResourceActivity : AppCompatActivity() {
                 )
                 if (result.isSuccess) {
                     toast(this@AddResourceActivity, getString(R.string.resource_updated))
+                    setResult(RESULT_OK)
                     finish()
                 } else {
                     toast(this@AddResourceActivity, getString(R.string.failed_to_update_resource))
@@ -234,6 +235,7 @@ class AddResourceActivity : AppCompatActivity() {
                     getString(R.string.added_to_my_library)
                 }
                 toast(this@AddResourceActivity, message)
+                setResult(RESULT_OK)
                 finish()
             } else {
                 binding.tlTitle.error = getString(R.string.resource_title_already_exists)

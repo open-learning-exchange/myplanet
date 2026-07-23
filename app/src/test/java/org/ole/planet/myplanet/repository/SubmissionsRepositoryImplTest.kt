@@ -7,48 +7,54 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
+import io.mockk.mockkObject
 import io.mockk.spyk
 import io.mockk.unmockkAll
 import io.mockk.verify
-import io.realm.Realm
-import io.realm.RealmQuery
 import javax.inject.Provider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.utils.NetworkUtils
 
 @ExperimentalCoroutinesApi
 class SubmissionsRepositoryImplTest {
 
-    private lateinit var databaseService: DatabaseService
     private lateinit var teamsRepositoryProvider: Provider<TeamsRepository>
     private lateinit var surveysRepositoryProvider: Provider<SurveysRepository>
     private lateinit var context: Context
     private lateinit var sharedPrefManager: SharedPrefManager
     private lateinit var exporter: SubmissionsRepositoryExporter
-    private val testDispatcher = UnconfinedTestDispatcher()
 
+    private val submitPhotosDao: SubmitPhotosDao = mockk(relaxed = true)
+    private val submissionDao: SubmissionDao = mockk(relaxed = true)
+    private val answerDao: AnswerDao = mockk(relaxed = true)
+    private val examDao: ExamDao = mockk(relaxed = true)
+    private val questionDao: QuestionDao = mockk(relaxed = true)
+    private val userDao: UserDao = mockk(relaxed = true)
     private lateinit var repository: SubmissionsRepositoryImpl
 
     @Before
     fun setUp() {
-        databaseService = mockk(relaxed = true)
         val teamsRepo = mockk<TeamsRepository>(relaxed = true)
         teamsRepositoryProvider = mockk(relaxed = true)
         every { teamsRepositoryProvider.get() } returns teamsRepo
@@ -57,22 +63,18 @@ class SubmissionsRepositoryImplTest {
         sharedPrefManager = mockk(relaxed = true)
         exporter = mockk(relaxed = true)
 
-        every { databaseService.ioDispatcher } returns testDispatcher
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            val realm = mockk<Realm>(relaxed = true)
-            transactionSlot.captured.invoke(realm)
-        }
-
         repository = spyk(SubmissionsRepositoryImpl(
-            databaseService,
-            testDispatcher,
             teamsRepositoryProvider,
             surveysRepositoryProvider,
             context,
             sharedPrefManager,
-            exporter
+            exporter,
+            submitPhotosDao,
+            submissionDao,
+            answerDao,
+            examDao,
+            questionDao,
+            userDao
         ), recordPrivateCalls = true)
     }
 
@@ -83,10 +85,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getPendingSurveysFlow queries correctly`() = runTest {
-        val mockList = listOf(mockk<RealmSubmission>())
-        coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns kotlinx.coroutines.flow.flowOf(mockList)
+        every { submissionDao.observePendingSurveys("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(Submission(id = "submission1")))
 
         val result = repository.getPendingSurveysFlow("user_123").first()
         assertEquals(1, result.size)
@@ -94,10 +93,7 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsFlow queries correctly`() = runTest {
-        val mockList = listOf(mockk<RealmSubmission>())
-        coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns kotlinx.coroutines.flow.flowOf(mockList)
+        every { submissionDao.observeByUserId("user_123") } returns kotlinx.coroutines.flow.flowOf(listOf(Submission(id = "submission1")))
 
         val result = repository.getSubmissionsFlow("user_123").first()
         assertEquals(1, result.size)
@@ -105,22 +101,11 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsFlow suppresses equivalent emissions`() = runTest {
-        val s1 = mockk<RealmSubmission>(relaxed = true).apply {
-            every { id } returns "1"
-            every { lastUpdateTime } returns 100L
-        }
-        val s1_dup = mockk<RealmSubmission>(relaxed = true).apply {
-            every { id } returns "1"
-            every { lastUpdateTime } returns 100L
-        }
-        val subList = listOf(s1)
-        val subListDup = listOf(s1_dup)
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDup = listOf(Submission(id = "1", lastUpdateTime = 100L))
 
-        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<RealmSubmission>>(replay = 1)
-
-        coEvery {
-            repository["queryListFlow"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns flowEmitter
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
 
         var emissions = 0
         val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
@@ -153,20 +138,12 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getUniquePendingSurveys returns list when exams exist`() = runTest {
-        val mockSub1 = mockk<RealmSubmission>(relaxed = true).apply {
-            every { parentId } returns "exam1@course1"
-        }
-        val mockSub2 = mockk<RealmSubmission>(relaxed = true).apply {
-            every { parentId } returns "exam2@course1"
-        }
-
-        coEvery {
-            repository["queryList"](RealmSubmission::class.java, false, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns listOf(mockSub1, mockSub2)
-
-        coEvery {
-            repository["getExamsByIds"](any<List<String>>())
-        } returns emptyList<RealmStepExam>()
+        coEvery { submissionDao.getUniquePendingSurveyCandidates("user") } returns listOf(
+            Submission(id = "sub1", parentId = "exam1@course1"),
+            Submission(id = "sub2", parentId = "exam2@course1"),
+        )
+        coEvery { answerDao.getBySubmissionIds(listOf("sub1", "sub2")) } returns emptyList()
+        coEvery { examDao.getByIds(listOf("exam1", "exam2")) } returns emptyList()
 
         val result = repository.getUniquePendingSurveys("user")
         assertEquals(0, result.size)
@@ -186,10 +163,8 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `getSubmissionsByUserId returns correctly`() = runTest {
-        val mockList = listOf(mockk<RealmSubmission>())
-        coEvery {
-            repository["queryList"](RealmSubmission::class.java, true, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns mockList
+        coEvery { submissionDao.getByUserId("test") } returns listOf(Submission(id = "submission1", userId = "test"))
+        coEvery { answerDao.getBySubmissionIds(listOf("submission1")) } returns emptyList()
 
         val result = repository.getSubmissionsByUserId("test")
         assertEquals(1, result.size)
@@ -199,19 +174,7 @@ class SubmissionsRepositoryImplTest {
     fun `createBulkSurveySubmissions calls getOrCreateSubmission for all users`() = runTest {
         val examId = "examId"
         val userIds = listOf("user1", "user2")
-        val realm = mockk<Realm>(relaxed = true)
-        val query = mockk<RealmQuery<RealmStepExam>>(relaxed = true)
-        val exam = mockk<RealmStepExam>(relaxed = true)
-
-        every { realm.where(RealmStepExam::class.java) } returns query
-        every { query.equalTo("id", examId) } returns query
-        every { query.findFirst() } returns exam
-        every { exam.courseId } returns "courseId"
-
-        coEvery { repository["withRealm"](any<Boolean>(), any<Function1<Realm, Any>>()) } answers {
-            val action = arg<Function1<Realm, Any>>(1)
-            action.invoke(realm)
-        }
+        coEvery { examDao.getById(examId) } returns StepExam(id = examId, courseId = "courseId")
 
         coEvery { repository.getOrCreateSubmission(any(), any()) } returns mockk()
 
@@ -222,23 +185,16 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
-    fun `saveSubmission performs transaction`() = runTest {
-        val sub = mockk<RealmSubmission>(relaxed = true)
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            val realm = mockk<Realm>(relaxed = true)
-            transactionSlot.captured.invoke(realm)
-        }
+    fun `saveSubmission upserts submission through Room`() = runTest {
+        val sub = Submission().apply { id = "submission1" }
 
         repository.saveSubmission(sub)
 
-        coVerify { databaseService.executeTransactionAsync(any()) }
+        coVerify { submissionDao.upsertAll(match { it.single().id == "submission1" }) }
     }
 
     @Test
-    fun `bulkInsertFromSync processes array correctly`() {
-        val realm = mockk<Realm>(relaxed = true)
+    fun `bulkInsertFromSync processes array correctly`() = runTest {
         val jsonArray = JsonArray().apply {
             add(JsonObject().apply {
                 add("doc", JsonObject().apply {
@@ -252,80 +208,102 @@ class SubmissionsRepositoryImplTest {
             })
         }
 
-        // Since insertSubmissionInternal is called on `this`, spyk can track it
-        every { repository["insertSubmissionInternal"](any<Realm>(), any<JsonObject>()) } answers { }
+        repository.bulkInsertFromSync(jsonArray)
 
-        repository.bulkInsertFromSync(realm, jsonArray)
-        verify(exactly = 1) { repository["insertSubmissionInternal"](realm, any<JsonObject>()) }
+        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
+    }
+
+    @Test
+    fun `bulkInsertFromSync stores JsonObject answer value as its json string`() = runTest {
+        val answers = JsonArray().apply {
+            add(JsonObject().apply {
+                add("value", JsonObject().apply { addProperty("text", "nested") })
+                addProperty("questionId", "q1")
+            })
+        }
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "sub_object_answer")
+                    add("answers", answers)
+                })
+            })
+        }
+
+        // Regression: previously getAsString() on a JsonObject value threw
+        // UnsupportedOperationException and failed the entire submissions sync.
+        repository.bulkInsertFromSync(jsonArray)
+
+        verify {
+            answerDao.upsertAllBlocking(
+                match { list -> list.single().value == "{\"text\":\"nested\"}" }
+            )
+        }
+    }
+
+    @Test
+    fun `bulkInsertFromSync stores array answer value as valueChoices not value`() = runTest {
+        val answers = JsonArray().apply {
+            add(JsonObject().apply {
+                add("value", JsonArray().apply { add("a"); add("b") })
+                addProperty("questionId", "q1")
+            })
+        }
+        val jsonArray = JsonArray().apply {
+            add(JsonObject().apply {
+                add("doc", JsonObject().apply {
+                    addProperty("_id", "sub_array_answer")
+                    add("answers", answers)
+                })
+            })
+        }
+
+        repository.bulkInsertFromSync(jsonArray)
+
+        verify {
+            answerDao.upsertAllBlocking(
+                match { list ->
+                    val answer = list.single()
+                    answer.value == null && answer.valueChoices?.size == 2
+                }
+            )
+        }
     }
 
     @Test
     fun `insertSubmission skips if _attachments present`() = runTest {
         val submission = JsonObject().apply { addProperty("_attachments", "test") }
         repository.insertSubmission(submission)
-        coVerify(exactly = 0) { databaseService.executeTransactionAsync(any()) }
+        verify(exactly = 0) { submissionDao.upsertAllBlocking(any()) }
     }
 
     @Test
-    fun `insertSubmission performs happy path creation`() = runTest {
-        val realm = mockk<Realm>(relaxed = true)
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(realm)
-        }
-
-        val query = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
-        every { realm.where(RealmSubmission::class.java) } returns query
-        every { query.equalTo(any<String>(), any<String>()) } returns query
-        every { query.findFirst() } returns null
-        every { realm.createObject(RealmSubmission::class.java, any<String>()) } returns mockk<RealmSubmission>(relaxed = true)
-
+    fun `insertSubmission upserts synced submission through Room`() = runTest {
         val submission = JsonObject().apply {
             addProperty("_id", "test_id")
             addProperty("status", "pending")
         }
 
-        every { repository["updateBasicFields"](any<RealmSubmission>(), any<String>(), any<String>(), any<Boolean>(), any<JsonObject>()) } answers { }
-        every { repository["updateTeam"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>()) } answers { }
-        every { repository["updateMembership"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>()) } answers { }
-        every { repository["updateUserId"](any<RealmSubmission>(), any<JsonObject>()) } answers { }
-        every { repository["updateAnswers"](any<Realm>(), any<RealmSubmission>(), any<JsonObject>(), any<Boolean>()) } answers { }
-
         repository.insertSubmission(submission)
 
-        verify(exactly = 1) { realm.createObject(RealmSubmission::class.java, "test_id") }
+        verify { submissionDao.upsertAllBlocking(match { it.single().id == "test_id" }) }
     }
 
     @Test
-    fun `deleteExamSubmissions queries and deletes correctly`() = runTest {
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            val realm = mockk<Realm>(relaxed = true)
-            val query = mockk<RealmQuery<RealmSubmission>>(relaxed = true)
-            every { realm.where(RealmSubmission::class.java) } returns query
-            every { query.equalTo(any<String>(), any<String>()) } returns query
-            every { query.findAll() } returns mockk(relaxed = true)
-
-            transactionSlot.captured.invoke(realm)
-        }
+    fun `deleteExamSubmissions deletes answers and submissions through Room`() = runTest {
+        coEvery { submissionDao.getByParentUserAndStatus("exam@course", "user", null) } returns listOf(Submission(id = "submission1"))
 
         repository.deleteExamSubmissions("exam", "course", "user")
-        coVerify { databaseService.executeTransactionAsync(any()) }
+
+        coVerify { answerDao.deleteBySubmissionIds(listOf("submission1")) }
+        coVerify { submissionDao.deleteByParentAndUser("exam@course", "user") }
     }
 
     @Test
     fun `hasSubmission returns true when match found`() = runTest {
-        val mockQuestionList = listOf(mockk<RealmExamQuestion>(relaxed = true).apply {
-            every { examId } returns "stepExamId"
-        })
+        coEvery { questionDao.countByExamId("stepExamId") } returns 1
 
-        coEvery {
-            repository["queryList"](RealmExamQuestion::class.java, false, any<Function1<RealmQuery<RealmExamQuestion>, Unit>>())
-        } answers { mockQuestionList }
-
-        coEvery {
-            repository["count"](RealmSubmission::class.java, any<Function1<RealmQuery<RealmSubmission>, Unit>>())
-        } returns 1L
+        coEvery { submissionDao.countByUserParentAndType("userId", "stepExamId@courseId", "type") } returns 1
 
         val result = repository.hasSubmission("stepExamId", "courseId", "userId", "type")
         assertTrue(result)
@@ -333,63 +311,92 @@ class SubmissionsRepositoryImplTest {
 
     @Test
     fun `createExamSubmission creates and returns new submission`() = runTest {
-        val exam = mockk<RealmStepExam>(relaxed = true)
-        every { exam.courseId } returns "course_id"
-        every { exam.id } returns "exam_id"
-
-        val realm = mockk<Realm>(relaxed = true)
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            // Empty to skip lambda execution to prevent Realm type issues when testing createObject
+        val exam = StepExam().apply {
+            id = "exam_id"
+            courseId = "course_id"
         }
 
         val result = repository.createExamSubmission(
-            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", "team")
+            CreateExamSubmissionRequest("user", "dob", "gender", exam, "type", null)
         )
-        // Function executeTransaction wrapper does not execute anything, so result can be null.
-        // We verify the interaction.
-        coVerify { databaseService.executeTransactionAsync(any()) }
+
+        assertEquals("exam_id@course_id", result?.parentId)
+        coVerify { submissionDao.upsertAll(match { it.single().parentId == "exam_id@course_id" }) }
     }
 
     @Test
-    fun `saveExamAnswer executes without exceptions`() = runTest {
+    fun `saveExamAnswer upserts answer through Room`() = runTest {
         val answerData = mockk<ExamAnswerData>(relaxed = true)
-        val mockAnswer = RealmAnswer()
-        val mockExam = mockk<RealmStepExam>(relaxed = true)
-        val mockQuestion = mockk<RealmExamQuestion>(relaxed = true)
-        val mockSubmission = mockk<RealmSubmission>(relaxed = true)
+        val question = ExamQuestion().apply { id = "question1"; examId = "exam1"; type = "text" }
+        val submission = Submission().apply { id = "submission1"; userId = "user1"; parentId = "exam1@course1" }
 
-        every { answerData.component1() } returns mockSubmission
-        every { answerData.component2() } returns mockQuestion
-
-        coEvery { repository.getSubmissionById(any()) } returns mockSubmission
-        coEvery { repository.getExamById(any()) } returns mockExam
-
-        val transactionSlot = slot<Function1<Realm, Unit>>()
-        coEvery {
-            databaseService.executeTransactionAsync(capture(transactionSlot))
-        } answers {
-            // Empty to prevent internal query cast exceptions. We just verify the interaction.
-        }
+        every { answerData.component1() } returns submission
+        every { answerData.component2() } returns question
+        every { answerData.component3() } returns "answer text"
+        every { answerData.component4() } returns null
+        every { answerData.component5() } returns null
+        every { answerData.component6() } returns false
+        every { answerData.component7() } returns "survey"
+        every { answerData.component8() } returns 0
+        every { answerData.component9() } returns 1
+        every { answerData.component10() } returns true
+        coEvery { submissionDao.getByIdOrRemoteId("submission1") } returns Submission(id = "submission1", parentId = "exam1@course1", userId = "user1")
 
         val result = repository.saveExamAnswer(answerData)
+
         assertTrue(result)
-        coVerify { databaseService.executeTransactionAsync(any()) }
+        coVerify { answerDao.upsertAll(match { it.single().submissionId == "submission1" && it.single().value == "answer text" }) }
+        coVerify { submissionDao.updateStatusAndLastUpdate("submission1", "complete", any()) }
     }
 
     @Test
-    fun `markSubmissionComplete executes transaction`() = runTest {
-        val mockSub = mockk<RealmSubmission>(relaxed = true)
-        coEvery {
-            repository["update"](RealmSubmission::class.java, "id", "test_id", any<Function1<RealmSubmission, Unit>>())
-        } answers {
-            val updater = it.invocation.args[3] as (RealmSubmission) -> Unit
-            updater.invoke(mockSub)
+    fun `serializeSubmission uploads fresh user data instead of the stored blob`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        // Fresh user record from Room (attachment-free, current) must win over the persisted
+        // blob, whose _attachments were stripped for storage safety.
+        val freshUser = mockk<UserEntity>()
+        every { freshUser.serialize() } returns JsonObject().apply { addProperty("_id", "fresh_user") }
+        coEvery { userDao.getById("u1") } returns freshUser
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            user = "{\"_id\":\"stored_user\"}"
         }
 
-        repository.markSubmissionComplete("test_id", JsonObject())
+        val result = repository.serializeSubmission(submission, context, "planet", "parent")
 
-        verify { mockSub.status = "complete" }
+        assertEquals("fresh_user", result.getAsJsonObject("user").get("_id").asString)
+    }
+
+    @Test
+    fun `serializeSubmission falls back to stored user blob when no fresh user exists`() = runTest {
+        mockkObject(NetworkUtils)
+        every { NetworkUtils.getUniqueIdentifier() } returns "androidId"
+        every { NetworkUtils.getDeviceName() } returns "device"
+        every { NetworkUtils.getCustomDeviceName(any()) } returns "custom"
+
+        coEvery { userDao.getById(any()) } returns null
+
+        val submission = Submission().apply {
+            id = "s1"; userId = "u1"; parentId = "exam1@course1"; type = "survey"
+            user = "{\"_id\":\"stored_user\"}"
+        }
+
+        val result = repository.serializeSubmission(submission, context, "planet", "parent")
+
+        assertEquals("stored_user", result.getAsJsonObject("user").get("_id").asString)
+    }
+
+    @Test
+    fun `markSubmissionComplete updates submission through Room`() = runTest {
+        val payload = JsonObject().apply { addProperty("name", "Learner") }
+
+        repository.markSubmissionComplete("test_id", payload)
+
+        coVerify { submissionDao.markComplete("test_id", payload.toString()) }
     }
 }

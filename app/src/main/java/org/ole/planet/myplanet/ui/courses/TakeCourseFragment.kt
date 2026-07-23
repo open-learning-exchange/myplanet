@@ -23,9 +23,9 @@ import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentTakeCourseBinding
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -45,9 +45,9 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     lateinit var coursesRepository: CoursesRepository
     private val viewModel: TakeCourseViewModel by viewModels()
     private var courseId: String? = null
-    private var userModel: RealmUser? = null
-    private var currentCourse: RealmMyCourse? = null
-    lateinit var steps: List<RealmCourseStep?>
+    private var userModel: UserEntity? = null
+    private var currentCourse: MyCourse? = null
+    lateinit var steps: List<CourseStep?>
     var position = 0
     private var currentStep = 0
     private var currentCourseProgress = 0

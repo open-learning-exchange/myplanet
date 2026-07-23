@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.decrypt
@@ -23,10 +23,10 @@ import org.ole.planet.myplanet.utils.JsonUtils
 
 data class HealthExaminationState(
     val isLoading: Boolean = true,
-    val user: RealmUser? = null,
-    val pojo: RealmHealthExamination? = null,
-    val health: RealmMyHealth? = null,
-    val examination: RealmHealthExamination? = null
+    val user: UserEntity? = null,
+    val pojo: HealthExamination? = null,
+    val health: MyHealth? = null,
+    val examination: HealthExamination? = null
 )
 
 @HiltViewModel
@@ -49,10 +49,10 @@ class HealthExaminationViewModel @Inject constructor(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
 
-            var user: RealmUser? = null
-            var pojo: RealmHealthExamination? = null
-            var health: RealmMyHealth? = null
-            var examination: RealmHealthExamination? = null
+            var user: UserEntity? = null
+            var pojo: HealthExamination? = null
+            var health: MyHealth? = null
+            var examination: HealthExamination? = null
 
             withContext(dispatcherProvider.io) {
                 if (userId != null) {
@@ -68,7 +68,7 @@ class HealthExaminationViewModel @Inject constructor(
 
                 if (pojo != null && pojo.data?.isNotEmpty() == true) {
                     try {
-                        health = JsonUtils.gson.fromJson(decrypt(pojo.data, user?.key, user?.iv), RealmMyHealth::class.java)
+                        health = JsonUtils.gson.fromJson(decrypt(pojo.data, user?.key, user?.iv), MyHealth::class.java)
                     } catch (e: Exception) {
                         e.printStackTrace()
                     }
@@ -92,7 +92,7 @@ class HealthExaminationViewModel @Inject constructor(
         }
     }
 
-    fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
+    fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
         if (_isSaving.value) return
 
         viewModelScope.launch {

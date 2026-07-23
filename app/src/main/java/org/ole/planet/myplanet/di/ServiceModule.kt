@@ -11,10 +11,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -144,8 +142,6 @@ object ServiceModule {
     @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
-        databaseService: DatabaseService,
-        @RealmDispatcher realmDispatcher: CoroutineDispatcher,
         @ApplicationContext context: Context,
         voicesRepository: VoicesRepository,
         chatRepository: ChatRepository,
@@ -168,6 +164,6 @@ object ServiceModule {
         @ApplicationScope scope: CoroutineScope,
         dispatcherProvider: DispatcherProvider
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, realmDispatcher, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
     }
 }

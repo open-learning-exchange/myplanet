@@ -21,6 +21,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.bumptech.glide.Glide
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.Calendar
 import java.util.Locale
@@ -32,7 +33,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentVitalSignBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -60,8 +61,8 @@ class MyHealthFragment : Fragment() {
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
     private var alertHealthListBinding: AlertHealthListBinding? = null
     var userId: String? = null
-    var userModel: RealmUser? = null
-    lateinit var userModelList: List<RealmUser>
+    var userModel: UserEntity? = null
+    lateinit var userModelList: List<UserEntity>
     lateinit var adapter: HealthUsersAdapter
     private lateinit var healthAdapter: HealthExaminationAdapter
     var dialog: AlertDialog? = null
@@ -102,7 +103,6 @@ class MyHealthFragment : Fragment() {
         view.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.secondary_bg))
         setupRealtimeSync()
         alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(context))
-        binding.txtDob.hint = "dd-MM-yyyy"
 
         val allowDateEdit = false
         if(allowDateEdit) {
@@ -293,9 +293,14 @@ class MyHealthFragment : Fragment() {
             binding.layoutUserDetail.visibility = View.VISIBLE
             binding.tvMessage.visibility = View.GONE
             binding.txtFullName.text = getDisplayName(currentUser)
+            Glide.with(this@MyHealthFragment)
+                .load(currentUser.userImage)
+                .placeholder(R.drawable.profile)
+                .error(R.drawable.profile)
+                .into(binding.userImage)
             binding.txtEmail.text = Utilities.checkNA(currentUser.email)
             binding.txtLanguage.text = Utilities.checkNA(currentUser.language)
-            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { getString(R.string.empty_text) }
+            binding.txtDob.text = TimeUtils.formatDateToDDMMYYYY(currentUser.dob).ifEmpty { "dd-MM-yyyy" }
 
             val healthRecord = userRepository.getHealthRecordsAndAssociatedUsers(uid, currentUser)
 
@@ -353,7 +358,7 @@ class MyHealthFragment : Fragment() {
         }
     }
 
-    private fun getDisplayName(user: RealmUser?): String {
+    private fun getDisplayName(user: UserEntity?): String {
         if (user == null) return getString(R.string.n_a)
 
         val fullName = listOfNotNull(user.firstName, user.middleName, user.lastName)
