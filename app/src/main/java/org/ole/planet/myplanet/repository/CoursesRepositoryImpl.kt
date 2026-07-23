@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -684,9 +685,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 it.isJsonObject && JsonUtils.getString("id", it.asJsonObject) == raw
             }?.asJsonObject ?: return raw
 
-            return JsonUtils.getString("res", matchedChoice).ifBlank {
-                JsonUtils.getString("text", matchedChoice).ifBlank { raw }
-            }
+            return ExamAnswerUtils.choiceDisplayValue(matchedChoice) ?: raw
         }
 
         val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
