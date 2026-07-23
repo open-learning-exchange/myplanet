@@ -16,7 +16,7 @@
     <string name="app_name">My Planet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">paramètres</string>
+    <string name="action_settings">Paramètres</string>
     <string name="hint_name">Nom d\'utilisateur</string>
     <string name="btn_back">Retourner</string>
     <string name="btn_sign_in">Se connecter</string>
@@ -93,8 +93,8 @@
     <string name="your_rating">Votre évaluation</string>
     <string name="loading_user_profile">Préparation de votre profil…</string>
     <string name="your_comment">Laissez votre commentaire</string>
-    <string name="sync_now">synchroniser maintenant</string>
-    <string name="logout">déconnexion</string>
+    <string name="sync_now">Synchroniser maintenant</string>
+    <string name="logout">Déconnexion</string>
     <string name="settings">Paramètres</string>
     <string name="edit_profile">Modifier le profil</string>
     <string name="profile">Profil</string>
@@ -335,8 +335,8 @@
     <string name="clear_data">Effacer les données</string>
     <string name="reset_app">Réinitialiser l\'application</string>
     <string name="freeup_space">Libérer de l\'espace disque</string>
-    <string name="action_disclaimer">avis de non-responsabilité</string>
-    <string name="action_about">à propos de</string>
+    <string name="action_disclaimer">Avis de non-responsabilité</string>
+    <string name="action_about">À propos de</string>
     <string name="english_dictionary">Dictionnaire anglais</string>
 
     <string-array name="team_type">
