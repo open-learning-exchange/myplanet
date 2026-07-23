@@ -188,6 +188,23 @@ class ChatHistoryAdapter(
     }
 
     private fun showGrandChildRecyclerView(items: List<TeamSummary>, section: String, realmChatHistory: ChatHistory, sharedIds: Set<String> = emptySet()) {
+        if (items.isEmpty()) {
+            val message = if (section == context.getString(R.string.teams)) {
+                context.getString(R.string.join_team_first)
+            } else {
+                context.getString(R.string.join_enterprise_first)
+            }
+            val dialog = AlertDialog.Builder(context, R.style.CustomAlertDialog)
+                .setTitle(section)
+                .setMessage(message)
+                .setPositiveButton(android.R.string.ok, null)
+                .create()
+
+            dialog.window?.setBackgroundDrawable(daynightGreyColor.toDrawable())
+            dialog.show()
+            return
+        }
+
         val grandChildDialogBinding = GrandChildRecyclerviewDialogBinding.inflate(LayoutInflater.from(context))
         var dialog: AlertDialog? = null
 

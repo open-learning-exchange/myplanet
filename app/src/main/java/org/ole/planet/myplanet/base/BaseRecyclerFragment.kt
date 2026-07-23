@@ -110,11 +110,17 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun addToMyList() {
-        if (isAddInProgress) return
+    open fun addToMyList(onComplete: (() -> Unit)? = null) {
+        if (isAddInProgress) {
+            onComplete?.invoke()
+            return
+        }
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
-        if (itemsToAdd.isEmpty()) return
+        if (itemsToAdd.isEmpty()) {
+            onComplete?.invoke()
+            return
+        }
 
         val resourceIds = mutableListOf<String>()
         val courseIds = mutableListOf<String>()
@@ -127,52 +133,58 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             }
         }
 
-        if (resourceIds.isEmpty() && courseIds.isEmpty()) return
+        if (resourceIds.isEmpty() && courseIds.isEmpty()) {
+            onComplete?.invoke()
+            return
+        }
 
         isAddInProgress = true
         setJoinInProgress(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
-            var libraryAdded = false
-            var courseAdded = false
-            var errorOccurred: Throwable? = null
+            try {
+                val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+                var libraryAdded = false
+                var courseAdded = false
+                var errorOccurred: Throwable? = null
 
-            if (resourceIds.isNotEmpty()) {
-                val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-                libraryResult.onSuccess {
-                    libraryAdded = true
-                }.onFailure {
-                    errorOccurred = it
-                }
-            }
-
-            if (courseIds.isNotEmpty()) {
-                val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
-                courseResult.onSuccess { added ->
-                    if (added) {
-                        courseAdded = true
+                if (resourceIds.isNotEmpty()) {
+                    val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                    libraryResult.onSuccess {
+                        libraryAdded = true
+                    }.onFailure {
+                        errorOccurred = it
                     }
-                }.onFailure {
-                    errorOccurred = it
                 }
+
+                if (courseIds.isNotEmpty()) {
+                    val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
+                    courseResult.onSuccess { added ->
+                        if (added) {
+                            courseAdded = true
+                        }
+                    }.onFailure {
+                        errorOccurred = it
+                    }
+                }
+
+                if (view == null || !isAdded || requireActivity().isFinishing) return@launch
+
+                postAddRefresh()
+
+                errorOccurred?.let {
+                    it.printStackTrace()
+                    toast(activity, "An error occurred: ${it.message}")
+                    return@launch
+                }
+
+                if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
+                if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+            } finally {
+                isAddInProgress = false
+                setJoinInProgress(false)
+                onComplete?.invoke()
             }
-
-            isAddInProgress = false
-            setJoinInProgress(false)
-
-            if (view == null || !isAdded || requireActivity().isFinishing) return@launch
-
-            postAddRefresh()
-
-            errorOccurred?.let {
-                it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
-                return@launch
-            }
-
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 

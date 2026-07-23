@@ -417,6 +417,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun createAlertDialog(): AlertDialog {
+        var hasAdded = false
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         builder.setMessage(buildAlertMessage())
         builder.setCancelable(true)
@@ -424,19 +425,26 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 if (userModel?.id?.startsWith("guest") == true) {
                     guestDialog(requireContext())
                 } else {
-                    val fragment = ResourcesFragment().apply {
-                        arguments = Bundle().apply {
-                            putBoolean("isMyCourseLib", true)
+                    hasAdded = true
+                    addToMyList {
+                        val fragment = ResourcesFragment().apply {
+                            arguments = Bundle().apply {
+                                putBoolean("isMyCourseLib", true)
+                            }
                         }
+                        homeItemClickListener?.openMyFragment(fragment)
                     }
-                    homeItemClickListener?.openMyFragment(fragment)
                 }
             }
         builder.setNegativeButton(getString(R.string.ok)) { dialog: DialogInterface, _: Int ->
+            hasAdded = true
+            addToMyList()
             dialog.cancel()
         }
         builder.setOnDismissListener {
-            addToMyList()
+            if (!hasAdded) {
+                addToMyList()
+            }
         }
         return builder.create()
     }
@@ -724,26 +732,32 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         }
     }
 
-    override fun addToMyList() {
+    override fun addToMyList(onComplete: (() -> Unit)?) {
         val userId = userModel?.id
         val itemsToAdd = selectedItems?.mapNotNull { it?.resourceId } ?: emptyList()
 
         if (userId != null && itemsToAdd.isNotEmpty()) {
             lifecycleScope.launch {
-                viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
-                    .onSuccess {
-                        _binding ?: return@onSuccess
-                        Utilities.toast(activity, getString(R.string.added_to_my_library))
-                        refreshResourcesData()
-                        selectedItems?.clear()
-                        changeButtonStatus()
-                        hideButton()
-                    }
-                    .onFailure {
-                        _binding ?: return@onFailure
-                        Utilities.toast(activity, getString(R.string.error, it.message))
-                    }
+                try {
+                    viewModel.addResourcesToUserLibrary(itemsToAdd, userId)
+                        .onSuccess {
+                            _binding ?: return@onSuccess
+                            Utilities.toast(activity, getString(R.string.added_to_my_library))
+                            refreshResourcesData()
+                            selectedItems?.clear()
+                            changeButtonStatus()
+                            hideButton()
+                        }
+                        .onFailure {
+                            _binding ?: return@onFailure
+                            Utilities.toast(activity, getString(R.string.error, it.message))
+                        }
+                } finally {
+                    onComplete?.invoke()
+                }
             }
+        } else {
+            onComplete?.invoke()
         }
     }
 }
