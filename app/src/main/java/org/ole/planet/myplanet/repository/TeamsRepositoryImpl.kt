@@ -1144,9 +1144,12 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean {
         val memberships = teamDao.getByTeamIdAndDocType(teamId, "membership")
         val newLeader = memberships.firstOrNull { it.userId == newLeaderId } ?: return false
-        val updatedMemberships = memberships.map { membership ->
+        val updatedMemberships = memberships.mapNotNull { membership ->
+            val shouldBeLeader = membership.userId == newLeader.userId
+            if (membership.isLeader == shouldBeLeader) return@mapNotNull null
             membership.apply {
-                isLeader = userId == newLeader.userId
+                isLeader = shouldBeLeader
+                updated = true
             }.requireRoomEntity()
         }
         teamDao.upsertAll(updatedMemberships)
