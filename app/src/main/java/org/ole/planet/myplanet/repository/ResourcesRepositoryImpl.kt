@@ -459,10 +459,19 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int {
         var processedCount = 0
+
+        val resourceIds = documents.mapNotNull { JsonUtils.getString("_id", it).takeIf { id -> id.isNotBlank() } }
+        val existingItems = mutableMapOf<String, MyLibrary>()
+        if (resourceIds.isNotEmpty()) {
+            resourceIds.chunked(900).forEach { chunk ->
+                existingItems.putAll(myLibraryDao.getByIds(chunk).associateBy { it.id })
+            }
+        }
+
         documents.forEach { doc ->
             try {
                 val resourceId = JsonUtils.getString("_id", doc)
-                val existing = myLibraryDao.getById(resourceId)
+                val existing = existingItems[resourceId]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
@@ -472,6 +481,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     )
                 )
                 if (library != null) {
+                    existingItems[resourceId] = library
                     myLibraryDao.upsert(library)
                     processedCount++
                 }
@@ -484,11 +494,23 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun batchInsertResources(documents: List<JsonObject>): List<String> {
         val savedIds = mutableListOf<String>()
-        documents.forEach { doc ->
+
+        val validDocs = documents.filter {
+            val _id = JsonUtils.getString("_id", it)
+            _id.isNotBlank() && !_id.startsWith("_design")
+        }
+        val resourceIds = validDocs.map { JsonUtils.getString("_id", it) }
+        val existingItems = mutableMapOf<String, MyLibrary>()
+        if (resourceIds.isNotEmpty()) {
+            resourceIds.chunked(900).forEach { chunk ->
+                existingItems.putAll(myLibraryDao.getByIds(chunk).associateBy { it.id })
+            }
+        }
+
+        validDocs.forEach { doc ->
             try {
                 val _id = JsonUtils.getString("_id", doc)
-                if (_id.startsWith("_design")) return@forEach
-                val existing = myLibraryDao.getById(_id)
+                val existing = existingItems[_id]
                 val library = MyLibrary.insertMyLibrary(
                     MyLibrary.Companion.InsertParams(
                         doc = doc,
@@ -497,6 +519,7 @@ class ResourcesRepositoryImpl @Inject constructor(
                     )
                 )
                 if (library != null) {
+                    existingItems[_id] = library
                     myLibraryDao.upsert(library)
                     savedIds.add(_id)
                 }
