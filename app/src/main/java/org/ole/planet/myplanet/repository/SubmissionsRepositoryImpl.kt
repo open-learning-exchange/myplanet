@@ -449,10 +449,7 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
             ?: submissionDao.getLatestPendingByUser(submission?.userId)
         val submissionId = submissionRow?.id
         val questionId = question.id
-
-        // getCorrectChoice() stores each choice's display TEXT, but `ans`/`listAns` carry the
-        // selected choice's id (see ExamTakingFragment.handleChecked using compoundButton.tag).
-        // Translate to text before comparing, otherwise every answer compares id-vs-text and fails.
+        
         val ansForCheck = ExamAnswerUtils.getChoiceTextById(question, ans)
         val listAnsForCheck = listAns?.keys?.associateWith { it }
 

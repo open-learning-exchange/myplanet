@@ -679,10 +679,6 @@ class CoursesRepositoryImpl @Inject constructor(
 
     private fun extractCorrectChoices(questionJson: JsonObject): List<String> {
         val choices = JsonUtils.getJsonArray("choices", questionJson)
-
-        // `correctChoice` may hold a choice's id (needs resolving to its display text via
-        // `choices`) or, for legacy data, the literal correct-answer text already. Try an
-        // id match first and fall back to treating the raw value as text.
         fun resolveChoiceValue(raw: String): String {
             val matchedChoice = choices.firstOrNull {
                 it.isJsonObject && JsonUtils.getString("id", it.asJsonObject) == raw
