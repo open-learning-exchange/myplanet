@@ -26,7 +26,6 @@ import dagger.hilt.android.HiltAndroidApp
 import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.Date
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -134,7 +133,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
 
         fun createLog(type: String, error: String = "") {
             applicationScope.launch {
-                saveLogToRoom(type, error, "${Date().time}")
+                saveLogToRoom(type, error, "${coreDependenciesEntryPoint.timeProvider().now()}")
             }
         }
 
@@ -255,7 +254,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             val error = e.stackTraceToString()
             val pendingFile = CrashLogStore.save(context, ApkLog.ERROR_TYPE_CRASH, error)
             applicationScope.launch {
-                if (saveLogToRoom(ApkLog.ERROR_TYPE_CRASH, error, "${Date().time}")) {
+                if (saveLogToRoom(ApkLog.ERROR_TYPE_CRASH, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                     pendingFile?.delete()
                 }
             }
@@ -360,7 +359,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                         val error = "ANR detected! Duration: ${duration}ms\n $message"
                         val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error)
                         applicationScope.launch {
-                            if (saveLogToRoom(ANR_LOG_TYPE, error, "${Date().time}")) {
+                            if (saveLogToRoom(ANR_LOG_TYPE, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                                 pendingFile?.delete()
                             }
                         }

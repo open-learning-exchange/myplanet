@@ -360,6 +360,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
     }
 
     private fun createAlertDialog(): AlertDialog {
+        var hasAdded = false
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
         val msg = buildString {
             append(getString(R.string.success_you_have_added_the_following_courses))
@@ -381,18 +382,25 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 if (userModel?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
-                    addToMyList()
-                    val fragment = CoursesFragment().apply {
-                        arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
+                    hasAdded = true
+                    addToMyList {
+                        val fragment = CoursesFragment().apply {
+                            arguments = Bundle().apply { putBoolean("isMyCourseLib", true) }
+                        }
+                        homeItemClickListener?.openMyFragment(fragment)
                     }
-                    homeItemClickListener?.openMyFragment(fragment)
                 }
             }
             .setNegativeButton(R.string.ok) { dialog: DialogInterface, _: Int ->
+                hasAdded = true
                 addToMyList()
                 dialog.cancel()
-    }
-            .setOnDismissListener { addToMyList() }
+            }
+            .setOnDismissListener {
+                if (!hasAdded) {
+                    addToMyList()
+                }
+            }
 
         return builder.create()
     }
