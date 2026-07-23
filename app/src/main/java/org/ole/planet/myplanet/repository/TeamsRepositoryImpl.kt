@@ -108,7 +108,10 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteLocalTeamRecords(teamIds: List<String>) {
         if (teamIds.isEmpty()) return
-        teamIds.filter { it.isNotBlank() }.distinct().forEach { teamDao.deleteById(it) }
+        val validIds = teamIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isNotEmpty()) {
+            teamDao.deleteByIds(validIds)
+        }
     }
 
     override suspend fun markTeamUploaded(teamId: String?, rev: String) {
@@ -1141,9 +1144,12 @@ class TeamsRepositoryImpl @Inject constructor(
     override suspend fun updateTeamLeader(teamId: String, newLeaderId: String): Boolean {
         val memberships = teamDao.getByTeamIdAndDocType(teamId, "membership")
         val newLeader = memberships.firstOrNull { it.userId == newLeaderId } ?: return false
-        val updatedMemberships = memberships.map { membership ->
+        val updatedMemberships = memberships.mapNotNull { membership ->
+            val shouldBeLeader = membership.userId == newLeader.userId
+            if (membership.isLeader == shouldBeLeader) return@mapNotNull null
             membership.apply {
-                isLeader = userId == newLeader.userId
+                isLeader = shouldBeLeader
+                updated = true
             }.requireRoomEntity()
         }
         teamDao.upsertAll(updatedMemberships)
