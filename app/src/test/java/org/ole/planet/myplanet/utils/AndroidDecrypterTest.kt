@@ -129,9 +129,7 @@ class AndroidDecrypterTest {
 
     @Test
     fun testDecryptWithInvalidEncryptedString() {
-        // Since AndroidDecrypter.decrypt catches generic Exceptions and prints stacktrace instead of crashing,
-        // it will successfully return null when IllegalBlockSizeException is thrown on invalid ciphertext lengths
-        assertNull(AndroidDecrypter.decrypt("00", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "abcdef0123456789abcdef0123456789"))
+        assertNull(AndroidDecrypter.decrypt("invalid_encrypted_data", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "abcdef0123456789abcdef0123456789"))
     }
 
     @Test
