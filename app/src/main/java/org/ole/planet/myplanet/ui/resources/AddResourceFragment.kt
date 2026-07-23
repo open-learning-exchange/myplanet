@@ -211,7 +211,7 @@ class AddResourceFragment : BottomSheetDialogFragment() {
         if (uri != null) {
             captureVideoLauncher.launch(uri)
         } else {
-            Utilities.toast(activity, "Unable to create video file")
+            Utilities.toast(activity, getString(R.string.unable_to_create_video_file))
         }
     }
 
