@@ -13,7 +13,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDialogFragment
 import org.ole.planet.myplanet.databinding.FragmentSendSurveyBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class SendSurveyFragment : BaseDialogFragment() {
     private lateinit var fragmentSendSurveyBinding: FragmentSendSurveyBinding
-    private var users: List<RealmUser> = emptyList()
+    private var users: List<UserEntity> = emptyList()
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
@@ -58,7 +58,7 @@ class SendSurveyFragment : BaseDialogFragment() {
         }
     }
 
-    private fun initListView(users: List<RealmUser>) {
+    private fun initListView(users: List<UserEntity>) {
         val names = users.map { it.toString() }
         val adapter = CheckboxAdapter()
         adapter.submitList(names)

@@ -26,9 +26,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.view.ViewCompat
-import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -55,9 +53,9 @@ import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNotificationsListener
 import org.ole.planet.myplanet.databinding.ActivityDashboardBinding
 import org.ole.planet.myplanet.databinding.CustomTabBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ChallengePrompter
 import org.ole.planet.myplanet.services.ThemeManager
@@ -69,6 +67,7 @@ import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.feedback.FeedbackListFragment
 import org.ole.planet.myplanet.ui.notifications.NotificationsFragment
+import org.ole.planet.myplanet.ui.onboarding.OnboardingActivity
 import org.ole.planet.myplanet.ui.resources.ResourceDetailFragment
 import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.settings.SettingsActivity
@@ -82,6 +81,7 @@ import org.ole.planet.myplanet.ui.teams.TeamPageConfig.TasksPage
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
@@ -97,7 +97,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private var isFirstLaunch = false
     private lateinit var binding: ActivityDashboardBinding
     private var headerResult: AccountHeader? = null
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     var result: Drawer? = null
     private var tl: TabLayout? = null
     private var dl: DrawerLayout? = null
@@ -243,18 +243,9 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun initViews() {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
-        val insetsController = WindowCompat.getInsetsController(window, binding.root)
-        insetsController.isAppearanceLightStatusBars = true
-        insetsController.isAppearanceLightNavigationBars = true
-        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, windowInsets ->
-            val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            binding.myToolbar.updatePadding(top = insets.top)
-            view.updatePadding(left = insets.left, right = insets.right, bottom = insets.bottom)
-            WindowInsetsCompat.CONSUMED
-        }
+        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
         setupUI(binding.activityDashboardParentLayout, this@DashboardActivity)
         setSupportActionBar(binding.myToolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(false)
@@ -350,14 +341,29 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     }
 
     private fun handleInitialFragment() {
-        if (intent != null && intent.hasExtra("fragmentToOpen")) {
-            val fragmentToOpen = intent.getStringExtra("fragmentToOpen")
-            if ("feedbackList" == fragmentToOpen) {
-                openMyFragment(FeedbackListFragment())
+        var fragmentToOpen = intent?.getStringExtra("fragmentToOpen")
+        var contentId = intent?.getStringExtra("contentId")
+
+        if (fragmentToOpen == null) {
+            val pendingSection = prefData.getRawString(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+            if (pendingSection.isNotEmpty()) {
+                fragmentToOpen = pendingSection
+                contentId = prefData.getRawString(OnboardingActivity.DEEP_LINK_ID_KEY).ifEmpty { null }
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_SECTION_KEY)
+                prefData.removeKey(OnboardingActivity.DEEP_LINK_ID_KEY)
             }
-        } else {
-            openCallFragment(BellDashboardFragment())
-            binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+        }
+
+        when (fragmentToOpen) {
+            "feedbackList" -> openMyFragment(FeedbackListFragment())
+            "courses" -> openCallFragment(CoursesFragment())
+            "resources" -> openCallFragment(ResourcesFragment())
+            "teams" -> openCallFragment(TeamFragment())
+            "surveys" -> openCallFragment(SurveyFragment())
+            else -> {
+                openCallFragment(BellDashboardFragment())
+                binding.appBarBell.bellToolbar.visibility = View.VISIBLE
+            }
         }
     }
 
@@ -932,7 +938,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f, tag)
     }
 
-    override fun openLibraryDetailFragment(library: RealmMyLibrary?) {
+    override fun openLibraryDetailFragment(library: MyLibrary?) {
         val f: Fragment = ResourceDetailFragment()
         val b = Bundle()
         b.putString("libraryId", library?.resourceId)
@@ -940,7 +946,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         openCallFragment(f)
     }
 
-    override fun sendSurvey(current: RealmStepExam?) {
+    override fun sendSurvey(current: StepExam?) {
         val f = SendSurveyFragment()
         val b = Bundle()
         b.putString("surveyId", current?.id)

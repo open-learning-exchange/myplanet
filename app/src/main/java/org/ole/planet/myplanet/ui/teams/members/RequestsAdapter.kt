@@ -6,16 +6,16 @@ import android.view.ViewGroup
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.databinding.RowMemberRequestBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 
 class RequestsAdapter(
     private val context: Context,
-    private var currentUser: RealmUser,
-    private val onAction: (RealmUser, Boolean) -> Unit
-) : ListAdapter<RealmUser, RequestsAdapter.ViewHolderUser>(DIFF_CALLBACK) {
+    private var currentUser: UserEntity,
+    private val onAction: (UserEntity, Boolean) -> Unit
+) : ListAdapter<UserEntity, RequestsAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     companion object {
-        internal val DIFF_CALLBACK = DiffUtils.itemCallback<RealmUser>(
+        internal val DIFF_CALLBACK = DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem ->
                 oldItem.name == newItem.name &&
@@ -32,13 +32,13 @@ class RequestsAdapter(
         this.teamId = teamId
     }
 
-    fun setData(members: List<RealmUser>, isLeader: Boolean, memberCount: Int) {
+    fun setData(members: List<UserEntity>, isLeader: Boolean, memberCount: Int) {
         teamLeader = isLeader
         joinedTeamMembers = memberCount
         submitList(members)
     }
 
-    fun setUser(user: RealmUser) {
+    fun setUser(user: UserEntity) {
         this.currentUser = user
     }
 

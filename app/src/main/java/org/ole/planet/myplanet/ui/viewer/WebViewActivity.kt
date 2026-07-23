@@ -280,7 +280,6 @@ class WebViewActivity : AppCompatActivity() {
                 if (view.url?.startsWith("file://") == false && view.url?.endsWith("/eng/") == true) {
                     finish()
                 }
-                activityWebViewBinding.contentWebView.pBar.incrementProgressBy(newProgress)
                 if (newProgress == 100 && activityWebViewBinding.contentWebView.pBar.isShown) {
                     activityWebViewBinding.contentWebView.pBar.visibility = View.GONE
                 }

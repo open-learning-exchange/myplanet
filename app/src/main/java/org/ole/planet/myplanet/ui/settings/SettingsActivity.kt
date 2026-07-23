@@ -33,9 +33,9 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
@@ -95,8 +95,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        var user: RealmUser? = null
-        private var libraryList: List<RealmMyLibrary>? = null
+        var user: UserEntity? = null
+        private var libraryList: List<MyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
 
@@ -133,8 +133,8 @@ class SettingsActivity : AppCompatActivity() {
                         appendLine("Details:")
                         pendingOps.take(10).forEach { op ->
                             val statusIcon = when (op.status) {
-                                RealmRetryOperation.STATUS_IN_PROGRESS -> "🔄"
-                                RealmRetryOperation.STATUS_PENDING -> "⏸"
+                                RetryOperation.STATUS_IN_PROGRESS -> "🔄"
+                                RetryOperation.STATUS_PENDING -> "⏸"
                                 else -> "❓"
                             }
                             appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")

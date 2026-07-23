@@ -16,8 +16,8 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.base.BaseMemberFragment
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 
 @AndroidEntryPoint
@@ -27,7 +27,7 @@ class RequestsFragment : BaseMemberFragment() {
     lateinit var userSessionManager: UserSessionManager
 
     private val viewModel: RequestsViewModel by viewModels()
-    private lateinit var currentUser: RealmUser
+    private lateinit var currentUser: UserEntity
     private var onMemberChangeListener: OnMemberChangeListener? = null
     fun setOnMemberChangeListener(listener: OnMemberChangeListener) {
         this.onMemberChangeListener = listener
@@ -35,14 +35,14 @@ class RequestsFragment : BaseMemberFragment() {
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
-        currentUser = RealmUser()
+        currentUser = UserEntity()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         viewModel.fetchMembers(teamId)
         viewLifecycleOwner.lifecycleScope.launch {
-            currentUser = userSessionManager.getUserModel() ?: RealmUser()
+            currentUser = userSessionManager.getUserModel() ?: UserEntity()
             (adapter as? RequestsAdapter)?.setUser(currentUser)
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
@@ -64,13 +64,13 @@ class RequestsFragment : BaseMemberFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
     override fun clearImages() {
         imageList.clear()
         llImage?.removeAllViews()
     }
 
-    override val list: List<RealmUser>
+    override val list: List<UserEntity>
         get() = emptyList()
 
     override val adapter: ListAdapter<*, *> by lazy {

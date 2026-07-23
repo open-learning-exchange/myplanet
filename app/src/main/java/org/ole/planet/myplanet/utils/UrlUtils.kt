@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.annotation.VisibleForTesting
 import androidx.core.net.toUri
 import java.net.URLEncoder
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 object UrlUtils {
@@ -85,7 +85,7 @@ object UrlUtils {
         return if (base.endsWith("/db")) base else "$base/db"
     }
 
-    fun getUrl(library: RealmMyLibrary?): String {
+    fun getUrl(library: MyLibrary?): String {
         return getUrl(library?.resourceId, library?.resourceLocalAddress)
     }
 

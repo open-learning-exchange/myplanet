@@ -1355,4 +1355,10 @@
     <string name="resource_updated">تم تحديث المورد</string>
     <string name="failed_to_update_resource">فشل تحديث المورد</string>
 
+    <string name="open_link_with">فتح الرابط باستخدام</string>
+    <string name="just_once">مرة واحدة فقط</string>
+    <string name="always">دائمًا</string>
+    <string name="survey_load_failed">تعذر تحميل الاستبيان. حاول مرة أخرى.</string>
+    <string name="survey_submitted">تم إرسال الاستبيان. شكرًا لك!</string>
+    <string name="survey_submit_failed">تعذر إرسال الاستبيان. حاول مرة أخرى.</string>
 </resources>

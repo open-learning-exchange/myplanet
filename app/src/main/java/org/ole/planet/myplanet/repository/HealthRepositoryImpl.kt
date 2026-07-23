@@ -4,20 +4,19 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmHealthExamination.Companion.serialize
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.HealthExamination.Companion.serialize
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.AndroidDecrypter
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -25,27 +24,25 @@ import org.ole.planet.myplanet.utils.UrlUtils
 
 class HealthRepositoryImpl @Inject constructor(
     private val apiInterface: ApiInterface,
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
-    private val dispatcherProvider: DispatcherProvider
-) : RealmRepository(databaseService, realmDispatcher), HealthRepository {
-    override suspend fun getHealthEntry(userId: String): Pair<RealmUser?, RealmHealthExamination?> {
-        val userCopy = findByField(RealmUser::class.java, "_id", userId)
-            ?: findByField(RealmUser::class.java, "id", userId)
-        val pojoCopy = findByField(RealmHealthExamination::class.java, "_id", userId)
-            ?: findByField(RealmHealthExamination::class.java, "userId", userId)
+    private val dispatcherProvider: DispatcherProvider,
+    private val healthExaminationDao: HealthExaminationDao,
+    private val userDao: UserDao
+) : HealthRepository {
+    override suspend fun getHealthEntry(userId: String): Pair<UserEntity?, HealthExamination?> {
+        val userCopy = userDao.getById(userId)
+        val pojoCopy = healthExaminationDao.getByIdOrUserId(userId)
 
         return Pair(userCopy, pojoCopy)
     }
 
-    override suspend fun getExaminationById(id: String): RealmHealthExamination? {
-        return findByField(RealmHealthExamination::class.java, "_id", id)
+    override suspend fun getExaminationById(id: String): HealthExamination? {
+        return healthExaminationDao.getById(id)
     }
 
-    override suspend fun initHealth(): RealmMyHealth {
+    override suspend fun initHealth(): MyHealth {
         return withContext(dispatcherProvider.default) {
-            val health = RealmMyHealth()
-            val profile = RealmMyHealth.RealmMyHealthProfile()
+            val health = MyHealth()
+            val profile = MyHealth.MyHealthProfile()
             health.lastExamination = Date().time
             health.userKey = AndroidDecrypter.generateKey()
             health.profile = profile
@@ -53,67 +50,44 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getUpdatedHealthExaminations(): List<RealmHealthExamination> {
-        return queryList(RealmHealthExamination::class.java) {
-            equalTo("isUpdated", true)
-            notEqualTo("userId", "")
-        }
+    override suspend fun getUpdatedHealthExaminations(): List<HealthExamination> {
+        return healthExaminationDao.getUpdated()
     }
 
-    override suspend fun getUpdatedHealthForUser(userId: String): List<RealmHealthExamination> {
-        return queryList(RealmHealthExamination::class.java) {
-            equalTo("isUpdated", true)
-            equalTo("userId", userId)
-        }
+    override suspend fun getUpdatedHealthForUser(userId: String): List<HealthExamination> {
+        return healthExaminationDao.getUpdatedForUser(userId)
     }
 
     override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
-        if (idToRevMap.isNotEmpty()) {
-            executeTransaction { realm ->
-                idToRevMap.keys.chunked(999).forEach { chunk ->
-                    val managedPojos = realm.where(RealmHealthExamination::class.java)
-                        .`in`("_id", chunk.toTypedArray())
-                        .findAll()
-                    managedPojos.forEach { managedPojo ->
-                        managedPojo._rev = idToRevMap[managedPojo._id]
-                        managedPojo.isUpdated = false
-                    }
-                }
-            }
+        idToRevMap.forEach { (id, rev) ->
+            healthExaminationDao.markUploaded(id, rev)
         }
     }
 
-    override suspend fun saveExamination(examination: RealmHealthExamination?, pojo: RealmHealthExamination?, user: RealmUser?) {
-        executeTransaction { realm ->
-            user?.let { realm.copyToRealmOrUpdate(it) }
-            pojo?.let { realm.copyToRealmOrUpdate(it) }
-            examination?.let { realm.copyToRealmOrUpdate(it) }
-        }
+    override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
+        user?.let { userDao.upsert(it) }
+        pojo?.let { healthExaminationDao.upsert(it) }
+        examination?.let { healthExaminationDao.upsert(it) }
     }
 
     override suspend fun updateExaminationUserId(id: String, userId: String) {
-        update(RealmHealthExamination::class.java, "_id", id) { examination ->
-            examination.userId = userId
-        }
+        healthExaminationDao.updateUserId(id, userId)
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
-        val documentList = ArrayList<JsonObject>(jsonArray.size())
+    override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
+        val examinations = ArrayList<HealthExamination>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
             jsonDoc = JsonUtils.getJsonObject("doc", jsonDoc)
             val id = JsonUtils.getString("_id", jsonDoc)
             if (!id.startsWith("_design")) {
-                documentList.add(jsonDoc)
+                examinations.add(HealthExamination.fromJson(jsonDoc))
             }
         }
-        val examinations = documentList.map { jsonDoc ->
-            RealmHealthExamination.fromJson(jsonDoc)
-        }
-        realm.insertOrUpdate(examinations)
+        healthExaminationDao.upsertAll(examinations)
     }
 
-    override suspend fun getExaminationConditions(examination: RealmHealthExamination?): Map<String, Boolean> {
+    override suspend fun getExaminationConditions(examination: HealthExamination?): Map<String, Boolean> {
         return withContext(dispatcherProvider.default) {
             val result = mutableMapOf<String, Boolean>()
             if (examination != null && !examination.conditions.isNullOrEmpty()) {
@@ -130,7 +104,7 @@ class HealthRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun uploadHealthData(myHealths: List<RealmHealthExamination>): Map<String, String?> {
+    override suspend fun uploadHealthData(myHealths: List<HealthExamination>): Map<String, String?> {
         val uploadedHealths = mutableMapOf<String, String?>()
         val semaphore = Semaphore(5)
         supervisorScope {
@@ -147,10 +121,7 @@ class HealthRepositoryImpl @Inject constructor(
 
                             if (res.body() != null && res.body()?.has("id") == true) {
                                 val rev = res.body()?.get("rev")?.asString
-                                val id = pojo._id
-                                if (id != null) {
-                                    return@async id to rev
-                                }
+                                return@async pojo._id to rev
                             }
                         } catch (e: Throwable) {
                             e.printStackTrace()

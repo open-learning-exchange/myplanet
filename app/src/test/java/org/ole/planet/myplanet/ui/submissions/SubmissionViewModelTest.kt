@@ -15,8 +15,8 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -47,8 +47,8 @@ class SubmissionViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createSubmission(id: String, parentId: String, type: String, status: String, lastUpdateTime: Long, userId: String = "user1"): RealmSubmission {
-        return RealmSubmission().apply {
+    private fun createSubmission(id: String, parentId: String, type: String, status: String, lastUpdateTime: Long, userId: String = "user1"): Submission {
+        return Submission().apply {
             this.id = id
             this.parentId = parentId
             this.type = type
@@ -112,9 +112,9 @@ class SubmissionViewModelTest {
         val s3 = createSubmission("3", "p2", "exam", "complete", 200L)
         val subList = listOf(s1, s2, s3)
 
-        val examMap = mapOf<String?, RealmStepExam>(
-            "p1" to RealmStepExam().apply { name = "Math Exam" },
-            "p2" to RealmStepExam().apply { name = "Science Exam" }
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Exam" },
+            "p2" to StepExam().apply { name = "Science Exam" }
         )
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")

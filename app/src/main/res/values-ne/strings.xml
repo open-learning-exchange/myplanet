@@ -1339,4 +1339,10 @@
     <string name="resource_updated">स्रोत अद्यावधिक गरियो</string>
     <string name="failed_to_update_resource">स्रोत अद्यावधिक गर्न असफल भयो</string>
 
+    <string name="open_link_with">यससँग लिङ्क खोल्नुहोस्</string>
+    <string name="just_once">एक पटक मात्र</string>
+    <string name="always">सधैं</string>
+    <string name="survey_load_failed">सर्वेक्षण लोड गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="survey_submitted">सर्वेक्षण पेश गरियो। धन्यवाद!</string>
+    <string name="survey_submit_failed">सर्वेक्षण पेश गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
 </resources>

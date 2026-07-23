@@ -33,12 +33,14 @@ import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.MainApplication.Companion.isPrimaryServerReachable
 import org.ole.planet.myplanet.MainApplication.Companion.isServerReachable
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.UserRepository
@@ -62,7 +64,7 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
@@ -698,15 +700,24 @@ class ChatDetailFragment : Fragment() {
         if (this::messageTextWatcher.isInitialized) {
             binding.editGchatMessage.removeTextChangedListener(messageTextWatcher)
         }
-        if (sharedPrefManager.isAlternativeUrl()) {
-            sharedPrefManager.setAlternativeUrl("")
-            sharedPrefManager.setProcessedAlternativeUrl("")
-            sharedPrefManager.setIsAlternativeUrl(false)
-        }
+        clearAlternativeUrlIfPrimaryRestored()
         loadingJob?.cancel()
         speechRecognizer?.destroy()
         _binding = null
         super.onDestroyView()
+    }
+
+    private fun clearAlternativeUrlIfPrimaryRestored() {
+        if (!sharedPrefManager.isAlternativeUrl()) return
+        val primaryUrl = serverUrl
+        val prefManager = sharedPrefManager
+        MainApplication.applicationScope.launch(dispatcherProvider.io) {
+            if (isPrimaryServerReachable(primaryUrl, dispatcherProvider.io)) {
+                prefManager.setAlternativeUrl("")
+                prefManager.setProcessedAlternativeUrl("")
+                prefManager.setIsAlternativeUrl(false)
+            }
+        }
     }
 
     private fun buildContextPrefix(): String {

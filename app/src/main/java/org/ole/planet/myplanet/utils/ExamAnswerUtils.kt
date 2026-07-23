@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.utils
 import android.util.LruCache
 import java.util.Arrays
 import java.util.Locale
-import org.ole.planet.myplanet.model.RealmExamQuestion
+import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.utils.JsonUtils.getStringAsJsonArray
 
 object ExamAnswerUtils {
@@ -11,7 +11,7 @@ object ExamAnswerUtils {
     // Using choices as the key prevents stale mapping if the question's choices are updated from the server.
     private val choicesCache = LruCache<String, Map<String, String>>(100)
 
-    fun getChoiceTextById(question: RealmExamQuestion, id: String): String {
+    fun getChoiceTextById(question: ExamQuestion, id: String): String {
         val choicesString = question.choices ?: return id
 
         var map = choicesCache.get(choicesString)
@@ -37,7 +37,7 @@ object ExamAnswerUtils {
     fun checkCorrectAnswer(
         ans: String,
         listAns: Map<String, String>?,
-        question: RealmExamQuestion?
+        question: ExamQuestion?
     ): Boolean {
         val questionType = question?.type
         val correctChoices = question?.getCorrectChoice()

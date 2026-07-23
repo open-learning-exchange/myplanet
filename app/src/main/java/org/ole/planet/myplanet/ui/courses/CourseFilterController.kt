@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.model.TagEntity
 
 data class FilterState(
     val searchText: String,
@@ -37,7 +37,7 @@ class CourseFilterController(
     private lateinit var spnSubject: Spinner
     private lateinit var spnProgress: Spinner
     private lateinit var tvSelected: TextView
-    val searchTags: MutableList<RealmTag> = ArrayList()
+    val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
 
@@ -95,21 +95,21 @@ class CourseFilterController(
         rootView.findViewById<View>(R.id.btn_clear_tags).setOnClickListener { clearAll() }
     }
 
-    fun addTag(tag: RealmTag) {
+    fun addTag(tag: TagEntity) {
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         _filterState.value = currentState()
         refreshTagText()
         onScrollToTop()
     }
 
-    fun setTags(list: List<RealmTag>) {
+    fun setTags(list: List<TagEntity>) {
         searchTags.clear()
         list.forEach { tag -> if (!searchTags.any { it.name == tag.name }) searchTags.add(tag) }
         _filterState.value = currentState()
         onScrollToTop()
     }
 
-    fun setSingleTag(tag: RealmTag) {
+    fun setSingleTag(tag: TagEntity) {
         searchTags.clear()
         searchTags.add(tag)
         tvSelected.text = tvSelected.context.getString(R.string.tag_selected, tag.name)
