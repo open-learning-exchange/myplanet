@@ -22,6 +22,7 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.viewModels
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
@@ -788,22 +789,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private val accountHeader: AccountHeader
         get() {
             val displayMetrics = resources.displayMetrics
-            val screenWidth = displayMetrics.widthPixels
-            val screenHeight = displayMetrics.heightPixels
             val density = displayMetrics.density
-
-            var paddingVerticalPx = screenHeight * 0.15
-            var paddingHorizontalPx = screenWidth * 0.15
-            if(screenWidth > screenHeight){ //sizing for tablets
-                paddingVerticalPx = screenHeight * 0.05
-                paddingHorizontalPx = screenWidth * 0.05
-            }
-
-            val paddingVerticalDp = (paddingVerticalPx / density).toInt()
-            val paddingHorizontalDp = (paddingHorizontalPx / density).toInt()
             val statusBarHeight = ViewCompat.getRootWindowInsets(binding.root)
                 ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
                 ?: ceil(25 * density).toInt()
+
+            val headerHeightDp = (resources.getDimension(R.dimen.drawer_header_height) / density).toInt()
 
             val header = AccountHeaderBuilder()
                 .withActivity(this@DashboardActivity)
@@ -811,13 +802,11 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 .withHeaderBackground(R.drawable.ole_logo)
                 .withDividerBelowHeader(false)
                 .withTranslucentStatusBar(false)
-                .withHeightDp(paddingVerticalDp + 20 * 2 + (statusBarHeight / density).toInt())
+                .withHeightDp(headerHeightDp + (statusBarHeight / density).toInt())
                 .build()
             val headerBackground = header.headerBackgroundView
-            headerBackground.setPadding(
-                paddingHorizontalDp, paddingVerticalDp + statusBarHeight + 25,
-                paddingHorizontalDp, paddingVerticalDp + 50
-            )
+            headerBackground.scaleType = ImageView.ScaleType.FIT_CENTER
+            headerBackground.setPadding(0, 0, 0, 0)
 
             val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
             if (AppCompatDelegate.getDefaultNightMode() == AppCompatDelegate.MODE_NIGHT_NO ||
@@ -835,7 +824,8 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             ?.getInsets(WindowInsetsCompat.Type.systemBars())?.top
             ?: ceil(25 * resources.displayMetrics.density).toInt()
 
-        val headerHeight = 160 + (statusBarHeight / resources.displayMetrics.density).toInt()
+        val headerHeightDp = (resources.getDimension(R.dimen.drawer_header_height) / resources.displayMetrics.density).toInt()
+        val headerHeight = headerHeightDp + (statusBarHeight / resources.displayMetrics.density).toInt()
         val dimenHolder = DimenHolder.fromDp(headerHeight)
 
         result = headerResult?.let {
