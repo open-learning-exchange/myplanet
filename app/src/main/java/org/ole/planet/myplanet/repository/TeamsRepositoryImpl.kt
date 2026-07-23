@@ -108,7 +108,10 @@ class TeamsRepositoryImpl @Inject constructor(
 
     override suspend fun deleteLocalTeamRecords(teamIds: List<String>) {
         if (teamIds.isEmpty()) return
-        teamIds.filter { it.isNotBlank() }.distinct().forEach { teamDao.deleteById(it) }
+        val validIds = teamIds.filter { it.isNotBlank() }.distinct()
+        if (validIds.isNotEmpty()) {
+            teamDao.deleteByIds(validIds)
+        }
     }
 
     override suspend fun markTeamUploaded(teamId: String?, rev: String) {

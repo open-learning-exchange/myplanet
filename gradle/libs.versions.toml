@@ -118,6 +118,7 @@ circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circ
 pbkdf2 = { module = "de.rtner:PBKDF2", version.ref = "pbkdf2" }
 markwon-editor = { module = "io.noties.markwon:editor", version.ref = "markwon" }
 markwon-image = { module = "io.noties.markwon:image", version.ref = "markwon" }
+markwon-image-glide = { module = "io.noties.markwon:image-glide", version.ref = "markwon" }
 markwon-html = { module = "io.noties.markwon:html", version.ref = "markwon" }
 markwon-ext-tables = { module = "io.noties.markwon:ext-tables", version.ref = "markwon" }
 osmdroid-android = { module = "org.osmdroid:osmdroid-android", version.ref = "osmdroidAndroid" }
