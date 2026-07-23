@@ -177,6 +177,7 @@ dependencies {
     implementation fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     implementation platform(libs.kotlin.bom)
     implementation(libs.annotation)
+    implementation(libs.activity.ktx)
     implementation(libs.appcompat)
     implementation(libs.cardview)
     implementation(libs.constraintlayout)

@@ -9,6 +9,7 @@ media3 = "1.10.1"
 retrofit2 = "3.0.0"
 markwon = "4.6.2"
 annotation = "1.10.0"
+activityKtx = "1.12.1"
 appcompat = "1.7.1"
 cardview = "1.0.0"
 constraintlayout = "2.2.1"
@@ -82,6 +83,7 @@ kotlin-serialization = { module = "org.jetbrains.kotlin:kotlin-serialization", v
 ksp-symbol-processing-gradle-plugin = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 annotation = { module = "androidx.annotation:annotation", version.ref = "annotation" }
+activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activityKtx" }
 appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
 cardview = { module = "androidx.cardview:cardview", version.ref = "cardview" }
 constraintlayout = { module = "androidx.constraintlayout:constraintlayout", version.ref = "constraintlayout" }

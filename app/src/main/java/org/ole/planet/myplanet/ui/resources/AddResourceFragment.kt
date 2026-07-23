@@ -206,10 +206,13 @@ class AddResourceFragment : BottomSheetDialogFragment() {
             requestCameraLauncher.launch(Manifest.permission.CAMERA)
             return
         }
-        val takeVideoIntent = Intent(MediaStore.ACTION_VIDEO_CAPTURE)
-        videoUri = createVideoFileUri()
-        takeVideoIntent.putExtra(MediaStore.EXTRA_OUTPUT, videoUri)
-        captureVideoLauncher.launch(videoUri)
+        val uri = createVideoFileUri()
+        videoUri = uri
+        if (uri != null) {
+            captureVideoLauncher.launch(uri)
+        } else {
+            Utilities.toast(activity, getString(R.string.unable_to_create_video_file))
+        }
     }
 
     private fun createVideoFileUri(): Uri? {
