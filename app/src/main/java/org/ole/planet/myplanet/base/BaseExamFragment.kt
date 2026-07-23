@@ -27,10 +27,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
@@ -41,7 +41,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
-    var exam: RealmStepExam? = null
+    var exam: StepExam? = null
     @Inject
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
@@ -52,10 +52,10 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
     var type: String? = "exam"
     var currentIndex = 0
     private var stepNumber = 0
-    var questions: List<RealmExamQuestion>? = null
+    var questions: List<ExamQuestion>? = null
     var ans = ""
-    var user: RealmUser? = null
-    var sub: RealmSubmission? = null
+    var user: UserEntity? = null
+    var sub: Submission? = null
     var listAns: HashMap<String, String>? = null
     var isMySurvey = false
     var date = Date().toString()
@@ -175,7 +175,7 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             )
         }
     }
-    abstract fun startExam(question: RealmExamQuestion?)
+    abstract fun startExam(question: ExamQuestion?)
     private fun insertIntoSubmitPhotos(submitId: String?) {
         applicationScope.launch {
             submissionsRepository.addSubmissionPhoto(

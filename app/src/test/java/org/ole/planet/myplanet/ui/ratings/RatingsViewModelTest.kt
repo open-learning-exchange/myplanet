@@ -11,7 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingEntry
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -48,7 +48,7 @@ class RatingsViewModelTest {
         val itemId = "item-1"
         val userId = "user-1"
 
-        val mockUser = RealmUser().apply { id = userId }
+        val mockUser = UserEntity().apply { id = userId }
         val mockSummary = RatingSummary(
             existingRating = RatingEntry("r-1", "Good", 5),
             averageRating = 4.5f,
@@ -77,7 +77,7 @@ class RatingsViewModelTest {
         val itemId = "item-1"
         val userId = "user-1"
 
-        val mockUser = RealmUser().apply { id = userId }
+        val mockUser = UserEntity().apply { id = userId }
 
         coEvery { userRepository.getUserProfile() } returns mockUser
         coEvery { ratingsRepository.getRatingSummary(type, itemId, userId) } throws RuntimeException("fail")
@@ -97,7 +97,7 @@ class RatingsViewModelTest {
         val itemId = "item-1"
         val userId = "user-1"
 
-        val mockUser = RealmUser().apply { id = userId }
+        val mockUser = UserEntity().apply { id = userId }
         val mockSummary = RatingSummary(
             existingRating = RatingEntry("r-1", "Good", 5),
             averageRating = 4.5f,

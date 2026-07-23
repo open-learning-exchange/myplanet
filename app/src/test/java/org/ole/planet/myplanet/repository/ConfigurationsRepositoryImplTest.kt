@@ -6,40 +6,39 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.slot
-import io.realm.Realm
+import java.util.logging.Level
+import java.util.logging.Logger
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
+import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.TestTimeProvider
-import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
-@ExperimentalCoroutinesApi
+@OptIn(ExperimentalCoroutinesApi::class)
 class ConfigurationsRepositoryImplTest {
 
     private lateinit var repository: ConfigurationsRepositoryImpl
-    private val testDispatcher = StandardTestDispatcher()
-    private val testScope = TestScope(testDispatcher)
+    private val testDispatcher = UnconfinedTestDispatcher()
 
     private val context: Context = mockk()
     private val apiInterface: ApiInterface = mockk()
-    private val preferences: SharedPreferences = mockk()
-    private val sharedPrefManager: SharedPrefManager = mockk()
-    private val databaseService: DatabaseService = mockk()
-    private val serverUrlMapper: ServerUrlMapper = mockk()
+    private val preferences: SharedPreferences = mockk(relaxed = true)
+    private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val appDatabase: AppDatabase = mockk(relaxed = true)
+    private val serverUrlMapper: ServerUrlMapper = mockk(relaxed = true)
+    private val serviceScope = CoroutineScope(testDispatcher)
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main = testDispatcher
@@ -50,16 +49,15 @@ class ConfigurationsRepositoryImplTest {
 
     @Before
     fun setup() {
+        Logger.getLogger("io.mockk").level = Level.OFF
         repository = ConfigurationsRepositoryImpl(
             context,
             apiInterface,
-            testScope,
-            preferences,
+            serviceScope,
             sharedPrefManager,
-            databaseService,
+            appDatabase,
             serverUrlMapper,
             dispatcherProvider,
-            testDispatcher,
             TestTimeProvider()
         )
     }
@@ -68,7 +66,6 @@ class ConfigurationsRepositoryImplTest {
     fun `checkHealth calls listener with success message when server is accessible`() = runTest(testDispatcher) {
         val healthUrl = "http://test.url/healthaccess?p=1234"
 
-        // Mock preferences for UrlUtils
         val rawPrefs: SharedPreferences = mockk()
         every { sharedPrefManager.rawPreferences } returns rawPrefs
         every { rawPrefs.getString(any(), any()) } returns "http://test.url"
@@ -85,27 +82,14 @@ class ConfigurationsRepositoryImplTest {
 
         val result = repository.checkHealth()
 
-        advanceUntilIdle()
-
         coVerify { apiInterface.healthAccess(healthUrl) }
-        assert(result == "Success")
+        assertEquals("Success", result)
     }
 
     @Test
-    fun `clearAllData executes transaction to delete all records`() = runTest(testDispatcher) {
-        val mockRealm: Realm = mockk(relaxed = true)
-        val transactionSlot = slot<(Realm) -> Unit>()
-
-        coEvery { databaseService.executeTransactionAsync(capture(transactionSlot)) } answers {
-            transactionSlot.captured.invoke(mockRealm)
-        }
-
+    fun `clearAllData delegates to Room clearAllTables`() = runTest(testDispatcher) {
         repository.clearAllData()
 
-        advanceUntilIdle()
-
-        coVerify { databaseService.executeTransactionAsync(any()) }
-        coVerify { mockRealm.deleteAll() }
+        io.mockk.verify(exactly = 1) { appDatabase.clearAllTables() }
     }
-
 }

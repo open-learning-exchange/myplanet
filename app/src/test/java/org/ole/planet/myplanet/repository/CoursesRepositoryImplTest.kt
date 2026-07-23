@@ -1,58 +1,80 @@
 package org.ole.planet.myplanet.repository
 
-import io.mockk.every
+import com.google.gson.JsonParser
+import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.mockk
-import io.mockk.verify
-import io.realm.Realm
-import io.realm.RealmQuery
-import io.realm.RealmResults
+import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.CertificationDao
+import org.ole.planet.myplanet.data.room.dao.CourseDao
+import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
+import org.ole.planet.myplanet.data.room.dao.CourseStepDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
+import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.TagDao
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CoursesRepositoryImplTest {
 
-    private val databaseService: DatabaseService = mockk(relaxed = true)
-    private val testDispatcher = UnconfinedTestDispatcher()
     private val progressRepository: ProgressRepository = mockk(relaxed = true)
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val submissionsRepository: SubmissionsRepository = mockk(relaxed = true)
     private val tagsRepository: TagsRepository = mockk(relaxed = true)
     private val ratingsRepository: RatingsRepository = mockk(relaxed = true)
     private val sharedPrefManager: SharedPrefManager = mockk(relaxed = true)
+    private val certificationDao: CertificationDao = mockk(relaxed = true)
+    private val courseDao: CourseDao = mockk(relaxed = true)
+    private val courseStepDao: CourseStepDao = mockk(relaxed = true)
+    private val examDao: ExamDao = mockk(relaxed = true)
+    private val questionDao: QuestionDao = mockk(relaxed = true)
+    private val submissionDao: SubmissionDao = mockk(relaxed = true)
+    private val answerDao: AnswerDao = mockk(relaxed = true)
+    private val tagDao: TagDao = mockk(relaxed = true)
+    private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
+    private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
+    private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
+    private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
 
-    private val mockRealm: Realm = mockk(relaxed = true)
     private lateinit var repository: CoursesRepositoryImpl
 
     @Before
     fun setup() {
-        io.mockk.coEvery { databaseService.withRealm<Any>(any()) } answers {
-            val block = firstArg<io.realm.Realm.() -> Any>()
-            block(mockRealm)
-        }
-        io.mockk.coEvery { databaseService.withRealmAsync<Any>(any()) } answers {
-            val block = firstArg<(io.realm.Realm) -> Any>()
-            block(mockRealm)
-        }
         repository = CoursesRepositoryImpl(
-            databaseService,
-            testDispatcher,
             progressRepository,
             activitiesRepository,
             submissionsRepository,
             tagsRepository,
             ratingsRepository,
-            sharedPrefManager
+            sharedPrefManager,
+            certificationDao,
+            courseDao,
+            courseStepDao,
+            examDao,
+            questionDao,
+            submissionDao,
+            answerDao,
+            tagDao,
+            searchActivityDao,
+            courseProgressDao,
+            removedLogDao,
+            myLibraryDao
         )
     }
 
@@ -76,90 +98,91 @@ class CoursesRepositoryImplTest {
 
     @Test
     fun `search empty query returns all courses`() = runTest {
-        val mockData = mockk<RealmResults<RealmMyCourse>>(relaxed = true)
-        val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
-        every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
-        every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(mockData as Iterable<RealmMyCourse>) } returns emptyList()
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "id1", courseId = "id1", courseTitle = "Math", courseTitleNormal = "math")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
         val result = repository.search("")
-        assertEquals(0, result.size)
-        verify { mockQuery.findAll() }
+
+        assertEquals(1, result.size)
+        assertEquals("Math", result.first().courseTitle)
     }
 
     @Test
     fun `search filters query parts before fetching and sorts startsWith before contains`() = runTest {
-        val mockData = mockk<RealmResults<RealmMyCourse>>(relaxed = true)
-        val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
-        every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
-
-        val startsWithCourse = mockk<RealmMyCourse>(relaxed = true) {
-            every { courseTitleNormal } returns "math 101"
-            every { courseTitle } returns "Math 101"
-        }
-        val containsCourse = mockk<RealmMyCourse>(relaxed = true) {
-            every { courseTitleNormal } returns "basic math"
-            every { courseTitle } returns "Basic Math"
-        }
-        val notMatchCourse = mockk<RealmMyCourse>(relaxed = true) {
-            every { courseTitleNormal } returns "science"
-            every { courseTitle } returns "Science"
-        }
-
-        every { mockData.iterator() } returns mutableListOf(containsCourse, notMatchCourse, startsWithCourse).iterator()
-        every { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) } returns mockQuery
-        every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(any<List<RealmMyCourse>>()) } answers { firstArg() }
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math", courseTitleNormal = "basic math"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Science", courseTitleNormal = "science"),
+            MyCourse(id = "3", courseId = "3", courseTitle = "Math 101", courseTitleNormal = "math 101")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
         val result = repository.search("Math")
 
-        verify { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) }
         assertEquals(2, result.size)
-        assertEquals(startsWithCourse, result[0])
-        assertEquals(containsCourse, result[1])
+        assertEquals("Math 101", result[0].courseTitle)
+        assertEquals("Basic Math", result[1].courseTitle)
     }
 
     @Test
     fun `search multi word matches all parts`() = runTest {
-        val mockData = mockk<RealmResults<RealmMyCourse>>(relaxed = true)
-        val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
-        every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
-
-        val matchCourse = mockk<RealmMyCourse>(relaxed = true) {
-            every { courseTitleNormal } returns "basic math 101"
-            every { courseTitle } returns "Basic Math 101"
-        }
-        val notMatchCourse = mockk<RealmMyCourse>(relaxed = true) {
-            every { courseTitleNormal } returns "basic science 101"
-            every { courseTitle } returns "Basic Science 101"
-        }
-
-        every { mockData.iterator() } returns mutableListOf(matchCourse, notMatchCourse).iterator()
-        every { mockQuery.contains("courseTitleNormal", "basic", io.realm.Case.INSENSITIVE) } returns mockQuery
-        every { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) } returns mockQuery
-        every { mockQuery.findAll() } returns mockData
-        every { mockRealm.copyFromRealm(any<List<RealmMyCourse>>()) } answers { firstArg() }
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", courseId = "1", courseTitle = "Basic Math 101", courseTitleNormal = "basic math 101"),
+            MyCourse(id = "2", courseId = "2", courseTitle = "Basic Science 101", courseTitleNormal = "basic science 101")
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
 
         val result = repository.search("Basic Math")
 
-        verify { mockQuery.contains("courseTitleNormal", "basic", io.realm.Case.INSENSITIVE) }
-        verify { mockQuery.contains("courseTitleNormal", "math", io.realm.Case.INSENSITIVE) }
         assertEquals(1, result.size)
-        assertEquals(matchCourse, result[0])
+        assertEquals("Basic Math 101", result[0].courseTitle)
     }
 
     @Test
     fun `getCoursesByIds returns correct courses`() = runTest {
-        val mockData = mockk<RealmResults<RealmMyCourse>>(relaxed = true)
-        val mockQuery = mockk<RealmQuery<RealmMyCourse>>(relaxed = true)
-        every { mockRealm.where(RealmMyCourse::class.java) } returns mockQuery
-        every { mockQuery.`in`("courseId", arrayOf("id1", "id2")) } returns mockQuery
-        every { mockQuery.findAll() } returns mockData
-        val courses = listOf(mockk<RealmMyCourse>(), mockk<RealmMyCourse>())
-        every { mockRealm.copyFromRealm(mockData as Iterable<RealmMyCourse>) } returns courses
+        coEvery { courseDao.getByCourseIds(listOf("id1", "id2")) } returns listOf(
+            MyCourse(id = "id1", courseId = "id1", courseTitle = "Course 1"),
+            MyCourse(id = "id2", courseId = "id2", courseTitle = "Course 2")
+        )
+        coEvery { courseStepDao.getByCourseIds(listOf("id1", "id2")) } returns listOf(
+            CourseStep(id = "step1", courseId = "id1", stepTitle = "Step 1"),
+            CourseStep(id = "step2", courseId = "id2", stepTitle = "Step 2")
+        )
 
         val result = repository.getCoursesByIds(listOf("id1", "id2"))
+
         assertEquals(2, result.size)
-        verify { mockQuery.`in`("courseId", arrayOf("id1", "id2")) }
+        assertEquals("Course 1", result[0].courseTitle)
+        assertEquals("Step 1", result[0].courseSteps?.first()?.stepTitle)
+        assertEquals("Course 2", result[1].courseTitle)
+    }
+
+    @Test
+    fun `saveSearchActivity writes course search activity to Room`() = runTest {
+        val savedActivity = slot<SearchActivity>()
+
+        repository.saveSearchActivity(
+            searchText = "algebra",
+            userName = "learner",
+            planetCode = "planet",
+            parentCode = "parent",
+            tags = emptyList(),
+            grade = "6",
+            subject = "math"
+        )
+
+        coVerify(exactly = 1) { searchActivityDao.insert(capture(savedActivity)) }
+        assertTrue(savedActivity.captured.id.isNotBlank())
+        assertEquals("learner", savedActivity.captured.user)
+        assertEquals("planet", savedActivity.captured.createdOn)
+        assertEquals("parent", savedActivity.captured.parentCode)
+        assertEquals("algebra", savedActivity.captured.text)
+        assertEquals("courses", savedActivity.captured.type)
+
+        val filter = JsonParser.parseString(savedActivity.captured.filter).asJsonObject
+        assertEquals("6", filter["doc.gradeLevel"].asString)
+        assertEquals("math", filter["doc.subjectLevel"].asString)
+        assertTrue(filter.getAsJsonArray("tags").isEmpty)
     }
 }

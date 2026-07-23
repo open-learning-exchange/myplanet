@@ -9,7 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ReportListItemBinding
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageViewerUtils
@@ -18,9 +18,9 @@ import org.ole.planet.myplanet.utils.TimeUtils
 class EnterprisesReportsAdapter(
     private val context: Context,
     private val prefData: SharedPrefManager,
-    private val onEdit: (RealmMyTeam) -> Unit,
-    private val onDelete: (RealmMyTeam) -> Unit
-) : ListAdapter<RealmMyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
+    private val onEdit: (MyTeam) -> Unit,
+    private val onDelete: (MyTeam) -> Unit
+) : ListAdapter<MyTeam, EnterprisesReportsAdapter.ReportsViewHolder>(diffCallback) {
     private var nonTeamMember = false
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ReportsViewHolder {
@@ -76,8 +76,8 @@ class EnterprisesReportsAdapter(
         }
     }
 
-    private fun bindReportImage(binding: ReportListItemBinding, report: RealmMyTeam) {
-        val imageFile = RealmMyTeam.getAttachmentFile(context, report._id, report.imageName)
+    private fun bindReportImage(binding: ReportListItemBinding, report: MyTeam) {
+        val imageFile = MyTeam.getAttachmentFile(context, report._id, report.imageName)
         if (imageFile != null && imageFile.exists()) {
             binding.reportImage.visibility = View.VISIBLE
             Glide.with(context)
@@ -101,7 +101,7 @@ class EnterprisesReportsAdapter(
     class ReportsViewHolder(val binding: ReportListItemBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val diffCallback = DiffUtils.itemCallback<RealmMyTeam>(
+        val diffCallback = DiffUtils.itemCallback<MyTeam>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )

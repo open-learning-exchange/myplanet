@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.legacy.kapt)
     alias(libs.plugins.ksp)
     alias(libs.plugins.dagger.hilt.android)
-    alias(libs.plugins.realm.android)
 }
 android {
     compileSdk = 37
@@ -67,7 +66,6 @@ android {
             ]
         }
         doNotStrip "**/libpl_droidsonroids_gif.so"
-        doNotStrip "**/librealm-jni.so"
     }
     compileOptions {
         targetCompatibility JavaVersion.VERSION_17
@@ -162,6 +160,7 @@ dependencies {
     testImplementation(libs.test.runner)
     testImplementation(libs.test.arch)
     testImplementation(libs.test.hilt)
+    testImplementation(libs.room.testing)
     kspTest(libs.hilt.android.compiler)
     androidTestImplementation(libs.test.junit)
     androidTestImplementation(libs.test.ext)
@@ -202,6 +201,9 @@ dependencies {
     implementation(libs.circular.progress.view)
     implementation(libs.material)
     implementation(libs.gson)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
     implementation(libs.toggle.button.group)
