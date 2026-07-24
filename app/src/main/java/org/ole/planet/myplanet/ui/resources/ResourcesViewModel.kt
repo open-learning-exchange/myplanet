@@ -50,26 +50,6 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
-        val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-        enrichedLibraries
-            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
-            .map { (library, rating, libraryTags) ->
-            val item = ResourceItem(
-                id = library.id,
-                title = library.title,
-                description = library.description,
-                createdDate = library.createdDate,
-                averageRating = library.averageRating,
-                timesRated = library.timesRated,
-                resourceId = library.resourceId,
-                isOffline = library.isResourceOffline(),
-                _rev = library._rev,
-                uploadDate = library.uploadDate,
-                filename = library.filename,
-                resourceLocalAddress = library.resourceLocalAddress
-            )
-            val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
-            ResourceListModel(library, item, rating, tags)
-        }
+        resourcesRepository.getResourceListModels(isMyCourseLib, modelId)
     }
 }
