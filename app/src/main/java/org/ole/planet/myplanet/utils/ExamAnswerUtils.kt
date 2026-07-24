@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.LruCache
+import com.google.gson.JsonObject
 import java.util.Arrays
 import java.util.Locale
 import org.ole.planet.myplanet.model.ExamQuestion
@@ -10,6 +11,12 @@ object ExamAnswerUtils {
     // Process-lifetime cache mapping a stringified choices JSON to a Map of id -> text.
     // Using choices as the key prevents stale mapping if the question's choices are updated from the server.
     private val choicesCache = LruCache<String, Map<String, String>>(100)
+
+    fun choiceDisplayValue(choice: JsonObject): String? {
+        return JsonUtils.getString("text", choice).ifBlank {
+            JsonUtils.getString("res", choice).ifBlank { null }
+        }
+    }
 
     fun getChoiceTextById(question: ExamQuestion, id: String): String {
         val choicesString = question.choices ?: return id
@@ -22,8 +29,9 @@ object ExamAnswerUtils {
                 if (choices[i].isJsonObject) {
                     val obj = choices[i].asJsonObject
                     val choiceId = JsonUtils.getString("id", obj)
-                    if (choiceId.isNotEmpty() && obj.has("text")) {
-                        mutableMap[choiceId] = JsonUtils.getString("text", obj)
+                    val displayValue = choiceDisplayValue(obj)
+                    if (choiceId.isNotEmpty() && displayValue != null) {
+                        mutableMap[choiceId] = displayValue
                     }
                 }
             }
@@ -51,15 +59,16 @@ object ExamAnswerUtils {
     }
 
     private fun checkSelectAnswer(ans: String, correctChoices: List<String>?): Boolean {
-        return correctChoices?.contains(ans.lowercase(Locale.getDefault())) == true
+        val normalizedAns = ans.lowercase(Locale.getDefault())
+        return correctChoices?.any { it.lowercase(Locale.getDefault()) == normalizedAns } == true
     }
 
     private fun checkMultipleSelectAnswer(
         listAns: Map<String, String>?,
         correctChoices: List<String>?
     ): Boolean {
-        val selectedAns = listAns?.values?.toTypedArray()
-        val correctChoicesArray = correctChoices?.toTypedArray()
+        val selectedAns = listAns?.values?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
+        val correctChoicesArray = correctChoices?.map { it.lowercase(Locale.getDefault()) }?.toTypedArray()
         return isEqual(selectedAns, correctChoicesArray)
     }
 

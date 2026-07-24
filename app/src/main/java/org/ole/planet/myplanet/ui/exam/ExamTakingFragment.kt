@@ -198,7 +198,11 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
             viewLifecycleOwner.lifecycleScope.launch {
-                updateAnsDb()
+                val cont = updateAnsDb()
+                if (this@ExamTakingFragment.type == "exam" && !cont) {
+                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                    return@launch
+                }
                 goToNextQuestion()
             }
         }
