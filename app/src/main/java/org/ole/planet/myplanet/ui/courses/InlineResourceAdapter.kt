@@ -19,7 +19,9 @@ import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
 import java.io.FileReader
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
@@ -65,10 +67,17 @@ class InlineResourceAdapter(
         }
     }
 
-    class ViewHolder(val binding: ItemInlineResourceBinding, dispatcherProvider: DispatcherProvider) : RecyclerView.ViewHolder(binding.root) {
+    private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (!adapterScope.isActive) {
+            adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+        }
+    }
+
+    class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
-        // Scope intentionally left alive across recycles (only previewJob is cancelled) so reused holders can still launch previews
-        val scope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
 
         fun cancelPreviousPreviews() {
             previewJob?.cancel()
@@ -92,18 +101,14 @@ class InlineResourceAdapter(
         val binding = ItemInlineResourceBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
-        return ViewHolder(binding, dispatcherProvider)
+        return ViewHolder(binding)
     }
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
+        adapterScope.cancel()
         textCache.clear()
         bitmapCache.evictAll()
-        for (i in 0 until recyclerView.childCount) {
-            val child = recyclerView.getChildAt(i)
-            val holder = recyclerView.getChildViewHolder(child) as? ViewHolder
-            holder?.cancelPreviousPreviews()
-        }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -180,7 +185,7 @@ class InlineResourceAdapter(
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                 else -> {
-                    holder.setPreviewJob(holder.scope.launch {
+                    holder.setPreviewJob(adapterScope.launch {
                         when {
                             mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                             mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
