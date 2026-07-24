@@ -45,11 +45,12 @@ class ChatShareTargetAdapter(
     class GroupViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val listTitleTextView: TextView = view.findViewById(R.id.listTitle)
         private val arrowIcon: ImageView = view.findViewById(R.id.arrowIcon)
+        private val textColor = ContextCompat.getColor(view.context, R.color.daynight_textColor)
 
         fun bind(item: ChatShareTargetItem) {
             listTitleTextView.setTypeface(null, Typeface.BOLD)
             listTitleTextView.text = item.title
-            listTitleTextView.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
+            listTitleTextView.setTextColor(textColor)
             arrowIcon.rotation = if (item.isExpanded) 180f else 0f
         }
     }
@@ -57,11 +58,13 @@ class ChatShareTargetAdapter(
     class ChildViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val expandedListTextView: TextView = view.findViewById(R.id.expandedListItem)
         private val sharedIcon: ImageView = view.findViewById(R.id.sharedIcon)
+        private val textColor = ContextCompat.getColor(view.context, R.color.daynight_textColor)
+        private val backgroundColor = ContextCompat.getColor(view.context, R.color.multi_select_grey)
 
         fun bind(item: ChatShareTargetItem) {
             expandedListTextView.text = item.title
-            itemView.setBackgroundColor(ContextCompat.getColor(itemView.context, R.color.multi_select_grey))
-            expandedListTextView.setTextColor(ContextCompat.getColor(itemView.context, R.color.daynight_textColor))
+            itemView.setBackgroundColor(backgroundColor)
+            expandedListTextView.setTextColor(textColor)
             sharedIcon.visibility = if (item.isShared) View.VISIBLE else View.GONE
         }
     }
