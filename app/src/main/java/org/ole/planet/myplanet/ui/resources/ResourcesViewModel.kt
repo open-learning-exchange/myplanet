@@ -23,6 +23,8 @@ class ResourcesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
+    private var lastCache: Pair<Pair<Boolean, String?>, List<ResourceListModel>>? = null
+
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
 
@@ -34,12 +36,16 @@ class ResourcesViewModel @Inject constructor(
     fun notifyDownloadComplete() {
         _downloadComplete.value = true
         _downloadComplete.value = false
+        lastCache = null
     }
 
     fun observeOpenedResourceIds(userId: String) {
         observeOpenedResourcesJob?.cancel()
         observeOpenedResourcesJob = viewModelScope.launch {
             resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
+                if (_openedResourceIds.value != ids) {
+                    lastCache = null
+                }
                 _openedResourceIds.value = ids
             }
         }
@@ -50,8 +56,13 @@ class ResourcesViewModel @Inject constructor(
     }
 
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
+        val key = Pair(isMyCourseLib, modelId)
+        val currentCache = lastCache
+        if (currentCache?.first == key) {
+            return@withContext currentCache.second
+        }
         val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)
-        enrichedLibraries
+        val result = enrichedLibraries
             .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
             .map { (library, rating, libraryTags) ->
             val item = ResourceItem(
@@ -71,5 +82,7 @@ class ResourcesViewModel @Inject constructor(
             val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
             ResourceListModel(library, item, rating, tags)
         }
+        lastCache = Pair(key, result)
+        result
     }
 }
