@@ -6,46 +6,51 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.realm.Case
-import io.realm.RealmList
-import io.realm.Sort
 import java.io.File
 import java.util.Date
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Provider
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
-import org.ole.planet.myplanet.data.DatabaseService
-import org.ole.planet.myplanet.di.RealmDispatcher
+import kotlinx.coroutines.flow.map
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.QuestionDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.data.room.dao.SubmitPhotosDao
+import org.ole.planet.myplanet.data.room.dao.UserDao
+import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.CreateExamSubmissionRequest
 import org.ole.planet.myplanet.model.ExamAnswerData
+import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.MembershipDoc
 import org.ole.planet.myplanet.model.QuestionAnswer
-import org.ole.planet.myplanet.model.RealmAnswer
-import org.ole.planet.myplanet.model.RealmExamQuestion
-import org.ole.planet.myplanet.model.RealmMembershipDoc
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmSubmitPhotos
-import org.ole.planet.myplanet.model.RealmTeamReference
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.SubmissionDetail
 import org.ole.planet.myplanet.model.SubmissionItem
+import org.ole.planet.myplanet.model.SubmitPhotos
+import org.ole.planet.myplanet.model.TeamReference
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 
 class SubmissionsRepositoryImpl @Inject internal constructor(
-    databaseService: DatabaseService,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher,
     private val teamsRepositoryProvider: Provider<TeamsRepository>,
     private val surveysRepositoryProvider: Provider<SurveysRepository>,
     @ApplicationContext private val context: Context,
     private val sharedPrefManager: SharedPrefManager,
-    private val exporter: SubmissionsRepositoryExporter
-) : RealmRepository(databaseService, realmDispatcher), SubmissionsRepository {
+    private val exporter: SubmissionsRepositoryExporter,
+    private val submitPhotosDao: SubmitPhotosDao,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
+    private val examDao: ExamDao,
+    private val questionDao: QuestionDao,
+    private val userDao: UserDao
+) : SubmissionsRepository {
 
     override suspend fun generateSubmissionPdf(submissionId: String): File? {
         return exporter.generateSubmissionPdf(context, submissionId)
@@ -55,53 +60,45 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         return exporter.generateMultipleSubmissionsPdf(context, submissionIds, examTitle)
     }
 
-    private fun RealmSubmission.examIdFromParentId(): String? {
+    private fun Submission.examIdFromParentId(): String? {
         return parentId?.substringBefore("@")
     }
 
-    override fun getPendingSurveysFlow(userId: String?): Flow<List<RealmSubmission>> {
-        return queryListFlow(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-                .equalTo("type", "survey")
-                .equalTo("status", "pending", Case.INSENSITIVE)
-        }
+    private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
+        if (rows.isEmpty()) return emptyList()
+        val answersBySubmissionId = answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
+        return rows.map { row -> row.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } } }
     }
 
-    override fun getSubmissionsFlow(userId: String): Flow<List<RealmSubmission>> {
-        return queryListFlow(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-        }.distinctUntilChanged { old, new ->
+    private suspend fun hydrateSubmission(row: Submission?): Submission? {
+        return row?.let { hydrateSubmissions(listOf(it)).firstOrNull() }
+    }
+
+    override fun getPendingSurveysFlow(userId: String?): Flow<List<Submission>> {
+        return submissionDao.observePendingSurveys(userId).map { rows -> rows.map { it } }
+    }
+
+    override fun getSubmissionsFlow(userId: String): Flow<List<Submission>> {
+        return submissionDao.observeByUserId(userId).map { rows -> rows.map { it } }.distinctUntilChanged { old, new ->
             // Assuming any meaningful mutation bumps lastUpdateTime.
             old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.lastUpdateTime == n.lastUpdateTime }
         }
     }
 
-    override suspend fun getPendingSurveys(userId: String?): List<RealmSubmission> {
+    override suspend fun getPendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
-
-        return queryList(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("status", "pending")
-            equalTo("type", "survey")
-        }
+        return hydrateSubmissions(submissionDao.getPendingSurveys(userId))
     }
 
-private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
+    private suspend fun getExamsByIds(examIds: List<String>): List<StepExam> {
         if (examIds.isEmpty()) return emptyList()
-        return queryList(RealmStepExam::class.java) {
-            `in`("id", examIds.toTypedArray())
-        }
+        return examDao.getByIds(examIds).map { it }
     }
 
-    override suspend fun getUniquePendingSurveys(userId: String?): List<RealmSubmission> {
+    override suspend fun getUniquePendingSurveys(userId: String?): List<Submission> {
         if (userId == null) return emptyList()
 
-        val pendingSurveys = queryList(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("status", "pending")
-            equalTo("type", "survey")
-            isNull("membershipDoc")
-        }
+        val pendingSurveys = hydrateSubmissions(submissionDao.getUniquePendingSurveyCandidates(userId))
 
         if (pendingSurveys.isEmpty()) {
             return emptyList()
@@ -115,7 +112,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         val exams = getExamsByIds(examIds)
         val validExamIds = exams.mapNotNull { it.id }.toSet()
 
-        val uniqueSurveys = linkedMapOf<String, RealmSubmission>()
+        val uniqueSurveys = linkedMapOf<String, Submission>()
         pendingSurveys.forEach { submission ->
             val examId = submission.examIdFromParentId()
             if (examId != null && validExamIds.contains(examId) && !uniqueSurveys.containsKey(examId)) {
@@ -126,7 +123,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getSurveyTitlesFromSubmissions(
-        submissions: List<RealmSubmission>
+        submissions: List<Submission>
     ): List<String> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }
         if (examIds.isEmpty()) {
@@ -143,8 +140,8 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getExamMap(
-        submissions: List<RealmSubmission>
-    ): Map<String?, RealmStepExam> {
+        submissions: List<Submission>
+    ): Map<String?, StepExam> {
         val examIds = submissions.mapNotNull { it.examIdFromParentId() }.distinct()
         if (examIds.isEmpty()) {
             return emptyMap()
@@ -161,25 +158,21 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun getExamQuestionCount(stepId: String): Int {
-        return findByField(RealmStepExam::class.java, "stepId", stepId)?.noOfQuestions ?: 0
+        return examDao.getFirstByStepId(stepId)?.noOfQuestions ?: 0
     }
 
-    override suspend fun getSubmissionById(id: String): RealmSubmission? {
-        return findByField(RealmSubmission::class.java, "id", id)
+    override suspend fun getSubmissionById(id: String): Submission? {
+        return hydrateSubmission(submissionDao.getByIdOrRemoteId(id))
     }
 
-    override suspend fun getSubmissionsByIds(ids: List<String>): List<RealmSubmission> {
+    override suspend fun getSubmissionsByIds(ids: List<String>): List<Submission> {
         if (ids.isEmpty()) return emptyList()
 
-        return queryList(RealmSubmission::class.java) {
-            `in`("id", ids.toTypedArray())
-        }
+        return hydrateSubmissions(submissionDao.getByIds(ids))
     }
 
-    override suspend fun getSubmissionsByUserId(userId: String): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java, ensureLatest = true) {
-            equalTo("userId", userId)
-        }
+    override suspend fun getSubmissionsByUserId(userId: String): List<Submission> {
+        return hydrateSubmissions(submissionDao.getByUserId(userId))
     }
 
     override suspend fun hasSubmission(
@@ -192,84 +185,52 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             return false
         }
 
-        val questions = queryList(RealmExamQuestion::class.java) {
-            equalTo("examId", stepExamId)
-        }
-        if (questions.isEmpty()) {
+        if (questionDao.countByExamId(stepExamId) == 0) {
             return false
         }
 
-        val examId = questions.firstOrNull()?.examId
-        if (examId.isNullOrBlank()) {
-            return false
-        }
-
-        val parentId = "$examId@$courseId"
-        return count(RealmSubmission::class.java) {
-            equalTo("userId", userId)
-            equalTo("parentId", parentId)
-            equalTo("type", type)
-        } > 0
+        val parentId = "$stepExamId@$courseId"
+        return submissionDao.countByUserParentAndType(userId, parentId, type) > 0
     }
 
     override suspend fun hasPendingOfflineSubmissions(): Boolean {
-        return count(RealmSubmission::class.java) {
-            beginGroup()
-            equalTo("isUpdated", true)
-            or()
-            isEmpty("_id")
-            endGroup()
-        } > 0
+        return submissionDao.countPendingOfflineSubmissions() > 0
     }
 
     override suspend fun hasPendingExamResults(): Boolean {
-        return count(RealmSubmission::class.java) {
-            equalTo("status", "pending", Case.INSENSITIVE)
-            isNotEmpty("answers")
-        } > 0
+        return submissionDao.countPendingExamResults() > 0
     }
 
     override suspend fun createBulkSurveySubmissions(examId: String, userIds: List<String>) {
-        val parentId = withRealm { realm ->
-            val courseId = realm.where(RealmStepExam::class.java).equalTo("id", examId).findFirst()?.courseId
-            if (!courseId.isNullOrEmpty()) {
-                "$examId@$courseId"
-            } else {
-                examId
-            }
+        val courseId = examDao.getById(examId)?.courseId
+        val parentId = if (!courseId.isNullOrEmpty()) {
+            "$examId@$courseId"
+        } else {
+            examId
         }
         userIds.forEach { userId ->
             getOrCreateSubmission(userId, parentId)
         }
     }
 
-    override suspend fun saveSubmission(submission: RealmSubmission) {
-        try {
-            save(submission)
-        } catch (e: Exception) {
-            throw e
+    override suspend fun saveSubmission(submission: Submission) {
+        val submissionEntity = submission ?: return
+        val answerEntities = submission.answers?.mapNotNull { it }.orEmpty()
+        submissionDao.upsertAll(listOf(submissionEntity))
+        if (answerEntities.isNotEmpty()) {
+            answerDao.upsertAll(answerEntities)
         }
     }
 
     override suspend fun markSubmissionComplete(id: String, payload: JsonObject) {
-        update(RealmSubmission::class.java, "id", id) { sub ->
-            sub.user = payload.toString()
-            sub.status = "complete"
-            sub.isUpdated = true // Mark for upload
-        }
+        submissionDao.markComplete(id, payload.toString())
     }
 
     override suspend fun getSubmissionDetail(submissionId: String): SubmissionDetail? {
-        var submission = findFirstCopy(RealmSubmission::class.java) {
-            equalTo("id", submissionId)
-                .or()
-                .equalTo("_id", submissionId)
-        }
+        var submission = hydrateSubmission(submissionDao.getByIdOrRemoteId(submissionId))
 
         if (submission == null) {
-            submission = findFirstCopy(RealmSubmission::class.java) {
-                contains("parentId", submissionId)
-            }
+            submission = hydrateSubmission(submissionDao.getFirstByParentIdContaining(submissionId))
         }
 
         if (submission == null) {
@@ -279,11 +240,9 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         val examId = submission.parentId?.substringBefore('@')
         val exam = examId?.let { getExamById(it) }
 
-        val user = submission.userId?.let { findByField(RealmUser::class.java, "id", it) }
+        val user = submission.userId?.let { userDao.getById(it) }
 
-        val questions = queryList(RealmExamQuestion::class.java) {
-            equalTo("examId", examId)
-        }
+        val questions = examId?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
 
         val questionAnswers = questions.map { question ->
             val answer = submission.answers?.find { it.questionId == question.id }
@@ -336,7 +295,7 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         )
     }
 
-    override fun getNormalizedSubmitterName(submission: RealmSubmission): String? {
+    override fun getNormalizedSubmitterName(submission: Submission): String? {
         return runCatching {
             submission.user?.takeIf { it.isNotBlank() }?.let { userJson ->
                 val jsonObject = JsonParser.parseString(userJson).asJsonObject
@@ -345,25 +304,16 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         }.getOrNull()
     }
 
-    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<RealmSubmission> {
-        return queryList(RealmSubmission::class.java) {
-            equalTo("parentId", parentId)
-                .equalTo("userId", userId)
-                .apply {
-                    if (status != null) {
-                        equalTo("status", status)
-                    }
-                }
-                .sort("startTime", Sort.DESCENDING)
-        }
+    override suspend fun getSubmissionsByParentId(parentId: String?, userId: String?, status: String?): List<Submission> {
+        return hydrateSubmissions(submissionDao.getByParentUserAndStatus(parentId, userId, status))
+    }
+
+    override suspend fun getLatestSubmissionByParentId(parentId: String, status: String): Submission? {
+        return hydrateSubmission(submissionDao.getLatestByParentIdAndStatus(parentId, status))
     }
 
     override suspend fun getSubmissionItems(parentId: String?, userId: String?): List<SubmissionItem> {
-        return queryList(RealmSubmission::class.java, maxDepth = 0) {
-            equalTo("parentId", parentId)
-                .equalTo("userId", userId)
-                .sort("startTime", Sort.DESCENDING)
-        }.map {
+        return submissionDao.getByParentUserAndStatus(parentId, userId, null).map {
             SubmissionItem(
                 id = it.id,
                 lastUpdateTime = it.lastUpdateTime,
@@ -374,42 +324,29 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
     }
 
     override suspend fun deleteExamSubmissions(examId: String, courseId: String?, userId: String?) {
-        executeTransaction { realm ->
-            val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
-                "${examId}@${courseId}"
-            } else {
-                examId
-            }
-
-            val allSubmissions = realm.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("parentId", parentIdToSearch)
-                .findAll()
-
-            allSubmissions.forEach { submission ->
-                submission.answers?.deleteAllFromRealm()
-                submission.deleteFromRealm()
-            }
+        val parentIdToSearch = if (!courseId.isNullOrEmpty()) {
+            "${examId}@${courseId}"
+        } else {
+            examId
         }
+        val submissions = submissionDao.getByParentUserAndStatus(parentIdToSearch, userId, null)
+        val submissionIds = submissions.map { it.id }
+        if (submissionIds.isNotEmpty()) {
+            answerDao.deleteBySubmissionIds(submissionIds)
+        }
+        submissionDao.deleteByParentAndUser(parentIdToSearch, userId)
     }
 
     override suspend fun isStepCompleted(stepId: String?, userId: String?): Boolean {
         if (stepId == null) return true
-        val exam = findByField(RealmStepExam::class.java, "stepId", stepId) ?: return true
+        val exam = examDao.getFirstByStepId(stepId) ?: return true
         return exam.id?.let {
-            count(RealmSubmission::class.java) {
-                equalTo("userId", userId)
-                    .contains("parentId", it)
-                    .notEqualTo("status", "pending")
-            } > 0
+            submissionDao.countCompletedByUserAndExamId(userId, it) > 0
         } ?: false
     }
 
-    private suspend fun getSurveysByCourseId(courseId: String): List<RealmStepExam> {
-        return queryList(RealmStepExam::class.java) {
-            equalTo("courseId", courseId)
-            equalTo("type", "survey")
-        }
+    private suspend fun getSurveysByCourseId(courseId: String): List<StepExam> {
+        return examDao.getByCourseIdAndType(courseId, "survey").map { it }
     }
 
     override suspend fun hasUnfinishedSurveys(courseId: String, userId: String?): Boolean {
@@ -439,21 +376,22 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         memberId: String?,
         photoPath: String?
     ) {
-        executeTransaction { realm ->
-            val id = UUID.randomUUID().toString()
-            val submit = realm.createObject(RealmSubmitPhotos::class.java, id)
-            submit.submissionId = submissionId
-            submit.examId = examId
-            submit.courseId = courseId
-            submit.memberId = memberId
-            submit.date = Date().toString()
-            submit.uniqueId = NetworkUtils.getUniqueIdentifier()
-            submit.photoLocation = photoPath
-            submit.uploaded = false
-        }
+        submitPhotosDao.insert(
+            SubmitPhotos().apply {
+                id = UUID.randomUUID().toString()
+                this.submissionId = submissionId
+                this.examId = examId
+                this.courseId = courseId
+                this.memberId = memberId
+                date = Date().toString()
+                uniqueId = NetworkUtils.getUniqueIdentifier()
+                photoLocation = photoPath
+                uploaded = false
+            }
+        )
     }
 
-    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): RealmSubmission? {
+    override suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission? {
         val (userId, userDob, userGender, exam, type, teamId) = request
         val team = if (!teamId.isNullOrEmpty()) {
             teamsRepositoryProvider.get().getTeamById(teamId)
@@ -461,166 +399,119 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             null
         }
 
-        var detachedSub: RealmSubmission? = null
-        executeTransaction { r ->
-                val managedSub = createSubmissionInternal(null, r)
-
-                val parentId = when {
-                    !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
-                        "${exam.id}@${exam.courseId}"
-                    } else {
-                        exam.id
-                    }
-                    else -> managedSub.parentId
+        val now = Date().time
+        val submission = Submission().apply {
+            id = UUID.randomUUID().toString()
+            parentId = when {
+                !exam.id.isNullOrEmpty() -> if (!exam.courseId.isNullOrEmpty()) {
+                    "${exam.id}@${exam.courseId}"
+                } else {
+                    exam.id
                 }
-                managedSub.parentId = parentId
-
-                try {
-                    val parentJsonString = JsonObject().apply {
-                        addProperty("_id", exam.id ?: "")
-                        addProperty("name", exam.name ?: "")
-                        addProperty("courseId", exam.courseId ?: "")
-                        addProperty("sourcePlanet", exam.sourcePlanet ?: "")
-                        addProperty("teamShareAllowed", exam.isTeamShareAllowed)
-                        addProperty("noOfQuestions", exam.noOfQuestions)
-                        addProperty("isFromNation", exam.isFromNation)
-                    }.toString()
-                    managedSub.parent = parentJsonString
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-
-                managedSub.userId = userId
-                managedSub.status = "pending"
-                managedSub.type = type
-                managedSub.startTime = Date().time
-                managedSub.lastUpdateTime = Date().time
-                if (managedSub.answers == null) {
-                    managedSub.answers = RealmList()
-                }
-
-                if (team != null) {
-                    val teamRef = r.createObject(RealmTeamReference::class.java)
-                    teamRef._id = team._id
-                    teamRef.name = team.name
-                    teamRef.type = team.type ?: "team"
-                    managedSub.teamObject = teamRef
-
-                    val membershipDoc = r.createObject(RealmMembershipDoc::class.java)
-                    membershipDoc.teamId = teamId
-                    managedSub.membershipDoc = membershipDoc
-
-                    try {
-                        val userJson = JsonObject()
-                        userJson.addProperty("age", userDob ?: "")
-                        userJson.addProperty("gender", userGender ?: "")
-                        val membershipJson = JsonObject()
-                        membershipJson.addProperty("teamId", teamId)
-                        userJson.add("membershipDoc", membershipJson)
-                        managedSub.user = userJson.toString()
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
-                }
-                detachedSub = r.copyFromRealm(managedSub)
+                else -> null
             }
-        return detachedSub
+            parent = JsonObject().apply {
+                addProperty("_id", exam.id ?: "")
+                addProperty("name", exam.name ?: "")
+                addProperty("courseId", exam.courseId ?: "")
+                addProperty("sourcePlanet", exam.sourcePlanet ?: "")
+                addProperty("teamShareAllowed", exam.isTeamShareAllowed)
+                addProperty("noOfQuestions", exam.noOfQuestions)
+                addProperty("isFromNation", exam.isFromNation)
+            }.toString()
+            this.userId = userId
+            status = "pending"
+            this.type = type
+            startTime = now
+            lastUpdateTime = now
+            answers = mutableListOf()
+
+            if (team != null) {
+                teamObject = TeamReference().apply {
+                    _id = team._id
+                    name = team.name
+                    this.type = team.type ?: "team"
+                }
+                membershipDoc = MembershipDoc().apply { this.teamId = teamId }
+                user = JsonObject().apply {
+                    addProperty("age", userDob ?: "")
+                    addProperty("gender", userGender ?: "")
+                    add("membershipDoc", JsonObject().apply { addProperty("teamId", teamId) })
+                }.toString()
+            }
+        }
+        saveSubmission(submission)
+        return submission
     }
 
     override suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean {
         val (submission, question, ans, listAns, otherText, otherVisible, type, index, total, isExplicitSubmission) = answerData
-        val submissionId = submission?.id
+        val submissionRow = submission?.id?.let { submissionDao.getByIdOrRemoteId(it) }
+            ?: submission
+            ?: submissionDao.getLatestPendingByUser(submission?.userId)
+        val submissionId = submissionRow?.id
         val questionId = question.id
 
-        executeTransaction { r ->
-            val realmSubmission = if (submissionId != null) {
-                r.where(RealmSubmission::class.java).equalTo("id", submissionId).findFirst()
+        if (submissionRow != null && !questionId.isNullOrBlank()) {
+            val existing = answerDao.getBySubmissionAndQuestion(submissionRow.id, questionId)
+            val valueChoices: List<String>?
+            val value: String?
+
+            if (question.type.equals("select", ignoreCase = true)) {
+                if (otherVisible && !otherText.isNullOrEmpty()) {
+                    value = otherText
+                    valueChoices = listOf("""{"id":"other","text":"$otherText"}""")
+                } else {
+                    val choiceText = ExamAnswerUtils.getChoiceTextById(question, ans)
+                    value = choiceText
+                    valueChoices = if (ans.isNotEmpty()) {
+                        listOf("""{"id":"$ans","text":"$choiceText"}""")
+                    } else {
+                        emptyList()
+                    }
+                }
+            } else if (question.type.equals("selectMultiple", ignoreCase = true)) {
+                value = ""
+                valueChoices = listAns?.map { (text, id) ->
+                    if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
+                        """{"id":"other","text":"$otherText"}"""
+                    } else {
+                        """{"id":"$id","text":"$text"}"""
+                    }
+                }
             } else {
-                r.where(RealmSubmission::class.java)
-                    .equalTo("status", "pending")
-                    .sort("startTime", Sort.DESCENDING)
-                    .findFirst()
+                value = if (otherVisible && !otherText.isNullOrEmpty()) otherText else ans
+                valueChoices = null
             }
 
-            val realmQuestion = r.where(RealmExamQuestion::class.java).equalTo("id", questionId).findFirst()
+            val isCorrect = if (type == "exam") {
+                ExamAnswerUtils.checkCorrectAnswer(ans, listAns, question)
+            } else {
+                true
+            }
+            val isFinal = index == total - 1
+            val newStatus = when {
+                isFinal && isExplicitSubmission && type == "survey" -> "complete"
+                isFinal && isExplicitSubmission -> "requires grading"
+                else -> "pending"
+            }
+            val now = Date().time
+            val answer = Answer(
+                id = existing?.id ?: UUID.randomUUID().toString(),
+                value = value,
+                valueChoices = valueChoices,
+                mistakes = if (type == "exam" && !isCorrect) (existing?.mistakes ?: 0) + 1 else existing?.mistakes ?: 0,
+                isPassed = if (type == "exam") isCorrect else existing?.isPassed ?: false,
+                grade = if (type == "exam") 1 else existing?.grade ?: 0,
+                examId = question.examId,
+                questionId = questionId,
+                submissionId = submissionId,
+            )
+            answerDao.upsertAll(listOf(answer))
+            submissionDao.updateStatusAndLastUpdate(submissionRow.id, newStatus, now)
 
-            if (realmSubmission != null && realmQuestion != null) {
-                val existing = realmSubmission.answers?.find { it.questionId == realmQuestion.id }
-                val ansObj = if (existing != null) {
-                    existing
-                } else {
-                    val newAnswerId = UUID.randomUUID().toString()
-                    val newAnswer = r.createObject(RealmAnswer::class.java, newAnswerId)
-                    realmSubmission.answers?.add(newAnswer)
-                    newAnswer
-                }
-                ansObj.questionId = realmQuestion.id
-                ansObj.submissionId = realmSubmission.id
-                ansObj.examId = realmQuestion.examId
-
-                if (realmQuestion.type.equals("select", ignoreCase = true)) {
-                    if (otherVisible && !otherText.isNullOrEmpty()) {
-                        ansObj.value = otherText
-                        ansObj.valueChoices = RealmList<String>().apply {
-                            add("""{"id":"other","text":"$otherText"}""")
-                        }
-                    } else {
-                        val choiceText = ExamAnswerUtils.getChoiceTextById(realmQuestion, ans)
-                        ansObj.value = choiceText
-                        ansObj.valueChoices = RealmList<String>().apply {
-                            if (ans.isNotEmpty()) {
-                                add("""{"id":"$ans","text":"$choiceText"}""")
-                            }
-                        }
-                    }
-                } else if (realmQuestion.type.equals("selectMultiple", ignoreCase = true)) {
-                    ansObj.value = ""
-                    ansObj.valueChoices = RealmList<String>().apply {
-                        listAns?.forEach { (text, id) ->
-                            if (id == "other" && otherVisible && !otherText.isNullOrEmpty()) {
-                                add("""{"id":"other","text":"$otherText"}""")
-                            } else {
-                                add("""{"id":"$id","text":"$text"}""")
-                            }
-                        }
-                    }
-                } else {
-                    val textValue = if (otherVisible && !otherText.isNullOrEmpty()) {
-                        otherText
-                    } else {
-                        ans
-                    }
-                    ansObj.value = textValue
-                    ansObj.valueChoices = null
-                }
-
-                if (type == "exam") {
-                    val isCorrect = ExamAnswerUtils.checkCorrectAnswer(ans, listAns, realmQuestion)
-                    ansObj.isPassed = isCorrect
-                    ansObj.grade = 1
-                    if (!isCorrect) {
-                        ansObj.mistakes += 1
-                    }
-                }
-
-                val isFinal = index == total - 1
-                realmSubmission.lastUpdateTime = Date().time
-                realmSubmission.status = when {
-                    isFinal && isExplicitSubmission && type == "survey" -> "complete"
-                    isFinal && isExplicitSubmission -> "requires grading"
-                    else -> "pending"
-                }
-
-                if (realmSubmission.status == "complete" && type == "survey") {
-                    val orphans = r.where(RealmSubmission::class.java)
-                        .equalTo("parentId", realmSubmission.parentId)
-                        .equalTo("userId", realmSubmission.userId)
-                        .equalTo("status", "pending")
-                        .equalTo("type", "survey")
-                        .isNull("membershipDoc")
-                        .findAll()
-                    orphans.deleteAllFromRealm()
-                }
+            if (newStatus == "complete" && type == "survey") {
+                submissionDao.deletePendingSurveyOrphans(submissionRow.parentId, submissionRow.userId)
             }
         }
 
@@ -633,83 +524,53 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
 
     override suspend fun updateSubmissionStatus(submissionId: String?, status: String) {
         if (submissionId.isNullOrEmpty()) return
-        update(RealmSubmission::class.java, "id", submissionId) { submission ->
-            submission.status = status
-        }
+        submissionDao.updateStatus(submissionId, status)
     }
 
-    override suspend fun getExamByStepId(stepId: String): RealmStepExam? {
-        return findByField(RealmStepExam::class.java, "stepId", stepId)
+    override suspend fun getExamByStepId(stepId: String): StepExam? {
+        return examDao.getFirstByStepId(stepId)
     }
 
-    override suspend fun getExamById(id: String): RealmStepExam? {
-        return findByField(RealmStepExam::class.java, "id", id)
+    override suspend fun getExamById(id: String): StepExam? {
+        return examDao.getById(id)
     }
 
     override suspend fun getUnuploadedPhotos(): List<Pair<String?, JsonObject>> {
-        return withRealm { realm ->
-            val data = realm.where(RealmSubmitPhotos::class.java).equalTo("uploaded", false).findAll()
-            if (data.isEmpty()) {
-                emptyList()
-            } else {
-                data.map { photo ->
-                    Pair(photo.id, RealmSubmitPhotos.serializeRealmSubmitPhotos(photo))
-                }
-            }
+        return submitPhotosDao.getUnuploaded().map { photo ->
+            Pair(photo.id, SubmitPhotos.serialize(photo))
         }
     }
 
     override suspend fun markPhotoUploaded(photoId: String?, rev: String, id: String) {
-        update(RealmSubmitPhotos::class.java, "id", photoId ?: "") { sub ->
-            sub.uploaded = true
-            sub._rev = rev
-            sub._id = id
-        }
+        photoId?.let { submitPhotosDao.markUploaded(it, rev, id) }
     }
 
-    override suspend fun getPhotosByIds(ids: Array<String>): List<RealmSubmitPhotos> {
+    override suspend fun getPhotosByIds(ids: Array<String>): List<SubmitPhotos> {
         if (ids.isEmpty()) return emptyList()
-        return withRealm { realm ->
-            val results = realm.where(RealmSubmitPhotos::class.java)
-                .`in`("id", ids)
-                .findAll()
-            realm.copyFromRealm(results)
-        }
+        return submitPhotosDao.getByIds(ids)
     }
 
-    override suspend fun getOrCreateSubmission(userId: String?, parentId: String): RealmSubmission {
-        var detachedSub: RealmSubmission? = null
-        executeTransaction { r ->
-            val sub = r.where(RealmSubmission::class.java)
-                .equalTo("userId", userId)
-                .equalTo("parentId", parentId)
-                .sort("lastUpdateTime", Sort.DESCENDING)
-                .equalTo("status", "pending")
-                .findFirst()
-
-            val managedSub = createSubmissionInternal(sub, r)
-            if (managedSub.userId.isNullOrEmpty()) managedSub.userId = userId
-            if (managedSub.parentId.isNullOrEmpty()) managedSub.parentId = parentId
-            if (managedSub.status.isNullOrEmpty()) managedSub.status = "pending"
-            if (managedSub.type.isNullOrEmpty()) managedSub.type = "survey"
-            if (managedSub.startTime == 0L) managedSub.startTime = Date().time
-
-            detachedSub = r.copyFromRealm(managedSub)
+    override suspend fun getOrCreateSubmission(userId: String?, parentId: String): Submission {
+        val existing = hydrateSubmission(submissionDao.getLatestPendingByUserAndParent(userId, parentId))
+        if (existing != null) {
+            return existing
         }
-        return detachedSub ?: error("Failed to create or retrieve submission")
-    }
 
-    private fun createSubmissionInternal(sub: RealmSubmission?, mRealm: io.realm.Realm): RealmSubmission {
-        val submission = if (sub == null || (sub.status == "complete" && (sub.type == "exam" || sub.type == "survey"))) {
-            mRealm.createObject(RealmSubmission::class.java, UUID.randomUUID().toString())
-        } else {
-            sub
+        val submission = Submission().apply {
+            id = UUID.randomUUID().toString()
+            this.userId = userId
+            this.parentId = parentId
+            status = "pending"
+            type = "survey"
+            startTime = Date().time
+            lastUpdateTime = startTime
+            answers = mutableListOf()
         }
-        submission.lastUpdateTime = Date().time
+        saveSubmission(submission)
         return submission
     }
 
-    override fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray) {
+    override suspend fun bulkInsertFromSync(jsonArray: JsonArray) {
         val documentList = ArrayList<JsonObject>(jsonArray.size())
         for (j in jsonArray) {
             var jsonDoc = j.asJsonObject
@@ -719,163 +580,118 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
                 documentList.add(jsonDoc)
             }
         }
-        documentList.forEach { jsonDoc ->
-            insertSubmissionInternal(realm, jsonDoc)
-        }
+        upsertRoomSubmissionsFromSync(documentList)
     }
 
     override suspend fun insertSubmission(submission: JsonObject) {
         if (submission.has("_attachments")) return
-        executeTransaction { mRealm ->
-            insertSubmissionInternal(mRealm, submission)
-        }
+        upsertRoomSubmissionsFromSync(listOf(submission))
     }
 
-    private fun insertSubmissionInternal(mRealm: io.realm.Realm, submission: JsonObject) {
-        if (submission.has("_attachments")) {
-            return
-        }
+    private fun upsertRoomSubmissionsFromSync(documentList: List<JsonObject>) {
+        val submissions = ArrayList<Submission>(documentList.size)
+        val answers = ArrayList<Answer>()
 
-        val id = JsonUtils.getString("_id", submission)
-
-        try {
-            var sub = mRealm.where(RealmSubmission::class.java).equalTo("_id", id).findFirst()
-            val isNewSubmission = sub == null
-            val hadLocalChanges = !isNewSubmission && sub.isUpdated
+        documentList.filterNot { it.has("_attachments") }.forEach { submission ->
+            val id = JsonUtils.getString("_id", submission)
+            if (id.isBlank()) return@forEach
             val serverStatus = JsonUtils.getString("status", submission)
-            val isStatusDowngrade = !isNewSubmission && serverStatus == "pending" &&
-                (sub.status == "complete" || sub.status == "requires grading")
-            val skipOverwrite = hadLocalChanges || isStatusDowngrade
-
-            if (sub == null) {
-                sub = mRealm.createObject(RealmSubmission::class.java, id)
-            }
-
-            updateBasicFields(sub, id, serverStatus, skipOverwrite, submission)
-            updateTeam(mRealm, sub, submission)
-            updateMembership(mRealm, sub, submission)
-            updateUserId(sub, submission)
-            updateAnswers(mRealm, sub, submission, skipOverwrite)
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun updateBasicFields(
-        sub: RealmSubmission?,
-        id: String,
-        serverStatus: String,
-        skipOverwrite: Boolean,
-        submission: JsonObject
-    ) {
-        sub?._id = id
-        if (!skipOverwrite) {
-            sub?.status = serverStatus
-            sub?.isUpdated = false
-        }
-        sub?._rev = JsonUtils.getString("_rev", submission)
-        sub?.grade = JsonUtils.getLong("grade", submission)
-        sub?.type = JsonUtils.getString("type", submission)
-        sub?.uploaded = JsonUtils.getString("_rev", submission).isNotEmpty()
-        sub?.startTime = JsonUtils.getLong("startTime", submission)
-        sub?.lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission)
-        sub?.parentId = JsonUtils.getString("parentId", submission)
-        sub?.sender = JsonUtils.getString("sender", submission)
-        sub?.source = JsonUtils.getString("source", submission)
-        sub?.parentCode = JsonUtils.getString("parentCode", submission)
-        sub?.parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission))
-        sub?.user = JsonUtils.gson.toJson(JsonUtils.getJsonObject("user", submission))
-    }
-
-    private fun updateTeam(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
-        if (submission.has("team") && submission.get("team").isJsonObject) {
-            val teamJson = submission.getAsJsonObject("team")
-            val teamRef = mRealm.createObject(RealmTeamReference::class.java)
-            teamRef._id = JsonUtils.getString("_id", teamJson)
-            teamRef.name = JsonUtils.getString("name", teamJson)
-            teamRef.type = JsonUtils.getString("type", teamJson)
-            sub?.teamObject = teamRef
-        }
-    }
-
-    private fun updateMembership(mRealm: io.realm.Realm, sub: RealmSubmission?, submission: JsonObject) {
-        val userJson = JsonUtils.getJsonObject("user", submission)
-        if (userJson.has("membershipDoc")) {
+            // Drop base64 `_attachments` (e.g. a profile photo) from the embedded user before
+            // persisting it as a blob; otherwise a single row can exceed SQLite's ~2MB
+            // CursorWindow limit and crash later `SELECT *` reads (SQLiteBlobTooBigException).
+            // Read membershipDoc first, then strip — the two keys are independent.
+            val userJson = JsonUtils.getJsonObject("user", submission)
             val membershipJson = JsonUtils.getJsonObject("membershipDoc", userJson)
-            if (membershipJson.entrySet().isNotEmpty()) {
-                val membership = mRealm.createObject(RealmMembershipDoc::class.java)
-                membership.teamId = JsonUtils.getString("teamId", membershipJson)
-                sub?.membershipDoc = membership
+            userJson.remove("_attachments")
+            val teamJson = JsonUtils.getJsonObject("team", submission)
+            val userId = normalizeSubmissionUserId(JsonUtils.getString("_id", userJson))
+            submissions.add(
+                Submission(
+                    id = id,
+                    _id = id,
+                    _rev = JsonUtils.getString("_rev", submission),
+                    parentId = JsonUtils.getString("parentId", submission),
+                    type = JsonUtils.getString("type", submission),
+                    userId = userId,
+                    user = JsonUtils.gson.toJson(userJson),
+                    startTime = JsonUtils.getLong("startTime", submission),
+                    lastUpdateTime = JsonUtils.getLong("lastUpdateTime", submission),
+                    grade = JsonUtils.getLong("grade", submission),
+                    status = serverStatus,
+                    uploaded = JsonUtils.getString("_rev", submission).isNotEmpty(),
+                    sender = JsonUtils.getString("sender", submission),
+                    source = JsonUtils.getString("source", submission),
+                    parentCode = JsonUtils.getString("parentCode", submission),
+                    parent = JsonUtils.gson.toJson(JsonUtils.getJsonObject("parent", submission)),
+                    teamId = JsonUtils.getString("_id", teamJson).ifBlank { JsonUtils.getString("teamId", membershipJson) },
+                    isUpdated = false,
+                )
+            )
+
+            val answersArray = JsonUtils.getJsonArray("answers", submission)
+            for (i in 0 until answersArray.size()) {
+                val answerJson = answersArray[i].asJsonObject
+                val valueElement = answerJson.get("value")
+                val valueChoices = if (valueElement != null && valueElement.isJsonArray) {
+                    valueElement.asJsonArray.map { it.toString() }
+                } else {
+                    null
+                }
+                val examIdPart = JsonUtils.getString("parentId", submission).split("@").firstOrNull()
+                    ?: JsonUtils.getString("parentId", submission)
+                answers.add(
+                    Answer(
+                        id = "$id-$i",
+                        value = valueElement?.let {
+                            when {
+                                it.isJsonNull || it.isJsonArray -> null
+                                it.isJsonPrimitive -> it.asString
+                                else -> it.toString()
+                            }
+                        },
+                        valueChoices = valueChoices,
+                        mistakes = JsonUtils.getInt("mistakes", answerJson),
+                        isPassed = JsonUtils.getBoolean("passed", answerJson),
+                        examId = JsonUtils.getString("parentId", submission),
+                        questionId = JsonUtils.getString("questionId", answerJson).ifBlank { "$examIdPart-$i" },
+                        submissionId = id,
+                    )
+                )
             }
         }
+
+        if (submissions.isEmpty() && answers.isEmpty()) return
+
+        if (submissions.isNotEmpty()) submissionDao.upsertAllBlocking(submissions)
+        if (answers.isNotEmpty()) answerDao.upsertAllBlocking(answers)
     }
 
-    private fun updateUserId(sub: RealmSubmission?, submission: JsonObject) {
-        val userId = JsonUtils.getString("_id", JsonUtils.getJsonObject("user", submission))
-        sub?.userId = if (userId.contains("@")) {
-            val us = userId.split("@".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-            if (us[0].startsWith("org.couchdb.user:")) us[0] else "org.couchdb.user:${us[0]}"
+    private fun normalizeSubmissionUserId(userId: String): String {
+        return if (userId.contains("@")) {
+            val localUserId = userId.substringBefore("@")
+            if (localUserId.startsWith("org.couchdb.user:")) localUserId else "org.couchdb.user:$localUserId"
         } else {
             userId
         }
     }
 
-    private fun updateAnswers(
-        mRealm: io.realm.Realm,
-        sub: RealmSubmission?,
-        submission: JsonObject,
-        skipOverwrite: Boolean
-    ) {
-        if (!skipOverwrite && submission.has("answers")) {
-            val answersArray = submission.get("answers").asJsonArray
-            sub?.answers = io.realm.RealmList<RealmAnswer>()
-
-            val unmanagedAnswers = mutableListOf<RealmAnswer>()
-            for (i in 0 until answersArray.size()) {
-                val answerJson = answersArray[i].asJsonObject
-                val realmAnswer = RealmAnswer()
-                realmAnswer.id = UUID.randomUUID().toString()
-
-                realmAnswer.value = JsonUtils.getString("value", answerJson)
-                realmAnswer.mistakes = JsonUtils.getInt("mistakes", answerJson)
-                realmAnswer.isPassed = JsonUtils.getBoolean("passed", answerJson)
-                realmAnswer.submissionId = sub?._id
-                realmAnswer.examId = sub?.parentId
-
-                val examIdPart = sub?.parentId?.split("@")?.get(0) ?: sub?.parentId
-                realmAnswer.questionId = if (answerJson.has("questionId")) {
-                    JsonUtils.getString("questionId", answerJson)
-                } else {
-                    "$examIdPart-$i"
-                }
-
-                unmanagedAnswers.add(realmAnswer)
-            }
-
-            if (unmanagedAnswers.isNotEmpty()) {
-                val managedAnswers = mRealm.copyToRealmOrUpdate(unmanagedAnswers)
-                sub?.answers?.addAll(managedAnswers)
-            }
-        }
-    }
-
     private data class PayloadData(
-        val user: RealmUser?,
-        val exam: RealmStepExam?,
-        val questions: List<RealmExamQuestion>
+        val user: UserEntity?,
+        val exam: StepExam?,
+        val questions: List<ExamQuestion>
     )
 
-    private fun getPayloadData(mRealm: io.realm.Realm, submission: RealmSubmission): PayloadData {
-        val user = mRealm.where(RealmUser::class.java).equalTo("id", submission.userId).findFirst()
+    private suspend fun getPayloadData(submission: Submission): PayloadData {
+        val user = submission.userId?.let { userDao.getById(it) }
         val examId = submission.examIdFromParentId()
-        val exam = examId?.let { mRealm.where(RealmStepExam::class.java).equalTo("id", it).findFirst() }
-        val questions = exam?.id?.let { mRealm.where(RealmExamQuestion::class.java).equalTo("examId", it).findAll() } ?: emptyList()
+        val exam = examId?.let { examDao.getById(it) }
+        val questions = exam?.id?.let { questionDao.getByExamId(it).map { question -> question } } ?: emptyList()
         return PayloadData(user, exam, questions)
     }
 
-    override suspend fun getExamUploadPayload(submission: RealmSubmission): JsonObject = withRealmAsync { mRealm ->
+    override suspend fun getExamUploadPayload(submission: Submission): JsonObject {
         val `object` = JsonObject()
-        val payloadData = getPayloadData(mRealm, submission)
+        val payloadData = getPayloadData(submission)
         val user = payloadData.user
         val exam = payloadData.exam
 
@@ -906,26 +722,28 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         `object`.addProperty("sender", submission.sender)
         `object`.addProperty("source", sharedPrefManager.getPlanetCode())
         `object`.addProperty("parentCode", sharedPrefManager.getParentCode())
-        `object`.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+        `object`.add("answers", Answer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
         if (exam != null) {
-            `object`.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
+            `object`.add("parent", StepExam.serializeExam(exam, payloadData.questions))
         } else {
             val parent = JsonUtils.gson.fromJson(submission.parent, JsonObject::class.java)
             `object`.add("parent", parent)
         }
-        if (TextUtils.isEmpty(submission.user)) {
-            `object`.add("user", user?.serialize())
-        } else {
-            `object`.add("user", JsonParser.parseString(submission.user))
+        // Prefer the fresh user record (attachment-free, current data) so the upload never
+        // depends on the persisted blob, whose _attachments are stripped for storage safety.
+        val freshUser = user?.serialize()
+        when {
+            freshUser != null -> `object`.add("user", freshUser)
+            !TextUtils.isEmpty(submission.user) -> `object`.add("user", JsonParser.parseString(submission.user))
         }
-        `object`
+        return `object`
     }
 
-    override suspend fun serializeSubmission(submission: RealmSubmission, context: Context, source: String, parentCode: String): JsonObject = withRealmAsync { mRealm ->
+    override suspend fun serializeSubmission(submission: Submission, context: Context, source: String, parentCode: String): JsonObject {
         val jsonObject = JsonObject()
 
         try {
-            val payloadData = getPayloadData(mRealm, submission)
+            val payloadData = getPayloadData(submission)
             val exam = payloadData.exam
 
             if (!submission._id.isNullOrEmpty()) {
@@ -947,15 +765,18 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
             jsonObject.addProperty("sender", submission.sender)
             jsonObject.addProperty("source", source)
             jsonObject.addProperty("parentCode", parentCode)
-            jsonObject.add("answers", RealmAnswer.serializeRealmAnswer(submission.answers ?: io.realm.RealmList()))
+            jsonObject.add("answers", Answer.serializeRealmAnswer(submission.answers ?: mutableListOf()))
             if (exam != null) {
-                jsonObject.add("parent", RealmStepExam.serializeExam(exam, payloadData.questions))
+                jsonObject.add("parent", StepExam.serializeExam(exam, payloadData.questions))
             } else if (!submission.parent.isNullOrEmpty()) {
                 jsonObject.add("parent", JsonParser.parseString(submission.parent))
             }
 
-            if (!submission.user.isNullOrEmpty()) {
-                val userJson = JsonParser.parseString(submission.user).asJsonObject
+            // Prefer the fresh user record (attachment-free, current data) over the persisted
+            // blob, whose _attachments are stripped for storage safety.
+            val userJson = payloadData.user?.serialize()
+                ?: submission.user?.takeIf { it.isNotEmpty() }?.let { JsonParser.parseString(it).asJsonObject }
+            if (userJson != null) {
                 if (submission.membershipDoc != null) {
                     val membershipJson = JsonObject()
                     membershipJson.addProperty("teamId", submission.membershipDoc?.teamId ?: "")
@@ -966,6 +787,20 @@ private suspend fun getExamsByIds(examIds: List<String>): List<RealmStepExam> {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        jsonObject
+        return jsonObject
+    }
+
+    override suspend fun getPendingExamResults(): List<Submission> {
+        return submissionDao.getPendingExamResults().map { entity ->
+            val answers = answerDao.getBySubmissionId(entity.id)
+            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
+        }
+    }
+
+    override suspend fun getPendingSubmissionsForUpload(): List<Submission> {
+        return submissionDao.getPendingSubmissions().map { entity ->
+            val answers = answerDao.getBySubmissionId(entity.id)
+            entity.apply { this.answers = answers.toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } }
+        }
     }
 }

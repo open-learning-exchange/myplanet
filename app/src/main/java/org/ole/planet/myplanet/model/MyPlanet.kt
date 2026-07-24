@@ -27,7 +27,7 @@ class MyPlanet : Serializable {
     }
 
     companion object {
-        fun getMyPlanetActivities(context: Context, spm: SharedPrefManager, model: RealmUser): JsonObject {
+        fun getMyPlanetActivities(context: Context, spm: SharedPrefManager, model: UserEntity): JsonObject {
             val postJSON = JsonObject()
             val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)
@@ -40,7 +40,7 @@ class MyPlanet : Serializable {
             return postJSON
         }
 
-        fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: RealmUser): JsonObject {
+        fun getNormalMyPlanetActivities(context: Context, spm: SharedPrefManager, model: UserEntity): JsonObject {
             val postJSON = JsonObject()
             val planet = JsonUtils.gson.fromJson(spm.getVersionDetail() ?: "", MyPlanet::class.java)
             if (planet != null) postJSON.addProperty("planetVersion", planet.planetVersion)

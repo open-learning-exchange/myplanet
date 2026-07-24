@@ -16,7 +16,7 @@
     <string name="app_name">My Planet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">settings</string>
+    <string name="action_settings">Settings</string>
     <string name="hint_name">username</string>
     <string name="btn_back">Back</string>
     <string name="btn_sign_in">Sign In</string>
@@ -76,7 +76,7 @@
     <string name="gender">Gender</string>
     <string name="birth_date">Birth Date</string>
     <string name="phone_number">Phone Number</string>
-    <string name="language">language</string>
+    <string name="language">Language</string>
     <string name="last_name">Last Name</string>
     <string name="version">Version %s</string>
     <string name="middle_name">Middle Name</string>
@@ -93,8 +93,8 @@
     <string name="your_rating">Your Rating</string>
     <string name="loading_user_profile">Preparing your profile…</string>
     <string name="your_comment">Leave your comment</string>
-    <string name="sync_now">sync now</string>
-    <string name="logout">logout</string>
+    <string name="sync_now">Sync Now</string>
+    <string name="logout">Logout</string>
     <string name="settings">Settings</string>
     <string name="edit_profile">Edit Profile</string>
     <string name="profile">Profile</string>
@@ -335,8 +335,8 @@
     <string name="clear_data">clear data</string>
     <string name="reset_app">reset app</string>
     <string name="freeup_space">free-up disk space</string>
-    <string name="action_disclaimer">disclaimer</string>
-    <string name="action_about">about</string>
+    <string name="action_disclaimer">Disclaimer</string>
+    <string name="action_about">About</string>
     <string name="english_dictionary">English Dictionary</string>
 
     <string-array name="team_type">
@@ -1212,7 +1212,7 @@
     <string name="enterprise_name_already_exists">An enterprise with this name already exists</string>
     <string name="downloading_images_please_check_notification">Downloading images, please check notification…</string>
     <string name="no_images_to_download">No images to download</string>
-    <string name="app_theme">app theme</string>
+    <string name="app_theme">App Theme</string>
     <string name="team_surveys">Team surveys</string>
     <string name="enterprise_created">Enterprise created</string>
     <string name="image_already_added">This image has already been added</string>
@@ -1234,6 +1234,12 @@
     <string name="courses_loading">Loading courses…</string>
     <string name="error">Error: %1$s</string>
     <string name="select_open_with">Open</string>
+    <string name="open_link_with">Open link with</string>
+    <string name="just_once">Just once</string>
+    <string name="always">Always</string>
+    <string name="survey_load_failed">Couldn\'t load the survey. Please try again.</string>
+    <string name="survey_submitted">Survey submitted. Thank you!</string>
+    <string name="survey_submit_failed">Couldn\'t submit the survey. Please try again.</string>
     <string name="select_media">Media</string>
     <string name="select_resource_type">Resource type</string>
     <string name="no_results_for_filter">No results match your current filter</string>
@@ -1338,5 +1344,7 @@
     <string name="save_changes">Save Changes</string>
     <string name="resource_updated">Resource updated</string>
     <string name="failed_to_update_resource">Failed to update resource</string>
+    <string name="join_team_first">Please join a Team to share this chat</string>
+    <string name="join_enterprise_first">Please join an Enterprise to share this chat</string>
 
 </resources>

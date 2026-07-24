@@ -29,7 +29,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.RetryOperation
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryQueueWorkerTest {
@@ -150,7 +150,7 @@ class RetryQueueWorkerTest {
         coEvery { retryQueue.setProcessing(any()) } returns Unit
         coEvery { retryQueue.cleanup() } returns Unit
 
-        val operation = RealmRetryOperation().apply { id = "testId" }
+        val operation = RetryOperation().apply { id = "testId" }
         coEvery { retryQueue.getPendingOperations() } returns listOf(operation)
 
         val result = worker.doWork()

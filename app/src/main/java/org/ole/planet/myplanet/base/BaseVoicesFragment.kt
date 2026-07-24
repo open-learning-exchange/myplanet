@@ -27,8 +27,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnHomeItemClickListener
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
 import org.ole.planet.myplanet.databinding.ImageThumbBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.voices.ReplyActivity
@@ -90,7 +90,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         if (context is OnHomeItemClickListener) homeItemClickListener = context
     }
 
-    override fun showReply(news: RealmNews?, fromLogin: Boolean, nonTeamMember: Boolean) {
+    override fun showReply(news: News?, fromLogin: Boolean, nonTeamMember: Boolean) {
         if (news != null) {
             val intent = Intent(activity, ReplyActivity::class.java).putExtra("id", news.id)
                 .putExtra("fromLogin", fromLogin)
@@ -99,7 +99,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    override fun onMemberSelected(userModel: RealmUser?) {
+    override fun onMemberSelected(userModel: UserEntity?) {
         if (!isAdded) return
 
         lifecycleScope.launch {
@@ -113,7 +113,7 @@ abstract class BaseVoicesFragment : BaseContainerFragment(), OnNewsItemClickList
         }
     }
 
-    abstract fun setData(list: List<RealmNews?>?)
+    abstract fun setData(list: List<News?>?)
     fun showNoData(v: View?, count: Int?, source: String) {
         count?.let { BaseRecyclerFragment.showNoData(v, it, source) }
     }

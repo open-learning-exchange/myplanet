@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnPersonalSelectedListener
 import org.ole.planet.myplanet.databinding.AlertMyPersonalBinding
 import org.ole.planet.myplanet.databinding.FragmentMyPersonalsBinding
-import org.ole.planet.myplanet.model.RealmMyPersonal
+import org.ole.planet.myplanet.model.Personal
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.ui.resources.AddResourceFragment
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -80,7 +80,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         _binding = null
     }
 
-    override fun onUpload(personal: RealmMyPersonal?) {
+    override fun onUpload(personal: Personal?) {
         pg.setText("Please wait...")
         pg.show()
         if (personal != null) {
@@ -101,7 +101,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
         // List updates are handled via repository flow
     }
 
-    override fun onEditPersonal(personal: RealmMyPersonal) {
+    override fun onEditPersonal(personal: Personal) {
         val alertMyPersonalBinding = AlertMyPersonalBinding.inflate(LayoutInflater.from(requireContext()))
         alertMyPersonalBinding.etDescription.setText(personal.description)
         alertMyPersonalBinding.etTitle.setText(personal.title)
@@ -128,7 +128,7 @@ class PersonalsFragment : Fragment(), OnPersonalSelectedListener {
             .show()
     }
 
-    override fun onDeletePersonal(personal: RealmMyPersonal) {
+    override fun onDeletePersonal(personal: Personal) {
         AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
             .setMessage(R.string.delete_record)
             .setPositiveButton(R.string.ok) { _, _ ->

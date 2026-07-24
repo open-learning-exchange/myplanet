@@ -63,8 +63,8 @@ class CoursesViewModelTest {
     }
 
     @Test
-    fun testLoadCourses_NotMyCoursesLib_SkipsGetCourseProgress() = runTest {
+    fun testLoadCourses_NotMyCoursesLib_StillCallsGetCourseProgress() = runTest {
         viewModel.loadCourses(false, "u1")
-        coVerify(exactly = 0) { coursesRepository.getCourseProgress(any<String>(), any<List<String>>()) }
+        coVerify { coursesRepository.getCourseProgress("u1", any<List<String>>()) }
     }
 }

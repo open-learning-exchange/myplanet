@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -46,7 +46,7 @@ class UserProfileViewModelTest {
         userSessionManager = mockk(relaxed = true)
         activitiesRepository = mockk(relaxed = true)
 
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "Test User"
         coEvery { userSessionManager.getUserModel() } returns mockUser
 
@@ -84,7 +84,7 @@ class UserProfileViewModelTest {
         val userId = "user123"
         coEvery { userRepository.getActiveUserIdSuspending() } returns userId
 
-        val mockUser = mockk<RealmUser>()
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.updateUserDetails(
             userId = userId,
             firstName = "John",
@@ -155,7 +155,7 @@ class UserProfileViewModelTest {
     fun `loadCurrentUserProfile sets userModel to value returned by userRepository`() = runTest {
         val userId = "user123"
         coEvery { userRepository.getActiveUserIdSuspending() } returns userId
-        val mockUser = mockk<RealmUser>()
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.getUserByAnyId(userId) } returns mockUser
 
         viewModel.loadCurrentUserProfile()

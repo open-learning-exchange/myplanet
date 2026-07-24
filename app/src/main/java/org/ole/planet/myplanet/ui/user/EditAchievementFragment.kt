@@ -41,10 +41,10 @@ import org.ole.planet.myplanet.databinding.EditAttachementBinding
 import org.ole.planet.myplanet.databinding.EditOtherInfoBinding
 import org.ole.planet.myplanet.databinding.FragmentEditAchievementBinding
 import org.ole.planet.myplanet.databinding.MyLibraryAlertdialogBinding
-import org.ole.planet.myplanet.model.RealmAchievement
-import org.ole.planet.myplanet.model.RealmAchievement.Companion.createReference
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Achievement
+import org.ole.planet.myplanet.model.Achievement.Companion.createReference
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
@@ -64,8 +64,8 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
     private lateinit var alertAddAttachmentBinding: AlertAddAttachmentBinding
     private lateinit var myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding
 
-    var user: RealmUser? = null
-    private var achievement: RealmAchievement? = null
+    var user: UserEntity? = null
+    private var achievement: Achievement? = null
     private var referenceArray: JsonArray? = null
     private var achievementArray: JsonArray? = null
     private var resourceArray: JsonArray? = null
@@ -471,7 +471,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         return achievement?.resumeFileName ?: ""
     }
 
-    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<RealmMyLibrary>, prevList: List<String?>): RecyclerView {
+    private fun createResourceList(myLibraryAlertdialogBinding: MyLibraryAlertdialogBinding, list: List<MyLibrary>, prevList: List<String?>): RecyclerView {
         val names = ArrayList<String>()
         val selected: ArrayList<Int> = ArrayList()
         for (i in list.indices) {

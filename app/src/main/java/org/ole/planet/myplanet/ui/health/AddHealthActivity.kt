@@ -14,7 +14,7 @@ import java.util.Calendar
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddHealthBinding
-import org.ole.planet.myplanet.model.RealmMyHealth
+import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -26,7 +26,7 @@ class AddHealthActivity : AppCompatActivity() {
     private lateinit var binding: ActivityAddHealthBinding
     private val viewModel: HealthViewModel by viewModels()
     var userId: String? = null
-    private var myHealth: RealmMyHealth? = null
+    private var myHealth: MyHealth? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

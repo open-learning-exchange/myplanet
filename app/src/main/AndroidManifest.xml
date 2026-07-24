@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           xmlns:tools="http://schemas.android.com/tools">
     <queries>
+        <package android:name="org.ole.planet.myplanet.lite" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:mimeType="application/vnd.android.package-archive" />
@@ -59,6 +60,39 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="myplanet" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="planet.learning.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.earth.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.somalia.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.vi.ole.org" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="planet.gt" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="sanpablo.planet.gt" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="uriur.planet.gt" android:pathPrefix="/app/" />
+                <data android:scheme="https" android:host="embakasi.planet.gt" android:pathPrefix="/app/" />
+                <data android:pathPrefix="/survey" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="http" android:host="192.168.48.253" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="10.82.1.31" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.1.73" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.1.66" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.1.148" android:pathPrefix="/app/" />
+                <data android:scheme="http" android:host="192.168.68.126" android:pathPrefix="/app/" />
+                <data android:pathPrefix="/survey" />
+            </intent-filter>
         </activity>
         <activity
             android:name=".ui.sync.LoginActivity"
@@ -104,6 +138,10 @@
         <activity
             android:name=".ui.settings.SettingsActivity"
             android:theme="@style/AppTheme" />
+        <activity
+            android:name=".ui.surveys.PublicSurveyActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="org.ole.planet.myplanet.fileprovider"
