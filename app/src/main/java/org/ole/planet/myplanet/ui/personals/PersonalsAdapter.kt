@@ -88,6 +88,7 @@ class PersonalsAdapter(private val context: Context) : ListAdapter<Personal, Per
     class PersonalsViewHolder(val binding: RowMyPersonalBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK =
             DiffUtils.itemCallback<Personal>(
                 areItemsTheSame = { old, new -> old._id == new._id },

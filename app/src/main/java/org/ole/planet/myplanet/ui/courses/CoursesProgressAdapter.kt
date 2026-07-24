@@ -104,6 +104,7 @@ class CoursesProgressAdapter(private val context: Context) : ListAdapter<JsonObj
     }
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JsonObject>(
             areItemsTheSame = { old, new ->
                 old.asJsonObject["courseId"]?.asString == new.asJsonObject["courseId"]?.asString

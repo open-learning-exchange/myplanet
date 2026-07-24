@@ -70,6 +70,7 @@ class ChatShareTargetAdapter(
         private const val VIEW_TYPE_GROUP = 0
         private const val VIEW_TYPE_CHILD = 1
 
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<ChatShareTargetItem>(
             areItemsTheSame = { oldItem, newItem ->
                 oldItem.title == newItem.title && oldItem.isGroup == newItem.isGroup

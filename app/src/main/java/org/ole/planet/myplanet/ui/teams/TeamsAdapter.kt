@@ -140,6 +140,7 @@ class TeamsAdapter(
     class TeamsViewHolder(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<TeamDetails>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }

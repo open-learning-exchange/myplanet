@@ -51,6 +51,7 @@ class UsersAdapter(
     }
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<User>(
             areItemsTheSame = { old, new -> old.name == new.name },
             areContentsTheSame = { old, new ->

@@ -15,6 +15,7 @@ class RequestsAdapter(
     private val onAction: (UserEntity, Boolean) -> Unit
 ) : ListAdapter<UserEntity, RequestsAdapter.ViewHolderUser>(DIFF_CALLBACK) {
     companion object {
+        @JvmStatic
         internal val DIFF_CALLBACK = DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
             areContentsTheSame = { oldItem, newItem ->
