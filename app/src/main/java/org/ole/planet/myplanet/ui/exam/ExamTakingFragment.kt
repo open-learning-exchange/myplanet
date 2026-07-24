@@ -205,7 +205,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
 
         examTakingTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            @Suppress("EmptyMethod")
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val questionsSize = questions?.size ?: 0

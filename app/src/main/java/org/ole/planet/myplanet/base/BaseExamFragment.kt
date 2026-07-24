@@ -204,8 +204,11 @@ abstract class BaseExamFragment : Fragment(), ImageCaptureCallback {
             etAnswer.addTextChangedListener(answerTextWatcher)
         } else {
             answerTextWatcher = object : TextWatcher {
+                @Suppress("EmptyMethod")
                 override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+                @Suppress("EmptyMethod")
                 override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
+                @Suppress("EmptyMethod")
                 override fun afterTextChanged(editable: Editable) {}
             }
             etAnswer.addTextChangedListener(answerTextWatcher)
