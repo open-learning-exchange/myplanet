@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 /**
  * Lets anyone respond to a `publicAccess` survey without logging in. Opened from
  * /survey/<teamId>/<surveyId> deep links. Fetches the survey from the server's public
- * API, stores it in Realm, and hosts the standard [ExamTakingFragment] survey form;
+ * API, stores it locally, and hosts the standard [ExamTakingFragment] survey form;
  * the completed submission is then posted back through the public API.
  */
 @AndroidEntryPoint
