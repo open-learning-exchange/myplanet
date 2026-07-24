@@ -54,6 +54,7 @@ class ItemReorderHelper(private val mAdapter: OnItemMoveListener) :
 
     override fun clearView(recyclerView: RecyclerView, viewHolder: RecyclerView.ViewHolder) {
         super.clearView(recyclerView, viewHolder)
+        mAdapter.onItemMoveFinished()
         viewHolder.itemView.alpha = ALPHA_FULL
         if (viewHolder is OnItemDragStateListener) {
             // Tell the view holder it's time to restore the idle state

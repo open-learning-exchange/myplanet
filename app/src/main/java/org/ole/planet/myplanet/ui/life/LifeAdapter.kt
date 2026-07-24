@@ -41,6 +41,12 @@ class LifeAdapter(
     private val show = 1f
 
     private val drawableCache = mutableMapOf<String, Int>()
+    private var workingList: MutableList<MyLife> = mutableListOf()
+
+    override fun onCurrentListChanged(previousList: MutableList<MyLife>, currentList: MutableList<MyLife>) {
+        super.onCurrentListChanged(previousList, currentList)
+        workingList = currentList.toMutableList()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
@@ -96,12 +102,20 @@ class LifeAdapter(
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        val newList = currentList.toMutableList()
-        val movedItem = newList.removeAt(fromPosition)
-        newList.add(toPosition, movedItem)
-        reorderCallback(newList)
-        submitList(newList)
+        if (fromPosition == toPosition ||
+            fromPosition !in workingList.indices ||
+            toPosition !in workingList.indices
+        ) {
+            return false
+        }
+        val movedItem = workingList.removeAt(fromPosition)
+        workingList.add(toPosition, movedItem)
+        submitList(workingList.toList())
         return true
+    }
+
+    override fun onItemMoveFinished() {
+        reorderCallback(workingList.toList())
     }
 
     internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),

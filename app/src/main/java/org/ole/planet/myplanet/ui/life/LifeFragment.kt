@@ -73,22 +73,31 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         val callback: ItemTouchHelper.Callback = ItemReorderHelper(lifeAdapter)
         itemTouchHelper = ItemTouchHelper(callback)
         itemTouchHelper?.attachToRecyclerView(recyclerView)
+        lifeAdapter.submitList(loadMyLifeList())
         return lifeAdapter
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        refreshList()
         recyclerView.setHasFixedSize(true)
         setupUI(binding.myLifeParentLayout, requireActivity())
         val dividerItemDecoration = DividerItemDecoration(recyclerView.context, RecyclerView.VERTICAL)
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
 
+    private suspend fun loadMyLifeList(): List<MyLife> {
+        val userId = profileDbHandler.getUserModel()?.id
+        var myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        if (myLifeList.isEmpty()) {
+            lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(requireContext(), userId))
+            myLifeList = lifeRepository.getMyLifeByUserId(userId)
+        }
+        return myLifeList
+    }
+
     private fun refreshList() {
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
-            val myLifeList = lifeRepository.getMyLifeByUserId(userId)
+            val myLifeList = loadMyLifeList()
             if (::lifeAdapter.isInitialized) {
                 lifeAdapter.submitList(myLifeList)
             }
