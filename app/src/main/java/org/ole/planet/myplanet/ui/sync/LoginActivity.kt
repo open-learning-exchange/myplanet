@@ -514,7 +514,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         val languageCodes = arrayOf("en", "es", "so", "ne", "ar", "fr")
         val checkedItem = languageCodes.indexOf(currentLanguage)
 
-        AlertDialog.Builder(this, R.style.AlertDialogTheme)
+        val dialog = AlertDialog.Builder(this, R.style.AlertDialogTheme)
             .setTitle(getString(R.string.select_language))
             .setSingleChoiceItems(
                 ArrayAdapter(this, R.layout.checked_list_item, options),
@@ -530,7 +530,18 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
             .setNegativeButton(R.string.cancel, null)
-            .show()
+            .create()
+
+        dialog.show()
+
+        if (resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+            val maxHeight = (resources.displayMetrics.heightPixels * 0.45).toInt()
+            dialog.listView?.let { listView ->
+                val params = listView.layoutParams
+                params.height = maxHeight
+                listView.layoutParams = params
+            }
+        }
     }
 
     override fun attachBaseContext(newBase: Context) {
