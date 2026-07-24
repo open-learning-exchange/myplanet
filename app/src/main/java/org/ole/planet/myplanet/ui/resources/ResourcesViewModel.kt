@@ -30,6 +30,7 @@ class ResourcesViewModel @Inject constructor(
     val openedResourceIds: StateFlow<Set<String>> = _openedResourceIds.asStateFlow()
 
     private var observeOpenedResourcesJob: Job? = null
+    private var currentObservedUserId: String? = null
 
     fun notifyDownloadComplete() {
         _downloadComplete.value = true
@@ -37,6 +38,10 @@ class ResourcesViewModel @Inject constructor(
     }
 
     fun observeOpenedResourceIds(userId: String) {
+        if (userId.isNotEmpty() && userId == currentObservedUserId && observeOpenedResourcesJob?.isActive == true) {
+            return
+        }
+        currentObservedUserId = userId
         observeOpenedResourcesJob?.cancel()
         observeOpenedResourcesJob = viewModelScope.launch {
             resourcesRepository.observeOpenedResourceIds(userId).collectLatest { ids ->
