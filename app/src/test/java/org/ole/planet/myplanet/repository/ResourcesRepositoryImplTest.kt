@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,6 +45,7 @@ class ResourcesRepositoryImplTest {
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userDao: UserDao = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -64,6 +66,7 @@ class ResourcesRepositoryImplTest {
             myLibraryDao,
             userDao,
             teamDao,
+            userSessionManager
         )
     }
 
