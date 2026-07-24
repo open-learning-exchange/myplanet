@@ -30,4 +30,7 @@
     <dimen name="status_badge_padding_horizontal">10dp</dimen>
     <dimen name="status_badge_padding_vertical">4dp</dimen>
     <dimen name="status_badge_margin_start">8dp</dimen>
+    <dimen name="item_margin_standard">16dp</dimen>
+    <dimen name="image_thumbnail_size_100">100dp</dimen>
+    <dimen name="image_thumbnail_size_120">120dp</dimen>
 </resources>
