@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.base
 
+import org.ole.planet.myplanet.services.UserSessionManager
+
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -48,7 +50,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
     @Inject
-    lateinit var profileDbHandler: org.ole.planet.myplanet.services.UserSessionManager
+    lateinit var profileDbHandler: UserSessionManager
 
     private var timesRated: TextView? = null
     var rating: TextView? = null
