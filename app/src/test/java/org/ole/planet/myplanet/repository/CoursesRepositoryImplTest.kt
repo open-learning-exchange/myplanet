@@ -51,6 +51,8 @@ class CoursesRepositoryImplTest {
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val userRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
 
@@ -74,7 +76,9 @@ class CoursesRepositoryImplTest {
             searchActivityDao,
             courseProgressDao,
             removedLogDao,
-            myLibraryDao
+            myLibraryDao,
+            userRepository,
+            dispatcherProvider
         )
     }
 

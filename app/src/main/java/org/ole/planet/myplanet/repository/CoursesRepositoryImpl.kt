@@ -27,7 +27,12 @@ import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.ExamQuestion
+import org.ole.planet.myplanet.model.StepItem
+import org.ole.planet.myplanet.ui.courses.CourseDetailModel
 import org.ole.planet.myplanet.model.MyCourse
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
@@ -60,7 +65,9 @@ class CoursesRepositoryImpl @Inject constructor(
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
-    private val myLibraryDao: MyLibraryDao
+    private val myLibraryDao: MyLibraryDao,
+    private val userRepository: dagger.Lazy<UserRepository>,
+    private val dispatcherProvider: DispatcherProvider
 ) : CoursesRepository {
 
     private val pendingCourseResources =
@@ -102,6 +109,47 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun getCourseById(courseId: String): MyCourse? {
         if (courseId.isBlank()) return null
         return mapCourse(courseDao.getByCourseId(courseId))
+    }
+
+
+    override fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?> {
+        return getCourseByCourseIdFlow(courseId).map { course ->
+            if (course == null) return@map null
+
+            withContext(dispatcherProvider.io) {
+                val user = userRepository.get().getUserModel()
+                val examCount = getCourseExamCount(courseId)
+                val resources = getCourseOnlineResources(courseId)
+                val downloadedResources = getCourseOfflineResources(courseId)
+                val rawSteps = getCourseSteps(courseId)
+
+                val steps = rawSteps.map { step ->
+                    val count = step.id?.let { submissionsRepository.getExamQuestionCount(it) } ?: 0
+                    StepItem(
+                        id = step.id,
+                        stepTitle = step.stepTitle,
+                        questionCount = count
+                    )
+                }
+
+                val userId = user?.id
+                val ratingSummary = if (userId != null) {
+                    ratingsRepository.getRatingSummary("course", courseId, userId)
+                } else {
+                    null
+                }
+
+                CourseDetailModel(
+                    course = course,
+                    user = user,
+                    ratingSummary = ratingSummary,
+                    examCount = examCount,
+                    resources = resources,
+                    downloadedResources = downloadedResources,
+                    steps = steps
+                )
+            }
+        }
     }
 
     override fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?> {
