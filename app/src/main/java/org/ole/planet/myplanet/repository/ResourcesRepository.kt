@@ -100,6 +100,7 @@ interface ResourcesRepository {
     suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<MyLibrary>>
     suspend fun getPendingResourceUploads(): List<MyLibrary>
     suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
+    suspend fun trackResourceOpen(resourceId: String)
 }
 
 sealed class ResourceUrlsResponse {

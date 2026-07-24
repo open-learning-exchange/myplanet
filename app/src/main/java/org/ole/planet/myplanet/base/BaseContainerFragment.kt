@@ -174,7 +174,9 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         val indexFile = File(directory, "index.html")
 
         if (indexFile.exists()) {
-            profileDbHandler.setResourceOpenCount(items, KEY_RESOURCE_OPEN)
+            viewLifecycleOwner.lifecycleScope.launch {
+                resourcesRepository.trackResourceOpen(items.resourceId ?: items.id)
+            }
             val intent = Intent(activity, WebViewActivity::class.java)
             intent.putExtra("RESOURCE_ID", items.id)
             intent.putExtra("LOCAL_ADDRESS", items.resourceLocalAddress)
@@ -215,7 +217,8 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline", profileDbHandler)
+                resourcesRepository.trackResourceOpen(offlineItem.resourceId ?: offlineItem.id)
+                ResourceOpener.openFileType(requireActivity(), offlineItem, "offline")
                 return@launch
             }
 
@@ -225,11 +228,13 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
                     FileUtils.getFileExtension(items.resourceLocalAddress) == "wav"
 
             when {
-                items.isResourceOffline() -> ResourceOpener.openFileType(
-                    requireActivity(), items, "offline", profileDbHandler
-                )
+                items.isResourceOffline() -> {
+                    resourcesRepository.trackResourceOpen(items.resourceId ?: items.id)
+                    ResourceOpener.openFileType(requireActivity(), items, "offline")
+                }
                 isVideo || isAudio -> {
-                    ResourceOpener.openFileType(requireActivity(), items, "online", profileDbHandler)
+                    resourcesRepository.trackResourceOpen(items.resourceId ?: items.id)
+                    ResourceOpener.openFileType(requireActivity(), items, "online")
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)
                 }
