@@ -113,7 +113,7 @@ class ChatViewModel @Inject constructor(
                 allChats = sortChats(chatHistory)
                 precomputedChats = buildPrecomputedChats(allChats)
             }
-            val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
+            val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets, chatRepository.extractSharedViewInIds(newsMessages))
             _screenData.value = data
             _filteredChats.value = allChats
         }
