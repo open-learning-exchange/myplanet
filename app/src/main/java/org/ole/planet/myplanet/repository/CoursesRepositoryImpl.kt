@@ -60,7 +60,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
-    private val myLibraryDao: MyLibraryDao
+    private val myLibraryDao: MyLibraryDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : CoursesRepository {
 
     private val pendingCourseResources =
@@ -299,7 +300,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 this.userId = userId
                 docId = courseId
             })
-            RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
 
