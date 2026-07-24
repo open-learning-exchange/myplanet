@@ -51,6 +51,7 @@ class TeamFragment : Fragment() {
     var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
+    private var previousTeamDataList: List<TeamDetails>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -310,7 +311,15 @@ class TeamFragment : Fragment() {
 
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
-            teamListAdapter.submitList(teamDataList)
+            val isMeaningfulChange = previousTeamDataList == null ||
+                previousTeamDataList?.size != teamDataList.size ||
+                previousTeamDataList?.firstOrNull()?._id != teamDataList.firstOrNull()?._id ||
+                previousTeamDataList?.lastOrNull()?._id != teamDataList.lastOrNull()?._id
+
+            if (isMeaningfulChange) {
+                teamListAdapter.submitList(teamDataList)
+                previousTeamDataList = teamDataList
+            }
             showNoResultsMessage(teamDataList.isEmpty())
             listContentDescription(conditionApplied)
         }
