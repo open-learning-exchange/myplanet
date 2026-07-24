@@ -339,8 +339,9 @@ class TeamsTasksFragment : BaseTeamFragment(), OnTaskCompletedListener {
                 adapterTask.updateAssignees(fetchedNames)
             }
 
-            adapterTask.submitList(taskList)
-            binding.rvTask.scrollToPosition(0)
+            adapterTask.submitList(taskList) {
+                binding.rvTask.scrollToPosition(0)
+            }
             showNoData(binding.tvNodata, taskList.size, "tasks")
         }
     }
