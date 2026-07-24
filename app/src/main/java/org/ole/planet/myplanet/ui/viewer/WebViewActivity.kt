@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.ui.viewer
 
-import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
@@ -81,7 +80,6 @@ class WebViewActivity : AppCompatActivity() {
             val indexFile = File(resourceDirectory, "index.html")
 
             if (indexFile.exists()) {
-                requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 activityWebViewBinding.contentWebView.wv.loadUrl("https://appassets.androidplatform.net/assets/index.html")
             }
         } else {
