@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.ui.teams.courses.TeamCoursesFragment
 import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
-import org.ole.planet.myplanet.utils.DiffUtils
 
 class TeamPagerAdapter(
     private val parentFragment: Fragment,
@@ -29,14 +28,8 @@ class TeamPagerAdapter(
 ) : FragmentStateAdapter(parentFragment) {
 
     fun updatePages(newPages: List<TeamPageConfig>) {
-        val diffResult = DiffUtils.calculateDiff(
-            pages,
-            newPages,
-            areItemsTheSame = { a, b -> a.id == b.id },
-            areContentsTheSame = { a, b -> a == b }
-        )
         pages = newPages.toList()
-        diffResult.dispatchUpdatesTo(this)
+        notifyDataSetChanged()
     }
 
     override fun getItemCount(): Int = pages.size
