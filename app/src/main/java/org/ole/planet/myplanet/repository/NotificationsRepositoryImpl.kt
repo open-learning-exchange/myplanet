@@ -153,7 +153,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
     override suspend fun getSurveyId(relatedId: String?): String? {
         return relatedId?.let {
-            examDao.getAll().firstOrNull { exam -> exam.name == it }?.id
+            examDao.getIdByName(it)
         }
     }
 
