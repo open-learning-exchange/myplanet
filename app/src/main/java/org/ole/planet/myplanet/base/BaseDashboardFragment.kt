@@ -384,11 +384,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     fun syncKeyId() {
-        if (model?.getRoleAsString()?.contains("health") == true) {
-            transactionSyncManager.syncAllHealthData(prefData.rawPreferences, this)
-        } else {
-            transactionSyncManager.syncKeyIv(prefData.rawPreferences, this, profileDbHandler)
-        }
+        transactionSyncManager.syncDashboardKeyId(model?.getRoleAsString(), this)
     }
 
     override fun onSyncStarted() {
