@@ -44,20 +44,8 @@ class UploadToShelfService @Inject constructor(
 
                 if (userModels.isEmpty()) return@launch
 
-                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                 userModels.forEach { model ->
-                    try {
-                        val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-                        val userExists = userSyncRepository.checkIfUserExists(header, model)
-
-                        if (!userExists) {
-                            userSyncRepository.uploadNewUser(model) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
-                        } else if (model.isUpdated) {
-                            userSyncRepository.updateExistingUser(header, model)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    userSyncRepository.checkAndUploadUser(model) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
 
                 uploadToShelf(object : OnSuccessListener {
@@ -79,20 +67,7 @@ class UploadToShelfService @Inject constructor(
                 val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
                 if (userModel != null) {
-                    try {
-                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                        val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-
-                        val userExists = userSyncRepository.checkIfUserExists(header, userModel)
-
-                        if (!userExists) {
-                            userSyncRepository.uploadNewUser(userModel) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
-                        } else if (userModel.isUpdated) {
-                            userSyncRepository.updateExistingUser(header, userModel)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    userSyncRepository.checkAndUploadUser(userModel) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
                 uploadSingleUserToShelf(userName, listener)
             } catch (e: Exception) {

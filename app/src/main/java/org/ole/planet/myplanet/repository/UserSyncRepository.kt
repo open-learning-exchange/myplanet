@@ -9,6 +9,7 @@ interface UserSyncRepository {
     suspend fun saveKeyIv(model: UserEntity, obj: JsonObject)
     suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean
     suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit)
+    suspend fun checkAndUploadUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit)
     suspend fun uploadNewUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit)
     suspend fun updateExistingUser(header: String, model: UserEntity)
     suspend fun saveUser(jsonDoc: JsonObject?, key: String? = null, iv: String? = null): UserEntity?
