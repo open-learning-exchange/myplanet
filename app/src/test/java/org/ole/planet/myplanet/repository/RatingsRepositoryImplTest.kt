@@ -15,7 +15,6 @@ import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.RatingDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -23,7 +22,7 @@ import org.ole.planet.myplanet.model.UserEntity
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
-    private lateinit var userDao: UserDao
+    private lateinit var userRepository: UserRepository
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
 
@@ -31,14 +30,14 @@ class RatingsRepositoryImplTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
+        userRepository = mockk(relaxed = true)
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao, userDao)
+        repository = RatingsRepositoryImpl(gson, ratingDao, userRepository)
     }
 
     private fun mockUserLookup(user: UserEntity?) {
-        coEvery { userDao.getById(any()) } returns user
+        coEvery { userRepository.getUserById(any()) } returns user
     }
 
     @Test
