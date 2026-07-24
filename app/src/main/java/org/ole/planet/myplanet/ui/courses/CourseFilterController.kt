@@ -8,10 +8,16 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
+import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.TagEntity
 
 data class FilterState(
@@ -40,6 +46,9 @@ class CourseFilterController(
     val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
+    private var searchJob: Job? = null
+    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
+    private val coroutineScope = CoroutineScope(dispatcherProvider.main)
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
@@ -84,7 +93,11 @@ class CourseFilterController(
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
-                _filterState.value = currentState()
+                searchJob?.cancel()
+                searchJob = coroutineScope.launch {
+                    delay(300)
+                    _filterState.value = currentState()
+                }
             }
             override fun afterTextChanged(s: Editable) {}
         }
@@ -158,6 +171,7 @@ class CourseFilterController(
     }
 
     fun detach() {
+        searchJob?.cancel()
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
         spnGrade.onItemSelectedListener = null
