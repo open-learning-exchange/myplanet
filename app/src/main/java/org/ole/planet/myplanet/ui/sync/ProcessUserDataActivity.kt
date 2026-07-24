@@ -17,6 +17,8 @@ import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
 import androidx.lifecycle.Observer
+import kotlinx.coroutines.flow.takeWhile
+import kotlinx.coroutines.flow.collect
 import androidx.lifecycle.lifecycleScope
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -192,38 +194,42 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     }
 
     private fun uploadLoginData() {
-        val liveData = syncRepository.uploadLoginData()
+        val flow = syncRepository.uploadLoginData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
+        lifecycleScope.launchWhenStarted {
+            flow.takeWhile { value ->
                 if (value is SyncUiState.Success) {
-                    liveData.removeObserver(this)
                     onSuccess(value.message)
+                    false
                 } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
+                    false
+                } else {
+                    true
                 }
-            }
-        })
+            }.collect {}
+        }
     }
 
     private fun uploadBulkData() {
         customProgressDialog.setText(this.getString(R.string.uploading_data_to_server_please_wait))
         customProgressDialog.show()
 
-        val liveData = syncRepository.uploadBulkData()
+        val flow = syncRepository.uploadBulkData()
 
-        liveData.observe(this, object : androidx.lifecycle.Observer<SyncUiState> {
-            override fun onChanged(value: SyncUiState) {
+        lifecycleScope.launchWhenStarted {
+            flow.takeWhile { value ->
                 if (value is SyncUiState.Success) {
-                    liveData.removeObserver(this)
                     safelyDismissDialog()
                     Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                    false
                 } else if (value is SyncUiState.Error) {
-                    liveData.removeObserver(this)
                     safelyDismissDialog()
+                    false
+                } else {
+                    true
                 }
-            }
-        })
+            }.collect {}
+        }
     }
 
     protected fun hideKeyboard(view: View?) {
