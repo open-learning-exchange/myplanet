@@ -287,7 +287,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
                         return@setPositiveButton
                     }
                     val imageUri = selectedImageUri
-                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                    val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
                     val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                     viewLifecycleOwner.lifecycleScope.launch {
                         val capturedDate = date ?: return@launch
