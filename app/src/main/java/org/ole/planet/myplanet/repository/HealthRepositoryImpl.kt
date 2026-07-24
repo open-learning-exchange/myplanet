@@ -59,9 +59,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
-        idToRevMap.forEach { (id, rev) ->
-            healthExaminationDao.markUploaded(id, rev)
-        }
+        healthExaminationDao.markUploaded(idToRevMap)
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
