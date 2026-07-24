@@ -313,14 +313,30 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        val snapshotList = currentList.toMutableList()
-        val pos = snapshotList.indexOfFirst { it?.id == newsId }
-        if (pos != -1) {
-            snapshotList.removeAt(pos)
-            submitList(snapshotList)
-        } else if (parentNews?.id == newsId) {
-            submitList(emptyList())
+        val isParent = parentNews?.id == newsId
+        val posInCurrent = currentList.indexOfFirst { it.id == newsId }
+
+        if (posInCurrent == -1 && !isParent) {
+            return
         }
+
+        if (isParent) {
+            submitList(emptyList())
+        } else {
+            val updatedOriginalList = originalList.toMutableList()
+            val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
+            if (posInOriginal != -1) {
+                updatedOriginalList.removeAt(posInOriginal)
+                originalList = updatedOriginalList.toList()
+            }
+
+            val updatedCurrentList = currentList.toMutableList()
+            if (posInCurrent != -1) {
+                updatedCurrentList.removeAt(posInCurrent)
+            }
+            submitList(updatedCurrentList)
+        }
+
         parentNews?.id?.let { pid ->
             val current = replyCountCache[pid]
             replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
