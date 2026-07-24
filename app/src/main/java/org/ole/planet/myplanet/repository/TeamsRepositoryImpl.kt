@@ -1049,7 +1049,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
         if (communityLeadersJson.isNotEmpty()) {
             val adminUsers = userRepository.parseLeadersJson(communityLeadersJson)
-            val teamUserIds = teamDao.getAll().filter { it.teamId == teamId }.mapNotNull { it.userId }.toSet()
+            val teamUserIds = teamDao.getAllByTeamId(teamId).mapNotNull { it.userId }.toSet()
             val memberNames = members.mapTo(HashSet()) { it.name }
             val validAdmins = adminUsers.filter { admin ->
                 val adminFullId = "org.couchdb.user:${admin.name}"
