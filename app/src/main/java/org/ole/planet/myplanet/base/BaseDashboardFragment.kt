@@ -41,9 +41,13 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardItem
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
 import org.ole.planet.myplanet.ui.dashboard.ItemType
+import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
+import org.ole.planet.myplanet.ui.life.LifeFragment
+import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
+import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.ui.user.BecomeMemberActivity
 import org.ole.planet.myplanet.ui.user.UserProfileFragment
 import org.ole.planet.myplanet.ui.voices.NewsViewModel
@@ -166,6 +170,26 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
+    private fun renderPlaceholder(
+        flexboxLayout: FlexboxLayout,
+        message: String,
+        onClick: (() -> Unit)? = null
+    ) {
+        val itemLibraryHomeBinding =
+            ItemLibraryHomeBinding.inflate(LayoutInflater.from(activity))
+        val v = itemLibraryHomeBinding.root
+        v.setBackgroundResource(R.color.card_bg)
+        itemLibraryHomeBinding.title.text = message
+        itemLibraryHomeBinding.title.setTextColor(
+            ContextCompat.getColor(requireContext(), R.color.hint_color)
+        )
+        itemLibraryHomeBinding.detail.visibility = View.GONE
+        if (onClick != null) {
+            v.setOnClickListener { onClick() }
+        }
+        flexboxLayout.addView(v, params)
+    }
+
     private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
@@ -173,6 +197,16 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         val countView = view?.findViewById<TextView>(R.id.count_library)
         if (dbMylibrary.isEmpty()) {
             countView?.visibility = View.GONE
+            flexboxLayout?.let {
+                renderPlaceholder(it, getString(R.string.no_resources)) {
+                    if (model?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireContext())
+                    } else {
+                        homeItemClickListener?.openMyFragment(ResourcesFragment())
+                    }
+                }
+            }
+            return
         } else {
             countView?.visibility = View.VISIBLE
             countView?.text = getString(R.string.number_placeholder, dbMylibrary.size)
@@ -206,6 +240,16 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
+        if (filteredCourses.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_courses)) {
+                if (model?.id?.startsWith("guest") == true) {
+                    DialogUtils.guestDialog(requireContext())
+                } else {
+                    homeItemClickListener?.openMyFragment(CoursesFragment())
+                }
+            }
+            return
+        }
         val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
         for ((itemCnt, items) in filteredCourses.withIndex()) {
             val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
@@ -218,6 +262,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private suspend fun renderMyTeams(teams: List<MyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
+        setCountText(teams.size, MyTeam::class.java, requireView())
+        if (teams.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_teams)) {
+                val fragment = org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
+                    arguments = android.os.Bundle().apply {
+                        putBoolean("fromDashboard", true)
+                    }
+                }
+                homeItemClickListener?.openMyFragment(fragment)
+            }
+            return
+        }
 
         for ((count, ob) in teams.withIndex()) {
             val v = LayoutInflater.from(activity).inflate(R.layout.item_home_my_team, flexboxLayout, false)
@@ -231,7 +287,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             v.tag = ob._id
             flexboxLayout.addView(v, params)
         }
-        setCountText(teams.size, MyTeam::class.java, requireView())
 
         val userId = profileDbHandler.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
@@ -265,6 +320,12 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
+        if (visibleItems.isEmpty()) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_data_available)) {
+                homeItemClickListener?.openCallFragment(org.ole.planet.myplanet.ui.life.LifeFragment())
+            }
+            return
+        }
         for ((itemCnt, items) in visibleItems.withIndex()) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
             flexboxLayout.addView(getLayout(itemCnt, dashboardItem, 0), params)
