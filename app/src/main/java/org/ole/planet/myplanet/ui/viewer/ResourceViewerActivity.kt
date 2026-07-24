@@ -1,8 +1,11 @@
 package org.ole.planet.myplanet.ui.viewer
 
+import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
+import android.util.Rational
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import dagger.hilt.android.AndroidEntryPoint
@@ -82,4 +85,36 @@ class ResourceViewerActivity : AppCompatActivity() {
         }
         return super.onOptionsItemSelected(item)
     }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        tryEnterPictureInPicture()
+    }
+
+    fun tryEnterPictureInPicture(): Boolean {
+        val fragment = currentViewerFragment()
+        if (fragment?.isPlayingVideo() != true) return false
+        val aspectRatio = fragment.getVideoAspectRatio() ?: Rational(16, 9)
+        val params = PictureInPictureParams.Builder()
+            .setAspectRatio(aspectRatio)
+            .build()
+        return try {
+            enterPictureInPictureMode(params)
+        } catch (e: IllegalStateException) {
+            Log.w("ResourceViewer", "Unable to enter picture-in-picture mode", e)
+            false
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        if (isInPictureInPictureMode) {
+            supportActionBar?.hide()
+        } else {
+            supportActionBar?.show()
+        }
+    }
+
+    private fun currentViewerFragment(): ResourceViewerFragment? =
+        supportFragmentManager.findFragmentById(R.id.fragment_container) as? ResourceViewerFragment
 }

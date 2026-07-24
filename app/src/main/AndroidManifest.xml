@@ -130,7 +130,8 @@
         <activity android:name=".ui.viewer.WebViewActivity"
             android:configChanges="orientation|screenSize" />
         <activity android:name=".ui.viewer.ResourceViewerActivity"
-            android:configChanges="orientation|screenSize"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:supportsPictureInPicture="true"
             android:exported="false" />
         <activity
             android:name=".ui.dictionary.DictionaryActivity"
