@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @HiltViewModel
@@ -69,6 +70,9 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    private var loadDataJob: kotlinx.coroutines.Job? = null
+    private var searchJob: kotlinx.coroutines.Job? = null
+
     private val _screenData = MutableStateFlow<ChatHistoryScreenData?>(null)
     val screenData: StateFlow<ChatHistoryScreenData?> = _screenData.asStateFlow()
 
@@ -103,19 +107,26 @@ class ChatViewModel @Inject constructor(
         parentCode: String?,
         communityName: String?
     ) {
-        viewModelScope.launch {
-            val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
-            val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
-            val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
-            val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
+        loadDataJob?.cancel()
+        loadDataJob = viewModelScope.launch {
+            val result = RetryUtils.retry(maxAttempts = 3, delayMs = 2000L) {
+                val currentUser = cachedUser ?: loadCurrentUser(userId).also { cachedUser = it }
+                val newsMessages = voicesRepository.getPlanetNewsMessages(currentUser?.planetCode)
+                val chatHistory = chatRepository.getChatHistoryForUser(currentUser?.name)
+                val targets = cachedShareTargets ?: loadShareTargets(parentCode, communityName, currentUser?._id).also { cachedShareTargets = it }
 
-            withContext(dispatcherProvider.default) {
-                allChats = sortChats(chatHistory)
-                precomputedChats = buildPrecomputedChats(allChats)
+                withContext(dispatcherProvider.default) {
+                    allChats = sortChats(chatHistory)
+                    precomputedChats = buildPrecomputedChats(allChats)
+                }
+
+                ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
             }
-            val data = ChatHistoryScreenData(currentUser, chatHistory, newsMessages, targets)
-            _screenData.value = data
-            _filteredChats.value = allChats
+
+            result?.let { data ->
+                _screenData.value = data
+                _filteredChats.value = allChats
+            }
         }
     }
 
@@ -145,7 +156,8 @@ class ChatViewModel @Inject constructor(
             _filteredChats.value = allChats
             return
         }
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             val results = withContext(dispatcherProvider.default) {
                 if (isFullSearch) {
                     fullConvoSearch(query, isQuestion)
