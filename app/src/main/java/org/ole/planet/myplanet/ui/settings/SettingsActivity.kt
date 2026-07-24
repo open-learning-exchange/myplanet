@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -95,6 +96,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
+        @Inject
+        lateinit var timeProvider: TimeProvider
         var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -353,7 +356,7 @@ class SettingsActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
         }
 
