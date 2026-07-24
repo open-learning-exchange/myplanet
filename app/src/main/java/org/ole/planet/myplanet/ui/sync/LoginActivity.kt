@@ -92,6 +92,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
         if (mAdapter == null) {
             mAdapter = UsersAdapter(this@LoginActivity)
             binding.recyclerView.layoutManager = LinearLayoutManager(this@LoginActivity)
+            binding.recyclerView.isNestedScrollingEnabled = true
             binding.recyclerView.adapter = mAdapter
         }
 
