@@ -43,25 +43,23 @@ class CoursesAdapter(
     private val isGuest: Boolean,
     var isMyCourseLib: Boolean = false
 ) : ListAdapter<Course, CoursesAdapter.CoursesViewHolder>(
-    DiffUtils.itemCallback<Course>(
-        areItemsTheSame = { old, new -> old.courseId == new.courseId },
-        areContentsTheSame = { old, new ->
-            old.courseTitle == new.courseTitle &&
-                    old.description == new.description &&
-                    old.gradeLevel == new.gradeLevel &&
-                    old.subjectLevel == new.subjectLevel &&
-                    old.createdDate == new.createdDate &&
-                    old.isMyCourse == new.isMyCourse &&
-                    old.numberOfSteps == new.numberOfSteps
+    DiffUtils.standardItemCallback<Course>(
+        idSelector = { it.courseId },
+        contentSelector = {
+            listOf(
+                it.courseTitle,
+                it.description,
+                it.gradeLevel,
+                it.subjectLevel,
+                it.createdDate,
+                it.isMyCourse,
+                it.numberOfSteps
+            )
         },
-        getChangePayload = { old, new ->
+        payloadSelector = { old, new ->
             val payloads = mutableListOf<String>()
             if (old.isMyCourse != new.isMyCourse) payloads.add(SELECTION_PAYLOAD)
             if (old.numberOfSteps != new.numberOfSteps) payloads.add(PROGRESS_PAYLOAD)
-
-            // We can treat tag payloads somewhat decoupled, but if they changed it would result in a bind update
-            // since tags map is modified from outside. If it was modified alongside course details it will trigger an update
-            // if we trigger a tag payload manually we don't have to evaluate it here unless course details changed.
 
             // Check if any fields other than the ones we handle via payloads have changed
             val unhandledChanges = old.courseTitle != new.courseTitle ||
