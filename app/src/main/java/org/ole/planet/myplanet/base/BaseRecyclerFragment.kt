@@ -16,7 +16,6 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
-import org.ole.planet.myplanet.ui.components.AdapterFactory
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -38,7 +37,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var courseLib: String? = null
     private var isAddInProgress = false
 
-    var adapterFactory: AdapterFactory? = null
+    var adapterFactory: BaseAdapterFactory? = null
 
 
     abstract fun getLayout(): Int

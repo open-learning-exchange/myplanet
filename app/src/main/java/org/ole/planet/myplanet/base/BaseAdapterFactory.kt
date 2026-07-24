@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.ui.components
+package org.ole.planet.myplanet.base
 
 import android.content.Context
 import com.google.gson.JsonObject
@@ -6,7 +6,7 @@ import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.ui.courses.CoursesAdapter
 import org.ole.planet.myplanet.ui.resources.ResourcesAdapter
 
-interface AdapterFactory {
+interface BaseAdapterFactory {
     fun createResourcesAdapter(
         context: Context,
         isGuest: Boolean,
@@ -23,7 +23,7 @@ interface AdapterFactory {
     ): CoursesAdapter
 }
 
-class DefaultAdapterFactory : AdapterFactory {
+class DefaultBaseAdapterFactory : BaseAdapterFactory {
     override fun createResourcesAdapter(
         context: Context,
         isGuest: Boolean,
