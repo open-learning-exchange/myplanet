@@ -118,7 +118,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getNewsByTeamId(teamId: String): List<News> {
-        return newsDao.getTopLevel().filter { matchesTeam(it, teamId) }
+        return newsDao.getTopLevelByTeam(teamId)
     }
 
     private fun isVisibleToUser(news: News, userIdentifier: String): Boolean {
@@ -142,15 +142,6 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
-    // Team-discussion visibility: top-level post targeted at the team, either via the
-    // viewableBy/viewableId columns or an entry inside the viewIn JSON.
-    private fun matchesTeam(news: News, teamId: String): Boolean {
-        val byViewable = news.viewableBy.equals("teams", ignoreCase = true) &&
-            news.viewableId.equals(teamId, ignoreCase = true)
-        val byViewIn = news.viewIn?.contains("\"_id\":\"$teamId\"", ignoreCase = true) == true
-        return byViewable || byViewIn
-    }
-
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>> {
         return newsDao.getTopLevelMessagesFlow()
             .distinctUntilChanged { old, new ->
@@ -172,8 +163,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>> {
-        return newsDao.getTopLevelFlow()
-            .map { allNews -> allNews.filter { matchesTeam(it, teamId) } }
+        return newsDao.getTopLevelByTeamFlow(teamId)
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
             }
@@ -252,7 +242,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFilteredNews(teamId: String): List<News> {
-        return newsDao.getTopLevel().filter { matchesTeam(it, teamId) }
+        return newsDao.getTopLevelByTeam(teamId)
     }
 
     override suspend fun getReplyCount(newsId: String?): Int {
