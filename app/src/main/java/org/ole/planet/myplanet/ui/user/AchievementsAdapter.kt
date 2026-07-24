@@ -60,16 +60,16 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
         val payloadSet = flatPayloads.filterIsInstance<String>().toSet()
 
         // If there are payloads we didn't handle, default to full bind
-        val handledPayloads = setOf(PHONE_PAYLOAD, EMAIL_PAYLOAD)
+        val handledPayloads = setOf(PAYLOAD_PHONE, PAYLOAD_EMAIL)
         if (payloadSet.subtract(handledPayloads).isNotEmpty() || flatPayloads.any { it !is String }) {
             super.onBindViewHolder(holder, position, payloads)
             return
         }
 
-        if (payloadSet.contains(PHONE_PAYLOAD)) {
+        if (payloadSet.contains(PAYLOAD_PHONE)) {
             holder.binding.tvRefPhone.text = row.phone
         }
-        if (payloadSet.contains(EMAIL_PAYLOAD)) {
+        if (payloadSet.contains(PAYLOAD_EMAIL)) {
             holder.binding.tvRefEmail.text = row.email
         }
     }
@@ -77,8 +77,8 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
     class AchievementsViewHolder(val binding: RowOtherInfoBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        private const val PHONE_PAYLOAD = "payload_phone"
-        private const val EMAIL_PAYLOAD = "payload_email"
+        const val PAYLOAD_PHONE = "payload_phone"
+        const val PAYLOAD_EMAIL = "payload_email"
 
         private val DIFF_CALLBACK = DiffUtils.itemCallback<ReferenceRow>(
             areItemsTheSame = { oldItem, newItem ->
@@ -89,8 +89,8 @@ class AchievementsAdapter(list: List<String>) : ListAdapter<ReferenceRow, Achiev
             getChangePayload = { oldItem, newItem ->
                 val payloads = mutableListOf<String>()
                 // Name and relationship are the identity so they shouldn't change for the "same" item
-                if (oldItem.phone != newItem.phone) payloads.add(PHONE_PAYLOAD)
-                if (oldItem.email != newItem.email) payloads.add(EMAIL_PAYLOAD)
+                if (oldItem.phone != newItem.phone) payloads.add(PAYLOAD_PHONE)
+                if (oldItem.email != newItem.email) payloads.add(PAYLOAD_EMAIL)
                 if (payloads.isNotEmpty()) payloads else null
             }
         )

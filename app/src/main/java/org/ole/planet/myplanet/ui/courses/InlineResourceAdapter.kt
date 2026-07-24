@@ -47,9 +47,9 @@ class InlineResourceAdapter(
         },
         getChangePayload = { old, new ->
             val payloads = mutableListOf<String>()
-            if (old.title != new.title) payloads.add("TITLE")
-            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add("ADDRESS")
-            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add("STATUS")
+            if (old.title != new.title) payloads.add(PAYLOAD_TITLE)
+            if (old.resourceLocalAddress != new.resourceLocalAddress) payloads.add(PAYLOAD_ADDRESS)
+            if (old.isResourceOffline() != new.isResourceOffline()) payloads.add(PAYLOAD_STATUS)
             if (payloads.isEmpty()) null else payloads
         }
     )
@@ -124,12 +124,12 @@ class InlineResourceAdapter(
             if (payloadList is List<*>) {
                 payloadList.forEach { payload ->
                     when (payload) {
-                        "TITLE" -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
-                        "ADDRESS" -> {
+                        PAYLOAD_TITLE -> holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
+                        PAYLOAD_ADDRESS -> {
                             holder.binding.tvResourceTitle.text = resource.title ?: resource.resourceLocalAddress ?: ""
                             updateStatusAndPreview(holder, context, resource)
                         }
-                        "STATUS" -> updateStatusAndPreview(holder, context, resource)
+                        PAYLOAD_STATUS -> updateStatusAndPreview(holder, context, resource)
                     }
                 }
             }
@@ -334,4 +334,10 @@ class InlineResourceAdapter(
     }
 
     private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
+
+    companion object {
+        const val PAYLOAD_TITLE = "PAYLOAD_TITLE"
+        const val PAYLOAD_ADDRESS = "PAYLOAD_ADDRESS"
+        const val PAYLOAD_STATUS = "PAYLOAD_STATUS"
+    }
 }
