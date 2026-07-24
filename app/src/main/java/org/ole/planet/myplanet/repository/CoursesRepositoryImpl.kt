@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
-import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.Certification
 import org.ole.planet.myplanet.model.CourseProgressData
@@ -56,7 +55,6 @@ class CoursesRepositoryImpl @Inject constructor(
     private val questionDao: QuestionDao,
     private val submissionDao: SubmissionDao,
     private val answerDao: AnswerDao,
-    private val tagDao: TagDao,
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
@@ -223,12 +221,7 @@ class CoursesRepositoryImpl @Inject constructor(
         tagNames: List<String>
     ): List<MyCourse> {
         val courseIdsWithTags = if (tagNames.isNotEmpty()) {
-            val matchingTagIds = tagDao.getByNames(tagNames).map { it.id }
-            if (matchingTagIds.isEmpty()) {
-                emptyList()
-            } else {
-                tagDao.getByDbAndTagIds("courses", matchingTagIds).mapNotNull { it.linkId }
-            }
+            tagsRepository.getLinkIdsForTagNames("courses", tagNames)
         } else {
             null
         }
