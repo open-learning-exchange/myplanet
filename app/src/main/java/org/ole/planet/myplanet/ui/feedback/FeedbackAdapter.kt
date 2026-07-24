@@ -3,7 +3,10 @@ package org.ole.planet.myplanet.ui.feedback
 import android.content.Intent
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import android.graphics.drawable.Drawable
+import androidx.core.content.ContextCompat
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.DrawableCompat
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
@@ -29,6 +32,11 @@ class FeedbackAdapter :
         )
     ) {
 
+    companion object {
+        private var bgPrimary: Drawable? = null
+        private var bgGrey: Drawable? = null
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): FeedbackViewHolder {
         val binding = RowFeedbackBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return FeedbackViewHolder(binding)
@@ -48,22 +56,23 @@ class FeedbackAdapter :
                 "${context.getString(R.string.open_date)}: ${getFormattedDate(feedback.openTime)}"
         binding.feedbackCardView.contentDescription = contentDescription
 
-        if ("yes".equals(feedback.priority, ignoreCase = true)) {
-            binding.tvPriority.background =
-                ResourcesCompat.getDrawable(context.resources, R.drawable.bg_primary, null)
-        } else {
-            binding.tvPriority.background =
-                ResourcesCompat.getDrawable(context.resources, R.drawable.bg_grey, null)
+        if (bgPrimary == null) {
+            bgPrimary = ContextCompat.getDrawable(context, R.drawable.bg_primary)
         }
-        binding.tvStatus.background = ResourcesCompat.getDrawable(
-            context.resources,
-            if ("open".equals(feedback.status, ignoreCase = true)) {
-                R.drawable.bg_primary
-            } else {
-                R.drawable.bg_grey
-            },
-            null
-        )
+        if (bgGrey == null) {
+            bgGrey = ContextCompat.getDrawable(context, R.drawable.bg_primary)?.mutate()
+            bgGrey?.let {
+                DrawableCompat.setTint(it, ContextCompat.getColor(context, R.color.md_amber_500))
+            }
+        }
+
+        if ("yes".equals(feedback.priority, ignoreCase = true)) {
+            binding.tvPriority.background = bgPrimary
+        } else {
+            binding.tvPriority.background = bgGrey
+        }
+        binding.tvStatus.background = if ("open".equals(feedback.status, ignoreCase = true)) bgPrimary else bgGrey
+
         binding.tvOpenDate.text = getFormattedDate(feedback.openTime)
         binding.root.setOnClickListener {
             binding.root.contentDescription = feedback.title
