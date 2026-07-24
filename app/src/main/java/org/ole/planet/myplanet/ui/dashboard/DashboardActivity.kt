@@ -325,6 +325,22 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
+        dl?.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerStateChanged(newState: Int) {
+                super.onDrawerStateChanged(newState)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+
+            override fun onDrawerClosed(drawerView: View) {
+                super.onDrawerClosed(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+
+            override fun onDrawerOpened(drawerView: View) {
+                super.onDrawerOpened(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+        })
         topbarSetting()
 
         if (isFirstLaunch) {
@@ -334,6 +350,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                 if (!(user?.id?.startsWith("guest") == true && offlineVisits >= 3) &&
                     resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
                 ) {
+                    result?.recyclerView?.scrollToPosition(0)
                     result?.openDrawer()
                 }
             }
@@ -369,7 +386,10 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
 
     private fun setupToolbarActions() {
         binding.appBarBell.ivSync.setOnClickListener { logSyncInSharedPrefs() }
-        binding.appBarBell.imgLogo.setOnClickListener { result?.openDrawer() }
+        binding.appBarBell.imgLogo.setOnClickListener {
+            result?.recyclerView?.scrollToPosition(0)
+            result?.openDrawer()
+        }
         binding.appBarBell.bellToolbar.setOnMenuItemClickListener { item ->
             handleToolbarMenuItem(item.itemId)
             true
@@ -848,6 +868,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (drawerItem != null) {
                         result?.setSelection(drawerItem.identifier, false)
                         menuAction((drawerItem as Nameable<*>).name.textRes)
+                        result?.recyclerView?.scrollToPosition(0)
                     }
                     false
                 }.withDrawerWidthDp(200).build()
