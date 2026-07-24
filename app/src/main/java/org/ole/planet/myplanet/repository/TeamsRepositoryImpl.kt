@@ -27,7 +27,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.di.AppPreferences
 import org.ole.planet.myplanet.model.CreateTeamRequest
 import org.ole.planet.myplanet.model.FinanceReportParams
@@ -70,7 +69,6 @@ class TeamsRepositoryImpl @Inject constructor(
     private val teamTaskDao: TeamTaskDao,
     private val myLibraryDao: MyLibraryDao,
     private val teamDao: TeamDao,
-    private val userDao: UserDao,
     private val courseDao: CourseDao,
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
@@ -752,7 +750,7 @@ class TeamsRepositoryImpl @Inject constructor(
     ) {
         if (teamId.isBlank() || resources.isEmpty() || userId.isNullOrBlank()) return
 
-        val user = userDao.getById(userId) ?: return
+        val user = userRepository.getUserById(userId) ?: return
         val teamResources = resources.mapNotNull { resource ->
             MyTeam().apply {
                 _id = UUID.randomUUID().toString()
@@ -1033,7 +1031,7 @@ class TeamsRepositoryImpl @Inject constructor(
             .mapNotNull { it.userId }
             .distinct()
 
-        return teamMembers.mapNotNull { userDao.getById(it) }
+        return teamMembers.mapNotNull { userRepository.getUserById(it) }
     }
 
     override suspend fun getJoinedMembersWithVisitInfo(teamId: String): List<JoinedMemberData> {
@@ -1058,7 +1056,7 @@ class TeamsRepositoryImpl @Inject constructor(
 
             if (validAdmins.isNotEmpty()) {
                 val adminFromRoomMap = validAdmins.mapNotNull { admin ->
-                    admin.name?.let { name -> userDao.getByName(name)?.let { name to it } }
+                    admin.name?.let { name -> userRepository.getUserByName(name)?.let { name to it } }
                 }.toMap()
 
                 for (admin in validAdmins) {
@@ -1120,14 +1118,14 @@ class TeamsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getAssignee(userId: String): UserEntity? {
-        return userDao.getById(userId)
+        return userRepository.getUserById(userId)
     }
 
     override suspend fun getRequestedMembers(teamId: String): List<UserEntity> {
         val requestedMemberIds = teamDao.getByTeamIdAndDocType(teamId, "request")
             .mapNotNull { it.userId }
             .distinct()
-        return requestedMemberIds.mapNotNull { userDao.getById(it) }
+        return requestedMemberIds.mapNotNull { userRepository.getUserById(it) }
     }
 
     override suspend fun isTeamNameExists(name: String, type: String, excludeTeamId: String?): Boolean {
@@ -1165,7 +1163,7 @@ class TeamsRepositoryImpl @Inject constructor(
         if (members.isEmpty()) return null
 
         val users = members.mapNotNull { member ->
-            member.userId?.let { userId -> userDao.getById(userId) }
+            member.userId?.let { userId -> userRepository.getUserById(userId) }
         }
         if (users.isEmpty()) return null
 
