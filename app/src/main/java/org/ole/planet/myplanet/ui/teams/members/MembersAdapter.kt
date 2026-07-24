@@ -38,6 +38,7 @@ class MembersAdapter(
     }
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<JoinedMemberData>(
             areItemsTheSame = { oldItem, newItem -> oldItem.user.id == newItem.user.id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem },

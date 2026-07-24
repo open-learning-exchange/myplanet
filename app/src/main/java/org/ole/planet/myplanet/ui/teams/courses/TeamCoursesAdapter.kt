@@ -55,6 +55,7 @@ class TeamCoursesAdapter(
     class ViewHolder(val binding: RowTeamResourceBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<MyCourse>(
             { oldItem, newItem -> oldItem.id == newItem.id },
             { oldItem, newItem ->

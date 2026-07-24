@@ -28,6 +28,7 @@ class FeedbackReplyAdapter(var context: Context) : ListAdapter<FeedbackReply, Fe
     inner class ReplyViewHolder(val binding: RowFeedbackReplyBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
+        @JvmStatic
         val DIFF_CALLBACK = DiffUtils.itemCallback<FeedbackReply>(
             areItemsTheSame = { oldItem, newItem -> oldItem.date == newItem.date && oldItem.user == newItem.user },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }

@@ -52,6 +52,7 @@ class QuestionAnswerAdapter : ListAdapter<QuestionAnswer, QuestionAnswerAdapter.
     }
 
     companion object {
+        @JvmStatic
         private val DIFF_CALLBACK = DiffUtils.itemCallback<QuestionAnswer>(
             areItemsTheSame = { oldItem, newItem -> oldItem.questionId == newItem.questionId },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
