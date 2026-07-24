@@ -101,7 +101,7 @@ class AchievementFragment : BaseContainerFragment() {
         super.onViewCreated(view, savedInstanceState)
         setupRealtimeSync()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             setupUserData()
             achievementData = loadAchievementDataAsync()
             updateAchievementUI()

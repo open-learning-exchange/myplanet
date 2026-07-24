@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
@@ -62,8 +61,6 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var submissionsRepository: SubmissionsRepository
     @Inject
     lateinit var surveysRepository: SurveysRepository
-    @Inject
-    lateinit var profileDbHandler: UserSessionManager
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
@@ -300,7 +297,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun removeFromShelf(`object`: Any) {
         lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
+            val userId = userRepository.getUserModel()?.id
             if (userId.isNullOrEmpty()) {
                 return@launch
             }
@@ -328,7 +325,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addToLibrary(libraryItems: List<MyLibrary?>, selectedItems: ArrayList<Int>) {
         lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+            val userId = userRepository.getUserModel()?.id ?: return@launch
             val resourceIds = selectedItems.mapNotNull { index ->
                 libraryItems.getOrNull(index)?.resourceId
             }
@@ -344,7 +341,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addAllToLibrary(libraryItems: List<MyLibrary?>) {
         lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
+            val user = userRepository.getUserModel()
             val userId = user?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)

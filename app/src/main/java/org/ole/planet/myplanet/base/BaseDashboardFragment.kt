@@ -53,6 +53,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
+
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
@@ -233,7 +234,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
         setCountText(teams.size, MyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.getUserModel()?.id
+        val userId = userRepository.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {

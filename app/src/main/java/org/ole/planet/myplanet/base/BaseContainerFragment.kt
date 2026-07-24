@@ -47,6 +47,9 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseContainerFragment : BaseResourceFragment() {
+    @Inject
+    lateinit var profileDbHandler: org.ole.planet.myplanet.services.UserSessionManager
+
     private var timesRated: TextView? = null
     var rating: TextView? = null
     private var ratingBar: AppCompatRatingBar? = null
@@ -133,7 +136,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
             val rb = this
             viewLifecycleOwner.lifecycleScope.launch {
-                val userModel = profileDbHandler.getUserModel()
+                val userModel = userRepository.getUserModel()
                 if (userModel?.isGuest() == false) {
                     rb.setOnClickListener {
                         homeItemClickListener?.showRatingDialog(type, id, title, listener)
