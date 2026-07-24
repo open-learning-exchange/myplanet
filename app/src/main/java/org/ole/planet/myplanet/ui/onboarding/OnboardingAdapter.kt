@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.ui.onboarding
 
 import android.content.Context
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -21,20 +22,27 @@ class OnboardingAdapter(private val mContext: Context, private val onBoardItems:
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
-        val itemView = LayoutInflater.from(mContext).inflate(R.layout.onboarding_item, container, false)
+        return try {
+            val itemView = LayoutInflater.from(mContext).inflate(R.layout.onboarding_item, container, false)
 
-        val item = onBoardItems[position]
-        val imageView = itemView.findViewById<ImageView>(R.id.iv_onboard)
-        imageView.setImageResource(item.imageID)
-        val tvTitle = itemView.findViewById<TextView>(R.id.tv_header)
-        tvTitle.text = item.title
-        tvTitle.setTextColor(mContext.getColor(R.color.daynight_textColor))
-        val tvContent = itemView.findViewById<TextView>(R.id.tv_desc)
-        tvContent.text = item.description
-        tvContent.setTextColor(mContext.getColor(R.color.daynight_textColor))
-        container.addView(itemView)
+            val item = onBoardItems[position]
+            val imageView = itemView.findViewById<ImageView>(R.id.iv_onboard)
+            imageView.setImageResource(item.imageID)
+            val tvTitle = itemView.findViewById<TextView>(R.id.tv_header)
+            tvTitle.text = item.title
+            tvTitle.setTextColor(mContext.getColor(R.color.daynight_textColor))
+            val tvContent = itemView.findViewById<TextView>(R.id.tv_desc)
+            tvContent.text = item.description
+            tvContent.setTextColor(mContext.getColor(R.color.daynight_textColor))
+            container.addView(itemView)
 
-        return itemView
+            itemView
+        } catch (e: Exception) {
+            Log.e("OnboardingAdapter", "Error inflating or finding views for item at position $position", e)
+            val fallbackView = View(mContext)
+            container.addView(fallbackView)
+            fallbackView
+        }
     }
 
     override fun destroyItem(container: ViewGroup, position: Int, `object`: Any) {
