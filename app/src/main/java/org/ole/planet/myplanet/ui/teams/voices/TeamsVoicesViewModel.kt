@@ -107,4 +107,8 @@ class TeamsVoicesViewModel @Inject constructor(
         return voicesRepository.getLibraryResource(resourceId)
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        observeJob?.cancel()
+    }
 }

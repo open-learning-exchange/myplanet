@@ -208,4 +208,8 @@ class VoicesViewModel @Inject constructor(
         allLabels.sorted()
     }
 
+    override fun onCleared() {
+        super.onCleared()
+        observeJob?.cancel()
+    }
 }

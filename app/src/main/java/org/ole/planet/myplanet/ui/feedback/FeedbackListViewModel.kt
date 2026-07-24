@@ -41,4 +41,9 @@ class FeedbackListViewModel @Inject constructor(
     fun refreshFeedback() {
         loadFeedback()
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        fetchJob?.cancel()
+    }
 }

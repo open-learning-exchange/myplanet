@@ -41,4 +41,9 @@ class EnterprisesFinancesViewModel @Inject constructor(
             }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        transactionsJob?.cancel()
+    }
 }

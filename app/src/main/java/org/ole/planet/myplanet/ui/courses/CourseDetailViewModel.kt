@@ -107,4 +107,9 @@ class CourseDetailViewModel @Inject constructor(
             }
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadJob?.cancel()
+    }
 }

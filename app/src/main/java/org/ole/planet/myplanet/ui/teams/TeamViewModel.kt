@@ -173,4 +173,10 @@ class TeamViewModel @Inject constructor(
                 onFailure = { TeamActionResult.Failure(it.message) }
             )
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        loadJob?.cancel()
+        loadTaskJob?.cancel()
+    }
 }

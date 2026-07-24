@@ -369,4 +369,12 @@ class DashboardViewModel @Inject constructor(
     fun clearNewNotifications() {
         _uiState.update { it.copy(newNotifications = emptyList()) }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        libraryJob?.cancel()
+        coursesJob?.cancel()
+        teamsJob?.cancel()
+        profileJob?.cancel()
+    }
 }

@@ -72,4 +72,9 @@ class ResourcesViewModel @Inject constructor(
             ResourceListModel(library, item, rating, tags)
         }
     }
+
+    override fun onCleared() {
+        super.onCleared()
+        observeOpenedResourcesJob?.cancel()
+    }
 }
