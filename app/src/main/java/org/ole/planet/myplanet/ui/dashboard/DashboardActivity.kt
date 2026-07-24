@@ -325,6 +325,12 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
         result?.actionBarDrawerToggle?.isDrawerIndicatorEnabled = true
         dl = result?.drawerLayout
+        dl?.addDrawerListener(object : DrawerLayout.SimpleDrawerListener() {
+            override fun onDrawerOpened(drawerView: View) {
+                super.onDrawerOpened(drawerView)
+                result?.recyclerView?.scrollToPosition(0)
+            }
+        })
         topbarSetting()
 
         if (isFirstLaunch) {
@@ -848,6 +854,7 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
                     if (drawerItem != null) {
                         result?.setSelection(drawerItem.identifier, false)
                         menuAction((drawerItem as Nameable<*>).name.textRes)
+                        result?.recyclerView?.scrollToPosition(0)
                     }
                     false
                 }.withDrawerWidthDp(200).build()
