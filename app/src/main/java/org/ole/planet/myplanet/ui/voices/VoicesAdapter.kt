@@ -121,7 +121,7 @@ class VoicesAdapter(
 
     private var originalList: List<News> = emptyList()
 
-    override fun submitList(list: List<News>?) {
+    private fun prepareSubmitList(list: List<News>?): List<News> {
         originalList = list ?: emptyList()
         val finalList = mutableListOf<News>()
         parentNews?.let {
@@ -132,21 +132,15 @@ class VoicesAdapter(
             it.forEach { item -> preParseNews(item) }
             finalList.addAll(it)
         }
-        super.submitList(finalList)
+        return finalList
+    }
+
+    override fun submitList(list: List<News>?) {
+        super.submitList(prepareSubmitList(list))
     }
 
     override fun submitList(list: List<News>?, commitCallback: Runnable?) {
-        originalList = list ?: emptyList()
-        val finalList = mutableListOf<News>()
-        parentNews?.let {
-            preParseNews(it)
-            finalList.add(it)
-        }
-        list?.let {
-            it.forEach { item -> preParseNews(item) }
-            finalList.addAll(it)
-        }
-        super.submitList(finalList, commitCallback)
+        super.submitList(prepareSubmitList(list), commitCallback)
     }
 
     private val externalFilesDir = FileUtils.getExternalFilesDir(context)
@@ -558,11 +552,16 @@ class VoicesAdapter(
                 }
 
                 val currentImageUrls = it.imageUrls?.toList()
-                if ((it.parsedImageUrls == null || it.rawImageUrls != currentImageUrls) && !currentImageUrls.isNullOrEmpty()) {
-                    val parsed = parseImageUrls(currentImageUrls)
-                    if (parsed != null) {
-                        it.parsedImageUrls = parsed
-                        it.rawImageUrls = currentImageUrls
+                if (it.rawImageUrls != currentImageUrls) {
+                    if (!currentImageUrls.isNullOrEmpty()) {
+                        val parsed = parseImageUrls(currentImageUrls)
+                        if (parsed != null) {
+                            it.parsedImageUrls = parsed
+                            it.rawImageUrls = currentImageUrls
+                        }
+                    } else {
+                        it.parsedImageUrls = null
+                        it.rawImageUrls = null
                     }
                 }
             } catch (e: IllegalStateException) {
