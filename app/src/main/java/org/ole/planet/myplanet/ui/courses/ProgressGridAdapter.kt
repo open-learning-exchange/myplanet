@@ -18,6 +18,16 @@ class ProgressGridAdapter(private val context: Context) :
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )
     ) {
+    private val colorCompleted by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.md_green_500)
+    }
+    private val colorInProgress by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.md_yellow_500)
+    }
+    private val colorMain by lazy(LazyThreadSafetyMode.NONE) {
+        ContextCompat.getColor(context, R.color.mainColor)
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderMyProgress {
         val rowMyProgressGridBinding =
             RowMyProgressGridBinding.inflate(LayoutInflater.from(parent.context), parent, false)
@@ -30,20 +40,12 @@ class ProgressGridAdapter(private val context: Context) :
             holder.tvProgress.text =
                 context.getString(R.string.percentage, item["percentage"].asString)
             if (item["completed"].asBoolean) {
-                holder.itemView.setBackgroundColor(
-                    ContextCompat.getColor(
-                        context, R.color.md_green_500
-                    )
-                )
+                holder.itemView.setBackgroundColor(colorCompleted)
             } else {
-                holder.itemView.setBackgroundColor(
-                    ContextCompat.getColor(
-                        context, R.color.md_yellow_500
-                    )
-                )
+                holder.itemView.setBackgroundColor(colorInProgress)
             }
         } else {
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.mainColor))
+            holder.itemView.setBackgroundColor(colorMain)
         }
     }
 
