@@ -106,7 +106,7 @@ class VoicesRepositoryImplTest {
 
     @Test
     fun getDiscussionsByTeamIdFlow_uses_dispatcherProvider_default() = testScope.runTest {
-        every { newsDao.getTopLevelFlow() } returns flowOf(emptyList())
+        every { newsDao.getTopLevelByTeamFlow(any()) } returns flowOf(emptyList())
 
         val flow = repository.getDiscussionsByTeamIdFlow("testTeam")
         val result = flow.toList()
@@ -154,7 +154,7 @@ class VoicesRepositoryImplTest {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team2\"}]"
         }
-        coEvery { newsDao.getTopLevel() } returns listOf(news1, news2, news3)
+        coEvery { newsDao.getTopLevelByTeam(any()) } returns listOf(news1, news2)
 
         val result = repository.getNewsByTeamId("team1")
 
@@ -173,7 +173,7 @@ class VoicesRepositoryImplTest {
             viewableBy = "other"
             viewIn = "[{\"_id\":\"team2\"}]"
         }
-        coEvery { newsDao.getTopLevel() } returns listOf(news1, news2)
+        coEvery { newsDao.getTopLevelByTeam(any()) } returns listOf(news1)
 
         val result = repository.getFilteredNews("team1")
 
