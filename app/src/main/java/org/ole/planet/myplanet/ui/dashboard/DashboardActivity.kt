@@ -723,22 +723,14 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
     private fun showVisitLimitWarning() {
         // Clear any existing banner first
         binding.bannerContainer.removeAllViews()
-        
+
         // Inflate the banner layout
         val bannerView = LayoutInflater.from(this).inflate(R.layout.banner_offline_visit_warning, binding.bannerContainer, true)
-        
+
         // Set up close button
         val closeButton = bannerView.findViewById<ImageButton>(R.id.banner_close)
         closeButton.setOnClickListener {
-            binding.bannerContainer.removeView(bannerView.parent as? View ?: bannerView)
-        }
-        
-        // Auto-dismiss after 10 seconds
-        lifecycleScope.launch {
-            delay(10000)
-            if (binding.bannerContainer.childCount > 0) {
-                binding.bannerContainer.removeAllViews()
-            }
+            binding.bannerContainer.removeAllViews()
         }
     }
 
