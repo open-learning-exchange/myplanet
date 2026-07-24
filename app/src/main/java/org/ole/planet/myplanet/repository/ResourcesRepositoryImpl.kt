@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import androidx.sqlite.db.SimpleSQLiteQuery
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesRepositoryImpl @Inject constructor(
@@ -58,28 +59,43 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
-        val base = when {
-            userId != null -> if (isMyCourseLib) {
-                myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            } else {
-                myLibraryDao.getPublicNotUserPattern(userIdPattern(userId))
+        if (query.isEmpty()) {
+            return when {
+                userId != null -> if (isMyCourseLib) {
+                    myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
+                } else {
+                    myLibraryDao.getPublicNotUserPattern(userIdPattern(userId))
+                }
+                isMyCourseLib -> emptyList()
+                else -> myLibraryDao.getPublic()
             }
-            isMyCourseLib -> return emptyList()
-            else -> myLibraryDao.getPublic()
         }
 
-        if (query.isEmpty()) {
-            return base
-        }
+        if (isMyCourseLib && userId == null) return emptyList()
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val matching = base.filter { item ->
-            val titleNormal = item.titleNormal ?: return@filter false
-            normalizedQueryParts.all { titleNormal.contains(it) }
+        val queryBuilder = StringBuilder("SELECT * FROM my_library WHERE isPrivate = 0")
+        val bindArgs = mutableListOf<Any>()
+
+        if (userId != null) {
+            if (isMyCourseLib) {
+                queryBuilder.append(" AND userId LIKE ? ESCAPE '\\'")
+                bindArgs.add(userIdPattern(userId))
+            } else {
+                queryBuilder.append(" AND (userId IS NULL OR userId NOT LIKE ? ESCAPE '\\')")
+                bindArgs.add(userIdPattern(userId))
+            }
         }
+
+        normalizedQueryParts.forEach { token ->
+            queryBuilder.append(" AND titleNormal LIKE ?")
+            bindArgs.add("%${token}%")
+        }
+
+        val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
         val startsWithQuery = mutableListOf<MyLibrary>()
         val containsQuery = mutableListOf<MyLibrary>()

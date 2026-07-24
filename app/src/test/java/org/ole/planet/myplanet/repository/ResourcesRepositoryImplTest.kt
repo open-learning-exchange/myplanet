@@ -119,7 +119,7 @@ class ResourcesRepositoryImplTest {
     fun `search with query filters by title`() = runTest {
         val mathBook = MyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
         val scienceBook = MyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(mathBook, scienceBook)
+        coEvery { myLibraryDao.filterByTitleNormal(any()) } returns listOf(mathBook)
 
         val result = repository.search("math", false, null)
 
@@ -154,7 +154,7 @@ class ResourcesRepositoryImplTest {
         val startsWithLib = MyLibrary().apply { title = "Ápple Tree"; titleNormal = "apple tree" }
         val containsLib = MyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
         val notMatchLib = MyLibrary().apply { title = "Banana"; titleNormal = "banana" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(containsLib, notMatchLib, startsWithLib)
+        coEvery { myLibraryDao.filterByTitleNormal(any()) } returns listOf(startsWithLib, containsLib)
 
         val result = repository.search("Apple", false, null)
 
@@ -167,7 +167,7 @@ class ResourcesRepositoryImplTest {
     fun `search multi word matches all parts`() = runTest {
         val matchLib = MyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
         val notMatchLib = MyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(matchLib, notMatchLib)
+        coEvery { myLibraryDao.filterByTitleNormal(any()) } returns listOf(matchLib)
 
         val result = repository.search("Ápple Tree", false, null)
 
