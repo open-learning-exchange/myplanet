@@ -522,10 +522,6 @@ class SubmissionsRepositoryImpl @Inject internal constructor(
         }
     }
 
-    override suspend fun getLastPendingSubmission(userId: String?): Submission? {
-        return hydrateSubmission(submissionDao.getLatestPendingByUser(userId))
-    }
-
     override suspend fun updateSubmissionStatus(submissionId: String?, status: String) {
         if (submissionId.isNullOrEmpty()) return
         submissionDao.updateStatus(submissionId, status)

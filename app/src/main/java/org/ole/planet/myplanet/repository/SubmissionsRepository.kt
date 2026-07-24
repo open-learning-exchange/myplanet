@@ -47,7 +47,6 @@ interface SubmissionsRepository {
     suspend fun addSubmissionPhoto(submissionId: String?, examId: String?, courseId: String?, memberId: String?, photoPath: String?)
     suspend fun createExamSubmission(request: CreateExamSubmissionRequest): Submission?
     suspend fun saveExamAnswer(answerData: ExamAnswerData): Boolean
-    suspend fun getLastPendingSubmission(userId: String?): Submission?
     suspend fun updateSubmissionStatus(submissionId: String?, status: String)
     suspend fun getExamByStepId(stepId: String): StepExam?
     suspend fun getExamById(id: String): StepExam?
