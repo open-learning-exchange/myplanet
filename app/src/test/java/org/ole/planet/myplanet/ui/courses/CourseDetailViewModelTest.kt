@@ -30,6 +30,8 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
+import org.ole.planet.myplanet.repository.RatingSummaryModel
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class CourseDetailViewModelTest {
 
@@ -72,14 +74,11 @@ class CourseDetailViewModelTest {
             coursesRepository,
             submissionsRepository,
             ratingsRepository,
-            userSessionManager,
             dispatcherProvider
         )
 
         ratingSummaryProvider = RatingSummaryProvider(
-            ratingsRepository,
-            userSessionManager,
-            dispatcherProvider
+            ratingsRepository
         )
 
         viewModel = CourseDetailViewModel(
@@ -112,7 +111,7 @@ class CourseDetailViewModelTest {
         coEvery { coursesRepository.getCourseOfflineResources(courseId) } returns emptyList()
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
         coEvery { submissionsRepository.getExamQuestionCount(any()) } returns 2
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns ratingSummary
+        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(user, ratingSummary)
     }
 
     @Test
@@ -189,11 +188,14 @@ class CourseDetailViewModelTest {
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
 
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns RatingSummary(
-            existingRating = null,
-            averageRating = 5.0f,
-            totalRatings = 10,
-            userRating = 5
+        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(
+            user = UserEntity().apply { id = "user_1" },
+            ratingSummary = RatingSummary(
+                existingRating = null,
+                averageRating = 5.0f,
+                totalRatings = 10,
+                userRating = 5
+            )
         )
 
         viewModel.refreshRatings(courseId)
