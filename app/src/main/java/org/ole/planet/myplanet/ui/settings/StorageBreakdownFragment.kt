@@ -8,20 +8,30 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
 import androidx.annotation.StringRes
+import androidx.appcompat.app.AlertDialog
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkInfo
+import androidx.work.WorkManager
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentStorageBreakdownBinding
 import org.ole.planet.myplanet.databinding.ItemStorageCategoryBinding
+import org.ole.planet.myplanet.services.FreeSpaceWorker
+import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class StorageBreakdownFragment : BottomSheetDialogFragment() {
@@ -76,7 +86,85 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             viewLifecycleOwner
         ) { _, _ -> loadStorage() }
 
+        binding.availableSpaceText.text = getString(R.string.available_space_colon) +
+            " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
+
+        binding.freeUpSpaceButton.setOnClickListener {
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setTitle(R.string.are_you_sure)
+                .setMessage(R.string.are_you_sure_want_to_delete_all_the_files)
+                .setPositiveButton(R.string.yes) { _, _ -> freeUpSpace() }
+                .setNegativeButton(R.string.no, null)
+                .show()
+        }
+
         loadStorage()
+    }
+
+    private fun freeUpSpace() {
+        val progressDialog = DialogUtils.getCustomProgressDialog(requireActivity())
+        progressDialog.show()
+
+        val workManager = WorkManager.getInstance(requireContext())
+        val freeSpaceWork = OneTimeWorkRequestBuilder<FreeSpaceWorker>()
+            .addTag("freeSpaceWork")
+            .build()
+        workManager.enqueue(freeSpaceWork)
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
+                    if (workInfo != null) {
+                        when (workInfo.state) {
+                            WorkInfo.State.RUNNING -> {
+                                val progress = workInfo.progress
+                                val deletedFiles = progress.getInt("deletedFiles", 0)
+                                val freedBytes = progress.getLong("freedBytes", 0)
+                                progressDialog.setText(
+                                    getString(
+                                        R.string.storage_deleting_progress,
+                                        deletedFiles,
+                                        FileUtils.formatSize(requireContext(), freedBytes)
+                                    )
+                                )
+                            }
+                            WorkInfo.State.SUCCEEDED -> {
+                                progressDialog.dismiss()
+                                val output = workInfo.outputData
+                                val deletedFiles = output.getInt("deletedFiles", 0)
+                                val freedBytes = output.getLong("freedBytes", 0)
+                                Utilities.toast(
+                                    requireActivity(),
+                                    getString(
+                                        R.string.storage_freed_summary,
+                                        FileUtils.formatSize(requireContext(), freedBytes),
+                                        deletedFiles
+                                    )
+                                )
+                                loadStorage()
+                            }
+                            WorkInfo.State.FAILED -> {
+                                progressDialog.dismiss()
+                                Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                            }
+                            WorkInfo.State.CANCELLED -> {
+                                progressDialog.dismiss()
+                            }
+                            else -> {
+                                // ENQUEUED or BLOCKED
+                            }
+                        }
+                        if (workInfo.state.isFinished) {
+                            kotlinx.coroutines.currentCoroutineContext().cancel()
+                        }
+                    }
+                }
+            }
+        }
+
+        progressDialog.setNegativeButton("Cancel") {
+            workManager.cancelWorkById(freeSpaceWork.id)
+        }
     }
 
     private fun loadStorage() {
