@@ -1,9 +1,11 @@
 package org.ole.planet.myplanet.model
 
+import android.content.Context
 import androidx.room.Entity
 import androidx.room.Ignore
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import org.ole.planet.myplanet.R
 
 /**
  * Room replacement for the former Realm `MyLife` model.
@@ -29,5 +31,17 @@ class MyLife {
         this.userId = userId
         this.title = title
         isVisible = true
+    }
+
+    companion object {
+        fun defaultItems(context: Context, userId: String?): List<MyLife> = listOf(
+            MyLife("ic_myhealth", userId, context.getString(R.string.myhealth)),
+            MyLife("my_achievement", userId, context.getString(R.string.achievements)),
+            MyLife("ic_submissions", userId, context.getString(R.string.submission)),
+            MyLife("ic_my_survey", userId, context.getString(R.string.my_survey)),
+            MyLife("ic_references", userId, context.getString(R.string.references)),
+            MyLife("ic_calendar", userId, context.getString(R.string.calendar)),
+            MyLife("ic_mypersonals", userId, context.getString(R.string.mypersonals))
+        )
     }
 }
