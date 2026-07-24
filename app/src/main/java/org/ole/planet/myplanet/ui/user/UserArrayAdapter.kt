@@ -36,7 +36,7 @@ class UserArrayAdapter(
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.contains(SELECTION_PAYLOAD)) {
+        if (payloads.contains(PAYLOAD_SELECTION)) {
             val user = getItem(position)
             val context = holder.itemView.context
             if (user.id == selectedUser?.id) {
@@ -74,13 +74,13 @@ class UserArrayAdapter(
             val previousUser = selectedUser
             selectedUser = user
             val prevPos = currentList.indexOfFirst { it.id == previousUser?.id }
-            if (prevPos != -1) notifyItemChanged(prevPos, SELECTION_PAYLOAD)
-            notifyItemChanged(currentPos, SELECTION_PAYLOAD)
+            if (prevPos != -1) notifyItemChanged(prevPos, PAYLOAD_SELECTION)
+            notifyItemChanged(currentPos, PAYLOAD_SELECTION)
             onItemClick(user)
         }
     }
 
     companion object {
-        private const val SELECTION_PAYLOAD = "selection_payload"
+        const val PAYLOAD_SELECTION = "selection_payload"
     }
 }

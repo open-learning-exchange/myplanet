@@ -51,9 +51,9 @@ class ResourcesAdapter(
     }
 
     companion object {
-        private const val SELECTION_PAYLOAD = "SELECTION_PAYLOAD"
-        private const val RATING_PAYLOAD = "RATING_PAYLOAD"
-        private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
+        const val PAYLOAD_SELECTION = "PAYLOAD_SELECTION"
+        const val PAYLOAD_RATING = "PAYLOAD_RATING"
+        const val PAYLOAD_TAGS = "PAYLOAD_TAGS"
 
         private val ITEM_CALLBACK = DiffUtils.itemCallback<ResourceListModel>(
             areItemsTheSame = { oldItem, newItem ->
@@ -65,7 +65,7 @@ class ResourcesAdapter(
             getChangePayload = { oldItem, newItem ->
                 val payloads = mutableListOf<String>()
                 if (oldItem.isOpened != newItem.isOpened || oldItem.item.isOffline != newItem.item.isOffline || oldItem.isLocallyOffline != newItem.isLocallyOffline) {
-                    payloads.add(SELECTION_PAYLOAD)
+                    payloads.add(PAYLOAD_SELECTION)
                 }
                 payloads.ifEmpty { null }
             }
@@ -78,7 +78,7 @@ class ResourcesAdapter(
         if (locallyOfflineIds.add(id)) {
             currentList.forEachIndexed { index, model ->
                 if (model.item.id == id) {
-                    notifyItemChanged(index, SELECTION_PAYLOAD)
+                    notifyItemChanged(index, PAYLOAD_SELECTION)
                 }
             }
         }
@@ -180,7 +180,7 @@ class ResourcesAdapter(
                 model.item.id?.let { itemId ->
                     if (selectedItemIds.add(itemId)) {
                         selectedItemsMap[itemId] = model.item
-                        notifyItemChanged(index, SELECTION_PAYLOAD)
+                        notifyItemChanged(index, PAYLOAD_SELECTION)
                     }
                 }
             }
@@ -189,7 +189,7 @@ class ResourcesAdapter(
                 model.item.id?.let { itemId ->
                     if (selectedItemIds.remove(itemId)) {
                         selectedItemsMap.remove(itemId)
-                        notifyItemChanged(index, SELECTION_PAYLOAD)
+                        notifyItemChanged(index, PAYLOAD_SELECTION)
                     }
                 }
             }
@@ -214,11 +214,11 @@ class ResourcesAdapter(
 
             val flatPayloads = payloads.flatMap { if (it is List<*>) it else listOf(it) }
 
-            if (flatPayloads.contains(RATING_PAYLOAD)) {
+            if (flatPayloads.contains(PAYLOAD_RATING)) {
                 bindRating(holder, model)
                 handled = true
             }
-            if (flatPayloads.contains(SELECTION_PAYLOAD)) {
+            if (flatPayloads.contains(PAYLOAD_SELECTION)) {
                 holder.rowLibraryBinding.checkbox.isChecked = selectedItemIds.contains(model.item.id)
                 val isResourceOpened = openedResourceIds.contains(model.item.id)
                 val isOffline = library.isOffline || locallyOfflineIds.contains(model.item.id)
@@ -227,7 +227,7 @@ class ResourcesAdapter(
                 handled = true
             }
 
-            if (flatPayloads.contains(TAGS_PAYLOAD)) {
+            if (flatPayloads.contains(PAYLOAD_TAGS)) {
                 displayTagCloud(holder, position)
                 handled = true
             }
@@ -246,7 +246,7 @@ class ResourcesAdapter(
             val wasOpened = oldOpenedResourceIds.contains(model.item.id)
             val isOpened = newOpenedResourceIds.contains(model.item.id)
             if (wasOpened != isOpened) {
-                notifyItemChanged(index, SELECTION_PAYLOAD)
+                notifyItemChanged(index, PAYLOAD_SELECTION)
             }
         }
     }
