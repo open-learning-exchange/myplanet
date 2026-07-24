@@ -227,7 +227,7 @@ class UserRepositoryImpl @Inject constructor(
 
         user.apply {
             if (id.isNullOrBlank()) {
-                id = newId.ifEmpty { UUID.randomUUID().toString() }
+                id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId
