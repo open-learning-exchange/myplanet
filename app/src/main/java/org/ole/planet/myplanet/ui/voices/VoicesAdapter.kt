@@ -905,7 +905,7 @@ class VoicesAdapter(
         val closeButton = view.findViewById<ImageView>(R.id.closeButton)
 
         dialog.setContentView(view)
-        dialog.window?.setBackgroundDrawable(Color.BLACK.toDrawable())
+        dialog.window?.setBackgroundDrawable(ContextCompat.getColor(context, R.color.md_black_1000).toDrawable())
 
         val request = Glide.with(photoView.context)
         val file = File(imageUrl)

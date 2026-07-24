@@ -104,7 +104,7 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
+                    setColorFilter(androidx.core.content.ContextCompat.getColor(context, R.color.pending_request_indicator), PorterDuff.Mode.SRC_IN)
                 }
             }
 
