@@ -1,0 +1,51 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/9.6.1/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build
+Reusing configuration cache.
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDefaultDebugBuild UP-TO-DATE
+> Task :app:dataBindingTriggerDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugBuildConfig UP-TO-DATE
+> Task :app:generateDefaultDebugResValues UP-TO-DATE
+> Task :app:generateDefaultDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDefaultDebug UP-TO-DATE
+> Task :app:packageDefaultDebugResources UP-TO-DATE
+> Task :app:checkDefaultDebugAarMetadata UP-TO-DATE
+> Task :app:processDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:mergeDefaultDebugResources UP-TO-DATE
+> Task :app:mapDefaultDebugSourceSetPaths UP-TO-DATE
+> Task :app:parseDefaultDebugLocalResources UP-TO-DATE
+> Task :app:compileDefaultDebugNavigationResources UP-TO-DATE
+> Task :app:createDefaultDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:preDefaultDebugUnitTestBuild UP-TO-DATE
+> Task :app:extractDeepLinksDefaultDebug UP-TO-DATE
+> Task :app:dataBindingMergeDependencyArtifactsDefaultDebug UP-TO-DATE
+> Task :app:generateDefaultDebugRFile UP-TO-DATE
+> Task :app:dataBindingGenBaseClassesDefaultDebug UP-TO-DATE
+> Task :app:processDefaultDebugMainManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifest UP-TO-DATE
+> Task :app:processDefaultDebugManifestForPackage UP-TO-DATE
+> Task :app:processDefaultDebugResources UP-TO-DATE
+> Task :app:kspDefaultDebugKotlin
+Could not load entry 197e75aef357902c200b49a44fb42ee1 from remote build cache: Connect to 34.134.219.48:5071 [/34.134.219.48] failed: Connect timed out
+w: [ksp] /app/app/src/main/java/org/ole/planet/myplanet/data/room/dao/RemovedLogDao.kt:18: The DAO function return type (kotlin.collections.List<kotlin.String?>) with the nullable type argument is meaningless because for now Room will never put a null value in a result.
+
+> Task :app:kaptGenerateStubsDefaultDebugKotlin
+
+> Task :app:kaptDefaultDebugKotlin
+warning: The following options were not recognized by any processor: '[dagger.hilt.internal.useAggregatingRootProcessor, kapt.kotlin.generated, dagger.fastInit, dagger.hilt.android.internal.disableAndroidSuperclassValidation, dagger.hilt.android.internal.projectType]'
+
+> Task :app:compileDefaultDebugKotlin
+> Task :app:compileDefaultDebugJavaWithJavac UP-TO-DATE
+> Task :app:hiltCollectClassesDefaultDebug
+> Task :app:hiltAggregateDepsDefaultDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDefaultDebug UP-TO-DATE
+> Task :app:bundleDefaultDebugClassesToCompileJar
+> Task :app:kspDefaultDebugUnitTestKotlin UP-TO-DATE
+> Task :app:kaptGenerateStubsDefaultDebugUnitTestKotlin UP-TO-DATE
+> Task :app:kaptDefaultDebugUnitTestKotlin SKIPPED
+> Task :app:compileDefaultDebugUnitTestKotlin UP-TO-DATE
+
+BUILD SUCCESSFUL in 2m 9s
+32 actionable tasks: 5 executed, 27 up-to-date
+Configuration cache entry reused.
+The remote build cache was disabled during the build due to errors.

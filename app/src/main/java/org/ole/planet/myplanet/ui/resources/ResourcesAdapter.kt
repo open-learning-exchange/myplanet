@@ -39,8 +39,6 @@ class ResourcesAdapter(
     private var listener: OnLibraryItemSelectedListener? = null
     private var homeItemClickListener: OnHomeItemClickListener? = null
     private var ratingChangeListener: OnRatingChangeListener? = null
-    private val config: ChipCloudConfig = getCloudConfig().selectMode(ChipCloud.SelectMode.single)
-
     private var isAscending = true
     private var isTitleAscending = true
 
@@ -51,6 +49,10 @@ class ResourcesAdapter(
     }
 
     companion object {
+        private val config: ChipCloudConfig by lazy {
+            getCloudConfig().selectMode(ChipCloud.SelectMode.single)
+        }
+
         private const val SELECTION_PAYLOAD = "SELECTION_PAYLOAD"
         private const val RATING_PAYLOAD = "RATING_PAYLOAD"
         private const val TAGS_PAYLOAD = "TAGS_PAYLOAD"
