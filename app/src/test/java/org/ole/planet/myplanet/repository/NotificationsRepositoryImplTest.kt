@@ -157,4 +157,30 @@ class NotificationsRepositoryImplTest {
 
         assertTrue(upsertSlot.captured.isRead)
     }
+
+    @Test
+    fun `getSurveyId returns id when exam is found by name`() = runTest {
+        coEvery { examDao.getIdByName("testName") } returns "testId"
+
+        val result = repository.getSurveyId("testName")
+
+        assertEquals("testId", result)
+    }
+
+    @Test
+    fun `getSurveyId returns null when exam is not found`() = runTest {
+        coEvery { examDao.getIdByName("missingName") } returns null
+
+        val result = repository.getSurveyId("missingName")
+
+        assertEquals(null, result)
+    }
+
+    @Test
+    fun `getSurveyId returns null when relatedId is null`() = runTest {
+        val result = repository.getSurveyId(null)
+
+        assertEquals(null, result)
+        coVerify(exactly = 0) { examDao.getIdByName(any()) }
+    }
 }
