@@ -115,6 +115,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
     }
 
     fun logSyncInSharedPrefs() {
+
         val protocol = prefData.getServerProtocol()
         val serverUrl = prefData.getServerUrl()
         val serverPin = prefData.getServerPin()
@@ -133,10 +134,16 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
         val dialog = builder.build()
         currentDialog = dialog
-        checkMinApk(url, serverPin, "DashboardActivity")
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
-            activitiesRepository.recordSyncUserChallengeAction("${userModel?.id}")
+            if (userModel?.id?.startsWith("guest") == true) {
+                // Show the guest redirect dialog instead of initiating sync
+                org.ole.planet.myplanet.utils.DialogUtils.guestDialog(this@DashboardElementActivity)
+                return@launch
+            } else {
+                checkMinApk(url, serverPin, "DashboardActivity")
+                activitiesRepository.recordSyncUserChallengeAction("${userModel?.id}")
+            }
         }
     }
 
