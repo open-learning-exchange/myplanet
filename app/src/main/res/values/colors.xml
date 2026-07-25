@@ -55,4 +55,7 @@
     <color name="field_fill">#E8EEF5</color>
     <color name="md_blue_100">#BBDEFB</color>
     <color name="md_blue_200">#90CAF9</color>
+
+    <color name="warning_card_bg">#FFFFFF</color>
+
 </resources>
