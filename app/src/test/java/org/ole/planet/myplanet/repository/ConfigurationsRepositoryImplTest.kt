@@ -92,4 +92,17 @@ class ConfigurationsRepositoryImplTest {
 
         io.mockk.verify(exactly = 1) { appDatabase.clearAllTables() }
     }
+
+    @Test
+    fun `checkVersion calls onError when baseUrl is empty`() = runTest(testDispatcher) {
+        val callback = mockk<ConfigurationsRepository.CheckVersionCallback>(relaxed = true)
+
+        every { sharedPrefManager.isAlternativeUrl() } returns false
+        every { sharedPrefManager.getCouchdbUrl() } returns ""
+        every { context.getString(R.string.server_url_not_configured) } returns "Server url not configured"
+
+        repository.checkVersion(callback, sharedPrefManager)
+
+        io.mockk.verify(exactly = 1) { callback.onError("Server url not configured", true) }
+    }
 }
