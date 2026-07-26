@@ -258,7 +258,7 @@ class SettingsActivity : AppCompatActivity() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
-                    lifecycleScope.launch {
+                    viewLifecycleOwner.lifecycleScope.launch {
                         val userModel = profileDbHandler.getUserModel()
                         if (userModel?.id?.startsWith("guest") == true) {
                             guestDialog(requireActivity())
