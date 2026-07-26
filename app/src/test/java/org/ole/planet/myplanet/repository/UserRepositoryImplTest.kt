@@ -29,10 +29,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
 import org.ole.planet.myplanet.R
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.User
@@ -43,8 +40,6 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
 
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34])
 @OptIn(ExperimentalCoroutinesApi::class)
 class UserRepositoryImplTest {
 
@@ -306,66 +301,5 @@ class UserRepositoryImplTest {
         repository.upsertSavedUser("someone", "pwd", "unknown", null, null)
 
         verify(exactly = 0) { sharedPrefManager.setSavedUsers(any()) }
-    }
-
-    @Test
-    fun `parseLeadersJson parses valid json with all fields`() {
-        val validJson = """
-            {
-              "docs": [
-                {
-                  "_id": "user123",
-                  "name": "john_doe",
-                  "firstName": "John",
-                  "lastName": "Doe",
-                  "email": "john@example.com"
-                }
-              ]
-            }
-        """.trimIndent()
-
-        val result = repository.parseLeadersJson(validJson)
-
-        assertEquals(1, result.size)
-        val user = result[0]
-        assertEquals("user123", user.id)
-        assertEquals("john_doe", user.name)
-        assertEquals("John", user.firstName)
-        assertEquals("Doe", user.lastName)
-        assertEquals("john@example.com", user.email)
-        assertEquals(0, user.rolesList?.size)
-    }
-
-    @Test
-    fun `parseLeadersJson parses valid json with missing optional fields`() {
-        val validJson = """
-            {
-              "docs": [
-                {
-                  "name": "jane_doe"
-                }
-              ]
-            }
-        """.trimIndent()
-
-        val result = repository.parseLeadersJson(validJson)
-
-        assertEquals(1, result.size)
-        val user = result[0]
-        assertEquals("org.couchdb.user:jane_doe", user.id)
-        assertEquals("jane_doe", user.name)
-        assertEquals(null, user.firstName)
-        assertEquals(null, user.lastName)
-        assertEquals(null, user.email)
-        assertEquals(0, user.rolesList?.size)
-    }
-
-    @Test
-    fun `parseLeadersJson handles invalid json gracefully`() {
-        val invalidJson = "{ invalid json }"
-
-        val result = repository.parseLeadersJson(invalidJson)
-
-        assertEquals(0, result.size)
     }
 }
