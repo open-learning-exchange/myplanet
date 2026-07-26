@@ -14,9 +14,12 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.Assert.assertEquals
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -28,6 +31,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.TeamTask
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -151,5 +155,18 @@ class TeamsRepositoryImplTest {
         coVerify { uploadManager.uploadTeamActivities() }
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
+    fun `test getTasksFlow delegates to teamTaskDao`() = runTest(testDispatcher) {
+        val userId = "test_user_id"
+        val mockTasks = listOf(TeamTask())
+        val mockFlow = flowOf(mockTasks)
+        every { teamTaskDao.getOpenTasksForUser(userId) } returns mockFlow
+
+        val resultFlow = teamsRepository.getTasksFlow(userId)
+
+        val resultList = resultFlow.first()
+        assertEquals(mockTasks, resultList)
     }
 }
