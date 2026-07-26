@@ -8,6 +8,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -28,6 +29,7 @@ import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.User
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -151,5 +153,82 @@ class TeamsRepositoryImplTest {
         coVerify { uploadManager.uploadTeamActivities() }
 
         io.mockk.unmockkObject(org.ole.planet.myplanet.MainApplication.Companion)
+    }
+
+    @Test
+    fun `test getMyTeamDetailsFlow returns mapped flow of team details`() = runTest(testDispatcher) {
+        // Arrange
+        val userId = "user_id_1"
+        val team1Id = "team_id_1"
+        val team2Id = "team_id_2"
+
+        // Membership for team 1
+        val membership1 = MyTeam().apply {
+            _id = "mem1"
+            this.userId = userId
+            this.teamId = team1Id
+            this.docType = "membership"
+        }
+
+        // Membership for team 2
+        val membership2 = MyTeam().apply {
+            _id = "mem2"
+            this.userId = userId
+            this.teamId = team2Id
+            this.docType = "membership"
+        }
+
+        // Root teams
+        val team1 = MyTeam().apply {
+            _id = team1Id
+            this.teamId = "" // Empty string or null makes it a root team
+            this.status = "active"
+            this.name = "Team 1"
+        }
+
+        val team2 = MyTeam().apply {
+            _id = team2Id
+            this.teamId = null // Empty string or null makes it a root team
+            this.status = "archived" // Should be filtered out
+            this.name = "Team 2"
+        }
+
+        // Extra team user is not a member of
+        val team3 = MyTeam().apply {
+            _id = "team_id_3"
+            this.teamId = null
+            this.status = "active"
+        }
+
+        val allEntities = listOf(membership1, membership2, team1, team2, team3)
+        every { teamDao.observeAll() } returns kotlinx.coroutines.flow.flowOf(allEntities)
+
+        // Mock getRecentVisitCounts behavior via teamLogDao
+        coEvery { teamLogDao.getRecentTeamVisits(any(), any()) } returns listOf()
+
+        // Mock getTeamMemberStatuses behavior via teamDao.getByTeamIdAndDocType
+        coEvery { teamDao.getByTeamIdAndDocType(team1Id, "membership") } returns listOf(membership1)
+
+        // Act
+        val resultFlow = teamsRepository.getMyTeamDetailsFlow(userId)
+        val results = mutableListOf<List<org.ole.planet.myplanet.model.TeamDetails>>()
+        val collectJob = launch {
+            resultFlow.collect { results.add(it) }
+        }
+        advanceUntilIdle()
+
+        // Assert
+        assert(results.isNotEmpty())
+        val teamDetailsList = results.first()
+
+        // Only team 1 should be included
+        // - it's a root team
+        // - user has a membership for it
+        // - its status is not "archived"
+        assert(teamDetailsList.size == 1)
+        assert(teamDetailsList[0]._id == team1Id)
+        assert(teamDetailsList[0].name == "Team 1")
+
+        collectJob.cancel()
     }
 }
