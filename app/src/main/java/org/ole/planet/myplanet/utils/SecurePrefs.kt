@@ -76,10 +76,13 @@ object SecurePrefs {
             val plainPrefsFile = File(context.applicationInfo.dataDir, "shared_prefs/$PLAIN_PREFS_FILE_NAME.xml")
             if (plainPrefsFile.exists()) {
                 val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
-                if (plainPrefs.all.isNotEmpty()) {
-                    encryptedPrefs.edit(commit = true) {
-                        plainPrefs.all.forEach { (key, value) ->
-                            when (value) {
+                val sensitiveKeys = listOf("loginUserName", "loginUserPassword")
+
+                var migrated = false
+                encryptedPrefs.edit(commit = true) {
+                    sensitiveKeys.forEach { key ->
+                        if (plainPrefs.contains(key)) {
+                            when (val value = plainPrefs.all[key]) {
                                 is String -> putString(key, value)
                                 is Boolean -> putBoolean(key, value)
                                 is Int -> putInt(key, value)
@@ -90,11 +93,14 @@ object SecurePrefs {
                                     putStringSet(key, value as Set<String>)
                                 }
                             }
+                            migrated = true
                         }
                     }
-                    plainPrefs.edit(commit = true) { clear() }
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                }
+
+                if (migrated) {
+                    plainPrefs.edit(commit = true) {
+                        sensitiveKeys.forEach { remove(it) }
                     }
                 }
             }
