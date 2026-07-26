@@ -261,7 +261,7 @@ class SettingsActivity : AppCompatActivity() {
                     lifecycleScope.launch {
                         val userModel = profileDbHandler.getUserModel()
                         if (userModel?.id?.startsWith("guest") == true) {
-                            org.ole.planet.myplanet.utils.DialogUtils.guestDialog(requireActivity())
+                            guestDialog(requireActivity())
                             return@launch
                         }
                         AlertDialog.Builder(requireActivity())
