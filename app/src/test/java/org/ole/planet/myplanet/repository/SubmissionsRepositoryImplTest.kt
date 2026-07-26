@@ -125,6 +125,56 @@ class SubmissionsRepositoryImplTest {
     }
 
     @Test
+    fun `getSubmissionsFlow does not suppress when size changes`() = runTest {
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDiffSize = listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L))
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Different size list should not be suppressed
+        flowEmitter.emit(subListDiffSize)
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `getSubmissionsFlow does not suppress when lastUpdateTime changes`() = runTest {
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDiffTime = listOf(Submission(id = "1", lastUpdateTime = 101L))
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Same size but different lastUpdateTime should not be suppressed
+        flowEmitter.emit(subListDiffTime)
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
+
+    @Test
     fun `getPendingSurveys returns empty list when userId is null`() = runTest {
         val result = repository.getPendingSurveys(null)
         assertTrue(result.isEmpty())
