@@ -13,6 +13,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import io.mockk.every
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -205,5 +208,31 @@ class ResourcesRepositoryImplTest {
         assertEquals(listOf("beginner"), filter.getAsJsonArray("level").map { it.asString })
         assertEquals(listOf("video"), filter.getAsJsonArray("mediaType").map { it.asString })
         assertTrue(filter.getAsJsonArray("tags").isEmpty)
+    }
+
+    @Test
+    fun `getRecentResources returns flow from dao with correct pattern`() = runTest {
+        val userId = "testUser123"
+        val expectedPattern = "%\"testUser123\"%"
+        val expectedList = listOf(mockk<MyLibrary>())
+
+        every { myLibraryDao.getRecentForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
+
+        val result = repository.getRecentResources(userId).first()
+
+        assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
+        val userId = "testUser123"
+        val expectedPattern = "%\"testUser123\"%"
+        val expectedList = listOf(mockk<MyLibrary>())
+
+        every { myLibraryDao.getPendingDownloadsForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
+
+        val result = repository.getPendingDownloads(userId).first()
+
+        assertEquals(expectedList, result)
     }
 }
