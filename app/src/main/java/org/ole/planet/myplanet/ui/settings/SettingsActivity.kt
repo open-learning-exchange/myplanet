@@ -261,7 +261,7 @@ class SettingsActivity : AppCompatActivity() {
                     viewLifecycleOwner.lifecycleScope.launch {
                         val userModel = profileDbHandler.getUserModel()
                         if (userModel?.id?.startsWith("guest") == true) {
-                            guestDialog(requireActivity())
+                            DialogUtils.guestDialog(requireActivity())
                             return@launch
                         }
                         AlertDialog.Builder(requireActivity())
