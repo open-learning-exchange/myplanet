@@ -10,6 +10,8 @@ import io.mockk.slot
 import java.util.logging.Level
 import java.util.logging.Logger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -205,5 +207,17 @@ class ResourcesRepositoryImplTest {
         assertEquals(listOf("beginner"), filter.getAsJsonArray("level").map { it.asString })
         assertEquals(listOf("video"), filter.getAsJsonArray("mediaType").map { it.asString })
         assertTrue(filter.getAsJsonArray("tags").isEmpty)
+    }
+
+    @Test
+    fun `getPendingDownloads returns flow of libraries`() = runTest {
+        val mockLibrary = MyLibrary().apply { title = "Pending Download" }
+        coEvery { myLibraryDao.getPendingDownloadsForUserPatternFlow("%\"test\\_user\"%") } returns flowOf(listOf(mockLibrary))
+
+        val resultFlow = repository.getPendingDownloads("test_user")
+        val result = resultFlow.first()
+
+        assertEquals(1, result.size)
+        assertEquals("Pending Download", result[0].title)
     }
 }
