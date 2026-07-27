@@ -55,6 +55,10 @@ class ResourcesViewModel @Inject constructor(
         return resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
     }
 
+    fun invalidateCache() {
+        lastCache = null
+    }
+
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         val key = Pair(isMyCourseLib, modelId)
         val currentCache = lastCache

@@ -117,6 +117,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     private fun refreshResourcesData() {
+        viewModel.invalidateCache()
         if (!isAdded || requireActivity().isFinishing) return
         val binding = _binding ?: return
 
