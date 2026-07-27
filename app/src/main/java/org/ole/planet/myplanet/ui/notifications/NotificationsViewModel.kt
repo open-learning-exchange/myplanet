@@ -357,9 +357,6 @@ class NotificationsViewModel @Inject constructor(
         }
     }
 
-    suspend fun getSurveyId(relatedId: String?): String? {
-        return notificationsRepository.getSurveyId(relatedId)
-    }
 
     suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return notificationsRepository.getTaskDetails(relatedId)
