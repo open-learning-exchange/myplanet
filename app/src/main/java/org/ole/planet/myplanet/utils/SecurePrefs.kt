@@ -103,6 +103,11 @@ object SecurePrefs {
                         sensitiveKeys.forEach { remove(it) }
                     }
                 }
+
+                plainPrefs.edit(commit = true) { clear() }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
+                }
             }
             encryptedPrefs
         } catch (e: Exception) {
