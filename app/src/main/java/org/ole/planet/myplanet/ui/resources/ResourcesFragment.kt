@@ -113,11 +113,11 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override fun onRatingChanged(type: String, id: String) {
+        viewModel.invalidateCache()
         refreshResourcesData()
     }
 
     private fun refreshResourcesData() {
-        viewModel.invalidateCache()
         if (!isAdded || requireActivity().isFinishing) return
         val binding = _binding ?: return
 
@@ -134,7 +134,6 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
-        viewModel.invalidateCache()
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
@@ -170,6 +169,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         hideButton()
 
         childFragmentManager.setFragmentResultListener("resource_added", viewLifecycleOwner) { _, _ ->
+            viewModel.invalidateCache()
             refreshResourcesData()
         }
 
@@ -513,6 +513,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         val localAddress = url.substringAfterLast('/')
         val id = allResourceModels.find { it.item.resourceLocalAddress == localAddress }?.item?.id ?: return
         adapterLibrary.markItemAsOffline(id)
+        viewModel.invalidateCache()
         refreshResourcesData()
     }
 
@@ -725,6 +726,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                 withContext(dispatcherProvider.main) {
                     _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
+                    viewModel.invalidateCache()
                     refreshResourcesData()
                     selectedItems?.clear()
                     changeButtonStatus()
@@ -745,6 +747,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
                         .onSuccess {
                             _binding ?: return@onSuccess
                             Utilities.toast(activity, getString(R.string.added_to_my_library))
+                            viewModel.invalidateCache()
                             refreshResourcesData()
                             selectedItems?.clear()
                             changeButtonStatus()
