@@ -19,10 +19,12 @@ interface UserDao {
     suspend fun getById(id: String): UserEntity?
     @Query("SELECT * FROM users") suspend fun getAll(): List<UserEntity>
     @Query("SELECT * FROM users WHERE name = :name LIMIT 1") suspend fun getByName(name: String): UserEntity?
+    @Query("SELECT * FROM users WHERE name = :name COLLATE NOCASE LIMIT 1") suspend fun getByNameIgnoreCase(name: String): UserEntity?
     @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%' OR firstName LIKE '%' || :query || '%' OR lastName LIKE '%' || :query || '%'") suspend fun search(query: String): List<UserEntity>
     @Query("SELECT COUNT(*) FROM users") suspend fun count(): Int
     @Query("SELECT COUNT(*) FROM users WHERE planetCode = :planetCode") suspend fun countByPlanetCode(planetCode: String): Int
     @Query("DELETE FROM users WHERE id = :id") suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM users WHERE id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Upsert suspend fun upsert(item: UserEntity)
     @Upsert suspend fun upsertAll(items: List<UserEntity>)
 }
@@ -136,6 +138,7 @@ interface TeamDao {
     @Query("SELECT * FROM teams WHERE _id = :id LIMIT 1") suspend fun getById(id: String): MyTeam?
     @Query("SELECT * FROM teams WHERE userId = :userId") suspend fun getByUserId(userId: String): List<MyTeam>
     @Query("SELECT * FROM teams") suspend fun getAll(): List<MyTeam>
+    @Query("SELECT * FROM teams WHERE teamId = :teamId") suspend fun getAllByTeamId(teamId: String): List<MyTeam>
     @Query("SELECT * FROM teams") fun observeAll(): Flow<List<MyTeam>>
     @Query("SELECT * FROM teams WHERE docType = :docType") suspend fun getByDocType(docType: String): List<MyTeam>
     @Query("SELECT * FROM teams WHERE docType = :docType") fun observeByDocType(docType: String): Flow<List<MyTeam>>
@@ -144,6 +147,7 @@ interface TeamDao {
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun countByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Query("SELECT COUNT(*) FROM teams WHERE teamId = :teamId AND docType = :docType") suspend fun countByTeamIdAndDocType(teamId: String, docType: String): Int
     @Query("DELETE FROM teams WHERE _id = :id") suspend fun deleteById(id: String): Int
+    @Query("DELETE FROM teams WHERE _id IN (:ids)") suspend fun deleteByIds(ids: List<String>): Int
     @Query("DELETE FROM teams WHERE teamId = :teamId AND userId = :userId AND docType = :docType") suspend fun deleteByTeamIdUserIdAndDocType(teamId: String, userId: String, docType: String): Int
     @Upsert suspend fun upsertAll(items: List<MyTeam>)
     @Upsert suspend fun upsert(item: MyTeam)

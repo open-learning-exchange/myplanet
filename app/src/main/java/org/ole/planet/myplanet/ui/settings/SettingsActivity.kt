@@ -194,6 +194,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
                 user = profileDbHandler.getUserModel()
+                blockGuestSwitches()
             }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
@@ -233,6 +234,30 @@ class SettingsActivity : AppCompatActivity() {
             clearDataButtonInit()
             initRetryQueueDebug()
             initStorageBreakdown()
+        }
+
+        private fun blockGuestSwitches() {
+            if (user?.id?.startsWith("guest") != true) return
+
+            fun processPreference(pref: Preference) {
+                when (pref) {
+                    is SwitchPreference -> {
+                        pref.onPreferenceChangeListener = OnPreferenceChangeListener { _, _ ->
+                            DialogUtils.guestDialog(requireContext())
+                            false
+                        }
+                    }
+                    is androidx.preference.PreferenceGroup -> {
+                        for (i in 0 until pref.preferenceCount) {
+                            processPreference(pref.getPreference(i))
+                        }
+                    }
+                }
+            }
+
+            for (i in 0 until preferenceScreen.preferenceCount) {
+                processPreference(preferenceScreen.getPreference(i))
+            }
         }
 
         private fun initStorageBreakdown() {
