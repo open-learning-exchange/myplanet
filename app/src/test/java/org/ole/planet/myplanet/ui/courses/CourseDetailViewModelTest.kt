@@ -70,6 +70,7 @@ class CourseDetailViewModelTest {
             // UninitializedPropertyAccessException if context was never set
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
+        io.mockk.every { MainApplication.context.getExternalFilesDir(null) } returns null
 
         courseDetailProvider = CourseDetailProvider(
             coursesRepository,
@@ -107,13 +108,14 @@ class CourseDetailViewModelTest {
         )
     ) {
         every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(course)
+        every { org.ole.planet.myplanet.MainApplication.testContext?.getExternalFilesDir(null) } returns null
         coEvery { userSessionManager.getUserModel() } returns user
         coEvery { coursesRepository.getCourseExamCount(courseId) } returns examCount
         coEvery { coursesRepository.getCourseOnlineResources(courseId) } returns emptyList()
         coEvery { coursesRepository.getCourseOfflineResources(courseId) } returns emptyList()
         coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
         coEvery { submissionsRepository.getExamQuestionCount(any()) } returns 2
-        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(user, ratingSummary)
+        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns ratingSummary
     }
 
     @Test
