@@ -21,7 +21,6 @@ import com.github.chrisbanes.photoview.PhotoView
 import io.noties.markwon.AbstractMarkwonPlugin
 import io.noties.markwon.Markwon
 import io.noties.markwon.MarkwonConfiguration
-import io.noties.markwon.MarkwonPlugin
 import io.noties.markwon.MarkwonSpansFactory
 import io.noties.markwon.RenderProps
 import io.noties.markwon.core.MarkwonTheme
@@ -31,9 +30,7 @@ import io.noties.markwon.html.HtmlTag
 import io.noties.markwon.html.tag.SimpleTagHandler
 import io.noties.markwon.image.ImageProps
 import io.noties.markwon.image.ImagesPlugin
-import io.noties.markwon.image.file.FileSchemeHandler
-import io.noties.markwon.image.network.NetworkSchemeHandler
-import io.noties.markwon.image.network.OkHttpNetworkSchemeHandler
+import io.noties.markwon.image.glide.GlideImagesPlugin
 import io.noties.markwon.movement.MovementMethodPlugin
 import java.util.regex.Pattern
 import org.commonmark.node.Image
@@ -60,18 +57,11 @@ object MarkdownUtils {
         return Markwon.builder(context)
             .usePlugin(HtmlPlugin.create())
             .usePlugin(ImagesPlugin.create())
+            .usePlugin(GlideImagesPlugin.create(Glide.with(context)))
             .usePlugin(MovementMethodPlugin.create(LinkMovementMethod.getInstance()))
             .usePlugin(TablePlugin.create(context))
             .usePlugin(HtmlPlugin.create { plugin: HtmlPlugin -> plugin.addHandler(AlignTagHandler()) })
             .usePlugin(object : AbstractMarkwonPlugin() {
-                override fun configure(registry: MarkwonPlugin.Registry) {
-                    registry.require(ImagesPlugin::class.java) { imagesPlugin ->
-                        imagesPlugin.addSchemeHandler(FileSchemeHandler.createWithAssets(context.assets))
-                        imagesPlugin.addSchemeHandler(NetworkSchemeHandler.create())
-                        imagesPlugin.addSchemeHandler(OkHttpNetworkSchemeHandler.create())
-                    }
-                }
-
                 override fun configureSpansFactory(builder: MarkwonSpansFactory.Builder) {
                     builder.appendFactory(Image::class.java) { configuration, props ->
                         val url = ImageProps.DESTINATION.require(props)
