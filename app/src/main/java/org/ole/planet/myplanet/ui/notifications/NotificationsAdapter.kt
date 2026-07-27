@@ -156,7 +156,6 @@ internal fun iconResFor(type: String): Int = when (type.lowercase()) {
     "join_request" -> R.drawable.ic_join_request
     "team_join" -> R.drawable.ic_activity
     "task" -> R.drawable.ic_date
-    "survey" -> R.drawable.ic_my_survey
     "chat" -> R.drawable.ic_mic
     "voice_reply" -> R.drawable.ic_send
     "resource" -> R.drawable.ic_folder
