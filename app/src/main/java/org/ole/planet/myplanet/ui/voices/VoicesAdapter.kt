@@ -334,7 +334,17 @@ class VoicesAdapter(
             if (posInCurrent != -1) {
                 updatedCurrentList.removeAt(posInCurrent)
             }
-            submitList(updatedCurrentList)
+            // `submitList` internally prepends `parentNews` again and re-parses everything.
+            // By passing `updatedCurrentList` which already contains `parentNews` at index 0,
+            // we inadvertently duplicate `parentNews` in `finalList` inside `submitList`.
+            // To prevent this and preserve the current filter state, we strip the parent
+            // post (if it exists) before submitting, letting `submitList` re-prepend it.
+            val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
+                updatedCurrentList.drop(1)
+            } else {
+                updatedCurrentList
+            }
+            submitList(listToSubmit)
         }
 
         parentNews?.id?.let { pid ->
