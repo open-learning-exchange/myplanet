@@ -472,7 +472,7 @@
     <string name="add_res">Add Resource</string>
     <string name="password">password</string>
     <string name="retype_password">Confirm Password</string>
-    <string name="become_a_member">become a member</string>
+    <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
@@ -1035,7 +1035,7 @@
     <string name="select_theme_mode">select theme mode</string>
     <string name="beta_resources_auto_download">Beta resources auto download</string>
     <string name="course_steps">Course Steps</string>
-    <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
+    <string name="to_access_this_feature_become_a_member">You are currently a guest user. To access this feature, become a member.</string>
     <string name="sales">Sales</string>
     <string name="beginning_balance">Beginning Balance</string>
     <string name="other">Other</string>
