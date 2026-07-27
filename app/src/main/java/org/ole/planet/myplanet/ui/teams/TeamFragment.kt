@@ -365,6 +365,7 @@ class TeamFragment : Fragment() {
 
     override fun onDestroyView() {
         _binding = null
+        previousTeamDataList = null
         super.onDestroyView()
     }
 }
