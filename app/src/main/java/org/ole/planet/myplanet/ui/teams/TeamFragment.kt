@@ -311,12 +311,7 @@ class TeamFragment : Fragment() {
 
     private fun observeTeamData() {
         collectLatestWhenStarted(viewModel.teamData) { teamDataList ->
-            val isMeaningfulChange = previousTeamDataList == null ||
-                previousTeamDataList?.size != teamDataList.size ||
-                previousTeamDataList?.firstOrNull()?._id != teamDataList.firstOrNull()?._id ||
-                previousTeamDataList?.lastOrNull()?._id != teamDataList.lastOrNull()?._id
-
-            if (isMeaningfulChange) {
+            if (previousTeamDataList != teamDataList) {
                 teamListAdapter.submitList(teamDataList)
                 previousTeamDataList = teamDataList
             }
