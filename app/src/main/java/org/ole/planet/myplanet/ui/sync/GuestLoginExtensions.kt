@@ -34,11 +34,11 @@ fun LoginActivity.showGuestLoginDialog(userRepository: UserRepository) {
         .onEach { s ->
             val input = s?.toString() ?: ""
             lifecycleScope.launch {
-                val error = AuthUtils.validateUsername(input, userRepository)
-                if (error != null) {
-                    binding.etUserName.error = error
-                } else {
+                if (input.isEmpty()) {
                     binding.etUserName.error = null
+                } else {
+                    val error = AuthUtils.validateUsername(input, userRepository)
+                    binding.etUserName.error = error
                 }
             }
         }
