@@ -175,7 +175,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
         if (indexFile.exists()) {
             viewLifecycleOwner.lifecycleScope.launch {
-                resourcesRepository.trackResourceOpen(items.resourceId ?: items.id)
+                resourcesRepository.trackResourceOpen(items)
             }
             val intent = Intent(activity, WebViewActivity::class.java)
             intent.putExtra("RESOURCE_ID", items.id)
@@ -217,7 +217,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             val offlineItem = matchingItems.firstOrNull { it.isResourceOffline() }
             if (offlineItem != null) {
-                resourcesRepository.trackResourceOpen(offlineItem.resourceId ?: offlineItem.id)
+                resourcesRepository.trackResourceOpen(offlineItem)
                 ResourceOpener.openFileType(requireActivity(), offlineItem, "offline")
                 return@launch
             }
@@ -229,11 +229,11 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
 
             when {
                 items.isResourceOffline() -> {
-                    resourcesRepository.trackResourceOpen(items.resourceId ?: items.id)
+                    resourcesRepository.trackResourceOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "offline")
                 }
                 isVideo || isAudio -> {
-                    resourcesRepository.trackResourceOpen(items.resourceId ?: items.id)
+                    resourcesRepository.trackResourceOpen(items)
                     ResourceOpener.openFileType(requireActivity(), items, "online")
                     val arrayList = arrayListOf(UrlUtils.getUrl(items))
                     DownloadUtils.openPriorityDownloadService(requireContext(), arrayList)

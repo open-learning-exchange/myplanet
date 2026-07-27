@@ -623,10 +623,7 @@ class ResourcesRepositoryImpl @Inject constructor(
         return true
     }
 
-    override suspend fun trackResourceOpen(resourceId: String) {
-        val item = getLibraryItemByResourceId(resourceId) ?: getLibraryItemById(resourceId)
-        if (item != null) {
-            userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
-        }
+    override suspend fun trackResourceOpen(item: MyLibrary) {
+        userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 }
