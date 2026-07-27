@@ -134,6 +134,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
 
     override suspend fun getAdapter(): ListAdapter<*, *> {
+        viewModel.invalidateCache()
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
         val user = profileDbHandler.getUserModel()
