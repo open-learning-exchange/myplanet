@@ -27,8 +27,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
-    private lateinit var userDao: UserDao
-    private lateinit var userSessionManager: UserSessionManager
+    private lateinit var userRepository: UserRepository
     private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
@@ -37,8 +36,7 @@ class RatingsRepositoryImplTest {
     fun setup() {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
-        userSessionManager = mockk(relaxed = true)
+        userRepository = mockk(relaxed = true)
         val testDispatcher = StandardTestDispatcher()
         dispatcherProvider = object : DispatcherProvider {
             override val main: CoroutineDispatcher = testDispatcher
@@ -48,11 +46,11 @@ class RatingsRepositoryImplTest {
         }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao, userDao, userSessionManager, dispatcherProvider)
+        repository = RatingsRepositoryImpl(gson, ratingDao, userRepository, dispatcherProvider)
     }
 
     private fun mockUserLookup(user: UserEntity?) {
-        coEvery { userDao.getById(any()) } returns user
+        coEvery { userRepository.getUserById(any()) } returns user
     }
 
     @Test

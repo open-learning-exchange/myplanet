@@ -10,7 +10,6 @@ import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
-import org.ole.planet.myplanet.repository.RatingSummaryModel
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -30,6 +29,7 @@ class CourseDetailProvider @Inject constructor(
     private val coursesRepository: CoursesRepository,
     private val submissionsRepository: SubmissionsRepository,
     private val ratingsRepository: RatingsRepository,
+    private val userSessionManager: UserSessionManager,
     private val dispatcherProvider: DispatcherProvider
 ) {
     operator fun invoke(courseId: String): Flow<CourseDetailModel?> {
@@ -37,6 +37,7 @@ class CourseDetailProvider @Inject constructor(
             if (course == null) return@map null
 
             withContext(dispatcherProvider.io) {
+                val user = userSessionManager.getUserModel()
                 val examCount = coursesRepository.getCourseExamCount(courseId)
                 val resources = coursesRepository.getCourseOnlineResources(courseId)
                 val downloadedResources = coursesRepository.getCourseOfflineResources(courseId)
@@ -51,12 +52,17 @@ class CourseDetailProvider @Inject constructor(
                     )
                 }
 
-                val summaryModel = ratingsRepository.getCourseRatingSummary(courseId)
+                val userId = user?.id
+                val ratingSummary = if (userId != null) {
+                    ratingsRepository.getRatingSummary("course", courseId, userId)
+                } else {
+                    null
+                }
 
                 CourseDetailModel(
                     course = course,
-                    user = summaryModel.user,
-                    ratingSummary = summaryModel.ratingSummary,
+                    user = user,
+                    ratingSummary = ratingSummary,
                     examCount = examCount,
                     resources = resources,
                     downloadedResources = downloadedResources,

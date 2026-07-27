@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
+
 import org.ole.planet.myplanet.repository.RatingSummaryModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -74,6 +75,7 @@ class CourseDetailViewModelTest {
             coursesRepository,
             submissionsRepository,
             ratingsRepository,
+            userSessionManager,
             dispatcherProvider
         )
 
