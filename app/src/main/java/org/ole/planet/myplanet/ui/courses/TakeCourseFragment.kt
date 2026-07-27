@@ -298,7 +298,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
                         hasExam -> getString(R.string.please_complete_test)
                         else -> getString(R.string.please_complete_survey)
                     }
-//                    binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
                 } else {
                     isNextStepLocked = false
                 }
@@ -312,7 +311,6 @@ class TakeCourseFragment : Fragment(), ViewPager.OnPageChangeListener, View.OnCl
     private fun onClickNext() {
         binding.tvStep.text = String.format(Locale.getDefault(), "${getString(R.string.step)} %d/%d", binding.viewPager2.currentItem, steps.size)
         if (binding.viewPager2.currentItem >= steps.size) {
-//            binding.nextStep.setTextColor(ContextCompat.getColor(requireContext(), R.color.md_grey_500))
             binding.nextStep.visibility = View.GONE
             binding.finishStep.visibility = View.VISIBLE
         } else {
