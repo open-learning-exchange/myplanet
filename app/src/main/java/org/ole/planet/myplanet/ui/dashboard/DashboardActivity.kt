@@ -204,10 +204,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             }
         }
 
-        collectWhenStarted(dashboardViewModel.surveyNavigationEvent) { surveyId ->
-            SubmissionsAdapter.openSurvey(this@DashboardActivity, surveyId, false, false, "")
-        }
-
         collectWhenStarted(dashboardViewModel.taskNavigationEvent) { teamData ->
             val f = TeamDetailFragment.newInstance(
                 teamId = teamData.first,
@@ -493,11 +489,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
             val relatedId = intent.getStringExtra("related_id")
             
             when (notificationType) {
-                NotificationUtils.TYPE_SURVEY -> {
-                    lifecycleScope.launch {
-                        handleSurveyNavigation(relatedId)
-                    }
-                }
                 NotificationUtils.TYPE_TASK -> {
                     lifecycleScope.launch {
                         handleTaskNavigation(relatedId)
@@ -517,11 +508,6 @@ class DashboardActivity : DashboardElementActivity(), OnHomeItemClickListener, N
         }
     }
     
-    private suspend fun handleSurveyNavigation(surveyId: String?) {
-        if (surveyId != null) {
-            dashboardViewModel.handleSurveyNavigation(surveyId)
-        }
-    }
     
     private suspend fun handleTaskNavigation(taskId: String?) {
         if (taskId != null) {

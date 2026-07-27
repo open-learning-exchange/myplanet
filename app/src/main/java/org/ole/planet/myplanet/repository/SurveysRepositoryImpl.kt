@@ -367,11 +367,6 @@ class SurveysRepositoryImpl @Inject constructor(
         return submissionDao.getPendingSurveys(userId).size
     }
 
-    override suspend fun getSurvey(id: String): StepExam? {
-        return examDao.getById(id)
-            ?: examDao.getByTypeAndName("surveys", id)
-    }
-
     override suspend fun getSurveys(): List<StepExam> {
         return examDao.getByType("surveys").map { it }
     }

@@ -77,9 +77,6 @@ class DashboardViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    private val _surveyNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val surveyNavigationEvent: SharedFlow<String> = _surveyNavigationEvent.asSharedFlow()
-
     private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>(extraBufferCapacity = 1)
     val taskNavigationEvent: SharedFlow<Triple<String, String, String>> = _taskNavigationEvent.asSharedFlow()
 
@@ -262,17 +259,6 @@ class DashboardViewModel @Inject constructor(
                 setUnreadNotifications(unreadCount)
             } catch (e: Exception) {
                 e.printStackTrace()
-            }
-        }
-    }
-
-    fun handleSurveyNavigation(surveyId: String) {
-        viewModelScope.launch {
-            val survey = withContext(dispatcherProvider.io) {
-                surveysRepository.getSurvey(surveyId)
-            }
-            survey?.id?.let { id ->
-                _surveyNavigationEvent.emit(id)
             }
         }
     }
