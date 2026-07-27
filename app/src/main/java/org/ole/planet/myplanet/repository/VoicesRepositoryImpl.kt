@@ -117,8 +117,17 @@ class VoicesRepositoryImpl @Inject constructor(
         }
     }
 
+
+    private fun teamIdPattern(teamId: String): String {
+        val escaped = teamId
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
+        return "%\"_id\":\"$escaped\"%"
+    }
+
     override suspend fun getNewsByTeamId(teamId: String): List<News> {
-        return newsDao.getTopLevelByTeam(teamId)
+        return newsDao.getTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     private fun isVisibleToUser(news: News, userIdentifier: String): Boolean {
@@ -163,7 +172,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getDiscussionsByTeamIdFlow(teamId: String): Flow<List<News>> {
-        return newsDao.getTopLevelByTeamFlow(teamId)
+        return newsDao.getTopLevelByTeamFlow(teamId, teamIdPattern(teamId))
             .distinctUntilChanged { old, new ->
                 old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
             }
@@ -242,7 +251,7 @@ class VoicesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getFilteredNews(teamId: String): List<News> {
-        return newsDao.getTopLevelByTeam(teamId)
+        return newsDao.getTopLevelByTeam(teamId, teamIdPattern(teamId))
     }
 
     override suspend fun getReplyCount(newsId: String?): Int {
