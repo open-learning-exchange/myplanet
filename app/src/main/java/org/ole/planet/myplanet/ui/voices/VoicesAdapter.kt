@@ -829,7 +829,7 @@ class VoicesAdapter(
     private fun loadSingleImage(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val file = File(path)
-        val size = (120 * binding.imgNews.context.resources.displayMetrics.density).toInt()
+        val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
         loadGlideImage(file, binding.imgNews, size)
         binding.imgNews.visibility = View.VISIBLE
         binding.imgNews.setOnClickListener {
@@ -840,7 +840,7 @@ class VoicesAdapter(
     private fun addImageToContainer(binding: RowNewsBinding, path: String?) {
         if (path == null) return
         val imageView = ImageView(context)
-        val size = (100 * context.resources.displayMetrics.density).toInt()
+        val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
         val margin = (4 * context.resources.displayMetrics.density).toInt()
         val params = ViewGroup.MarginLayoutParams(size, size)
         params.setMargins(margin, margin, margin, margin)
@@ -863,7 +863,7 @@ class VoicesAdapter(
             val basePath = externalFilesDir
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
-                val size = (120 * binding.imgNews.context.resources.displayMetrics.density).toInt()
+                val size = binding.imgNews.context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_120)
                 loadGlideImage(imageFile, binding.imgNews, size)
                 binding.imgNews.visibility = View.VISIBLE
                 binding.imgNews.setOnClickListener {
@@ -880,7 +880,7 @@ class VoicesAdapter(
             if (library != null && basePath != null) {
                 val imageFile = File(basePath, "ole/${library.id}/${library.resourceLocalAddress}")
                 val imageView = ImageView(context)
-                val size = (100 * context.resources.displayMetrics.density).toInt()
+                val size = context.resources.getDimensionPixelSize(R.dimen.image_thumbnail_size_100)
                 val margin = (4 * context.resources.displayMetrics.density).toInt()
                 val params = ViewGroup.MarginLayoutParams(size, size)
                 params.setMargins(margin, margin, margin, margin)
