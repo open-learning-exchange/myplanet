@@ -86,17 +86,21 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         setupListeners()
     }
 
+    private fun computeParentId(): String? {
+        return if (!TextUtils.isEmpty(exam?.courseId)) {
+            "$id@${exam?.courseId}"
+        } else {
+            id
+        }
+    }
+
     private fun initializeExamData() {
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-            val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
+            val parentId = computeParentId()
             if (sub == null) {
                 val submissions = submissionsRepository.getSubmissionsByParentId(
                     parentId, user?.id, "pending"
@@ -671,7 +675,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (sub == null) {
-            sub = submissionsRepository.getLastPendingSubmission(user?.id)
+            val parentId = computeParentId()
+            sub = submissionsRepository.getSubmissionsByParentId(parentId, user?.id, "pending")
+                .firstOrNull()
         }
 
         val result = submissionsRepository.saveExamAnswer(
