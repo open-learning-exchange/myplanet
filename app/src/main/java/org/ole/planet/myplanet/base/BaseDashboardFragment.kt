@@ -198,7 +198,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         if (dbMylibrary.isEmpty()) {
             countView?.visibility = View.GONE
             flexboxLayout?.let {
-                renderPlaceholder(it, getString(R.string.no_resources)) {
+                renderPlaceholder(it, getString(R.string.no_resources_added_yet)) {
                     if (model?.id?.startsWith("guest") == true) {
                         DialogUtils.guestDialog(requireContext())
                     } else {
@@ -241,7 +241,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
         setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         if (filteredCourses.isEmpty()) {
-            renderPlaceholder(flexboxLayout, getString(R.string.no_courses)) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_courses_joined_yet)) {
                 if (model?.id?.startsWith("guest") == true) {
                     DialogUtils.guestDialog(requireContext())
                 } else {
@@ -264,7 +264,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         flexboxLayout.removeAllViews()
         setCountText(teams.size, MyTeam::class.java, requireView())
         if (teams.isEmpty()) {
-            renderPlaceholder(flexboxLayout, getString(R.string.no_teams)) {
+            renderPlaceholder(flexboxLayout, getString(R.string.no_teams_joined_yet)) {
                 val fragment = org.ole.planet.myplanet.ui.teams.TeamFragment().apply {
                     arguments = android.os.Bundle().apply {
                         putBoolean("fromDashboard", true)

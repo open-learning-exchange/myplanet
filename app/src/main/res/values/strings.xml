@@ -946,6 +946,9 @@
     <string name="virtual_assistant_currently_not_available">virtual assistant currently not available</string>
     <string name="no_courses">no courses available</string>
     <string name="no_resources">no resources available</string>
+    <string name="no_resources_added_yet">You haven\'t added any resources yet</string>
+    <string name="no_courses_joined_yet">You haven\'t joined any courses yet</string>
+    <string name="no_teams_joined_yet">You haven\'t joined a team yet</string>
     <string name="no_finance_record">finance record not available</string>
     <string name="no_team_courses">team courses not available</string>
     <string name="no_team_resources">team resources not available</string>
