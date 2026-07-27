@@ -28,7 +28,7 @@ import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepItem
-import org.ole.planet.myplanet.ui.courses.CourseDetailModel
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.MyCourse
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext

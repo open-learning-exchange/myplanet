@@ -9,15 +9,8 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 
-data class CourseDetailModel(
-    val course: MyCourse,
-    val user: UserEntity?,
-    val ratingSummary: RatingSummary?,
-    val examCount: Int,
-    val resources: List<MyLibrary>,
-    val downloadedResources: List<MyLibrary>,
-    val steps: List<StepItem>
-)
+import org.ole.planet.myplanet.model.CourseDetailModel
+
 
 class CourseDetailProvider @Inject constructor(
     private val coursesRepository: CoursesRepository

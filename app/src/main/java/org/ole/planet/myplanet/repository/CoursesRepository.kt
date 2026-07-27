@@ -10,7 +10,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
-import org.ole.planet.myplanet.ui.courses.CourseDetailModel
+import org.ole.planet.myplanet.model.CourseDetailModel
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>

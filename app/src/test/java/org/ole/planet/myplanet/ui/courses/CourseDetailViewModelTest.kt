@@ -22,7 +22,7 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
-import org.ole.planet.myplanet.ui.courses.CourseDetailModel
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
