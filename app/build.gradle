@@ -216,6 +216,7 @@ dependencies {
     implementation(libs.pbkdf2)
     implementation(libs.markwon.editor)
     implementation(libs.markwon.image)
+    implementation(libs.markwon.image.glide)
     implementation(libs.markwon.html)
     implementation(libs.markwon.ext.tables)
     implementation(libs.osmdroid.android)
