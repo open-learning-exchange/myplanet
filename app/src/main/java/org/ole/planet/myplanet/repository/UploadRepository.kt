@@ -10,7 +10,7 @@ interface UploadRepository {
         succeeded: List<UploadedItemResult>
     ): List<UploadedItemResult>
     suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject>
-    suspend fun postBulkUpload(url: String, serializedData: JsonObject): Response<com.google.gson.JsonArray>
+    suspend fun postUploadArray(url: String, serializedData: JsonObject): Response<com.google.gson.JsonArray>
     suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject>
     suspend fun fetchExistingDoc(url: String): Response<JsonObject>
 }

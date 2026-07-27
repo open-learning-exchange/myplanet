@@ -308,7 +308,7 @@ class UploadManager @Inject constructor(
                 payload.add("docs", bulkDocs)
 
                 try {
-                    val response = uploadRepository.postBulkUpload(
+                    val response = uploadRepository.postUploadArray(
                         "${UrlUtils.getUrl()}/teams/_bulk_docs", payload
                     )
 
@@ -321,6 +321,7 @@ class UploadManager @Inject constructor(
                             val teamData = teamMap[id] ?: continue
 
                             if (element.has("error")) {
+                                // 200 bulk response code prevents retry here, as per doc errors aren't retried
                                 queueTeamRetry(teamData, response.code(), if (teamData.isDeletePending) "PUT" else "POST", id)
                             } else {
                                 var rev = getString("rev", element)
@@ -343,7 +344,7 @@ class UploadManager @Inject constructor(
                 } catch (e: Exception) {
                     Log.e(TAG, "Exception in UploadManager bulk upload", e)
                     batch.forEach { teamData ->
-                        queueTeamRetry(teamData, null, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, e as? java.lang.Exception)
+                        queueTeamRetry(teamData, null, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, e)
                     }
                 }
 
