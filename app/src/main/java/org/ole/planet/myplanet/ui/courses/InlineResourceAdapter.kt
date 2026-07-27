@@ -83,8 +83,18 @@ class InlineResourceAdapter(
 
     override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
-        textCache.clear()
-        bitmapCache.evictAll()
+        val dir = externalFilesDir ?: return
+        val currentMap = currentList.associateBy { it.id }
+
+        previousList.forEach { prev ->
+            val current = currentMap[prev.id]
+            if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
+                val file = File(dir, "ole/${prev.id}/${prev.resourceLocalAddress}")
+                val prefix = file.absolutePath
+                textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
+                bitmapCache.snapshot().keys.filter { it.startsWith(prefix) }.forEach { bitmapCache.remove(it) }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
