@@ -91,8 +91,12 @@ class ResourcesRepositoryImpl @Inject constructor(
         }
 
         normalizedQueryParts.forEach { token ->
-            queryBuilder.append(" AND titleNormal LIKE ?")
-            bindArgs.add("%${token}%")
+            val escapedToken = token
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            queryBuilder.append(" AND titleNormal LIKE ? ESCAPE '\\'")
+            bindArgs.add("%${escapedToken}%")
         }
 
         val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
