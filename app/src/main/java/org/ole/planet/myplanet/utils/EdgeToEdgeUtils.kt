@@ -18,18 +18,38 @@ object EdgeToEdgeUtils {
      * @param rootView The root view that should handle window insets
      * @param lightStatusBar Whether to use light status bar icons (default: true)
      * @param lightNavigationBar Whether to use light navigation bar icons (default: true)
+     * @param topInsetView Optional view whose background should extend behind the status bar.
+     * When provided, the status-bar inset is added to this view instead of creating padding
+     * above the entire screen.
      */
     fun setupEdgeToEdge(
         activity: ComponentActivity,
         rootView: View,
         lightStatusBar: Boolean = true,
-        lightNavigationBar: Boolean = true
+        lightNavigationBar: Boolean = true,
+        topInsetView: View? = null
     ) {
         configureEdgeToEdge(activity, lightStatusBar, lightNavigationBar)
 
+        val rootPadding = rootView.paddingSnapshot()
+        val topInsetPadding = topInsetView?.paddingSnapshot()
+
         ViewCompat.setOnApplyWindowInsetsListener(rootView) { view, windowInsets ->
             val insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars())
-            view.setPadding(insets.left, insets.top, insets.right, insets.bottom)
+            view.setPadding(
+                rootPadding.left + insets.left,
+                rootPadding.top + if (topInsetView == null) insets.top else 0,
+                rootPadding.right + insets.right,
+                rootPadding.bottom + insets.bottom
+            )
+            if (topInsetView != null && topInsetPadding != null) {
+                topInsetView.setPadding(
+                    topInsetPadding.left,
+                    topInsetPadding.top + insets.top,
+                    topInsetPadding.right,
+                    topInsetPadding.bottom
+                )
+            }
             windowInsets
         }
     }
@@ -75,4 +95,13 @@ object EdgeToEdgeUtils {
     } else {
         SystemBarStyle.dark(TRANSPARENT_SCRIM)
     }
+
+    private fun View.paddingSnapshot() = Padding(
+        left = paddingLeft,
+        top = paddingTop,
+        right = paddingRight,
+        bottom = paddingBottom
+    )
+
+    private data class Padding(val left: Int, val top: Int, val right: Int, val bottom: Int)
 }
