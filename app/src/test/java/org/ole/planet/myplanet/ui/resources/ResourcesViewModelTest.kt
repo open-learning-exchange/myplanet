@@ -28,19 +28,13 @@ class ResourcesViewModelTest {
     private val resourcesRepository = mockk<ResourcesRepository>(relaxed = true)
     private val testDispatcher = StandardTestDispatcher()
     private val dispatcherProvider = TestDispatcherProvider(testDispatcher)
-    private val syncManager = mockk<org.ole.planet.myplanet.services.sync.SyncManager>(relaxed = true)
 
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-
-        val syncStatusFlow = kotlinx.coroutines.flow.MutableStateFlow<org.ole.planet.myplanet.services.sync.SyncManager.SyncStatus>(org.ole.planet.myplanet.services.sync.SyncManager.SyncStatus.Idle)
-        io.mockk.every { syncManager.syncStatus } returns syncStatusFlow
-
         viewModel = ResourcesViewModel(
             resourcesRepository,
-            dispatcherProvider,
-            syncManager
+            dispatcherProvider
         )
     }
 
