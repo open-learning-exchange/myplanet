@@ -5,10 +5,12 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
+import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @EntryPoint
 @InstallIn(SingletonComponent::class)
@@ -19,4 +21,6 @@ interface CoreDependenciesEntryPoint {
     fun serverUrlMapper(): ServerUrlMapper
     fun dispatcherProvider(): DispatcherProvider
     fun apkLogDao(): ApkLogDao
+    fun timeProvider(): TimeProvider
+    fun resourcesRepository(): ResourcesRepository
 }
