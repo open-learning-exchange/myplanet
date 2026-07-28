@@ -194,6 +194,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
                 user = profileDbHandler.getUserModel()
+                blockGuestSwitches()
             }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
@@ -235,6 +236,30 @@ class SettingsActivity : AppCompatActivity() {
             initStorageBreakdown()
         }
 
+        private fun blockGuestSwitches() {
+            if (user?.id?.startsWith("guest") != true) return
+
+            fun processPreference(pref: Preference) {
+                when (pref) {
+                    is SwitchPreference -> {
+                        pref.onPreferenceChangeListener = OnPreferenceChangeListener { _, _ ->
+                            DialogUtils.guestDialog(requireContext())
+                            false
+                        }
+                    }
+                    is androidx.preference.PreferenceGroup -> {
+                        for (i in 0 until pref.preferenceCount) {
+                            processPreference(pref.getPreference(i))
+                        }
+                    }
+                }
+            }
+
+            for (i in 0 until preferenceScreen.preferenceCount) {
+                processPreference(preferenceScreen.getPreference(i))
+            }
+        }
+
         private fun initStorageBreakdown() {
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
@@ -258,10 +283,20 @@ class SettingsActivity : AppCompatActivity() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            viewModel.clearAllData()
-                        }.setNegativeButton(R.string.no, null).show()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val userModel = profileDbHandler.getUserModel()
+                        if (userModel?.id?.startsWith("guest") == true) {
+                            DialogUtils.guestDialog(requireActivity())
+                            return@launch
+                        }
+                        AlertDialog.Builder(requireActivity())
+                            .setTitle(R.string.are_you_sure)
+                            .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                                viewModel.clearAllData()
+                            }
+                            .setNegativeButton(R.string.no, null)
+                            .show()
+                    }
                     false
                 }
             }
