@@ -64,13 +64,14 @@ open class Meetup {
 
         val result = mutableListOf<Calendar>()
         val recurringType = recurring?.lowercase(Locale.ROOT) ?: "none"
+        val hasExplicitEndDate = endDate > startDate
 
         when (recurringType) {
             "daily" -> {
                 val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
                 var currDate = startLocalDate
                 var count = 0
-                while (count < maxOccurrences && (currDate <= endLocalDate || endDate <= startDate)) {
+                while (if (hasExplicitEndDate) currDate <= endLocalDate else count < maxOccurrences) {
                     val cal = Calendar.getInstance().apply {
                         set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
                         set(Calendar.MILLISECOND, 0)
@@ -84,7 +85,7 @@ open class Meetup {
                 val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
                 var currDate = startLocalDate
                 var count = 0
-                while (count < maxOccurrences && (currDate <= endLocalDate || endDate <= startDate)) {
+                while (if (hasExplicitEndDate) currDate <= endLocalDate else count < maxOccurrences) {
                     val cal = Calendar.getInstance().apply {
                         set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
                         set(Calendar.MILLISECOND, 0)
@@ -128,23 +129,29 @@ open class Meetup {
         }
 
         val recurringType = recurring?.lowercase(Locale.ROOT) ?: "none"
+        val hasExplicitEndDate = endDate > startDate
 
         return when (recurringType) {
             "daily" -> {
                 val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
                 val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, targetDate)
-                if (daysBetween < 0 || daysBetween >= maxOccurrences) return false
-                if (endDate > startDate && targetDate > endLocalDate) return false
-                true
+                if (daysBetween < 0) return false
+                if (hasExplicitEndDate) {
+                    targetDate <= endLocalDate
+                } else {
+                    daysBetween < maxOccurrences
+                }
             }
             "weekly" -> {
                 val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
                 val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, targetDate)
                 if (daysBetween < 0 || daysBetween % 7 != 0L) return false
                 val weeksBetween = daysBetween / 7
-                if (weeksBetween >= maxOccurrences) return false
-                if (endDate > startDate && targetDate > endLocalDate) return false
-                true
+                if (hasExplicitEndDate) {
+                    targetDate <= endLocalDate
+                } else {
+                    weeksBetween < maxOccurrences
+                }
             }
             else -> {
                 targetDate in startLocalDate..endLocalDate
