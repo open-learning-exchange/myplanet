@@ -4,7 +4,6 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.adapter.FragmentStateAdapter
-import org.ole.planet.myplanet.utils.DiffUtils
 
 class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : FragmentStateAdapter(fm) {
     private val steps = mutableListOf<String>()
@@ -15,21 +14,7 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
         private const val COURSE_DETAIL_ID = 0L
     }
 
-    private sealed interface StepItem
-    private object HeaderItem : StepItem
-    private data class StepEntry(val id: String) : StepItem
-
     fun submitList(newSteps: List<String>) {
-        val oldWithHeader: List<StepItem> = listOf(HeaderItem) + steps.map(::StepEntry)
-        val newWithHeader: List<StepItem> = listOf(HeaderItem) + newSteps.map(::StepEntry)
-
-        val diffResult = DiffUtils.calculateDiff(
-            oldWithHeader,
-            newWithHeader,
-            areItemsTheSame = { a, b -> a == b },
-            areContentsTheSame = { a, b -> a == b }
-        )
-
         newSteps.forEach { stepId ->
             if (!itemIds.containsKey(stepId)) {
                 itemIds[stepId] = nextId++
@@ -38,7 +23,7 @@ class CoursesPagerAdapter(fm: Fragment, private val courseId: String?) : Fragmen
 
         steps.clear()
         steps.addAll(newSteps)
-        diffResult.dispatchUpdatesTo(this)
+        notifyDataSetChanged()
     }
 
     override fun createFragment(position: Int): Fragment {
