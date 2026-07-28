@@ -38,6 +38,6 @@ interface MeetupDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<Meetup>)
 
-    @Query("DELETE FROM meetup WHERE id = :id OR meetupId = :id")
+    @Query("DELETE FROM meetup WHERE (id != '' AND id = :id) OR (meetupId IS NOT NULL AND meetupId != '' AND meetupId = :id)")
     suspend fun deleteById(id: String)
 }

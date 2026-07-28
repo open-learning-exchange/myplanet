@@ -248,7 +248,11 @@ class TeamCalendarFragment : BaseTeamFragment() {
                                 meetup.occursOnDate(clickedDate)
                             }
 
-                            meetupAdapter?.submitList(filteredMeetups)
+                            if (filteredMeetups.isEmpty()) {
+                                meetupDialog?.dismiss()
+                            } else {
+                                meetupAdapter?.submitList(filteredMeetups)
+                            }
                         }
                     }
                 }
