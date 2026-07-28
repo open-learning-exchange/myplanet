@@ -589,7 +589,7 @@ class CoursesRepositoryImpl @Inject constructor(
             gradeLevel = JsonUtils.getString("gradeLevel", doc),
             subjectLevel = JsonUtils.getString("subjectLevel", doc),
             createdDate = JsonUtils.getLong("createdDate", doc),
-                        coverFileName = JsonUtils.getString("coverFileName", doc).ifEmpty { null },
+                        coverFileName = JsonUtils.getString("coverFileName", doc).takeIf { it.isNotEmpty() },
                     )
 
         return ParsedCourseSyncPayload(course, parsedSteps, parsedExams, parsedQuestions)
