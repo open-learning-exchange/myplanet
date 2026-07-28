@@ -129,7 +129,7 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
 
         libraryJob?.cancel()
-        libraryJob = viewModelScope.launch(dispatcherProvider.main) {
+        libraryJob = viewModelScope.launch {
             val myLibrary = withContext(dispatcherProvider.io) {
                 resourcesRepository.getMyLibrary(userId)
             }
@@ -137,7 +137,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         coursesJob?.cancel()
-        coursesJob = viewModelScope.launch(dispatcherProvider.main) {
+        coursesJob = viewModelScope.launch {
             coursesRepository.getMyCoursesFlow(userId)
                 .flowOn(dispatcherProvider.io)
                 .collect { courses ->
@@ -146,7 +146,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         teamsJob?.cancel()
-        teamsJob = viewModelScope.launch(dispatcherProvider.main) {
+        teamsJob = viewModelScope.launch {
             teamsRepository.getMyTeamsFlow(userId)
                 .flowOn(dispatcherProvider.io)
                 .collect { teams ->
@@ -155,7 +155,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         profileJob?.cancel()
-        profileJob = viewModelScope.launch(dispatcherProvider.main) {
+        profileJob = viewModelScope.launch {
             val profile = withContext(dispatcherProvider.io) {
                 userRepository.getDashboardProfile(userId)
             }
