@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
@@ -136,8 +137,7 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
             if (userModel?.id?.startsWith("guest") == true) {
-                // Show the guest redirect dialog instead of initiating sync
-                org.ole.planet.myplanet.utils.DialogUtils.guestDialog(this@DashboardElementActivity)
+                DialogUtils.guestDialog(this@DashboardElementActivity)
                 return@launch
             }
             checkMinApk(url, serverPin, "DashboardActivity")
