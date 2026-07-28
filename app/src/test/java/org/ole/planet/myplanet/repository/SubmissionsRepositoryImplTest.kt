@@ -65,7 +65,6 @@ class SubmissionsRepositoryImplTest {
 
         repository = spyk(SubmissionsRepositoryImpl(
             teamsRepositoryProvider,
-            surveysRepositoryProvider,
             context,
             sharedPrefManager,
             exporter,
