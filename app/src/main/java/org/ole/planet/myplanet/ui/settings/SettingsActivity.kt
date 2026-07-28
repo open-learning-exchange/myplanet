@@ -283,10 +283,20 @@ class SettingsActivity : AppCompatActivity() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            viewModel.clearAllData()
-                        }.setNegativeButton(R.string.no, null).show()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val userModel = profileDbHandler.getUserModel()
+                        if (userModel?.id?.startsWith("guest") == true) {
+                            DialogUtils.guestDialog(requireActivity())
+                            return@launch
+                        }
+                        AlertDialog.Builder(requireActivity())
+                            .setTitle(R.string.are_you_sure)
+                            .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                                viewModel.clearAllData()
+                            }
+                            .setNegativeButton(R.string.no, null)
+                            .show()
+                    }
                     false
                 }
             }
