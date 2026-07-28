@@ -501,7 +501,8 @@ class UploadManager @Inject constructor(
 
                                 if (itemResponse.has("error")) {
                                     val isCreate = TextUtils.isEmpty(news._id)
-                                    queueNewsRetry(news, news.newsJson, response.code(), if (isCreate) "POST" else "PUT")
+                                    val errorReason = itemResponse.get("error").asString
+                                    queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", Exception("Bulk upload error: $errorReason"))
                                 } else {
                                     successfulUpdates.add(NewsUpdateData(
                                         id = news.id,
