@@ -26,7 +26,7 @@ class EventsRepositoryImpl @Inject constructor(
         meetupId: String, title: String, description: String,
         startDate: Long, endDate: Long, startTime: String,
         endTime: String, meetupLocation: String, meetupLink: String,
-        recurring: String
+        recurring: String, recurringNumber: Int
     ): Boolean {
         return try {
             val meetup = meetupDao.getById(meetupId) ?: return false
@@ -39,6 +39,7 @@ class EventsRepositoryImpl @Inject constructor(
             meetup.meetupLocation = meetupLocation
             meetup.meetupLink = meetupLink
             meetup.recurring = recurring
+            meetup.recurringNumber = recurringNumber
             meetup.updated = true
             meetupDao.upsert(meetup)
             true
@@ -139,6 +140,7 @@ class EventsRepositoryImpl @Inject constructor(
             if (params.recurringText != null) {
                 recurring = params.recurringText
             }
+            recurringNumber = params.recurringNumber
             val ob = JsonObject()
             ob.addProperty("teams", params.teamId)
             link = gson.toJson(ob)

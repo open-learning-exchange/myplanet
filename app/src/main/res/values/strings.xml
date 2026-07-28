@@ -297,6 +297,7 @@
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="recurring_frequency">Recurring Frequency</string>
+    <string name="recurring_count">Recurrence Limit</string>
     <string name="date_reset">Date Reset</string>
     <string name="emergency_contact">Emergency Contact</string>
     <string name="emergency_contact_details">Name: %1$s Type: %2$s Contact: %3$s</string>
