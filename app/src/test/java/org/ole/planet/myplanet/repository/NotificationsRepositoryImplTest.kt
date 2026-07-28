@@ -14,7 +14,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ExamDao
-import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -30,7 +29,7 @@ class NotificationsRepositoryImplTest {
     private lateinit var teamNotificationDao: TeamNotificationDao
     private lateinit var notificationDao: NotificationDao
     private lateinit var teamTaskDao: TeamTaskDao
-    private lateinit var newsDao: NewsDao
+    private lateinit var voicesRepository: VoicesRepository
     private lateinit var examDao: ExamDao
 
     @Before
@@ -40,7 +39,7 @@ class NotificationsRepositoryImplTest {
         teamNotificationDao = mockk(relaxed = true)
         notificationDao = mockk(relaxed = true)
         teamTaskDao = mockk(relaxed = true)
-        newsDao = mockk(relaxed = true)
+        voicesRepository = mockk(relaxed = true)
         examDao = mockk(relaxed = true)
         repository = NotificationsRepositoryImpl(
             userRepository,
@@ -49,7 +48,7 @@ class NotificationsRepositoryImplTest {
             teamNotificationDao,
             notificationDao,
             teamTaskDao,
-            newsDao,
+            voicesRepository,
             examDao,
         )
     }

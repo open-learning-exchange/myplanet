@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.utils
 
 import android.app.PendingIntent
 import android.app.usage.StorageStatsManager
+import org.ole.planet.myplanet.utils.TimeProvider
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageInstaller
@@ -174,7 +175,7 @@ object FileUtils {
         }
     }
 
-    fun getDisplayName(context: Context, uri: Uri): String {
+    fun getDisplayName(context: Context, uri: Uri, timeProvider: TimeProvider): String {
         var name: String? = null
         if (uri.scheme == "content") {
             context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -184,7 +185,7 @@ object FileUtils {
                 }
             }
         }
-        return name ?: uri.lastPathSegment ?: "image_${System.currentTimeMillis()}.jpg"
+        return name ?: uri.lastPathSegment ?: "image_${timeProvider.now()}.jpg"
     }
 
     fun readBytesFromUri(context: Context, uri: Uri): ByteArray? {

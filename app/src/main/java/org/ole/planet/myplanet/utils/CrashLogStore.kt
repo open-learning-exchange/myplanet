@@ -18,12 +18,12 @@ object CrashLogStore {
 
     private fun dir(context: Context): File = File(context.filesDir, DIR_NAME)
 
-    fun save(context: Context, type: String, error: String): File? {
+    fun save(context: Context, type: String, error: String, timeProvider: TimeProvider): File? {
         return try {
             val logDir = dir(context)
             if (!logDir.exists() && !logDir.mkdirs()) return null
             if ((logDir.listFiles()?.size ?: 0) >= MAX_PENDING_FILES) return null
-            val file = File(logDir, "${System.currentTimeMillis()}_$type$FILE_EXTENSION")
+            val file = File(logDir, "${timeProvider.now()}_$type$FILE_EXTENSION")
             file.writeText(error)
             file
         } catch (e: Exception) {
