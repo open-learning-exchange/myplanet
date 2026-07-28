@@ -69,6 +69,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
 import org.ole.planet.myplanet.utils.ServerConfigUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -133,6 +134,8 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
 
     @Inject
     lateinit var syncManager: SyncManager
+    @Inject
+    override lateinit var timeProvider: TimeProvider
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
@@ -367,7 +370,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         return if (lastSynced == 0L) {
             " Never Synced"
         } else {
-            TimeUtils.getRelativeTime(lastSynced)
+            TimeUtils.getRelativeTime(lastSynced, timeProvider)
         }
     }
 
@@ -593,7 +596,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
                 dotSync?.backgroundTintList = ColorStateList.valueOf(0xFFEF4444.toInt())
             } else {
                 val lastSyncMillis = prefData.getLastSync()
-                var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis)
+                var relativeTime = TimeUtils.getRelativeTime(lastSyncMillis, timeProvider)
 
                 if (relativeTime.matches(secondsAgoRegex)) {
                     relativeTime = getString(R.string.a_few_seconds_ago)
@@ -737,7 +740,7 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
         }
         prefData.setLastUsageUploaded(Date().time)
         if (::lblLastSyncDate.isInitialized) {
-            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time))} >>")
+            lblLastSyncDate.text = getString(R.string.message_placeholder, "${getString(R.string.last_sync, TimeUtils.getRelativeTime(Date().time, timeProvider))} >>")
         }
         syncFailed = false
     }

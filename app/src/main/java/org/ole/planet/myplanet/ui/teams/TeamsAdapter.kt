@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -104,7 +105,7 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
+                    setColorFilter(ContextCompat.getColor(context, R.color.pending_request_indicator), PorterDuff.Mode.SRC_IN)
                 }
             }
 
