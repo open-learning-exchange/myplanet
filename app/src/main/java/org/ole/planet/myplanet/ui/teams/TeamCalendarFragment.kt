@@ -218,11 +218,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch {
                     viewModel.meetups.collect { meetups ->
-                        val newDates = meetups.mapTo(mutableListOf()) { meetup ->
-                            val calendarInstance = Calendar.getInstance()
-                            calendarInstance.timeInMillis = meetup.startDate
-                            calendarInstance
-                        }
+                        val newDates = meetups.flatMap { it.getAllEventDates() }.toMutableList()
 
                         if (isAdded && activity != null) {
                             eventDates.clear()
@@ -241,10 +237,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                                 .toLocalDate()
 
                             val filteredMeetups = meetups.filter { meetup ->
-                                val meetupDate = Instant.ofEpochMilli(meetup.startDate)
-                                    .atZone(ZoneId.systemDefault())
-                                    .toLocalDate()
-                                meetupDate == clickedDate
+                                meetup.occursOnDate(clickedDate)
                             }
 
                             meetupAdapter?.submitList(filteredMeetups)
@@ -371,10 +364,7 @@ class TeamCalendarFragment : BaseTeamFragment() {
                         .toLocalDate()
 
                     val markedDates = meetups.filter { meetup ->
-                        val meetupDate = Instant.ofEpochMilli(meetup.startDate)
-                            .atZone(ZoneId.systemDefault())
-                            .toLocalDate()
-                        meetupDate == clickedDate
+                        meetup.occursOnDate(clickedDate)
                     }
 
                     if (markedDates.isNotEmpty()) {
@@ -473,7 +463,6 @@ class TeamCalendarFragment : BaseTeamFragment() {
         }
 
         meetupDialog?.setOnDismissListener {
-            eventDates.add(clickedCalendar)
             viewLifecycleOwner.lifecycleScope.launch {
                 val calendarDays = eventDates.map { CalendarDay(it).apply {
                     imageResource = R.drawable.ic_calendar

@@ -6,6 +6,11 @@ import androidx.room.PrimaryKey
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import org.json.JSONArray
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.util.Calendar
+import java.util.Locale
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
@@ -41,6 +46,111 @@ open class Meetup {
     var sync: String? = null
     var sourcePlanet: String? = null
     var updated: Boolean = false
+
+    fun getAllEventDates(): List<Calendar> {
+        if (startDate == 0L) return emptyList()
+
+        val startLocalDate = Instant.ofEpochMilli(startDate)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+
+        val endLocalDate = if (endDate > startDate) {
+            Instant.ofEpochMilli(endDate)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+        } else {
+            startLocalDate
+        }
+
+        val result = mutableListOf<Calendar>()
+        val recurringType = recurring?.lowercase(Locale.ROOT) ?: "none"
+
+        when (recurringType) {
+            "daily" -> {
+                val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
+                var currDate = startLocalDate
+                var count = 0
+                while (count < maxOccurrences && (currDate <= endLocalDate || endDate <= startDate)) {
+                    val cal = Calendar.getInstance().apply {
+                        set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    result.add(cal)
+                    currDate = currDate.plusDays(1)
+                    count++
+                }
+            }
+            "weekly" -> {
+                val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
+                var currDate = startLocalDate
+                var count = 0
+                while (count < maxOccurrences && (currDate <= endLocalDate || endDate <= startDate)) {
+                    val cal = Calendar.getInstance().apply {
+                        set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    result.add(cal)
+                    currDate = currDate.plusWeeks(1)
+                    count++
+                }
+            }
+            else -> {
+                var currDate = startLocalDate
+                while (currDate <= endLocalDate) {
+                    val cal = Calendar.getInstance().apply {
+                        set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    result.add(cal)
+                    currDate = currDate.plusDays(1)
+                }
+            }
+        }
+
+        return result
+    }
+
+    fun occursOnDate(targetDate: LocalDate): Boolean {
+        if (startDate == 0L) return false
+
+        val startLocalDate = Instant.ofEpochMilli(startDate)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+
+        if (targetDate < startLocalDate) return false
+
+        val endLocalDate = if (endDate > startDate) {
+            Instant.ofEpochMilli(endDate)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+        } else {
+            startLocalDate
+        }
+
+        val recurringType = recurring?.lowercase(Locale.ROOT) ?: "none"
+
+        return when (recurringType) {
+            "daily" -> {
+                val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
+                val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, targetDate)
+                if (daysBetween < 0 || daysBetween >= maxOccurrences) return false
+                if (endDate > startDate && targetDate > endLocalDate) return false
+                true
+            }
+            "weekly" -> {
+                val maxOccurrences = if (recurringNumber > 0) recurringNumber else 10
+                val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, targetDate)
+                if (daysBetween < 0 || daysBetween % 7 != 0L) return false
+                val weeksBetween = daysBetween / 7
+                if (weeksBetween >= maxOccurrences) return false
+                if (endDate > startDate && targetDate > endLocalDate) return false
+                true
+            }
+            else -> {
+                targetDate in startLocalDate..endLocalDate
+            }
+        }
+    }
 
     companion object {
         /**
