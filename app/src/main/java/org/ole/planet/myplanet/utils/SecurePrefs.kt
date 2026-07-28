@@ -78,7 +78,6 @@ object SecurePrefs {
                 val plainPrefs = context.getSharedPreferences(PLAIN_PREFS_FILE_NAME, Context.MODE_PRIVATE)
                 val sensitiveKeys = listOf("loginUserName", "loginUserPassword")
 
-                var migrated = false
                 encryptedPrefs.edit(commit = true) {
                     sensitiveKeys.forEach { key ->
                         if (plainPrefs.contains(key)) {
@@ -93,17 +92,12 @@ object SecurePrefs {
                                     putStringSet(key, value as Set<String>)
                                 }
                             }
-                            migrated = true
                         }
                     }
                 }
 
-                if (migrated) {
-                    plainPrefs.edit(commit = true) {
-                        sensitiveKeys.forEach { remove(it) }
-                    }
-                }
-
+                // The legacy "secure_store" file was exclusively used for these two credentials.
+                // We unconditionally clear and delete it to ensure no plaintext legacy file lingers on disk.
                 plainPrefs.edit(commit = true) { clear() }
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
                     context.deleteSharedPreferences(PLAIN_PREFS_FILE_NAME)
