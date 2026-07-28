@@ -760,10 +760,10 @@ class UserRepositoryImpl @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
-    override suspend fun checkAndUploadUser(model: UserEntity, updateHealthFn: suspend (String, String) -> Unit) {
+    override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
         try {
-            val password = SecurePrefs.getPassword(context, settings) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${pwd}").toByteArray(), Base64.NO_WRAP)}"
             val userExists = checkIfUserExists(header, model)
             if (!userExists) {
                 uploadNewUser(model, updateHealthFn)

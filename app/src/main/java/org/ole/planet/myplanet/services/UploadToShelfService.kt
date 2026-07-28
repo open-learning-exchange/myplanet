@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Base64
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,8 +43,9 @@ class UploadToShelfService @Inject constructor(
 
                 if (userModels.isEmpty()) return@launch
 
+                val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                 userModels.forEach { model ->
-                    userSyncRepository.checkAndUploadUser(model) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                    userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
 
                 uploadToShelf(object : OnSuccessListener {
@@ -67,7 +67,8 @@ class UploadToShelfService @Inject constructor(
                 val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
                 if (userModel != null) {
-                    userSyncRepository.checkAndUploadUser(userModel) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                    userSyncRepository.checkAndUploadUser(userModel, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
                 uploadSingleUserToShelf(userName, listener)
             } catch (e: Exception) {
