@@ -71,7 +71,6 @@ class CoursesRepositoryImplTest {
             questionDao,
             submissionDao,
             answerDao,
-            tagDao,
             searchActivityDao,
             courseProgressDao,
             removedLogDao,
