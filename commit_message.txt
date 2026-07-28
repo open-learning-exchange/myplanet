@@ -1,0 +1,5 @@
+Fix TeamFragment list submission caching logic
+
+* Used full structural equality check (`!=`) instead of a lossy heuristic to avoid stale UI updates.
+* Reset `previousTeamDataList` to `null` in `onDestroyView()` so that when the view and adapter are recreated, the initial list submission is not improperly skipped.
+* Documented unfeasibility of Robolectric UI tests due to Hilt binding complexity.
