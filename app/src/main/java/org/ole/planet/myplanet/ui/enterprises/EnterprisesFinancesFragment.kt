@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.model.Transaction
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDateTZ
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
 @AndroidEntryPoint
 class EnterprisesFinancesFragment : BaseTeamFragment() {
@@ -226,20 +227,14 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
         binding.rvFinance.layoutManager = LinearLayoutManager(activity)
         binding.rvFinance.adapter = financeAdapter
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            launch {
-                isMemberFlow.collectLatest { isMember ->
-                    val canManage = if (fromCommunity) user?.isManager() == true else isMember
-                    binding.addTransaction.visibility = if (canManage) View.VISIBLE else View.GONE
-                }
-            }
-            launch {
-                viewModel.transactions.collectLatest { results ->
-                    transactions = results
-                    updatedFinanceList(results)
-                    showNoData(binding.tvNodata, transactions.size, "finances")
-                }
-            }
+        collectLatestWhenStarted(isMemberFlow) { isMember ->
+            val canManage = if (fromCommunity) user?.isManager() == true else isMember
+            binding.addTransaction.visibility = if (canManage) View.VISIBLE else View.GONE
+        }
+        collectLatestWhenStarted(viewModel.transactions) { results ->
+            transactions = results
+            updatedFinanceList(results)
+            showNoData(binding.tvNodata, transactions.size, "finances")
         }
 
         observeTransactions()
