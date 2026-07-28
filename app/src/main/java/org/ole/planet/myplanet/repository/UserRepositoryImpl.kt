@@ -116,8 +116,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun findUserByName(name: String): UserEntity? {
-        return userDao.getAll()
-            .firstOrNull { it.name.equals(name, ignoreCase = true) }
+        return userDao.getByNameIgnoreCase(name)
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
@@ -232,7 +231,7 @@ class UserRepositoryImpl @Inject constructor(
 
         user.apply {
             if (id.isNullOrBlank()) {
-                id = newId.ifEmpty { UUID.randomUUID().toString() }
+                id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId

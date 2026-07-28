@@ -54,9 +54,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
-    @Inject
-    lateinit var timeProvider: TimeProvider
-
     companion object {
         private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
     }

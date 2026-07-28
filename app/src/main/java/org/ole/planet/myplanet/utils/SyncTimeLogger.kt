@@ -16,6 +16,10 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 
 object SyncTimeLogger {
+    private val timeProvider by lazy {
+        coreEntryPoint.timeProvider()
+    }
+
     private val coreEntryPoint by lazy {
         EntryPointAccessors.fromApplication(MainApplication.context, CoreDependenciesEntryPoint::class.java)
     }
@@ -48,7 +52,7 @@ object SyncTimeLogger {
     )
 
     fun startLogging() {
-        startTime = System.currentTimeMillis()
+        startTime = timeProvider.now()
         isLogging = true
         processTimes.clear()
         processItemCounts.clear()
@@ -65,7 +69,7 @@ object SyncTimeLogger {
     fun stopLogging(uploadManager: UploadManager? = null) {
         if (!isLogging) return
 
-        endTime = System.currentTimeMillis()
+        endTime = timeProvider.now()
         isLogging = false
         val summary = generateSummary()
         saveSummaryToRealm(summary, uploadManager)
@@ -114,14 +118,14 @@ object SyncTimeLogger {
         if (!isLogging) return
 
         val key = "$processName:start"
-        processTimes[key] = System.currentTimeMillis()
+        processTimes[key] = timeProvider.now()
     }
 
     fun endProcess(processName: String, itemCount: Int = 0) {
         if (!isLogging) return
 
         val startKey = "$processName:start"
-        val endTime = System.currentTimeMillis()
+        val endTime = timeProvider.now()
 
         if (!processTimes.containsKey(startKey)) {
             return
@@ -144,7 +148,7 @@ object SyncTimeLogger {
     fun logApiCall(endpoint: String, duration: Long, success: Boolean, itemsReturned: Int = 0) {
         if (!isLogging) return
 
-        val timestamp = System.currentTimeMillis()
+        val timestamp = timeProvider.now()
         val callNum = apiCallCounter.incrementAndGet()
         val elapsed = timestamp - startTime
         val processName = extractProcessName(endpoint)
@@ -160,7 +164,7 @@ object SyncTimeLogger {
     fun logRealmOperation(operation: String, model: String, duration: Long, itemCount: Int) {
         if (!isLogging) return
 
-        val timestamp = System.currentTimeMillis()
+        val timestamp = timeProvider.now()
         val opNum = realmOpCounter.incrementAndGet()
         val elapsed = timestamp - startTime
 
@@ -173,7 +177,7 @@ object SyncTimeLogger {
     fun logDetail(context: String, message: String) {
         if (!isLogging) return
 
-        val timestamp = System.currentTimeMillis()
+        val timestamp = timeProvider.now()
         val elapsed = timestamp - startTime
         detailedLogs.getOrPut(context) { mutableListOf() }.add(message)
 
