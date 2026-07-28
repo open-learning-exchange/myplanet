@@ -145,17 +145,7 @@ open class DashboardPluginFragment : BaseContainerFragment() {
         return v
     }
 
-    fun getMyLifeListBase(userId: String?): List<MyLife> {
-        val myLifeList: MutableList<MyLife> = ArrayList()
-        myLifeList.add(MyLife("ic_myhealth", userId, getString(R.string.myhealth)))
-        myLifeList.add(MyLife("my_achievement", userId, getString(R.string.achievements)))
-        myLifeList.add(MyLife("ic_submissions", userId, getString(R.string.submission)))
-        myLifeList.add(MyLife("ic_my_survey", userId, getString(R.string.my_survey)))
-        myLifeList.add(MyLife("ic_references", userId, getString(R.string.references)))
-        myLifeList.add(MyLife("ic_calendar", userId, getString(R.string.calendar)))
-        myLifeList.add(MyLife("ic_mypersonals", userId, getString(R.string.mypersonals)))
-        return myLifeList
-    }
+    fun getMyLifeListBase(userId: String?): List<MyLife> = MyLife.defaultItems(requireContext(), userId)
 
     fun setBackgroundColor(v: View, count: Int) {
         if (count % 2 == 0) {
