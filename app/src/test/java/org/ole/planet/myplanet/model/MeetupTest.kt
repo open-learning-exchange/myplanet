@@ -317,4 +317,31 @@ class MeetupTest {
         assertEquals(true, meetup.occursOnDate(july27))
         assertEquals(false, meetup.occursOnDate(july21))
     }
+
+    @Test
+    fun `getAllEventDates and occursOnDate work correctly for recurring events with explicit end date`() {
+        val startCal = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.JULY, 20, 10, 0, 0)
+        }
+        val endCal = java.util.Calendar.getInstance().apply {
+            set(2026, java.util.Calendar.JULY, 25, 10, 0, 0)
+        }
+
+        val meetup = Meetup().apply {
+            startDate = startCal.timeInMillis
+            endDate = endCal.timeInMillis
+            recurring = "daily"
+        }
+
+        val dates = meetup.getAllEventDates()
+        assertEquals(6, dates.size)
+        assertEquals(20, dates.first().get(java.util.Calendar.DAY_OF_MONTH))
+        assertEquals(25, dates.last().get(java.util.Calendar.DAY_OF_MONTH))
+
+        val july23 = java.time.LocalDate.of(2026, 7, 23)
+        val july26 = java.time.LocalDate.of(2026, 7, 26)
+
+        assertEquals(true, meetup.occursOnDate(july23))
+        assertEquals(false, meetup.occursOnDate(july26))
+    }
 }
