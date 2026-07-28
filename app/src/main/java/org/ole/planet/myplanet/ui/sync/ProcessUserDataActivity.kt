@@ -16,6 +16,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.core.net.toUri
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import androidx.lifecycle.Observer
 import kotlinx.coroutines.flow.takeWhile
 import kotlinx.coroutines.flow.collect
@@ -196,18 +197,16 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
     private fun uploadLoginData() {
         val flow = syncRepository.uploadLoginData()
 
-        lifecycleScope.launchWhenStarted {
-            flow.takeWhile { value ->
-                if (value is SyncUiState.Success) {
-                    onSuccess(value.message)
-                    false
-                } else if (value is SyncUiState.Error) {
-                    false
-                } else {
-                    true
-                }
-            }.collect {}
-        }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                onSuccess(value.message)
+                false
+            } else if (value is SyncUiState.Error) {
+                false
+            } else {
+                true
+            }
+        }) {}
     }
 
     private fun uploadBulkData() {
@@ -216,20 +215,18 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
 
         val flow = syncRepository.uploadBulkData()
 
-        lifecycleScope.launchWhenStarted {
-            flow.takeWhile { value ->
-                if (value is SyncUiState.Success) {
-                    safelyDismissDialog()
-                    Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
-                    false
-                } else if (value is SyncUiState.Error) {
-                    safelyDismissDialog()
-                    false
-                } else {
-                    true
-                }
-            }.collect {}
-        }
+        collectWhenStarted(flow.takeWhile { value ->
+            if (value is SyncUiState.Success) {
+                safelyDismissDialog()
+                Toast.makeText(this@ProcessUserDataActivity, "upload complete", Toast.LENGTH_SHORT).show()
+                false
+            } else if (value is SyncUiState.Error) {
+                safelyDismissDialog()
+                false
+            } else {
+                true
+            }
+        }) {}
     }
 
     protected fun hideKeyboard(view: View?) {
