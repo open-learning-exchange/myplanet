@@ -324,6 +324,12 @@ class TeamCalendarFragment : BaseTeamFragment() {
             .setView(dialogBinding.root)
             .create()
 
+        dialogBinding.btnDelete.visibility = View.VISIBLE
+        dialogBinding.btnDelete.setOnClickListener {
+            dialog.dismiss()
+            confirmDeleteMeetup(meetup)
+        }
+
         dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
         dialogBinding.btnSave.setOnClickListener {
             val newTitle = dialogBinding.etTitle.text.toString().trim()
@@ -365,6 +371,25 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
         dialog.show()
+    }
+
+    private fun confirmDeleteMeetup(meetup: Meetup) {
+        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setMessage(R.string.confirm_delete_meetup)
+            .setPositiveButton(R.string.ok) { _, _ ->
+                lifecycleScope.launch {
+                    val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
+                    val success = viewModel.deleteMeetup(targetId, teamId)
+                    if (success) {
+                        Utilities.toast(activity, getString(R.string.meetup_deleted))
+                        meetupDialog?.dismiss()
+                    } else {
+                        Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     override fun onDestroyView() {
@@ -456,9 +481,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
         recyclerView.layoutParams.height = cardHeight + extraHeight
         recyclerView.requestLayout()
         recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        meetupAdapter = EventsAdapter { meetup ->
-            showEditMeetupDialog(meetup)
-        }
+        meetupAdapter = EventsAdapter(
+            onMeetupClick = { meetup -> showEditMeetupDialog(meetup) },
+            onDeleteClick = { meetup -> confirmDeleteMeetup(meetup) }
+        )
         recyclerView.adapter = meetupAdapter
         meetupAdapter?.submitList(meetupList)
 

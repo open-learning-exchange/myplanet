@@ -89,4 +89,11 @@ class EventsDetailViewModel @Inject constructor(
             _members.value = eventsRepository.getJoinedMembers(meetupId)
         }
     }
+
+    fun deleteMeetup(meetupId: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = eventsRepository.deleteMeetup(meetupId)
+            onResult(success)
+        }
+    }
 }

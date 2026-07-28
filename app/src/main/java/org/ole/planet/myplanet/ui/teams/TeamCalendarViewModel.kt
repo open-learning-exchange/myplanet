@@ -63,4 +63,12 @@ class TeamCalendarViewModel @Inject constructor(
             recurringNumber = recurringNumber
         )
     }
+
+    suspend fun deleteMeetup(meetupId: String, teamId: String): Boolean {
+        val success = eventsRepository.deleteMeetup(meetupId)
+        if (success && teamId.isNotEmpty()) {
+            fetchMeetups(teamId)
+        }
+        return success
+    }
 }

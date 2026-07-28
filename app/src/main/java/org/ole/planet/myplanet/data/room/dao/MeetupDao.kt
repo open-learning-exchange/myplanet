@@ -37,4 +37,7 @@ interface MeetupDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(items: List<Meetup>)
+
+    @Query("DELETE FROM meetup WHERE id = :id OR meetupId = :id")
+    suspend fun deleteById(id: String)
 }

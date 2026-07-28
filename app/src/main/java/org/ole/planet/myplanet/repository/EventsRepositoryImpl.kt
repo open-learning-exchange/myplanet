@@ -171,4 +171,15 @@ class EventsRepositoryImpl @Inject constructor(
         meetupDao.upsert(meetup)
         return true
     }
+
+    override suspend fun deleteMeetup(meetupId: String): Boolean {
+        if (meetupId.isBlank()) return false
+        return try {
+            meetupDao.deleteById(meetupId)
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

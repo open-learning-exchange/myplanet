@@ -11,7 +11,8 @@ import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 class EventsAdapter(
-    private val onMeetupClick: ((Meetup) -> Unit)? = null
+    private val onMeetupClick: ((Meetup) -> Unit)? = null,
+    private val onDeleteClick: ((Meetup) -> Unit)? = null
 ) : ListAdapter<Meetup, EventsAdapter.EventsViewHolder>(
     DiffUtils.itemCallback<Meetup>(
         areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
@@ -66,6 +67,9 @@ class EventsAdapter(
             binding.root.setOnClickListener {
                 onMeetupClick?.invoke(meetup)
             }
+            binding.btnDelete.setOnClickListener {
+                onDeleteClick?.invoke(meetup)
+            }
         }
     }
 
@@ -84,6 +88,9 @@ class EventsAdapter(
         binding.tvCreator.text = context.getString(R.string.message_placeholder, meetup.creator)
         binding.root.setOnClickListener {
             onMeetupClick?.invoke(meetup)
+        }
+        binding.btnDelete.setOnClickListener {
+            onDeleteClick?.invoke(meetup)
         }
     }
 

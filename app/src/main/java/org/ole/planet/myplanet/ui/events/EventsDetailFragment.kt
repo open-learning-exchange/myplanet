@@ -152,6 +152,12 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
             .setView(dialogBinding.root)
             .create()
 
+        dialogBinding.btnDelete.visibility = View.VISIBLE
+        dialogBinding.btnDelete.setOnClickListener {
+            dialog.dismiss()
+            confirmDeleteMeetup(meetup)
+        }
+
         dialogBinding.btnCancel.setOnClickListener { dialog.dismiss() }
 
         dialogBinding.btnSave.setOnClickListener {
@@ -186,6 +192,24 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         }
 
         dialog.show()
+    }
+
+    private fun confirmDeleteMeetup(meetup: Meetup) {
+        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+            .setMessage(R.string.confirm_delete_meetup)
+            .setPositiveButton(R.string.ok) { _, _ ->
+                val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
+                viewModel.deleteMeetup(targetId) { success ->
+                    if (success) {
+                        Toast.makeText(requireContext(), getString(R.string.meetup_deleted), Toast.LENGTH_SHORT).show()
+                        parentFragmentManager.popBackStack()
+                    } else {
+                        Toast.makeText(requireContext(), getString(R.string.meetup_not_deleted), Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
     }
 
     private fun pickDate(onPicked: (Long) -> Unit) {
