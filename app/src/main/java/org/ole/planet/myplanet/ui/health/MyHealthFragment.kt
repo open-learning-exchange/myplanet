@@ -55,7 +55,8 @@ class MyHealthFragment : Fragment() {
 
     @Inject
     lateinit var userRepository: UserRepository
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
+    @Inject
+    lateinit var realtimeSyncManager: RealtimeSyncManager
     private var _binding: FragmentVitalSignBinding? = null
     private val binding get() = _binding!!
     private lateinit var alertMyPersonalBinding: AlertMyPersonalBinding
@@ -152,7 +153,7 @@ class MyHealthFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
+        collectWhenStarted(realtimeSyncManager.dataUpdateFlow) { update ->
             if (update.table == "health" && update.shouldRefreshUI) {
                 refreshHealthData()
             }

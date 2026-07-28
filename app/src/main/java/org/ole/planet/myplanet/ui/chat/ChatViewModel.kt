@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.ChatHistory
@@ -62,11 +63,13 @@ class ChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            realtimeSyncManager.dataUpdateFlow.collect { update ->
-                if (update.table == "chats" && update.shouldRefreshUI) {
-                    _refreshChatSignal.emit(Unit)
+            realtimeSyncManager.dataUpdateFlow
+                .filter { it.table == "chats" }
+                .collect { update ->
+                    if (update.shouldRefreshUI) {
+                        _refreshChatSignal.emit(Unit)
+                    }
                 }
-            }
         }
     }
 
