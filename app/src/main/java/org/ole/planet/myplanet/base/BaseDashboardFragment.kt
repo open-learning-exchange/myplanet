@@ -66,25 +66,28 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     lateinit var lifeRepository: LifeRepository
 
     fun onLoaded(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
+        val icClose = v.findViewById<ImageView>(R.id.ic_close)
+        val imageView = v.findViewById<ImageView>(R.id.imageView)
+
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserProfile()
             fullName = model?.getFullName()
             if (fullName?.trim().isNullOrBlank()) {
                 fullName = model?.name
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
-                v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
+                llPrompt.visibility = View.VISIBLE
+                llPrompt.setOnClickListener {
                     if (!childFragmentManager.isStateSaved) {
                         UserInformationFragment.getInstance("", "", false)
                             .show(childFragmentManager, "")
                     }
                 }
             } else {
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+                llPrompt.visibility = View.GONE
             }
-            v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+            icClose.setOnClickListener {
+                llPrompt.visibility = View.GONE
             }
-            val imageView = v.findViewById<ImageView>(R.id.imageView)
             if (!TextUtils.isEmpty(model?.userImage)) {
                 Glide.with(requireActivity())
                     .load(model?.userImage)

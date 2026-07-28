@@ -12,6 +12,12 @@ import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.ole.planet.myplanet.services.FileUploader
+import org.ole.planet.myplanet.utils.FileUtils
+import java.io.File
+
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
@@ -93,5 +99,25 @@ class UploadRepositoryImpl @Inject constructor(
         }
 
         return failed
+    }
+
+    override suspend fun uploadAttachment(
+        file: File,
+        destinationFormat: String,
+        id: String,
+        rev: String,
+        name: String
+    ): Response<JsonObject> {
+        val connection = file.toURI().toURL().openConnection()
+        val mimeType = connection.contentType ?: "application/octet-stream"
+        val body = FileUtils.fullyReadFileToBytes(file)
+            .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+        val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
+
+        return apiInterface.uploadResource(
+            FileUploader.getHeaderMap(mimeType, rev),
+            url,
+            body
+        )
     }
 }
