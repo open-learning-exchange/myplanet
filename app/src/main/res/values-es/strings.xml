@@ -16,7 +16,7 @@
     <string name="app_name">myPlanet</string>
     <string name="planet">Planet</string>
     <string name="app_project_name">myPlanet</string>
-    <string name="action_settings">configuración</string>
+    <string name="action_settings">Configuración</string>
     <string name="hint_name">Nombre</string>
     <string name="btn_back">Volver</string>
     <string name="btn_sign_in">Iniciar sesión</string>
@@ -93,8 +93,8 @@
     <string name="your_rating">Tu calificación</string>
     <string name="loading_user_profile">Preparando tu perfil…</string>
     <string name="your_comment">Deja tu comentario</string>
-    <string name="sync_now">sincronizar ahora</string>
-    <string name="logout">cerrar sesión</string>
+    <string name="sync_now">Sincronizar ahora</string>
+    <string name="logout">Cerrar sesión</string>
     <string name="settings">Configuraciones</string>
     <string name="edit_profile">Editar perfil</string>
     <string name="profile">Perfil</string>
@@ -335,8 +335,8 @@
     <string name="clear_data">Borrar datos</string>
     <string name="reset_app">Restablecer aplicación</string>
     <string name="freeup_space">Liberar espacio en disco</string>
-    <string name="action_disclaimer">descargo de responsabilidad</string>
-    <string name="action_about">acerca de</string>
+    <string name="action_disclaimer">Descargo de responsabilidad</string>
+    <string name="action_about">Acerca de</string>
     <string name="english_dictionary">Diccionario inglés</string>
 
     <string-array name="team_type">
@@ -1341,6 +1341,8 @@
     <string name="save_changes">Guardar cambios</string>
     <string name="resource_updated">Recurso actualizado</string>
     <string name="failed_to_update_resource">Error al actualizar el recurso</string>
+    <string name="join_team_first">Únete a un equipo para compartir este chat</string>
+    <string name="join_enterprise_first">Únete a una empresa para compartir este chat</string>
 
     <string name="open_link_with">Abrir enlace con</string>
     <string name="just_once">Solo una vez</string>

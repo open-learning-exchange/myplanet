@@ -105,13 +105,8 @@ class SubmissionsAdapter(
 
         private fun showSubmittedBy(submission: SubmissionUiModel) {
             val finalName = submission.submitterName
-            if (finalName.isBlank()) {
-                binding.submittedBy.visibility = View.GONE
-                binding.submittedBy.text = ""
-            } else {
-                binding.submittedBy.visibility = View.VISIBLE
-                binding.submittedBy.text = finalName
-            }
+            binding.submittedBy.text = finalName
+            binding.submittedBy.visibility = if (finalName.isBlank()) View.INVISIBLE else View.VISIBLE
         }
     }
 

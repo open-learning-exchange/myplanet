@@ -86,17 +86,21 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         setupListeners()
     }
 
+    private fun computeParentId(): String? {
+        return if (!TextUtils.isEmpty(exam?.courseId)) {
+            "$id@${exam?.courseId}"
+        } else {
+            id
+        }
+    }
+
     private fun initializeExamData() {
         viewLifecycleOwner.lifecycleScope.launch {
             user = userSessionManager.getUserModel()
             initExam()
             questions = surveysRepository.getExamQuestions(exam?.id ?: "")
             binding.tvQuestionCount.text = getString(R.string.Q1, questions?.size)
-            val parentId = if (!TextUtils.isEmpty(exam?.courseId)) {
-                "$id@${exam?.courseId}"
-            } else {
-                id
-            }
+            val parentId = computeParentId()
             if (sub == null) {
                 val submissions = submissionsRepository.getSubmissionsByParentId(
                     parentId, user?.id, "pending"
@@ -205,7 +209,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
 
 
         examTakingTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            @Suppress("EmptyMethod")
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val questionsSize = questions?.size ?: 0
@@ -671,7 +677,9 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         }
 
         if (sub == null) {
-            sub = submissionsRepository.getLastPendingSubmission(user?.id)
+            val parentId = computeParentId()
+            sub = submissionsRepository.getSubmissionsByParentId(parentId, user?.id, "pending")
+                .firstOrNull()
         }
 
         val result = submissionsRepository.saveExamAnswer(

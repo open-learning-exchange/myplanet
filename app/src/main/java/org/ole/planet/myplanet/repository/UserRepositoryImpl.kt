@@ -111,8 +111,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun findUserByName(name: String): UserEntity? {
-        return userDao.getAll()
-            .firstOrNull { it.name.equals(name, ignoreCase = true) }
+        return userDao.getByNameIgnoreCase(name)
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
@@ -227,7 +226,7 @@ class UserRepositoryImpl @Inject constructor(
 
         user.apply {
             if (id.isNullOrBlank()) {
-                id = newId.ifEmpty { UUID.randomUUID().toString() }
+                id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId
@@ -1010,9 +1009,7 @@ class UserRepositoryImpl @Inject constructor(
                     }
                 }
 
-                for (i in 1 until sortedUsers.size) {
-                    userDao.deleteById(sortedUsers[i].id)
-                }
+                userDao.deleteByIds(sortedUsers.drop(1).map { it.id })
             }
         }
     }
@@ -1260,7 +1257,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         }
 
-        usersToDelete.forEach { userDao.deleteById(it) }
+        if (usersToDelete.isNotEmpty()) userDao.deleteByIds(usersToDelete.toList())
         if (usersToUpsert.isNotEmpty()) {
             userDao.upsertAll(usersToUpsert)
         }

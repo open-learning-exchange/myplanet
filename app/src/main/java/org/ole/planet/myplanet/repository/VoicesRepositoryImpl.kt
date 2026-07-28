@@ -154,7 +154,12 @@ class VoicesRepositoryImpl @Inject constructor(
     override suspend fun getCommunityNews(userIdentifier: String): Flow<List<News>> {
         return newsDao.getTopLevelMessagesFlow()
             .distinctUntilChanged { old, new ->
-                old.size == new.size && old.zip(new).all { (o, n) -> o.id == n.id && o.time == n.time }
+                old.size == new.size && old.zip(new).all { (o, n) ->
+                    o.id == n.id && o.time == n.time &&
+                            o.labels?.toSet() == n.labels?.toSet() &&
+                            o.message == n.message &&
+                            o.isEdited == n.isEdited
+                }
             }
             .map { allNews ->
                 allNews.filter { news ->
