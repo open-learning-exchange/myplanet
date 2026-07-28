@@ -227,6 +227,25 @@
                     android:buttonTint="@color/daynight_textColor" />
             </RadioGroup>
 
+            <com.google.android.material.textfield.TextInputLayout
+                android:id="@+id/tl_recurring_count"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="@dimen/padding_large"
+                android:textColorHint="@color/hint_color"
+                android:visibility="gone">
+
+                <EditText
+                    android:id="@+id/et_recurring_count"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/recurring_count"
+                    android:inputType="number"
+                    android:text="10"
+                    android:textColor="@color/daynight_textColor"
+                    android:backgroundTint="@color/hint_color" />
+            </com.google.android.material.textfield.TextInputLayout>
+
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
