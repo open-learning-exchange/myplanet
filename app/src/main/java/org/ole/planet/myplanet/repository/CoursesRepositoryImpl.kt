@@ -9,6 +9,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
 import org.ole.planet.myplanet.data.room.dao.CertificationDao
 import org.ole.planet.myplanet.data.room.dao.CourseDao
@@ -23,25 +24,23 @@ import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.Answer
 import org.ole.planet.myplanet.model.Certification
+import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.CourseProgressData
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.ExamQuestion
-import org.ole.planet.myplanet.model.StepItem
-import org.ole.planet.myplanet.model.CourseDetailModel
 import org.ole.planet.myplanet.model.MyCourse
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.model.TableDataUpdate
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
@@ -110,7 +109,6 @@ class CoursesRepositoryImpl @Inject constructor(
         if (courseId.isBlank()) return null
         return mapCourse(courseDao.getByCourseId(courseId))
     }
-
 
     override fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?> {
         return getCourseByCourseIdFlow(courseId).map { course ->
