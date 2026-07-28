@@ -54,6 +54,14 @@ class TagsRepositoryImpl @Inject constructor(
         return getLinkedTagsBulk("courses", courseIds)
     }
 
+    override suspend fun getLinkIdsForTagNames(dbType: String, tagNames: List<String>): List<String> {
+        val matchingTagIds = tagDao.getByNames(tagNames).map { it.id }
+        if (matchingTagIds.isEmpty()) {
+            return emptyList()
+        }
+        return tagDao.getByDbAndTagIds(dbType, matchingTagIds).mapNotNull { it.linkId }
+    }
+
     private suspend fun getLinkedTagsBulk(db: String, linkIds: List<String>): Map<String, List<TagEntity>> {
         if (linkIds.isEmpty()) {
             return emptyMap()
