@@ -61,7 +61,14 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        EdgeToEdgeUtils.setupEdgeToEdge(this, window.decorView)
+        val contentView = findViewById<View>(android.R.id.content)
+        val actionBarContainer = findViewById<View>(androidx.appcompat.R.id.action_bar_container)
+        EdgeToEdgeUtils.setupEdgeToEdge(
+            this,
+            contentView,
+            lightStatusBar = false,
+            topInsetView = actionBarContainer
+        )
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         FragmentNavigator.replaceFragment(supportFragmentManager, android.R.id.content, SettingFragment())
         title = getString(R.string.action_settings)

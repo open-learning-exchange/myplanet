@@ -50,7 +50,7 @@ object EdgeToEdgeUtils {
                     topInsetPadding.bottom
                 )
             }
-            windowInsets
+            WindowInsetsCompat.CONSUMED
         }
     }
 
@@ -75,7 +75,7 @@ object EdgeToEdgeUtils {
                 systemBarsInsets.right,
                 maxOf(systemBarsInsets.bottom, imeInsets.bottom)
             )
-            windowInsets
+            WindowInsetsCompat.CONSUMED
         }
     }
 
