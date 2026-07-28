@@ -195,7 +195,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
         submit?.setOnClickListener {
             if (isValidReportForm(dialogAddReportBinding)) {
                 val imageUri = selectedImageUri
-                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
                 val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                 viewModel.addReport(
                     description = dialogAddReportBinding.summary.text.toString(),
@@ -278,7 +278,7 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
                 }
 
                 val imageUri = selectedImageUri
-                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it) }
+                val imageName = imageUri?.let { FileUtils.getDisplayName(requireContext(), it, timeProvider) }
                 val imageData = imageUri?.let { FileUtils.readBytesFromUri(requireContext(), it) }
                 viewModel.updateReport(
                     reportId = reportId,

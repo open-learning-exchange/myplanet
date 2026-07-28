@@ -7,11 +7,11 @@ import androidx.work.WorkerParameters
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import java.util.Calendar
-import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.utils.FileUtils
-import org.ole.planet.myplanet.utils.NotificationUtils.create
+import org.ole.planet.myplanet.utils.NotificationUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils.formatDate
 
 @HiltWorker
@@ -20,7 +20,8 @@ class TaskNotificationWorker @AssistedInject constructor(
     @Assisted workerParams: WorkerParameters,
     private val userSessionManager: UserSessionManager,
     private val teamsRepository: TeamsRepository,
-    private val notificationsRepository: NotificationsRepository
+    private val notificationsRepository: NotificationsRepository,
+    private val timeProvider: TimeProvider
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -41,13 +42,15 @@ class TaskNotificationWorker @AssistedInject constructor(
             }.getOrElse { emptyList() }
 
             if (tasks.isNotEmpty()) {
+                val notificationManager = NotificationUtils.getInstance(applicationContext)
                 tasks.forEach { task ->
-                    create(
-                        applicationContext,
-                        R.drawable.ole_logo,
-                        task.title,
-                        "Task expires on " + formatDate(task.deadline, ""),
+                    val config = NotificationUtils.createTaskNotification(
+                        task.id,
+                        task.title.orEmpty(),
+                        formatDate(task.deadline),
+                        timeProvider
                     )
+                    notificationManager.showNotification(config)
                 }
 
                 val taskIds = tasks.mapNotNull { it.id }.filter { it.isNotBlank() }

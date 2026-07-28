@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DownloadUtils.extractLinks
+import org.ole.planet.myplanet.utils.ExamAnswerUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
@@ -60,7 +61,8 @@ class CoursesRepositoryImpl @Inject constructor(
     private val searchActivityDao: SearchActivityDao,
     private val courseProgressDao: CourseProgressDao,
     private val removedLogDao: RemovedLogDao,
-    private val myLibraryDao: MyLibraryDao
+    private val myLibraryDao: MyLibraryDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : CoursesRepository {
 
     private val pendingCourseResources =
@@ -299,7 +301,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 this.userId = userId
                 docId = courseId
             })
-            RealtimeSyncManager.getInstance().notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
 
@@ -588,7 +590,7 @@ class CoursesRepositoryImpl @Inject constructor(
             gradeLevel = JsonUtils.getString("gradeLevel", doc),
             subjectLevel = JsonUtils.getString("subjectLevel", doc),
             createdDate = JsonUtils.getLong("createdDate", doc),
-                        coverFileName = JsonUtils.getString("coverFileName", doc).ifEmpty { null },
+                        coverFileName = JsonUtils.getString("coverFileName", doc).takeIf { it.isNotEmpty() },
                     )
 
         return ParsedCourseSyncPayload(course, parsedSteps, parsedExams, parsedQuestions)
@@ -646,6 +648,7 @@ class CoursesRepositoryImpl @Inject constructor(
                                         hasOtherOption = JsonUtils.getBoolean("hasOtherOption", questionJson),
                     scaleMax = JsonUtils.getInt("scaleMax", questionJson).let { if (it <= 0) 9 else it },
                     marks = JsonUtils.getString("marks", questionJson),
+                    correctChoiceList = extractCorrectChoices(questionJson),
                 )
             )
         }
@@ -677,24 +680,21 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun extractCorrectChoices(questionJson: JsonObject): List<String> {
-        val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
-        if (correctChoiceArray.size() > 0) {
-            return correctChoiceArray.map { it.asString }
-        }
-
-        val correctChoice = JsonUtils.getString("correctChoice", questionJson)
-        if (correctChoice.isBlank()) {
-            return emptyList()
-        }
-
         val choices = JsonUtils.getJsonArray("choices", questionJson)
-        return choices.mapNotNull { choiceElement ->
-            val choice = choiceElement.asJsonObject
-            if (JsonUtils.getString("id", choice) == correctChoice) {
-                JsonUtils.getString("res", choice).ifBlank { null }
-            } else {
-                null
-            }
+        fun resolveChoiceValue(raw: String): String {
+            val matchedChoice = choices.firstOrNull {
+                it.isJsonObject && JsonUtils.getString("id", it.asJsonObject) == raw
+            }?.asJsonObject ?: return raw
+
+            return ExamAnswerUtils.choiceDisplayValue(matchedChoice) ?: raw
+        }
+
+        val correctChoiceArray = JsonUtils.getJsonArray("correctChoice", questionJson)
+        return if (correctChoiceArray.size() > 0) {
+            correctChoiceArray.map { resolveChoiceValue(it.asString) }
+        } else {
+            val correctChoice = JsonUtils.getString("correctChoice", questionJson)
+            if (correctChoice.isBlank()) emptyList() else listOf(resolveChoiceValue(correctChoice))
         }
     }
 
