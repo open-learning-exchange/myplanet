@@ -22,6 +22,11 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -1263,6 +1268,29 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit> {
+        return try {
+            val semaphore = Semaphore(5)
+            supervisorScope {
+                users.map { model ->
+                    async {
+                        semaphore.withPermit {
+                            try {
+                                uploadShelfData(model)
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
