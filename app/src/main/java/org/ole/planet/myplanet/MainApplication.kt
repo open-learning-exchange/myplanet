@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
+import org.ole.planet.myplanet.di.ServiceDependenciesEntryPoint
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
@@ -390,7 +390,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             try {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     this@MainApplication,
-                    NetworkDependenciesEntryPoint::class.java
+                    ServiceDependenciesEntryPoint::class.java
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
