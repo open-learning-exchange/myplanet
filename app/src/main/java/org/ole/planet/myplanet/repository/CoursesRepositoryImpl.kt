@@ -285,18 +285,38 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
+        return leaveCourses(listOf(courseId), userId)
+    }
+
+    override suspend fun leaveCourses(courseIds: List<String>, userId: String): Result<Unit> {
         return runCatching {
-            courseDao.getByCourseId(courseId)?.let { course ->
-                val updatedUserIds = course.userId.orEmpty().filter { it != userId }
-                courseDao.upsert(course.copy(userId = updatedUserIds))
+            val validCourseIds = courseIds.filter { it.isNotBlank() }
+            if (validCourseIds.isEmpty()) return@runCatching
+
+            val courses = courseDao.getByCourseIds(validCourseIds)
+            if (courses.isNotEmpty()) {
+                val updatedCourses = courses.map { course ->
+                    val updatedUserIds = course.userId.orEmpty().filter { it != userId }
+                    course.copy(userId = updatedUserIds)
+                }
+                courseDao.upsertAll(updatedCourses)
             }
-            removedLogDao.insert(RemovedLog().apply {
-                id = UUID.randomUUID().toString()
-                type = "courses"
-                this.userId = userId
-                docId = courseId
-            })
-            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
+
+            if (userId.isNotBlank()) {
+                validCourseIds.chunked(1000).forEach { chunk ->
+                    val logs = chunk.map { docId ->
+                        RemovedLog().apply {
+                            id = UUID.randomUUID().toString()
+                            type = "courses"
+                            this.userId = userId
+                            this.docId = docId
+                        }
+                    }
+                    removedLogDao.insertAll(logs)
+                }
+            }
+
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, validCourseIds.size))
         }
     }
 
@@ -429,6 +449,10 @@ class CoursesRepositoryImpl @Inject constructor(
 
     override suspend fun removeCourseFromShelf(courseId: String, userId: String) {
         leaveCourse(courseId, userId)
+    }
+
+    override suspend fun removeCoursesFromShelf(courseIds: List<String>, userId: String) {
+        leaveCourses(courseIds, userId)
     }
 
     override suspend fun logCourseVisit(courseId: String, title: String, userId: String) {
