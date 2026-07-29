@@ -1,14 +1,13 @@
 package org.ole.planet.myplanet.ui.feedback
 
-import android.graphics.drawable.GradientDrawable
 import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
+import androidx.core.content.ContextCompat
 import org.junit.Test
-import org.junit.Assert.*
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.R
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
-import androidx.core.content.ContextCompat
-import org.ole.planet.myplanet.R
 
 @RunWith(RobolectricTestRunner::class)
 class TintTest {

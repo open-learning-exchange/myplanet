@@ -4,7 +4,6 @@ import android.content.Context
 import com.google.gson.JsonObject
 import io.mockk.coEvery
 import io.mockk.coVerify
-import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -16,7 +15,6 @@ import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.UserDao
-import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
 
 @OptIn(ExperimentalCoroutinesApi::class)

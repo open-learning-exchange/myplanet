@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.ui.submissions.SubmissionsFragment
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
 import org.ole.planet.myplanet.ui.teams.TeamFragment
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
-import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
 

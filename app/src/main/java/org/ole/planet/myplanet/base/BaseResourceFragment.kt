@@ -43,8 +43,8 @@ import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
-import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.TimeProvider
+import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
