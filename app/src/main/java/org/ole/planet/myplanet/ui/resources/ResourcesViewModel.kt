@@ -15,15 +15,27 @@ import org.ole.planet.myplanet.model.ResourceItem
 import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.repository.ResourcesRepository
+import org.ole.planet.myplanet.services.sync.SyncManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourcesViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val syncManager: SyncManager
 ) : ViewModel() {
 
     private var lastCache: Pair<Pair<Boolean, String?>, List<ResourceListModel>>? = null
+
+    init {
+        viewModelScope.launch {
+            syncManager.syncStatus.collectLatest { status ->
+                if (status is SyncManager.SyncStatus.Success) {
+                    lastCache = null
+                }
+            }
+        }
+    }
 
     private val _downloadComplete = MutableStateFlow(false)
     val downloadComplete: StateFlow<Boolean> = _downloadComplete.asStateFlow()
@@ -62,7 +74,7 @@ class ResourcesViewModel @Inject constructor(
     suspend fun getLibraryListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> = withContext(dispatcherProvider.io) {
         val key = Pair(isMyCourseLib, modelId)
         val currentCache = lastCache
-        if (currentCache?.first == key && currentCache.second.isNotEmpty()) {
+        if (currentCache?.first == key) {
             return@withContext currentCache.second
         }
         val enrichedLibraries = resourcesRepository.getEnrichedLibraries(isMyCourseLib, modelId)

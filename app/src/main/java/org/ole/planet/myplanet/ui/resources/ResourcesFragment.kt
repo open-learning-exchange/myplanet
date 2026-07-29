@@ -94,6 +94,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
         androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == android.app.Activity.RESULT_OK) {
+            viewModel.invalidateCache()
             refreshResourcesData()
         }
     }
@@ -683,6 +684,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     }
     
     override fun onDataUpdated(table: String, update: TableDataUpdate) {
+        viewModel.invalidateCache()
         refreshResourcesData()
     }
 
