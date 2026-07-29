@@ -15,7 +15,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -25,7 +24,7 @@ import org.ole.planet.myplanet.utils.SystemTimeProvider
 class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
-    private lateinit var userDao: UserDao
+    private lateinit var userRepository: UserRepository
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -35,8 +34,8 @@ class EventsRepositoryImplTest {
     @Before
     fun setup() {
         meetupDao = mockk(relaxed = true)
-        userDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userDao)
+        userRepository = mockk(relaxed = true)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository)
     }
 
     @Test
@@ -69,7 +68,7 @@ class EventsRepositoryImplTest {
             Meetup().apply { userId = "user2" },
             Meetup().apply { userId = "user1" }
         )
-        coEvery { userDao.getAll() } returns listOf(
+        coEvery { userRepository.getAllUsers() } returns listOf(
             UserEntity(id = "user1"),
             UserEntity(id = "user2", _id = "remote-user2"),
             UserEntity(id = "user3")

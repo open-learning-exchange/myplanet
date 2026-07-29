@@ -12,6 +12,7 @@ interface UploadRepository {
     suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject>
     suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject>
     suspend fun fetchExistingDoc(url: String): Response<JsonObject>
+    suspend fun uploadAttachment(file: java.io.File, destinationFormat: String, id: String, rev: String, name: String): Response<JsonObject>
 }
 
 data class UploadQueryContract<T : Any>(
