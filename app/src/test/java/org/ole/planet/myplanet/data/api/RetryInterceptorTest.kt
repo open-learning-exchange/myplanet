@@ -19,6 +19,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.services.BroadcastService
+import org.ole.planet.myplanet.utils.SystemTimeProvider
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -26,12 +28,14 @@ import org.robolectric.annotation.Config
 @Config(manifest = Config.NONE, sdk = [33], application = Application::class)
 class RetryInterceptorTest {
     private lateinit var broadcastService: BroadcastService
+    private lateinit var timeProvider: TimeProvider
     private lateinit var retryInterceptor: RetryInterceptor
 
     @Before
     fun setUp() {
         broadcastService = mockk(relaxed = true)
-        retryInterceptor = RetryInterceptor(broadcastService)
+        timeProvider = SystemTimeProvider()
+        retryInterceptor = RetryInterceptor(broadcastService, timeProvider)
         retryInterceptor.initialDelay = 10L
     }
 

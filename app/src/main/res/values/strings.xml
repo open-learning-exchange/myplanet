@@ -472,7 +472,7 @@
     <string name="add_res">Add Resource</string>
     <string name="password">password</string>
     <string name="retype_password">Confirm Password</string>
-    <string name="become_a_member">become a member</string>
+    <string name="become_a_member">Become a member</string>
     <string name="change_member">Change Member</string>
     <string name="use_phone_number_as_password">Use phone number as password</string>
     <string name="feedback">Feedback</string>
@@ -1013,6 +1013,11 @@
     <string name="dark_mode_follow_system">Follow System</string>
     <string name="theme_mode_light">Light</string>
     <string name="theme_mode_dark">Dark</string>
+    <string name="text_size">text size</string>
+    <string name="select_text_size">Select Text Size</string>
+    <string name="text_size_small">Small</string>
+    <string name="text_size_medium">Medium</string>
+    <string name="text_size_large">Large</string>
     <string name="are_you_sure_you_want_to_archive_these_courses">Are you sure you want to archive these courses?</string>
     <string name="are_you_sure_you_want_to_archive_this_course">Are you sure you want to archive this course?</string>
     <string name="manual">manual</string>
@@ -1035,7 +1040,7 @@
     <string name="select_theme_mode">select theme mode</string>
     <string name="beta_resources_auto_download">Beta resources auto download</string>
     <string name="course_steps">Course Steps</string>
-    <string name="to_access_this_feature_become_a_member">you are currently a guest user. to access this feature, become a member.</string>
+    <string name="to_access_this_feature_become_a_member">You are currently a guest user. To access this feature, become a member.</string>
     <string name="sales">Sales</string>
     <string name="beginning_balance">Beginning Balance</string>
     <string name="other">Other</string>
