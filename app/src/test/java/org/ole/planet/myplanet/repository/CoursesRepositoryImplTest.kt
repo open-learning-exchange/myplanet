@@ -51,6 +51,7 @@ class CoursesRepositoryImplTest {
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
 
@@ -70,11 +71,11 @@ class CoursesRepositoryImplTest {
             questionDao,
             submissionDao,
             answerDao,
-            tagDao,
             searchActivityDao,
             courseProgressDao,
             removedLogDao,
-            myLibraryDao
+            myLibraryDao,
+            realtimeSyncManager
         )
     }
 
