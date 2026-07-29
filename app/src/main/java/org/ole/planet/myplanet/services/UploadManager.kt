@@ -89,7 +89,7 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
-        withContext(dispatcherProvider.main) {
+        withContext(dispatcherProvider.mainImmediate) {
             listener?.onSuccess(message)
         }
     }
