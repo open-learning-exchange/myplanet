@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/secondary_bg"
     tools:context=".ui.submission.SubmissionDetailFragment">
 
     <LinearLayout
@@ -17,7 +18,8 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="16dp"
             app:cardCornerRadius="8dp"
-            app:cardElevation="4dp">
+            app:cardElevation="4dp"
+            app:cardBackgroundColor="@color/card_bg">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -31,25 +33,28 @@
                     android:layout_height="wrap_content"
                     android:textSize="20sp"
                     android:textStyle="bold"
-                    android:textColor="?android:attr/textColorPrimary" />
+                    android:textColor="@color/daynight_textColor"/>
                 <TextView
                     android:id="@+id/tv_submission_status"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/daynight_textColor"/>
                 <TextView
                     android:id="@+id/tv_submission_date"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/daynight_textColor"/>
                 <TextView
                     android:id="@+id/tv_submitted_by"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
-                    android:textSize="14sp" />
+                    android:textSize="14sp"
+                    android:textColor="@color/daynight_textColor"/>
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
@@ -59,6 +64,7 @@
             android:layout_height="wrap_content"
             android:nestedScrollingEnabled="false"
             tools:itemCount="14"
-            tools:listitem="@layout/item_question_answer" />
+            tools:listitem="@layout/item_question_answer"
+            android:textColor="@color/daynight_textColor"/>
     </LinearLayout>
 </ScrollView>

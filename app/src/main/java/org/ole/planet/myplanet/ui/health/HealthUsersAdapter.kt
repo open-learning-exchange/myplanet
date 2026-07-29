@@ -7,14 +7,16 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
-class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = null) :
-    ListAdapter<RealmUser, HealthUsersAdapter.ViewHolder>(
-        DiffUtils.itemCallback<RealmUser>(
+class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = null) :
+    ListAdapter<UserEntity, HealthUsersAdapter.ViewHolder>(DIFF_CALLBACK) {
+
+    companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.name == new.name &&
@@ -29,10 +31,10 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
                 if (diffs.isEmpty()) null else diffs
             }
         )
-    ) {
+    }
 
-    class ViewHolder(private val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(user: RealmUser, clickListener: ((RealmUser) -> Unit)?) {
+    class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
+        fun bind(user: UserEntity, clickListener: ((UserEntity) -> Unit)?) {
             bindName(user)
             bindDate(user)
             bindImage(user)
@@ -41,17 +43,16 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
             }
         }
 
-        fun bindName(user: RealmUser) {
+        fun bindName(user: UserEntity) {
             binding.txtName.text = binding.root.context.getString(R.string.two_strings, user.getFullName(), "(${user.name})")
         }
 
-        fun bindDate(user: RealmUser) {
+        fun bindDate(user: UserEntity) {
             binding.txtJoined.text = binding.root.context.getString(R.string.joined_colon, TimeUtils.formatDate(user.joinDate))
         }
 
-        fun bindImage(user: RealmUser) {
+        fun bindImage(user: UserEntity) {
             if (!TextUtils.isEmpty(user.userImage)) {
-                val avatarSize = binding.ivUser.context.resources.getDimensionPixelSize(R.dimen._80dp)
                 ImageUtils.loadProfileImage(user.userImage, binding.ivUser, avatarSize)
             } else {
                 binding.ivUser.setImageResource(R.drawable.profile)
@@ -59,9 +60,14 @@ class HealthUsersAdapter(private val clickListener: ((RealmUser) -> Unit)? = nul
         }
     }
 
+    private var avatarSize = 0
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (avatarSize == 0) {
+            avatarSize = parent.context.resources.getDimensionPixelSize(R.dimen._80dp)
+        }
         val binding = ItemUserBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding)
+        return ViewHolder(binding, avatarSize)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {

@@ -111,9 +111,9 @@ class DownloadService : Service() {
         Log.d(TAG, "onStartCommand: fromSync=$fromSync queueRunning=$isQueueRunning")
 
         if (!isQueueRunning) {
+            isQueueRunning = true
             currentJob?.cancel()
             currentJob = appScope.launch {
-                isQueueRunning = true
                 try {
                     processDownloadQueue()
                 } finally {

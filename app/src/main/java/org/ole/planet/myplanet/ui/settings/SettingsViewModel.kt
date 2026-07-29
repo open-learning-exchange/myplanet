@@ -8,8 +8,8 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.RetryOperation
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.utils.DownloadUtils.downloadAllFiles
 
 data class RetryQueueDetails(
     val pendingCount: Long = 0,
-    val pendingOps: List<RealmRetryOperation> = emptyList(),
+    val pendingOps: List<RetryOperation> = emptyList(),
     val isProcessing: Boolean = false
 )
 
@@ -43,8 +43,8 @@ class SettingsViewModel @Inject constructor(
     private val _retryQueueDetailsEvent = Channel<RetryQueueDetails>(Channel.BUFFERED)
     val retryQueueDetailsEvent: Flow<RetryQueueDetails> = _retryQueueDetailsEvent.receiveAsFlow()
 
-    private val _downloadCompleteEvent = Channel<List<RealmMyLibrary>>(Channel.BUFFERED)
-    val downloadCompleteEvent: Flow<List<RealmMyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
+    private val _downloadCompleteEvent = Channel<List<MyLibrary>>(Channel.BUFFERED)
+    val downloadCompleteEvent: Flow<List<MyLibrary>> = _downloadCompleteEvent.receiveAsFlow()
 
 
     fun isCurrentlyProcessing(): Boolean {
@@ -59,23 +59,27 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun clearRetryQueue() {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val cleared = retryQueue.safeClearQueue()
             _clearRetryQueueEvent.send(cleared)
         }
     }
 
+    private suspend fun getRetryQueueSnapshot(): RetryQueueDetails {
+        val pendingCount = retryQueue.getPendingCount()
+        val pendingOps = retryQueue.getPendingOperations()
+        val isProcessing = retryQueue.isCurrentlyProcessing()
+        return RetryQueueDetails(pendingCount, pendingOps, isProcessing)
+    }
+
     fun fetchRetryQueueDetails() {
-        viewModelScope.launch(dispatcherProvider.io) {
-            val pendingCount = retryQueue.getPendingCount()
-            val pendingOps = retryQueue.getPendingOperations()
-            val isProcessing = retryQueue.isCurrentlyProcessing()
-            _retryQueueDetailsEvent.send(RetryQueueDetails(pendingCount, pendingOps, isProcessing))
+        viewModelScope.launch {
+            _retryQueueDetailsEvent.send(getRetryQueueSnapshot())
         }
     }
 
-    fun downloadFiles(libraryList: List<RealmMyLibrary>?) {
-        viewModelScope.launch(dispatcherProvider.io) {
+    fun downloadFiles(libraryList: List<MyLibrary>?) {
+        viewModelScope.launch {
             var files = libraryList
             try {
                 files = libraryList ?: resourcesRepository.getAllLibrariesToSync()

@@ -10,14 +10,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 data class RequestsUiState(
-    val members: List<RealmUser> = emptyList(),
+    val members: List<UserEntity> = emptyList(),
     val isLeader: Boolean = false,
     val memberCount: Int = 0
 )
@@ -26,8 +25,7 @@ data class RequestsUiState(
 class RequestsViewModel @Inject constructor(
     private val teamsRepository: TeamsRepository,
     private val teamsSyncRepository: TeamsSyncRepository,
-    private val userSessionManager: UserSessionManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val userSessionManager: UserSessionManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RequestsUiState())
@@ -36,7 +34,7 @@ class RequestsViewModel @Inject constructor(
     val successAction = _successAction.asSharedFlow()
 
     fun fetchMembers(teamId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val members = teamsRepository.getRequestedMembers(teamId)
             val memberCount = teamsRepository.getJoinedMembers(teamId).size
             val user = userSessionManager.getUserModel()
@@ -45,7 +43,7 @@ class RequestsViewModel @Inject constructor(
         }
     }
 
-    fun respondToRequest(teamId: String?, user: RealmUser, isAccepted: Boolean) {
+    fun respondToRequest(teamId: String?, user: UserEntity, isAccepted: Boolean) {
         if (teamId.isNullOrBlank() || user.id.isNullOrBlank()) return
 
         val originalState = _uiState.value
@@ -55,7 +53,7 @@ class RequestsViewModel @Inject constructor(
         )
         _uiState.value = optimisticState
 
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val userId = user.id ?: run { _uiState.value = originalState; return@launch }
             val result = teamsRepository.respondToMemberRequest(teamId, userId, isAccepted)
             if (result.isSuccess) {

@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -35,6 +35,7 @@ class UserProfileViewModelTest {
 
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
+        override val mainImmediate: CoroutineDispatcher = testDispatcher
         override val io: CoroutineDispatcher = testDispatcher
         override val default: CoroutineDispatcher = testDispatcher
         override val unconfined: CoroutineDispatcher = testDispatcher
@@ -46,7 +47,7 @@ class UserProfileViewModelTest {
         userSessionManager = mockk(relaxed = true)
         activitiesRepository = mockk(relaxed = true)
 
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "Test User"
         coEvery { userSessionManager.getUserModel() } returns mockUser
 
@@ -54,7 +55,7 @@ class UserProfileViewModelTest {
         coEvery { activitiesRepository.getGlobalLastVisit() } returns 123456789L
         coEvery { activitiesRepository.getResourceOpenCount("Test User", UserSessionManager.KEY_RESOURCE_OPEN) } returns 10L
 
-        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository, dispatcherProvider)
+        viewModel = UserProfileViewModel(userRepository, userSessionManager, activitiesRepository)
     }
 
     @Test
@@ -84,7 +85,7 @@ class UserProfileViewModelTest {
         val userId = "user123"
         coEvery { userRepository.getActiveUserIdSuspending() } returns userId
 
-        val mockUser = mockk<RealmUser>()
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.updateUserDetails(
             userId = userId,
             firstName = "John",
@@ -155,7 +156,7 @@ class UserProfileViewModelTest {
     fun `loadCurrentUserProfile sets userModel to value returned by userRepository`() = runTest {
         val userId = "user123"
         coEvery { userRepository.getActiveUserIdSuspending() } returns userId
-        val mockUser = mockk<RealmUser>()
+        val mockUser = mockk<UserEntity>()
         coEvery { userRepository.getUserByAnyId(userId) } returns mockUser
 
         viewModel.loadCurrentUserProfile()

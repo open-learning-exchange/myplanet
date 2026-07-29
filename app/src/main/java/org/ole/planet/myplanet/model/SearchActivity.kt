@@ -1,0 +1,48 @@
+package org.ole.planet.myplanet.model
+
+import androidx.room.Entity
+import androidx.room.Index
+import androidx.room.PrimaryKey
+import com.google.gson.JsonObject
+import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utils.JsonUtils
+import org.ole.planet.myplanet.utils.NetworkUtils
+import org.ole.planet.myplanet.utils.VersionUtils
+
+@Entity(
+    tableName = "search_activity",
+    indices = [Index("_rev"), Index("type"), Index("user")]
+)
+open class SearchActivity(
+    @PrimaryKey
+    @JvmField
+    var id: String = "",
+    @JvmField
+    var _id: String = "",
+    var _rev: String = "",
+    var text: String = "",
+    var type: String = "",
+    var time: Long = 0,
+    var user: String = "",
+    var filter: String = "",
+    var createdOn: String = "",
+    var parentCode: String = ""
+) {
+    fun serialize(): JsonObject {
+        val obj = JsonObject()
+        obj.addProperty("text", text)
+        obj.addProperty("type", type)
+        obj.addProperty("time", time)
+        obj.addProperty("user", user)
+        obj.addProperty("androidId", VersionUtils.getAndroidId(MainApplication.context))
+        obj.addProperty(
+            "customDeviceName", NetworkUtils.getCustomDeviceName(MainApplication.context)
+        )
+        obj.addProperty("deviceName", NetworkUtils.getDeviceName())
+        obj.addProperty("createdOn", createdOn)
+        obj.addProperty("parentCode", parentCode)
+        obj.add("filter", JsonUtils.gson.fromJson(filter, JsonObject::class.java))
+        return obj
+    }
+
+}

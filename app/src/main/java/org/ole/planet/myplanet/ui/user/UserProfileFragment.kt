@@ -32,8 +32,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.DiskCacheStrategy
@@ -58,10 +56,9 @@ import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
-import org.ole.planet.myplanet.databinding.RowStatBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
-import org.ole.planet.myplanet.utils.DiffUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -73,7 +70,9 @@ class UserProfileFragment : Fragment() {
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    private var model: RealmUser? = null
+    @Inject
+    lateinit var timeProvider: TimeProvider
+    private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
@@ -173,7 +172,7 @@ class UserProfileFragment : Fragment() {
     private fun initializeDependencies() {
         binding.rvStat.layoutManager = LinearLayoutManager(activity)
         binding.rvStat.isNestedScrollingEnabled = false
-        binding.rvStat.adapter = StatsAdapter()
+        binding.rvStat.adapter = StatsAdapter(requireContext())
     }
 
     private fun observeUserProfile() {
@@ -456,7 +455,7 @@ class UserProfileFragment : Fragment() {
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)
@@ -466,40 +465,6 @@ class UserProfileFragment : Fragment() {
     private fun setupStatsRecycler() {
         val map = createStatsMap()
         (binding.rvStat.adapter as StatsAdapter).submitList(map.entries.map { it.toPair() })
-    }
-
-    inner class StatsAdapter : ListAdapter<Pair<String, String?>, ViewHolderRowStat>(
-        DiffUtils.itemCallback<Pair<String, String?>>(
-            { oldItem, newItem -> oldItem.first == newItem.first },
-            { oldItem, newItem -> oldItem == newItem }
-        )
-    ) {
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderRowStat {
-            val rowStatBinding = RowStatBinding.inflate(LayoutInflater.from(activity), parent, false)
-            return ViewHolderRowStat(rowStatBinding)
-        }
-
-        override fun onBindViewHolder(holder: ViewHolderRowStat, position: Int) {
-            val item = getItem(position)
-            holder.rowStatBinding.tvTitle.text = item.first
-            holder.rowStatBinding.tvTitle.visibility = View.VISIBLE
-            holder.rowStatBinding.tvDescription.text = item.second
-            if (holder.bindingAdapterPosition % 2 == 0) {
-                holder.rowStatBinding.root.setBackgroundColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        R.color.user_profile_background
-                    )
-                )
-            } else {
-                holder.rowStatBinding.root.setBackgroundColor(
-                    ContextCompat.getColor(
-                        requireContext(),
-                        android.R.color.transparent
-                    )
-                )
-            }
-        }
     }
 
     private fun searchForPhoto() {
@@ -550,8 +515,6 @@ class UserProfileFragment : Fragment() {
         val path = uri?.toString()
         viewModel.updateCurrentUserProfileImage(path)
     }
-
-    inner class ViewHolderRowStat(val rowStatBinding: RowStatBinding) : RecyclerView.ViewHolder(rowStatBinding.root)
 
     override fun onDestroyView() {
         editProfileDialog?.dismiss()

@@ -20,7 +20,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnItemDragStateListener
 import org.ole.planet.myplanet.callback.OnItemMoveListener
 import org.ole.planet.myplanet.callback.OnStartDragListener
-import org.ole.planet.myplanet.model.RealmMyLife
+import org.ole.planet.myplanet.model.MyLife
 import org.ole.planet.myplanet.ui.calendar.CalendarFragment
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.ui.health.MyHealthFragment
@@ -34,13 +34,19 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class LifeAdapter(
     private val context: Context,
     private val mDragStartListener: OnStartDragListener,
-    private val visibilityCallback: (RealmMyLife, Boolean) -> Unit,
-    private val reorderCallback: (List<RealmMyLife>) -> Unit
-) : ListAdapter<RealmMyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
+    private val visibilityCallback: (MyLife, Boolean) -> Unit,
+    private val reorderCallback: (List<MyLife>) -> Unit
+) : ListAdapter<MyLife, RecyclerView.ViewHolder>(DIFF_CALLBACK), OnItemMoveListener {
     private val hide = 0.5f
     private val show = 1f
 
     private val drawableCache = mutableMapOf<String, Int>()
+    private var workingList: MutableList<MyLife> = mutableListOf()
+
+    override fun onCurrentListChanged(previousList: MutableList<MyLife>, currentList: MutableList<MyLife>) {
+        super.onCurrentListChanged(previousList, currentList)
+        workingList = currentList.toMutableList()
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
         val v = LayoutInflater.from(context).inflate(R.layout.row_life, parent, false)
@@ -96,12 +102,20 @@ class LifeAdapter(
     }
 
     override fun onItemMove(fromPosition: Int, toPosition: Int): Boolean {
-        val newList = currentList.toMutableList()
-        val movedItem = newList.removeAt(fromPosition)
-        newList.add(toPosition, movedItem)
-        reorderCallback(newList)
-        submitList(newList)
+        if (fromPosition == toPosition ||
+            fromPosition !in workingList.indices ||
+            toPosition !in workingList.indices
+        ) {
+            return false
+        }
+        val movedItem = workingList.removeAt(fromPosition)
+        workingList.add(toPosition, movedItem)
+        submitList(workingList.toList())
         return true
+    }
+
+    override fun onItemMoveFinished() {
+        reorderCallback(workingList.toList())
     }
 
     internal inner class LifeViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView),
@@ -128,7 +142,7 @@ class LifeAdapter(
     }
 
     companion object {
-        private val DIFF_CALLBACK = DiffUtils.itemCallback<RealmMyLife>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<MyLife>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )

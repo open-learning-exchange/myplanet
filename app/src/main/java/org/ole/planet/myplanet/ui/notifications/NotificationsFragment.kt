@@ -61,7 +61,7 @@ class NotificationsFragment : Fragment() {
 
         val options = resources.getStringArray(status_options)
         val optionsList: MutableList<String?> = ArrayList(listOf(*options))
-        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item, optionsList)
+        val spinnerAdapter = ArrayAdapter(requireContext(), R.layout.spinner_item_right, optionsList)
         spinnerAdapter.setDropDownViewResource(R.layout.spinner_item)
         binding.status.adapter = spinnerAdapter
         var isInitialSpinnerSelection = true

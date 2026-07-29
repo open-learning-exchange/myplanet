@@ -23,12 +23,11 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
-import org.ole.planet.myplanet.repository.ActivitiesRepository
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -45,10 +44,10 @@ import org.ole.planet.myplanet.utils.NotificationConfig
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val newNotifications: List<NotificationConfig> = emptyList(),
-    val library: List<RealmMyLibrary> = emptyList(),
-    val courses: List<RealmMyCourse> = emptyList(),
-    val teams: List<RealmMyTeam> = emptyList(),
-    val users: List<RealmUser> = emptyList(),
+    val library: List<MyLibrary> = emptyList(),
+    val courses: List<MyCourse> = emptyList(),
+    val teams: List<MyTeam> = emptyList(),
+    val users: List<UserEntity> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
 )
@@ -71,7 +70,6 @@ class DashboardViewModel @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val notificationsRepository: NotificationsRepository,
     private val surveysRepository: SurveysRepository,
-    private val activitiesRepository: ActivitiesRepository,
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
@@ -131,7 +129,7 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
 
         libraryJob?.cancel()
-        libraryJob = viewModelScope.launch(dispatcherProvider.main) {
+        libraryJob = viewModelScope.launch {
             val myLibrary = withContext(dispatcherProvider.io) {
                 resourcesRepository.getMyLibrary(userId)
             }
@@ -139,7 +137,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         coursesJob?.cancel()
-        coursesJob = viewModelScope.launch(dispatcherProvider.main) {
+        coursesJob = viewModelScope.launch {
             coursesRepository.getMyCoursesFlow(userId)
                 .flowOn(dispatcherProvider.io)
                 .collect { courses ->
@@ -148,7 +146,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         teamsJob?.cancel()
-        teamsJob = viewModelScope.launch(dispatcherProvider.main) {
+        teamsJob = viewModelScope.launch {
             teamsRepository.getMyTeamsFlow(userId)
                 .flowOn(dispatcherProvider.io)
                 .collect { teams ->
@@ -157,21 +155,12 @@ class DashboardViewModel @Inject constructor(
         }
 
         profileJob?.cancel()
-        profileJob = viewModelScope.launch(dispatcherProvider.main) {
-            val (fullName, offlineLogins) = withContext(dispatcherProvider.io) {
-                val user = userRepository.getUserById(userId)
-                val userName = user?.name
-                val fullName = user?.getFullName()?.takeIf { it.trim().isNotBlank() } ?: user?.name
-
-                val count = if (userName != null) {
-                    activitiesRepository.getOfflineLoginCount(userName)
-                } else {
-                    0
-                }
-                Pair(fullName, count)
+        profileJob = viewModelScope.launch {
+            val profile = withContext(dispatcherProvider.io) {
+                userRepository.getDashboardProfile(userId)
             }
 
-            _uiState.update { it.copy(fullName = fullName, offlineLogins = offlineLogins) }
+            _uiState.update { it.copy(fullName = profile.fullName, offlineLogins = profile.offlineLogins) }
         }
     }
 
@@ -179,11 +168,11 @@ class DashboardViewModel @Inject constructor(
         return teamsRepository.getTeamType(teamId)
     }
 
-    suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
+    suspend fun getLibraryForSelectedUser(userId: String): List<MyLibrary> {
         return resourcesRepository.getLibraryForSelectedUser(userId)
     }
 
-    suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+    suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         return resourcesRepository.getLibraryListForUser(userId)
     }
 

@@ -18,8 +18,8 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.TestDispatcherProvider
@@ -83,19 +83,15 @@ class UserSessionManagerTest {
 
     @Test
     fun `getUserModel suspending returns model from repository`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>()
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = mockk<UserEntity>()
+        coEvery { userRepository.getUserModel() } returns mockUser
         assertEquals(mockUser, userSessionManager.getUserModel())
     }
 
     @Test
     fun `onLoginAsync invokes callback and logs login on success`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        every { mockUser.id } returns "id123"
-        every { mockUser.name } returns "test_name"
-        every { mockUser.parentCode } returns "pc123"
-        every { mockUser.planetCode } returns "pl123"
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = UserEntity(id = "id123", name = "test_name", parentCode = "pc123", planetCode = "pl123")
+        coEvery { userRepository.getUserModel() } returns mockUser
 
         var callbackInvoked = false
         val callback = { callbackInvoked = true }
@@ -117,7 +113,7 @@ class UserSessionManagerTest {
     @Test
     fun `onLoginAsync invokes onError on exception`() = testScope.runTest {
         val exception = RuntimeException("Mock Error")
-        coEvery { userRepository.getUserModelSuspending() } throws exception
+        coEvery { userRepository.getUserModel() } throws exception
 
         var errorInvoked: Throwable? = null
         val onError: (Throwable) -> Unit = { errorInvoked = it }
@@ -130,8 +126,8 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLogin delegates to onLoginAsync`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = mockk<UserEntity>(relaxed = true)
+        coEvery { userRepository.getUserModel() } returns mockUser
         userSessionManager.onLogin()
         advanceUntilIdle()
         coVerify { activitiesRepository.logLogin(any(), any(), any(), any()) }
@@ -139,9 +135,9 @@ class UserSessionManagerTest {
 
     @Test
     fun `logoutAsync logs logout successfully`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
+        val mockUser = mockk<UserEntity>(relaxed = true)
         every { mockUser.name } returns "test_name"
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        coEvery { userRepository.getUserModel() } returns mockUser
 
         userSessionManager.logoutAsync()
         advanceUntilIdle()
@@ -151,7 +147,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `logoutAsync handles exception silently`() = testScope.runTest {
-        coEvery { userRepository.getUserModelSuspending() } throws RuntimeException("Mock error")
+        coEvery { userRepository.getUserModel() } throws RuntimeException("Mock error")
         // Should not throw an unhandled exception
         userSessionManager.logoutAsync()
         advanceUntilIdle()
@@ -159,14 +155,10 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount delegates to logResourceOpen for normal user`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        every { mockUser.id } returns "normal_user"
-        every { mockUser.name } returns "test_name"
-        every { mockUser.parentCode } returns "pc123"
-        every { mockUser.planetCode } returns "pl123"
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = UserEntity(id = "normal_user", name = "test_name", parentCode = "pc123", planetCode = "pl123")
+        coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>()
+        val mockLibrary = mockk<MyLibrary>()
         every { mockLibrary.title } returns "test_title"
         every { mockLibrary.resourceId } returns "res123"
 
@@ -187,11 +179,10 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount uses default type`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        every { mockUser.id } returns "normal_user"
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = UserEntity(id = "normal_user")
+        coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
 
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
@@ -210,11 +201,10 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount exits early for guest user`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        every { mockUser.id } returns "guest_user"
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = UserEntity(id = "guest_user")
+        coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
 
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
@@ -224,8 +214,8 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLoginAsync invokes onError when callback throws exception`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = mockk<UserEntity>(relaxed = true)
+        coEvery { userRepository.getUserModel() } returns mockUser
 
         val exception = RuntimeException("Callback Error")
         val callback: () -> Unit = { throw exception }
@@ -240,8 +230,8 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLoginAsync invokes onError when logLogin throws exception`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = mockk<UserEntity>(relaxed = true)
+        coEvery { userRepository.getUserModel() } returns mockUser
 
         val exception = RuntimeException("Mock logLogin error")
         coEvery { activitiesRepository.logLogin(any(), any(), any(), any()) } throws exception
@@ -257,7 +247,7 @@ class UserSessionManagerTest {
 
     @Test
     fun `onLoginAsync handles exception when onError is null`() = testScope.runTest {
-        coEvery { userRepository.getUserModelSuspending() } throws RuntimeException("Mock Error")
+        coEvery { userRepository.getUserModel() } throws RuntimeException("Mock Error")
 
         // Should not crash
         userSessionManager.onLoginAsync(onError = null)
@@ -266,8 +256,8 @@ class UserSessionManagerTest {
 
     @Test
     fun `logoutAsync handles exception when logLogout throws`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = mockk<UserEntity>(relaxed = true)
+        coEvery { userRepository.getUserModel() } returns mockUser
         coEvery { activitiesRepository.logLogout(any()) } throws RuntimeException("Mock logout error")
 
         userSessionManager.logoutAsync()
@@ -278,8 +268,8 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount handles exception from userRepository`() = testScope.runTest {
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
-        coEvery { userRepository.getUserModelSuspending() } throws RuntimeException("Mock error")
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
+        coEvery { userRepository.getUserModel() } throws RuntimeException("Mock error")
 
         userSessionManager.setResourceOpenCount(mockLibrary)
         advanceUntilIdle()
@@ -289,11 +279,10 @@ class UserSessionManagerTest {
 
     @Test
     fun `setResourceOpenCount handles exception from activitiesRepository`() = testScope.runTest {
-        val mockUser = mockk<RealmUser>(relaxed = true)
-        every { mockUser.id } returns "normal_user"
-        coEvery { userRepository.getUserModelSuspending() } returns mockUser
+        val mockUser = UserEntity(id = "normal_user")
+        coEvery { userRepository.getUserModel() } returns mockUser
 
-        val mockLibrary = mockk<RealmMyLibrary>(relaxed = true)
+        val mockLibrary = mockk<MyLibrary>(relaxed = true)
         coEvery { activitiesRepository.logResourceOpen(any(), any(), any(), any(), any(), any()) } throws RuntimeException("Mock logResourceOpen error")
 
         userSessionManager.setResourceOpenCount(mockLibrary)

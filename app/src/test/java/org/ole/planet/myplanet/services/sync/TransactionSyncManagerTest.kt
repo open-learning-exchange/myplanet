@@ -69,6 +69,7 @@ class TransactionSyncManagerTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val testScope = TestScope(testDispatcher)
     private val dispatcherProvider: DispatcherProvider = mockk()
+    private val userSessionManager: org.ole.planet.myplanet.services.UserSessionManager = mockk()
 
     @Before
     fun setup() {
@@ -80,8 +81,6 @@ class TransactionSyncManagerTest {
 
         transactionSyncManager = TransactionSyncManager(
             apiInterface,
-            databaseService,
-            dispatcherProvider.io,
             context,
             voicesRepository,
             chatRepository,
@@ -102,7 +101,8 @@ class TransactionSyncManagerTest {
             progressRepository,
             surveysRepository,
             testScope,
-            dispatcherProvider
+            dispatcherProvider,
+            userSessionManager
         )
     }
 

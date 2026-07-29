@@ -19,13 +19,16 @@ import com.opencsv.CSVParserBuilder
 import com.opencsv.CSVReaderBuilder
 import java.io.File
 import java.io.FileReader
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemInlineResourceBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -34,11 +37,10 @@ import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 class InlineResourceAdapter(
-    private val parentScope: CoroutineScope,
     private val dispatcherProvider: DispatcherProvider,
-    private val onResourceClick: (RealmMyLibrary) -> Unit
-) : ListAdapter<RealmMyLibrary, InlineResourceAdapter.ViewHolder>(
-    DiffUtils.itemCallback<RealmMyLibrary>(
+    private val onResourceClick: (MyLibrary) -> Unit
+) : ListAdapter<MyLibrary, InlineResourceAdapter.ViewHolder>(
+    DiffUtils.itemCallback<MyLibrary>(
         areItemsTheSame = { old, new -> old.id == new.id },
         areContentsTheSame = { old, new ->
             old.resourceLocalAddress == new.resourceLocalAddress &&
@@ -65,6 +67,15 @@ class InlineResourceAdapter(
         }
     }
 
+    private var adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+
+    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
+        super.onAttachedToRecyclerView(recyclerView)
+        if (!adapterScope.isActive) {
+            adapterScope = CoroutineScope(SupervisorJob() + dispatcherProvider.main)
+        }
+    }
+
     class ViewHolder(val binding: ItemInlineResourceBinding) : RecyclerView.ViewHolder(binding.root) {
         private var previewJob: Job? = null
 
@@ -79,10 +90,20 @@ class InlineResourceAdapter(
         }
     }
 
-    override fun onCurrentListChanged(previousList: MutableList<RealmMyLibrary>, currentList: MutableList<RealmMyLibrary>) {
+    override fun onCurrentListChanged(previousList: MutableList<MyLibrary>, currentList: MutableList<MyLibrary>) {
         super.onCurrentListChanged(previousList, currentList)
-        textCache.clear()
-        bitmapCache.evictAll()
+        val dir = externalFilesDir ?: return
+        val currentMap = currentList.associateBy { it.id }
+
+        previousList.forEach { prev ->
+            val current = currentMap[prev.id]
+            if (current == null || current.resourceLocalAddress != prev.resourceLocalAddress) {
+                val file = File(dir, "ole/${prev.id}/${prev.resourceLocalAddress}")
+                val prefix = file.absolutePath
+                textCache.keys.filter { it.startsWith(prefix) }.forEach { textCache.remove(it) }
+                bitmapCache.snapshot().keys.filter { it.startsWith(prefix) }.forEach { bitmapCache.remove(it) }
+            }
+        }
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -95,13 +116,9 @@ class InlineResourceAdapter(
 
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
+        adapterScope.cancel()
         textCache.clear()
         bitmapCache.evictAll()
-        for (i in 0 until recyclerView.childCount) {
-            val child = recyclerView.getChildAt(i)
-            val holder = recyclerView.getChildViewHolder(child) as? ViewHolder
-            holder?.cancelPreviousPreviews()
-        }
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -151,7 +168,7 @@ class InlineResourceAdapter(
         }
     }
 
-    private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: RealmMyLibrary) {
+    private fun updateStatusAndPreview(holder: ViewHolder, context: Context, resource: MyLibrary) {
         val binding = holder.binding
         val isDownloaded = resource.isResourceOffline() ||
             FileUtils.checkFileExist(context, UrlUtils.getUrl(resource))
@@ -178,7 +195,7 @@ class InlineResourceAdapter(
                 mimeType?.startsWith("image") == true -> showImagePreview(binding, context, resourceFile)
                 mimeType?.startsWith("video") == true -> showVideoPreview(binding, context, resourceFile)
                 else -> {
-                    holder.setPreviewJob(parentScope.launch(dispatcherProvider.main) {
+                    holder.setPreviewJob(adapterScope.launch {
                         when {
                             mimeType?.contains("pdf") == true -> showPdfPreview(holder, resourceFile)
                             mimeType?.startsWith("audio") == true -> showAudioPreview(holder, resourceFile)
@@ -223,7 +240,7 @@ class InlineResourceAdapter(
 
     private suspend fun showPdfPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedBitmap = bitmapCache.get(cacheKey)
         val bitmap = if (cachedBitmap != null) {
             cachedBitmap
@@ -256,7 +273,7 @@ class InlineResourceAdapter(
     private suspend fun showAudioPreview(holder: ViewHolder, file: File) {
         holder.binding.audioPreviewContainer.visibility = View.VISIBLE
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedDuration = textCache[cacheKey]
         val durationText = if (cachedDuration != null) {
             cachedDuration
@@ -280,7 +297,7 @@ class InlineResourceAdapter(
 
     private suspend fun showCsvPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedPreview = textCache[cacheKey]
         val preview = if (cachedPreview != null) {
             cachedPreview
@@ -312,7 +329,7 @@ class InlineResourceAdapter(
 
     private suspend fun showTextPreview(holder: ViewHolder, file: File) {
         if (!file.exists()) return
-        val cacheKey = "${file.absolutePath}_${file.lastModified()}"
+        val cacheKey = getCacheKey(file)
         val cachedText = textCache[cacheKey]
         val text = if (cachedText != null) {
             cachedText
@@ -330,4 +347,6 @@ class InlineResourceAdapter(
             holder.binding.tvTextPreview.text = text
         }
     }
+
+    private fun getCacheKey(file: File): String = "${file.absolutePath}_${file.lastModified()}_${file.length()}"
 }

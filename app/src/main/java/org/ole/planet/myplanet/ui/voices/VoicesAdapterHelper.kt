@@ -10,9 +10,12 @@ import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities
 
 object VoicesAdapterHelper {
-    fun createOnAnimateTyping(coroutineScope: CoroutineScope, dispatcherProvider: DispatcherProvider): (String, (String) -> Unit, () -> Unit) -> (() -> Unit) {
+    fun createOnAnimateTyping(
+        scope: CoroutineScope,
+        dispatcherProvider: DispatcherProvider
+    ): (String, (String) -> Unit, () -> Unit) -> (() -> Unit) {
         return { response, onUpdate, onComplete ->
-            val job = coroutineScope.launch(dispatcherProvider.main) {
+            val job = scope.launch(dispatcherProvider.main) {
                 var currentIndex = 0
                 while (currentIndex < response.length) {
                     if (!isActive) return@launch

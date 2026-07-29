@@ -31,14 +31,16 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnSyncListener
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
 import org.ole.planet.myplanet.services.sync.TransactionSyncManager
+import org.ole.planet.myplanet.ui.dashboard.DashboardItem
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
+import org.ole.planet.myplanet.ui.dashboard.ItemType
 import org.ole.planet.myplanet.ui.exam.UserInformationFragment
 import org.ole.planet.myplanet.ui.health.HealthUsersAdapter
 import org.ole.planet.myplanet.ui.teams.TeamDetailFragment
@@ -64,25 +66,28 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     lateinit var lifeRepository: LifeRepository
 
     fun onLoaded(v: View) {
+        val llPrompt = v.findViewById<LinearLayout>(R.id.ll_prompt)
+        val icClose = v.findViewById<ImageView>(R.id.ic_close)
+        val imageView = v.findViewById<ImageView>(R.id.imageView)
+
         viewLifecycleOwner.lifecycleScope.launch {
             model = userRepository.getUserProfile()
             fullName = model?.getFullName()
             if (fullName?.trim().isNullOrBlank()) {
                 fullName = model?.name
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.VISIBLE
-                v.findViewById<LinearLayout>(R.id.ll_prompt).setOnClickListener {
+                llPrompt.visibility = View.VISIBLE
+                llPrompt.setOnClickListener {
                     if (!childFragmentManager.isStateSaved) {
                         UserInformationFragment.getInstance("", "", false)
                             .show(childFragmentManager, "")
                     }
                 }
             } else {
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+                llPrompt.visibility = View.GONE
             }
-            v.findViewById<ImageView>(R.id.ic_close).setOnClickListener {
-                v.findViewById<LinearLayout>(R.id.ll_prompt).visibility = View.GONE
+            icClose.setOnClickListener {
+                llPrompt.visibility = View.GONE
             }
-            val imageView = v.findViewById<ImageView>(R.id.imageView)
             if (!TextUtils.isEmpty(model?.userImage)) {
                 Glide.with(requireActivity())
                     .load(model?.userImage)
@@ -164,7 +169,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
-    private fun renderMyLibrary(dbMylibrary: List<RealmMyLibrary>) {
+    private fun renderMyLibrary(dbMylibrary: List<MyLibrary>) {
         val flexboxLayout = view?.findViewById<FlexboxLayout>(R.id.flexboxLayout)
         flexboxLayout?.removeAllViews()
         flexboxLayout?.flexDirection = FlexDirection.ROW
@@ -199,20 +204,21 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
     }
 
-    private fun renderMyCourses(courses: List<RealmMyCourse>) {
+    private fun renderMyCourses(courses: List<MyCourse>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutCourse) ?: return
         flexboxLayout.removeAllViews()
         val filteredCourses = courses.filter { !it.courseTitle.isNullOrBlank() }
-        setCountText(filteredCourses.size, RealmMyCourse::class.java, requireView())
+        setCountText(filteredCourses.size, MyCourse::class.java, requireView())
         val myCoursesTextViewArray = arrayOfNulls<TextView>(filteredCourses.size)
         for ((itemCnt, items) in filteredCourses.withIndex()) {
-            setTextViewProperties(myCoursesTextViewArray, itemCnt, items)
+            val dashboardItem = DashboardItem(items.courseId, items.courseTitle, null, ItemType.COURSE)
+            setTextViewProperties(myCoursesTextViewArray, itemCnt, dashboardItem)
             myCoursesTextViewArray[itemCnt]?.let { setTextColor(it, itemCnt) }
             flexboxLayout.addView(myCoursesTextViewArray[itemCnt], params)
         }
     }
 
-    private suspend fun renderMyTeams(teams: List<RealmMyTeam>) {
+    private suspend fun renderMyTeams(teams: List<MyTeam>) {
         val flexboxLayout: FlexboxLayout = view?.findViewById(R.id.flexboxLayoutTeams) ?: return
         flexboxLayout.removeAllViews()
 
@@ -228,7 +234,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
             v.tag = ob._id
             flexboxLayout.addView(v, params)
         }
-        setCountText(teams.size, RealmMyTeam::class.java, requireView())
+        setCountText(teams.size, MyTeam::class.java, requireView())
 
         val userId = profileDbHandler.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
@@ -264,11 +270,12 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         val surveyCount = viewModel.getAssignedSurveyCount(userId)
         for ((itemCnt, items) in visibleItems.withIndex()) {
-            flexboxLayout.addView(getLayout(itemCnt, items, surveyCount), params)
+            val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
+            flexboxLayout.addView(getLayout(itemCnt, dashboardItem, surveyCount), params)
         }
     }
 
-    private fun myLibraryItemClickAction(textView: TextView, items: RealmMyLibrary?) {
+    private fun myLibraryItemClickAction(textView: TextView, items: MyLibrary?) {
         textView.setOnClickListener {
             items?.let {
                 openResource(it)
@@ -278,10 +285,10 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     private fun setCountText(countText: Int, c: Class<*>, v: View) {
         when (c) {
-            RealmMyCourse::class.java -> {
+            MyCourse::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_course))
             }
-            RealmMyTeam::class.java -> {
+            MyTeam::class.java -> {
                 updateCountText(countText, v.findViewById(R.id.count_team))
             }
         }
@@ -376,11 +383,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     fun syncKeyId() {
-        if (model?.getRoleAsString()?.contains("health") == true) {
-            transactionSyncManager.syncAllHealthData(prefData.rawPreferences, this)
-        } else {
-            transactionSyncManager.syncKeyIv(prefData.rawPreferences, this, profileDbHandler)
-        }
+        transactionSyncManager.syncDashboardKeyId(model?.getRoleAsString(), this)
     }
 
     override fun onSyncStarted() {

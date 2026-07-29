@@ -5,27 +5,21 @@ import android.content.DialogInterface
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
-import android.view.ViewGroup
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
 import android.widget.EditText
-import android.widget.Spinner
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.RealmList
 import java.util.Calendar
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityAddResourceBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.LocalResourceRequest
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
@@ -34,6 +28,7 @@ import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.Utilities.toast
+import org.ole.planet.myplanet.utils.setupHintSpinner
 
 @AndroidEntryPoint
 class AddResourceActivity : AppCompatActivity() {
@@ -44,10 +39,10 @@ class AddResourceActivity : AppCompatActivity() {
     @Inject
     lateinit var teamsRepository: TeamsRepository
     private lateinit var binding: ActivityAddResourceBinding
-    var userModel: RealmUser? = null
-    var subjects: RealmList<String>? = null
-    var levels: RealmList<String>? = null
-    private var resourceFor: RealmList<String>? = null
+    var userModel: UserEntity? = null
+    var subjects: MutableList<String>? = null
+    var levels: MutableList<String>? = null
+    private var resourceFor: MutableList<String>? = null
     private var resourceUrl: String? = null
     private var teamId: String? = null
 
@@ -65,10 +60,19 @@ class AddResourceActivity : AppCompatActivity() {
         supportActionBar?.setHomeButtonEnabled(true)
         resourceUrl = intent.getStringExtra("resource_local_url")
         teamId = intent.getStringExtra("teamId")
-        levels = RealmList()
-        subjects = RealmList()
-        resourceFor = RealmList()
+        levels = mutableListOf()
+        subjects = mutableListOf()
+        resourceFor = mutableListOf()
+        val resourceId = intent.getStringExtra("resource_id")
+        val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
         initializeViews()
+        if (isEditMode && resourceId != null) {
+            supportActionBar?.title = getString(R.string.edit_resource)
+            binding.btnSubmit.text = getString(R.string.save_changes)
+            lifecycleScope.launch {
+                prefillFields(resourceId)
+            }
+        }
         setupPrivateResourceCheckbox()
         lifecycleScope.launch {
             userModel = userSessionManager.getUserModel()
@@ -95,16 +99,17 @@ class AddResourceActivity : AppCompatActivity() {
         binding.tvResourceFor.setOnClickListener { view: View ->
             showMultiSelectList(resources.getStringArray(R.array.array_resource_for), resourceFor, view,getString(R.string.resource_for))
         }
-        setupHintSpinner(binding.spnLang, getString(R.string.language), resources.getStringArray(R.array.language))
-        setupHintSpinner(binding.spnOpenWith, getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
-        setupHintSpinner(binding.spnMedia, getString(R.string.select_media), resources.getStringArray(R.array.media))
-        setupHintSpinner(binding.spnResourceType, getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
+        binding.spnLang.setupHintSpinner(getString(R.string.language), resources.getStringArray(R.array.language))
+        binding.spnOpenWith.setupHintSpinner(getString(R.string.select_open_with), resources.getStringArray(R.array.open_With))
+        binding.spnMedia.setupHintSpinner(getString(R.string.select_media), resources.getStringArray(R.array.media))
+        binding.spnResourceType.setupHintSpinner(getString(R.string.select_resource_type), resources.getStringArray(R.array.resource_type))
         binding.etTitle.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
                 binding.tlTitle.error = null
             } else {
                 val title = binding.etTitle.text.toString().trim()
-                if (title.isNotEmpty()) {
+                val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
+                if (title.isNotEmpty() && !isEditMode) {
                     lifecycleScope.launch {
                         if (resourcesRepository.resourceTitleExists(title)) {
                             binding.tlTitle.error = getString(R.string.resource_title_already_exists)
@@ -117,34 +122,57 @@ class AddResourceActivity : AppCompatActivity() {
         binding.btnCancel.setOnClickListener { finish() }
     }
 
-    private fun setupHintSpinner(spinner: Spinner, hint: String, entries: Array<String>) {
-        val items = listOf(hint) + entries.toList()
-        val hintColor = ContextCompat.getColor(this, R.color.hint_color)
-        val textColor = ContextCompat.getColor(this, R.color.daynight_textColor)
-        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
-            override fun isEnabled(position: Int) = position != 0
-            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-                val view = super.getDropDownView(position, convertView, parent) as TextView
-                view.setTextColor(if (position == 0) hintColor else textColor)
-                return view
-            }
-        }
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.adapter = adapter
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View?, position: Int, id: Long) {
-                (view as? TextView)?.setTextColor(if (position == 0) hintColor else textColor)
-            }
+    private suspend fun prefillFields(resourceId: String) {
+        val resource = resourcesRepository.getResourceById(resourceId) ?: return
+        binding.etTitle.setText(resource.title)
+        binding.etAuthor.setText(resource.author)
+        binding.etYear.setText(resource.year)
+        binding.etDescription.setText(resource.description)
+        binding.etPublisher.setText(resource.publisher)
+        binding.etLinkToLicense.setText(resource.linkToLicense)
 
-            override fun onNothingSelected(parent: AdapterView<*>) {}
-        }
+        resource.subject?.forEach { subjects?.add(it) }
+        resource.level?.forEach { levels?.add(it) }
+
+        binding.tvSubject.text = resource.subject?.joinToString(", ")
+            ?.takeIf { it.isNotEmpty() } ?: getString(R.string.subject)
+        binding.tvLevels.text = resource.level?.joinToString(", ")
+            ?.takeIf { it.isNotEmpty() } ?: getString(R.string.levels)
     }
 
     private fun saveResource() {
         val title = binding.etTitle.text.toString().trim { it <= ' ' }
         if (!validate(title)) return
-        val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
+        val isEditMode = intent.getBooleanExtra("is_edit_mode", false)
+        val resourceId = intent.getStringExtra("resource_id")
+        binding.btnSubmit.isEnabled = false
 
+        if (isEditMode && resourceId != null) {
+            lifecycleScope.launch {
+                val result = resourcesRepository.updateLocalResource(
+                    resourceId = resourceId,
+                    title = title,
+                    author = binding.etAuthor.text.toString().trim(),
+                    year = binding.etYear.text.toString().trim(),
+                    description = binding.etDescription.text.toString().trim(),
+                    publisher = binding.etPublisher.text.toString().trim(),
+                    linkToLicense = binding.etLinkToLicense.text.toString().trim(),
+                    subjects = subjects,
+                    levels = levels
+                )
+                if (result.isSuccess) {
+                    toast(this@AddResourceActivity, getString(R.string.resource_updated))
+                    setResult(RESULT_OK)
+                    finish()
+                } else {
+                    toast(this@AddResourceActivity, getString(R.string.failed_to_update_resource))
+                    binding.btnSubmit.isEnabled = true
+                }
+            }
+            return
+        }
+
+        val isPrivateTeamResource = binding.cbPrivateResource.isChecked && teamId != null
         val request = LocalResourceRequest(
             title = title,
             addedBy = binding.tvAddedBy.text.toString().trim { it <= ' ' },
@@ -165,10 +193,8 @@ class AddResourceActivity : AppCompatActivity() {
             isPrivateTeamResource = isPrivateTeamResource,
             teamId = teamId
         )
-        binding.btnSubmit.isEnabled = false
         lifecycleScope.launch {
             val result = resourcesRepository.saveLocalResource(request)
-
             if (result.isSuccess) {
                 val message = if (isPrivateTeamResource) {
                     getString(R.string.resource_added_to_team)
@@ -176,6 +202,7 @@ class AddResourceActivity : AppCompatActivity() {
                     getString(R.string.added_to_my_library)
                 }
                 toast(this@AddResourceActivity, message)
+                setResult(RESULT_OK)
                 finish()
             } else {
                 binding.tlTitle.error = getString(R.string.resource_title_already_exists)

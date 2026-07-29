@@ -23,24 +23,29 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
-import org.ole.planet.myplanet.model.RealmMyPersonal
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.Personal
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.NewsUpdateData
+import org.ole.planet.myplanet.repository.NewsUploadData
 import org.ole.planet.myplanet.repository.PersonalsRepository
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.TeamUploadData
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.upload.AchievementUploader
 import org.ole.planet.myplanet.services.upload.PhotoUploader
 import org.ole.planet.myplanet.services.upload.UploadConfigs
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.services.upload.UploadCoordinator
+import org.ole.planet.myplanet.services.upload.UploadError
 import org.ole.planet.myplanet.services.upload.UploadResult
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.FileUtils
@@ -60,6 +65,8 @@ class UploadManager @Inject constructor(
     private val sharedPrefManager: SharedPrefManager,
     private val gson: Gson,
     private val uploadCoordinator: UploadCoordinator,
+    private val uploadRepository: UploadRepository,
+    private val retryQueue: RetryQueue,
     private val personalsRepository: PersonalsRepository,
     private val userRepository: UserRepository,
     private val chatRepository: ChatRepository,
@@ -75,21 +82,21 @@ class UploadManager @Inject constructor(
     private val photoUploader: PhotoUploader,
     private val achievementUploader: AchievementUploader,
     private val timeProvider: TimeProvider
-) : FileUploader(apiInterface, scope) {
+) : FileUploader(uploadRepository, scope) {
 
     private suspend fun uploadNewsActivities() {
-        uploadCoordinator.upload(uploadConfigs.NewsActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
     }
 
     private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
-        withContext(dispatcherProvider.main) {
+        withContext(dispatcherProvider.mainImmediate) {
             listener?.onSuccess(message)
         }
     }
 
     fun uploadActivities(listener: OnSuccessListener?) {
         scope.launch {
-            val model = userRepository.getUserModelSuspending() ?: run {
+            val model = userRepository.getUserModel() ?: run {
                 notifyListener(listener, "Cannot upload activities: user model is null")
                 return@launch
             }
@@ -130,7 +137,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    private fun createImage(user: RealmUser?, imgObject: JsonObject?): JsonObject {
+    private fun createImage(user: UserEntity?, imgObject: JsonObject?): JsonObject {
         val `object` = JsonObject()
         `object`.addProperty("title", getString("fileName", imgObject))
         `object`.addProperty("createdDate", timeProvider.now())
@@ -153,11 +160,11 @@ class UploadManager @Inject constructor(
     }
 
     private suspend fun uploadCourseProgress() {
-        uploadCoordinator.upload(uploadConfigs.CourseProgress)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseProgress)
     }
 
     suspend fun uploadFeedback(): Boolean {
-        return when (val result = uploadCoordinator.upload(uploadConfigs.Feedback)) {
+        return when (val result = uploadCoordinator.uploadRoom(uploadConfigs.Feedback)) {
             is UploadResult.Success -> true
             is UploadResult.PartialSuccess -> result.failed.isEmpty()
             is UploadResult.Failure -> false
@@ -173,8 +180,8 @@ class UploadManager @Inject constructor(
     }
     suspend fun uploadResource(listener: OnSuccessListener?) {
         try {
-            val user = userRepository.getUserModelSuspending()
-            val result = uploadCoordinator.upload(uploadConfigs.getResourcesConfig(user))
+            val user = userRepository.getUserModel()
+            val result = uploadCoordinator.uploadRoom(uploadConfigs.getResourcesConfig(user))
 
             when (result) {
                 is UploadResult.Success -> {
@@ -222,7 +229,7 @@ class UploadManager @Inject constructor(
         }
     }
 
-    suspend fun uploadMyPersonal(personal: RealmMyPersonal): String {
+    suspend fun uploadMyPersonal(personal: Personal): String {
         if (!personal.isUploaded) {
             return withContext(dispatcherProvider.io) {
                 try {
@@ -245,7 +252,7 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamTask() {
-        uploadCoordinator.upload(uploadConfigs.TeamTask)
+        uploadCoordinator.uploadRoom(uploadConfigs.TeamTask)
     }
 
     suspend fun uploadSubmissions(buttonClickTime: Long = 0L) {
@@ -282,46 +289,84 @@ class UploadManager @Inject constructor(
 
         withContext(dispatcherProvider.io) {
             teamsToUpload.processInBatches { batch ->
+                val deletedIds = mutableListOf<String>()
+                val uploadedTeams = mutableMapOf<String, String>()
+
                 batch.forEach { teamData ->
                     try {
                         if (teamData.isDeletePending) {
                             val id = teamData.teamId ?: return@forEach
-                            val response = apiInterface.putDoc(
-                                UrlUtils.header, "application/json",
+                            val response = uploadRepository.putUpload(
                                 "${UrlUtils.getUrl()}/teams/$id", teamData.serialized
                             )
                             if (response.isSuccessful) {
-                                teamsSyncRepository.get().deleteLocalTeamRecord(id)
+                                deletedIds.add(id)
+                            } else {
+                                queueTeamRetry(teamData, response.code(), "PUT", id)
                             }
                         } else {
-                            val response = apiInterface.postDoc(
-                                UrlUtils.header, "application/json",
+                            val response = uploadRepository.postUpload(
                                 "${UrlUtils.getUrl()}/teams", teamData.serialized
                             )
 
                             val `object` = response.body()
 
-                            if (`object` != null) {
-                                val rev = getString("rev", `object`)
-                                teamsSyncRepository.get().markTeamUploaded(teamData.teamId, rev)
+                            if (response.isSuccessful && `object` != null) {
+                                var rev = getString("rev", `object`)
                                 if (!teamData.imageName.isNullOrEmpty() && teamData.teamId != null && rev.isNotEmpty()) {
-                                    uploadTeamImageAttachment(teamData.teamId, rev, teamData.imageName)
+                                    rev = uploadTeamImageAttachment(teamData.teamId, rev, teamData.imageName)
                                 }
+                                teamData.teamId?.let { uploadedTeams[it] = rev }
+                            } else {
+                                queueTeamRetry(teamData, response.code(), "POST", null)
                             }
                         }
                     } catch (e: IOException) {
                         Log.e(TAG, "Exception in UploadManager", e)
+                        queueTeamRetry(teamData, null, if (teamData.isDeletePending) "PUT" else "POST", teamData.teamId, e)
                     }
+                }
+
+                if (deletedIds.isNotEmpty()) {
+                    teamsSyncRepository.get().deleteLocalTeamRecords(deletedIds)
+                }
+                if (uploadedTeams.isNotEmpty()) {
+                    teamsSyncRepository.get().markTeamsUploaded(uploadedTeams)
                 }
             }
         }
     }
 
-    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String) {
-        val imageFile = RealmMyTeam
-            .getAttachmentFile(context, teamId, imageName) ?: return
-        if (!imageFile.exists()) return
-        try {
+    private suspend fun queueTeamRetry(
+        teamData: TeamUploadData,
+        httpCode: Int?,
+        httpMethod: String,
+        dbId: String?,
+        exception: Exception? = null
+    ) {
+        val retryable = exception != null || (httpCode != null && httpCode >= 500)
+        if (!retryable) return
+        retryQueue.queueFailedOperation(
+            uploadType = "MyTeam",
+            error = UploadError(
+                itemId = teamData.teamId ?: "",
+                exception = exception ?: Exception("Upload failed: HTTP $httpCode"),
+                retryable = true,
+                httpCode = httpCode
+            ),
+            payload = teamData.serialized,
+            endpoint = "teams",
+            httpMethod = httpMethod,
+            dbId = dbId,
+            modelClassName = "MyTeam"
+        )
+    }
+
+    private suspend fun uploadTeamImageAttachment(teamId: String, rev: String, imageName: String): String {
+        val imageFile = MyTeam
+            .getAttachmentFile(context, teamId, imageName) ?: return rev
+        if (!imageFile.exists()) return rev
+        return try {
             val mimeType = FileUtils.getMimeType(imageName) ?: "image/*"
             val body = imageFile.readBytes().toRequestBody(mimeType.toMediaTypeOrNull())
             val encodedName = Uri.encode(imageName)
@@ -329,15 +374,18 @@ class UploadManager @Inject constructor(
             val response = apiInterface.uploadResource(FileUploader.getHeaderMap(mimeType, rev), url, body)
             val newRev = response.body()?.get("rev")?.asString
             if (!newRev.isNullOrEmpty()) {
-                teamsSyncRepository.get().markTeamUploaded(teamId, newRev)
+                newRev
+            } else {
+                rev
             }
         } catch (e: Exception) {
             Log.e(TAG, "Failed to upload team image attachment", e)
+            rev
         }
     }
 
     suspend fun uploadUserActivities(listener: OnSuccessListener) {
-        val model = userRepository.getUserModelSuspending() ?: run {
+        val model = userRepository.getUserModel() ?: run {
             notifyListener(listener, "Cannot upload user activities: user model is null")
             return
         }
@@ -360,25 +408,28 @@ class UploadManager @Inject constructor(
     }
 
     suspend fun uploadTeamActivities() {
-        uploadCoordinator.upload(uploadConfigs.TeamActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.TeamActivities)
     }
 
     suspend fun uploadRating() {
-        uploadCoordinator.upload(uploadConfigs.Rating)
+        uploadCoordinator.uploadRoom(uploadConfigs.Rating)
     }
 
     suspend fun uploadNews() {
         // Note: uploadNews has unique logic that requires uploading images BEFORE the news document,
         // then modifying the serialized JSON based on image upload responses. This doesn't fit the
-        // standard UploadCoordinator pattern, so we handle it with custom logic but still use
-        // the coordinator for the core upload/update flow where possible.
-        val user = userRepository.getUserModelSuspending()
+        // standard UploadCoordinator pattern (a single serialize-then-POST/PUT per item), so the
+        // orchestration stays custom here — but the actual doc-level network calls and retry-queueing
+        // now reuse the same UploadRepository/RetryQueue primitives UploadCoordinator uses, instead of
+        // reimplementing them.
+        val user = userRepository.getUserModel()
         val newsItems = voicesRepository.getNewsForUpload()
 
         withContext(dispatcherProvider.io) {
             newsItems.processInBatches { batch ->
                 val successfulUpdates = mutableListOf<NewsUpdateData>()
                 batch.forEach { news ->
+                    val isCreate = TextUtils.isEmpty(news._id)
                     try {
                         // Upload images first and collect metadata
                         val imagesArray = JsonArray()
@@ -389,9 +440,7 @@ class UploadManager @Inject constructor(
 
                             // Create image resource document
                             val imageDoc = createImage(user, imgObject)
-                            val imageResponse = apiInterface.postDoc(
-                                UrlUtils.header,
-                                "application/json",
+                            val imageResponse = uploadRepository.postUpload(
                                 "${UrlUtils.getUrl()}/resources",
                                 imageDoc
                             ).body()
@@ -427,20 +476,10 @@ class UploadManager @Inject constructor(
                         newsJson.add("images", imagesArray)
 
                         // Upload news document (POST or PUT)
-                        val newsResponse = if (TextUtils.isEmpty(news._id)) {
-                            apiInterface.postDoc(
-                                UrlUtils.header,
-                                "application/json",
-                                "${UrlUtils.getUrl()}/news",
-                                newsJson
-                            )
+                        val newsResponse = if (isCreate) {
+                            uploadRepository.postUpload("${UrlUtils.getUrl()}/news", newsJson)
                         } else {
-                            apiInterface.putDoc(
-                                UrlUtils.header,
-                                "application/json",
-                                "${UrlUtils.getUrl()}/news/${news._id}",
-                                newsJson
-                            )
+                            uploadRepository.putUpload("${UrlUtils.getUrl()}/news/${news._id}", newsJson)
                         }
 
                         // Update database on success
@@ -452,9 +491,12 @@ class UploadManager @Inject constructor(
                                 _rev = getString("rev", body),
                                 imagesArray = imagesArray
                             ))
+                        } else {
+                            queueNewsRetry(news, newsJson, newsResponse.code(), if (isCreate) "POST" else "PUT")
                         }
                     } catch (e: Exception) {
                         Log.e(TAG, "Exception in UploadManager", e)
+                        queueNewsRetry(news, news.newsJson, null, if (isCreate) "POST" else "PUT", e)
                     }
                 }
 
@@ -466,12 +508,37 @@ class UploadManager @Inject constructor(
         uploadNewsActivities()
     }
 
+    private suspend fun queueNewsRetry(
+        news: NewsUploadData,
+        payload: JsonObject,
+        httpCode: Int?,
+        httpMethod: String,
+        exception: Exception? = null
+    ) {
+        val retryable = exception != null || (httpCode != null && httpCode >= 500)
+        if (!retryable) return
+        retryQueue.queueFailedOperation(
+            uploadType = "News",
+            error = UploadError(
+                itemId = news.id ?: "",
+                exception = exception ?: Exception("Upload failed: HTTP $httpCode"),
+                retryable = true,
+                httpCode = httpCode
+            ),
+            payload = payload,
+            endpoint = "news",
+            httpMethod = httpMethod,
+            dbId = news._id,
+            modelClassName = "News"
+        )
+    }
+
     suspend fun uploadCrashLog() {
-        uploadCoordinator.upload(uploadConfigs.CrashLog)
+        uploadCoordinator.uploadRoom(uploadConfigs.CrashLog)
     }
 
     suspend fun uploadSearchActivity() {
-        uploadCoordinator.upload(uploadConfigs.SearchActivity)
+        uploadCoordinator.uploadRoom(uploadConfigs.SearchActivity)
     }
 
     suspend fun uploadResourceActivities(type: String) {
@@ -480,15 +547,15 @@ class UploadManager @Inject constructor(
         } else {
             uploadConfigs.ResourceActivities
         }
-        uploadCoordinator.upload(config)
+        uploadCoordinator.uploadRoom(config)
     }
 
     suspend fun uploadCourseActivities() {
-        uploadCoordinator.upload(uploadConfigs.CourseActivities)
+        uploadCoordinator.uploadRoom(uploadConfigs.CourseActivities)
     }
 
     suspend fun uploadMeetups() {
-        uploadCoordinator.upload(uploadConfigs.Meetups)
+        uploadCoordinator.uploadRoom(uploadConfigs.Meetups)
     }
 
     suspend fun uploadAdoptedSurveys() {

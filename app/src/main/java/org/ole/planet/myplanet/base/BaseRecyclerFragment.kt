@@ -10,13 +10,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import io.realm.RealmObject
 import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.Utilities.toast
 
@@ -34,7 +33,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     lateinit var tvFragmentInfo: TextView
     var tvDelete: TextView? = null
     var list: MutableList<LI>? = null
-    var resources: List<RealmMyLibrary>? = null
+    var resources: List<MyLibrary>? = null
     var courseLib: String? = null
     private var isAddInProgress = false
 
@@ -50,10 +49,10 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             courseLib = it.getString("courseLib")
             @Suppress("UNCHECKED_CAST")
             resources = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<RealmMyLibrary>
+                it.getSerializable("resources", ArrayList::class.java) as? ArrayList<MyLibrary>
             } else {
                 @Suppress("DEPRECATION")
-                it.getSerializable("resources") as? ArrayList<RealmMyLibrary>
+                it.getSerializable("resources") as? ArrayList<MyLibrary>
             }
         }
     }
@@ -82,15 +81,15 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
                 resources?.let { showDownloadDialog(it) }
-            } else if (isMyCourseLib && courseLib == null && !isSurvey) {
-                viewLifecycleOwner.lifecycleScope.launch {
-                    val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
-                    val libraryList = resourcesRepository.getLibraryListForUser(userId)
-                    showDownloadDialog(libraryList)
-                }
             }
             startPostponedEnterTransition()
             requireActivity().reportFullyDrawn()
+
+            if (isMyCourseLib && courseLib == null && !isSurvey) {
+                val userId = sharedPrefManager.getUserId().ifEmpty { "--" }
+                val libraryList = resourcesRepository.getLibraryListForUser(userId)
+                showDownloadDialog(libraryList)
+            }
         }
     }
 
@@ -111,69 +110,81 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         }
     }
 
-    open fun addToMyList() {
-        if (isAddInProgress) return
+    open fun addToMyList(onComplete: (() -> Unit)? = null) {
+        if (isAddInProgress) {
+            onComplete?.invoke()
+            return
+        }
 
         val itemsToAdd = selectedItems?.toList() ?: emptyList()
-        if (itemsToAdd.isEmpty()) return
+        if (itemsToAdd.isEmpty()) {
+            onComplete?.invoke()
+            return
+        }
 
         val resourceIds = mutableListOf<String>()
         val courseIds = mutableListOf<String>()
 
         itemsToAdd.forEach { item ->
-            when (val realmObject = item as? RealmObject) {
-                is RealmMyLibrary -> realmObject.resourceId?.let(resourceIds::add)
-                is RealmMyCourse -> realmObject.courseId?.let(courseIds::add)
+            when (item) {
+                is MyLibrary -> item.resourceId?.let(resourceIds::add)
+                is MyCourse -> item.courseId?.let(courseIds::add)
                 else -> {}
             }
         }
 
-        if (resourceIds.isEmpty() && courseIds.isEmpty()) return
+        if (resourceIds.isEmpty() && courseIds.isEmpty()) {
+            onComplete?.invoke()
+            return
+        }
 
         isAddInProgress = true
         setJoinInProgress(true)
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
-            var libraryAdded = false
-            var courseAdded = false
-            var errorOccurred: Throwable? = null
+            try {
+                val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+                var libraryAdded = false
+                var courseAdded = false
+                var errorOccurred: Throwable? = null
 
-            if (resourceIds.isNotEmpty()) {
-                val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
-                libraryResult.onSuccess {
-                    libraryAdded = true
-                }.onFailure {
-                    errorOccurred = it
-                }
-            }
-
-            if (courseIds.isNotEmpty()) {
-                val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
-                courseResult.onSuccess { added ->
-                    if (added) {
-                        courseAdded = true
+                if (resourceIds.isNotEmpty()) {
+                    val libraryResult = resourcesRepository.addResourcesToUserLibrary(resourceIds, userId)
+                    libraryResult.onSuccess {
+                        libraryAdded = true
+                    }.onFailure {
+                        errorOccurred = it
                     }
-                }.onFailure {
-                    errorOccurred = it
                 }
+
+                if (courseIds.isNotEmpty()) {
+                    val courseResult = coursesRepository.markCoursesAdded(courseIds, userId)
+                    courseResult.onSuccess { added ->
+                        if (added) {
+                            courseAdded = true
+                        }
+                    }.onFailure {
+                        errorOccurred = it
+                    }
+                }
+
+                if (view == null || !isAdded || requireActivity().isFinishing) return@launch
+
+                postAddRefresh()
+
+                errorOccurred?.let {
+                    it.printStackTrace()
+                    toast(activity, "An error occurred: ${it.message}")
+                    return@launch
+                }
+
+                if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
+                if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
+            } finally {
+                isAddInProgress = false
+                setJoinInProgress(false)
+                onComplete?.invoke()
             }
-
-            isAddInProgress = false
-            setJoinInProgress(false)
-
-            if (view == null || !isAdded || requireActivity().isFinishing) return@launch
-
-            postAddRefresh()
-
-            errorOccurred?.let {
-                it.printStackTrace()
-                toast(activity, "An error occurred: ${it.message}")
-                return@launch
-            }
-
-            if (libraryAdded) toast(activity, getString(R.string.added_to_my_library))
-            if (courseAdded) toast(activity, getString(R.string.added_to_my_courses))
         }
     }
 
@@ -198,24 +209,26 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
     open fun deleteSelected(deleteProgress: Boolean) {
         val snapshot = selectedItems?.toList() ?: return
+        val courseIdsToDelete = mutableListOf<String>()
         for (item in snapshot) {
-            val `object` = item as RealmObject
-            deleteCourseProgress(deleteProgress, `object`)
-            removeFromShelf(`object`)
+            if (deleteProgress && item is MyCourse) {
+                item.courseId?.let { courseIdsToDelete.add(it) }
+            }
+            item?.let { removeFromShelf(it) }
+        }
+
+        if (courseIdsToDelete.isNotEmpty()) {
+            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
+                for (courseId in courseIdsToDelete) {
+                    coursesRepository.deleteCourseProgress(courseId)
+                }
+            }
         }
         selectedItems?.clear()
     }
 
     fun countSelected(): Int {
         return selectedItems?.size ?: 0
-    }
-
-    private fun deleteCourseProgress(deleteProgress: Boolean, `object`: RealmObject) {
-        if (deleteProgress && `object` is RealmMyCourse) {
-            viewLifecycleOwner.lifecycleScope.launch(dispatcherProvider.io) {
-                coursesRepository.deleteCourseProgress(`object`.courseId)
-            }
-        }
     }
 
     override fun onDetach() {

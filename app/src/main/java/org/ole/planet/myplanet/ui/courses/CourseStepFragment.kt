@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.ui.courses
 
 import android.os.Bundle
 import android.text.Spannable
-import android.text.method.LinkMovementMethod
 import android.text.style.URLSpan
 import android.view.ActionMode
 import android.view.LayoutInflater
@@ -23,11 +22,11 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.databinding.FragmentCourseStepBinding
+import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.CourseStepData
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ConfigurationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
 import org.ole.planet.myplanet.services.ResourceDownloadCoordinator
@@ -56,11 +55,11 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     private lateinit var fragmentCourseStepBinding: FragmentCourseStepBinding
     var stepId: String? = null
     private var nextStepId: String? = null
-    private lateinit var step: RealmCourseStep
-    private lateinit var resources: List<RealmMyLibrary>
-    private lateinit var stepExams: List<RealmStepExam>
-    private lateinit var stepSurvey: List<RealmStepExam>
-    var user: RealmUser? = null
+    private lateinit var step: CourseStep
+    private lateinit var resources: List<MyLibrary>
+    private lateinit var stepExams: List<StepExam>
+    private lateinit var stepSurvey: List<StepExam>
+    var user: UserEntity? = null
     private var stepNumber = 0
     private var courseTitle: String? = null
     private var saveInProgress: Job? = null
@@ -124,18 +123,15 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val markdownContentWithLocalPaths = prependBaseUrlToImages(
                     step.description,
                     "file://${MainApplication.context.getExternalFilesDir(null)}/ole/",
-                    600,
-                    350
+                    600, 350
                 )
+
+                fragmentCourseStepBinding.description.setTextIsSelectable(true)
+                fragmentCourseStepBinding.description.customSelectionActionModeCallback = createAiSelectionCallback()
                 setMarkdownText(
                     fragmentCourseStepBinding.description,
                     markdownContentWithLocalPaths
                 )
-                fragmentCourseStepBinding.description.movementMethod =
-                    LinkMovementMethod.getInstance()
-                fragmentCourseStepBinding.description.setTextIsSelectable(true)
-                fragmentCourseStepBinding.description.customSelectionActionModeCallback =
-                    createAiSelectionCallback()
 
                 if (!data.userHasCourse) {
                     fragmentCourseStepBinding.btnTakeTest.visibility = View.GONE
@@ -185,7 +181,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         fragmentCourseStepBinding.tvResourcesHeader.visibility = View.VISIBLE
         fragmentCourseStepBinding.rvInlineResources.visibility = View.VISIBLE
 
-        inlineResourceAdapter = InlineResourceAdapter(viewLifecycleOwner.lifecycleScope, dispatcherProvider) { library ->
+        inlineResourceAdapter = InlineResourceAdapter(dispatcherProvider) { library ->
             openResource(library)
         }
         fragmentCourseStepBinding.rvInlineResources.apply {
@@ -303,7 +299,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
             }
         }
         fragmentCourseStepBinding.btnResources.visibility = View.GONE
-
         fragmentCourseStepBinding.btnAskAi.setOnClickListener {
             openChatFragment()
         }
@@ -333,7 +328,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
                 val tv = fragmentCourseStepBinding.description
                 val start = tv.selectionStart
                 val end = tv.selectionEnd
-                if (start >= 0 && end > start) {
+                if (start in 0..<end) {
                     openChatFragment(tv.text.subSequence(start, end).toString())
                     mode.finish()
                     return true
@@ -359,5 +354,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         super.onDestroyView()
         loadDataJob?.cancel()
         CameraUtils.release()
+        fragmentCourseStepBinding.rvInlineResources.adapter = null
     }
 }

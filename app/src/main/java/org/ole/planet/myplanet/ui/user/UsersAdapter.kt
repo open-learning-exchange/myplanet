@@ -14,9 +14,14 @@ import org.ole.planet.myplanet.utils.ImageUtils
 class UsersAdapter(
     private val onItemClickListener: OnUserProfileClickListener
 ) : ListAdapter<User, UsersAdapter.ViewHolder>(DIFF_CALLBACK) {
+    private var avatarSize: Int = 0
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        if (avatarSize == 0) {
+            avatarSize = parent.context.resources.getDimensionPixelSize(R.dimen._40dp)
+        }
         val binding = UserListItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
-        return ViewHolder(binding)
+        return ViewHolder(binding, avatarSize)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
@@ -34,14 +39,13 @@ class UsersAdapter(
 
     fun getList(): List<User> = currentList
 
-    class ViewHolder(private val binding: UserListItemBinding) : RecyclerView.ViewHolder(binding.root) {
+    class ViewHolder(private val binding: UserListItemBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
         fun bindView(account: User) {
             if (account.fullName?.isEmpty() == true || account.fullName == " ") {
                 binding.userNameTextView.text = account.name
             } else {
                 binding.userNameTextView.text = account.fullName
             }
-            val avatarSize = binding.root.context.resources.getDimensionPixelSize(R.dimen._40dp)
             ImageUtils.loadProfileImage(account.image, binding.userProfile, avatarSize)
         }
     }

@@ -1,80 +1,67 @@
 package org.ole.planet.myplanet.repository
 
-import android.util.Log
 import com.google.gson.JsonObject
-import io.realm.RealmObject
-import java.lang.reflect.Field
-import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineDispatcher
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
-import org.ole.planet.myplanet.di.RealmDispatcher
+import org.ole.planet.myplanet.data.room.dao.AnswerDao
+import org.ole.planet.myplanet.data.room.dao.ExamDao
+import org.ole.planet.myplanet.data.room.dao.SubmissionDao
+import org.ole.planet.myplanet.model.MembershipDoc
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.utils.UrlUtils
 import retrofit2.Response
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.ole.planet.myplanet.services.FileUploader
+import org.ole.planet.myplanet.utils.FileUtils
+import java.io.File
+
 
 @Singleton
 class UploadRepositoryImpl @Inject constructor(
-    databaseService: DatabaseService,
     private val apiInterface: ApiInterface,
-    @RealmDispatcher realmDispatcher: CoroutineDispatcher
-) : RealmRepository(databaseService, realmDispatcher), UploadRepository {
+    private val examDao: ExamDao,
+    private val submissionDao: SubmissionDao,
+    private val answerDao: AnswerDao,
+) : UploadRepository {
 
-    override suspend fun <T : RealmObject> queryPending(config: UploadQueryContract<T>): List<T> {
-        return withRealmAsync { realm ->
-            val query = realm.where(config.modelClass.java)
-            val filteredQuery = config.queryBuilder(query)
-            val results = filteredQuery.findAll()
-            realm.copyFromRealm(results)
+    @Suppress("UNCHECKED_CAST")
+    override suspend fun <T : Any> queryPending(config: UploadQueryContract<T>): List<T> {
+        return when (config.queryType) {
+            UploadQueryType.AdoptedSurveys -> examDao.getPendingAdoptedSurveys()
+                .map { it } as List<T>
+
+            UploadQueryType.ExamResults -> hydrateSubmissions(submissionDao.getPendingExamResults()) as List<T>
+
+            UploadQueryType.CompletedSubmissions -> hydrateSubmissions(submissionDao.getPendingSubmissions()) as List<T>
         }
     }
 
-    override suspend fun <T : RealmObject> markUploaded(config: UploadUpdateContract<T>, succeeded: List<UploadedItemResult>): List<UploadedItemResult> {
-        val failedLocally = mutableListOf<UploadedItemResult>()
-        executeTransaction { realm ->
-            val localIds = succeeded.map { it.localId }
-            val idFieldName = realm.schema.get(config.modelClass.java.simpleName)?.primaryKey ?: "id"
-
-            val itemsById = mutableMapOf<String, T>()
-            if (localIds.isNotEmpty()) {
-                val query = realm.where(config.modelClass.java)
-                localIds.chunked(1000).forEachIndexed { index, chunk ->
-                    if (index > 0) query.or()
-                    query.`in`(idFieldName, chunk.toTypedArray())
-                }
-                val results = query.findAll()
-                results.forEach { item ->
-                    val localId = config.idExtractor(item) ?: ""
-                    itemsById[localId] = item
-                }
-            }
-
-            succeeded.forEach { uploadedItem ->
-                try {
-                    val item = itemsById[uploadedItem.localId]
-
-                    item?.let {
-                        setRealmField(it, "_id", uploadedItem.remoteId)
-                        setRealmField(it, "_rev", uploadedItem.remoteRev)
-                        config.additionalUpdates?.invoke(realm, it, uploadedItem)
-                    } ?: run {
-                        failedLocally.add(uploadedItem)
-                    }
-                } catch (e: Exception) {
-                    Log.e("UploadRepositoryImpl", "Failed to update item ${uploadedItem.localId}", e)
-                    failedLocally.add(uploadedItem)
-                }
+    override suspend fun markUploaded(
+        config: UploadUpdateContract,
+        succeeded: List<UploadedItemResult>
+    ): List<UploadedItemResult> {
+        return when (config.updateType) {
+            UploadUpdateType.Exams -> markExamsUploaded(succeeded)
+            UploadUpdateType.Submissions -> succeeded.filter { result ->
+                submissionDao.markUploaded(result.localId, result.remoteId, result.remoteRev) == 0
             }
         }
-        return failedLocally
     }
 
-    override suspend fun postUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+    override suspend fun postUpload(
+        url: String,
+        serializedData: JsonObject
+    ): Response<JsonObject> {
         return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
     }
 
-    override suspend fun putUpload(url: String, serializedData: JsonObject): Response<JsonObject> {
+    override suspend fun putUpload(
+        url: String,
+        serializedData: JsonObject
+    ): Response<JsonObject> {
         return apiInterface.putDoc(UrlUtils.header, "application/json", url, serializedData)
     }
 
@@ -82,42 +69,55 @@ class UploadRepositoryImpl @Inject constructor(
         return apiInterface.getJsonObject(UrlUtils.header, url)
     }
 
-    private class FieldCacheEntry(val field: Field?)
+    private suspend fun hydrateSubmissions(rows: List<Submission>): List<Submission> {
+        if (rows.isEmpty()) return emptyList()
+        val answersBySubmissionId =
+            answerDao.getBySubmissionIds(rows.map { it.id }).groupBy { it.submissionId }
+        return rows.map { row -> row.apply { answers = answersBySubmissionId[id].orEmpty().toMutableList(); teamId?.let { membershipDoc = MembershipDoc().apply { this.teamId = it } } } }
+    }
 
-    private val fieldCache = ConcurrentHashMap<Pair<Class<*>, String>, FieldCacheEntry>()
+    private suspend fun markExamsUploaded(
+        succeeded: List<UploadedItemResult>
+    ): List<UploadedItemResult> {
+        if (succeeded.isEmpty()) return emptyList()
+        val existing = examDao.getByIds(succeeded.map { it.localId }).associateBy { it.id }
+        val updated = mutableListOf<StepExam>()
+        val failed = mutableListOf<UploadedItemResult>()
 
-    private fun setRealmField(obj: RealmObject, fieldName: String, value: Any?) {
-        try {
-            val cacheKey = Pair(obj.javaClass, fieldName)
-            var entry = fieldCache[cacheKey]
-
-            if (entry == null) {
-                var clazz: Class<*>? = obj.javaClass
-                var field: Field? = null
-
-                while (clazz != null && field == null) {
-                    try {
-                        field = clazz.getDeclaredField(fieldName)
-                    } catch (e: NoSuchFieldException) {
-                        clazz = clazz.superclass
-                    }
-                }
-
-                if (field != null) {
-                    field.isAccessible = true
-                } else {
-                    Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
-                }
-
-                entry = FieldCacheEntry(field)
-                fieldCache[cacheKey] = entry
-            } else if (entry.field == null) {
-                Log.w("UploadRepositoryImpl", "Field $fieldName not found in class hierarchy of ${obj.javaClass.simpleName}")
+        succeeded.forEach { result ->
+            val exam = existing[result.localId]
+            if (exam == null) {
+                failed += result
+            } else {
+                exam._rev = result.remoteRev
+                updated += exam
             }
-
-            entry.field?.set(obj, value)
-        } catch (e: Exception) {
-            Log.w("UploadRepositoryImpl", "Failed to set field $fieldName: ${e.message}")
         }
+
+        if (updated.isNotEmpty()) {
+            examDao.upsertAll(updated.mapNotNull { it })
+        }
+
+        return failed
+    }
+
+    override suspend fun uploadAttachment(
+        file: File,
+        destinationFormat: String,
+        id: String,
+        rev: String,
+        name: String
+    ): Response<JsonObject> {
+        val connection = file.toURI().toURL().openConnection()
+        val mimeType = connection.contentType ?: "application/octet-stream"
+        val body = FileUtils.fullyReadFileToBytes(file)
+            .toRequestBody("application/octet-stream".toMediaTypeOrNull())
+        val url = String.format(destinationFormat, UrlUtils.getUrl(), id, name)
+
+        return apiInterface.uploadResource(
+            FileUploader.getHeaderMap(mimeType, rev),
+            url,
+            body
+        )
     }
 }

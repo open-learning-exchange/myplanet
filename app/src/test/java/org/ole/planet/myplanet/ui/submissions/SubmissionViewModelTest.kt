@@ -16,8 +16,8 @@ import org.junit.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.model.AssignedSurvey
-import org.ole.planet.myplanet.model.RealmStepExam
-import org.ole.planet.myplanet.model.RealmSubmission
+import org.ole.planet.myplanet.model.StepExam
+import org.ole.planet.myplanet.model.Submission
 import org.ole.planet.myplanet.repository.SubmissionsRepository
 import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.UserRepository
@@ -29,6 +29,7 @@ class SubmissionViewModelTest {
     private val testDispatcherProvider = object : DispatcherProvider {
         override val io = testDispatcher
         override val main = testDispatcher
+        override val mainImmediate = testDispatcher
         override val default = testDispatcher
         override val unconfined = testDispatcher
     }
@@ -51,8 +52,8 @@ class SubmissionViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun createSubmission(id: String, parentId: String, type: String, status: String, lastUpdateTime: Long, userId: String = "user1"): RealmSubmission {
-        return RealmSubmission().apply {
+    private fun createSubmission(id: String, parentId: String, type: String, status: String, lastUpdateTime: Long, userId: String = "user1"): Submission {
+        return Submission().apply {
             this.id = id
             this.parentId = parentId
             this.type = type
@@ -70,8 +71,8 @@ class SubmissionViewModelTest {
         val subList = listOf(s1, s2, s3)
 
         val assignedSurveys = listOf(
-            AssignedSurvey(RealmStepExam().apply { id = "p1"; name = "Survey P1" }, false, null),
-            AssignedSurvey(RealmStepExam().apply { id = "p2"; name = "Survey P2" }, false, null)
+            AssignedSurvey(StepExam().apply { id = "p1"; name = "Survey P1" }, false, null),
+            AssignedSurvey(StepExam().apply { id = "p2"; name = "Survey P2" }, false, null)
         )
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")
@@ -122,9 +123,9 @@ class SubmissionViewModelTest {
         val s3 = createSubmission("3", "p2", "exam", "complete", 200L)
         val subList = listOf(s1, s2, s3)
 
-        val examMap = mapOf<String?, RealmStepExam>(
-            "p1" to RealmStepExam().apply { name = "Math Exam" },
-            "p2" to RealmStepExam().apply { name = "Science Exam" }
+        val examMap = mapOf<String?, StepExam>(
+            "p1" to StepExam().apply { name = "Math Exam" },
+            "p2" to StepExam().apply { name = "Science Exam" }
         )
 
         `when`(userRepository.getActiveUserIdSuspending()).thenReturn("user1")

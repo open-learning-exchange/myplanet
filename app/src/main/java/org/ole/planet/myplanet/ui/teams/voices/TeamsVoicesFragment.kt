@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.utils.collectWhenStarted
 @AndroidEntryPoint
 class TeamsVoicesFragment : BaseTeamFragment() {
     private var _binding: FragmentDiscussionListBinding? = null
+    private var shouldScrollToTopNextUpdate = false
     private val binding get() = _binding!!
 
     private val viewModel: TeamsVoicesViewModel by viewModels()
@@ -139,6 +140,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                             binding.etMessage.text?.clear()
                             imageList.clear()
                             llImage?.removeAllViews()
+                            shouldScrollToTopNextUpdate = true
                             binding.llAddNews.visibility = View.GONE
                             binding.tlMessage.error = null
                             binding.addMessage.text = getString(R.string.add_message)
@@ -156,7 +158,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: News?) {
         val bundle = Bundle()
         bundle.putString("newsId", news?.newsId)
         bundle.putString("newsRev", news?.newsRev)
@@ -183,7 +185,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(realmNewsList: List<News?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(
@@ -259,19 +261,25 @@ class TeamsVoicesFragment : BaseTeamFragment() {
             if (!isMemberFlow.value) adapterNews?.setNonTeamMember(true)
             realmNewsList?.let { adapterNews?.submitList(it.filterNotNull()) }
             binding.rvDiscussion.adapter = adapterNews
+            shouldScrollToTopNextUpdate = false
             showNoData(binding.tvNodata, realmNewsList?.filterNotNull()?.size ?: 0, "discussions")
         } else {
             (existingAdapter as? VoicesAdapter)?.let { adapter ->
                 adapter.setCurrentUser(user)
                 realmNewsList?.let {
-                    adapter.submitList(it.filterNotNull())
+                    adapter.submitList(it.filterNotNull()){
+                        if (shouldScrollToTopNextUpdate) {
+                            binding.rvDiscussion.scrollToPosition(0)
+                            shouldScrollToTopNextUpdate = false
+                        }
+                    }
                     showNoData(binding.tvNodata, it.filterNotNull().size, "discussions")
                 }
             }
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<News?>?) {
         showRecyclerView(list)
     }
 
@@ -279,5 +287,4 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         _binding = null
         super.onDestroyView()
     }
-
 }

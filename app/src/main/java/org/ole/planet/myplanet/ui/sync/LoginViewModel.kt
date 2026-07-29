@@ -8,9 +8,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.User
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -22,11 +22,11 @@ class LoginViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel() {
 
-    private val _teams = MutableStateFlow<List<RealmMyTeam>>(emptyList())
-    val teams: StateFlow<List<RealmMyTeam>> = _teams.asStateFlow()
+    private val _teams = MutableStateFlow<List<MyTeam>>(emptyList())
+    val teams: StateFlow<List<MyTeam>> = _teams.asStateFlow()
 
-    private val _users = MutableStateFlow<List<RealmUser>>(emptyList())
-    val users: StateFlow<List<RealmUser>> = _users.asStateFlow()
+    private val _users = MutableStateFlow<List<UserEntity>>(emptyList())
+    val users: StateFlow<List<UserEntity>> = _users.asStateFlow()
 
     private val _savedUsers = MutableStateFlow<List<User>>(emptyList())
     val savedUsers: StateFlow<List<User>> = _savedUsers.asStateFlow()
@@ -39,17 +39,17 @@ class LoginViewModel @Inject constructor(
         if (!force && _teams.value.isNotEmpty()) {
             return
         }
-        viewModelScope.launch { // Launch on main to safely emit Realm objects
+        viewModelScope.launch(dispatcherProvider.io) {
             val teamsList = teamsRepository.getAllActiveTeams()
-            _teams.value = teamsList
+            _teams.value = teamsList.toList()
         }
     }
 
     fun getTeamMembers(teamId: String?) {
-        viewModelScope.launch { // Launch on main to safely emit Realm objects
+        viewModelScope.launch(dispatcherProvider.io) {
             if (!teamId.isNullOrEmpty()) {
                 val teamMembers = teamsRepository.refreshJoinedMembersForLogin(teamId)
-                _users.value = teamMembers
+                _users.value = teamMembers.toList()
                 loadSavedUsers() // Refresh saved users after joining team
             } else {
                 _users.value = emptyList()

@@ -16,9 +16,9 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseContainerFragment
 import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.databinding.FragmentLibraryDetailBinding
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyLibrary.Companion.listToString
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyLibrary.Companion.listToString
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingsRepository
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.FileUtils.getFileExtension
@@ -33,9 +33,9 @@ class ResourceDetailFragment : BaseContainerFragment(), OnRatingChangeListener {
     private val binding get() = _binding!!
     private var libraryId: String? = null
     private var lastKnownRating: JsonObject? = null
-    private lateinit var library: RealmMyLibrary
-    var userModel: RealmUser? = null
-    private suspend fun fetchLibrary(libraryId: String): RealmMyLibrary? {
+    private lateinit var library: MyLibrary
+    var userModel: UserEntity? = null
+    private suspend fun fetchLibrary(libraryId: String): MyLibrary? {
         return resourcesRepository.getLibraryItemById(libraryId)
             ?: resourcesRepository.getLibraryItemByResourceId(libraryId)
     }

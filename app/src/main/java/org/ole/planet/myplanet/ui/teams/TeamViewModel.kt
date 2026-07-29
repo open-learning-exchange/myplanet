@@ -8,12 +8,14 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -35,15 +37,17 @@ class TeamViewModel @Inject constructor(
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
 
-    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
-    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
+    private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
+    val taskList: StateFlow<List<TeamTask>> = _taskList
 
     fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
 
     fun loadTasks(teamId: String) {
         loadTaskJob?.cancel()
         loadTaskJob = viewModelScope.launch {
-            teamsRepository.getTasksByTeamId(teamId).collectLatest { tasks ->
+            teamsRepository.getTasksByTeamId(teamId)
+                .flowOn(dispatcherProvider.io)
+                .collectLatest { tasks ->
                 _taskList.value = tasks
             }
         }
@@ -67,17 +71,23 @@ class TeamViewModel @Inject constructor(
             when {
                 fromDashboard -> {
                     if (userId != null) {
-                        teamsRepository.getMyTeamDetailsFlow(userId).collectLatest { list ->
+                        teamsRepository.getMyTeamDetailsFlow(userId)
+                            .flowOn(dispatcherProvider.io)
+                            .collectLatest { list ->
                             applyFilters(list, currentSearchQuery)
                         }
                     }
                 }
                 type == "enterprise" -> {
-                    val teamList = teamsRepository.getShareableEnterpriseDetails(userId)
+                    val teamList = withContext(dispatcherProvider.io) {
+                        teamsRepository.getShareableEnterpriseDetails(userId)
+                    }
                     applyFilters(teamList, currentSearchQuery)
                 }
                 else -> {
-                    val teamList = teamsRepository.getTeamDetails(userId)
+                    val teamList = withContext(dispatcherProvider.io) {
+                        teamsRepository.getTeamDetails(userId)
+                    }
                     applyFilters(teamList, currentSearchQuery)
                 }
             }
@@ -125,8 +135,10 @@ class TeamViewModel @Inject constructor(
     fun leaveTeam(teamId: String, userId: String?) {
         viewModelScope.launch {
             teamsRepository.leaveTeam(teamId, userId)
-            teamsSyncRepository.syncTeamActivities()
             loadTeams(currentFromDashboard, currentType, currentUserId)
+        }
+        viewModelScope.launch {
+            teamsSyncRepository.syncTeamActivities()
         }
     }
 
@@ -138,7 +150,7 @@ class TeamViewModel @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         category: String?,
-        userModel: RealmUser
+        userModel: UserEntity
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {

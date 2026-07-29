@@ -16,8 +16,8 @@ import com.google.gson.JsonObject
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertExaminationBinding
 import org.ole.planet.myplanet.databinding.RowExaminationBinding
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.ui.health.HealthExaminationAdapter.HealthExaminationViewHolder
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -27,13 +27,16 @@ import org.ole.planet.myplanet.utils.Utilities
 
 class HealthExaminationAdapter(
     private val context: Context,
-    private var mh: RealmHealthExamination,
-    private var userModel: RealmUser?,
-    private var userMap: Map<String, RealmUser>
-) : ListAdapter<RealmHealthExamination, HealthExaminationViewHolder>(diffCallback) {
+    private var mh: HealthExamination,
+    private var userModel: UserEntity?,
+    private var userMap: Map<String, UserEntity>
+) : ListAdapter<HealthExamination, HealthExaminationViewHolder>(DIFF_CALLBACK) {
     private val displayNameCache = mutableMapOf<String, String>()
+    private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
+    private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
+    private val colorMultiSelectGrey by lazy { ContextCompat.getColor(context, R.color.multi_select_grey) }
 
-    fun updateData(mh: RealmHealthExamination, userModel: RealmUser?, userMap: Map<String, RealmUser>) {
+    fun updateData(mh: HealthExamination, userModel: UserEntity?, userMap: Map<String, UserEntity>) {
         this.mh = mh
         this.userModel = userModel
         this.userMap = userMap
@@ -62,10 +65,10 @@ class HealthExaminationAdapter(
                 model?.getFullName() ?: createdBy.split(colonRegex).dropLastWhile { it.isEmpty() }.toTypedArray().getOrNull(1) ?: createdBy
             }
             binding.txtDate.text = context.getString(R.string.two_strings, binding.txtDate.text, name).trimIndent()
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_grey_50))
+            holder.itemView.setBackgroundColor(colorGrey50)
         } else {
             binding.txtDate.text = context.getString(R.string.self_examination, binding.txtDate.text)
-            holder.itemView.setBackgroundColor(ContextCompat.getColor(context, R.color.md_green_50))
+            holder.itemView.setBackgroundColor(colorGreen50)
         }
 
         binding.txtPulse.text = item.let { checkEmptyInt(it.pulse) }
@@ -103,8 +106,7 @@ class HealthExaminationAdapter(
             .setTitle(binding.txtDate.tag as? CharSequence ?: binding.txtDate.text)
             .setView(alertExaminationBinding.root)
             .setPositiveButton("OK", null).create()
-        val backgroundColor = ContextCompat.getColor(context, R.color.multi_select_grey)
-        dialog.window?.setBackgroundDrawable(backgroundColor.toDrawable())
+        dialog.window?.setBackgroundDrawable(colorMultiSelectGrey.toDrawable())
         if (realmExamination != null) {
             dialog.setButton(DialogInterface.BUTTON_NEUTRAL, context.getString(R.string.edit)) { _: DialogInterface?, _: Int ->
                 context.startActivity(Intent(context, HealthExaminationActivity::class.java)
@@ -115,7 +117,7 @@ class HealthExaminationAdapter(
         dialog.show()
     }
 
-    private fun showConditions(tvCondition: TextView, realmExamination: RealmHealthExamination?) {
+    private fun showConditions(tvCondition: TextView, realmExamination: HealthExamination?) {
         val conditionsMap = JsonUtils.gson.fromJson(realmExamination?.conditions, JsonObject::class.java)
         val keys = conditionsMap.keySet()
         val conditions = StringBuilder()
@@ -139,7 +141,7 @@ class HealthExaminationAdapter(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-        private val diffCallback = DiffUtils.itemCallback<RealmHealthExamination>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExamination>(
             { oldItem, newItem -> oldItem._id == newItem._id },
             { oldItem, newItem -> oldItem == newItem }
         )

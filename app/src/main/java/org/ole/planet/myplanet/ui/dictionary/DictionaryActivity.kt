@@ -11,7 +11,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import com.google.gson.JsonArray
 import dagger.hilt.android.AndroidEntryPoint
-import io.realm.Case
 import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.isActive
@@ -19,10 +18,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseActivity
-import org.ole.planet.myplanet.data.DatabaseService
+import org.ole.planet.myplanet.data.room.dao.DictionaryDao
+import org.ole.planet.myplanet.data.room.entity.DictionaryEntity
 import org.ole.planet.myplanet.databinding.FragmentDictionaryBinding
 import org.ole.planet.myplanet.model.Download
-import org.ole.planet.myplanet.model.RealmDictionary
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -35,7 +34,7 @@ import org.ole.planet.myplanet.utils.Utilities
 @AndroidEntryPoint
 class DictionaryActivity : BaseActivity() {
     @Inject
-    lateinit var databaseService: DatabaseService
+    lateinit var dictionaryDao: DictionaryDao
 
     @Inject
     override lateinit var dispatcherProvider: DispatcherProvider
@@ -118,21 +117,22 @@ class DictionaryActivity : BaseActivity() {
                 null
             }
             json?.let { jsonArray ->
-                databaseService.executeTransactionAsync { bgRealm ->
-                    jsonArray.forEach { js ->
-                        val doc = js.asJsonObject
-                        val dict = bgRealm.createObject(
-                            RealmDictionary::class.java, UUID.randomUUID().toString()
-                        )
-                        dict.code = JsonUtils.getString("code", doc)
-                        dict.language = JsonUtils.getString("language", doc)
-                        dict.advanceCode = JsonUtils.getString("advance_code", doc)
-                        dict.word = JsonUtils.getString("word", doc)
-                        dict.meaning = JsonUtils.getString("meaning", doc)
-                        dict.definition = JsonUtils.getString("definition", doc)
-                        dict.synonym = JsonUtils.getString("synonym", doc)
-                        dict.antonym = JsonUtils.getString("antonoym", doc)
-                    }
+                val entities = jsonArray.map { js ->
+                    val doc = js.asJsonObject
+                    DictionaryEntity(
+                        id = UUID.randomUUID().toString(),
+                        code = JsonUtils.getString("code", doc),
+                        language = JsonUtils.getString("language", doc),
+                        advanceCode = JsonUtils.getString("advance_code", doc),
+                        word = JsonUtils.getString("word", doc),
+                        meaning = JsonUtils.getString("meaning", doc),
+                        definition = JsonUtils.getString("definition", doc),
+                        synonym = JsonUtils.getString("synonym", doc),
+                        antonym = JsonUtils.getString("antonoym", doc)
+                    )
+                }
+                withContext(dispatcherProvider.io) {
+                    dictionaryDao.insertAll(entities)
                 }
             }
         }
@@ -143,8 +143,8 @@ class DictionaryActivity : BaseActivity() {
     }
 
     private suspend fun loadDictionaryCount(): Long {
-        return databaseService.withRealmAsync { realm ->
-            realm.where(RealmDictionary::class.java).count()
+        return withContext(dispatcherProvider.io) {
+            dictionaryDao.count()
         }
     }
 
@@ -152,10 +152,8 @@ class DictionaryActivity : BaseActivity() {
         fragmentDictionaryBinding.btnSearch.setOnClickListener {
             val query = fragmentDictionaryBinding.etSearch.text.toString()
             lifecycleScope.launch {
-                val dict = databaseService.withRealmAsync { realm ->
-                    realm.where(RealmDictionary::class.java)
-                        .equalTo("word", query, Case.INSENSITIVE)
-                        .findFirst()?.let { realm.copyFromRealm(it) }
+                val dict = withContext(dispatcherProvider.io) {
+                    dictionaryDao.findByWord(query)
                 }
                 if (dict != null) {
                     fragmentDictionaryBinding.tvResult.text = HtmlCompat.fromHtml(

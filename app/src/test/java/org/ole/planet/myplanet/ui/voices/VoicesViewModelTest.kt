@@ -13,7 +13,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -31,6 +31,7 @@ class VoicesViewModelTest {
 
     private val testDispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = UnconfinedTestDispatcher()
+        override val mainImmediate: CoroutineDispatcher = UnconfinedTestDispatcher()
         override val io: CoroutineDispatcher = UnconfinedTestDispatcher()
         override val default: CoroutineDispatcher = UnconfinedTestDispatcher()
         override val unconfined: CoroutineDispatcher = UnconfinedTestDispatcher()
@@ -45,22 +46,22 @@ class VoicesViewModelTest {
 
     @Test
     fun `test search and label filter results`() = runTest {
-        val news1 = mockk<RealmNews>(relaxed = true) {
+        val news1 = mockk<News>(relaxed = true) {
             coEvery { message } returns "This is a Test message"
-            coEvery { labels } returns io.realm.RealmList("Label1")
+            coEvery { labels } returns listOf("Label1")
             coEvery { userName } returns "User1"
             coEvery { newsTitle } returns "Title1"
         }
-        val news2 = mockk<RealmNews>(relaxed = true) {
+        val news2 = mockk<News>(relaxed = true) {
             coEvery { message } returns "Another Message"
-            coEvery { labels } returns io.realm.RealmList("Label2")
+            coEvery { labels } returns listOf("Label2")
             coEvery { userName } returns "User2"
             coEvery { newsTitle } returns "Title2"
         }
 
         coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(news1, news2))
 
-        var result: List<RealmNews?> = emptyList()
+        var result: List<News?> = emptyList()
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
             viewModel.filteredNews.collect {
                 result = it
@@ -87,5 +88,54 @@ class VoicesViewModelTest {
 
         assertEquals(1, result.size)
         assertEquals(news2, result[0])
+    }
+
+    @Test
+    fun `test simultaneous query and label filtering`() = runTest {
+        val news1 = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Apple"
+            coEvery { labels } returns listOf("Fruit")
+        }
+        val news2 = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Banana"
+            coEvery { labels } returns listOf("Fruit")
+        }
+        val news3 = mockk<News>(relaxed = true) {
+            coEvery { message } returns "Carrot"
+            coEvery { labels } returns listOf("Vegetable")
+        }
+
+        coEvery { voicesRepository.getCommunityNews(any()) } returns flowOf(listOf(news1, news2, news3))
+
+        var result: List<News?> = emptyList()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.filteredNews.collect {
+                result = it
+            }
+        }
+
+        viewModel.observeCommunityNews("test_user")
+        advanceUntilIdle()
+
+        // Set both states
+        viewModel.updateSelectedLabel("Fruit")
+        viewModel.updateSearchQuery("apple")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(news1, result[0])
+
+        // Change query but keep label
+        viewModel.updateSearchQuery("banana")
+        advanceUntilIdle()
+
+        assertEquals(1, result.size)
+        assertEquals(news2, result[0])
+
+        // Query for item with different label
+        viewModel.updateSearchQuery("carrot")
+        advanceUntilIdle()
+
+        assertEquals(0, result.size)
     }
 }

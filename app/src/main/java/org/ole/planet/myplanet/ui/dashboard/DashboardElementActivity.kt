@@ -26,6 +26,7 @@ import org.ole.planet.myplanet.ui.resources.ResourcesFragment
 import org.ole.planet.myplanet.ui.sync.LoginActivity
 import org.ole.planet.myplanet.ui.sync.SyncActivity
 import org.ole.planet.myplanet.ui.teams.TeamFragment
+import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
 
@@ -133,9 +134,13 @@ abstract class DashboardElementActivity : SyncActivity(), FragmentManager.OnBack
 
         val dialog = builder.build()
         currentDialog = dialog
-        checkMinApk(url, serverPin, "DashboardActivity")
         lifecycleScope.launch {
             val userModel = profileDbHandler.getUserModel()
+            if (userModel?.id?.startsWith("guest") == true) {
+                DialogUtils.guestDialog(this@DashboardElementActivity)
+                return@launch
+            }
+            checkMinApk(url, serverPin, "DashboardActivity")
             activitiesRepository.recordSyncUserChallengeAction("${userModel?.id}")
         }
     }

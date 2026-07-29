@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.repository
 
-import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 
 interface RatingsRepository {
@@ -18,7 +17,9 @@ interface RatingsRepository {
         rating: Float,
         comment: String,
     ): RatingSummary
-    fun bulkInsertFromSync(realm: io.realm.Realm, jsonArray: JsonArray)
+    suspend fun insertRatingsFromSync(documentList: List<JsonObject>)
+    suspend fun getPendingRatingUploads(): List<org.ole.planet.myplanet.model.Rating>
+    suspend fun markRatingUploaded(id: String): Boolean
 }
 
 data class RatingEntry(

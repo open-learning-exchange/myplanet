@@ -13,7 +13,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.widget.doOnTextChanged
 import androidx.lifecycle.lifecycleScope
-import com.google.gson.JsonObject
 import dagger.hilt.android.AndroidEntryPoint
 import fisk.chipcloud.ChipCloud
 import fisk.chipcloud.ChipCloudConfig
@@ -23,10 +22,11 @@ import javax.inject.Inject
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ActivityHealthExaminationBinding
-import org.ole.planet.myplanet.model.RealmExamination
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Examination
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.encrypt
 import org.ole.planet.myplanet.utils.AndroidDecrypter.Companion.generateIv
@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DimenUtils.dpToPx
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.JsonUtils
-import org.ole.planet.myplanet.utils.JsonUtils.getBoolean
 import org.ole.planet.myplanet.utils.JsonUtils.getString
 import org.ole.planet.myplanet.utils.TimeUtils.getAge
 import org.ole.planet.myplanet.utils.Utilities
@@ -46,18 +45,22 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     @Inject
     lateinit var userSessionManager: UserSessionManager
 
+    @Inject
+    lateinit var healthRepository: HealthRepository
+
     private val viewModel: HealthExaminationViewModel by viewModels()
     private lateinit var binding: ActivityHealthExaminationBinding
     var userId: String? = null
-    var user: RealmUser? = null
-    private var currentUser: RealmUser? = null
-    private var pojo: RealmHealthExamination? = null
-    var health: RealmMyHealth? = null
+    var user: UserEntity? = null
+    private var currentUser: UserEntity? = null
+    private var pojo: HealthExamination? = null
+    var health: MyHealth? = null
     private var customDiag: MutableSet<String?>? = null
     private var mapConditions: HashMap<String?, Boolean>? = null
     var allowSubmission = true
     private lateinit var config: ChipCloudConfig
-    private var examination: RealmHealthExamination? = null
+    private var examination: HealthExamination? = null
+    private var conditionsMap: Map<String, Boolean> = emptyMap()
     private fun initViews() {
         config = Utilities.getCloudConfig().selectMode(ChipCloud.SelectMode.close)
         binding.btnAddDiag.setOnClickListener {
@@ -103,9 +106,12 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
                     health = state.health
                     examination = state.examination
 
-                    initExamination()
-                    validateFields()
-                    btnSave.isEnabled = true
+                    lifecycleScope.launch {
+                        conditionsMap = healthRepository.getExaminationConditions(examination)
+                        initExamination()
+                        validateFields()
+                        btnSave.isEnabled = true
+                    }
                 }
             }
         }
@@ -198,9 +204,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         val arr = resources.getStringArray(R.array.diagnosis_list)
         val mainList = listOf(*arr)
         if (customDiag?.isEmpty() == true && examination != null) {
-            val conditions = JsonUtils.gson.fromJson(examination?.conditions, JsonObject::class.java)
-            for (s in conditions.keySet()) {
-                if (!mainList.contains(s) && getBoolean(s, conditions)) {
+            for ((s, value) in conditionsMap) {
+                if (!mainList.contains(s) && value) {
                     chipCloud.addChip(s)
                     chipCloud.setDeleteListener { _: Int, s1: String? ->
                         customDiag?.remove(Constants.LABELS[s1])
@@ -211,7 +216,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
         }
     }
 
-    private fun showCheckbox(examination: RealmHealthExamination?) {
+    private fun showCheckbox(examination: HealthExamination?) {
         val arr = resources.getStringArray(R.array.diagnosis_list)
         binding.containerCheckbox.removeAllViews()
         for (s in arr) {
@@ -220,8 +225,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             c.setTextColor(ContextCompat.getColor(this, R.color.daynight_textColor))
 
             if (examination != null) {
-                val conditions = JsonUtils.gson.fromJson(examination.conditions, JsonObject::class.java)
-                c.isChecked = getBoolean(s, conditions)
+                c.isChecked = conditionsMap[s] ?: false
             }
             c.setPadding(dpToPx(8), dpToPx(8), dpToPx(8), dpToPx(8))
             c.text = s
@@ -244,7 +248,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             createPojo()
             if (examination == null) {
                 val odUserId = generateIv()
-                examination = RealmHealthExamination()
+                examination = HealthExamination()
                 examination?._id = odUserId
                 examination?.userId = odUserId
             }
@@ -255,7 +259,7 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
             examination?.isSelfExamination = currentUser?._id == pojo?._id
             examination?.date = Date().time
             examination?.planetCode = user?.planetCode
-            val sign = RealmExamination()
+            val sign = Examination()
             sign.allergies = "${binding.etAllergies.text}".trim { it <= ' ' }
             sign.createdBy = currentUser?._id
             examination?.bp = "${binding.etBloodpressure.text}".trim { it <= ' ' }
@@ -375,8 +379,8 @@ class HealthExaminationActivity : AppCompatActivity(), CompoundButton.OnCheckedC
     private fun createPojo() {
         try {
             if (pojo == null) {
-                pojo = RealmHealthExamination()
-                pojo?._id = userId
+                pojo = HealthExamination()
+                pojo?._id = userId.orEmpty()
                 pojo?.userId = user?._id
             }
             health?.lastExamination = Date().time

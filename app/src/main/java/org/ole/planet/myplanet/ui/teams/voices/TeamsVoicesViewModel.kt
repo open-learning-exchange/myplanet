@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
@@ -31,11 +31,11 @@ class TeamsVoicesViewModel @Inject constructor(
     private val dispatcherProvider: DispatcherProvider
 ) : ViewModel(), LabelManipulator by DefaultLabelManipulator(voicesRepository, dispatcherProvider) {
 
-    private val _teamPolicy = MutableStateFlow<Pair<RealmMyTeam?, VoicePostingPolicy?>?>(null)
-    val teamPolicy: StateFlow<Pair<RealmMyTeam?, VoicePostingPolicy?>?> = _teamPolicy.asStateFlow()
+    private val _teamPolicy = MutableStateFlow<Pair<MyTeam?, VoicePostingPolicy?>?>(null)
+    val teamPolicy: StateFlow<Pair<MyTeam?, VoicePostingPolicy?>?> = _teamPolicy.asStateFlow()
 
-    private val _discussions = MutableStateFlow<List<RealmNews?>>(emptyList())
-    val discussions: StateFlow<List<RealmNews?>> = _discussions.asStateFlow()
+    private val _discussions = MutableStateFlow<List<News?>>(emptyList())
+    val discussions: StateFlow<List<News?>> = _discussions.asStateFlow()
 
     private val _createNewsSuccess = Channel<Boolean>(Channel.BUFFERED)
     val createNewsSuccess: Flow<Boolean> = _createNewsSuccess.receiveAsFlow()
@@ -43,13 +43,13 @@ class TeamsVoicesViewModel @Inject constructor(
     private var observeJob: Job? = null
 
     fun loadTeam(teamId: String) {
-        viewModelScope.launch(dispatcherProvider.io) {
+        viewModelScope.launch {
             val teamResult = teamsRepository.getTeamByIdOrTeamId(teamId)
             _teamPolicy.value = Pair(teamResult, teamResult?.toVoicePostingPolicy())
         }
     }
 
-    suspend fun getFilteredNews(teamId: String): List<RealmNews?> {
+    suspend fun getFilteredNews(teamId: String): List<News?> {
         val newsList = voicesRepository.getFilteredNews(teamId)
         voicesRepository.updateTeamNotification(teamId, newsList.size)
         return newsList
@@ -57,15 +57,15 @@ class TeamsVoicesViewModel @Inject constructor(
 
     fun observeDiscussions(teamId: String) {
         observeJob?.cancel()
-        observeJob = viewModelScope.launch(dispatcherProvider.io) {
+        observeJob = viewModelScope.launch {
             voicesRepository.getDiscussionsByTeamIdFlow(teamId).collect {
                 _discussions.value = it
             }
         }
     }
 
-    fun createTeamNews(map: HashMap<String?, String>, user: RealmUser, imageList: List<String>) {
-        viewModelScope.launch(dispatcherProvider.io) {
+    fun createTeamNews(map: HashMap<String?, String>, user: UserEntity, imageList: List<String>) {
+        viewModelScope.launch {
             val success = voicesRepository.createTeamNews(map, user, imageList)
             _createNewsSuccess.send(success)
         }
@@ -75,7 +75,7 @@ class TeamsVoicesViewModel @Inject constructor(
         return teamsRepository.isTeamLeader(teamId, userId)
     }
 
-    suspend fun getUserById(userId: String): RealmUser? {
+    suspend fun getUserById(userId: String): UserEntity? {
         return voicesRepository.getUserById(userId)
     }
 
@@ -103,7 +103,7 @@ class TeamsVoicesViewModel @Inject constructor(
         return voicesRepository.shareNewsToCommunity(newsId, userId, planetCode, parentCode, teamName)
     }
 
-    suspend fun getLibraryResource(resourceId: String): RealmMyLibrary? {
+    suspend fun getLibraryResource(resourceId: String): MyLibrary? {
         return voicesRepository.getLibraryResource(resourceId)
     }
 

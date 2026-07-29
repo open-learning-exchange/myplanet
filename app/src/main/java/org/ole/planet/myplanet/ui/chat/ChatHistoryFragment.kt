@@ -24,13 +24,12 @@ import org.ole.planet.myplanet.base.BaseRecyclerFragment.Companion.showNoData
 import org.ole.planet.myplanet.callback.OnChatHistoryItemClickListener
 import org.ole.planet.myplanet.databinding.FragmentChatHistoryBinding
 import org.ole.planet.myplanet.model.ChatShareTargets
-import org.ole.planet.myplanet.model.RealmConversation
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -44,19 +43,18 @@ class ChatHistoryFragment : Fragment() {
     private var _binding: FragmentChatHistoryBinding? = null
     private val binding get() = _binding!!
     private val sharedViewModel: ChatViewModel by activityViewModels()
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private var isFullSearch: Boolean = false
     private var isQuestion: Boolean = false
     @Inject
     lateinit var sharedPrefManager: SharedPrefManager
-    private var sharedNewsMessages: List<RealmNews> = emptyList()
+    private var sharedNewsMessages: List<News> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
     
     @Inject
     lateinit var chatRepository: ChatRepository
     @Inject
     lateinit var voicesRepository: VoicesRepository
-    private val syncManagerInstance = RealtimeSyncManager.getInstance()
     private val serverUrl: String
         get() = sharedPrefManager.getServerUrl()
 
@@ -194,7 +192,7 @@ class ChatHistoryFragment : Fragment() {
             }
         }
         newAdapter.setChatHistoryItemClickListener(object : OnChatHistoryItemClickListener {
-            override fun onChatHistoryItemClicked(conversations: List<RealmConversation>?, id: String, rev: String?, aiProvider: String?) {
+            override fun onChatHistoryItemClicked(conversations: List<Conversation>?, id: String, rev: String?, aiProvider: String?) {
                 conversations?.let { sharedViewModel.setSelectedChatHistory(it) }
                 sharedViewModel.setSelectedId(id)
                 rev?.let { sharedViewModel.setSelectedRev(it) }
@@ -250,10 +248,8 @@ class ChatHistoryFragment : Fragment() {
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(syncManagerInstance.dataUpdateFlow) { update ->
-            if (update.table == "chats" && update.shouldRefreshUI) {
-                refreshChatHistory()
-            }
+        collectWhenStarted(sharedViewModel.refreshChatSignal) {
+            refreshChatHistory()
         }
     }
 

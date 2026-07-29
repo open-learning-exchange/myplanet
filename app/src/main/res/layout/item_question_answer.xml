@@ -6,7 +6,8 @@
     android:layout_height="wrap_content"
     android:layout_marginBottom="12dp"
     app:cardCornerRadius="8dp"
-    app:cardElevation="2dp">
+    app:cardElevation="2dp"
+    app:cardBackgroundColor="@color/card_bg" >
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -18,7 +19,7 @@
             android:id="@+id/tv_question_header"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="@color/daynight_textColor"
             android:textSize="16sp"
             android:textStyle="bold"
             android:visibility="gone"
@@ -28,18 +29,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="@color/daynight_textColor"
             android:textSize="14sp" />
         <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:layout_marginTop="12dp"
             android:layout_marginBottom="12dp"
-            android:background="?android:attr/listDivider" />
+            android:background="@color/chat_detail_divider" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="?android:attr/textColorSecondary"
+            android:textColor="@color/daynight_textColor"
             android:textSize="12sp"
             android:text="@string/label_answer"
             android:textStyle="bold" />
@@ -48,14 +49,14 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:textColor="?android:attr/textColorPrimary"
+            android:textColor="@color/daynight_textColor"
             android:textSize="14sp" />
         <TextView
             android:id="@+id/tv_question_type"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
-            android:textColor="?android:attr/textColorTertiary"
+            android:textColor="@color/daynight_textColor"
             android:textSize="11sp"
             android:visibility="gone"
             tools:visibility="visible" />

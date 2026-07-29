@@ -5,6 +5,7 @@ import android.graphics.Typeface
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.toColorInt
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -22,7 +23,7 @@ class TeamsAdapter(
     private val onEditTeamClick: (TeamDetails) -> Unit,
     private val onLeaveTeamClick: (TeamDetails) -> Unit,
     private val onRequestToJoinClick: (TeamDetails) -> Unit
-) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(TeamDiffCallback) {
+) : ListAdapter<TeamDetails, TeamsAdapter.TeamsViewHolder>(DIFF_CALLBACK) {
     private var type: String? = ""
     private val dateCache = mutableMapOf<Long, String>()
 
@@ -104,7 +105,7 @@ class TeamsAdapter(
                     contentDescription = "${context.getString(R.string.requested)} ${team.name}"
                     visibility = View.VISIBLE
                     setImageResource(R.drawable.baseline_hourglass_top_24)
-                    setColorFilter("#9fa0a4".toColorInt(), PorterDuff.Mode.SRC_IN)
+                    setColorFilter(ContextCompat.getColor(context, R.color.pending_request_indicator), PorterDuff.Mode.SRC_IN)
                 }
             }
 
@@ -140,7 +141,7 @@ class TeamsAdapter(
     class TeamsViewHolder(val binding: ItemTeamListBinding) : RecyclerView.ViewHolder(binding.root)
 
     companion object {
-        val TeamDiffCallback = DiffUtils.itemCallback<TeamDetails>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<TeamDetails>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
             areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
         )

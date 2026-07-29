@@ -16,8 +16,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.fragment.app.viewModels
-import androidx.lifecycle.Observer
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.preference.Preference
 import androidx.preference.Preference.OnPreferenceChangeListener
 import androidx.preference.Preference.OnPreferenceClickListener
@@ -28,12 +29,13 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmRetryOperation
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.RetryOperation
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.FreeSpaceWorker
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.ThemeManager
@@ -46,6 +48,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -93,8 +96,10 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
-        var user: RealmUser? = null
-        private var libraryList: List<RealmMyLibrary>? = null
+        @Inject
+        lateinit var timeProvider: TimeProvider
+        var user: UserEntity? = null
+        private var libraryList: List<MyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
 
 
@@ -131,8 +136,8 @@ class SettingsActivity : AppCompatActivity() {
                         appendLine("Details:")
                         pendingOps.take(10).forEach { op ->
                             val statusIcon = when (op.status) {
-                                RealmRetryOperation.STATUS_IN_PROGRESS -> "🔄"
-                                RealmRetryOperation.STATUS_PENDING -> "⏸"
+                                RetryOperation.STATUS_IN_PROGRESS -> "🔄"
+                                RetryOperation.STATUS_PENDING -> "⏸"
                                 else -> "❓"
                             }
                             appendLine("$statusIcon ${op.uploadType}: ${op.status} (${op.attemptCount}/${op.maxAttempts})")
@@ -192,6 +197,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
                 user = profileDbHandler.getUserModel()
+                blockGuestSwitches()
             }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
@@ -233,6 +239,30 @@ class SettingsActivity : AppCompatActivity() {
             initStorageBreakdown()
         }
 
+        private fun blockGuestSwitches() {
+            if (user?.id?.startsWith("guest") != true) return
+
+            fun processPreference(pref: Preference) {
+                when (pref) {
+                    is SwitchPreference -> {
+                        pref.onPreferenceChangeListener = OnPreferenceChangeListener { _, _ ->
+                            DialogUtils.guestDialog(requireContext())
+                            false
+                        }
+                    }
+                    is androidx.preference.PreferenceGroup -> {
+                        for (i in 0 until pref.preferenceCount) {
+                            processPreference(pref.getPreference(i))
+                        }
+                    }
+                }
+            }
+
+            for (i in 0 until preferenceScreen.preferenceCount) {
+                processPreference(preferenceScreen.getPreference(i))
+            }
+        }
+
         private fun initStorageBreakdown() {
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
@@ -256,10 +286,20 @@ class SettingsActivity : AppCompatActivity() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            viewModel.clearAllData()
-                        }.setNegativeButton(R.string.no, null).show()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val userModel = profileDbHandler.getUserModel()
+                        if (userModel?.id?.startsWith("guest") == true) {
+                            DialogUtils.guestDialog(requireActivity())
+                            return@launch
+                        }
+                        AlertDialog.Builder(requireActivity())
+                            .setTitle(R.string.are_you_sure)
+                            .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                                viewModel.clearAllData()
+                            }
+                            .setNegativeButton(R.string.no, null)
+                            .show()
+                    }
                     false
                 }
             }
@@ -276,43 +316,43 @@ class SettingsActivity : AppCompatActivity() {
 
                             workManager.enqueue(freeSpaceWork)
 
-                            val liveData = workManager.getWorkInfoByIdLiveData(freeSpaceWork.id)
-                            liveData.observe(viewLifecycleOwner, object : Observer<WorkInfo?> {
-                                override fun onChanged(value: WorkInfo?) {
-                                    val workInfo = value
-                                    if (workInfo != null) {
-                                        when (workInfo.state) {
-                                            WorkInfo.State.RUNNING -> {
-                                                val progress = workInfo.progress
-                                                val deletedFiles = progress.getInt("deletedFiles", 0)
-                                                val freedBytes = progress.getLong("freedBytes", 0)
-                                                dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
+                            viewLifecycleOwner.lifecycleScope.launch {
+                                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                                    workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
+                                        if (workInfo != null) {
+                                            when (workInfo.state) {
+                                                WorkInfo.State.RUNNING -> {
+                                                    val progress = workInfo.progress
+                                                    val deletedFiles = progress.getInt("deletedFiles", 0)
+                                                    val freedBytes = progress.getLong("freedBytes", 0)
+                                                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
+                                                }
+                                                WorkInfo.State.SUCCEEDED -> {
+                                                    dialog.dismiss()
+                                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                                                    val output = workInfo.outputData
+                                                    val deletedFiles = output.getInt("deletedFiles", 0)
+                                                    val freedBytes = output.getLong("freedBytes", 0)
+                                                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
+                                                }
+                                                WorkInfo.State.FAILED -> {
+                                                    dialog.dismiss()
+                                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                                }
+                                                WorkInfo.State.CANCELLED -> {
+                                                    dialog.dismiss()
+                                                }
+                                                else -> {
+                                                    // ENQUEUED or BLOCKED
+                                                }
                                             }
-                                            WorkInfo.State.SUCCEEDED -> {
-                                                dialog.dismiss()
-                                                Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                                val output = workInfo.outputData
-                                                val deletedFiles = output.getInt("deletedFiles", 0)
-                                                val freedBytes = output.getLong("freedBytes", 0)
-                                                Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
+                                            if (workInfo.state.isFinished) {
+                                                kotlinx.coroutines.currentCoroutineContext().cancel()
                                             }
-                                            WorkInfo.State.FAILED -> {
-                                                dialog.dismiss()
-                                                Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                                            }
-                                            WorkInfo.State.CANCELLED -> {
-                                                dialog.dismiss()
-                                            }
-                                            else -> {
-                                                // ENQUEUED or BLOCKED
-                                            }
-                                        }
-                                        if (workInfo.state.isFinished) {
-                                            liveData.removeObserver(this)
                                         }
                                     }
                                 }
-                            })
+                            }
 
                             dialog.setNegativeButton("Cancel") {
                                 workManager.cancelWorkById(freeSpaceWork.id)
@@ -351,7 +391,7 @@ class SettingsActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
         }
 

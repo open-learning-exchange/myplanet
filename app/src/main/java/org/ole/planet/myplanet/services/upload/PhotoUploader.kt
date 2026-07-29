@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -18,8 +19,9 @@ class PhotoUploader @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
-    @ApplicationScope scope: CoroutineScope
-) : FileUploader(apiInterface, scope) {
+    @ApplicationScope scope: CoroutineScope,
+    private val uploadRepository: UploadRepository
+) : FileUploader(uploadRepository, scope) {
 
     suspend fun uploadSubmitPhotos(
         listener: OnSuccessListener?
@@ -60,12 +62,12 @@ class PhotoUploader @Inject constructor(
 
                 if (listener != null && successfulUploads.isNotEmpty()) {
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
-                    val photos = submissionsRepository.getPhotosByIds(photoIds)
+                    val photosMap = submissionsRepository.getPhotosByIds(photoIds).associateBy { it.id }
 
-                    photos.forEach { photo ->
-                        val uploadInfo = successfulUploads.find { it.photoId == photo.id }
-                        if (uploadInfo != null) {
-                            uploadAttachment(uploadInfo.id, uploadInfo.rev, photo, listener)
+                    successfulUploads.forEach { uploadInfo ->
+                        val photo = photosMap[uploadInfo.photoId]
+                        if (photo != null) {
+                            uploadAttachment(photo.photoLocation, "%s/submissions/%s/%s", uploadInfo.id, uploadInfo.rev, listener)
                         }
                     }
                 }

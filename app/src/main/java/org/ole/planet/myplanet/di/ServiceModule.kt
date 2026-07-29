@@ -11,10 +11,8 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Qualifier
 import javax.inject.Singleton
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import org.ole.planet.myplanet.data.DatabaseService
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.ChatRepository
@@ -33,12 +31,14 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TagsRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UploadToShelfService
+import org.ole.planet.myplanet.services.retry.RetryQueue
 import org.ole.planet.myplanet.services.sync.LoginSyncManager
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.services.sync.SyncManager
@@ -81,9 +81,10 @@ object ServiceModule {
         teamsRepository: TeamsRepository,
         teamsSyncRepository: TeamsSyncRepository,
         coursesRepository: CoursesRepository,
-        eventsRepository: EventsRepository
+        eventsRepository: EventsRepository,
+        userSyncRepository: UserSyncRepository
     ): SyncManager {
-        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository)
+        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository, userSyncRepository)
     }
 
     @Provides
@@ -94,6 +95,8 @@ object ServiceModule {
         sharedPrefManager: SharedPrefManager,
         gson: Gson,
         uploadCoordinator: UploadCoordinator,
+        uploadRepository: UploadRepository,
+        retryQueue: RetryQueue,
         personalsRepository: PersonalsRepository,
         userRepository: UserRepository,
         chatRepository: ChatRepository,
@@ -110,7 +113,7 @@ object ServiceModule {
         achievementUploader: AchievementUploader,
         timeProvider: TimeProvider
     ): UploadManager {
-        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
+        return UploadManager(context, submissionsRepository, sharedPrefManager, gson, uploadCoordinator, uploadRepository, retryQueue, personalsRepository, userRepository, chatRepository, voicesRepository, uploadConfigs, resourcesRepository, teamsRepository, teamsSyncRepository, apiInterface, activitiesRepository, dispatcherProvider, scope, photoUploader, achievementUploader, timeProvider)
     }
 
     @Provides
@@ -139,8 +142,6 @@ object ServiceModule {
     @Singleton
     fun provideTransactionSyncManager(
         apiInterface: ApiInterface,
-        databaseService: DatabaseService,
-        @RealmDispatcher realmDispatcher: CoroutineDispatcher,
         @ApplicationContext context: Context,
         voicesRepository: VoicesRepository,
         chatRepository: ChatRepository,
@@ -161,8 +162,9 @@ object ServiceModule {
         progressRepository: ProgressRepository,
         surveysRepository: SurveysRepository,
         @ApplicationScope scope: CoroutineScope,
-        dispatcherProvider: DispatcherProvider
+        dispatcherProvider: DispatcherProvider,
+        userSessionManager: org.ole.planet.myplanet.services.UserSessionManager
     ): TransactionSyncManager {
-        return TransactionSyncManager(apiInterface, databaseService, realmDispatcher, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider)
+        return TransactionSyncManager(apiInterface, context, voicesRepository, chatRepository, feedbackRepository, sharedPrefManager, userRepository, userSyncRepository, activitiesRepository, teamsRepository, teamsSyncRepository, notificationsRepository, tagsRepository, ratingsRepository, submissionsRepository, coursesRepository, communityRepository, healthRepository, progressRepository, surveysRepository, scope, dispatcherProvider, userSessionManager)
     }
 }

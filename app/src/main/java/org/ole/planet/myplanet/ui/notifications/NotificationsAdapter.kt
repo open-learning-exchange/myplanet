@@ -110,9 +110,8 @@ class NotificationsAdapter(
 
         fun bind(item: NotificationListItem.Item) {
             val notification = item.notification
-            binding.title.text = Html.fromHtml(notification.formattedText.toString(), Html.FROM_HTML_MODE_LEGACY)
+            binding.title.text = item.parsedText
             binding.timestamp.text = formatRelativeTime(notification.createdAt)
-            binding.ivTypeIcon.setImageResource(iconResFor(notification.type))
             binding.root.alpha = if (notification.isRead) 0.6f else 1.0f
 
             if (item.isSelectionMode) {
