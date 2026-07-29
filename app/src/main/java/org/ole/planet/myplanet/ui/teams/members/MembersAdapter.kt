@@ -138,27 +138,26 @@ class MembersAdapter(
         if ((isLoggedInUserTeamLeader || isOwnCard) && itemCount > 1) {
             binding.icMore.visibility = View.VISIBLE
             binding.icMore.setOnClickListener {
-                val overflowMenuOptions = if (isOwnCard) {
-                    arrayOf(context.getString(R.string.leave))
-                } else {
-                    arrayOf(
-                        context.getString(R.string.remove),
-                        context.getString(R.string.make_leader)
-                    )
+                val overflowMenuOptions = mutableListOf<String>()
+                if (isOwnCard) {
+                    overflowMenuOptions.add(context.getString(R.string.leave))
+                } else if (isLoggedInUserTeamLeader) {
+                    overflowMenuOptions.add(context.getString(R.string.remove))
+                    overflowMenuOptions.add(context.getString(R.string.make_leader))
+                }
+
+                if (overflowMenuOptions.isEmpty()) {
+                    return@setOnClickListener
                 }
 
                 val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
                 val adapter = MemberMenuAdapter(context, overflowMenuOptions.toList())
                 builder.setAdapter(adapter) { _, i ->
-                    if (isOwnCard) {
-                        when (i) {
-                            0 -> actionListener.onLeaveTeam()
-                        }
-                    } else {
-                        when (i) {
-                            0 -> actionListener.onRemoveMember(getItem(position), position)
-                            1 -> actionListener.onMakeLeader(getItem(position))
-                        }
+                    val selectedOption = overflowMenuOptions[i]
+                    when (selectedOption) {
+                        context.getString(R.string.leave) -> actionListener.onLeaveTeam()
+                        context.getString(R.string.remove) -> actionListener.onRemoveMember(getItem(position), position)
+                        context.getString(R.string.make_leader) -> actionListener.onMakeLeader(getItem(position))
                     }
                 }.setNegativeButton(R.string.dismiss, null).show()
             }
