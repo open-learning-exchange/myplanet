@@ -168,6 +168,8 @@ class MembersFragment : BaseTeamFragment() {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 teamsRepository.updateTeamLeader(teamId, userId)
+                val members = teamsRepository.getJoinedMembersWithVisitInfo(teamId)
+                membersAdapter?.updateData(members, false)
                 loadMembers()
                 Toast.makeText(requireContext(), getString(R.string.leader_selected), Toast.LENGTH_SHORT).show()
                 onMemberChangeListener?.onMemberChanged()
