@@ -156,6 +156,8 @@ class MembersFragment : BaseTeamFragment() {
                     }
                 }
                 teamsRepository.removeMember(teamId, memberId)
+                teamsSyncRepository.syncTeamActivities() // Sync immediately so that the user is now deleted.
+                Toast.makeText(requireContext(), "When sync is finished, user will be deleted", Toast.LENGTH_LONG).show();
                 loadMembers()
                 onMemberChangeListener?.onMemberChanged()
             } catch (e: Exception) {
