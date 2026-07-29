@@ -82,7 +82,8 @@ class TransactionSyncManager @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val surveysRepository: SurveysRepository,
     @ApplicationScope private val applicationScope: CoroutineScope,
-    private val dispatcherProvider: DispatcherProvider
+    private val dispatcherProvider: DispatcherProvider,
+    private val userSessionManager: UserSessionManager
 ) {
     // The heavy tables are fetched in parallel (see SyncManager), but SQLite has a single
     // writer, so running ~14 batch inserts concurrently just thrashes the write lock/WAL — the
@@ -99,6 +100,16 @@ class TransactionSyncManager @Inject constructor(
             e.printStackTrace()
         }
         return false
+    }
+
+
+    fun syncDashboardKeyId(role: String?, listener: OnSyncListener) {
+        val settings = sharedPrefManager.rawPreferences
+        if (role?.contains("health") == true) {
+            syncAllHealthData(settings, listener)
+        } else {
+            syncKeyIv(settings, listener, userSessionManager)
+        }
     }
 
     fun syncAllHealthData(settings: SharedPreferences, listener: OnSyncListener) {
