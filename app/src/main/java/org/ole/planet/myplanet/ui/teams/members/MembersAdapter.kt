@@ -69,6 +69,7 @@ class MembersAdapter(
                     holder.binding.tvIsLeader.text = context.getString(R.string.team_leader)
                 }
             }
+            checkUserAndShowOverflowMenu(holder.binding, position)
         } else {
             super.onBindViewHolder(holder, position, payloads)
         }
@@ -168,8 +169,13 @@ class MembersAdapter(
     }
 
     fun updateData(newList: List<JoinedMemberData>, isLoggedInUserTeamLeader: Boolean) {
+        val leaderChanged = this.isLoggedInUserTeamLeader != isLoggedInUserTeamLeader
         this.isLoggedInUserTeamLeader = isLoggedInUserTeamLeader
-        submitList(newList)
+        submitList(newList) {
+            if (leaderChanged) {
+                notifyDataSetChanged()
+            }
+        }
     }
 
     class MembersViewHolder(val binding: RowJoinedUserBinding) :
