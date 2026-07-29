@@ -150,12 +150,6 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getSurveyId(relatedId: String?): String? {
-        return relatedId?.let {
-            examDao.getAll().firstOrNull { exam -> exam.name == it }?.id
-        }
-    }
-
     override suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult? {
         return relatedId?.let {
             val task = teamTaskDao.getById(it)
