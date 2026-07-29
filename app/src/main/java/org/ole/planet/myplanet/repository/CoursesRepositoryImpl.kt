@@ -287,7 +287,7 @@ class CoursesRepositoryImpl @Inject constructor(
     override suspend fun leaveCourse(courseId: String, userId: String): Result<Unit> {
         return runCatching {
             courseDao.getByCourseId(courseId)?.let { course ->
-                val updatedUserIds = course.userId.orEmpty().toMutableList().apply { remove(userId) }
+                val updatedUserIds = course.userId.orEmpty().filter { it != userId }
                 courseDao.upsert(course.copy(userId = updatedUserIds))
             }
             removedLogDao.insert(RemovedLog().apply {
@@ -746,10 +746,10 @@ class CoursesRepositoryImpl @Inject constructor(
     }
 
     private fun mergeUserIds(existingUserIds: List<String>?, newUserId: String?): List<String>? {
-        val merged = existingUserIds.orEmpty().toMutableList()
+        val merged = existingUserIds.orEmpty().filter { !it.isNullOrBlank() }.toMutableList()
         if (!newUserId.isNullOrBlank() && !merged.contains(newUserId)) {
             merged.add(newUserId)
         }
-        return merged.takeIf { it.isNotEmpty() }
+        return merged.distinct().takeIf { it.isNotEmpty() }
     }
 }
