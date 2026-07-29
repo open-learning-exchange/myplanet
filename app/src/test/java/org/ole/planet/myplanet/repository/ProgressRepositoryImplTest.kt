@@ -15,6 +15,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.AnswerDao
@@ -464,6 +465,25 @@ class ProgressRepositoryImplTest {
         assertEquals(10, result1?.get("max")?.asInt)
 
         val result2 = repository.findProgressForCourse(jsonArray, "course3")
-        assertEquals(null, result2)
+        assertNull(result2)
+    }
+
+    @Test
+    fun testFindProgressForCourse_emptyArray() {
+        val jsonArray = JsonArray()
+        val result = repository.findProgressForCourse(jsonArray, "course1")
+        assertNull(result)
+    }
+
+    @Test
+    fun testFindProgressForCourse_missingProgress() {
+        val jsonArray = JsonArray()
+        val course1 = JsonObject().apply {
+            addProperty("courseId", "course1")
+        }
+        jsonArray.add(course1)
+
+        val result = repository.findProgressForCourse(jsonArray, "course1")
+        assertNull(result)
     }
 }

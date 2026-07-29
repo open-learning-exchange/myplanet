@@ -9,7 +9,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
-import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -24,9 +23,11 @@ import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
 
+import org.ole.planet.myplanet.repository.ActivitiesRepository
+
 class UploadConfigsTest {
+    private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
     private val searchActivityDao: SearchActivityDao = mockk(relaxed = true)
-    private val courseActivityDao: CourseActivityDao = mockk(relaxed = true)
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val newsLogDao: NewsLogDao = mockk(relaxed = true)
     private val resourceActivityDao: ResourceActivityDao = mockk(relaxed = true)
@@ -35,7 +36,7 @@ class UploadConfigsTest {
     private val uploadConfigs = UploadConfigs(
         voicesRepository = mockk(relaxed = true),
         submissionsRepository = mockk(relaxed = true),
-        activitiesRepository = mockk(relaxed = true),
+        activitiesRepository = activitiesRepository,
         teamsSyncRepository = mockk<Lazy<TeamsSyncRepository>>(relaxed = true),
         sharedPrefManager = mockk(relaxed = true),
         userRepository = mockk(relaxed = true),
@@ -46,7 +47,6 @@ class UploadConfigsTest {
         resourcesRepository = mockk(relaxed = true),
         apkLogDao = mockk<ApkLogDao>(relaxed = true),
         searchActivityDao = searchActivityDao,
-        courseActivityDao = courseActivityDao,
         courseProgressDao = courseProgressDao,
         resourceActivityDao = resourceActivityDao,
         submitPhotosDao = submitPhotosDao,
@@ -105,7 +105,7 @@ class UploadConfigsTest {
     @Test
     fun `CourseActivities config fetches pending Room rows from DAO`() = runTest {
         val pending = listOf(CourseActivity().apply { id = "course-local-1" })
-        coEvery { courseActivityDao.getPendingUploads() } returns pending
+        coEvery { activitiesRepository.getPendingCourseActivityUploads() } returns pending
 
         val result = uploadConfigs.CourseActivities.fetchPendingItems()
 
@@ -121,18 +121,18 @@ class UploadConfigsTest {
             response = mockk(relaxed = true)
         )
         coEvery {
-            courseActivityDao.markUploaded(
+            activitiesRepository.markCourseActivityUploaded(
                 localId = "course-local-1",
                 remoteId = "course-remote-1",
                 rev = "1-rev"
             )
-        } returns 1
+        } returns true
 
         val failures = uploadConfigs.CourseActivities.markUploaded(listOf(result))
 
         assertTrue(failures.isEmpty())
         coVerify {
-            courseActivityDao.markUploaded(
+            activitiesRepository.markCourseActivityUploaded(
                 localId = "course-local-1",
                 remoteId = "course-remote-1",
                 rev = "1-rev"
