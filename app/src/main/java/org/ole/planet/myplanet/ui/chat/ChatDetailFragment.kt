@@ -417,16 +417,7 @@ class ChatDetailFragment : Fragment() {
                 launch {
                     sharedViewModel.selectedAiProvider.collect { selectedAiProvider ->
                         aiName = selectedAiProvider ?: aiName
-                        if (binding.aiTableRow.isNotEmpty()) {
-                            for (i in 0 until binding.aiTableRow.childCount) {
-                                val view = binding.aiTableRow.getChildAt(i)
-                                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                                    selectAI(view, "$selectedAiProvider", modelName)
-                                    break
-                                }
-                            }
-                        }
+                        updateSelectedAiProvider(selectedAiProvider)
                     }
                 }
                 launch {
@@ -508,6 +499,19 @@ class ChatDetailFragment : Fragment() {
             setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
             setOnClickListener { selectAI(this, providerName, modelName) }
         }
+
+    private fun updateSelectedAiProvider(selectedAiProvider: String?) {
+        if (binding.aiTableRow.isNotEmpty()) {
+            for (i in 0 until binding.aiTableRow.childCount) {
+                val view = binding.aiTableRow.getChildAt(i)
+                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
+                    selectAI(view, "$selectedAiProvider", modelName)
+                    break
+                }
+            }
+        }
+    }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = binding.aiTableRow
