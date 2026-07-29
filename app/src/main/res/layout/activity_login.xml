@@ -17,7 +17,8 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="match_parent"
             android:baselineAligned="false"
             android:focusableInTouchMode="true"
             android:orientation="horizontal">
@@ -25,7 +26,8 @@
             <androidx.constraintlayout.widget.ConstraintLayout
                 android:id="@+id/lyt"
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="match_parent"
                 android:layout_weight="6"
                 android:background="@color/light_dark">
 
@@ -312,14 +314,16 @@
 
             <LinearLayout
                 android:layout_width="0dp"
-                android:layout_height="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="match_parent"
                 android:layout_weight="4"
                 android:background="@color/mainColor"
                 android:orientation="vertical">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
+                    android:layout_height="wrap_content"
+                    android:minHeight="match_parent">
 
                     <ImageButton
                         android:id="@+id/themeToggleButton"
@@ -420,11 +424,12 @@
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/recyclerView"
                         android:layout_width="match_parent"
-                        android:layout_height="0dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
                         android:clipToPadding="false"
                         android:paddingBottom="8dp"
                         android:scrollbars="vertical"
+                        android:nestedScrollingEnabled="false"
                         app:layout_constraintBottom_toBottomOf="parent"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
