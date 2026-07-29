@@ -4,7 +4,6 @@ import dagger.Lazy
 import javax.inject.Inject
 import javax.inject.Singleton
 import org.ole.planet.myplanet.data.room.dao.ApkLogDao
-import org.ole.planet.myplanet.data.room.dao.CourseActivityDao
 import org.ole.planet.myplanet.data.room.dao.CourseProgressDao
 import org.ole.planet.myplanet.data.room.dao.NewsLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
@@ -55,7 +54,6 @@ class UploadConfigs @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
     private val apkLogDao: ApkLogDao,
     private val searchActivityDao: SearchActivityDao,
-    private val courseActivityDao: CourseActivityDao,
     private val courseProgressDao: CourseProgressDao,
     private val resourceActivityDao: ResourceActivityDao,
     private val submitPhotosDao: SubmitPhotosDao,
@@ -164,16 +162,16 @@ class UploadConfigs @Inject constructor(
     val CourseActivities = RoomUploadConfig(
         endpoint = "course_activities",
         modelClassName = "CourseActivity",
-        fetchPendingItems = { courseActivityDao.getPendingUploads() },
+        fetchPendingItems = { activitiesRepository.getPendingCourseActivityUploads() },
         serializer = UploadSerializer.Simple(CourseActivity::serialize),
         idExtractor = { it.id },
         markUploaded = { results ->
             results.filter { result ->
-                courseActivityDao.markUploaded(
+                !activitiesRepository.markCourseActivityUploaded(
                     localId = result.localId,
                     remoteId = result.remoteId,
                     rev = result.remoteRev
-                ) == 0
+                )
             }
         }
     )
