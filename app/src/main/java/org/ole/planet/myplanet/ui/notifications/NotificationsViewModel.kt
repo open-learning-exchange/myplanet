@@ -120,9 +120,7 @@ class NotificationsViewModel @Inject constructor(
                     if (currentFilter == "unread") {
                         currentList.filterNot { it.id in markedIds }
                     } else {
-                        currentList.map { notif ->
-                            if (notif.id in markedIds && !notif.isRead) notif.copy(isRead = true) else notif
-                        }
+                        currentList.markAsRead(markedIds)
                     }
                 }
                 _unreadCount.update { maxOf(0, it - wasUnreadCount) }
@@ -157,9 +155,7 @@ class NotificationsViewModel @Inject constructor(
                         if (currentFilter == "unread") {
                             currentList.filter { it.id != notificationId }
                         } else {
-                            currentList.map {
-                                if (it.id == notificationId) it.copy(isRead = true) else it
-                            }
+                            currentList.markAsRead(notificationId)
                         }
                     } else {
                         currentList
@@ -180,14 +176,20 @@ class NotificationsViewModel @Inject constructor(
                     if (currentFilter == "unread") {
                         currentList.filterNot { it.id in markedIds }
                     } else {
-                        currentList.map {
-                            if (it.id in markedIds && !it.isRead) it.copy(isRead = true) else it
-                        }
+                        currentList.markAsRead(markedIds)
                     }
                 }
                 _unreadCount.value = 0
             }
         }
+    }
+
+    private fun List<Notification>.markAsRead(id: String): List<Notification> {
+        return map { if (it.id == id && !it.isRead) it.copy(isRead = true) else it }
+    }
+
+    private fun List<Notification>.markAsRead(ids: Set<String>): List<Notification> {
+        return map { if (it.id in ids && !it.isRead) it.copy(isRead = true) else it }
     }
 
     private fun buildGroupedList(
