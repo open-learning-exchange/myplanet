@@ -82,14 +82,14 @@ class UploadManager @Inject constructor(
     private val photoUploader: PhotoUploader,
     private val achievementUploader: AchievementUploader,
     private val timeProvider: TimeProvider
-) : FileUploader(apiInterface, scope) {
+) : FileUploader(uploadRepository, scope) {
 
     private suspend fun uploadNewsActivities() {
         uploadCoordinator.uploadRoom(uploadConfigs.NewsActivities)
     }
 
     private suspend fun notifyListener(listener: OnSuccessListener?, message: String) {
-        withContext(dispatcherProvider.main) {
+        withContext(dispatcherProvider.mainImmediate) {
             listener?.onSuccess(message)
         }
     }
