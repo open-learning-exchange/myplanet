@@ -8,6 +8,7 @@ import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.di.ApplicationScope
 import org.ole.planet.myplanet.repository.SubmissionsRepository
+import org.ole.planet.myplanet.repository.UploadRepository
 import org.ole.planet.myplanet.services.FileUploader
 import org.ole.planet.myplanet.services.upload.UploadConstants.BATCH_SIZE
 import org.ole.planet.myplanet.utils.DispatcherProvider
@@ -18,8 +19,9 @@ class PhotoUploader @Inject constructor(
     private val submissionsRepository: SubmissionsRepository,
     private val apiInterface: ApiInterface,
     private val dispatcherProvider: DispatcherProvider,
-    @ApplicationScope scope: CoroutineScope
-) : FileUploader(apiInterface, scope) {
+    @ApplicationScope scope: CoroutineScope,
+    private val uploadRepository: UploadRepository
+) : FileUploader(uploadRepository, scope) {
 
     suspend fun uploadSubmitPhotos(
         listener: OnSuccessListener?
