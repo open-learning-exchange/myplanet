@@ -23,11 +23,11 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmMyLibrary
-import org.ole.planet.myplanet.model.RealmMyTeam
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.NotificationsRepository
 import org.ole.planet.myplanet.repository.ProgressRepository
@@ -44,10 +44,10 @@ import org.ole.planet.myplanet.utils.NotificationConfig
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
     val newNotifications: List<NotificationConfig> = emptyList(),
-    val library: List<RealmMyLibrary> = emptyList(),
-    val courses: List<RealmMyCourse> = emptyList(),
-    val teams: List<RealmMyTeam> = emptyList(),
-    val users: List<RealmUser> = emptyList(),
+    val library: List<MyLibrary> = emptyList(),
+    val courses: List<MyCourse> = emptyList(),
+    val teams: List<MyTeam> = emptyList(),
+    val users: List<UserEntity> = emptyList(),
     val offlineLogins: Int = 0,
     val fullName: String? = null,
 )
@@ -129,7 +129,7 @@ class DashboardViewModel @Inject constructor(
         if (userId == null) return
 
         libraryJob?.cancel()
-        libraryJob = viewModelScope.launch(dispatcherProvider.main) {
+        libraryJob = viewModelScope.launch {
             val myLibrary = withContext(dispatcherProvider.io) {
                 resourcesRepository.getMyLibrary(userId)
             }
@@ -137,7 +137,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         coursesJob?.cancel()
-        coursesJob = viewModelScope.launch(dispatcherProvider.main) {
+        coursesJob = viewModelScope.launch {
             coursesRepository.getMyCoursesFlow(userId)
                 .flowOn(dispatcherProvider.io)
                 .collect { courses ->
@@ -146,7 +146,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         teamsJob?.cancel()
-        teamsJob = viewModelScope.launch(dispatcherProvider.main) {
+        teamsJob = viewModelScope.launch {
             teamsRepository.getMyTeamsFlow(userId)
                 .flowOn(dispatcherProvider.io)
                 .collect { teams ->
@@ -155,7 +155,7 @@ class DashboardViewModel @Inject constructor(
         }
 
         profileJob?.cancel()
-        profileJob = viewModelScope.launch(dispatcherProvider.main) {
+        profileJob = viewModelScope.launch {
             val profile = withContext(dispatcherProvider.io) {
                 userRepository.getDashboardProfile(userId)
             }
@@ -168,11 +168,11 @@ class DashboardViewModel @Inject constructor(
         return teamsRepository.getTeamType(teamId)
     }
 
-    suspend fun getLibraryForSelectedUser(userId: String): List<RealmMyLibrary> {
+    suspend fun getLibraryForSelectedUser(userId: String): List<MyLibrary> {
         return resourcesRepository.getLibraryForSelectedUser(userId)
     }
 
-    suspend fun getLibraryListForUser(userId: String?): List<RealmMyLibrary> {
+    suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         return resourcesRepository.getLibraryListForUser(userId)
     }
 

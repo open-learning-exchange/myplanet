@@ -40,7 +40,7 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.FragmentChatDetailBinding
 import org.ole.planet.myplanet.model.AiProvider
 import org.ole.planet.myplanet.model.ChatMessage
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ChatRepository
 import org.ole.planet.myplanet.repository.ChatResult
 import org.ole.planet.myplanet.repository.UserRepository
@@ -64,7 +64,7 @@ class ChatDetailFragment : Fragment() {
     private var currentID: String = ""
     private var aiName: String = ""
     private var aiModel: String = ""
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private var isUserLoaded = false
     private var isAiUnavailable = false
     private var newsId: String? = null
@@ -321,10 +321,12 @@ class ChatDetailFragment : Fragment() {
             false
         }
         messageTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 binding.textGchatIndicator.visibility = View.GONE
             }
+            @Suppress("EmptyMethod")
             override fun afterTextChanged(s: Editable?) {}
         }
         binding.editGchatMessage.addTextChangedListener(messageTextWatcher)
@@ -415,16 +417,7 @@ class ChatDetailFragment : Fragment() {
                 launch {
                     sharedViewModel.selectedAiProvider.collect { selectedAiProvider ->
                         aiName = selectedAiProvider ?: aiName
-                        if (binding.aiTableRow.isNotEmpty()) {
-                            for (i in 0 until binding.aiTableRow.childCount) {
-                                val view = binding.aiTableRow.getChildAt(i)
-                                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
-                                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
-                                    selectAI(view, "$selectedAiProvider", modelName)
-                                    break
-                                }
-                            }
-                        }
+                        updateSelectedAiProvider(selectedAiProvider)
                     }
                 }
                 launch {
@@ -506,6 +499,19 @@ class ChatDetailFragment : Fragment() {
             setBackgroundColor(ContextCompat.getColor(context, R.color.disable_color))
             setOnClickListener { selectAI(this, providerName, modelName) }
         }
+
+    private fun updateSelectedAiProvider(selectedAiProvider: String?) {
+        if (binding.aiTableRow.isNotEmpty()) {
+            for (i in 0 until binding.aiTableRow.childCount) {
+                val view = binding.aiTableRow.getChildAt(i)
+                if (view is Button && view.text.toString().equals(selectedAiProvider, ignoreCase = true)) {
+                    val modelName = getModelsMap()[selectedAiProvider?.lowercase()] ?: "default-model"
+                    selectAI(view, "$selectedAiProvider", modelName)
+                    break
+                }
+            }
+        }
+    }
 
     private fun selectAI(selectedButton: Button, providerName: String, modelName: String) {
         val aiTableRow = binding.aiTableRow

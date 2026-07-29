@@ -19,9 +19,9 @@ import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.ole.planet.myplanet.MainApplication
-import org.ole.planet.myplanet.model.RealmCourseStep
-import org.ole.planet.myplanet.model.RealmMyCourse
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.CourseStep
+import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
@@ -44,6 +44,7 @@ class CourseDetailViewModelTest {
     private val userSessionManager: UserSessionManager = mockk()
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
+        override val mainImmediate: CoroutineDispatcher = testDispatcher
         override val io: CoroutineDispatcher = testDispatcher
         override val default: CoroutineDispatcher = testDispatcher
         override val unconfined: CoroutineDispatcher = testDispatcher
@@ -94,10 +95,10 @@ class CourseDetailViewModelTest {
     }
 
     private fun stubCourseLoad(
-        course: RealmMyCourse?,
+        course: MyCourse?,
         examCount: Int = 0,
-        steps: List<RealmCourseStep> = emptyList(),
-        user: RealmUser? = RealmUser().apply { id = "user_1" },
+        steps: List<CourseStep> = emptyList(),
+        user: UserEntity? = UserEntity().apply { id = "user_1" },
         ratingSummary: RatingSummary = RatingSummary(
             existingRating = null,
             averageRating = 4.0f,
@@ -117,7 +118,7 @@ class CourseDetailViewModelTest {
 
     @Test
     fun loadCourseDetail_whenCourseExists_emitsSuccessWithAggregatedData() = runTest {
-        val course = RealmMyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
         stubCourseLoad(course = course, examCount = 7)
 
         viewModel.loadCourseDetail(courseId)
@@ -145,8 +146,8 @@ class CourseDetailViewModelTest {
 
     @Test
     fun loadCourseDetail_populatesStepItemsWithQuestionCounts() = runTest {
-        val course = RealmMyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
-        val step = RealmCourseStep().apply { id = "step_1"; stepTitle = "Intro" }
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        val step = CourseStep().apply { id = "step_1"; stepTitle = "Intro" }
         stubCourseLoad(course = course, steps = listOf(step))
 
         viewModel.loadCourseDetail(courseId)
@@ -161,9 +162,9 @@ class CourseDetailViewModelTest {
 
     @Test
     fun toggleStepDescription_expandsMatchingStepAndCollapsesOthers() = runTest {
-        val course = RealmMyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
-        val stepA = RealmCourseStep().apply { id = "a"; stepTitle = "A" }
-        val stepB = RealmCourseStep().apply { id = "b"; stepTitle = "B" }
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        val stepA = CourseStep().apply { id = "a"; stepTitle = "A" }
+        val stepB = CourseStep().apply { id = "b"; stepTitle = "B" }
         stubCourseLoad(course = course, steps = listOf(stepA, stepB))
 
         viewModel.loadCourseDetail(courseId)
@@ -183,7 +184,7 @@ class CourseDetailViewModelTest {
 
     @Test
     fun refreshRatings_updatesRatingSummaryOnSuccessState() = runTest {
-        val course = RealmMyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
+        val course = MyCourse().apply { courseId = this@CourseDetailViewModelTest.courseId }
         stubCourseLoad(course = course)
 
         viewModel.loadCourseDetail(courseId)

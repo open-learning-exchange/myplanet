@@ -12,10 +12,10 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.model.CreateTeamRequest
-import org.ole.planet.myplanet.model.RealmTeamTask
-import org.ole.planet.myplanet.model.RealmUser
 import org.ole.planet.myplanet.model.TeamDetails
 import org.ole.planet.myplanet.model.TeamStatus
+import org.ole.planet.myplanet.model.TeamTask
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
@@ -37,8 +37,8 @@ class TeamViewModel @Inject constructor(
     private val _teamData = MutableStateFlow<List<TeamDetails>>(emptyList())
     val teamData: StateFlow<List<TeamDetails>> = _teamData
 
-    private val _taskList = MutableStateFlow<List<RealmTeamTask>>(emptyList())
-    val taskList: StateFlow<List<RealmTeamTask>> = _taskList
+    private val _taskList = MutableStateFlow<List<TeamTask>>(emptyList())
+    val taskList: StateFlow<List<TeamTask>> = _taskList
 
     fun getTeamUpdateFlow() = realtimeSyncManager.dataUpdateFlow
 
@@ -150,7 +150,7 @@ class TeamViewModel @Inject constructor(
         teamType: String,
         isPublic: Boolean,
         category: String?,
-        userModel: RealmUser
+        userModel: UserEntity
     ): TeamActionResult {
         val teamTypeForValidation = if (category == "enterprise") "enterprise" else "team"
         if (teamsRepository.isTeamNameExists(name, teamTypeForValidation, null)) {

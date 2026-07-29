@@ -26,8 +26,8 @@ import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseDashboardFragment
 import org.ole.planet.myplanet.databinding.FragmentHomeBellBinding
 import org.ole.planet.myplanet.model.CourseCompletion
-import org.ole.planet.myplanet.model.RealmSubmission
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.Submission
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
 import org.ole.planet.myplanet.ui.courses.CoursesFragment
 import org.ole.planet.myplanet.ui.courses.TakeCourseFragment
@@ -48,14 +48,11 @@ class BellDashboardFragment : BaseDashboardFragment() {
     private val binding get() = _binding!!
     private var networkStatusJob: Job? = null
     private val viewModel: BellDashboardViewModel by viewModels()
-    var user: RealmUser? = null
+    var user: UserEntity? = null
     private var surveyListDialog: AlertDialog? = null
 
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
-
-    @Inject
-    lateinit var timeProvider: TimeProvider
 
     companion object {
         private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
@@ -165,7 +162,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun showRemindLaterDialog(pendingSurveys: List<RealmSubmission>,previousDialog: AlertDialog) {
+    private fun showRemindLaterDialog(pendingSurveys: List<Submission>,previousDialog: AlertDialog) {
         val dialogView = LayoutInflater.from(requireActivity()).inflate(R.layout.dialog_remind_later, null)
         val radioGroup: RadioGroup = dialogView.findViewById(R.id.radioGroupRemindOptions)
         val numberPicker: NumberPicker = dialogView.findViewById(R.id.numberPickerTime)
@@ -216,7 +213,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
             .window?.setBackgroundDrawableResource(R.color.card_bg)
     }
 
-    private fun scheduleReminder(pendingSurveys: List<RealmSubmission>, value: Int, timeUnit: TimeUnit) {
+    private fun scheduleReminder(pendingSurveys: List<Submission>, value: Int, timeUnit: TimeUnit) {
         val surveyIds = pendingSurveys.joinToString(",") { it.id.toString() }
         viewLifecycleOwner.lifecycleScope.launch {
             surveysRepository.scheduleSurveyReminder(surveyIds, timeUnit, value)
@@ -230,11 +227,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun handleDueReminders(remindersToShow: List<String>) {
+        val allSurveyIds = remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
+        if (allSurveyIds.isEmpty()) return
+
+        val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds)
+        val submissionsById = allSubmissions.associateBy { it.id }
+
         for (surveyIds in remindersToShow) {
             val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
             if (surveyIdList.isEmpty()) continue
-            val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
-            val submissionsById = submissions.associateBy { it.id }
+
             val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
 
             if (pendingSurveys.isNotEmpty()) {
@@ -243,7 +245,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         }
     }
 
-    private fun showPendingSurveysReminder(pendingSurveys: List<RealmSubmission>) {
+    private fun showPendingSurveysReminder(pendingSurveys: List<Submission>) {
         if (pendingSurveys.isEmpty()) return
 
         viewLifecycleOwner.lifecycleScope.launch {
@@ -258,7 +260,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private fun showSurveyListDialog(
-        pendingSurveys: List<RealmSubmission>,
+        pendingSurveys: List<Submission>,
         title: String,
         surveyTitles: List<String>,
         dismissOnNeutral: Boolean = false

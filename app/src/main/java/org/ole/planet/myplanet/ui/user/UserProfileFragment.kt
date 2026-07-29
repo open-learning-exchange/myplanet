@@ -56,8 +56,9 @@ import org.ole.planet.myplanet.R.array.language
 import org.ole.planet.myplanet.R.array.subject_level
 import org.ole.planet.myplanet.databinding.EditProfileDialogBinding
 import org.ole.planet.myplanet.databinding.FragmentUserProfileBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -69,7 +70,9 @@ class UserProfileFragment : Fragment() {
     private val viewModel: UserProfileViewModel by viewModels()
     @Inject
     lateinit var userSessionManager: UserSessionManager
-    private var model: RealmUser? = null
+    @Inject
+    lateinit var timeProvider: TimeProvider
+    private var model: UserEntity? = null
     private var editProfileDialog: Dialog? = null
     private lateinit var pickImageLauncher: ActivityResultLauncher<Intent>
     private var selectedGender: String? = null
@@ -452,7 +455,7 @@ class UserProfileFragment : Fragment() {
     private fun createStatsMap(): LinkedHashMap<String, String?> {
         return linkedMapOf(
             getString(R.string.community_name) to Utilities.checkNA(model?.planetCode),
-            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it) },
+            getString(R.string.last_login) to viewModel.lastVisit.value?.let { TimeUtils.getRelativeTime(it, timeProvider) },
             getString(R.string.total_visits_overall) to viewModel.offlineVisits.value.toString(),
             getString(R.string.most_opened_resource) to Utilities.checkNA(viewModel.maxOpenedResource.value),
             getString(R.string.number_of_resources_opened) to Utilities.checkNA(viewModel.numberOfResourceOpen.value)

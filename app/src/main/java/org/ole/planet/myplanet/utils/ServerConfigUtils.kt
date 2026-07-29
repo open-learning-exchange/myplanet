@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.core.net.toUri
 import org.ole.planet.myplanet.BuildConfig
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmCommunity
+import org.ole.planet.myplanet.model.Community
 import org.ole.planet.myplanet.model.ServerAddress
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.ui.sync.ProcessUserDataActivity
@@ -126,7 +126,7 @@ object ServerConfigUtils {
         val isPinEnabled: Boolean
     )
 
-    fun getCommunityConfig(selected: RealmCommunity, httpsProtocol: String): CommunityConfig {
+    fun getCommunityConfig(selected: Community, httpsProtocol: String): CommunityConfig {
         val domain = selected.localDomain
         val protocol = httpsProtocol
         val pin = if (selected.weight == 0) BuildConfig.PLANET_LEARNING_PIN else ""

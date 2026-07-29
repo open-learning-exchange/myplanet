@@ -16,9 +16,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmHealthExamination
-import org.ole.planet.myplanet.model.RealmMyHealth
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.HealthExamination
+import org.ole.planet.myplanet.model.MyHealth
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.HealthRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.MainDispatcherRule
@@ -47,10 +47,10 @@ class HealthExaminationViewModelTest {
 
     @Test
     fun loadData_success_updatesState() = runTest {
-        val mockUser = mockk<RealmUser>()
-        val mockPojo = mockk<RealmHealthExamination>()
-        val mockHealth = mockk<RealmMyHealth>()
-        val mockExamination = mockk<RealmHealthExamination>()
+        val mockUser = mockk<UserEntity>()
+        val mockPojo = mockk<HealthExamination>()
+        val mockHealth = mockk<MyHealth>()
+        val mockExamination = mockk<HealthExamination>()
 
         coEvery { mockPojo.data } returns null
         coEvery { healthRepository.getHealthEntry("user_id") } returns Pair(mockUser, mockPojo)
@@ -81,9 +81,9 @@ class HealthExaminationViewModelTest {
 
     @Test
     fun saveExamination_success_emitsTrueAndResetsIsSaving() = runTest {
-        val examination = mockk<RealmHealthExamination>()
-        val pojo = mockk<RealmHealthExamination>()
-        val user = mockk<RealmUser>()
+        val examination = mockk<HealthExamination>()
+        val pojo = mockk<HealthExamination>()
+        val user = mockk<UserEntity>()
         coEvery { healthRepository.saveExamination(examination, pojo, user) } returns Unit
 
         val results = mutableListOf<Boolean>()
@@ -103,9 +103,9 @@ class HealthExaminationViewModelTest {
 
     @Test
     fun saveExamination_error_emitsFalseAndResetsIsSaving() = runTest {
-        val examination = mockk<RealmHealthExamination>()
-        val pojo = mockk<RealmHealthExamination>()
-        val user = mockk<RealmUser>()
+        val examination = mockk<HealthExamination>()
+        val pojo = mockk<HealthExamination>()
+        val user = mockk<UserEntity>()
         coEvery { healthRepository.saveExamination(examination, pojo, user) } throws RuntimeException("Network error")
 
         val results = mutableListOf<Boolean>()
@@ -125,9 +125,9 @@ class HealthExaminationViewModelTest {
 
     @Test
     fun saveExamination_alreadySaving_isNoOp() = runTest {
-        val examination = mockk<RealmHealthExamination>()
-        val pojo = mockk<RealmHealthExamination>()
-        val user = mockk<RealmUser>()
+        val examination = mockk<HealthExamination>()
+        val pojo = mockk<HealthExamination>()
+        val user = mockk<UserEntity>()
 
         coEvery { healthRepository.saveExamination(examination, pojo, user) } coAnswers { delay(100) }
 

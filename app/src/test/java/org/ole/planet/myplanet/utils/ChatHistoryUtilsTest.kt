@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.utils
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 
 class ChatHistoryUtilsTest {
 
@@ -15,7 +15,7 @@ class ChatHistoryUtilsTest {
 
     @Test
     fun `extractSharedViewInIds ignores news with null newsId`() {
-        val news = RealmNews().apply {
+        val news = News().apply {
             newsId = null
             viewIn = """[{"_id":"id1"}]"""
         }
@@ -25,15 +25,15 @@ class ChatHistoryUtilsTest {
 
     @Test
     fun `extractSharedViewInIds extracts unique viewIn ids grouped by newsId`() {
-        val news1 = RealmNews().apply {
+        val news1 = News().apply {
             newsId = "news_1"
             viewIn = """[{"_id":"id1"}, {"_id":"id2"}]"""
         }
-        val news2 = RealmNews().apply {
+        val news2 = News().apply {
             newsId = "news_1"
             viewIn = """[{"_id":"id2"}, {"_id":"id3"}]"""
         }
-        val news3 = RealmNews().apply {
+        val news3 = News().apply {
             newsId = "news_2"
             viewIn = """[{"_id":"id4"}]"""
         }
@@ -47,19 +47,19 @@ class ChatHistoryUtilsTest {
 
     @Test
     fun `extractSharedViewInIds handles malformed json gracefully`() {
-        val news1 = RealmNews().apply {
+        val news1 = News().apply {
             newsId = "news_1"
             viewIn = "malformed json"
         }
-        val news2 = RealmNews().apply {
+        val news2 = News().apply {
             newsId = "news_2"
             viewIn = """{"not":"an array"}"""
         }
-        val news3 = RealmNews().apply {
+        val news3 = News().apply {
             newsId = "news_3"
             viewIn = null
         }
-        val news4 = RealmNews().apply {
+        val news4 = News().apply {
             newsId = "news_4"
             viewIn = """[{"no_id":"present"}]"""
         }

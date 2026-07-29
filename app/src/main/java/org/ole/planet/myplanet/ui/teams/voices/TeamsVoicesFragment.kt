@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.base.BaseTeamFragment
 import org.ole.planet.myplanet.databinding.FragmentDiscussionListBinding
-import org.ole.planet.myplanet.model.RealmNews
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.repository.VoicePostingPolicy
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.repository.toVoicePostingPolicy
@@ -158,7 +158,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         }
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {
+    override fun onNewsItemClick(news: News?) {
         val bundle = Bundle()
         bundle.putString("newsId", news?.newsId)
         bundle.putString("newsRev", news?.newsRev)
@@ -185,7 +185,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         changeLayoutManager(newConfig.orientation, binding.rvDiscussion)
     }
 
-    private fun showRecyclerView(realmNewsList: List<RealmNews?>?) {
+    private fun showRecyclerView(realmNewsList: List<News?>?) {
         val existingAdapter = binding.rvDiscussion.adapter
         if (existingAdapter == null) {
             val labelManager = VoicesLabelManager(
@@ -249,7 +249,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
                     onEditAction = { action ->
                         viewLifecycleOwner.lifecycleScope.launch { action() }
                     },
-                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(dispatcherProvider),
+                    onAnimateTyping = VoicesAdapterHelper.createOnAnimateTyping(viewLifecycleOwner.lifecycleScope, dispatcherProvider),
                     labelManager = labelManager,
                     voicesRepository = voicesRepository,
                     userRepository = userRepository,
@@ -279,7 +279,7 @@ class TeamsVoicesFragment : BaseTeamFragment() {
         }
     }
 
-    override fun setData(list: List<RealmNews?>?) {
+    override fun setData(list: List<News?>?) {
         showRecyclerView(list)
     }
 

@@ -8,21 +8,21 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.ItemUserBinding
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class UserArrayAdapter(
-    private val onItemClick: (RealmUser) -> Unit
-) : ListAdapter<RealmUser, UserArrayAdapter.ViewHolder>(
-    DiffUtils.itemCallback<RealmUser>(
+    private val onItemClick: (UserEntity) -> Unit
+) : ListAdapter<UserEntity, UserArrayAdapter.ViewHolder>(
+    DiffUtils.itemCallback<UserEntity>(
         { oldItem, newItem -> oldItem.id == newItem.id },
         { oldItem, newItem -> oldItem.id == newItem.id && oldItem.name == newItem.name }
     )
 ) {
 
-    var selectedUser: RealmUser? = null
+    var selectedUser: UserEntity? = null
     private var avatarSize = 0
 
     class ViewHolder(val binding: ItemUserBinding) : RecyclerView.ViewHolder(binding.root)

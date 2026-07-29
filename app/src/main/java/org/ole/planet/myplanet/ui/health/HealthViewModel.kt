@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import org.ole.planet.myplanet.model.RealmMyHealth
+import org.ole.planet.myplanet.model.MyHealth
 import org.ole.planet.myplanet.repository.UserRepository
 
 @HiltViewModel
@@ -54,7 +54,7 @@ class HealthViewModel @Inject constructor(
 }
 
 data class HealthData(
-    val myHealth: RealmMyHealth?,
+    val myHealth: MyHealth?,
     val firstName: String?,
     val middleName: String?,
     val lastName: String?,

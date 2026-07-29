@@ -1,9 +1,9 @@
 package org.ole.planet.myplanet.ui.courses
 
 import org.ole.planet.myplanet.model.Course
-import org.ole.planet.myplanet.model.RealmMyCourse
+import org.ole.planet.myplanet.model.MyCourse
 
-internal fun RealmMyCourse.toCourse(): Course {
+internal fun MyCourse.toCourse(): Course {
     return Course(
         courseId = this.courseId ?: "",
         courseTitle = this.courseTitle ?: "",

@@ -17,7 +17,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.model.RealmFeedback
+import org.ole.planet.myplanet.model.Feedback
 import org.ole.planet.myplanet.repository.FeedbackRepository
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -42,7 +42,7 @@ class FeedbackDetailViewModelTest {
     @Test
     fun testLoadFeedback() = runTest(testDispatcher) {
         val feedbackId = "123"
-        val mockFeedback = mockk<RealmFeedback>()
+        val mockFeedback = mockk<Feedback>()
         coEvery { feedbackRepository.getFeedbackById(feedbackId) } returns mockFeedback
 
         viewModel.loadFeedback(feedbackId)
@@ -57,7 +57,7 @@ class FeedbackDetailViewModelTest {
         val feedbackId = "123"
         val mockMessage = "Test message"
         val mockUser = "testuser"
-        val mockFeedback = mockk<RealmFeedback>()
+        val mockFeedback = mockk<Feedback>()
         coEvery { feedbackRepository.addReply(feedbackId, mockMessage, mockUser) } returns Unit
         coEvery { feedbackRepository.getFeedbackById(feedbackId) } returns mockFeedback
 
@@ -72,7 +72,7 @@ class FeedbackDetailViewModelTest {
     @Test
     fun testCloseFeedback() = runTest(testDispatcher) {
         val feedbackId = "123"
-        val mockFeedback = mockk<RealmFeedback>()
+        val mockFeedback = mockk<Feedback>()
         coEvery { feedbackRepository.closeFeedback(feedbackId) } returns Unit
         coEvery { feedbackRepository.getFeedbackById(feedbackId) } returns mockFeedback
 

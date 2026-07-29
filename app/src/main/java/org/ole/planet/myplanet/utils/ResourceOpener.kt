@@ -3,17 +3,17 @@ package org.ole.planet.myplanet.utils
 import android.app.Activity
 import android.content.Intent
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmMyLibrary
+import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerActivity
 import org.ole.planet.myplanet.ui.viewer.ResourceViewerFragment
 
 object ResourceOpener {
-    private fun resourcePath(item: RealmMyLibrary): String {
+    private fun resourcePath(item: MyLibrary): String {
         return "${item.id}/${item.resourceLocalAddress}"
     }
 
-    private fun resolveType(item: RealmMyLibrary): ResourceViewerFragment.ResourceType {
+    private fun resolveType(item: MyLibrary): ResourceViewerFragment.ResourceType {
         val mimetype = Utilities.getMimeType(item.resourceLocalAddress)
         val extension = item.resourceLocalAddress?.substringAfterLast(".", "")
         return when {
@@ -28,7 +28,7 @@ object ResourceOpener {
         }
     }
 
-    private fun openResource(activity: Activity, item: RealmMyLibrary, isOnline: Boolean, type: ResourceViewerFragment.ResourceType? = null) {
+    private fun openResource(activity: Activity, item: MyLibrary, isOnline: Boolean, type: ResourceViewerFragment.ResourceType? = null) {
         val resolvedType = type ?: resolveType(item)
         val filePath = if (isOnline) {
             UrlUtils.getUrl(item)
@@ -64,7 +64,7 @@ object ResourceOpener {
         }
     }
 
-    fun openFileType(activity: Activity, items: RealmMyLibrary, videoType: String, profileDbHandler: UserSessionManager) {
+    fun openFileType(activity: Activity, items: MyLibrary, videoType: String, profileDbHandler: UserSessionManager) {
         val mimetype = Utilities.getMimeType(resourcePath(items))
         if (mimetype == null) {
             Utilities.toast(activity, activity.getString(R.string.unable_to_open_resource))

@@ -21,8 +21,8 @@ import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnNewsItemClickListener
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.ui.teams.members.MembersDetailFragment
@@ -49,7 +49,7 @@ object VoicesActions {
         return EditDialogComponents(v, et, tlInput, llImage)
     }
 
-    private fun loadExistingImages(context: Context, news: RealmNews?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
+    private fun loadExistingImages(context: Context, news: News?, imageLayout: ViewGroup, imagesToRemove: MutableSet<String>) {
         imageLayout.removeAllViews()
 
         val imageUrls = news?.imageUrls
@@ -127,9 +127,9 @@ object VoicesActions {
         dialog: AlertDialog,
         isEdit: Boolean,
         components: EditDialogComponents,
-        news: RealmNews?,
+        news: News?,
         repository: VoicesRepository,
-        currentUser: RealmUser?,
+        currentUser: UserEntity?,
         imageList: List<String>?,
         listener: OnNewsItemClickListener?,
         imagesToRemove: MutableSet<String>,
@@ -165,11 +165,11 @@ object VoicesActions {
         context: Context,
         id: String?,
         isEdit: Boolean,
-        currentUser: RealmUser?,
+        currentUser: UserEntity?,
         listener: OnNewsItemClickListener?,
         viewHolder: RecyclerView.ViewHolder,
         repository: VoicesRepository,
-        updateReplyButton: (RecyclerView.ViewHolder, RealmNews?, Int) -> Unit = { _, _, _ -> },
+        updateReplyButton: (RecyclerView.ViewHolder, News?, Int) -> Unit = { _, _, _ -> },
         launchAction: (suspend () -> Unit) -> Unit
     ) {
         val components = createEditDialogComponents(context, listener)
@@ -203,7 +203,7 @@ object VoicesActions {
     }
 
     suspend fun showMemberDetails(
-        userModel: RealmUser?,
+        userModel: UserEntity?,
         activitiesRepository: ActivitiesRepository
     ): MembersDetailFragment? {
         if (userModel == null) return null

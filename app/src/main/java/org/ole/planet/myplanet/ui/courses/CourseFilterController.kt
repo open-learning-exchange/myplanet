@@ -8,11 +8,17 @@ import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.Spinner
 import android.widget.TextView
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.model.RealmTag
+import org.ole.planet.myplanet.utils.DefaultDispatcherProvider
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import org.ole.planet.myplanet.model.TagEntity
 
 data class FilterState(
     val searchText: String,
@@ -37,9 +43,12 @@ class CourseFilterController(
     private lateinit var spnSubject: Spinner
     private lateinit var spnProgress: Spinner
     private lateinit var tvSelected: TextView
-    val searchTags: MutableList<RealmTag> = ArrayList()
+    val searchTags: MutableList<TagEntity> = ArrayList()
     private var searchTextWatcher: TextWatcher? = null
     private var spinnerListener: AdapterView.OnItemSelectedListener? = null
+    private var searchJob: Job? = null
+    private val dispatcherProvider: DispatcherProvider = DefaultDispatcherProvider()
+    private val coroutineScope = CoroutineScope(dispatcherProvider.main)
 
     fun setup() {
         etSearch = rootView.findViewById(R.id.et_search)
@@ -81,11 +90,17 @@ class CourseFilterController(
 
     private fun setupSearchWatcher() {
         searchTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
                 if (!etSearch.isFocused) return
-                _filterState.value = currentState()
+                searchJob?.cancel()
+                searchJob = coroutineScope.launch {
+                    delay(300)
+                    _filterState.value = currentState()
+                }
             }
+            @Suppress("EmptyMethod")
             override fun afterTextChanged(s: Editable) {}
         }
         etSearch.addTextChangedListener(searchTextWatcher)
@@ -95,21 +110,21 @@ class CourseFilterController(
         rootView.findViewById<View>(R.id.btn_clear_tags).setOnClickListener { clearAll() }
     }
 
-    fun addTag(tag: RealmTag) {
+    fun addTag(tag: TagEntity) {
         if (!searchTags.any { it.name == tag.name }) searchTags.add(tag)
         _filterState.value = currentState()
         refreshTagText()
         onScrollToTop()
     }
 
-    fun setTags(list: List<RealmTag>) {
+    fun setTags(list: List<TagEntity>) {
         searchTags.clear()
         list.forEach { tag -> if (!searchTags.any { it.name == tag.name }) searchTags.add(tag) }
         _filterState.value = currentState()
         onScrollToTop()
     }
 
-    fun setSingleTag(tag: RealmTag) {
+    fun setSingleTag(tag: TagEntity) {
         searchTags.clear()
         searchTags.add(tag)
         tvSelected.text = tvSelected.context.getString(R.string.tag_selected, tag.name)
@@ -158,6 +173,7 @@ class CourseFilterController(
     }
 
     fun detach() {
+        searchJob?.cancel()
         searchTextWatcher?.let { etSearch.removeTextChangedListener(it) }
         searchTextWatcher = null
         spnGrade.onItemSelectedListener = null

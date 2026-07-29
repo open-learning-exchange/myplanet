@@ -16,6 +16,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
@@ -24,8 +25,8 @@ import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.databinding.FragmentTeamDetailBinding
-import org.ole.planet.myplanet.model.RealmNews
-import org.ole.planet.myplanet.model.RealmUser
+import org.ole.planet.myplanet.model.News
+import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.CalendarPage
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ChatPage
@@ -167,7 +168,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         binding.viewPager2.adapter = null
     }
 
-    private fun setupTeamDetails(isMyTeam: Boolean, user: RealmUser?, hasPendingRequest: Boolean) {
+    private fun setupTeamDetails(isMyTeam: Boolean, user: UserEntity?, hasPendingRequest: Boolean) {
         binding.title.text = getEffectiveTeamName()
         binding.subtitle.text = getEffectiveTeamType()
 
@@ -245,7 +246,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    private fun setupNonMyTeamButtons(user: RealmUser?, hasPendingRequest: Boolean) {
+    private fun setupNonMyTeamButtons(user: UserEntity?, hasPendingRequest: Boolean) {
         binding.btnAddDoc.isEnabled = false
         binding.btnAddDoc.visibility = View.GONE
         binding.btnLeave.isEnabled = true
@@ -281,7 +282,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         }
     }
 
-    private fun setupMyTeamButtons(user: RealmUser?) {
+    private fun setupMyTeamButtons(user: UserEntity?) {
         binding.btnAddDoc.isEnabled = true
         binding.btnAddDoc.visibility = View.VISIBLE
         binding.btnLeave.isEnabled = true
@@ -415,7 +416,7 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
         createTeamLog()
     }
 
-    override fun onNewsItemClick(news: RealmNews?) {}
+    override fun onNewsItemClick(news: News?) {}
 
     override fun clearImages() {
         imageList.clear()
@@ -440,8 +441,10 @@ class TeamDetailFragment : BaseTeamFragment(), OnMemberChangeListener, OnTeamUpd
     }
 
     private fun setupRealtimeSync() {
-        collectWhenStarted(teamViewModel.getTeamUpdateFlow()) { update ->
-            if (update.table == "teams" && update.shouldRefreshUI) {
+        collectWhenStarted(
+            teamViewModel.getTeamUpdateFlow().filter { it.table == "teams" }
+        ) { update ->
+            if (update.shouldRefreshUI) {
                 refreshTeamDetails()
             }
         }
