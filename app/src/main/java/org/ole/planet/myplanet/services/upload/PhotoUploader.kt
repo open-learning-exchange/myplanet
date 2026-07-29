@@ -62,11 +62,11 @@ class PhotoUploader @Inject constructor(
 
                 if (listener != null && successfulUploads.isNotEmpty()) {
                     val photoIds = successfulUploads.map { it.photoId }.toTypedArray()
-                    val photos = submissionsRepository.getPhotosByIds(photoIds)
+                    val photosMap = submissionsRepository.getPhotosByIds(photoIds).associateBy { it.id }
 
-                    photos.forEach { photo ->
-                        val uploadInfo = successfulUploads.find { it.photoId == photo.id }
-                        if (uploadInfo != null) {
+                    successfulUploads.forEach { uploadInfo ->
+                        val photo = photosMap[uploadInfo.photoId]
+                        if (photo != null) {
                             uploadAttachment(photo.photoLocation, "%s/submissions/%s/%s", uploadInfo.id, uploadInfo.rev, listener)
                         }
                     }
