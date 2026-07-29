@@ -3,12 +3,18 @@ package org.ole.planet.myplanet.services.sync
 import android.content.SharedPreferences
 import android.net.Uri
 import androidx.core.net.toUri
+import java.net.HttpURLConnection
+import java.net.URL
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @Singleton
-class ServerUrlMapper @Inject constructor() {
+class ServerUrlMapper @Inject constructor(
+    private val dispatcherProvider: DispatcherProvider
+) {
     private val serverMappings = mapOf(
         "http://${BuildConfig.PLANET_SANPABLO_URL}" to "https://${BuildConfig.PLANET_SANPABLO_CLONE_URL}",
         "http://${BuildConfig.PLANET_URIUR_URL}" to "https://${BuildConfig.PLANET_URIUR_CLONE_URL}",
@@ -112,5 +118,22 @@ class ServerUrlMapper @Inject constructor() {
             defaultInfo
         }
         return result
+    }
+
+    suspend fun isUrlDirectlyReachable(url: String): Boolean {
+        return try {
+            withContext(dispatcherProvider.io) {
+                val cleanUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) "http://$url" else url
+                val connection = URL(cleanUrl).openConnection() as HttpURLConnection
+                connection.connectTimeout = 5000
+                connection.readTimeout = 5000
+                connection.requestMethod = "GET"
+                val code = connection.responseCode
+                connection.disconnect()
+                code in 200..599
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 }
