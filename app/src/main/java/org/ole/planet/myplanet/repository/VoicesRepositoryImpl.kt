@@ -503,4 +503,12 @@ class VoicesRepositoryImpl @Inject constructor(
         return myLibraryDao.getPrivateImagesCreatedAfter(timestamp)
             .mapNotNull { it.resourceRemoteAddress }
     }
+
+    override suspend fun countTeamChats(teamId: String): Long {
+        return newsDao.countTeamChats(teamId)
+    }
+
+    override suspend fun getTeamChatViewableIds(teamIds: List<String>): List<String> {
+        return newsDao.getTeamChatViewableIds(teamIds)
+    }
 }

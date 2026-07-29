@@ -368,6 +368,14 @@ class ActivitiesRepositoryImpl @Inject constructor(
         offlineActivityDao.upsertAll(activities)
     }
 
+    override suspend fun getPendingCourseActivityUploads(): List<CourseActivity> {
+        return courseActivityDao.getPendingUploads()
+    }
+
+    override suspend fun markCourseActivityUploaded(localId: String, remoteId: String, rev: String): Boolean {
+        return courseActivityDao.markUploaded(localId, remoteId, rev) != 0
+    }
+
     override suspend fun uploadMyPlanetActivities(userModel: UserEntity) {
         apiInterface.postDoc(
             UrlUtils.header,
