@@ -382,9 +382,8 @@ class CoursesAdapter(
                 updateProgressViews(position)
             }
             if (hasSelectionPayload) {
-                if (!isGuest && (isMyCourseLib || !course.isMyCourse)) {
-                    rowCourseBinding.checkbox.isChecked = selectedItems.any { it?.courseId == course.courseId }
-                }
+                updateVisibilityForMyCourse(course)
+                setupCheckbox(course, isGuest)
             }
         }
 
