@@ -4,7 +4,6 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.net.Uri
 import android.os.SystemClock
-import android.util.Base64
 import android.util.Log
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
@@ -116,7 +115,7 @@ class TransactionSyncManager @Inject constructor(
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
-        val header = "Basic ${Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)}"
+        val header = UrlUtils.basicAuthHeader(userName, password)
 
         applicationScope.launch(dispatcherProvider.io) {
             try {
@@ -169,7 +168,7 @@ class TransactionSyncManager @Inject constructor(
         listener.onSyncStarted()
         val userName = SecurePrefs.getUserName(context, settings) ?: ""
         val password = SecurePrefs.getPassword(context, settings) ?: ""
-        val header = "Basic " + Base64.encodeToString("$userName:$password".toByteArray(), Base64.NO_WRAP)
+        val header = UrlUtils.basicAuthHeader(userName, password)
 
         applicationScope.launch(dispatcherProvider.io) {
             val model = userSessionManager.getUserModel()

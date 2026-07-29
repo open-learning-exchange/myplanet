@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Base64
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +17,7 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SecurePrefs
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadToShelfService @Inject constructor(
@@ -42,7 +42,7 @@ class UploadToShelfService @Inject constructor(
                 val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                 userModels.forEach { model ->
                     try {
-                        val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+                        val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
                         val userExists = userSyncRepository.checkIfUserExists(header, model)
 
                         if (!userExists) {
@@ -76,7 +76,7 @@ class UploadToShelfService @Inject constructor(
                 if (userModel != null) {
                     try {
                         val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                        val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+                        val header = UrlUtils.basicAuthHeader(userModel.name.toString(), password)
 
                         val userExists = userSyncRepository.checkIfUserExists(header, userModel)
 

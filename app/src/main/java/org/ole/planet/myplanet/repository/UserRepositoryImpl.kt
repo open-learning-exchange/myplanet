@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
-import android.util.Base64
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.JsonArray
@@ -685,7 +684,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
         try {
             val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
             if (response.body() != null) {
@@ -708,7 +707,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveKeyIv(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
         val ob = JsonObject()
         var keyString = AndroidDecrypter.generateKey()
         var iv: String? = AndroidDecrypter.generateIv()
@@ -778,7 +777,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse.isSuccessful) {
