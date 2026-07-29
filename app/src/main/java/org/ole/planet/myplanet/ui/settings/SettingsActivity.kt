@@ -255,13 +255,20 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         private fun initStorageBreakdown() {
-            val storagePreference = findPreference<Preference>("storage_breakdown")
-            storagePreference?.summary = getString(R.string.storage_breakdown_summary) +
-                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
-            storagePreference?.setOnPreferenceClickListener {
+            refreshStorageBreakdownSummary()
+            findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
                 true
             }
+            parentFragmentManager.setFragmentResultListener(
+                StorageBreakdownFragment.RESULT_KEY,
+                viewLifecycleOwner
+            ) { _, _ -> refreshStorageBreakdownSummary() }
+        }
+
+        private fun refreshStorageBreakdownSummary() {
+            findPreference<Preference>("storage_breakdown")?.summary = getString(R.string.storage_breakdown_summary) +
+                " · ${getString(R.string.available_space_colon)} ${FileUtils.availableOverTotalMemoryFormattedString(requireContext())}"
         }
 
         private fun initRetryQueueDebug() {

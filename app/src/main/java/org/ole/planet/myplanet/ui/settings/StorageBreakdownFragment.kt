@@ -84,10 +84,10 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         parentFragmentManager.setFragmentResultListener(
             StorageCategoryDetailFragment.RESULT_KEY,
             viewLifecycleOwner
-        ) { _, _ -> loadStorage() }
-
-        binding.availableSpaceText.text = getString(R.string.available_space_colon) +
-            " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
+        ) { _, _ ->
+            loadStorage()
+            parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
+        }
 
         binding.freeUpSpaceButton.setOnClickListener {
             AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
@@ -142,13 +142,16 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                                     )
                                 )
                                 loadStorage()
+                                parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
                             }
                             WorkInfo.State.FAILED -> {
                                 progressDialog.dismiss()
                                 Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                                loadStorage()
                             }
                             WorkInfo.State.CANCELLED -> {
                                 progressDialog.dismiss()
+                                loadStorage()
                             }
                             else -> {
                                 // ENQUEUED or BLOCKED
@@ -162,7 +165,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             }
         }
 
-        progressDialog.setNegativeButton("Cancel") {
+        progressDialog.setNegativeButton(getString(R.string.cancel)) {
             workManager.cancelWorkById(freeSpaceWork.id)
         }
     }
@@ -171,6 +174,9 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         binding.progressBar.visibility = View.VISIBLE
         binding.contentLayout.visibility = View.GONE
         binding.emptyText.visibility = View.GONE
+
+        binding.availableSpaceText.text = getString(R.string.available_space_colon) +
+            " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
 
         viewLifecycleOwner.lifecycleScope.launch {
             val totalBytes = withContext(dispatcherProvider.io) { scanStorage() }
@@ -242,5 +248,9 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
+    }
+
+    companion object {
+        const val RESULT_KEY = "storage_breakdown_changed"
     }
 }
