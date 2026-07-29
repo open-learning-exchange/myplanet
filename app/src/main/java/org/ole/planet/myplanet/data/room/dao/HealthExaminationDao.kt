@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.data.room.dao
 
 import androidx.room.Dao
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import org.ole.planet.myplanet.model.HealthExamination
 
@@ -27,6 +28,13 @@ interface HealthExaminationDao {
 
     @Query("UPDATE health_examinations SET _rev = :rev, isUpdated = 0 WHERE _id = :id")
     suspend fun markUploaded(id: String, rev: String?)
+
+    @Transaction
+    suspend fun markUploaded(idToRevMap: Map<String, String?>) {
+        idToRevMap.forEach { (id, rev) ->
+            markUploaded(id, rev)
+        }
+    }
 
     @Query("UPDATE health_examinations SET userId = :userId WHERE _id = :id")
     suspend fun updateUserId(id: String, userId: String)
