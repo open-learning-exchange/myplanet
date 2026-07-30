@@ -17,6 +17,9 @@ import androidx.core.content.edit
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.services.NotificationActionReceiver
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
+import dagger.hilt.android.EntryPointAccessors
+import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
+import org.ole.planet.myplanet.utils.TimeProvider
 
 data class NotificationConfig(
     val id: String,
@@ -88,7 +91,8 @@ object NotificationUtils {
     }
 
     fun getInstance(context: Context): NotificationManager {
-        return NotificationManager(context)
+        val entryPoint = EntryPointAccessors.fromApplication(context.applicationContext, CoreDependenciesEntryPoint::class.java)
+        return NotificationManager(context, entryPoint.timeProvider())
     }
 
     fun createSurveyNotification(surveyId: String, surveyTitle: String): NotificationConfig {
@@ -105,8 +109,8 @@ object NotificationUtils {
         )
     }
 
-    fun createTaskNotification(taskId: String, taskTitle: String, deadline: String): NotificationConfig {
-        val priority = if (isTaskUrgent(deadline)) {
+    fun createTaskNotification(taskId: String, taskTitle: String, deadline: String, timeProvider: TimeProvider): NotificationConfig {
+        val priority = if (isTaskUrgent(deadline, timeProvider)) {
             NotificationCompat.PRIORITY_HIGH
         } else {
             NotificationCompat.PRIORITY_DEFAULT
@@ -227,10 +231,10 @@ object NotificationUtils {
         }
     }
 
-    private fun isTaskUrgent(deadline: String): Boolean {
+    private fun isTaskUrgent(deadline: String, timeProvider: TimeProvider): Boolean {
         return try {
             val deadlineTime = TimeUtils.parseDate(deadline) ?: return false
-            val currentTime = System.currentTimeMillis()
+            val currentTime = timeProvider.now()
             val timeDiff = deadlineTime - currentTime
             val daysUntilDeadline = timeDiff / (1000 * 60 * 60 * 24)
             daysUntilDeadline <= 2
@@ -240,7 +244,7 @@ object NotificationUtils {
         }
     }
 
-    class NotificationManager(private val context: Context) {
+    class NotificationManager(private val context: Context, private val timeProvider: TimeProvider) {
         private val notificationManager = NotificationManagerCompat.from(context)
         private val preferences: SharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         private val activeNotifications = mutableSetOf<String>()
@@ -335,7 +339,7 @@ object NotificationUtils {
                 .setCategory(config.category)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(config.autoCancel)
-                .setWhen(System.currentTimeMillis())
+                .setWhen(timeProvider.now())
                 .setShowWhen(true)
                 .setColor(ContextCompat.getColor(context, R.color.colorPrimary))
 

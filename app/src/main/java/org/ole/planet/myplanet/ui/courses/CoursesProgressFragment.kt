@@ -10,6 +10,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
 import org.ole.planet.myplanet.databinding.FragmentCoursesProgressBinding
 import org.ole.planet.myplanet.utils.collectWhenStarted
+import org.ole.planet.myplanet.model.CoursesProgressRow
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 @AndroidEntryPoint
 class CoursesProgressFragment : Fragment() {
@@ -35,7 +38,25 @@ class CoursesProgressFragment : Fragment() {
     private fun observeCourseData() {
         collectWhenStarted(progressViewModel.courseData) { courseData ->
             courseData?.let { jsonArray ->
-                val list = jsonArray.map { it.asJsonObject }
+                val list = jsonArray.map { element ->
+                    val obj = element.asJsonObject
+
+                    val stepMistake = if (obj.has("stepMistake")) {
+                        val type = object : TypeToken<Map<String, Int>>() {}.type
+                        Gson().fromJson<Map<String, Int>>(obj.get("stepMistake"), type)
+                    } else {
+                        null
+                    }
+
+                    CoursesProgressRow(
+                        courseId = obj.get("courseId").asString,
+                        courseName = obj.get("courseName").asString,
+                        progressCurrent = obj.getAsJsonObject("progress")?.get("current")?.asInt,
+                        progressMax = obj.getAsJsonObject("progress")?.get("max")?.asInt,
+                        mistakes = obj.get("mistakes")?.asInt,
+                        stepMistake = stepMistake
+                    )
+                }
                 progressAdapter.submitList(list)
             }
         }
