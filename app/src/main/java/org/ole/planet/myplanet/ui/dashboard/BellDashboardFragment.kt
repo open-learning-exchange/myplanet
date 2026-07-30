@@ -75,7 +75,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         observeSurveyReminders()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
                 viewModel.loadCompletedCourses(it)
