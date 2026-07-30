@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.showAlert
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.FileUtils.installApk
+import org.ole.planet.myplanet.utils.UrlUtils
 
 @AndroidEntryPoint
 abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessListener {
@@ -151,11 +152,7 @@ abstract class ProcessUserDataActivity : BasePermissionActivity(), OnSuccessList
         prefData.setUrlUser(urlUser)
         prefData.setUrlPwd(urlPwd)
 
-        if (!couchdbURL.endsWith("db")) {
-            couchdbURL += "/db"
-        }
-
-        return couchdbURL
+        return UrlUtils.dbUrl(couchdbURL)
     }
 
     fun isUrlValid(url: String): Boolean {

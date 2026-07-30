@@ -37,21 +37,18 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.services.DownloadService
 import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.ui.components.CheckboxAdapter
 import org.ole.planet.myplanet.ui.dashboard.DashboardActivity
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
-    var homeItemClickListener: OnHomeItemClickListener? = null
-    var model: UserEntity? = null
-    var lv: RecyclerView? = null
-    var convertView: View? = null
-    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
+    @Inject
+    lateinit var timeProvider: TimeProvider
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
@@ -63,11 +60,15 @@ abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var surveysRepository: SurveysRepository
     @Inject
-    lateinit var profileDbHandler: UserSessionManager
-    @Inject
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var broadcastService: BroadcastService
+
+    var homeItemClickListener: OnHomeItemClickListener? = null
+    var model: UserEntity? = null
+    var lv: RecyclerView? = null
+    var convertView: View? = null
+    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
 
@@ -105,6 +106,7 @@ abstract class BaseResourceFragment : Fragment() {
             }
         }
     }
+
     private val pendingDownloadUrls = mutableSetOf<String>()
 
     protected fun trackDownloadUrls(urls: Collection<String>) {
@@ -162,8 +164,6 @@ abstract class BaseResourceFragment : Fragment() {
             }
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)
-
-
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
@@ -282,7 +282,6 @@ abstract class BaseResourceFragment : Fragment() {
         }
     }
 
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         registerReceiver()
@@ -300,7 +299,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun removeFromShelf(`object`: Any) {
         lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id
+            val userId = userRepository.getUserModel()?.id
             if (userId.isNullOrEmpty()) {
                 return@launch
             }
@@ -328,7 +327,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addToLibrary(libraryItems: List<MyLibrary?>, selectedItems: ArrayList<Int>) {
         lifecycleScope.launch {
-            val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+            val userId = userRepository.getUserModel()?.id ?: return@launch
             val resourceIds = selectedItems.mapNotNull { index ->
                 libraryItems.getOrNull(index)?.resourceId
             }
@@ -344,7 +343,7 @@ abstract class BaseResourceFragment : Fragment() {
 
     fun addAllToLibrary(libraryItems: List<MyLibrary?>) {
         lifecycleScope.launch {
-            val user = profileDbHandler.getUserModel()
+            val user = userRepository.getUserModel()
             val userId = user?.id ?: return@launch
             val validLibraryItems = libraryItems.filterNotNull()
             resourcesRepository.addAllResourcesToUserLibrary(validLibraryItems, userId)
