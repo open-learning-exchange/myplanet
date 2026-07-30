@@ -554,7 +554,6 @@ class ChatDetailFragment : Fragment() {
         _id = ""
         _rev = ""
         currentID = ""
-        binding.editGchatMessage.text.clear()
         binding.textGchatIndicator.visibility = View.GONE
     }
 
