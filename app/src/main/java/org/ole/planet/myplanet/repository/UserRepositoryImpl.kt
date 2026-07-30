@@ -765,7 +765,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${pwd}").toByteArray(), Base64.NO_WRAP)}"
+            val header = UrlUtils.basicAuthHeader(model.name.toString(), pwd)
             val userExists = checkIfUserExists(header, model)
             if (!userExists) {
                 uploadNewUser(model, updateHealthFn)
