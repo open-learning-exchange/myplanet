@@ -350,7 +350,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
                         val adapter = HealthUsersAdapter { selected ->
                             selected._id?.let { userId ->
                                 viewLifecycleOwner.lifecycleScope.launch {
-                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
+                                    val libraryList = viewModel.getLibraryListForUser(userId)
                                     showDownloadDialog(libraryList)
                                 }
                             }
