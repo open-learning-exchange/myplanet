@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
 import org.ole.planet.myplanet.model.MyLibrary
+import org.ole.planet.myplanet.model.ResourceListModel
 import org.ole.planet.myplanet.model.TagEntity
 
 data class LibraryWithMetadata(
@@ -41,7 +42,6 @@ interface ResourcesRepository {
     suspend fun getLibraryItemsByIds(ids: Collection<String>): List<MyLibrary>
     suspend fun getLibraryItemsByLocalAddress(localAddress: String): List<MyLibrary>
     suspend fun getLibraryListForUser(userId: String?): List<MyLibrary>
-    suspend fun getLibraryForSelectedUser(userId: String): List<MyLibrary>
     suspend fun getMyLibrary(userId: String?): List<MyLibrary>
     suspend fun getAllStepResources(stepId: String?): List<MyLibrary>
     fun getRecentResources(userId: String): Flow<List<MyLibrary>>
@@ -91,6 +91,7 @@ interface ResourcesRepository {
     suspend fun getFilterFacets(libraries: List<MyLibrary>): Map<String, Set<String>>
     suspend fun batchInsertResources(documents: List<JsonObject>): List<String>
     suspend fun batchInsertMyLibrary(shelfId: String?, documents: List<JsonObject>): Int
+    suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel>
     suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata>
     suspend fun getLibraryItemsByResourceIds(ids: Collection<String>): List<MyLibrary>
     suspend fun getTeamPrivateResources(teamId: String): List<MyLibrary>
@@ -100,6 +101,7 @@ interface ResourcesRepository {
     suspend fun getCourseResourcesGroupedByStepId(courseId: String): Map<String?, List<MyLibrary>>
     suspend fun getPendingResourceUploads(): List<MyLibrary>
     suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
+    suspend fun trackResourceOpen(item: MyLibrary)
 }
 
 sealed class ResourceUrlsResponse {
