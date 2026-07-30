@@ -10,7 +10,9 @@ import android.media.AudioManager
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.text.TextUtils
+import android.util.Rational
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
@@ -282,6 +284,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
+        setupDragToPipGesture(playerView)
 
         val audioSource = ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(fileUri))
         exoPlayer?.apply {
@@ -308,6 +311,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
         val playerView = binding.root.findViewById<PlayerView>(R.id.video_player)
         playerView.player = exoPlayer
+        setupDragToPipGesture(playerView)
         exoPlayer?.apply {
             setMediaSource(mediaSource)
             playWhenReady = true
@@ -511,9 +515,60 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         navigateBackWithError(getString(R.string.video_unavailable))
     }
 
+    private fun setupDragToPipGesture(playerView: PlayerView) {
+        val density = resources.displayMetrics.density
+        val slopPx = DRAG_SLOP_DP * density
+        val thresholdPx = DRAG_THRESHOLD_DP * density
+        var startX = 0f
+        var startY = 0f
+        var isDragging = false
+
+        playerView.setOnTouchListener { _, event ->
+            when (event.actionMasked) {
+                MotionEvent.ACTION_DOWN -> {
+                    startX = event.rawX
+                    startY = event.rawY
+                    isDragging = false
+                    false
+                }
+                MotionEvent.ACTION_MOVE -> {
+                    val deltaY = event.rawY - startY
+                    val deltaX = event.rawX - startX
+                    if (!isDragging && deltaY > slopPx && deltaY > kotlin.math.abs(deltaX)) {
+                        isDragging = true
+                    }
+                    isDragging
+                }
+                MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                    val wasDragging = isDragging
+                    val deltaY = event.rawY - startY
+                    isDragging = false
+                    if (wasDragging && deltaY > thresholdPx) {
+                        (activity as? ResourceViewerActivity)?.tryEnterPictureInPicture()
+                    }
+                    wasDragging
+                }
+                else -> false
+            }
+        }
+    }
+
+    fun isPlayingVideo(): Boolean = type == ResourceType.VIDEO && exoPlayer?.isPlaying == true
+
+    fun getVideoAspectRatio(): Rational? {
+        val videoSize = exoPlayer?.videoSize ?: return null
+        val width = videoSize.width
+        val height = videoSize.height
+        if (width <= 0 || height <= 0) return null
+        val ratio = (width.toDouble() / height.toDouble()).coerceIn(MIN_PIP_ASPECT_RATIO, MAX_PIP_ASPECT_RATIO)
+        return Rational((ratio * PIP_ASPECT_RATIO_DENOMINATOR).toInt(), PIP_ASPECT_RATIO_DENOMINATOR)
+    }
+
     override fun onPause() {
         super.onPause()
-        exoPlayer?.pause()
+        if (activity?.isInPictureInPictureMode != true) {
+            exoPlayer?.pause()
+        }
         ttsManager.stop()
     }
 
@@ -531,6 +586,11 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     companion object {
+        private const val MIN_PIP_ASPECT_RATIO = 1.0 / 2.39
+        private const val MAX_PIP_ASPECT_RATIO = 2.39 / 1.0
+        private const val PIP_ASPECT_RATIO_DENOMINATOR = 1000
+        private const val DRAG_SLOP_DP = 24f
+        private const val DRAG_THRESHOLD_DP = 150f
         private const val ARG_RESOURCE_ID = "resourceId"
         private const val ARG_FILE_PATH = "filePath"
         private const val ARG_TITLE = "title"

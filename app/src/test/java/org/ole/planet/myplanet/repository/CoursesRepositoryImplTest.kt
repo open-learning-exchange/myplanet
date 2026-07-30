@@ -57,6 +57,7 @@ class CoursesRepositoryImplTest {
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
     private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = object : org.ole.planet.myplanet.utils.DispatcherProvider { override val main = kotlinx.coroutines.Dispatchers.Unconfined; override val io = kotlinx.coroutines.Dispatchers.Unconfined; override val default = kotlinx.coroutines.Dispatchers.Unconfined; override val unconfined = kotlinx.coroutines.Dispatchers.Unconfined }
+    private val realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
 
@@ -76,13 +77,13 @@ class CoursesRepositoryImplTest {
             questionDao,
             submissionDao,
             answerDao,
-            tagDao,
             searchActivityDao,
             courseProgressDao,
             removedLogDao,
             myLibraryDao,
             userRepository,
-            dispatcherProvider
+            dispatcherProvider,
+            realtimeSyncManager
         )
     }
 

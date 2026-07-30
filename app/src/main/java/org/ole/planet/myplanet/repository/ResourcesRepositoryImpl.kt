@@ -17,16 +17,17 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
+import androidx.sqlite.db.SimpleSQLiteQuery
 import org.ole.planet.myplanet.utils.Utilities
 
 class ResourcesRepositoryImpl @Inject constructor(
@@ -40,8 +41,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
-    private val userDao: UserDao,
-    private val teamDao: TeamDao
+    private val userRepository: UserRepository,
+    private val teamDao: TeamDao,
+    private val userSessionManager: UserSessionManager
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -58,28 +60,47 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun search(query: String, isMyCourseLib: Boolean, userId: String?): List<MyLibrary> {
-        val base = when {
-            userId != null -> if (isMyCourseLib) {
-                myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
-            } else {
-                myLibraryDao.getPublicNotUserPattern(userIdPattern(userId))
+        if (query.isEmpty()) {
+            return when {
+                userId != null -> if (isMyCourseLib) {
+                    myLibraryDao.getPublicForUserPattern(userIdPattern(userId))
+                } else {
+                    myLibraryDao.getPublicNotUserPattern(userIdPattern(userId))
+                }
+                isMyCourseLib -> emptyList()
+                else -> myLibraryDao.getPublic()
             }
-            isMyCourseLib -> return emptyList()
-            else -> myLibraryDao.getPublic()
         }
 
-        if (query.isEmpty()) {
-            return base
-        }
+        if (isMyCourseLib && userId == null) return emptyList()
 
         val queryParts = query.split(" ").filterNot { it.isEmpty() }
         val normalizedQueryParts = queryParts.map { Utilities.normalizeText(it) }
         val normalizedQuery = Utilities.normalizeText(query)
 
-        val matching = base.filter { item ->
-            val titleNormal = item.titleNormal ?: return@filter false
-            normalizedQueryParts.all { titleNormal.contains(it) }
+        val queryBuilder = StringBuilder("SELECT * FROM my_library WHERE isPrivate = 0")
+        val bindArgs = mutableListOf<Any>()
+
+        if (userId != null) {
+            if (isMyCourseLib) {
+                queryBuilder.append(" AND userId LIKE ? ESCAPE '\\'")
+                bindArgs.add(userIdPattern(userId))
+            } else {
+                queryBuilder.append(" AND (userId IS NULL OR userId NOT LIKE ? ESCAPE '\\')")
+                bindArgs.add(userIdPattern(userId))
+            }
         }
+
+        normalizedQueryParts.forEach { token ->
+            val escapedToken = token
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            queryBuilder.append(" AND titleNormal LIKE ? ESCAPE '\\'")
+            bindArgs.add("%${escapedToken}%")
+        }
+
+        val matching = myLibraryDao.filterByTitleNormal(SimpleSQLiteQuery(queryBuilder.toString(), bindArgs.toTypedArray()))
 
         val startsWithQuery = mutableListOf<MyLibrary>()
         val containsQuery = mutableListOf<MyLibrary>()
@@ -385,7 +406,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val userName = userDao.getById(userId)?.name ?: return flowOf(emptySet())
+        val userName = userRepository.getUserById(userId)?.name ?: return flowOf(emptySet())
 
         return resourceActivityDao.observeByUserAndType(userName, "resource_opened")
             .map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
@@ -619,5 +640,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             )
         }
         return true
+    }
+
+    override suspend fun trackResourceOpen(item: MyLibrary) {
+        userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 }
