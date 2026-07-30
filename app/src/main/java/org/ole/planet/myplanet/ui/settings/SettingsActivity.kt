@@ -48,6 +48,7 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
+import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
@@ -95,6 +96,8 @@ class SettingsActivity : AppCompatActivity() {
         lateinit var defaultPref: SharedPreferences
         @Inject
         lateinit var sharedPrefManager: SharedPrefManager
+        @Inject
+        lateinit var timeProvider: TimeProvider
         var user: UserEntity? = null
         private var libraryList: List<MyLibrary>? = null
         private lateinit var dialog: DialogUtils.CustomProgressDialog
@@ -194,6 +197,7 @@ class SettingsActivity : AppCompatActivity() {
             setPreferencesFromResource(R.xml.pref, rootKey)
             lifecycleScope.launch {
                 user = profileDbHandler.getUserModel()
+                blockGuestSwitches()
             }
             dialog = DialogUtils.getCustomProgressDialog(requireActivity())
 
@@ -208,6 +212,12 @@ class SettingsActivity : AppCompatActivity() {
             val darkMode = findPreference<Preference>("dark_mode")
             darkMode?.setOnPreferenceClickListener {
                 ThemeManager.showThemeDialog(requireActivity())
+                true
+            }
+
+            val textSize = findPreference<Preference>("text_size")
+            textSize?.setOnPreferenceClickListener {
+                textSizeChanger(requireActivity())
                 true
             }
 
@@ -235,6 +245,30 @@ class SettingsActivity : AppCompatActivity() {
             initStorageBreakdown()
         }
 
+        private fun blockGuestSwitches() {
+            if (user?.id?.startsWith("guest") != true) return
+
+            fun processPreference(pref: Preference) {
+                when (pref) {
+                    is SwitchPreference -> {
+                        pref.onPreferenceChangeListener = OnPreferenceChangeListener { _, _ ->
+                            DialogUtils.guestDialog(requireContext())
+                            false
+                        }
+                    }
+                    is androidx.preference.PreferenceGroup -> {
+                        for (i in 0 until pref.preferenceCount) {
+                            processPreference(pref.getPreference(i))
+                        }
+                    }
+                }
+            }
+
+            for (i in 0 until preferenceScreen.preferenceCount) {
+                processPreference(preferenceScreen.getPreference(i))
+            }
+        }
+
         private fun initStorageBreakdown() {
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
                 StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
@@ -258,10 +292,20 @@ class SettingsActivity : AppCompatActivity() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
                 preference.onPreferenceClickListener = OnPreferenceClickListener {
-                    AlertDialog.Builder(requireActivity()).setTitle(R.string.are_you_sure)
-                        .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
-                            viewModel.clearAllData()
-                        }.setNegativeButton(R.string.no, null).show()
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        val userModel = profileDbHandler.getUserModel()
+                        if (userModel?.id?.startsWith("guest") == true) {
+                            DialogUtils.guestDialog(requireActivity())
+                            return@launch
+                        }
+                        AlertDialog.Builder(requireActivity())
+                            .setTitle(R.string.are_you_sure)
+                            .setPositiveButton(R.string.yes) { _: DialogInterface?, _: Int ->
+                                viewModel.clearAllData()
+                            }
+                            .setNegativeButton(R.string.no, null)
+                            .show()
+                    }
                     false
                 }
             }
@@ -353,7 +397,7 @@ class SettingsActivity : AppCompatActivity() {
             if (lastSynced == 0L) {
                 lastSyncDate?.setTitle(R.string.last_synced_never)
             } else if (lastSyncDate != null) {
-                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced)
+                lastSyncDate.title = getString(R.string.last_synced_colon) + TimeUtils.getRelativeTime(lastSynced, timeProvider)
             }
         }
 
@@ -396,6 +440,35 @@ class SettingsActivity : AppCompatActivity() {
                             else -> "en"
                         }
                         LocaleUtils.setLocale(context, selectedLanguage)
+                        (context as Activity).recreate()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+
+                val dialog = builder.create()
+                dialog.show()
+            }
+
+            fun textSizeChanger(context: Context) {
+                val scales = floatArrayOf(0.85f, 1.0f, 1.15f)
+                val options = arrayOf(
+                    context.getString(R.string.text_size_small),
+                    context.getString(R.string.text_size_medium),
+                    context.getString(R.string.text_size_large)
+                )
+                val currentScale = LocaleUtils.getTextScale(context)
+                var checkedItem = 1
+                for (i in scales.indices) {
+                    if (scales[i] == currentScale) {
+                        checkedItem = i
+                        break
+                    }
+                }
+
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.select_text_size))
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                        LocaleUtils.setTextScale(context, scales[which])
                         (context as Activity).recreate()
                         dialog.dismiss()
                     }

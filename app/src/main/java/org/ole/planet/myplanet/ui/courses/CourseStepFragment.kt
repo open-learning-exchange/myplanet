@@ -107,7 +107,7 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         loadDataJob = viewLifecycleOwner.lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             val data = loadStepData()
             if (viewLifecycleOwner.lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 step = data.step
@@ -354,5 +354,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         super.onDestroyView()
         loadDataJob?.cancel()
         CameraUtils.release()
+        fragmentCourseStepBinding.rvInlineResources.adapter = null
     }
 }

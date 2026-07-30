@@ -372,10 +372,6 @@ class SurveysRepositoryImpl @Inject constructor(
             ?: examDao.getByType("surveys").firstOrNull { it.name == id }
     }
 
-    override suspend fun getSurveys(): List<StepExam> {
-        return examDao.getByType("surveys").map { it }
-    }
-
     override suspend fun getSurveys(ascending: Boolean): List<StepExam> {
         val entities = examDao.getByType("surveys").sortedBy { it.createdDate }
         return (if (ascending) entities else entities.asReversed()).map { it }
