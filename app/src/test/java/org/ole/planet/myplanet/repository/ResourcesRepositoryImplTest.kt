@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
+import io.mockk.every
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -23,10 +24,10 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -44,8 +45,9 @@ class ResourcesRepositoryImplTest {
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -64,8 +66,9 @@ class ResourcesRepositoryImplTest {
             removedLogDao,
             teamsSyncRepositoryLazy,
             myLibraryDao,
-            userDao,
+            userRepository,
             teamDao,
+            userSessionManager
         )
     }
 
@@ -121,12 +124,30 @@ class ResourcesRepositoryImplTest {
     fun `search with query filters by title`() = runTest {
         val mathBook = MyLibrary().apply { title = "Math Book"; titleNormal = "math book" }
         val scienceBook = MyLibrary().apply { title = "Science Book"; titleNormal = "science book" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(mathBook, scienceBook)
+
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(mathBook)
 
         val result = repository.search("math", false, null)
 
         assertEquals(1, result.size)
         assertEquals("Math Book", result[0].title)
+
+        val capturedQuery = querySlot.captured
+        assertTrue(capturedQuery.sql.contains("titleNormal LIKE ? ESCAPE '\\'"))
+
+        val bindArgs = mutableMapOf<Int, Any?>()
+        capturedQuery.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
+            override fun bindNull(index: Int) { bindArgs[index] = null }
+            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
+            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
+            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
+            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
+            override fun clearBindings() {}
+            override fun close() {}
+        })
+
+        assertEquals("%math%", bindArgs[1])
     }
 
     @Test
@@ -156,25 +177,59 @@ class ResourcesRepositoryImplTest {
         val startsWithLib = MyLibrary().apply { title = "Ápple Tree"; titleNormal = "apple tree" }
         val containsLib = MyLibrary().apply { title = "Green Ápple"; titleNormal = "green apple" }
         val notMatchLib = MyLibrary().apply { title = "Banana"; titleNormal = "banana" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(containsLib, notMatchLib, startsWithLib)
+
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(startsWithLib, containsLib)
 
         val result = repository.search("Apple", false, null)
 
         assertEquals(2, result.size)
         assertEquals(startsWithLib, result[0])
         assertEquals(containsLib, result[1])
+
+        val capturedQuery = querySlot.captured
+        assertTrue(capturedQuery.sql.contains("titleNormal LIKE ? ESCAPE '\\'"))
     }
 
     @Test
     fun `search multi word matches all parts`() = runTest {
         val matchLib = MyLibrary().apply { title = "The Apple Tree"; titleNormal = "the apple tree" }
         val notMatchLib = MyLibrary().apply { title = "The Orange Tree"; titleNormal = "the orange tree" }
-        coEvery { myLibraryDao.getPublic() } returns listOf(matchLib, notMatchLib)
+
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns listOf(matchLib)
 
         val result = repository.search("Ápple Tree", false, null)
 
         assertEquals(1, result.size)
         assertEquals(matchLib, result[0])
+
+        val capturedQuery = querySlot.captured
+        assertTrue(capturedQuery.sql.contains("titleNormal LIKE ? ESCAPE '\\'"))
+    }
+
+    @Test
+    fun `search properly escapes wildcards in query`() = runTest {
+        val querySlot = slot<androidx.sqlite.db.SupportSQLiteQuery>()
+        coEvery { myLibraryDao.filterByTitleNormal(capture(querySlot)) } returns emptyList()
+
+        repository.search("100% _real_ \\deal", false, null)
+
+        val bindArgs = mutableMapOf<Int, Any?>()
+        querySlot.captured.bindTo(object : androidx.sqlite.db.SupportSQLiteProgram {
+            override fun bindNull(index: Int) { bindArgs[index] = null }
+            override fun bindLong(index: Int, value: Long) { bindArgs[index] = value }
+            override fun bindDouble(index: Int, value: Double) { bindArgs[index] = value }
+            override fun bindString(index: Int, value: String) { bindArgs[index] = value }
+            override fun bindBlob(index: Int, value: ByteArray) { bindArgs[index] = value }
+            override fun clearBindings() {}
+            override fun close() {}
+        })
+
+        // SQLite binds are 1-indexed.
+        assertEquals("%100\\%%", bindArgs[1])
+        assertEquals("%\\_real\\_%", bindArgs[2])
+        assertEquals("%\\\\deal%", bindArgs[3])
     }
 
     @Test
@@ -210,14 +265,28 @@ class ResourcesRepositoryImplTest {
     }
 
     @Test
-    fun `getPendingDownloads returns flow of libraries`() = runTest {
-        val mockLibrary = MyLibrary().apply { title = "Pending Download" }
-        coEvery { myLibraryDao.getPendingDownloadsForUserPatternFlow("%\"test\\_user\"%") } returns flowOf(listOf(mockLibrary))
+    fun `getRecentResources returns flow from dao with correct pattern`() = runTest {
+        val userId = "testUser123"
+        val expectedPattern = "%\"testUser123\"%"
+        val expectedList = listOf(mockk<MyLibrary>())
 
-        val resultFlow = repository.getPendingDownloads("test_user")
-        val result = resultFlow.first()
+        every { myLibraryDao.getRecentForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
 
-        assertEquals(1, result.size)
-        assertEquals("Pending Download", result[0].title)
+        val result = repository.getRecentResources(userId).first()
+
+        assertEquals(expectedList, result)
+    }
+
+    @Test
+    fun `getPendingDownloads returns flow from dao with correct pattern`() = runTest {
+        val userId = "testUser123"
+        val expectedPattern = "%\"testUser123\"%"
+        val expectedList = listOf(mockk<MyLibrary>())
+
+        every { myLibraryDao.getPendingDownloadsForUserPatternFlow(expectedPattern) } returns flowOf(expectedList)
+
+        val result = repository.getPendingDownloads(userId).first()
+
+        assertEquals(expectedList, result)
     }
 }
