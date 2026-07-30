@@ -21,6 +21,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import dagger.hilt.android.AndroidEntryPoint
 import java.io.File
 import javax.inject.Inject
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,6 +44,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
     lateinit var dispatcherProvider: DispatcherProvider
 
     private var progressDialog: DialogUtils.CustomProgressDialog? = null
+    private var loadJob: Job? = null
 
     internal data class CategoryData(
         @StringRes val nameRes: Int,
@@ -104,6 +106,8 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
     }
 
     private fun freeUpSpace() {
+        binding.freeUpSpaceButton.isEnabled = false
+
         val progressDialog = DialogUtils.getCustomProgressDialog(requireActivity())
         this.progressDialog = progressDialog
         progressDialog.show()
@@ -134,6 +138,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                             WorkInfo.State.SUCCEEDED -> {
                                 progressDialog.dismiss()
                                 this@StorageBreakdownFragment.progressDialog = null
+                                binding.freeUpSpaceButton.isEnabled = true
                                 val output = workInfo.outputData
                                 val deletedFiles = output.getInt("deletedFiles", 0)
                                 val freedBytes = output.getLong("freedBytes", 0)
@@ -151,6 +156,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                             WorkInfo.State.FAILED -> {
                                 progressDialog.dismiss()
                                 this@StorageBreakdownFragment.progressDialog = null
+                                binding.freeUpSpaceButton.isEnabled = true
                                 Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
                                 loadStorage()
                                 parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
@@ -158,6 +164,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                             WorkInfo.State.CANCELLED -> {
                                 progressDialog.dismiss()
                                 this@StorageBreakdownFragment.progressDialog = null
+                                binding.freeUpSpaceButton.isEnabled = true
                                 loadStorage()
                                 parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
                             }
@@ -179,6 +186,8 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
     }
 
     private fun loadStorage() {
+        loadJob?.cancel()
+
         binding.progressBar.visibility = View.VISIBLE
         binding.contentLayout.visibility = View.GONE
         binding.emptyText.visibility = View.GONE
@@ -186,7 +195,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
         binding.availableSpaceText.text = getString(R.string.available_space_colon) +
             " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
 
-        viewLifecycleOwner.lifecycleScope.launch {
+        loadJob = viewLifecycleOwner.lifecycleScope.launch {
             val totalBytes = withContext(dispatcherProvider.io) { scanStorage() }
 
             binding.progressBar.visibility = View.GONE
