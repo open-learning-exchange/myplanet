@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.first
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -165,4 +166,31 @@ class SurveysRepositoryImplTest {
         verify { sharedPreferencesEditor.putString("reminder_surveys_survey1", "survey1") }
         verify { sharedPreferencesEditor.apply() }
     }
+
+
+
+
+    @Test
+    fun `dueRemindersFlow emits due surveys and removes them from preferences`() = runTest {
+        // The test setup uses TestTimeProvider with currentTime = 1_700_000_000_000L
+        val currentTime = 1_700_000_000_000L
+        val allPrefs = mapOf<String, Any>(
+            "reminder_time_survey1" to currentTime - 100_000L, // Due
+            "reminder_time_survey2" to currentTime + 100_000L  // Not due
+        )
+        every { sharedPreferences.all } returns allPrefs
+        every { sharedPreferences.getLong("reminder_time_survey1", 0) } returns currentTime - 100_000L
+        every { sharedPreferences.getLong("reminder_time_survey2", 0) } returns currentTime + 100_000L
+
+        val result = repository.dueRemindersFlow().first()
+
+        assertEquals(listOf("survey1"), result)
+
+        verify { sharedPreferencesEditor.remove("reminder_time_survey1") }
+        verify { sharedPreferencesEditor.remove("reminder_surveys_survey1") }
+
+        verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_time_survey2") }
+        verify(exactly = 0) { sharedPreferencesEditor.remove("reminder_surveys_survey2") }
+    }
+
 }
