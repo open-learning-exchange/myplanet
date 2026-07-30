@@ -37,7 +37,6 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var courseLib: String? = null
     private var isAddInProgress = false
 
-
     abstract fun getLayout(): Int
 
     abstract suspend fun getAdapter(): ListAdapter<*, *>
@@ -275,6 +274,5 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
             textView.setText(messageRes)
         }
-
     }
 }
