@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ResourcesRepositoryBenchmarkTest {
@@ -33,6 +34,7 @@ class ResourcesRepositoryBenchmarkTest {
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -48,7 +50,8 @@ class ResourcesRepositoryBenchmarkTest {
             teamsSyncRepositoryLazy,
             myLibraryDao,
             userRepository,
-            teamDao
+            teamDao,
+            userSessionManager
         )
     }
 
