@@ -5,13 +5,18 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.every
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.firstOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -196,6 +201,41 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `getCourseByCourseIdFlow returns mapped course with steps`() = runTest {
+        val courseId = "course-123"
+        val myCourse = MyCourse(id = courseId, courseId = courseId, courseTitle = "Test Course")
+        val steps = listOf(
+            CourseStep(id = "step-1", courseId = courseId, stepTitle = "Step 1"),
+            CourseStep(id = "step-2", courseId = courseId, stepTitle = "Step 2")
+        )
+
+        every { courseDao.observeByCourseId(courseId) } returns flowOf(myCourse)
+        coEvery { courseStepDao.getByCourseId(courseId) } returns steps
+
+        val resultFlow = repository.getCourseByCourseIdFlow(courseId)
+        val mappedCourse = resultFlow.first()
+
+        assertNotNull(mappedCourse)
+        assertEquals(courseId, mappedCourse?.courseId)
+        assertEquals("Test Course", mappedCourse?.courseTitle)
+        assertEquals(2, mappedCourse?.courseSteps?.size)
+        assertEquals(2, mappedCourse?.getNumberOfSteps())
+        assertEquals("Step 1", mappedCourse?.courseSteps?.get(0)?.stepTitle)
+    }
+
+    @Test
+    fun `getCourseByCourseIdFlow returns null when course not found`() = runTest {
+        val courseId = "non-existent-course"
+
+        every { courseDao.observeByCourseId(courseId) } returns flowOf(null)
+
+        val resultFlow = repository.getCourseByCourseIdFlow(courseId)
+        val mappedCourse = resultFlow.first()
+
+        assertNull(mappedCourse)
+    }
+
+    @Test
     fun getCourseDetailModel_whenCourseNull_returnsNull() = runTest {
         coEvery { courseDao.observeByCourseId(any()) } returns kotlinx.coroutines.flow.flowOf(null)
 
@@ -235,5 +275,4 @@ class CoursesRepositoryImplTest {
         assertEquals(3, result?.steps?.first()?.questionCount)
         assertEquals(4.0f, result?.ratingSummary?.averageRating)
     }
-
 }
