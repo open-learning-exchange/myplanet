@@ -257,7 +257,14 @@ class SettingsActivity : AppCompatActivity() {
         private fun initStorageBreakdown() {
             refreshStorageBreakdownSummary()
             findPreference<Preference>("storage_breakdown")?.setOnPreferenceClickListener {
-                StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                viewLifecycleOwner.lifecycleScope.launch {
+                    val userModel = profileDbHandler.getUserModel()
+                    if (userModel?.id?.startsWith("guest") == true) {
+                        DialogUtils.guestDialog(requireActivity())
+                    } else {
+                        StorageBreakdownFragment().show(parentFragmentManager, "storage_breakdown")
+                    }
+                }
                 true
             }
             parentFragmentManager.setFragmentResultListener(
