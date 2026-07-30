@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.base
 
-import org.ole.planet.myplanet.services.UserSessionManager
-
 import android.app.Activity
 import android.content.Context
 import android.content.DialogInterface
@@ -36,6 +34,7 @@ import org.ole.planet.myplanet.callback.OnRatingChangeListener
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourceUrlsResponse
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_DOWNLOAD
 import org.ole.planet.myplanet.services.UserSessionManager.Companion.KEY_RESOURCE_OPEN
 import org.ole.planet.myplanet.ui.components.FragmentNavigator
@@ -51,6 +50,8 @@ import org.ole.planet.myplanet.utils.Utilities
 abstract class BaseContainerFragment : BaseResourceFragment() {
     @Inject
     lateinit var profileDbHandler: UserSessionManager
+    @Inject
+    lateinit var prefData: SharedPrefManager
 
     private var timesRated: TextView? = null
     var rating: TextView? = null
@@ -59,8 +60,6 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
     private var hasInstallPermissionValue = false
     private var currentLibrary: MyLibrary? = null
     private var installApkLauncher: ActivityResultLauncher<Intent>? = null
-    @Inject
-    lateinit var prefData: SharedPrefManager
     private var pendingAutoOpenLibrary: MyLibrary? = null
     private var shouldAutoOpenAfterDownload = false
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -95,6 +94,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             DownloadUtils.openPriorityDownloadService(requireContext(), urls)
         }
     }
+
     fun startDownloadWithAutoOpen(urls: ArrayList<String>, libraryToOpen: MyLibrary? = null) {
         if (libraryToOpen != null) {
             pendingAutoOpenLibrary = libraryToOpen
@@ -104,6 +104,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
         startDownload(urls)
         showProgressDialog()
     }
+
     override fun onDownloadComplete() {
         super.onDownloadComplete()
         if (shouldAutoOpenAfterDownload && pendingAutoOpenLibrary != null) {
@@ -125,6 +126,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     fun initRatingView(type: String?, id: String?, title: String?, listener: OnRatingChangeListener?) {
         timesRated = requireView().findViewById(R.id.times_rated)
         rating = requireView().findViewById(R.id.tv_rating)
@@ -147,6 +149,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     override fun onAttach(context: Context) {
         super.onAttach(context)
         if (context is OnHomeItemClickListener) {
@@ -165,6 +168,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             e.printStackTrace()
         }
     }
+
     fun openResource(items: MyLibrary) {
         dismissProgressDialog()
         if (items.mediaType == "HTML") {
@@ -337,6 +341,7 @@ abstract class BaseContainerFragment : BaseResourceFragment() {
             }
         }
     }
+
     fun setResourceButton(resources: List<MyLibrary>?, btnResources: Button) {
         if (resources.isNullOrEmpty()) {
             btnResources.visibility = View.GONE
