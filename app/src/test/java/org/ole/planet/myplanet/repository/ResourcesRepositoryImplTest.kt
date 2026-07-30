@@ -21,10 +21,10 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.Utilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -42,8 +42,9 @@ class ResourcesRepositoryImplTest {
     private val teamsRepositoryLazy: Lazy<TeamsRepository> = mockk(relaxed = true)
     private val teamsSyncRepositoryLazy: Lazy<TeamsSyncRepository> = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
-    private val userDao: UserDao = mockk(relaxed = true)
+    private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
+    private val userSessionManager: UserSessionManager = mockk(relaxed = true)
 
     private lateinit var repository: ResourcesRepositoryImpl
 
@@ -62,8 +63,9 @@ class ResourcesRepositoryImplTest {
             removedLogDao,
             teamsSyncRepositoryLazy,
             myLibraryDao,
-            userDao,
+            userRepository,
             teamDao,
+            userSessionManager
         )
     }
 

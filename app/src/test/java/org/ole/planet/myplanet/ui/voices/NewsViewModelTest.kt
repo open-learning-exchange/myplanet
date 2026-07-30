@@ -27,6 +27,7 @@ class NewsViewModelTest {
 
     private val testDispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = UnconfinedTestDispatcher()
+        override val mainImmediate: CoroutineDispatcher = UnconfinedTestDispatcher()
         override val io: CoroutineDispatcher = UnconfinedTestDispatcher()
         override val default: CoroutineDispatcher = UnconfinedTestDispatcher()
         override val unconfined: CoroutineDispatcher = UnconfinedTestDispatcher()

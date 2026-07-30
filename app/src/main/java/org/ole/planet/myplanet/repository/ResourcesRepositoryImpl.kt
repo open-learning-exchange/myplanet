@@ -17,12 +17,12 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.services.SharedPrefManager
+import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -41,8 +41,9 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
-    private val userDao: UserDao,
-    private val teamDao: TeamDao
+    private val userRepository: UserRepository,
+    private val teamDao: TeamDao,
+    private val userSessionManager: UserSessionManager
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -405,7 +406,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val userName = userDao.getById(userId)?.name ?: return flowOf(emptySet())
+        val userName = userRepository.getUserById(userId)?.name ?: return flowOf(emptySet())
 
         return resourceActivityDao.observeByUserAndType(userName, "resource_opened")
             .map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
@@ -639,5 +640,9 @@ class ResourcesRepositoryImpl @Inject constructor(
             )
         }
         return true
+    }
+
+    override suspend fun trackResourceOpen(item: MyLibrary) {
+        userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
     }
 }
