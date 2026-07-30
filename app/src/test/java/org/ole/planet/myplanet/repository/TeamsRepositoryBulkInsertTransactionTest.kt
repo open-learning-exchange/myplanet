@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
 import org.ole.planet.myplanet.data.room.dao.TeamLogDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UploadManager
 import org.ole.planet.myplanet.services.UserSessionManager
@@ -89,7 +88,6 @@ class TeamsRepositoryBulkInsertTransactionTest {
             mockk<TeamTaskDao>(relaxed = true),
             mockk<MyLibraryDao>(relaxed = true),
             teamDao,
-            mockk<UserDao>(relaxed = true),
             mockk<CourseDao>(relaxed = true),
             mockk<CourseStepDao>(relaxed = true),
             db,
