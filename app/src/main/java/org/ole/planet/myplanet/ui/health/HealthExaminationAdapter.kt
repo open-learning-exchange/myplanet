@@ -30,7 +30,7 @@ class HealthExaminationAdapter(
     private var mh: HealthExamination,
     private var userModel: UserEntity?,
     private var userMap: Map<String, UserEntity>
-) : ListAdapter<HealthExamination, HealthExaminationViewHolder>(diffCallback) {
+) : ListAdapter<HealthExamination, HealthExaminationViewHolder>(DIFF_CALLBACK) {
     private val displayNameCache = mutableMapOf<String, String>()
     private val colorGrey50 by lazy { ContextCompat.getColor(context, R.color.md_grey_50) }
     private val colorGreen50 by lazy { ContextCompat.getColor(context, R.color.md_green_50) }
@@ -141,7 +141,7 @@ class HealthExaminationAdapter(
 
     companion object {
         private val colonRegex by lazy { ":".toRegex() }
-        private val diffCallback = DiffUtils.itemCallback<HealthExamination>(
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<HealthExamination>(
             { oldItem, newItem -> oldItem._id == newItem._id },
             { oldItem, newItem -> oldItem == newItem }
         )

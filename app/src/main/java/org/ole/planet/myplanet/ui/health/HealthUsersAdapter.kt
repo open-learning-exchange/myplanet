@@ -13,8 +13,10 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.TimeUtils
 
 class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = null) :
-    ListAdapter<UserEntity, HealthUsersAdapter.ViewHolder>(
-        DiffUtils.itemCallback<UserEntity>(
+    ListAdapter<UserEntity, HealthUsersAdapter.ViewHolder>(DIFF_CALLBACK) {
+
+    companion object {
+        private val DIFF_CALLBACK = DiffUtils.itemCallback<UserEntity>(
             areItemsTheSame = { old, new -> old.id == new.id },
             areContentsTheSame = { old, new ->
                 old.name == new.name &&
@@ -29,7 +31,7 @@ class HealthUsersAdapter(private val clickListener: ((UserEntity) -> Unit)? = nu
                 if (diffs.isEmpty()) null else diffs
             }
         )
-    ) {
+    }
 
     class ViewHolder(private val binding: ItemUserBinding, private val avatarSize: Int) : RecyclerView.ViewHolder(binding.root) {
         fun bind(user: UserEntity, clickListener: ((UserEntity) -> Unit)?) {

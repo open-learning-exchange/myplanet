@@ -22,6 +22,11 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -110,8 +115,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun findUserByName(name: String): UserEntity? {
-        return userDao.getAll()
-            .firstOrNull { it.name.equals(name, ignoreCase = true) }
+        return userDao.getByNameIgnoreCase(name)
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
@@ -226,7 +230,7 @@ class UserRepositoryImpl @Inject constructor(
 
         user.apply {
             if (id.isNullOrBlank()) {
-                id = newId.ifEmpty { UUID.randomUUID().toString() }
+                id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId
@@ -1263,6 +1267,29 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit> {
+        return try {
+            val semaphore = Semaphore(5)
+            supervisorScope {
+                users.map { model ->
+                    async {
+                        semaphore.withPermit {
+                            try {
+                                uploadShelfData(model)
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
