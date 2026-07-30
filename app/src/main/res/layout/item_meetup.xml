@@ -43,7 +43,7 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_margin="4dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/delete_meetup"
             android:src="@drawable/ic_delete"
             app:layout_constraintEnd_toEndOf="parent"

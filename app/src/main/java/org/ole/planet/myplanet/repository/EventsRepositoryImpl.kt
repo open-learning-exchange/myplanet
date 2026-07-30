@@ -5,8 +5,10 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
+import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
@@ -14,7 +16,8 @@ import org.ole.planet.myplanet.utils.TimeProvider
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val removedLogDao: RemovedLogDao
 ) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
@@ -175,6 +178,16 @@ class EventsRepositoryImpl @Inject constructor(
     override suspend fun deleteMeetup(meetupId: String): Boolean {
         if (meetupId.isBlank()) return false
         return try {
+            val meetup = meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId)
+            val userId = meetup?.userId
+            if (!userId.isNullOrBlank()) {
+                removedLogDao.insert(RemovedLog().apply {
+                    id = UUID.randomUUID().toString()
+                    type = "meetups"
+                    this.userId = userId
+                    docId = meetupId
+                })
+            }
             meetupDao.deleteById(meetupId)
             true
         } catch (e: Exception) {

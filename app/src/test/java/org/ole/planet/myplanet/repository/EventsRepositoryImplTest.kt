@@ -15,6 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
+import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -25,6 +26,7 @@ class EventsRepositoryImplTest {
 
     private lateinit var meetupDao: MeetupDao
     private lateinit var userRepository: UserRepository
+    private lateinit var removedLogDao: RemovedLogDao
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -35,7 +37,8 @@ class EventsRepositoryImplTest {
     fun setup() {
         meetupDao = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository)
+        removedLogDao = mockk(relaxed = true)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, removedLogDao)
     }
 
     @Test
@@ -164,5 +167,16 @@ class EventsRepositoryImplTest {
 
         val result = repository.createMeetup(params)
         assertFalse(result)
+    }
+
+    @Test
+    fun deleteMeetup() = runTest {
+        coEvery { meetupDao.getById("m1") } returns Meetup().apply { id = "m1"; userId = "u1" }
+
+        val result = repository.deleteMeetup("m1")
+        assertTrue(result)
+
+        coVerify { meetupDao.deleteById("m1") }
+        coVerify { removedLogDao.insert(any()) }
     }
 }
