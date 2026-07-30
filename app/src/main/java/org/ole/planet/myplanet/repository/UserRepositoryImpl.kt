@@ -22,11 +22,15 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
-import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -74,7 +78,7 @@ class UserRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
-    private val healthExaminationDao: HealthExaminationDao,
+    private val healthRepository: HealthRepository,
     private val userDao: UserDao
 ) : UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
@@ -111,8 +115,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun findUserByName(name: String): UserEntity? {
-        return userDao.getAll()
-            .firstOrNull { it.name.equals(name, ignoreCase = true) }
+        return userDao.getByNameIgnoreCase(name)
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
@@ -227,7 +230,7 @@ class UserRepositoryImpl @Inject constructor(
 
         user.apply {
             if (id.isNullOrBlank()) {
-                id = newId.ifEmpty { UUID.randomUUID().toString() }
+                id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId
@@ -760,6 +763,21 @@ class UserRepositoryImpl @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
+    override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${pwd}").toByteArray(), Base64.NO_WRAP)}"
+            val userExists = checkIfUserExists(header, model)
+            if (!userExists) {
+                uploadNewUser(model, updateHealthFn)
+            } else if (model.isUpdated) {
+                updateExistingUser(header, model)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean {
         try {
             val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
@@ -862,7 +880,7 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: UserEntity
     ): HealthRecord? {
-        val mh = healthExaminationDao.getByIdOrUserId(userId) ?: return null
+        val mh = healthRepository.getByIdOrUserId(userId) ?: return null
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
         val mm = if (TextUtils.isEmpty(json)) {
             null
@@ -875,7 +893,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         } ?: return null
 
-        val list = healthExaminationDao.getByProfileId(mm.userKey ?: "")
+        val list = healthRepository.getByProfileId(mm.userKey ?: "")
         if (list.isEmpty()) {
             return HealthRecord(mh, mm, emptyList(), emptyMap())
         }
@@ -900,7 +918,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId)
+        val healthPojo = healthRepository.getByIdOrUserId(userId)
 
         if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
             try {
@@ -915,7 +933,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+        val healthPojo = healthRepository.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
 
         userModel?.apply {
             firstName = (userData["firstName"] as? String)?.trim()
@@ -972,7 +990,7 @@ class UserRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        healthExaminationDao.upsert(healthPojo)
+        healthRepository.upsert(healthPojo)
     }
 
     override suspend fun validateUsername(username: String): String? {
@@ -1264,6 +1282,29 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
 
+
+    override suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit> {
+        return try {
+            val semaphore = Semaphore(5)
+            supervisorScope {
+                users.map { model ->
+                    async {
+                        semaphore.withPermit {
+                            try {
+                                uploadShelfData(model)
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
 
     override suspend fun uploadShelfData(user: UserEntity) {
         try {

@@ -7,6 +7,10 @@ import org.ole.planet.myplanet.R
 
 object ImageUtils {
     fun loadProfileImage(image: String?, imageView: ImageView, sizePx: Int) {
+        if (image.isNullOrEmpty()) {
+            imageView.setImageResource(R.drawable.profile)
+            return
+        }
         Glide.with(imageView.context)
             .load(image)
             .diskCacheStrategy(DiskCacheStrategy.ALL)
@@ -29,5 +33,13 @@ object ImageUtils {
         } else {
             imageView.setImageResource(R.drawable.ole_logo)
         }
+    }
+
+    fun loadPlaceholderImage(image: String?, imageView: ImageView) {
+        Glide.with(imageView.context)
+            .load(image)
+            .placeholder(R.drawable.profile)
+            .error(R.drawable.profile)
+            .into(imageView)
     }
 }
