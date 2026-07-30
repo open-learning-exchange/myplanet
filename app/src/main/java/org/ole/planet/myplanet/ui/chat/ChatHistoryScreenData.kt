@@ -9,5 +9,6 @@ data class ChatHistoryScreenData(
     val currentUser: UserEntity?,
     val chatHistory: List<ChatHistory>,
     val newsMessages: List<News>,
-    val shareTargets: ChatShareTargets
+    val shareTargets: ChatShareTargets,
+    val sharedViewInIds: Map<String, Set<String>>
 )
