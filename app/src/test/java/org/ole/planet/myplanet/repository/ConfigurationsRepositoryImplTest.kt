@@ -4,7 +4,6 @@ import io.mockk.verify
 import org.ole.planet.myplanet.model.MyPlanet
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.UrlUtils
-
 import android.content.Context
 import android.content.SharedPreferences
 import io.mockk.coEvery
@@ -36,7 +35,6 @@ class ConfigurationsRepositoryImplTest {
 
     private lateinit var repository: ConfigurationsRepositoryImpl
     private val testDispatcher = UnconfinedTestDispatcher()
-
     private val context: Context = mockk()
     private val apiInterface: ApiInterface = mockk()
     private val preferences: SharedPreferences = mockk(relaxed = true)
@@ -97,7 +95,6 @@ class ConfigurationsRepositoryImplTest {
 
         io.mockk.verify(exactly = 1) { appDatabase.clearAllTables() }
     }
-
 
     @Test
     fun `checkVersion calls onError if baseUrl is empty`() = runTest(testDispatcher) {
