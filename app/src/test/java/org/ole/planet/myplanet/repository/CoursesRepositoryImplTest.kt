@@ -201,6 +201,47 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyCourses with list filters correctly by userId`() {
+        val course1 = MyCourse(id = "1", userId = listOf("user1", "user2"))
+        val course2 = MyCourse(id = "2", userId = listOf("user2"))
+        val course3 = MyCourse(id = "3", userId = null)
+        val courses = listOf(course1, course2, course3)
+
+        val resultNull = repository.getMyCourses(null, courses)
+        assertTrue(resultNull.isEmpty())
+
+        val resultUser1 = repository.getMyCourses("user1", courses)
+        assertEquals(1, resultUser1.size)
+        assertEquals("1", resultUser1[0].id)
+
+        val resultUser2 = repository.getMyCourses("user2", courses)
+        assertEquals(2, resultUser2.size)
+
+        val resultUser3 = repository.getMyCourses("user3", courses)
+        assertTrue(resultUser3.isEmpty())
+    }
+
+    @Test
+    fun `getMyCourses by userId fetches all and filters`() = runTest {
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", userId = listOf("user1", "user2")),
+            MyCourse(id = "2", userId = listOf("user2")),
+            MyCourse(id = "3", userId = null)
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val resultUser1 = repository.getMyCourses("user1")
+        assertEquals(1, resultUser1.size)
+        assertEquals("1", resultUser1[0].id)
+
+        val resultUser2 = repository.getMyCourses("user2")
+        assertEquals(2, resultUser2.size)
+
+        val resultUser3 = repository.getMyCourses("user3")
+        assertTrue(resultUser3.isEmpty())
+    }
+
+    @Test
     fun `getCourseByCourseIdFlow returns mapped course with steps`() = runTest {
         val courseId = "course-123"
         val myCourse = MyCourse(id = courseId, courseId = courseId, courseTitle = "Test Course")
