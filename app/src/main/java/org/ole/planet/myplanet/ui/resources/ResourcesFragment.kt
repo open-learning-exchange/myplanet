@@ -136,7 +136,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = profileDbHandler.getUserModel()
+        val user = userRepository.getUserModel()
         val factory = adapterFactory ?: DefaultBaseAdapterFactory()
         adapterLibrary = factory.createResourcesAdapter(
             context = requireActivity(),
@@ -196,7 +196,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         lifecycleScope.launch {
-            userModel = profileDbHandler.getUserModel()
+            userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
 
             val userId = userModel?.id

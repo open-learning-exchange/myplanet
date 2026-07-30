@@ -58,8 +58,8 @@ class CoursesAdapter(
         },
         payloadSelector = { old, new ->
             val payloads = mutableListOf<String>()
-            if (old.isMyCourse != new.isMyCourse) payloads.add(SELECTION_PAYLOAD)
-            if (old.numberOfSteps != new.numberOfSteps) payloads.add(PROGRESS_PAYLOAD)
+            if (old.isMyCourse != new.isMyCourse) payloads.add(PAYLOAD_SELECTION)
+            if (old.numberOfSteps != new.numberOfSteps) payloads.add(PAYLOAD_PROGRESS)
 
             // Check if any fields other than the ones we handle via payloads have changed
             val unhandledChanges = old.courseTitle != new.courseTitle ||
@@ -84,7 +84,7 @@ class CoursesAdapter(
         val index = currentList.indexOfFirst { it.courseId == id }
         if (index != -1) {
             val bundle = Bundle()
-            bundle.putBoolean(RATING_PAYLOAD, true)
+            bundle.putBoolean(PAYLOAD_RATING, true)
             notifyItemChanged(index, bundle)
             return
         }
@@ -115,10 +115,10 @@ class CoursesAdapter(
     }
 
     companion object {
-        private const val TAG_PAYLOAD = "payload_tags"
-        private const val RATING_PAYLOAD = "payload_rating"
-        private const val PROGRESS_PAYLOAD = "payload_progress"
-        private const val SELECTION_PAYLOAD = "payload_selection"
+        const val PAYLOAD_TAGS = "payload_tags"
+        const val PAYLOAD_RATING = "payload_rating"
+        const val PAYLOAD_PROGRESS = "payload_progress"
+        const val PAYLOAD_SELECTION = "payload_selection"
     }
 
     init {
@@ -153,7 +153,7 @@ class CoursesAdapter(
             }
             val index = courseIdToPosition[courseId]
             if (index != null && index != -1) {
-                notifyItemChanged(index, TAG_PAYLOAD)
+                notifyItemChanged(index, PAYLOAD_TAGS)
             }
         }
     }
@@ -212,7 +212,7 @@ class CoursesAdapter(
             val courseId = currentList[index].courseId
             if (oldMap?.get(courseId) != progressMap?.get(courseId)) {
                 val bundle = Bundle()
-                bundle.putBoolean(PROGRESS_PAYLOAD, true)
+                bundle.putBoolean(PAYLOAD_PROGRESS, true)
                 notifyItemChanged(index, bundle)
             }
         }
@@ -257,7 +257,7 @@ class CoursesAdapter(
             val wasSelected = oldSelectedIds.contains(course.courseId)
             val isSelected = newSelectedIds.contains(course.courseId)
             if (wasSelected != isSelected) {
-                notifyItemChanged(index, SELECTION_PAYLOAD)
+                notifyItemChanged(index, PAYLOAD_SELECTION)
             }
         }
 
@@ -275,11 +275,11 @@ class CoursesAdapter(
         }
 
         val flatPayloads = payloads.flatMap { if (it is List<*>) it else listOf(it) }
-        val hasTagPayload = flatPayloads.any { it == TAG_PAYLOAD }
-        val hasSelectionPayload = flatPayloads.any { it == SELECTION_PAYLOAD }
+        val hasTagPayload = flatPayloads.any { it == PAYLOAD_TAGS }
+        val hasSelectionPayload = flatPayloads.any { it == PAYLOAD_SELECTION }
         val bundle = flatPayloads.filterIsInstance<Bundle>().fold(Bundle()) { acc, b -> acc.apply { putAll(b) } }
-        val hasRatingPayload = bundle.containsKey(RATING_PAYLOAD)
-        val hasProgressPayload = bundle.containsKey(PROGRESS_PAYLOAD) || flatPayloads.any { it == PROGRESS_PAYLOAD }
+        val hasRatingPayload = bundle.containsKey(PAYLOAD_RATING)
+        val hasProgressPayload = bundle.containsKey(PAYLOAD_PROGRESS) || flatPayloads.any { it == PAYLOAD_PROGRESS }
 
         if (hasTagPayload || hasRatingPayload || hasProgressPayload || hasSelectionPayload) {
             val course = getItem(position) ?: return

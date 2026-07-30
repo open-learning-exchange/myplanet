@@ -5,7 +5,6 @@ import com.google.gson.JsonObject
 import java.util.UUID
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
@@ -15,7 +14,7 @@ import org.ole.planet.myplanet.utils.TimeProvider
 class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
-    private val userDao: UserDao
+    private val userRepository: UserRepository
 ) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
@@ -71,7 +70,7 @@ class EventsRepositoryImpl @Inject constructor(
             return emptyList()
         }
         val memberIdSet = memberIds.toSet()
-        return userDao.getAll()
+        return userRepository.getAllUsers()
             .filter { user ->
                 memberIdSet.contains(user.id) || user._id?.let(memberIdSet::contains) == true
             }
