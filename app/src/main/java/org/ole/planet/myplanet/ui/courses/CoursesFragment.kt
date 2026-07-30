@@ -37,6 +37,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
 
@@ -99,11 +100,12 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             userModel = userSessionManager.getUserModel()
         }
 
-        adapterCourses = CoursesAdapter(
-            hostActivity,
-            HashMap(),
-            userModel?.isGuest() ?: true,
-            isMyCourseLib
+        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+        adapterCourses = factory.createCoursesAdapter(
+            context = hostActivity,
+            map = HashMap(),
+            isGuest = userModel?.isGuest() ?: true,
+            isMyCourseLib = isMyCourseLib
         )
 
         adapterCourses.setListener(this@CoursesFragment)

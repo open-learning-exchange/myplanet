@@ -18,6 +18,7 @@ class DatabaseServiceTest {
     private val testDispatcher = UnconfinedTestDispatcher()
     private val dispatcherProvider = object : DispatcherProvider {
         override val main = testDispatcher
+        override val mainImmediate = testDispatcher
         override val io = testDispatcher
         override val default = testDispatcher
         override val unconfined = testDispatcher
