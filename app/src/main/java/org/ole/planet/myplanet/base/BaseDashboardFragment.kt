@@ -51,7 +51,6 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
-
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
@@ -60,7 +59,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
-
     @Inject
     lateinit var lifeRepository: LifeRepository
 
@@ -389,5 +387,4 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     override fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
-
 }
