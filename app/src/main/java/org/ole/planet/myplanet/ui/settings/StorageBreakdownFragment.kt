@@ -196,41 +196,48 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
             " " + FileUtils.availableOverTotalMemoryFormattedString(requireContext())
 
         loadJob = viewLifecycleOwner.lifecycleScope.launch {
-            val totalBytes = withContext(dispatcherProvider.io) { scanStorage() }
+            val result = withContext(dispatcherProvider.io) { scanStorage() }
+
+            categories.forEachIndexed { index, category ->
+                category.sizeBytes = result.sizes[index]
+                category.fileCount = result.counts[index]
+            }
 
             binding.progressBar.visibility = View.GONE
 
-            if (totalBytes == 0L) {
+            if (result.totalBytes == 0L) {
                 binding.emptyText.visibility = View.VISIBLE
                 return@launch
             }
 
             binding.totalSizeText.text = getString(R.string.storage_total_downloaded) + ": " +
-                FileUtils.formatSize(requireContext(), totalBytes)
+                FileUtils.formatSize(requireContext(), result.totalBytes)
             binding.contentLayout.visibility = View.VISIBLE
             populateCategoryRows()
         }
     }
 
-    private fun scanStorage(): Long {
-        categories.forEach { it.sizeBytes = 0; it.fileCount = 0 }
+    private data class ScanResult(val totalBytes: Long, val sizes: LongArray, val counts: IntArray)
+
+    private fun scanStorage(): ScanResult {
+        val sizes = LongArray(categories.size)
+        val counts = IntArray(categories.size)
 
         val oleDir = File(FileUtils.getOlePath(requireContext()))
-        if (!oleDir.exists() || !oleDir.isDirectory) return 0L
+        if (!oleDir.exists() || !oleDir.isDirectory) return ScanResult(0L, sizes, counts)
 
-        val allKnownExtensions = categories.dropLast(1).flatMap { it.extensions }.toSet()
         var total = 0L
 
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension.lowercase()
             val size = file.length()
             total += size
-            val cat = categories.find { it.extensions.isNotEmpty() && ext in it.extensions }
-                ?: categories.last()
-            cat.sizeBytes += size
-            cat.fileCount++
+            val index = categories.indexOfFirst { it.extensions.isNotEmpty() && ext in it.extensions }
+                .let { if (it == -1) categories.lastIndex else it }
+            sizes[index] += size
+            counts[index]++
         }
-        return total
+        return ScanResult(total, sizes, counts)
     }
 
     private fun populateCategoryRows() {
