@@ -143,7 +143,7 @@ class LoginSyncManager @Inject constructor(
                 }
 
                 try {
-                    val response = apiInterface.findDocs(header, "application/json", url, `object`)
+                    val response = apiInterface.postDoc(header, "application/json", url, `object`)
                     if (response.isSuccessful && response.body() != null) {
                         val responseBody = response.body()
                         sharedPrefManager.setCommunityLeaders("$responseBody")

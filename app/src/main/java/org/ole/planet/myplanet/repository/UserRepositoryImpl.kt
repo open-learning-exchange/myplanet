@@ -1330,7 +1330,7 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
+            apiInterface.postDoc(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
         }?.body()
 
         response?.let { responseBody ->
