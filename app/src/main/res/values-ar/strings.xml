@@ -947,6 +947,9 @@
     <string name="virtual_assistant_currently_not_available">المساعد الافتراضي غير متاح حالياً</string>
     <string name="no_courses">لا تتوفر دورات</string>
     <string name="no_resources">لا تتوفر موارد</string>
+    <string name="no_resources_added_yet">لم تقم بإضافة أي موارد بعد</string>
+    <string name="no_courses_joined_yet">لم تنضم إلى أي دورات بعد</string>
+    <string name="no_teams_joined_yet">لم تنضم إلى أي فريق بعد</string>
     <string name="no_finance_record">لا يتوفر سجل مالي</string>
     <string name="no_team_courses">لا تتوفر دورات الفريق</string>
     <string name="no_team_resources">لا تتوفر موارد الفريق</string>

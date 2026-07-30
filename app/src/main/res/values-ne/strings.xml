@@ -943,6 +943,9 @@
     <string name="virtual_assistant_currently_not_available">भर्चुअल सहायक हाललाई उपलब्ध छैन</string>
     <string name="no_courses">कुनै पाठ्यक्रम उपलब्ध छैन</string>
     <string name="no_resources">कुनै स्रोतहरू उपलब्ध छैनन्</string>
+    <string name="no_resources_added_yet">तपाईंले अझै कुनै स्रोतहरू थप्नुभएको छैन</string>
+    <string name="no_courses_joined_yet">तपाईं अझै कुनै पाठ्यक्रमहरूमा सामेल हुनुभएको छैन</string>
+    <string name="no_teams_joined_yet">तपाईं अझै कुनै टोलीमा सामेल हुनुभएको छैन</string>
     <string name="no_finance_record">वित्तीय रेकर्ड उपलब्ध छैन</string>
     <string name="no_team_courses">कुनै टिम पाठ्यक्रमहरू उपलब्ध छैनन्</string>
     <string name="no_team_resources">कुनै टिम स्रोतहरू उपलब्ध छैनन्</string>
