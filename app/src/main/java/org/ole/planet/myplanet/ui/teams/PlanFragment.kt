@@ -64,7 +64,7 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = profileDbHandler.getUserModel()
+            val currentUser = userRepository.getUserModel()
             val isMyTeam = teamsRepository.isTeamLeader(currentTeam._id ?: "", currentUser?.id)
             binding.btnAddPlan.isVisible = isMyTeam
             binding.btnAddPlan.isEnabled = isMyTeam
@@ -145,7 +145,7 @@ class PlanFragment : BaseTeamFragment() {
         }
 
         viewLifecycleOwner.lifecycleScope.launch {
-            val currentUser = profileDbHandler.getUserModel()
+            val currentUser = userRepository.getUserModel()
             val userId = currentUser?.id ?: return@launch
             val createdBy = userId
             val teamIdentifier = team._id?.takeIf { it.isNotBlank() }

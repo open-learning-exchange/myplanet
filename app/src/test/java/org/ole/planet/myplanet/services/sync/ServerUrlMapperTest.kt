@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.BuildConfig
+import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -24,10 +25,11 @@ import org.robolectric.annotation.Config
 class ServerUrlMapperTest {
 
     private lateinit var serverUrlMapper: ServerUrlMapper
+    private val dispatcherProvider: DispatcherProvider = mockk(relaxed = true)
 
     @Before
     fun setUp() {
-        serverUrlMapper = ServerUrlMapper()
+        serverUrlMapper = ServerUrlMapper(dispatcherProvider)
     }
 
     @After
