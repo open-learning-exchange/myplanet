@@ -288,6 +288,35 @@ class SettingsActivity : AppCompatActivity() {
             viewModel.fetchRetryQueueDetails()
         }
 
+        private fun handleFreeSpaceWorkState(workInfo: WorkInfo, dialog: DialogUtils.CustomProgressDialog) {
+            when (workInfo.state) {
+                WorkInfo.State.RUNNING -> {
+                    val progress = workInfo.progress
+                    val deletedFiles = progress.getInt("deletedFiles", 0)
+                    val freedBytes = progress.getLong("freedBytes", 0)
+                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
+                }
+                WorkInfo.State.SUCCEEDED -> {
+                    dialog.dismiss()
+                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                    val output = workInfo.outputData
+                    val deletedFiles = output.getInt("deletedFiles", 0)
+                    val freedBytes = output.getLong("freedBytes", 0)
+                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
+                }
+                WorkInfo.State.FAILED -> {
+                    dialog.dismiss()
+                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                }
+                WorkInfo.State.CANCELLED -> {
+                    dialog.dismiss()
+                }
+                else -> {
+                    // ENQUEUED or BLOCKED
+                }
+            }
+        }
+
         private fun clearDataButtonInit() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
@@ -326,32 +355,7 @@ class SettingsActivity : AppCompatActivity() {
                                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                                     workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
                                         if (workInfo != null) {
-                                            when (workInfo.state) {
-                                                WorkInfo.State.RUNNING -> {
-                                                    val progress = workInfo.progress
-                                                    val deletedFiles = progress.getInt("deletedFiles", 0)
-                                                    val freedBytes = progress.getLong("freedBytes", 0)
-                                                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
-                                                }
-                                                WorkInfo.State.SUCCEEDED -> {
-                                                    dialog.dismiss()
-                                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                                    val output = workInfo.outputData
-                                                    val deletedFiles = output.getInt("deletedFiles", 0)
-                                                    val freedBytes = output.getLong("freedBytes", 0)
-                                                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
-                                                }
-                                                WorkInfo.State.FAILED -> {
-                                                    dialog.dismiss()
-                                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                                                }
-                                                WorkInfo.State.CANCELLED -> {
-                                                    dialog.dismiss()
-                                                }
-                                                else -> {
-                                                    // ENQUEUED or BLOCKED
-                                                }
-                                            }
+                                            handleFreeSpaceWorkState(workInfo, dialog)
                                             if (workInfo.state.isFinished) {
                                                 kotlinx.coroutines.currentCoroutineContext().cancel()
                                             }
