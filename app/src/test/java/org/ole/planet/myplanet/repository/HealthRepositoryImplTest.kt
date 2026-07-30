@@ -146,8 +146,7 @@ class HealthRepositoryImplTest {
         repository.markHealthExaminationsUploaded(idToRevMap)
         advanceUntilIdle()
 
-        coVerify { healthExaminationDao.markUploaded("exam1", "rev1") }
-        coVerify { healthExaminationDao.markUploaded("exam2", "rev2") }
+        coVerify { healthExaminationDao.markUploaded(idToRevMap) }
     }
 
     @Test

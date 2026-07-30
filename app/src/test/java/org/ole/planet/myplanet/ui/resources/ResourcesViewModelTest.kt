@@ -107,8 +107,9 @@ class ResourcesViewModelTest {
             name = "Tag 1"
         }
 
-        coEvery { resourcesRepository.getEnrichedLibraries(any(), any()) } returns listOf(
-            LibraryWithMetadata(mockLibrary, mockRating, listOf(mockTag))
+        val mockResourceItem = mockk<org.ole.planet.myplanet.model.ResourceItem>(relaxed = true)
+        coEvery { resourcesRepository.getResourceListModels(any(), any()) } returns listOf(
+            org.ole.planet.myplanet.model.ResourceListModel(mockLibrary, mockResourceItem, mockRating, listOf(org.ole.planet.myplanet.model.TagItem(mockTag.id, mockTag.name)))
         )
 
         val result = viewModel.getLibraryListModels(true, "modelId")

@@ -106,7 +106,7 @@ class EditAchievementFragment : BaseContainerFragment(), DatePickerDialog.OnDate
         super.onViewCreated(view, savedInstanceState)
         setListeners()
         viewLifecycleOwner.lifecycleScope.launch {
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             achievementArray = JsonArray()
             initializeData()
         }

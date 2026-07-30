@@ -66,7 +66,6 @@ class SubmissionsRepositoryImplTest {
 
         repository = spyk(SubmissionsRepositoryImpl(
             teamsRepositoryProvider,
-            surveysRepositoryProvider,
             context,
             sharedPrefManager,
             exporter,
@@ -90,6 +89,14 @@ class SubmissionsRepositoryImplTest {
 
         val result = repository.getPendingSurveysFlow("user_123").first()
         assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `getPendingSurveysFlow handles null userId`() = runTest {
+        every { submissionDao.observePendingSurveys(null) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+
+        val result = repository.getPendingSurveysFlow(null).first()
+        assertTrue(result.isEmpty())
     }
 
     @Test
