@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import androidx.annotation.VisibleForTesting
 import com.google.gson.JsonArray
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import java.util.Date
 import javax.inject.Inject
@@ -15,6 +16,7 @@ import org.ole.planet.myplanet.model.ChatRequest
 import org.ole.planet.myplanet.model.ContentData
 import org.ole.planet.myplanet.model.ContinueChatRequest
 import org.ole.planet.myplanet.model.Conversation
+import org.ole.planet.myplanet.model.News
 import org.ole.planet.myplanet.model.Data
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.sync.ServerUrlMapper
@@ -185,5 +187,34 @@ class ChatRepositoryImpl @Inject constructor(
             chatHistory._rev = newRev
         }
         chatDao.update(chatHistory)
+    }
+
+    override fun extractSharedViewInIds(sharedNews: List<News>): Map<String, Set<String>> {
+        if (sharedNews.isEmpty()) return emptyMap()
+        return sharedNews
+            .groupBy { it.newsId }
+            .mapNotNull { (newsId, newsEntries) ->
+                if (newsId == null) null
+                else {
+                    val ids = newsEntries.flatMap { news ->
+                        try {
+                            val array = JsonUtils.gson.fromJson(news.viewIn, JsonArray::class.java)
+                            val list = mutableListOf<String>()
+                            for (i in 0 until array.size()) {
+                                val elem = array.get(i) as JsonElement
+                                if (elem.isJsonObject) {
+                                    val id = elem.asJsonObject.get("_id")?.asString
+                                    if (id != null) list.add(id)
+                                }
+                            }
+                            list
+                        } catch (_: Exception) {
+                            emptyList<String>()
+                        }
+                    }.toSet()
+                    newsId to ids
+                }
+            }
+            .toMap()
     }
 }

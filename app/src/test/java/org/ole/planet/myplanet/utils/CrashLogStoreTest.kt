@@ -29,7 +29,7 @@ class CrashLogStoreTest {
 
     @Test
     fun `save writes a file and loadPendingLogs returns it`() {
-        val file = CrashLogStore.save(context, "anr", "stack trace body")
+        val file = CrashLogStore.save(context, "anr", "stack trace body", SystemTimeProvider())
 
         assertNotNull(file)
         assertTrue(file!!.exists())
@@ -43,7 +43,7 @@ class CrashLogStoreTest {
 
     @Test
     fun `type containing underscores survives the filename round trip`() {
-        CrashLogStore.save(context, "my_custom_type", "err")
+        CrashLogStore.save(context, "my_custom_type", "err", SystemTimeProvider())
 
         val pending = CrashLogStore.loadPendingLogs(context)
         assertEquals(1, pending.size)
@@ -67,7 +67,7 @@ class CrashLogStoreTest {
             File(pendingDir, "${1000L + i}_crash.log").writeText("e$i")
         }
 
-        assertNull(CrashLogStore.save(context, "crash", "one too many"))
+        assertNull(CrashLogStore.save(context, "crash", "one too many", SystemTimeProvider()))
         assertEquals(20, CrashLogStore.loadPendingLogs(context).size)
     }
 

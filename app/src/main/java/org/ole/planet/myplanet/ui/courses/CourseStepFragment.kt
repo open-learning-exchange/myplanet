@@ -354,5 +354,6 @@ class CourseStepFragment : BaseContainerFragment(), ImageCaptureCallback {
         super.onDestroyView()
         loadDataJob?.cancel()
         CameraUtils.release()
+        fragmentCourseStepBinding.rvInlineResources.adapter = null
     }
 }

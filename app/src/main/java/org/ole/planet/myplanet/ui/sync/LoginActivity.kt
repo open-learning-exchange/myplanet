@@ -23,7 +23,6 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.afollestad.materialdialogs.MaterialDialog
-import com.bumptech.glide.Glide
 import com.google.android.material.snackbar.Snackbar
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.ArrayList
@@ -55,6 +54,7 @@ import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.EdgeToEdgeUtils
 import org.ole.planet.myplanet.utils.FileUtils
+import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.LocaleUtils
 import org.ole.planet.myplanet.utils.NetworkUtils
 import org.ole.planet.myplanet.utils.SecurePrefs
@@ -565,11 +565,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
     }
     override fun onItemClick(user: User) {
         if (user.password?.isEmpty() == true && user.source != "guest") {
-            Glide.with(this)
-                .load(user.image)
-                .placeholder(R.drawable.profile)
-                .error(R.drawable.profile)
-                .into(binding.userProfile)
+            ImageUtils.loadPlaceholderImage(user.image, binding.userProfile)
 
             binding.inputName.setText(user.name)
         } else {

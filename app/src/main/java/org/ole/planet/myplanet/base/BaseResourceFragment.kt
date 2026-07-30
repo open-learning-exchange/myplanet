@@ -43,9 +43,13 @@ import org.ole.planet.myplanet.utils.DialogUtils
 import org.ole.planet.myplanet.utils.DialogUtils.getProgressDialog
 import org.ole.planet.myplanet.utils.DialogUtils.showError
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.TimeProvider
 
 @AndroidEntryPoint
 abstract class BaseResourceFragment : Fragment() {
+    @Inject
+    lateinit var timeProvider: TimeProvider
+
     var homeItemClickListener: OnHomeItemClickListener? = null
     var model: UserEntity? = null
     var lv: RecyclerView? = null

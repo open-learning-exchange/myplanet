@@ -42,7 +42,7 @@ import org.ole.planet.myplanet.callback.OnTeamPageListener
 import org.ole.planet.myplanet.data.room.AppDatabase
 import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.di.DefaultPreferences
-import org.ole.planet.myplanet.di.NetworkDependenciesEntryPoint
+import org.ole.planet.myplanet.di.ServiceDependenciesEntryPoint
 import org.ole.planet.myplanet.model.ApkLog
 import org.ole.planet.myplanet.repository.ResourcesRepository
 import org.ole.planet.myplanet.services.AutoSyncWorker
@@ -252,7 +252,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
         fun handleUncaughtException(e: Throwable) {
             e.printStackTrace()
             val error = e.stackTraceToString()
-            val pendingFile = CrashLogStore.save(context, ApkLog.ERROR_TYPE_CRASH, error)
+            val pendingFile = CrashLogStore.save(context, ApkLog.ERROR_TYPE_CRASH, error, coreDependenciesEntryPoint.timeProvider())
             applicationScope.launch {
                 if (saveLogToRoom(ApkLog.ERROR_TYPE_CRASH, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                     pendingFile?.delete()
@@ -357,7 +357,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
                 listener = object : ANRWatchdog.ANRListener {
                     override fun onAppNotResponding(message: String, blockedThread: Thread, duration: Long) {
                         val error = "ANR detected! Duration: ${duration}ms\n $message"
-                        val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error)
+                        val pendingFile = CrashLogStore.save(context, ANR_LOG_TYPE, error, coreDependenciesEntryPoint.timeProvider())
                         applicationScope.launch {
                             if (saveLogToRoom(ANR_LOG_TYPE, error, "${coreDependenciesEntryPoint.timeProvider().now()}")) {
                                 pendingFile?.delete()
@@ -390,7 +390,7 @@ class MainApplication : Application(), WorkManagerConfiguration.Provider {
             try {
                 val entryPoint = EntryPointAccessors.fromApplication(
                     this@MainApplication,
-                    NetworkDependenciesEntryPoint::class.java
+                    ServiceDependenciesEntryPoint::class.java
                 )
                 entryPoint.retryQueue().recoverStuckOperations()
             } catch (e: Exception) {
