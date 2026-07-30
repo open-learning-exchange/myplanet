@@ -637,7 +637,7 @@ class SyncManager @Inject constructor(
                 val apiStartTime = SystemClock.elapsedRealtime()
                 var response: JsonObject? = null
                 ApiClient.executeWithRetryAndWrap {
-                    apiInterface.findDocs(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
+                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
                 }?.let {
                     response = it.body()
                 }

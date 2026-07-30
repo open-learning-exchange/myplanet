@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.repository
 
 import com.google.gson.JsonObject
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.OfflineActivity
 import org.ole.planet.myplanet.model.UserEntity
 
@@ -26,4 +27,6 @@ interface ActivitiesRepository {
     suspend fun insertLoginActivitiesFromSync(docs: List<JsonObject>)
     suspend fun uploadActivities()
     suspend fun uploadMyPlanetActivities(userModel: UserEntity)
+    suspend fun getPendingCourseActivityUploads(): List<CourseActivity>
+    suspend fun markCourseActivityUploaded(localId: String, remoteId: String, rev: String): Boolean
 }

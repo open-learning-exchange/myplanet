@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -65,7 +66,6 @@ class SubmissionsRepositoryImplTest {
 
         repository = spyk(SubmissionsRepositoryImpl(
             teamsRepositoryProvider,
-            surveysRepositoryProvider,
             context,
             sharedPrefManager,
             exporter,
@@ -89,6 +89,14 @@ class SubmissionsRepositoryImplTest {
 
         val result = repository.getPendingSurveysFlow("user_123").first()
         assertEquals(1, result.size)
+    }
+
+    @Test
+    fun `getPendingSurveysFlow handles null userId`() = runTest {
+        every { submissionDao.observePendingSurveys(null) } returns kotlinx.coroutines.flow.flowOf(emptyList())
+
+        val result = repository.getPendingSurveysFlow(null).first()
+        assertTrue(result.isEmpty())
     }
 
     @Test
@@ -398,5 +406,59 @@ class SubmissionsRepositoryImplTest {
         repository.markSubmissionComplete("test_id", payload)
 
         coVerify { submissionDao.markComplete("test_id", payload.toString()) }
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns name when valid json is provided`() {
+        val submission = Submission().apply {
+            user = "{\"name\": \"John Doe\", \"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertEquals("John Doe", result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when name is blank`() {
+        val submission = Submission().apply {
+            user = "{\"name\": \"   \", \"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when name key is missing`() {
+        val submission = Submission().apply {
+            user = "{\"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is malformed json`() {
+        val submission = Submission().apply {
+            user = "invalid json"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is null`() {
+        val submission = Submission().apply {
+            user = null
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is blank`() {
+        val submission = Submission().apply {
+            user = "   "
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
     }
 }
