@@ -57,14 +57,9 @@ class ResourcesAdapter(
         const val PAYLOAD_RATING = "PAYLOAD_RATING"
         const val PAYLOAD_TAGS = "PAYLOAD_TAGS"
 
-        private val ITEM_CALLBACK = DiffUtils.itemCallback<ResourceListModel>(
-            areItemsTheSame = { oldItem, newItem ->
-                oldItem.item.id == newItem.item.id
-            },
-            areContentsTheSame = { oldItem, newItem ->
-                oldItem == newItem
-            },
-            getChangePayload = { oldItem, newItem ->
+        private val ITEM_CALLBACK = DiffUtils.standardItemCallback<ResourceListModel>(
+            idSelector = { it.item.id ?: "" },
+            payloadSelector = { oldItem, newItem ->
                 val payloads = mutableListOf<String>()
                 if (oldItem.isOpened != newItem.isOpened || oldItem.item.isOffline != newItem.item.isOffline || oldItem.isLocallyOffline != newItem.isLocallyOffline) {
                     payloads.add(PAYLOAD_SELECTION)
