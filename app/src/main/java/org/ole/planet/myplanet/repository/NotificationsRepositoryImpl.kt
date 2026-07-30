@@ -7,7 +7,6 @@ import java.util.Calendar
 import java.util.Date
 import javax.inject.Inject
 import org.ole.planet.myplanet.data.room.dao.ExamDao
-import org.ole.planet.myplanet.data.room.dao.NewsDao
 import org.ole.planet.myplanet.data.room.dao.NotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamNotificationDao
 import org.ole.planet.myplanet.data.room.dao.TeamTaskDao
@@ -28,7 +27,7 @@ class NotificationsRepositoryImpl @Inject constructor(
     private val teamNotificationDao: TeamNotificationDao,
     private val notificationDao: NotificationDao,
     private val teamTaskDao: TeamTaskDao,
-    private val newsDao: NewsDao,
+    private val voicesRepository: VoicesRepository,
     private val examDao: ExamDao
 ) : NotificationsRepository {
     override suspend fun refresh() = Unit
@@ -148,12 +147,6 @@ class NotificationsRepositoryImpl @Inject constructor(
                 rev = it.rev,
                 needsSync = it.needsSync
             )
-        }
-    }
-
-    override suspend fun getSurveyId(relatedId: String?): String? {
-        return relatedId?.let {
-            examDao.getAll().firstOrNull { exam -> exam.name == it }?.id
         }
     }
 
@@ -290,7 +283,7 @@ class NotificationsRepositoryImpl @Inject constructor(
 
         val notification = teamNotificationDao.findByParentAndType(teamId, "chat")
 
-        val chatCount = newsDao.countTeamChats(teamId)
+        val chatCount = voicesRepository.countTeamChats(teamId)
 
         val hasChat = notification != null && notification.lastCount < chatCount
 
@@ -317,7 +310,7 @@ class NotificationsRepositoryImpl @Inject constructor(
         }
 
         // 2. Fetch all relevant chat counts in a single query
-        val chatViewableIds = newsDao.getTeamChatViewableIds(teamIds)
+        val chatViewableIds = voicesRepository.getTeamChatViewableIds(teamIds)
         val chatCountsById = mutableMapOf<String, Long>()
         chatViewableIds.forEach { viewableId ->
             val currentCount = chatCountsById[viewableId] ?: 0

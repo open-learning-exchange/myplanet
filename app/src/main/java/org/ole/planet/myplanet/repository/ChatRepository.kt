@@ -17,4 +17,5 @@ interface ChatRepository {
     suspend fun getLatestRev(id: String): String?
     suspend fun insertChatHistoryList(chats: List<JsonObject>)
     suspend fun insertChatHistoryFromSync(docs: List<JsonObject>)
+    fun extractSharedViewInIds(sharedNews: List<org.ole.planet.myplanet.model.News>): Map<String, Set<String>>
 }
