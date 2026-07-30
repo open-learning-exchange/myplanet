@@ -30,6 +30,9 @@ import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
+
+import org.ole.planet.myplanet.repository.RatingSummaryModel
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class CourseDetailViewModelTest {
 
@@ -68,6 +71,7 @@ class CourseDetailViewModelTest {
             // UninitializedPropertyAccessException if context was never set
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
+        io.mockk.every { MainApplication.context.getExternalFilesDir(null) } returns null
 
         courseDetailProvider = CourseDetailProvider(
             coursesRepository,
@@ -78,9 +82,7 @@ class CourseDetailViewModelTest {
         )
 
         ratingSummaryProvider = RatingSummaryProvider(
-            ratingsRepository,
-            userSessionManager,
-            dispatcherProvider
+            ratingsRepository
         )
 
         viewModel = CourseDetailViewModel(
@@ -107,6 +109,7 @@ class CourseDetailViewModelTest {
         )
     ) {
         every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(course)
+        every { org.ole.planet.myplanet.MainApplication.testContext?.getExternalFilesDir(null) } returns null
         coEvery { userSessionManager.getUserModel() } returns user
         coEvery { coursesRepository.getCourseExamCount(courseId) } returns examCount
         coEvery { coursesRepository.getCourseOnlineResources(courseId) } returns emptyList()
@@ -190,11 +193,14 @@ class CourseDetailViewModelTest {
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
 
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns RatingSummary(
-            existingRating = null,
-            averageRating = 5.0f,
-            totalRatings = 10,
-            userRating = 5
+        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(
+            user = UserEntity().apply { id = "user_1" },
+            ratingSummary = RatingSummary(
+                existingRating = null,
+                averageRating = 5.0f,
+                totalRatings = 10,
+                userRating = 5
+            )
         )
 
         viewModel.refreshRatings(courseId)

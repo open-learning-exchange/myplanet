@@ -11,10 +11,14 @@ import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
 
+import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.utils.DispatcherProvider
+
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val ratingDao: RatingDao,
     private val userRepository: UserRepository,
+    private val dispatcherProvider: DispatcherProvider
 ) : RatingsRepository {
 
     override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
@@ -31,6 +35,20 @@ class RatingsRepositoryImpl @Inject constructor(
         val ratings = ratingDao.getByTypeAndItem(type, resourceId)
         val aggregated = aggregateRatings(ratings, userId)[resourceId]
         return aggregated?.toJson()
+    }
+
+
+    override suspend fun getCourseRatingSummary(courseId: String): RatingSummaryModel {
+        return withContext(dispatcherProvider.io) {
+            val user = userRepository.getUserModel()
+            val userId = user?.id
+            val summary = if (userId != null) {
+                getRatingSummary("course", courseId, userId)
+            } else {
+                null
+            }
+            RatingSummaryModel(user, summary)
+        }
     }
 
     override suspend fun getCourseRatings(userId: String?): HashMap<String?, JsonObject> {
