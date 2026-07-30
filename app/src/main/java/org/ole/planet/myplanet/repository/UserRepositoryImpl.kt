@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.repository
 import android.content.Context
 import android.content.SharedPreferences
 import android.text.TextUtils
-import android.util.Base64
 import android.util.Log
 import androidx.core.content.edit
 import com.google.gson.JsonArray
@@ -22,11 +21,15 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.supervisorScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
-import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -74,7 +77,7 @@ class UserRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
-    private val healthExaminationDao: HealthExaminationDao,
+    private val healthRepository: HealthRepository,
     private val userDao: UserDao
 ) : UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
@@ -111,8 +114,7 @@ class UserRepositoryImpl @Inject constructor(
     }
 
     override suspend fun findUserByName(name: String): UserEntity? {
-        return userDao.getAll()
-            .firstOrNull { it.name.equals(name, ignoreCase = true) }
+        return userDao.getByNameIgnoreCase(name)
     }
 
     override suspend fun getSyncedUsers(): List<UserEntity> {
@@ -227,7 +229,7 @@ class UserRepositoryImpl @Inject constructor(
 
         user.apply {
             if (id.isNullOrBlank()) {
-                id = newId.ifEmpty { UUID.randomUUID().toString() }
+                id = if (newId.isEmpty()) { UUID.randomUUID().toString() } else { newId }
             }
             _rev = JsonUtils.getString("_rev", jsonDoc)
             _id = newId
@@ -681,7 +683,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun changeUserSecurity(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
         try {
             val response = apiInterface.getJsonObject(header, "${UrlUtils.getUrl()}/${table}/_security")
             if (response.body() != null) {
@@ -704,7 +706,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun saveKeyIv(model: UserEntity, obj: JsonObject) {
         val table = "userdb-${Utilities.toHex(model.planetCode)}-${Utilities.toHex(model.name)}"
-        val header = "Basic ${Base64.encodeToString(("${obj["name"].asString}:${obj["password"].asString}").toByteArray(), Base64.NO_WRAP)}"
+        val header = UrlUtils.basicAuthHeader(obj["name"].asString, obj["password"].asString)
         val ob = JsonObject()
         var keyString = AndroidDecrypter.generateKey()
         var iv: String? = AndroidDecrypter.generateIv()
@@ -760,6 +762,21 @@ class UserRepositoryImpl @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
+    override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val header = UrlUtils.basicAuthHeader(model.name.toString(), pwd)
+            val userExists = checkIfUserExists(header, model)
+            if (!userExists) {
+                uploadNewUser(model, updateHealthFn)
+            } else if (model.isUpdated) {
+                updateExistingUser(header, model)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean {
         try {
             val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
@@ -774,7 +791,7 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun processUserAfterCreation(model: UserEntity, obj: JsonObject, updateHealthFn: suspend (String, String) -> Unit) {
         try {
             val password = model.password ?: SecurePrefs.getPassword(context, settings) ?: ""
-            val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
+            val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
             val fetchDataResponse = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/${model._id}")
 
             if (fetchDataResponse.isSuccessful) {
@@ -862,7 +879,7 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: UserEntity
     ): HealthRecord? {
-        val mh = healthExaminationDao.getByIdOrUserId(userId) ?: return null
+        val mh = healthRepository.getByIdOrUserId(userId) ?: return null
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
         val mm = if (TextUtils.isEmpty(json)) {
             null
@@ -875,7 +892,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         } ?: return null
 
-        val list = healthExaminationDao.getByProfileId(mm.userKey ?: "")
+        val list = healthRepository.getByProfileId(mm.userKey ?: "")
         if (list.isEmpty()) {
             return HealthRecord(mh, mm, emptyList(), emptyMap())
         }
@@ -900,7 +917,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId)
+        val healthPojo = healthRepository.getByIdOrUserId(userId)
 
         if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
             try {
@@ -915,7 +932,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+        val healthPojo = healthRepository.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
 
         userModel?.apply {
             firstName = (userData["firstName"] as? String)?.trim()
@@ -972,7 +989,7 @@ class UserRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        healthExaminationDao.upsert(healthPojo)
+        healthRepository.upsert(healthPojo)
     }
 
     override suspend fun validateUsername(username: String): String? {
@@ -1265,6 +1282,29 @@ class UserRepositoryImpl @Inject constructor(
     }
 
 
+    override suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit> {
+        return try {
+            val semaphore = Semaphore(5)
+            supervisorScope {
+                users.map { model ->
+                    async {
+                        semaphore.withPermit {
+                            try {
+                                uploadShelfData(model)
+                            } catch (e: Throwable) {
+                                e.printStackTrace()
+                            }
+                        }
+                    }
+                }.awaitAll()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Result.failure(e)
+        }
+    }
+
     override suspend fun uploadShelfData(user: UserEntity) {
         try {
             val jsonDoc = apiInterface.getJsonObject(UrlUtils.header, "${UrlUtils.getUrl()}/shelf/${user._id}").body()
@@ -1290,7 +1330,7 @@ class UserRepositoryImpl @Inject constructor(
         }
 
         val response = org.ole.planet.myplanet.data.api.ApiClient.executeWithRetryAndWrap {
-            apiInterface.findDocs(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
+            apiInterface.postDoc(org.ole.planet.myplanet.utils.UrlUtils.header, "application/json", "${org.ole.planet.myplanet.utils.UrlUtils.getUrl()}/shelf/_all_docs?include_docs=true", keysObject)
         }?.body()
 
         response?.let { responseBody ->
