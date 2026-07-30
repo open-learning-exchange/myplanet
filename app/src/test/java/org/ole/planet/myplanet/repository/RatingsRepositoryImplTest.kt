@@ -17,12 +17,17 @@ import org.junit.Test
 import org.ole.planet.myplanet.data.room.dao.RatingDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.utils.DispatcherProvider
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.test.StandardTestDispatcher
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RatingsRepositoryImplTest {
 
     private lateinit var ratingDao: RatingDao
     private lateinit var userRepository: UserRepository
+    private lateinit var dispatcherProvider: DispatcherProvider
     private lateinit var gson: Gson
     private lateinit var repository: RatingsRepositoryImpl
 
@@ -31,9 +36,16 @@ class RatingsRepositoryImplTest {
         Logger.getLogger("io.mockk").level = Level.OFF
         ratingDao = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
+        val testDispatcher = StandardTestDispatcher()
+        dispatcherProvider = object : DispatcherProvider {
+            override val main: CoroutineDispatcher = testDispatcher
+            override val io: CoroutineDispatcher = testDispatcher
+            override val default: CoroutineDispatcher = testDispatcher
+            override val unconfined: CoroutineDispatcher = testDispatcher
+        }
         gson = Gson()
 
-        repository = RatingsRepositoryImpl(gson, ratingDao, userRepository)
+        repository = RatingsRepositoryImpl(gson, ratingDao, userRepository, dispatcherProvider)
     }
 
     private fun mockUserLookup(user: UserEntity?) {

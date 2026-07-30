@@ -27,10 +27,11 @@ import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
+
+
+import org.ole.planet.myplanet.repository.RatingSummaryModel
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CourseDetailViewModelTest {
@@ -41,9 +42,7 @@ class CourseDetailViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val coursesRepository: CoursesRepository = mockk()
-    private val submissionsRepository: SubmissionsRepository = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
         override val mainImmediate: CoroutineDispatcher = testDispatcher
@@ -70,13 +69,12 @@ class CourseDetailViewModelTest {
             // UninitializedPropertyAccessException if context was never set
         }
         MainApplication.testContext = mockk<Context>(relaxed = true)
+        io.mockk.every { MainApplication.context.getExternalFilesDir(null) } returns null
 
         courseDetailProvider = CourseDetailProvider(coursesRepository)
 
         ratingSummaryProvider = RatingSummaryProvider(
-            ratingsRepository,
-            userSessionManager,
-            dispatcherProvider
+            ratingsRepository
         )
 
         viewModel = CourseDetailViewModel(
@@ -198,12 +196,14 @@ class CourseDetailViewModelTest {
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
 
-        coEvery { userSessionManager.getUserModel() } returns UserEntity().apply { id = "user_1" }
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns RatingSummary(
-            existingRating = null,
-            averageRating = 5.0f,
-            totalRatings = 10,
-            userRating = 5
+        coEvery { ratingsRepository.getCourseRatingSummary(courseId) } returns RatingSummaryModel(
+            user = UserEntity().apply { id = "user_1" },
+            ratingSummary = RatingSummary(
+                existingRating = null,
+                averageRating = 5.0f,
+                totalRatings = 10,
+                userRating = 5
+            )
         )
 
         viewModel.refreshRatings(courseId)
