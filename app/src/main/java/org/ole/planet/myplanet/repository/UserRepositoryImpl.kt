@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.data.api.ApiInterface
 import org.ole.planet.myplanet.data.room.dao.AchievementDao
-import org.ole.planet.myplanet.data.room.dao.HealthExaminationDao
 import org.ole.planet.myplanet.data.room.dao.MeetupDao
 import org.ole.planet.myplanet.data.room.dao.OfflineActivityDao
 import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
@@ -79,7 +78,7 @@ class UserRepositoryImpl @Inject constructor(
     private val offlineActivityDao: OfflineActivityDao,
     private val removedLogDao: RemovedLogDao,
     private val achievementDao: AchievementDao,
-    private val healthExaminationDao: HealthExaminationDao,
+    private val healthRepository: HealthRepository,
     private val userDao: UserDao
 ) : UserRepository, UserSyncRepository {
     override suspend fun getDashboardProfile(userId: String): DashboardProfile {
@@ -866,7 +865,7 @@ class UserRepositoryImpl @Inject constructor(
         userId: String,
         currentUser: UserEntity
     ): HealthRecord? {
-        val mh = healthExaminationDao.getByIdOrUserId(userId) ?: return null
+        val mh = healthRepository.getByIdOrUserId(userId) ?: return null
         val json = AndroidDecrypter.decrypt(mh.data, currentUser.key, currentUser.iv)
         val mm = if (TextUtils.isEmpty(json)) {
             null
@@ -879,7 +878,7 @@ class UserRepositoryImpl @Inject constructor(
             }
         } ?: return null
 
-        val list = healthExaminationDao.getByProfileId(mm.userKey ?: "")
+        val list = healthRepository.getByProfileId(mm.userKey ?: "")
         if (list.isEmpty()) {
             return HealthRecord(mh, mm, emptyList(), emptyMap())
         }
@@ -904,7 +903,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun getHealthProfile(userId: String): MyHealth? {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId)
+        val healthPojo = healthRepository.getByIdOrUserId(userId)
 
         if (healthPojo != null && !TextUtils.isEmpty(healthPojo.data)) {
             try {
@@ -919,7 +918,7 @@ class UserRepositoryImpl @Inject constructor(
 
     override suspend fun updateUserHealthProfile(userId: String, userData: Map<String, Any?>) {
         val userModel = getUserByAnyId(userId)
-        val healthPojo = healthExaminationDao.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
+        val healthPojo = healthRepository.getByIdOrUserId(userId) ?: HealthExamination().apply { _id = userId }
 
         userModel?.apply {
             firstName = (userData["firstName"] as? String)?.trim()
@@ -976,7 +975,7 @@ class UserRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             e.printStackTrace()
         }
-        healthExaminationDao.upsert(healthPojo)
+        healthRepository.upsert(healthPojo)
     }
 
     override suspend fun validateUsername(username: String): String? {
