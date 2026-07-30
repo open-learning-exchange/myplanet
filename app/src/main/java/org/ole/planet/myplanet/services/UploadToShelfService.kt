@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.UserSyncRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.SecurePrefs
-import org.ole.planet.myplanet.utils.UrlUtils
 
 @Singleton
 class UploadToShelfService @Inject constructor(
@@ -41,18 +40,7 @@ class UploadToShelfService @Inject constructor(
 
                 val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                 userModels.forEach { model ->
-                    try {
-                        val header = UrlUtils.basicAuthHeader(model.name.toString(), password)
-                        val userExists = userSyncRepository.checkIfUserExists(header, model)
-
-                        if (!userExists) {
-                            userSyncRepository.uploadNewUser(model) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
-                        } else if (model.isUpdated) {
-                            userSyncRepository.updateExistingUser(header, model)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
 
                 uploadToShelf(object : OnSuccessListener {
@@ -74,20 +62,8 @@ class UploadToShelfService @Inject constructor(
                 val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
                 if (userModel != null) {
-                    try {
-                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                        val header = UrlUtils.basicAuthHeader(userModel.name.toString(), password)
-
-                        val userExists = userSyncRepository.checkIfUserExists(header, userModel)
-
-                        if (!userExists) {
-                            userSyncRepository.uploadNewUser(userModel) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
-                        } else if (userModel.isUpdated) {
-                            userSyncRepository.updateExistingUser(header, userModel)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                    userSyncRepository.checkAndUploadUser(userModel, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
                 uploadSingleUserToShelf(userName, listener)
             } catch (e: Exception) {

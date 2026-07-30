@@ -762,6 +762,21 @@ class UserRepositoryImpl @Inject constructor(
         return "$protocol://$replacedUrl"
     }
 
+    override suspend fun checkAndUploadUser(model: UserEntity, password: String?, updateHealthFn: suspend (String, String) -> Unit) {
+        try {
+            val pwd = password ?: SecurePrefs.getPassword(context, settings) ?: ""
+            val header = "Basic ${Base64.encodeToString(("${model.name}:${pwd}").toByteArray(), Base64.NO_WRAP)}"
+            val userExists = checkIfUserExists(header, model)
+            if (!userExists) {
+                uploadNewUser(model, updateHealthFn)
+            } else if (model.isUpdated) {
+                updateExistingUser(header, model)
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     override suspend fun checkIfUserExists(header: String, model: UserEntity): Boolean {
         try {
             val res = apiInterface.getJsonObject(header, "${replacedUrl(model)}/_users/org.couchdb.user:${model.name}")
