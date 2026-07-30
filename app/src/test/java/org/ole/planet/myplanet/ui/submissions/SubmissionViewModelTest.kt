@@ -27,6 +27,7 @@ class SubmissionViewModelTest {
     private val testDispatcherProvider = object : DispatcherProvider {
         override val io = testDispatcher
         override val main = testDispatcher
+        override val mainImmediate = testDispatcher
         override val default = testDispatcher
         override val unconfined = testDispatcher
     }
