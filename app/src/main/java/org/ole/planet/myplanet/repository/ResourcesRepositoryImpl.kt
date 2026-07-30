@@ -17,7 +17,6 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.SearchActivity
@@ -40,7 +39,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val removedLogDao: RemovedLogDao,
     private val teamsSyncRepositoryLazy: dagger.Lazy<TeamsSyncRepository>,
     private val myLibraryDao: MyLibraryDao,
-    private val userDao: UserDao,
+    private val userRepository: UserRepository,
     private val teamDao: TeamDao
 ) : ResourcesRepository {
 
@@ -385,7 +384,7 @@ class ResourcesRepositoryImpl @Inject constructor(
     }
 
     override suspend fun observeOpenedResourceIds(userId: String): Flow<Set<String>> {
-        val userName = userDao.getById(userId)?.name ?: return flowOf(emptySet())
+        val userName = userRepository.getUserById(userId)?.name ?: return flowOf(emptySet())
 
         return resourceActivityDao.observeByUserAndType(userName, "resource_opened")
             .map { activities -> activities.mapNotNull { it.resourceId }.toSet() }
