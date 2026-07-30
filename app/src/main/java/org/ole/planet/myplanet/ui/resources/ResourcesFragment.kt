@@ -50,6 +50,7 @@ import org.ole.planet.myplanet.ui.sync.RealtimeSyncHelper
 import org.ole.planet.myplanet.ui.sync.RealtimeSyncMixin
 import org.ole.planet.myplanet.utils.DialogUtils.guestDialog
 import org.ole.planet.myplanet.utils.KeyboardUtils.setupUI
+import org.ole.planet.myplanet.base.DefaultBaseAdapterFactory
 import org.ole.planet.myplanet.utils.ResourceSearchUtils
 import org.ole.planet.myplanet.utils.Utilities
 import org.ole.planet.myplanet.utils.collectWhenStarted
@@ -135,11 +136,12 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
     override suspend fun getAdapter(): ListAdapter<*, *> {
         allResourceModels = viewModel.getLibraryListModels(isMyCourseLib, model?.id)
 
-        val user = profileDbHandler.getUserModel()
-        adapterLibrary = ResourcesAdapter(
-            requireActivity(),
-            user?.isGuest() == true,
-            emptySet(),
+        val user = userRepository.getUserModel()
+        val factory = adapterFactory ?: DefaultBaseAdapterFactory()
+        adapterLibrary = factory.createResourcesAdapter(
+            context = requireActivity(),
+            isGuest = user?.isGuest() == true,
+            openedResourceIds = emptySet(),
             currentUserName = user?.name,
             onEditClick = { model -> openEditResource(model) }
         )
@@ -194,7 +196,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
             }
         }
         lifecycleScope.launch {
-            userModel = profileDbHandler.getUserModel()
+            userModel = userRepository.getUserModel()
             setupGuestUserRestrictions()
 
             val userId = userModel?.id

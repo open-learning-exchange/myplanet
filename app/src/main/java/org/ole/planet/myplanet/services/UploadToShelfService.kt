@@ -2,17 +2,11 @@ package org.ole.planet.myplanet.services
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.util.Base64
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -46,18 +40,7 @@ class UploadToShelfService @Inject constructor(
 
                 val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
                 userModels.forEach { model ->
-                    try {
-                        val header = "Basic ${Base64.encodeToString(("${model.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-                        val userExists = userSyncRepository.checkIfUserExists(header, model)
-
-                        if (!userExists) {
-                            userSyncRepository.uploadNewUser(model) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
-                        } else if (model.isUpdated) {
-                            userSyncRepository.updateExistingUser(header, model)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    userSyncRepository.checkAndUploadUser(model, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
 
                 uploadToShelf(object : OnSuccessListener {
@@ -79,20 +62,8 @@ class UploadToShelfService @Inject constructor(
                 val userModel = if (userName != null) userRepository.getUserByName(userName) else null
 
                 if (userModel != null) {
-                    try {
-                        val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
-                        val header = "Basic ${Base64.encodeToString(("${userModel.name}:${password}").toByteArray(), Base64.NO_WRAP)}"
-
-                        val userExists = userSyncRepository.checkIfUserExists(header, userModel)
-
-                        if (!userExists) {
-                            userSyncRepository.uploadNewUser(userModel) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
-                        } else if (userModel.isUpdated) {
-                            userSyncRepository.updateExistingUser(header, userModel)
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                    }
+                    val password = SecurePrefs.getPassword(context, sharedPreferences) ?: ""
+                    userSyncRepository.checkAndUploadUser(userModel, password) { userId: String, examinationId: String -> healthRepository.updateExaminationUserId(userId, examinationId) }
                 }
                 uploadSingleUserToShelf(userName, listener)
             } catch (e: Exception) {
@@ -142,28 +113,14 @@ class UploadToShelfService @Inject constructor(
                 return@launch
             }
 
-            try {
-                val semaphore = Semaphore(5)
-                supervisorScope {
-                    unmanagedUsers.map { model ->
-                        async {
-                            semaphore.withPermit {
-                                try {
-                                    userSyncRepository.uploadShelfData(model)
-                                } catch (e: Throwable) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        }
-                    }.awaitAll()
-                }
+            val result = userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers)
+            if (result.isSuccess) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } else {
                 withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
+                    listener.onSuccess("Unable to update documents: ${result.exceptionOrNull()?.localizedMessage ?: "Unknown error"}")
                 }
             }
         }
