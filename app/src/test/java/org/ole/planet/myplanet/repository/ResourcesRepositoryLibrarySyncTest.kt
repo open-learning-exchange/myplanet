@@ -20,7 +20,6 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.data.room.dao.ResourceActivityDao
 import org.ole.planet.myplanet.data.room.dao.SearchActivityDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.robolectric.RobolectricTestRunner
@@ -71,7 +70,7 @@ class ResourcesRepositoryLibrarySyncTest {
             mockk<RemovedLogDao>(relaxed = true),
             mockk<dagger.Lazy<TeamsSyncRepository>>(relaxed = true),
             myLibraryDao,
-            mockk<UserDao>(relaxed = true),
+            mockk<UserRepository>(relaxed = true),
             mockk<TeamDao>(relaxed = true),
             mockk<org.ole.planet.myplanet.services.UserSessionManager>(relaxed = true)
         )

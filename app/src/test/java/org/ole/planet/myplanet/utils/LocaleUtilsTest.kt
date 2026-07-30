@@ -35,6 +35,10 @@ class LocaleUtilsTest {
         cachedLanguageField.isAccessible = true
         cachedLanguageField.set(LocaleUtils, null)
 
+        val cachedTextScaleField = LocaleUtils::class.java.getDeclaredField("cachedTextScale")
+        cachedTextScaleField.isAccessible = true
+        cachedTextScaleField.set(LocaleUtils, null)
+
         val cachedPrefsField = LocaleUtils::class.java.getDeclaredField("cachedPrefs")
         cachedPrefsField.isAccessible = true
         cachedPrefsField.set(LocaleUtils, null)
@@ -45,6 +49,10 @@ class LocaleUtilsTest {
         val cachedLanguageField = LocaleUtils::class.java.getDeclaredField("cachedLanguage")
         cachedLanguageField.isAccessible = true
         cachedLanguageField.set(LocaleUtils, null)
+
+        val cachedTextScaleField = LocaleUtils::class.java.getDeclaredField("cachedTextScale")
+        cachedTextScaleField.isAccessible = true
+        cachedTextScaleField.set(LocaleUtils, null)
 
         val cachedPrefsField = LocaleUtils::class.java.getDeclaredField("cachedPrefs")
         cachedPrefsField.isAccessible = true
@@ -130,6 +138,51 @@ class LocaleUtilsTest {
         verify {
             spiedContext.createConfigurationContext(withArg { config ->
                 assertEquals("de", config.locales[0].language)
+            })
+        }
+    }
+
+    @Test
+    fun testGetTextScaleFallbackToDefault() {
+        val textScale = LocaleUtils.getTextScale(appContext)
+
+        assertEquals(LocaleUtils.DEFAULT_TEXT_SCALE, textScale)
+    }
+
+    @Test
+    fun testSetTextScale() {
+        val spiedContext = spyk(appContext)
+        val dummyContext = mockk<Context>()
+
+        every { spiedContext.createConfigurationContext(any()) } returns dummyContext
+
+        val resultContext = LocaleUtils.setTextScale(spiedContext, 1.15f)
+
+        assertEquals(dummyContext, resultContext)
+        assertEquals(1.15f, prefs.getFloat("Locale.Helper.Selected.TextScale", 0f))
+        assertEquals(1.15f, LocaleUtils.getTextScale(appContext))
+
+        verify {
+            spiedContext.createConfigurationContext(withArg { config ->
+                assertEquals(1.15f, config.fontScale)
+            })
+        }
+    }
+
+    @Test
+    fun testOnAttachAppliesPersistedTextScale() {
+        prefs.edit().putFloat("Locale.Helper.Selected.TextScale", 0.85f).apply()
+
+        val spiedContext = spyk(appContext)
+        val dummyContext = mockk<Context>()
+
+        every { spiedContext.createConfigurationContext(any()) } returns dummyContext
+
+        LocaleUtils.onAttach(spiedContext)
+
+        verify {
+            spiedContext.createConfigurationContext(withArg { config ->
+                assertEquals(0.85f, config.fontScale)
             })
         }
     }

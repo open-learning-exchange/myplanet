@@ -38,10 +38,11 @@ abstract class BaseActivity : SyncActivity() {
 
     private fun updateConfigurationIfNeeded() {
         val currentLanguage = LocaleUtils.getLanguage(this)
+        val currentTextScale = LocaleUtils.getTextScale(this)
         val configuration = resources.configuration
         val currentLocale = configuration.locales.get(0)
 
-        if (currentLocale.language != currentLanguage) {
+        if (currentLocale.language != currentLanguage || configuration.fontScale != currentTextScale) {
             recreate()
         }
     }
