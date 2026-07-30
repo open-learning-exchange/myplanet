@@ -50,6 +50,7 @@ class ChatHistoryFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
     private var sharedNewsMessages: List<News> = emptyList()
     private var shareTargets = ChatShareTargets(null, emptyList(), emptyList())
+    private var sharedViewInIds: Map<String, Set<String>> = emptyMap()
     
     @Inject
     lateinit var chatRepository: ChatRepository
@@ -167,6 +168,7 @@ class ChatHistoryFragment : Fragment() {
             emptyList(),
             user,
             sharedNewsMessages,
+            sharedViewInIds,
             shareTargets
         ) { map, chat ->
             if (!isAdded || _binding == null) {
@@ -186,7 +188,7 @@ class ChatHistoryFragment : Fragment() {
                     sharedNewsMessages = sharedNewsMessages + createdNews
                 }
                 (binding.recyclerView.adapter as? ChatHistoryAdapter)?.let { adapter ->
-                    adapter.updateCachedData(currentUser, sharedNewsMessages)
+                    adapter.updateCachedData(currentUser, sharedNewsMessages, sharedViewInIds)
                     adapter.notifyChatShared(chat._id)
                 }
             }
@@ -209,7 +211,8 @@ class ChatHistoryFragment : Fragment() {
             sharedNewsMessages = data.newsMessages
             shareTargets = data.shareTargets
 
-            newAdapter.updateCachedData(user, sharedNewsMessages)
+            sharedViewInIds = data.sharedViewInIds
+            newAdapter.updateCachedData(user, sharedNewsMessages, sharedViewInIds)
             newAdapter.updateShareTargets(shareTargets)
 
             if (data.chatHistory.isNotEmpty()) {

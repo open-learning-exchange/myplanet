@@ -27,8 +27,12 @@ import org.robolectric.annotation.Config
 @Config(sdk = [Build.VERSION_CODES.O], application = Application::class)
 class NotificationUtilsTest {
 
+    private lateinit var timeProvider: TimeProvider
+
     @Before
     fun setUp() {
+        timeProvider = mockk()
+        every { timeProvider.now() } returns System.currentTimeMillis()
     }
 
     @After
@@ -63,7 +67,7 @@ class NotificationUtilsTest {
         mockkObject(TimeUtils)
         every { TimeUtils.parseDate(deadline) } returns System.currentTimeMillis() + (1000 * 60 * 60 * 24 * 1) // 1 day in future
 
-        val config = NotificationUtils.createTaskNotification(taskId, taskTitle, deadline)
+        val config = NotificationUtils.createTaskNotification(taskId, taskTitle, deadline, timeProvider)
 
         assertEquals(NotificationCompat.PRIORITY_HIGH, config.priority)
         assertEquals(NotificationUtils.TYPE_TASK, config.type)
@@ -81,7 +85,7 @@ class NotificationUtilsTest {
         mockkObject(TimeUtils)
         every { TimeUtils.parseDate(deadline) } returns System.currentTimeMillis() + (1000L * 60 * 60 * 24 * 5) // 5 days in future
 
-        val config = NotificationUtils.createTaskNotification(taskId, taskTitle, deadline)
+        val config = NotificationUtils.createTaskNotification(taskId, taskTitle, deadline, timeProvider)
 
         assertEquals(NotificationCompat.PRIORITY_DEFAULT, config.priority)
     }
@@ -161,7 +165,7 @@ class NotificationUtilsTest {
         val notificationManagerMock = mockk<NotificationManager>(relaxed = true)
         every { spyContext.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManagerMock
 
-        val manager = NotificationUtils.NotificationManager(spyContext)
+        val manager = NotificationUtils.NotificationManager(spyContext, timeProvider)
 
         assertNotNull(manager)
 
