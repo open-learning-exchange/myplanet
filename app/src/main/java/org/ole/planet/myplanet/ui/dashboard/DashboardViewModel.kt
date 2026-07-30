@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.repository.VoicesRepository
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
+import org.ole.planet.myplanet.utils.RetryUtils
 
 data class DashboardUiState(
     val unreadNotifications: Int = 0,
@@ -218,24 +219,15 @@ class DashboardViewModel @Inject constructor(
 
     fun refreshNotificationsWithRetry(userId: String, maxRetries: Int = 2) {
         viewModelScope.launch {
-            var lastException: Exception? = null
-            repeat(maxRetries) { attempt ->
-                try {
-                    val unreadCount = withContext(dispatcherProvider.io) {
-                        notificationsRepository.refresh()
-                        getUnreadNotificationsSize(userId)
-                    }
-                    setUnreadNotifications(unreadCount)
-                    return@launch
-                } catch (e: Exception) {
-                    lastException = e
-                    e.printStackTrace()
-                    if (attempt < maxRetries - 1) {
-                        kotlinx.coroutines.delay(300.milliseconds)
-                    }
+            val unreadCount = RetryUtils.retry(maxAttempts = maxRetries, delayMs = 300L) {
+                withContext(dispatcherProvider.io) {
+                    notificationsRepository.refresh()
+                    getUnreadNotificationsSize(userId)
                 }
             }
-            lastException?.printStackTrace()
+            if (unreadCount != null) {
+                setUnreadNotifications(unreadCount)
+            }
         }
     }
 
