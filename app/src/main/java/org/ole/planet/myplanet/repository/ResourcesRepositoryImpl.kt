@@ -21,6 +21,9 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.ResourceItem
+import org.ole.planet.myplanet.model.ResourceListModel
+import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DownloadUtils
@@ -564,6 +567,30 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     private suspend fun getResourceTagsBulk(ids: List<String>): Map<String, List<TagEntity>> {
         return tagsRepository.getTagsForResources(ids)
+    }
+
+    override suspend fun getResourceListModels(isMyCourseLib: Boolean, modelId: String?): List<ResourceListModel> {
+        val enrichedLibraries = getEnrichedLibraries(isMyCourseLib, modelId)
+        return enrichedLibraries
+            .sortedByDescending { (library, _, _) -> library.isResourceOffline() }
+            .map { (library, rating, libraryTags) ->
+                val item = ResourceItem(
+                    id = library.id,
+                    title = library.title,
+                    description = library.description,
+                    createdDate = library.createdDate,
+                    averageRating = library.averageRating,
+                    timesRated = library.timesRated,
+                    resourceId = library.resourceId,
+                    isOffline = library.isResourceOffline(),
+                    _rev = library._rev,
+                    uploadDate = library.uploadDate,
+                    filename = library.filename,
+                    resourceLocalAddress = library.resourceLocalAddress
+                )
+                val tags = libraryTags.map { tag -> TagItem(tag.id, tag.name) }
+                ResourceListModel(library, item, rating, tags)
+            }
     }
 
     override suspend fun getEnrichedLibraries(isMyCourseLib: Boolean, modelId: String?): List<LibraryWithMetadata> {
