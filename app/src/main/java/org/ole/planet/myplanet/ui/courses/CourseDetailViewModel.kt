@@ -15,6 +15,7 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.repository.RatingSummary
+import org.ole.planet.myplanet.repository.RatingSummaryModel
 import org.ole.planet.myplanet.utils.MarkdownUtils
 
 sealed interface CourseDetailUiState {
