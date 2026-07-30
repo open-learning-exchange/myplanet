@@ -7,7 +7,6 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.roundToInt
 import org.ole.planet.myplanet.data.room.dao.RatingDao
-import org.ole.planet.myplanet.data.room.dao.UserDao
 import org.ole.planet.myplanet.model.Rating
 import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -15,7 +14,7 @@ import org.ole.planet.myplanet.utils.JsonUtils
 class RatingsRepositoryImpl @Inject constructor(
     private val gson: Gson,
     private val ratingDao: RatingDao,
-    private val userDao: UserDao,
+    private val userRepository: UserRepository,
 ) : RatingsRepository {
 
     override suspend fun getRatings(type: String?, userId: String?): HashMap<String?, JsonObject> {
@@ -141,7 +140,7 @@ class RatingsRepositoryImpl @Inject constructor(
     private suspend fun findUserForRating(userId: String): UserEntity {
         require(userId.isNotBlank()) { "User ID is required to submit a rating" }
 
-        val user = userDao.getById(userId)
+        val user = userRepository.getUserById(userId)
 
         return requireNotNull(user) { "Unable to locate user with ID '$userId'" }
     }
