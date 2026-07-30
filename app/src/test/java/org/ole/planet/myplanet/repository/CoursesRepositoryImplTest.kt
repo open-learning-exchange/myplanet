@@ -7,7 +7,10 @@ import io.mockk.mockk
 import io.mockk.slot
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.flow.firstOrNull
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -26,6 +29,7 @@ import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TagDao
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
+import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.model.SearchActivity
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.utils.Utilities
@@ -51,6 +55,8 @@ class CoursesRepositoryImplTest {
     private val courseProgressDao: CourseProgressDao = mockk(relaxed = true)
     private val removedLogDao: RemovedLogDao = mockk(relaxed = true)
     private val myLibraryDao: MyLibraryDao = mockk(relaxed = true)
+    private val userRepository: dagger.Lazy<UserRepository> = mockk(relaxed = true)
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = object : org.ole.planet.myplanet.utils.DispatcherProvider { override val main = kotlinx.coroutines.Dispatchers.Unconfined; override val io = kotlinx.coroutines.Dispatchers.Unconfined; override val default = kotlinx.coroutines.Dispatchers.Unconfined; override val unconfined = kotlinx.coroutines.Dispatchers.Unconfined }
     private val realtimeSyncManager: org.ole.planet.myplanet.services.sync.RealtimeSyncManager = mockk(relaxed = true)
 
     private lateinit var repository: CoursesRepositoryImpl
@@ -75,6 +81,8 @@ class CoursesRepositoryImplTest {
             courseProgressDao,
             removedLogDao,
             myLibraryDao,
+            userRepository,
+            dispatcherProvider,
             realtimeSyncManager
         )
     }
@@ -186,4 +194,46 @@ class CoursesRepositoryImplTest {
         assertEquals("math", filter["doc.subjectLevel"].asString)
         assertTrue(filter.getAsJsonArray("tags").isEmpty)
     }
+
+    @Test
+    fun getCourseDetailModel_whenCourseNull_returnsNull() = runTest {
+        coEvery { courseDao.observeByCourseId(any()) } returns kotlinx.coroutines.flow.flowOf(null)
+
+        val result = repository.getCourseDetailModel("course_id").firstOrNull()
+        assertNull(result)
+    }
+
+    @Test
+    fun getCourseDetailModel_whenCourseExists_returnsAggregatedData() = runTest {
+        val course = MyCourse().apply { courseId = "course_id" }
+        val step = org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" }
+        val user = org.ole.planet.myplanet.model.UserEntity().apply { id = "user_1" }
+
+        coEvery { courseDao.observeByCourseId("course_id") } returns kotlinx.coroutines.flow.flowOf(course)
+        coEvery { userRepository.get().getUserModel() } returns user
+        coEvery { examDao.getByCourseIdAndType("course_id", "courses") } returns listOf(mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>(), mockk<org.ole.planet.myplanet.model.StepExam>())
+        coEvery { myLibraryDao.getCourseResources("course_id", false) } returns emptyList()
+        coEvery { myLibraryDao.getCourseResources("course_id", true) } returns emptyList()
+        coEvery { courseStepDao.getByCourseId("course_id") } returns listOf(org.ole.planet.myplanet.model.CourseStep().apply { id = "step_1"; stepTitle = "Title" })
+        coEvery { submissionsRepository.getExamQuestionCount("step_1") } returns 3
+
+        coEvery { ratingsRepository.getRatingSummary("course", "course_id", "user_1") } returns RatingSummary(
+            existingRating = null,
+            averageRating = 4.0f,
+            totalRatings = 2,
+            userRating = 5
+        )
+
+        val result = repository.getCourseDetailModel("course_id").firstOrNull()
+
+        assertNotNull(result)
+        assertEquals(course, result?.course)
+        assertEquals(user, result?.user)
+        assertEquals(5, result?.examCount)
+        assertEquals(1, result?.steps?.size)
+        assertEquals("step_1", result?.steps?.first()?.id)
+        assertEquals(3, result?.steps?.first()?.questionCount)
+        assertEquals(4.0f, result?.ratingSummary?.averageRating)
+    }
+
 }

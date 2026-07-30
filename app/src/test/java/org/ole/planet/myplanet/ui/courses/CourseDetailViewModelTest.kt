@@ -22,11 +22,11 @@ import org.ole.planet.myplanet.MainApplication
 import org.ole.planet.myplanet.model.CourseStep
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.CourseDetailModel
+import org.ole.planet.myplanet.model.StepItem
 import org.ole.planet.myplanet.repository.CoursesRepository
 import org.ole.planet.myplanet.repository.RatingSummary
 import org.ole.planet.myplanet.repository.RatingsRepository
-import org.ole.planet.myplanet.repository.SubmissionsRepository
-import org.ole.planet.myplanet.services.UserSessionManager
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.MainDispatcherRule
 
@@ -42,9 +42,7 @@ class CourseDetailViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(testDispatcher)
 
     private val coursesRepository: CoursesRepository = mockk()
-    private val submissionsRepository: SubmissionsRepository = mockk()
     private val ratingsRepository: RatingsRepository = mockk()
-    private val userSessionManager: UserSessionManager = mockk()
     private val dispatcherProvider = object : DispatcherProvider {
         override val main: CoroutineDispatcher = testDispatcher
         override val mainImmediate: CoroutineDispatcher = testDispatcher
@@ -73,13 +71,7 @@ class CourseDetailViewModelTest {
         MainApplication.testContext = mockk<Context>(relaxed = true)
         io.mockk.every { MainApplication.context.getExternalFilesDir(null) } returns null
 
-        courseDetailProvider = CourseDetailProvider(
-            coursesRepository,
-            submissionsRepository,
-            ratingsRepository,
-            userSessionManager,
-            dispatcherProvider
-        )
+        courseDetailProvider = CourseDetailProvider(coursesRepository)
 
         ratingSummaryProvider = RatingSummaryProvider(
             ratingsRepository
@@ -108,15 +100,26 @@ class CourseDetailViewModelTest {
             userRating = 5
         )
     ) {
+        val model = if (course == null) null else {
+            val stepItems = steps.map {
+                StepItem(
+                    id = it.id,
+                    stepTitle = it.stepTitle,
+                    questionCount = 2
+                )
+            }
+            CourseDetailModel(
+                course = course,
+                user = user,
+                ratingSummary = ratingSummary,
+                examCount = examCount,
+                resources = emptyList(),
+                downloadedResources = emptyList(),
+                steps = stepItems
+            )
+        }
+        every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(model)
         every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(course)
-        every { org.ole.planet.myplanet.MainApplication.testContext?.getExternalFilesDir(null) } returns null
-        coEvery { userSessionManager.getUserModel() } returns user
-        coEvery { coursesRepository.getCourseExamCount(courseId) } returns examCount
-        coEvery { coursesRepository.getCourseOnlineResources(courseId) } returns emptyList()
-        coEvery { coursesRepository.getCourseOfflineResources(courseId) } returns emptyList()
-        coEvery { coursesRepository.getCourseSteps(courseId) } returns steps
-        coEvery { submissionsRepository.getExamQuestionCount(any()) } returns 2
-        coEvery { ratingsRepository.getRatingSummary("course", courseId, any()) } returns ratingSummary
     }
 
     @Test
@@ -132,12 +135,12 @@ class CourseDetailViewModelTest {
         state as CourseDetailUiState.Success
         assertEquals(7, state.examCount)
         assertEquals(4.0f, state.ratingSummary?.averageRating)
-        coVerify { coursesRepository.getCourseExamCount(courseId) }
+
     }
 
     @Test
     fun loadCourseDetail_whenCourseNull_emitsError() = runTest {
-        every { coursesRepository.getCourseByCourseIdFlow(courseId) } returns flowOf(null)
+        every { coursesRepository.getCourseDetailModel(courseId) } returns flowOf(null)
 
         viewModel.loadCourseDetail(courseId)
         advanceUntilIdle()
