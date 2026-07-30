@@ -222,7 +222,7 @@ class TransactionSyncManager @Inject constructor(
                 }
                 val batchStartTime = SystemClock.elapsedRealtime()
                 val batchApiStartTime = SystemClock.elapsedRealtime()
-                val response = apiInterface.findDocs(
+                val response = apiInterface.postDoc(
                     authHeader,
                     "application/json",
                     "$url/$table/_all_docs?include_docs=true&limit=$pageSize&skip=$skip",

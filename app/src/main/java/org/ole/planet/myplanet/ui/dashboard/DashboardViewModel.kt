@@ -169,10 +169,6 @@ class DashboardViewModel @Inject constructor(
         return teamsRepository.getTeamType(teamId)
     }
 
-    suspend fun getLibraryForSelectedUser(userId: String): List<MyLibrary> {
-        return resourcesRepository.getLibraryForSelectedUser(userId)
-    }
-
     suspend fun getLibraryListForUser(userId: String?): List<MyLibrary> {
         return resourcesRepository.getLibraryListForUser(userId)
     }
