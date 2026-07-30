@@ -16,5 +16,6 @@ interface UserSyncRepository {
     suspend fun bulkInsertAchievementsFromSync(jsonArray: JsonArray)
     suspend fun insertUsersFromSync(docs: List<JsonObject>)
     suspend fun uploadShelfData(user: UserEntity)
+    suspend fun uploadAllSyncedUsersToShelf(users: List<UserEntity>): Result<Unit>
     suspend fun checkShelfBatchForDataOptimized(shelfIds: List<String>): List<String>
 }

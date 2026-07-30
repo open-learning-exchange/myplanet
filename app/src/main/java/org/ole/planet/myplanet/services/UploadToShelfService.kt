@@ -6,12 +6,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.supervisorScope
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.callback.OnSuccessListener
 import org.ole.planet.myplanet.data.api.ApiInterface
@@ -118,28 +113,14 @@ class UploadToShelfService @Inject constructor(
                 return@launch
             }
 
-            try {
-                val semaphore = Semaphore(5)
-                supervisorScope {
-                    unmanagedUsers.map { model ->
-                        async {
-                            semaphore.withPermit {
-                                try {
-                                    userSyncRepository.uploadShelfData(model)
-                                } catch (e: Throwable) {
-                                    e.printStackTrace()
-                                }
-                            }
-                        }
-                    }.awaitAll()
-                }
+            val result = userSyncRepository.uploadAllSyncedUsersToShelf(unmanagedUsers)
+            if (result.isSuccess) {
                 withContext(dispatcherProvider.main) {
                     listener.onSuccess("Sync with server completed successfully")
                 }
-            } catch (e: Exception) {
-                e.printStackTrace()
+            } else {
                 withContext(dispatcherProvider.main) {
-                    listener.onSuccess("Unable to update documents: ${e.localizedMessage}")
+                    listener.onSuccess("Unable to update documents: ${result.exceptionOrNull()?.localizedMessage ?: "Unknown error"}")
                 }
             }
         }
