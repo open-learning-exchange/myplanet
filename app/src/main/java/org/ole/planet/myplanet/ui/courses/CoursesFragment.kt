@@ -357,6 +357,15 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         if (::filterController.isInitialized) filterController.setTags(list ?: emptyList())
     }
 
+    override fun addToMyList(onComplete: (() -> Unit)?) {
+        super.addToMyList {
+            if (isAdded && ::selectionController.isInitialized && ::adapterCourses.isInitialized) {
+                selectionController.clearAll(adapterCourses)
+            }
+            onComplete?.invoke()
+        }
+    }
+
     private fun createAlertDialog(): AlertDialog {
         var hasAdded = false
         val builder = AlertDialog.Builder(requireContext(), R.style.CustomAlertDialog)
