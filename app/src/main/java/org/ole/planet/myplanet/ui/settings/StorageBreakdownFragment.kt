@@ -42,6 +42,8 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
+    private var progressDialog: DialogUtils.CustomProgressDialog? = null
+
     internal data class CategoryData(
         @StringRes val nameRes: Int,
         val extensions: Set<String>,
@@ -103,6 +105,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     private fun freeUpSpace() {
         val progressDialog = DialogUtils.getCustomProgressDialog(requireActivity())
+        this.progressDialog = progressDialog
         progressDialog.show()
 
         val workManager = WorkManager.getInstance(requireContext())
@@ -130,6 +133,7 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                             }
                             WorkInfo.State.SUCCEEDED -> {
                                 progressDialog.dismiss()
+                                this@StorageBreakdownFragment.progressDialog = null
                                 val output = workInfo.outputData
                                 val deletedFiles = output.getInt("deletedFiles", 0)
                                 val freedBytes = output.getLong("freedBytes", 0)
@@ -146,12 +150,16 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
                             }
                             WorkInfo.State.FAILED -> {
                                 progressDialog.dismiss()
+                                this@StorageBreakdownFragment.progressDialog = null
                                 Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
                                 loadStorage()
+                                parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
                             }
                             WorkInfo.State.CANCELLED -> {
                                 progressDialog.dismiss()
+                                this@StorageBreakdownFragment.progressDialog = null
                                 loadStorage()
+                                parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
                             }
                             else -> {
                                 // ENQUEUED or BLOCKED
@@ -247,6 +255,8 @@ class StorageBreakdownFragment : BottomSheetDialogFragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        progressDialog?.dismiss()
+        progressDialog = null
         _binding = null
     }
 

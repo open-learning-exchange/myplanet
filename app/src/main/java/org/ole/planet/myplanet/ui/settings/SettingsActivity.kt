@@ -262,7 +262,7 @@ class SettingsActivity : AppCompatActivity() {
             }
             parentFragmentManager.setFragmentResultListener(
                 StorageBreakdownFragment.RESULT_KEY,
-                viewLifecycleOwner
+                this
             ) { _, _ -> refreshStorageBreakdownSummary() }
         }
 
