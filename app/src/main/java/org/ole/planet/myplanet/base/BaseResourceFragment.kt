@@ -49,12 +49,6 @@ import org.ole.planet.myplanet.utils.TimeProvider
 abstract class BaseResourceFragment : Fragment() {
     @Inject
     lateinit var timeProvider: TimeProvider
-
-    var homeItemClickListener: OnHomeItemClickListener? = null
-    var model: UserEntity? = null
-    var lv: RecyclerView? = null
-    var convertView: View? = null
-    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     @Inject
     lateinit var userRepository: UserRepository
     @Inject
@@ -69,6 +63,12 @@ abstract class BaseResourceFragment : Fragment() {
     lateinit var sharedPrefManager: SharedPrefManager
     @Inject
     lateinit var broadcastService: BroadcastService
+
+    var homeItemClickListener: OnHomeItemClickListener? = null
+    var model: UserEntity? = null
+    var lv: RecyclerView? = null
+    var convertView: View? = null
+    internal lateinit var prgDialog: DialogUtils.CustomProgressDialog
     private var resourceNotFoundDialog: AlertDialog? = null
     private var downloadSuggestionDialog: AlertDialog? = null
 
@@ -106,6 +106,7 @@ abstract class BaseResourceFragment : Fragment() {
             }
         }
     }
+
     private val pendingDownloadUrls = mutableSetOf<String>()
 
     protected fun trackDownloadUrls(urls: Collection<String>) {
@@ -163,8 +164,6 @@ abstract class BaseResourceFragment : Fragment() {
             }
             alertDialogBuilder.setView(convertView)
                 .setCustomTitle(titleView)
-
-
                 .setPositiveButton(R.string.download_selected) { _: DialogInterface?, _: Int ->
                     lifecycleScope.launch {
                         val selectedItemsList = (lv?.adapter as? CheckboxAdapter)?.selectedItemsList
@@ -282,7 +281,6 @@ abstract class BaseResourceFragment : Fragment() {
             }
         }
     }
-
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
