@@ -17,6 +17,24 @@ object DiffUtils {
         }
     }
 
+    fun <T : Any> standardItemCallback(
+        idSelector: (T) -> Any,
+        contentSelector: ((T) -> Any)? = null,
+        payloadSelector: ((T, T) -> Any?)? = null
+    ): RecyclerDiffUtil.ItemCallback<T> {
+        return itemCallback(
+            areItemsTheSame = { oldItem, newItem -> idSelector(oldItem) == idSelector(newItem) },
+            areContentsTheSame = { oldItem, newItem ->
+                if (contentSelector != null) {
+                    contentSelector(oldItem) == contentSelector(newItem)
+                } else {
+                    oldItem == newItem
+                }
+            },
+            getChangePayload = payloadSelector
+        )
+    }
+
     fun <T> calculateDiff(
         oldList: List<T>,
         newList: List<T>,

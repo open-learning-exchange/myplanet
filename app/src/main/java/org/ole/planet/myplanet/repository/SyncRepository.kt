@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.repository
 
 import android.content.Context
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.map
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequest
 import androidx.work.WorkInfo
@@ -17,7 +17,7 @@ import org.ole.planet.myplanet.services.UserDataWorker
 class SyncRepository @Inject constructor(
     @ApplicationContext private val context: Context
 ) {
-    fun uploadLoginData(): LiveData<SyncUiState> {
+    fun uploadLoginData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_LOGIN))
             .build()
@@ -27,12 +27,12 @@ class SyncRepository @Inject constructor(
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        return workManager.getWorkInfoByIdLiveData(workRequest.id).map { workInfo ->
+        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
             mapWorkInfoToState(workInfo)
         }
     }
 
-    fun uploadBulkData(): LiveData<SyncUiState> {
+    fun uploadBulkData(): Flow<SyncUiState> {
         val workRequest = OneTimeWorkRequest.Builder(UserDataWorker::class.java)
             .setInputData(workDataOf(UserDataWorker.KEY_UPLOAD_TYPE to UserDataWorker.UPLOAD_TYPE_BULK))
             .build()
@@ -42,7 +42,7 @@ class SyncRepository @Inject constructor(
             ExistingWorkPolicy.REPLACE,
             workRequest
         )
-        return workManager.getWorkInfoByIdLiveData(workRequest.id).map { workInfo ->
+        return workManager.getWorkInfoByIdFlow(workRequest.id).map { workInfo ->
             mapWorkInfoToState(workInfo)
         }
     }
