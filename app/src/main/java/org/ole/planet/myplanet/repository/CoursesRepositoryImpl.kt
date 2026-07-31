@@ -212,6 +212,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 }
             }
 
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, validCourseIds.size))
             true
         }
     }
@@ -325,6 +326,7 @@ class CoursesRepositoryImpl @Inject constructor(
                 courseDao.upsert(course.copy(userId = mergeUserIds(course.userId, userId)))
             }
             removedLogDao.deleteByTypeUserAndDoc("courses", userId, courseId)
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("courses", 0, 1))
         }
     }
 
