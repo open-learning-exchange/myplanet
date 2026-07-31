@@ -1354,7 +1354,12 @@ class UserRepositoryImpl @Inject constructor(
         val myMeetups = Meetup.getMyMeetUpIds(userMeetups)
         val removedResources = removedLogDao.getRemovedDocIds("resources", userId).filterNotNull()
         val removedCourses = removedLogDao.getRemovedDocIds("courses", userId).filterNotNull()
-        val removedMeetups = removedLogDao.getRemovedDocIds("meetups", userId).filterNotNull() + removedLogDao.getRemovedDocIds("meetup", userId).filterNotNull()
+        val removedMeetups = (
+            removedLogDao.getRemovedDocIds("meetups", userId) +
+            removedLogDao.getRemovedDocIds("meetup", userId) +
+            removedLogDao.getAllRemovedDocIds("meetups") +
+            removedLogDao.getAllRemovedDocIds("meetup")
+        ).filterNotNull()
         val mergedResourceIds = mergeJsonArray(myLibs, JsonUtils.getJsonArray("resourceIds", jsonDoc), removedResources)
         val mergedCourseIds = mergeJsonArray(myCourseIds, JsonUtils.getJsonArray("courseIds", jsonDoc), removedCourses)
         val `object` = JsonObject()

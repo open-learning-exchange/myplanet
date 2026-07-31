@@ -63,9 +63,14 @@ class CommunityRepositoryImpl @Inject constructor(
     override suspend fun insertMeetupsFromSync(docs: List<JsonObject>) {
         if (docs.isEmpty()) return
         val currentUserId = userRepository.getUserModel()?.id
-        val removedIds = if (!currentUserId.isNullOrBlank()) {
-            (removedLogDao.getRemovedDocIds("meetups", currentUserId) + removedLogDao.getRemovedDocIds("meetup", currentUserId)).filterNotNull().toSet()
-        } else emptySet()
+        val removedIds = (
+            removedLogDao.getAllRemovedDocIds("meetups") +
+            removedLogDao.getAllRemovedDocIds("meetup") +
+            if (!currentUserId.isNullOrBlank()) {
+                removedLogDao.getRemovedDocIds("meetups", currentUserId) +
+                removedLogDao.getRemovedDocIds("meetup", currentUserId)
+            } else emptyList()
+        ).filterNotNull().toSet()
 
         val ids = docs.map { JsonUtils.getString("_id", it) }
         val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }

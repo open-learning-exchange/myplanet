@@ -17,6 +17,9 @@ interface RemovedLogDao {
     @Query("SELECT docId FROM removed_log WHERE type = :type AND userId = :userId")
     suspend fun getRemovedDocIds(type: String, userId: String?): List<String?>
 
+    @Query("SELECT docId FROM removed_log WHERE type = :type")
+    suspend fun getAllRemovedDocIds(type: String): List<String?>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(log: RemovedLog)
 }

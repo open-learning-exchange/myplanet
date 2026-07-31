@@ -99,9 +99,14 @@ class EventsRepositoryImpl @Inject constructor(
         if (documents.isEmpty()) return 0
         return try {
             val currentUserId = userRepository.getUserModel()?.id
-            val removedIds = if (!currentUserId.isNullOrBlank()) {
-                (removedLogDao.getRemovedDocIds("meetups", currentUserId) + removedLogDao.getRemovedDocIds("meetup", currentUserId)).filterNotNull().toSet()
-            } else emptySet()
+            val removedIds = (
+                removedLogDao.getAllRemovedDocIds("meetups") +
+                removedLogDao.getAllRemovedDocIds("meetup") +
+                if (!currentUserId.isNullOrBlank()) {
+                    removedLogDao.getRemovedDocIds("meetups", currentUserId) +
+                    removedLogDao.getRemovedDocIds("meetup", currentUserId)
+                } else emptyList()
+            ).filterNotNull().toSet()
 
             val ids = documents.map { JsonUtils.getString("_id", it) }
             val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
@@ -191,29 +196,33 @@ class EventsRepositoryImpl @Inject constructor(
         return try {
             val meetup = meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId)
             val currentUserId = userRepository.getUserModel()?.id
-            val userId = meetup?.userId ?: currentUserId
 
             val docIdsToLog = mutableSetOf<String>()
             if (meetupId.isNotBlank()) docIdsToLog.add(meetupId)
             meetup?.id?.let { if (it.isNotBlank()) docIdsToLog.add(it) }
             meetup?.meetupId?.let { if (it.isNotBlank()) docIdsToLog.add(it) }
 
-            if (!userId.isNullOrBlank()) {
+            val userIdsToLog = mutableSetOf<String>()
+            if (!currentUserId.isNullOrBlank()) userIdsToLog.add(currentUserId)
+            meetup?.userId?.let { if (it.isNotBlank()) userIdsToLog.add(it) }
+
+            userIdsToLog.forEach { uId ->
                 docIdsToLog.forEach { docId ->
                     removedLogDao.insert(RemovedLog().apply {
                         id = UUID.randomUUID().toString()
                         type = "meetups"
-                        this.userId = userId
+                        this.userId = uId
                         this.docId = docId
                     })
                     removedLogDao.insert(RemovedLog().apply {
                         id = UUID.randomUUID().toString()
                         type = "meetup"
-                        this.userId = userId
+                        this.userId = uId
                         this.docId = docId
                     })
                 }
             }
+
             meetupDao.deleteById(meetupId)
             meetup?.id?.let { meetupDao.deleteById(it) }
             meetup?.meetupId?.let { meetupDao.deleteById(it) }
