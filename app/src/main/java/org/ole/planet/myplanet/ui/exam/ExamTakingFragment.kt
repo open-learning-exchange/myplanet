@@ -202,14 +202,20 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
         binding.btnNext.setOnClickListener {
             saveCurrentAnswer()
             viewLifecycleOwner.lifecycleScope.launch {
-                updateAnsDb()
+                val cont = updateAnsDb()
+                if (this@ExamTakingFragment.type == "exam" && !cont) {
+                    Snackbar.make(binding.root, getString(R.string.incorrect_ans), Snackbar.LENGTH_LONG).show()
+                    return@launch
+                }
                 goToNextQuestion()
             }
         }
 
 
         examTakingTextWatcher = object : TextWatcher {
+            @Suppress("EmptyMethod")
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            @Suppress("EmptyMethod")
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val questionsSize = questions?.size ?: 0

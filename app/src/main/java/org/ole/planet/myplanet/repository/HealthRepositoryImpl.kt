@@ -134,4 +134,15 @@ class HealthRepositoryImpl @Inject constructor(
         return uploadedHealths
     }
 
+    override suspend fun getByIdOrUserId(id: String): HealthExamination? {
+        return healthExaminationDao.getByIdOrUserId(id)
+    }
+
+    override suspend fun getByProfileId(profileId: String): List<HealthExamination> {
+        return healthExaminationDao.getByProfileId(profileId)
+    }
+
+    override suspend fun upsert(examination: HealthExamination) {
+        healthExaminationDao.upsert(examination)
+    }
 }
