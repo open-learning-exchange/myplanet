@@ -57,6 +57,12 @@ class UploadRepositoryImpl @Inject constructor(
     ): Response<JsonObject> {
         return apiInterface.postDoc(UrlUtils.header, "application/json", url, serializedData)
     }
+    override suspend fun postUploadArray(
+        url: String,
+        serializedData: JsonObject
+    ): Response<com.google.gson.JsonArray> {
+        return apiInterface.postDocArray(UrlUtils.header, "application/json", url, serializedData)
+    }
 
     override suspend fun putUpload(
         url: String,

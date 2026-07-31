@@ -185,10 +185,6 @@ class ResourcesRepositoryImpl @Inject constructor(
             .filter { it.needToUpdate() }
     }
 
-    override suspend fun getLibraryForSelectedUser(userId: String): List<MyLibrary> {
-        return getLibraryListForUser(userId)
-    }
-
     override suspend fun getMyLibrary(userId: String?): List<MyLibrary> {
         if (userId.isNullOrBlank()) return emptyList()
         return myLibraryDao.getForUserPattern(userIdPattern(userId))

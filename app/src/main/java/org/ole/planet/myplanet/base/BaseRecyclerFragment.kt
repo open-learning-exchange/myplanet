@@ -37,6 +37,8 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var courseLib: String? = null
     private var isAddInProgress = false
 
+    var adapterFactory: BaseAdapterFactory? = null
+
     abstract fun getLayout(): Int
 
     abstract suspend fun getAdapter(): ListAdapter<*, *>

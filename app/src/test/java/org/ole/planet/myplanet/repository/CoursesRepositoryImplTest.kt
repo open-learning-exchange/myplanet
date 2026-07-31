@@ -5,13 +5,18 @@ import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
 import io.mockk.slot
+import io.mockk.every
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.flow.firstOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -196,6 +201,82 @@ class CoursesRepositoryImplTest {
     }
 
     @Test
+    fun `getMyCourses with list filters correctly by userId`() {
+        val course1 = MyCourse(id = "1", userId = listOf("user1", "user2"))
+        val course2 = MyCourse(id = "2", userId = listOf("user2"))
+        val course3 = MyCourse(id = "3", userId = null)
+        val courses = listOf(course1, course2, course3)
+
+        val resultNull = repository.getMyCourses(null, courses)
+        assertTrue(resultNull.isEmpty())
+
+        val resultUser1 = repository.getMyCourses("user1", courses)
+        assertEquals(1, resultUser1.size)
+        assertEquals("1", resultUser1[0].id)
+
+        val resultUser2 = repository.getMyCourses("user2", courses)
+        assertEquals(2, resultUser2.size)
+
+        val resultUser3 = repository.getMyCourses("user3", courses)
+        assertTrue(resultUser3.isEmpty())
+    }
+
+    @Test
+    fun `getMyCourses by userId fetches all and filters`() = runTest {
+        coEvery { courseDao.getAll() } returns listOf(
+            MyCourse(id = "1", userId = listOf("user1", "user2")),
+            MyCourse(id = "2", userId = listOf("user2")),
+            MyCourse(id = "3", userId = null)
+        )
+        coEvery { courseStepDao.getByCourseIds(any()) } returns emptyList()
+
+        val resultUser1 = repository.getMyCourses("user1")
+        assertEquals(1, resultUser1.size)
+        assertEquals("1", resultUser1[0].id)
+
+        val resultUser2 = repository.getMyCourses("user2")
+        assertEquals(2, resultUser2.size)
+
+        val resultUser3 = repository.getMyCourses("user3")
+        assertTrue(resultUser3.isEmpty())
+    }
+
+    @Test
+    fun `getCourseByCourseIdFlow returns mapped course with steps`() = runTest {
+        val courseId = "course-123"
+        val myCourse = MyCourse(id = courseId, courseId = courseId, courseTitle = "Test Course")
+        val steps = listOf(
+            CourseStep(id = "step-1", courseId = courseId, stepTitle = "Step 1"),
+            CourseStep(id = "step-2", courseId = courseId, stepTitle = "Step 2")
+        )
+
+        every { courseDao.observeByCourseId(courseId) } returns flowOf(myCourse)
+        coEvery { courseStepDao.getByCourseId(courseId) } returns steps
+
+        val resultFlow = repository.getCourseByCourseIdFlow(courseId)
+        val mappedCourse = resultFlow.first()
+
+        assertNotNull(mappedCourse)
+        assertEquals(courseId, mappedCourse?.courseId)
+        assertEquals("Test Course", mappedCourse?.courseTitle)
+        assertEquals(2, mappedCourse?.courseSteps?.size)
+        assertEquals(2, mappedCourse?.getNumberOfSteps())
+        assertEquals("Step 1", mappedCourse?.courseSteps?.get(0)?.stepTitle)
+    }
+
+    @Test
+    fun `getCourseByCourseIdFlow returns null when course not found`() = runTest {
+        val courseId = "non-existent-course"
+
+        every { courseDao.observeByCourseId(courseId) } returns flowOf(null)
+
+        val resultFlow = repository.getCourseByCourseIdFlow(courseId)
+        val mappedCourse = resultFlow.first()
+
+        assertNull(mappedCourse)
+    }
+
+    @Test
     fun getCourseDetailModel_whenCourseNull_returnsNull() = runTest {
         coEvery { courseDao.observeByCourseId(any()) } returns kotlinx.coroutines.flow.flowOf(null)
 
@@ -235,5 +316,4 @@ class CoursesRepositoryImplTest {
         assertEquals(3, result?.steps?.first()?.questionCount)
         assertEquals(4.0f, result?.ratingSummary?.averageRating)
     }
-
 }

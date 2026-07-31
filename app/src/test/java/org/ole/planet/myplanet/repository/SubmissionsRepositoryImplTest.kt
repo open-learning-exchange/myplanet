@@ -18,6 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -127,6 +128,56 @@ class SubmissionsRepositoryImplTest {
         // Equivalent list should be suppressed
         flowEmitter.emit(subListDup)
         assertEquals(1, emissions)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `getSubmissionsFlow does not suppress when size changes`() = runTest {
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDiffSize = listOf(Submission(id = "1", lastUpdateTime = 100L), Submission(id = "2", lastUpdateTime = 100L))
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Different size list should not be suppressed
+        flowEmitter.emit(subListDiffSize)
+        assertEquals(2, emissions)
+
+        job.cancel()
+    }
+
+    @Test
+    fun `getSubmissionsFlow does not suppress when lastUpdateTime changes`() = runTest {
+        val subList = listOf(Submission(id = "1", lastUpdateTime = 100L))
+        val subListDiffTime = listOf(Submission(id = "1", lastUpdateTime = 101L))
+
+        val flowEmitter = kotlinx.coroutines.flow.MutableSharedFlow<List<Submission>>(replay = 1)
+        every { submissionDao.observeByUserId("user_123") } returns flowEmitter
+
+        var emissions = 0
+        val job = kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined).launch {
+            repository.getSubmissionsFlow("user_123").collect {
+                emissions++
+            }
+        }
+
+        flowEmitter.emit(subList)
+        assertEquals(1, emissions)
+
+        // Same size but different lastUpdateTime should not be suppressed
+        flowEmitter.emit(subListDiffTime)
+        assertEquals(2, emissions)
 
         job.cancel()
     }
@@ -405,5 +456,59 @@ class SubmissionsRepositoryImplTest {
         repository.markSubmissionComplete("test_id", payload)
 
         coVerify { submissionDao.markComplete("test_id", payload.toString()) }
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns name when valid json is provided`() {
+        val submission = Submission().apply {
+            user = "{\"name\": \"John Doe\", \"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertEquals("John Doe", result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when name is blank`() {
+        val submission = Submission().apply {
+            user = "{\"name\": \"   \", \"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when name key is missing`() {
+        val submission = Submission().apply {
+            user = "{\"other\": \"value\"}"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is malformed json`() {
+        val submission = Submission().apply {
+            user = "invalid json"
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is null`() {
+        val submission = Submission().apply {
+            user = null
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
+    }
+
+    @Test
+    fun `getNormalizedSubmitterName returns null when user is blank`() {
+        val submission = Submission().apply {
+            user = "   "
+        }
+        val result = repository.getNormalizedSubmitterName(submission)
+        assertNull(result)
     }
 }
