@@ -22,7 +22,7 @@ interface MyLifeDao {
     @Query("SELECT * FROM my_life WHERE _id IN (:ids)")
     suspend fun getByIds(ids: List<String>): List<MyLife>
 
-    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id")
+    @Query("UPDATE my_life SET isVisible = :isVisible WHERE _id = :id OR imageId = :id OR title = :id")
     suspend fun updateVisibility(id: String, isVisible: Boolean)
 
     @Update

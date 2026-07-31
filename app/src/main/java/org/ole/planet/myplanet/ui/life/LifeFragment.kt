@@ -48,7 +48,10 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     override suspend fun getAdapter(): ListAdapter<*, *> {
         lifeAdapter = LifeAdapter(requireContext(), this,
             visibilityCallback = { myLife, isVisible ->
-                myLife._id?.let { id ->
+                val id = myLife._id.takeIf { it.isNotBlank() }
+                    ?: myLife.imageId?.takeIf { it.isNotBlank() }
+                    ?: myLife.title
+                if (!id.isNullOrEmpty()) {
                     viewLifecycleOwner.lifecycleScope.launch {
                         withContext(dispatcherProvider.io) {
                             lifeRepository.updateVisibility(isVisible, id)
