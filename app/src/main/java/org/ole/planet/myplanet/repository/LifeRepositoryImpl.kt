@@ -58,11 +58,13 @@ class LifeRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        return myLifeDao.getByUserId(userId)
+        val effectiveUserId = userId?.ifEmpty { null }
+        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.imageId ?: it.title }
     }
 
     override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
-        return myLifeDao.getVisibleByUserId(userId)
+        val effectiveUserId = userId?.ifEmpty { null }
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.imageId ?: it.title }
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
@@ -81,7 +83,7 @@ class LifeRepositoryImpl @Inject constructor(
                         cacheMyLifeItems(userId, storedItems)
                     }
                 }
-                return cached.filter { it.isVisible }.map { item ->
+                return cached.filter { it.isVisible }.distinctBy { it.imageId ?: it.title }.map { item ->
                     MyLife(item.imageId, userId, item.title).apply {
                         isVisible = item.isVisible
                         weight = item.weight
@@ -100,7 +102,7 @@ class LifeRepositoryImpl @Inject constructor(
             cacheMyLifeItems(userId, allForUser)
             allForUser.filter { it.isVisible }
         }
-        return visibleItems
+        return visibleItems.distinctBy { it.imageId ?: it.title }
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {

@@ -86,13 +86,13 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     }
 
     private suspend fun loadMyLifeList(): List<MyLife> {
-        val userId = userRepository.getUserModel()?.id
+        val userId = sharedPrefManager.getUserId().ifEmpty { userRepository.getUserModel()?.id }
         var myLifeList = lifeRepository.getMyLifeByUserId(userId)
         if (myLifeList.isEmpty()) {
             lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(requireContext(), userId))
             myLifeList = lifeRepository.getMyLifeByUserId(userId)
         }
-        return myLifeList
+        return myLifeList.distinctBy { it.imageId ?: it.title }
     }
 
     private fun refreshList() {
