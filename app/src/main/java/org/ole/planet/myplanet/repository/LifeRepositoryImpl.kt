@@ -57,14 +57,21 @@ class LifeRepositoryImpl @Inject constructor(
         }
     }
 
+    private fun MyLife.dedupKey(): Any {
+        return _id?.takeIf { it.isNotBlank() }
+            ?: imageId?.takeIf { it.isNotBlank() }
+            ?: title?.takeIf { it.isNotBlank() }
+            ?: System.identityHashCode(this)
+    }
+
     override suspend fun getMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
         val effectiveUserId = userId?.ifEmpty { null }
-        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.imageId ?: it.title }
+        return myLifeDao.getByUserId(effectiveUserId).distinctBy { it.dedupKey() }
     }
 
     override suspend fun getVisibleMyLifeByUserId(userId: String?, ensureLatest: Boolean): List<MyLife> {
         val effectiveUserId = userId?.ifEmpty { null }
-        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.imageId ?: it.title }
+        return myLifeDao.getVisibleByUserId(effectiveUserId).distinctBy { it.dedupKey() }
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
@@ -102,7 +109,7 @@ class LifeRepositoryImpl @Inject constructor(
             cacheMyLifeItems(userId, allForUser)
             allForUser.filter { it.isVisible }
         }
-        return visibleItems.distinctBy { it.imageId ?: it.title }
+        return visibleItems.distinctBy { it.dedupKey() }
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {
