@@ -114,6 +114,15 @@ class ChatViewModelTest {
     }
 
     @Test
+    fun `draftMessage updates and clears correctly`() {
+        assertEquals("", viewModel.getDraftMessage())
+        viewModel.setDraftMessage("Draft message for AI")
+        assertEquals("Draft message for AI", viewModel.getDraftMessage())
+        viewModel.clearDraftMessage()
+        assertEquals("", viewModel.getDraftMessage())
+    }
+
+    @Test
     fun `parseAndBuildInitialPage sets pagination state and returns messages`() = runTest {
         val json = "[{\"query\":\"q1\",\"response\":\"r1\"}]"
         val messages = viewModel.parseAndBuildInitialPage(json)
