@@ -37,6 +37,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
     var courseLib: String? = null
     private var isAddInProgress = false
 
+    var adapterFactory: BaseAdapterFactory? = null
 
     abstract fun getLayout(): Int
 
@@ -76,7 +77,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
         super.onViewCreated(view, savedInstanceState)
         postponeEnterTransition()
         viewLifecycleOwner.lifecycleScope.launch {
-            model = profileDbHandler.getUserModel()
+            model = userRepository.getUserModel()
             val adapter = getAdapter()
             recyclerView.adapter = adapter
             if (isMyCourseLib && adapter.itemCount != 0 && courseLib == "courses") {
@@ -143,7 +144,7 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val userId = profileDbHandler.getUserModel()?.id ?: return@launch
+                val userId = userRepository.getUserModel()?.id ?: return@launch
                 var libraryAdded = false
                 var courseAdded = false
                 var errorOccurred: Throwable? = null
@@ -275,6 +276,5 @@ abstract class BaseRecyclerFragment<LI> : BaseRecyclerParentFragment<Any?>(), On
             val textView = v as? TextView ?: v.findViewById(R.id.tv_empty_message)
             textView.setText(messageRes)
         }
-
     }
 }

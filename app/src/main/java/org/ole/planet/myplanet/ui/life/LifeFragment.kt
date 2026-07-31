@@ -86,7 +86,7 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
     }
 
     private suspend fun loadMyLifeList(): List<MyLife> {
-        val userId = profileDbHandler.getUserModel()?.id
+        val userId = userRepository.getUserModel()?.id
         var myLifeList = lifeRepository.getMyLifeByUserId(userId)
         if (myLifeList.isEmpty()) {
             lifeRepository.seedMyLifeIfEmpty(userId, MyLife.defaultItems(requireContext(), userId))

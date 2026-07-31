@@ -215,6 +215,12 @@ class SettingsActivity : AppCompatActivity() {
                 true
             }
 
+            val textSize = findPreference<Preference>("text_size")
+            textSize?.setOnPreferenceClickListener {
+                textSizeChanger(requireActivity())
+                true
+            }
+
             // Show Available space under the "Freeup Space" preference.
             val spacePreference = findPreference<Preference>("freeup_space")
             if (spacePreference != null) {
@@ -282,6 +288,35 @@ class SettingsActivity : AppCompatActivity() {
             viewModel.fetchRetryQueueDetails()
         }
 
+        private fun handleFreeSpaceWorkState(workInfo: WorkInfo, dialog: DialogUtils.CustomProgressDialog) {
+            when (workInfo.state) {
+                WorkInfo.State.RUNNING -> {
+                    val progress = workInfo.progress
+                    val deletedFiles = progress.getInt("deletedFiles", 0)
+                    val freedBytes = progress.getLong("freedBytes", 0)
+                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
+                }
+                WorkInfo.State.SUCCEEDED -> {
+                    dialog.dismiss()
+                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
+                    val output = workInfo.outputData
+                    val deletedFiles = output.getInt("deletedFiles", 0)
+                    val freedBytes = output.getLong("freedBytes", 0)
+                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
+                }
+                WorkInfo.State.FAILED -> {
+                    dialog.dismiss()
+                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
+                }
+                WorkInfo.State.CANCELLED -> {
+                    dialog.dismiss()
+                }
+                else -> {
+                    // ENQUEUED or BLOCKED
+                }
+            }
+        }
+
         private fun clearDataButtonInit() {
             val preference = findPreference<Preference>("reset_app")
             if (preference != null) {
@@ -320,32 +355,7 @@ class SettingsActivity : AppCompatActivity() {
                                 viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                                     workManager.getWorkInfoByIdFlow(freeSpaceWork.id).collect { workInfo ->
                                         if (workInfo != null) {
-                                            when (workInfo.state) {
-                                                WorkInfo.State.RUNNING -> {
-                                                    val progress = workInfo.progress
-                                                    val deletedFiles = progress.getInt("deletedFiles", 0)
-                                                    val freedBytes = progress.getLong("freedBytes", 0)
-                                                    dialog.setText("Deleting files... $deletedFiles deleted (${FileUtils.formatSize(requireContext(), freedBytes)})")
-                                                }
-                                                WorkInfo.State.SUCCEEDED -> {
-                                                    dialog.dismiss()
-                                                    Utilities.toast(requireActivity(), getString(R.string.data_cleared))
-                                                    val output = workInfo.outputData
-                                                    val deletedFiles = output.getInt("deletedFiles", 0)
-                                                    val freedBytes = output.getLong("freedBytes", 0)
-                                                    Utilities.toast(requireActivity(), "Freed ${FileUtils.formatSize(requireContext(), freedBytes)} ($deletedFiles files)")
-                                                }
-                                                WorkInfo.State.FAILED -> {
-                                                    dialog.dismiss()
-                                                    Utilities.toast(requireActivity(), getString(R.string.unable_to_clear_files))
-                                                }
-                                                WorkInfo.State.CANCELLED -> {
-                                                    dialog.dismiss()
-                                                }
-                                                else -> {
-                                                    // ENQUEUED or BLOCKED
-                                                }
-                                            }
+                                            handleFreeSpaceWorkState(workInfo, dialog)
                                             if (workInfo.state.isFinished) {
                                                 kotlinx.coroutines.currentCoroutineContext().cancel()
                                             }
@@ -434,6 +444,44 @@ class SettingsActivity : AppCompatActivity() {
                             else -> "en"
                         }
                         LocaleUtils.setLocale(context, selectedLanguage)
+                        (context as Activity).recreate()
+                        dialog.dismiss()
+                    }
+                    .setNegativeButton(R.string.cancel, null)
+
+                val dialog = builder.create()
+                dialog.show()
+
+                if (context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+                    val maxHeight = (context.resources.displayMetrics.heightPixels * 0.35).toInt()
+                    dialog.listView?.let { listView ->
+                        val params = listView.layoutParams
+                        params.height = maxHeight
+                        listView.layoutParams = params
+                    }
+                }
+            }
+
+            fun textSizeChanger(context: Context) {
+                val scales = floatArrayOf(0.85f, 1.0f, 1.15f)
+                val options = arrayOf(
+                    context.getString(R.string.text_size_small),
+                    context.getString(R.string.text_size_medium),
+                    context.getString(R.string.text_size_large)
+                )
+                val currentScale = LocaleUtils.getTextScale(context)
+                var checkedItem = 1
+                for (i in scales.indices) {
+                    if (scales[i] == currentScale) {
+                        checkedItem = i
+                        break
+                    }
+                }
+
+                val builder = AlertDialog.Builder(context, R.style.AlertDialogTheme)
+                    .setTitle(context.getString(R.string.select_text_size))
+                    .setSingleChoiceItems(ArrayAdapter(context, R.layout.checked_list_item, options), checkedItem) { dialog, which ->
+                        LocaleUtils.setTextScale(context, scales[which])
                         (context as Activity).recreate()
                         dialog.dismiss()
                     }

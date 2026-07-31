@@ -68,6 +68,7 @@ import org.ole.planet.myplanet.utils.NetworkUtils.extractProtocol
 import org.ole.planet.myplanet.utils.NetworkUtils.getCustomDeviceName
 import org.ole.planet.myplanet.utils.NetworkUtils.isNetworkConnectedFlow
 import org.ole.planet.myplanet.utils.NotificationUtils.cancelAll
+import org.ole.planet.myplanet.utils.RetryUtils
 import org.ole.planet.myplanet.utils.ServerConfigUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 import org.ole.planet.myplanet.utils.TimeUtils
@@ -487,18 +488,15 @@ abstract class SyncActivity : ProcessUserDataActivity(), ConfigurationsRepositor
     private suspend fun onSyncComplete() {
         val activityContext = this@SyncActivity
         try {
-            var attempt = 0
-            val maxAttempts = 3 // Maximum 3 seconds wait
-            while (attempt < maxAttempts) {
-                val hasUser = userRepository.hasAtLeastOneUser()
-                if (hasUser) {
-                    break
-                }
-                attempt++
-                delay(1000)
+            val hasUser = RetryUtils.retry(
+                maxAttempts = 3, // Maximum 3 seconds wait
+                delayMs = 1000L,
+                shouldRetry = { it != true }
+            ) {
+                userRepository.hasAtLeastOneUser()
             }
 
-            if (attempt >= maxAttempts) {
+            if (hasUser != true) {
                 Log.w("SyncActivity", "Timeout waiting for users to sync. Continuing anyway...")
             }
 
