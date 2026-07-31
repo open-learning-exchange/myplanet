@@ -81,6 +81,12 @@ class LifeRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMyLifeForDashboard(userId: String, seedBase: List<MyLife>): List<MyLife> {
+        val effectiveUserId = userId.ifEmpty { null }
+        val allForUser = getMyLifeByUserId(effectiveUserId, ensureLatest = false)
+        if (allForUser.isNotEmpty()) {
+            return allForUser.filter { it.isVisible }.distinctBy { it.dedupKey() }
+        }
+
         val json = sharedPrefManager.rawPreferences.getString("$MY_LIFE_CACHE_PREFIX$userId", null)
         if (json != null) {
             val cached: List<CachedMyLifeItem>? = try {
@@ -90,13 +96,7 @@ class LifeRepositoryImpl @Inject constructor(
                 null
             }
             if (cached != null) {
-                appScope.launch {
-                    val storedItems = getMyLifeByUserId(userId, ensureLatest = false)
-                    if (storedItems.isNotEmpty()) {
-                        cacheMyLifeItems(userId, storedItems)
-                    }
-                }
-                return cached.filter { it.isVisible }.distinctBy { it.imageId ?: it.title }.map { item ->
+                return cached.filter { it.isVisible }.map { item ->
                     MyLife(item.imageId, userId, item.title).apply {
                         isVisible = item.isVisible
                         weight = item.weight
@@ -105,17 +105,10 @@ class LifeRepositoryImpl @Inject constructor(
             }
         }
 
-        val allForUser = getMyLifeByUserId(userId, ensureLatest = false)
-        val visibleItems = if (allForUser.isEmpty()) {
-            seedMyLifeIfEmpty(userId, seedBase)
-            val seeded = getMyLifeByUserId(userId, ensureLatest = true)
-            cacheMyLifeItems(userId, seeded)
-            seeded.filter { it.isVisible }
-        } else {
-            cacheMyLifeItems(userId, allForUser)
-            allForUser.filter { it.isVisible }
-        }
-        return visibleItems.distinctBy { it.dedupKey() }
+        seedMyLifeIfEmpty(effectiveUserId, seedBase)
+        val seeded = getMyLifeByUserId(effectiveUserId, ensureLatest = true)
+        if (userId.isNotEmpty()) cacheMyLifeItems(userId, seeded)
+        return seeded.filter { it.isVisible }.distinctBy { it.dedupKey() }
     }
 
     private fun cacheMyLifeItems(userId: String, items: List<MyLife>) {

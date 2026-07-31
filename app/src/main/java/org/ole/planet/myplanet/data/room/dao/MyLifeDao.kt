@@ -9,14 +9,13 @@ import org.ole.planet.myplanet.model.MyLife
 
 @Dao
 interface MyLifeDao {
-    // `IS` (not `=`) so a null userId matches null rows, mirroring Realm's equalTo(null) semantics.
-    @Query("SELECT * FROM my_life WHERE userId IS :userId ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) ORDER BY weight")
     suspend fun getByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT * FROM my_life WHERE userId IS :userId AND isVisible = 1 ORDER BY weight")
+    @Query("SELECT * FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId) AND isVisible = 1 ORDER BY weight")
     suspend fun getVisibleByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT COUNT(*) FROM my_life WHERE userId IS :userId")
+    @Query("SELECT COUNT(*) FROM my_life WHERE (:userId IS NULL OR userId IS NULL OR userId = :userId)")
     suspend fun countByUserId(userId: String?): Int
 
     @Query("SELECT * FROM my_life WHERE _id IN (:ids)")
