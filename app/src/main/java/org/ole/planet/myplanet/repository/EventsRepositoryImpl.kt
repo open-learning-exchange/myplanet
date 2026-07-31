@@ -98,16 +98,25 @@ class EventsRepositoryImpl @Inject constructor(
     override suspend fun batchInsertMeetups(documents: List<JsonObject>): Int {
         if (documents.isEmpty()) return 0
         return try {
+            val currentUserId = userRepository.getUserModel()?.id
+            val removedIds = if (!currentUserId.isNullOrBlank()) {
+                (removedLogDao.getRemovedDocIds("meetups", currentUserId) + removedLogDao.getRemovedDocIds("meetup", currentUserId)).filterNotNull().toSet()
+            } else emptySet()
+
             val ids = documents.map { JsonUtils.getString("_id", it) }
             val existingByMeetupId = meetupDao.getByMeetupIds(ids).associateBy { it.meetupId }
 
             val meetupsToInsert = documents.mapNotNull { meetupDoc ->
                 val id = JsonUtils.getString("_id", meetupDoc)
-                val existing = existingByMeetupId[id]
-                if (existing?.updated == true) {
+                if (removedIds.contains(id)) {
                     null
                 } else {
-                    Meetup.fromJson(meetupDoc, "", existing)
+                    val existing = existingByMeetupId[id]
+                    if (existing?.updated == true) {
+                        null
+                    } else {
+                        Meetup.fromJson(meetupDoc, "", existing)
+                    }
                 }
             }
             if (meetupsToInsert.isNotEmpty()) {
@@ -122,8 +131,10 @@ class EventsRepositoryImpl @Inject constructor(
 
     override suspend fun createMeetup(params: MeetupCreationParams): Boolean {
         val gson = Gson()
+        val currentUserId = userRepository.getUserModel()?.id
         val meetup = Meetup().apply {
             id = "${UUID.randomUUID()}"
+            userId = currentUserId
             title = params.title
             meetupLink = params.meetupLink
             description = params.description
@@ -179,16 +190,33 @@ class EventsRepositoryImpl @Inject constructor(
         if (meetupId.isBlank()) return false
         return try {
             val meetup = meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId)
-            val userId = meetup?.userId
+            val currentUserId = userRepository.getUserModel()?.id
+            val userId = meetup?.userId ?: currentUserId
+
+            val docIdsToLog = mutableSetOf<String>()
+            if (meetupId.isNotBlank()) docIdsToLog.add(meetupId)
+            meetup?.id?.let { if (it.isNotBlank()) docIdsToLog.add(it) }
+            meetup?.meetupId?.let { if (it.isNotBlank()) docIdsToLog.add(it) }
+
             if (!userId.isNullOrBlank()) {
-                removedLogDao.insert(RemovedLog().apply {
-                    id = UUID.randomUUID().toString()
-                    type = "meetups"
-                    this.userId = userId
-                    docId = meetupId
-                })
+                docIdsToLog.forEach { docId ->
+                    removedLogDao.insert(RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        type = "meetups"
+                        this.userId = userId
+                        this.docId = docId
+                    })
+                    removedLogDao.insert(RemovedLog().apply {
+                        id = UUID.randomUUID().toString()
+                        type = "meetup"
+                        this.userId = userId
+                        this.docId = docId
+                    })
+                }
             }
             meetupDao.deleteById(meetupId)
+            meetup?.id?.let { meetupDao.deleteById(it) }
+            meetup?.meetupId?.let { meetupDao.deleteById(it) }
             true
         } catch (e: Exception) {
             e.printStackTrace()
