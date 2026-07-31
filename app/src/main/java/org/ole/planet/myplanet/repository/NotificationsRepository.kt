@@ -16,7 +16,6 @@ interface NotificationsRepository {
     suspend fun updateStorageNotification(userId: String?, availablePercent: Int)
     suspend fun markNotificationsAsRead(notificationIds: Set<String>): Set<String>
     suspend fun markAllUnreadAsRead(userId: String?): Set<String>
-    suspend fun getSurveyId(relatedId: String?): String?
     suspend fun getTaskDetails(relatedId: String?): TaskNotificationResult?
     suspend fun getJoinRequestTeamId(relatedId: String?): String?
     suspend fun getJoinRequestDetails(relatedId: String?): Pair<String, String>

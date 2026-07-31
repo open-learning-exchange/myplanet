@@ -9,9 +9,11 @@ import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.services.BroadcastService
 import org.ole.planet.myplanet.utils.Constants
+import org.ole.planet.myplanet.utils.TimeProvider
 
 class RetryInterceptor @Inject constructor(
-    private val broadcastService: BroadcastService
+    private val broadcastService: BroadcastService,
+    private val timeProvider: TimeProvider
 ) : Interceptor {
     private val maxRetries = 3
     var initialDelay = 1000L
@@ -73,13 +75,13 @@ class RetryInterceptor @Inject constructor(
     }
 
     private fun backoff(chain: Interceptor.Chain, delayMillis: Long) {
-        val deadline = System.currentTimeMillis() + delayMillis
+        val deadline = timeProvider.now() + delayMillis
         try {
             while (true) {
                 if (chain.call().isCanceled()) {
                     throw IOException("Call cancelled during retry delay")
                 }
-                val remaining = deadline - System.currentTimeMillis()
+                val remaining = deadline - timeProvider.now()
                 if (remaining <= 0) {
                     return
                 }

@@ -59,9 +59,7 @@ class HealthRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markHealthExaminationsUploaded(idToRevMap: Map<String, String?>) {
-        idToRevMap.forEach { (id, rev) ->
-            healthExaminationDao.markUploaded(id, rev)
-        }
+        healthExaminationDao.markUploaded(idToRevMap)
     }
 
     override suspend fun saveExamination(examination: HealthExamination?, pojo: HealthExamination?, user: UserEntity?) {
@@ -136,4 +134,15 @@ class HealthRepositoryImpl @Inject constructor(
         return uploadedHealths
     }
 
+    override suspend fun getByIdOrUserId(id: String): HealthExamination? {
+        return healthExaminationDao.getByIdOrUserId(id)
+    }
+
+    override suspend fun getByProfileId(profileId: String): List<HealthExamination> {
+        return healthExaminationDao.getByProfileId(profileId)
+    }
+
+    override suspend fun upsert(examination: HealthExamination) {
+        healthExaminationDao.upsert(examination)
+    }
 }

@@ -54,9 +54,6 @@ class BellDashboardFragment : BaseDashboardFragment() {
     @Inject
     lateinit var serverUrlMapper: ServerUrlMapper
 
-    @Inject
-    lateinit var timeProvider: TimeProvider
-
     companion object {
         private val SURVEY_DIALOG_INTERVAL_MS = TimeUnit.HOURS.toMillis(1)
     }
@@ -78,7 +75,7 @@ class BellDashboardFragment : BaseDashboardFragment() {
         observeSurveyReminders()
         viewLifecycleOwner.lifecycleScope.launch {
             val wasUserNull = user == null
-            user = profileDbHandler.getUserModel()
+            user = userRepository.getUserModel()
             binding.cardProfileBell.txtCommunityName.text = user?.planetCode
             user?.id?.let {
                 viewModel.loadCompletedCourses(it)
@@ -230,11 +227,16 @@ class BellDashboardFragment : BaseDashboardFragment() {
     }
 
     private suspend fun handleDueReminders(remindersToShow: List<String>) {
+        val allSurveyIds = remindersToShow.flatMap { it.split(",") }.filter { it.isNotBlank() }.distinct()
+        if (allSurveyIds.isEmpty()) return
+
+        val allSubmissions = submissionsRepository.getSubmissionsByIds(allSurveyIds)
+        val submissionsById = allSubmissions.associateBy { it.id }
+
         for (surveyIds in remindersToShow) {
             val surveyIdList = surveyIds.split(",").filter { it.isNotBlank() }
             if (surveyIdList.isEmpty()) continue
-            val submissions = submissionsRepository.getSubmissionsByIds(surveyIdList)
-            val submissionsById = submissions.associateBy { it.id }
+
             val pendingSurveys = surveyIdList.mapNotNull { submissionsById[it] }.filter { it.status == "pending" }
 
             if (pendingSurveys.isNotEmpty()) {

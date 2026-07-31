@@ -70,13 +70,9 @@ class UserSessionManager @Inject constructor(
                     parentCode = model?.parentCode,
                     planetCode = model?.planetCode
                 )
-                withContext(dispatcherProvider.main) {
-                    callback?.invoke()
-                }
+                callback?.invoke()
             } catch (e: Exception) {
-                withContext(dispatcherProvider.main) {
-                    onError?.invoke(e)
-                }
+                onError?.invoke(e)
             }
         }
     }
