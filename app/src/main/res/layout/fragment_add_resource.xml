@@ -38,16 +38,17 @@
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingVertical="@dimen/padding_normal">
 
                 <ImageView
-                    android:layout_width="@dimen/_80dp"
-                    android:layout_height="@dimen/_80dp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_large"
+                    android:layout_margin="@dimen/padding_normal"
                     android:background="@drawable/oval_primary"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_large"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
                     app:srcCompat="@drawable/ic_camera"
                     app:tint="@color/daynight_textColor" />
                 <TextView
@@ -67,16 +68,17 @@
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingVertical="@dimen/padding_normal">
 
                 <ImageView
-                    android:layout_width="@dimen/_80dp"
-                    android:layout_height="@dimen/_80dp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_large"
+                    android:layout_margin="@dimen/padding_normal"
                     android:background="@drawable/oval_primary"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_large"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
                     app:srcCompat="@drawable/ic_record_video"
                     app:tint="@color/daynight_textColor" />
                 <TextView
@@ -96,16 +98,17 @@
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingVertical="@dimen/padding_normal">
 
                 <ImageView
-                    android:layout_width="@dimen/_80dp"
-                    android:layout_height="@dimen/_80dp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_large"
+                    android:layout_margin="@dimen/padding_normal"
                     android:background="@drawable/oval_primary"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_large"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
                     app:srcCompat="@drawable/ic_mic"
                     app:tint="@color/daynight_textColor" />
                 <TextView
@@ -125,16 +128,17 @@
                 android:layout_weight="1"
                 android:background="?attr/selectableItemBackground"
                 android:gravity="center"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingVertical="@dimen/padding_normal">
 
                 <ImageView
-                    android:layout_width="@dimen/_80dp"
-                    android:layout_height="@dimen/_80dp"
+                    android:layout_width="60dp"
+                    android:layout_height="60dp"
                     android:layout_gravity="center"
-                    android:layout_margin="@dimen/padding_large"
+                    android:layout_margin="@dimen/padding_normal"
                     android:background="@drawable/oval_primary"
-                    android:gravity="center"
-                    android:padding="@dimen/padding_large"
+                    android:padding="14dp"
+                    android:scaleType="fitCenter"
                     app:srcCompat="@drawable/ic_folder"
                     app:tint="@color/daynight_textColor" />
                 <TextView
