@@ -32,6 +32,33 @@ void main() {
       );
     });
 
+    /// An unencoded '@' or '/' in the PIN would otherwise re-point the URL at a
+    /// different host.
+    test('percent-encodes the PIN in the userinfo component', () {
+      expect(
+        ServerConfig.buildCouchDbUrl('https://planet.example.org', 'p@ss/word'),
+        'https://satellite:p%40ss%2Fword@planet.example.org:443',
+      );
+    });
+
+    test('is a no-op for the numeric PINs actually in use', () {
+      expect(
+        ServerConfig.buildCouchDbUrl('https://planet.example.org', '1234'),
+        contains('satellite:1234@'),
+      );
+    });
+
+    test('rejects a URL with no scheme or host', () {
+      expect(
+        () => ServerConfig.buildCouchDbUrl('planet.example.org', '1234'),
+        throwsFormatException,
+      );
+      expect(
+        () => ServerConfig.buildCouchDbUrl('', '1234'),
+        throwsFormatException,
+      );
+    });
+
     test('passes through a URL that already carries credentials', () {
       const url = 'https://someone:secret@planet.example.org:443';
       expect(ServerConfig.buildCouchDbUrl(url, '1234'), url);

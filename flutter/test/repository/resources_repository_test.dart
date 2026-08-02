@@ -205,6 +205,57 @@ void main() {
     });
   });
 
+  group('sync — partial page walk', () {
+    test('keeps local rows when the walk ends early', () async {
+      // Seed a full library.
+      stubCount(150);
+      stubPage(0, 100, List.generate(100, (i) => row('res-$i', 'T')));
+      stubPage(100, 100, List.generate(50, (i) => row('res-${100 + i}', 'T')));
+      await repository.sync(config: config);
+      expect(await repository.localCount(), 150);
+
+      // Now the server truncates mid-walk: page 2 comes back empty even though
+      // the count promised more. savedIds is only a prefix of what exists.
+      stubCount(150);
+      stubPage(0, 100, List.generate(50, (i) => row('res-$i', 'T')));
+      stubPage(50, 100, const []);
+      await repository.sync(config: config);
+
+      // Cleanup must be skipped — deleting everything outside the prefix would
+      // throw away rows the server still has.
+      expect(await repository.localCount(), 150);
+    });
+  });
+
+  group('sync — large libraries', () {
+    test(
+      'deletes stale rows when the kept set exceeds the SQLite bind limit',
+      () async {
+        // 1200 ids is past the 999-variable floor a single NOT IN would bind.
+        stubCount(1200);
+        stubPage(0, 100, List.generate(100, (i) => row('res-$i', 'T')));
+        for (var skip = 100; skip < 1200; skip += 100) {
+          stubPage(
+            skip,
+            100,
+            List.generate(100, (i) => row('res-${skip + i}', 'T')),
+          );
+        }
+        final result = await repository.sync(config: config);
+
+        expect((result as SyncComplete).savedCount, 1200);
+        expect(await repository.localCount(), 1200);
+
+        // Shrink to a single resource; 1199 rows must be removed in chunks.
+        stubCount(1);
+        stubPage(0, 100, [row('res-0', 'T')]);
+        await repository.sync(config: config);
+
+        expect(await repository.localCount(), 1);
+      },
+    );
+  });
+
   group('watchResources', () {
     test('emits an updated list when a sync writes new rows', () async {
       stubCount(1);

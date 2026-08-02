@@ -100,6 +100,15 @@ class MyLibraryMapper {
 
   /// The Kotlin walks `_attachments` and treats the first key without a `/` as
   /// the resource's own file, deriving the download URL from it.
+  ///
+  /// **Deviation from the Kotlin**, twice over:
+  /// * The userinfo is stripped before the URL is stored. `couchDbUrl` carries
+  ///   `satellite:<pin>@`, and the Kotlin writes that straight into
+  ///   `resourceRemoteAddress` — putting the PIN in a database row for every
+  ///   resource, from where it reaches anything that reads, exports or logs the
+  ///   row. Credentials are attached at request time instead.
+  /// * An empty `couchDbUrl` yields `null` rather than the Kotlin's
+  ///   `http:///resources/...`, which is not a usable URL.
   static _Attachment? _primaryAttachment(
     Map<String, dynamic> doc,
     String resourceId,
@@ -108,15 +117,31 @@ class MyLibraryMapper {
     final attachments = JsonUtils.getObject('_attachments', doc);
     if (attachments == null) return null;
 
+    final base = credentialFreeBase(couchDbUrl);
+    if (base == null) return null;
+
     for (final key in attachments.keys) {
       if (key.contains('/')) continue;
-      final base = couchDbUrl.isEmpty ? 'http://' : couchDbUrl;
       return _Attachment(
         remoteAddress: '$base/resources/$resourceId/$key',
         localAddress: key,
       );
     }
     return null;
+  }
+
+  /// Strips userinfo and any trailing slash from a CouchDB URL. Returns `null`
+  /// when the input is empty or unparseable.
+  static String? credentialFreeBase(String couchDbUrl) {
+    if (couchDbUrl.isEmpty) return null;
+
+    final parsed = Uri.tryParse(couchDbUrl);
+    if (parsed == null || parsed.host.isEmpty) return null;
+
+    return parsed
+        .replace(userInfo: '')
+        .toString()
+        .replaceAll(RegExp(r'/+$'), '');
   }
 }
 

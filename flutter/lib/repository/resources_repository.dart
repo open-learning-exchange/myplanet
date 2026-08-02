@@ -61,6 +61,10 @@ class ResourcesRepository {
     final batchSizer = AdaptiveBatchProcessor(initialSize: initialBatchSize);
     final savedIds = <String>[];
     var skip = 0;
+    // A short page means the server changed under us mid-walk. `savedIds` is
+    // then only a prefix of what exists, so the cleanup below must not run —
+    // it would delete local rows the server still has.
+    var walkedEveryPage = true;
 
     while (skip < totalRows) {
       final batchSize = batchSizer.currentSize;
@@ -79,7 +83,10 @@ class ResourcesRepository {
       batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
 
       final rows = pageResult.data['rows'];
-      if (rows is! List || rows.isEmpty) break;
+      if (rows is! List || rows.isEmpty) {
+        walkedEveryPage = false;
+        break;
+      }
 
       final companions = <MyLibraryTableCompanion>[];
       for (final row in rows) {
@@ -111,7 +118,7 @@ class ResourcesRepository {
     }
 
     // Port of `ResourcesRepositoryImpl.removeDeletedResources`.
-    if (savedIds.isNotEmpty) {
+    if (walkedEveryPage && savedIds.isNotEmpty) {
       await _dao.deleteNotIn(savedIds);
     }
 

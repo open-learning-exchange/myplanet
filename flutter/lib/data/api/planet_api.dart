@@ -75,6 +75,10 @@ class PlanetApi {
         url,
         options: Options(
           responseType: responseType,
+          // Set per request, not only in `withDefaults`: the public constructor
+          // accepts any Dio, and with a default one a 401 would throw and be
+          // reported as unreachable rather than as an authentication failure.
+          validateStatus: (_) => true,
           headers: {'Authorization': ?authHeader},
         ),
       );
