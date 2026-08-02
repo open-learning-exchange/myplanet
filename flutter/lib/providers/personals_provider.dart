@@ -4,6 +4,11 @@ import '../data/local/app_database.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 
+/// The state `ui/personals/PersonalsViewModel.kt` holds.
+///
+/// `PersonalActions` replaces the ViewModel's `viewModelScope.launch` wrappers:
+/// Riverpod already scopes the repository call to the widget that reads it, so
+/// the actions only need to forward the signed-in user.
 final personalsProvider = StreamProvider<List<PersonalRow>>((ref) {
   final user = ref.watch(sessionProvider).valueOrNull;
   if (user == null) return Stream.value(const []);

@@ -5,6 +5,12 @@ import 'app.dart';
 import 'core/prefs/planet_prefs.dart';
 import 'providers/app_providers.dart';
 
+/// Entry point, replacing `MainApplication.kt` and the launcher Activity.
+///
+/// Only the bootstrap lives here. Theme, locale and routing belong to
+/// `app.dart`, and the background work `MainApplication` schedules through
+/// WorkManager has no equivalent yet — see
+/// `docs/kotlin-to-flutter-migration.md`.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 

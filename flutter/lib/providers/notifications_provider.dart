@@ -4,6 +4,11 @@ import '../data/local/app_database.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 
+/// Port of `ui/notifications/NotificationsViewModel.kt`.
+///
+/// [NotificationFilter] replaces the Fragment's three-way tab index with a
+/// named enum, so the DAO query and the UI cannot disagree about which tab is
+/// which.
 enum NotificationFilter { all, unread, read }
 
 final notificationFilterProvider = StateProvider<NotificationFilter>(
