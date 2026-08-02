@@ -51,7 +51,7 @@ void main() {
       // The stored URL must not carry the satellite PIN.
       expect(
         row!.resourceRemoteAddress.value,
-        'https://planet.example.org/resources/res-1/chapter one.pdf',
+        'https://planet.example.org/resources/res-1/chapter%20one.pdf',
       );
       expect(row.resourceRemoteAddress.value, isNot(contains('1234')));
       expect(row.resourceRemoteAddress.value, isNot(contains('satellite')));

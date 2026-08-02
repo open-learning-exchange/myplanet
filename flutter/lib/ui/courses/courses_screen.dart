@@ -14,11 +14,24 @@ import '../router.dart';
 /// Keeps the Kotlin's three filters — free-text search, grade level, subject
 /// level — plus the my-courses/all-courses toggle, all applied in SQL rather
 /// than by filtering an in-memory list as `BaseRecyclerFragment` does.
-class CoursesScreen extends ConsumerWidget {
+class CoursesScreen extends ConsumerStatefulWidget {
   const CoursesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CoursesScreen> createState() => _CoursesScreenState();
+}
+
+class _CoursesScreenState extends ConsumerState<CoursesScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final courses = ref.watch(coursesStreamProvider);
     final syncState = ref.watch(courseSyncProvider);
@@ -60,13 +73,14 @@ class CoursesScreen extends ConsumerWidget {
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
                 child: SearchBar(
+                  controller: _searchController,
                   hintText: l10n.search,
                   leading: const Icon(Icons.search),
                   onChanged: (value) =>
                       ref.read(courseFilterProvider.notifier).setQuery(value),
                 ),
               ),
-              const _CourseFilterBar(),
+              _CourseFilterBar(onCleared: _searchController.clear),
               if (syncState is SyncRunning)
                 LinearProgressIndicator(
                   value: syncState.progress.total == 0
@@ -96,7 +110,10 @@ class CoursesScreen extends ConsumerWidget {
 }
 
 class _CourseFilterBar extends ConsumerWidget {
-  const _CourseFilterBar();
+  const _CourseFilterBar({required this.onCleared});
+
+  /// Clears the search field, which lives in the parent's state.
+  final VoidCallback onCleared;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,12 +152,16 @@ class _CourseFilterBar extends ConsumerWidget {
           ),
           if (filter.gradeLevel != null ||
               filter.subjectLevel != null ||
-              filter.myCoursesOnly) ...[
+              filter.myCoursesOnly ||
+              filter.query.isNotEmpty) ...[
             const SizedBox(width: 8),
             ActionChip(
               avatar: const Icon(Icons.clear, size: 18),
               label: Text(l10n.clearFilters),
-              onPressed: notifier.clear,
+              onPressed: () {
+                notifier.clear();
+                onCleared();
+              },
             ),
           ],
         ],
@@ -169,7 +190,9 @@ class _LevelDropdown extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: DropdownButton<String?>(
-        value: value,
+        // Belt and braces: a selection that is no longer among the options
+        // would otherwise assert. Can happen transiently while options reload.
+        value: options.contains(value) ? value : null,
         hint: Text(label),
         borderRadius: BorderRadius.circular(8),
         items: [
@@ -214,7 +237,8 @@ class _CourseTile extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
       trailing: const Icon(Icons.chevron_right),
-      onTap: () => context.go('${Routes.courses}/${course.id}'),
+      onTap: () =>
+          context.go('${Routes.courses}/${Uri.encodeComponent(course.id)}'),
     );
   }
 }

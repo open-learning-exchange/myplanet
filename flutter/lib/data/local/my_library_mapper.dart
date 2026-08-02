@@ -123,7 +123,11 @@ class MyLibraryMapper {
     for (final key in attachments.keys) {
       if (key.contains('/')) continue;
       return _Attachment(
-        remoteAddress: '$base/resources/$resourceId/$key',
+        // Encoded to match UrlUtils.resourceUrl — both build the same download
+        // path, and server-supplied filenames can contain spaces, '#' or '?'.
+        remoteAddress:
+            '$base/resources'
+            '/${Uri.encodeComponent(resourceId)}/${Uri.encodeComponent(key)}',
         localAddress: key,
       );
     }

@@ -82,10 +82,6 @@ existing users and servers:
    image name, not the user id.
 4. **Partial syncs are not rolled back.** A page failure mid-walk leaves earlier pages persisted,
    matching `SyncManager`.
-5. **Course step ids are content-derived.** Embedded steps carry no `_id`, so the Kotlin uses
-   `Base64(stepJson.toString())`. The port does the same with `base64(jsonEncode(step))`. The bytes
-   need not match the Kotlin's — under drop-and-resync the id only has to be stable *within* this
-   app — but editing a step's content still changes its id, exactly as in the Kotlin.
 
 Deliberate *deviations*, all flagged in code:
 
@@ -106,6 +102,13 @@ Deliberate *deviations*, all flagged in code:
   database thousands of times over. The port strips the userinfo and attaches credentials at
   request time. An empty CouchDB URL yields `null` rather than the Kotlin's unusable
   `http:///resources/...`.
+- **Course step ids are position-derived, not content-derived.** Embedded steps carry no `_id`, and
+  the Kotlin derives one as `Base64(stepJson.toString())`. That is unsafe as a primary key: two
+  steps with identical content collide, so the upsert silently drops one (within a course) or moves
+  it to the wrong course (across courses), and the key length grows with the step's text. The port
+  uses `<courseId>:<position>` — bounded, unique, and stable across syncs. Safe to diverge on
+  because the id is local in both apps, never a server value. `CourseDao.upsertAll` also deletes
+  steps past the new length, which upserting alone cannot do when a course shrinks.
 - **URL components are percent-encoded.** `buildCouchDbUrl` encodes the PIN, `userDocUrl` encodes
   the login name (keeping the `org.couchdb.user:` colon literal, which CouchDB requires), and
   `resourceUrl` returns `null` instead of interpolating the literal text `null`. All are no-ops
