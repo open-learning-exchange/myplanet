@@ -1,0 +1,66 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "myPlanet",
+  "@appTitle": {
+    "description": "Application name, shown in the app bar and launcher."
+  },
+
+  "serverConfigurationTitle": "Connect to a Planet server",
+  "serverUrlLabel": "Server URL",
+  "serverUrlHint": "https://planet.example.org",
+  "serverPinLabel": "Server PIN",
+  "connect": "Connect",
+  "serverUrlNotConfigured": "Server URL not configured",
+  "deviceCouldNotReachLocalServer": "device couldn't reach the server. check if you are connected to the correct Wi-Fi network for the local server (community).",
+  "deviceCouldNotReachNationServer": "device couldn’t reach the server. check if you are connected to the internet and try again",
+  "connectionFailed": "Connection failed!",
+  "connectedToCommunity": "Connected to {code}",
+  "@connectedToCommunity": {
+    "placeholders": {
+      "code": { "type": "String" }
+    }
+  },
+  "changeServer": "Change server",
+
+  "login": "Login",
+  "name": "Name",
+  "password": "password",
+  "signInOffline": "Sign in offline",
+  "invalidCredentials": "Name or password is incorrect.",
+  "userNotFound": "User not found.",
+  "missingAuthData": "Server response missing authentication data.",
+  "serverError": "Server error. Please try again later.",
+  "networkError": "Server not reachable. Check your internet connection.",
+  "emptyCredentials": "Username and password are required.",
+  "notAManager": "This account is not a manager.",
+  "savedAccounts": "Saved accounts",
+
+  "resources": "Resources",
+  "search": "search",
+  "sync": "sync",
+  "cancel": "cancel",
+  "settings": "Settings",
+  "logOut": "Log out",
+  "noDataAvailable": "No data available",
+  "syncingResources": "Syncing resources… {completed} of {total}",
+  "@syncingResources": {
+    "placeholders": {
+      "completed": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+  "syncedResources": "{count, plural, =0{No resources synced} =1{1 resource synced} other{{count} resources synced}}",
+  "@syncedResources": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "syncFailed": "Sync failed: {message}",
+  "@syncFailed": {
+    "placeholders": {
+      "message": { "type": "String" }
+    }
+  },
+  "availableOffline": "Available offline"
+}
