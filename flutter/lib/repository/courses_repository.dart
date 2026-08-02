@@ -7,6 +7,7 @@ import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/course_mapper.dart';
+import 'shelf_repository.dart';
 
 /// Port of the courses read/sync surface of
 /// `repository/CoursesRepositoryImpl.kt` plus the `courses` table pull that
@@ -21,7 +22,7 @@ import '../data/local/course_mapper.dart';
 /// SQLite and never touch the network; [sync] refills the table and Drift pushes
 /// the change into any open stream.
 class CoursesRepository {
-  CoursesRepository(this._api, this._dao);
+  CoursesRepository(this._api, this._dao, this._removedLogDao);
 
   /// Courses carry embedded steps, so documents are much larger than resource
   /// documents — a smaller starting page keeps the first batch responsive on a
@@ -30,6 +31,7 @@ class CoursesRepository {
 
   final PlanetApi _api;
   final CourseDao _dao;
+  final RemovedLogDao _removedLogDao;
 
   /// Reactive, offline-first course list.
   Stream<List<CourseRow>> watchCourses({
@@ -68,16 +70,30 @@ class CoursesRepository {
 
   /// Port of `joinCourse` / `leaveCourse`.
   ///
-  /// Local-only: this writes shelf membership to SQLite but does **not** push
-  /// the shelf document back to CouchDB, because the upload framework
-  /// (`services/upload/`) is not ported yet. Until it is, a join made here is
-  /// lost on the next full resync.
+  /// Writes local shelf membership and records (or clears) the removal so the
+  /// shelf upload can tell a deliberate "leave" from a document the server
+  /// simply still lists. Pushing the shelf itself is [ShelfRepository.upload];
+  /// this stays a local, synchronous-feeling write so the UI responds offline.
   Future<void> setShelfMembership(
     String courseId,
     String userId, {
     required bool joined,
-  }) {
-    return _dao.setShelfMembership(courseId, userId, joined: joined);
+  }) async {
+    await _dao.setShelfMembership(courseId, userId, joined: joined);
+
+    if (joined) {
+      await _removedLogDao.clear(
+        type: ShelfRepository.coursesType,
+        userId: userId,
+        docId: courseId,
+      );
+    } else {
+      await _removedLogDao.record(
+        type: ShelfRepository.coursesType,
+        userId: userId,
+        docId: courseId,
+      );
+    }
   }
 
   /// Port of the `courses` table pull.

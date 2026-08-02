@@ -10,6 +10,8 @@ test suite. It is *not* yet a replacement for the Kotlin app: **2 of 28 UI packa
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
+- **Phase 3** — the first write-back path: shelf upload, so joining or leaving a course reaches
+  the server.
 
 ## Strategy
 
@@ -42,6 +44,7 @@ test suite. It is *not* yet a replacement for the Kotlin app: **2 of 28 UI packa
 | Dashboard navigation host | `ui/dashboard/DashboardActivity.kt` | `ui/dashboard/dashboard_shell.dart` |
 | Courses list, search, filters | `CoursesRepositoryImpl`, `CoursesFragment` | `repository/courses_repository.dart`, `ui/courses/courses_screen.dart` |
 | Course detail and steps | `CourseDetailFragment`, `MyCourse`/`CourseStep` | `ui/courses/course_detail_screen.dart`, `data/local/course_mapper.dart` |
+| Shelf write-back | `UserRepositoryImpl.uploadShelfData`, `UploadToShelfService`, `RemovedLog` | `repository/shelf_repository.dart`, `removed_log` table |
 
 ## Technology mapping
 
@@ -76,12 +79,6 @@ existing users and servers:
    need not match the Kotlin's — under drop-and-resync the id only has to be stable *within* this
    app — but editing a step's content still changes its id, exactly as in the Kotlin.
 
-One **known incompleteness**, flagged in code: `CoursesRepository.setShelfMembership` (join/leave a
-course) writes to SQLite but does **not** push the shelf document back to CouchDB, because the
-upload framework is not ported. A join made in the Flutter app is lost on the next full resync.
-This is the first place the missing upload path bites, and it will keep biting until item 3 below
-is resolved.
-
 Deliberate *deviations*, all flagged in code:
 
 - **`ServerUrlMapper` no longer reads `BuildConfig.PLANET_*`.** Those come from the tracked
@@ -106,6 +103,23 @@ Deliberate *deviations*, all flagged in code:
   `resourceUrl` returns `null` instead of interpolating the literal text `null`. All are no-ops
   for well-formed input; the Kotlin is simply wrong when a value contains `@`, `/` or a space.
 
+## Write-back
+
+Phase 3 opened the write path with `ShelfRepository`, which pushes the user's shelf document
+(`courseIds` / `resourceIds` / `meetupIds`) back to CouchDB. Two things are worth knowing before
+extending it:
+
+- **The payload is derived state, not a queue.** It is recomputed from SQLite on every upload, so a
+  failed push needs no retry bookkeeping — the next one simply sends current truth. Prefer this
+  shape over an outbox for anything else that is a whole-document overwrite.
+- **Deletions need an explicit record.** The merge unions local ids with the server's, so a "leave"
+  would be silently re-added. The `removed_log` table (port of `RemovedLog`) is what makes a
+  removal stick. Note the asymmetry, which is the Kotlin's: the removal list filters only the
+  *server* side, so re-adding something beats a stale removal record.
+
+Not yet solved: uploads only run while the user is in the app and acting. Submissions, news and
+team writes need retry and background delivery — see item 1 below.
+
 ## Platform policy
 
 Both platforms must permit cleartext, because the primary myPlanet deployment is a local community
@@ -127,10 +141,11 @@ Ordered by risk, highest first.
    OS-scheduled execution that survives process death. Flutter has no first-party answer;
    `workmanager` / `flutter_background_service` are thin platform-channel wrappers, and the
    Android side would remain Kotlin. It may argue for keeping a Kotlin platform layer permanently
-   rather than a pure-Dart app. **Still unresolved, and now blocking:** the courses slice already
-   hits it — joining a course cannot reach the server without the upload path, which in turn wants
-   background retry. This needs a decision before the `teams`, `voices` or `submissions` packages,
-   all of which write back.
+   rather than a pure-Dart app. **Still unresolved.** Phase 3 works around it for the shelf by
+   making the payload derived rather than queued, so an opportunistic in-app push is enough. That
+   trick does not generalise: a survey submission or a news post is an *append*, not an overwrite,
+   and losing one is not recoverable by recomputation. A decision is needed before `submissions`,
+   `voices` or `teams`.
 2. **`TeamsRepositoryImpl` (~1785 lines).** The largest file in the codebase, spanning team
    creation, tasks, membership roles and reactive queries. Should be split by responsibility
    *during* the port, not carried over whole.
@@ -194,4 +209,4 @@ flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clon
 ---
 
 **Last updated**: 2026-08-02
-**Phase**: 2 of N (dashboard shell + courses)
+**Phase**: 3 of N (shelf write-back)
