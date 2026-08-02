@@ -39,7 +39,7 @@ lib/
 ├── data/
 │   ├── api/       # Dio client (replaces the Retrofit ApiInterface)
 │   └── local/     # Drift tables, DAOs, CouchDB document mappers
-├── repository/    # Configurations, User, Resources
+├── repository/    # Configurations, User, Resources, Courses
 ├── providers/     # Riverpod graph (replaces the Hilt modules)
 ├── ui/            # Screens + go_router
 └── l10n/          # .arb files (replaces res/values-{lang}/strings.xml)

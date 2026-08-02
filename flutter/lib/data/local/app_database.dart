@@ -20,7 +20,10 @@ part 'app_database.g.dart';
 /// the drop-and-resync policy documented in `docs/realm-to-room-migration.md`;
 /// [_migration] keeps that policy so a schema bump re-pulls from the server
 /// rather than needing a hand-written migration.
-@DriftDatabase(tables: [Users, MyLibraryTable], daos: [UserDao, MyLibraryDao])
+@DriftDatabase(
+  tables: [Users, MyLibraryTable, Courses, CourseSteps],
+  daos: [UserDao, MyLibraryDao, CourseDao],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
@@ -31,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -143,5 +146,149 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   Future<int> deleteNotIn(List<String> keepIds) {
     if (keepIds.isEmpty) return delete(myLibraryTable).go();
     return (delete(myLibraryTable)..where((r) => r.id.isNotIn(keepIds))).go();
+  }
+}
+
+/// Port of `data/room/dao/MyCourseDao.kt` and `CourseStepDao.kt`.
+@DriftAccessor(tables: [Courses, CourseSteps])
+class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
+  CourseDao(super.db);
+
+  /// Port of `CoursesRepositoryImpl.batchInsertMyCourses`' upsert loop. Courses
+  /// and their steps go in as one transaction so a course is never visible
+  /// without its steps.
+  Future<void> upsertAll(
+    List<CoursesCompanion> courseRows,
+    List<CourseStepsCompanion> stepRows,
+  ) async {
+    await transaction(() async {
+      await batch((b) {
+        b.insertAllOnConflictUpdate(courses, courseRows);
+        b.insertAllOnConflictUpdate(courseSteps, stepRows);
+      });
+    });
+  }
+
+  Future<CourseRow?> getById(String courseId) =>
+      (select(courses)..where((c) => c.id.equals(courseId))).getSingleOrNull();
+
+  Future<List<CourseRow>> getByIds(List<String> ids) =>
+      (select(courses)..where((c) => c.id.isIn(ids))).get();
+
+  Future<int> count() async {
+    final query = selectOnly(courses)..addColumns([courses.id.count()]);
+    final row = await query.getSingle();
+    return row.read(courses.id.count()) ?? 0;
+  }
+
+  /// Port of `CoursesRepositoryImpl.getCourseSteps` — ordered by position within
+  /// the course.
+  Future<List<CourseStepRow>> getSteps(String courseId) {
+    return (select(courseSteps)
+          ..where((s) => s.courseId.equals(courseId))
+          ..orderBy([(s) => OrderingTerm(expression: s.stepIndex)]))
+        .get();
+  }
+
+  Stream<CourseRow?> watchCourse(String courseId) => (select(
+    courses,
+  )..where((c) => c.id.equals(courseId))).watchSingleOrNull();
+
+  Stream<List<CourseStepRow>> watchSteps(String courseId) {
+    return (select(courseSteps)
+          ..where((s) => s.courseId.equals(courseId))
+          ..orderBy([(s) => OrderingTerm(expression: s.stepIndex)]))
+        .watch();
+  }
+
+  /// Reactive course list. Combines the read paths of
+  /// `CoursesRepositoryImpl.getMyCoursesFlow`, `search` and `filterCourses`.
+  ///
+  /// [query] matches the diacritic-folded title. [shelfUserId] restricts to
+  /// courses the user has added ("my courses"). [gradeLevel] / [subjectLevel]
+  /// are the two filter spinners on the courses screen.
+  Stream<List<CourseRow>> watchCourses({
+    String? query,
+    String? shelfUserId,
+    String? gradeLevel,
+    String? subjectLevel,
+  }) {
+    final statement = select(courses);
+
+    final trimmed = query?.trim().toLowerCase();
+    if (trimmed != null && trimmed.isNotEmpty) {
+      statement.where((c) => c.courseTitleNormal.like('%$trimmed%'));
+    }
+    if (shelfUserId != null && shelfUserId.isNotEmpty) {
+      statement.where((c) => c.userId.like('%"$shelfUserId"%'));
+    }
+    if (gradeLevel != null && gradeLevel.isNotEmpty) {
+      statement.where((c) => c.gradeLevel.equals(gradeLevel));
+    }
+    if (subjectLevel != null && subjectLevel.isNotEmpty) {
+      statement.where((c) => c.subjectLevel.equals(subjectLevel));
+    }
+
+    statement.orderBy([(c) => OrderingTerm(expression: c.courseTitleNormal)]);
+    return statement.watch();
+  }
+
+  /// The distinct values behind the grade/subject filters.
+  Future<List<String>> distinctGradeLevels() => _distinct(courses.gradeLevel);
+
+  Future<List<String>> distinctSubjectLevels() =>
+      _distinct(courses.subjectLevel);
+
+  Future<List<String>> _distinct(GeneratedColumn<String> column) async {
+    final query = selectOnly(courses, distinct: true)
+      ..addColumns([column])
+      ..where(column.isNotNull() & column.equals('').not())
+      ..orderBy([OrderingTerm(expression: column)]);
+    final rows = await query.get();
+    return rows
+        .map((row) => row.read(column))
+        .whereType<String>()
+        .toList(growable: false);
+  }
+
+  /// Port of `CoursesRepositoryImpl.isMyCourse`.
+  Future<bool> isMyCourse(String courseId, String userId) async {
+    final course = await getById(courseId);
+    return course?.userId.contains(userId) ?? false;
+  }
+
+  /// Port of `joinCourse` / `leaveCourse` — local shelf membership only. The
+  /// server-side shelf write travels with the upload framework, which is not
+  /// ported yet.
+  Future<void> setShelfMembership(
+    String courseId,
+    String userId, {
+    required bool joined,
+  }) async {
+    final course = await getById(courseId);
+    if (course == null) return;
+
+    final updated = joined
+        ? ({...course.userId, userId}.toList(growable: false))
+        : course.userId.where((id) => id != userId).toList(growable: false);
+
+    await (update(courses)..where((c) => c.id.equals(courseId))).write(
+      CoursesCompanion(userId: Value(updated)),
+    );
+  }
+
+  /// Drops local courses (and their steps) the server no longer lists.
+  Future<void> deleteNotIn(List<String> keepIds) async {
+    await transaction(() async {
+      if (keepIds.isEmpty) {
+        await delete(courseSteps).go();
+        await delete(courses).go();
+        return;
+      }
+      await (delete(
+        courseSteps,
+      )..where((s) => s.courseId.isNotIn(keepIds))).go();
+      await (delete(courses)..where((c) => c.id.isNotIn(keepIds))).go();
+    });
   }
 }

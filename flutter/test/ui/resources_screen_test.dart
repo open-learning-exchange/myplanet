@@ -1,63 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
-import 'package:myplanet/l10n/app_localizations.dart';
 import 'package:myplanet/providers/resources_providers.dart';
 import 'package:myplanet/ui/resources/resources_screen.dart';
 
-MyLibraryRow buildRow({
-  required String id,
-  String? title,
-  String? author,
-  bool offline = false,
-  List<String> subject = const [],
-}) {
-  return MyLibraryRow(
-    id: id,
-    userId: const [],
-    title: title,
-    titleNormal: title?.toLowerCase(),
-    resourceOffline: offline,
-    createdDate: 0,
-    timesRated: 0,
-    resourceFor: const [],
-    subject: subject,
-    level: const [],
-    tag: const [],
-    languages: const [],
-    isPrivate: false,
-    author: author,
-  );
-}
-
-Widget wrap(Widget child, {List<Override> overrides = const []}) {
-  return ProviderScope(
-    overrides: overrides,
-    child: MaterialApp(
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: AppLocalizations.supportedLocales,
-      home: child,
-    ),
-  );
-}
+import '../support/widget_harness.dart';
 
 void main() {
   testWidgets('renders the resources returned by the stream', (tester) async {
     await tester.pumpWidget(
-      wrap(
+      wrapScreen(
         const ResourcesScreen(),
         overrides: [
           resourcesStreamProvider.overrideWith(
             (ref) => Stream.value([
-              buildRow(id: 'r1', title: 'Álgebra Básica', author: 'Ada'),
-              buildRow(id: 'r2', title: 'Biology', offline: true),
+              buildLibraryRow(id: 'r1', title: 'Álgebra Básica', author: 'Ada'),
+              buildLibraryRow(id: 'r2', title: 'Biology', offline: true),
             ]),
           ),
         ],
@@ -73,7 +32,7 @@ void main() {
 
   testWidgets('shows the empty state when nothing is synced', (tester) async {
     await tester.pumpWidget(
-      wrap(
+      wrapScreen(
         const ResourcesScreen(),
         overrides: [
           resourcesStreamProvider.overrideWith(
@@ -93,7 +52,7 @@ void main() {
     late WidgetRef capturedRef;
 
     await tester.pumpWidget(
-      wrap(
+      wrapScreen(
         Consumer(
           builder: (context, ref, _) {
             capturedRef = ref;
@@ -117,23 +76,14 @@ void main() {
 
   testWidgets('renders Spanish strings under the es locale', (tester) async {
     await tester.pumpWidget(
-      ProviderScope(
+      wrapScreen(
+        const ResourcesScreen(),
         overrides: [
           resourcesStreamProvider.overrideWith(
             (ref) => Stream.value(const <MyLibraryRow>[]),
           ),
         ],
-        child: const MaterialApp(
-          locale: Locale('es'),
-          localizationsDelegates: [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: ResourcesScreen(),
-        ),
+        locale: const Locale('es'),
       ),
     );
     await tester.pumpAndSettle();

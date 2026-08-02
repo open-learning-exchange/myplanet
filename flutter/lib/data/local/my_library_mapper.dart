@@ -1,7 +1,7 @@
-import 'package:diacritic/diacritic.dart';
 import 'package:drift/drift.dart';
 
 import '../../core/utils/json_utils.dart';
+import '../../core/utils/text_utils.dart' as text;
 import 'app_database.dart';
 
 /// Port of `MyLibrary.insertMyLibrary` (`model/MyLibrary.kt`).
@@ -13,10 +13,8 @@ import 'app_database.dart';
 class MyLibraryMapper {
   const MyLibraryMapper._();
 
-  /// Mirrors the `titleNormal` computation: NFD-normalise, strip combining
-  /// marks, lower-case. Used for accent-insensitive search.
-  static String normalizeTitle(String title) =>
-      removeDiacritics(title).toLowerCase();
+  /// Mirrors the `titleNormal` computation. Used for accent-insensitive search.
+  static String normalizeTitle(String title) => text.normalizeText(title);
 
   /// Returns `null` for an empty document or a `_design/*` doc, matching the
   /// filter in `ResourcesRepositoryImpl.batchInsertResources`.
