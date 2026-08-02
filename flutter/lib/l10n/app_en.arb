@@ -62,5 +62,40 @@
       "message": { "type": "String" }
     }
   },
-  "availableOffline": "Available offline"
+  "availableOffline": "Available offline",
+
+  "courses": "Courses",
+  "myCourses": "My courses",
+  "allCourses": "All courses",
+  "courseSteps": "{count, plural, =0{No steps} =1{1 step} other{{count} steps}}",
+  "@courseSteps": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "stepNumber": "Step {number}",
+  "@stepNumber": {
+    "placeholders": {
+      "number": { "type": "int" }
+    }
+  },
+  "resourcesInStep": "{count, plural, =0{No resources} =1{1 resource} other{{count} resources}}",
+  "@resourcesInStep": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "gradeLevel": "Grade level",
+  "subjectLevel": "Subject",
+  "allLevels": "All",
+  "clearFilters": "Clear filters",
+  "joinCourse": "Add to my courses",
+  "leaveCourse": "Remove from my courses",
+  "syncedCourses": "{count, plural, =0{No courses synced} =1{1 course synced} other{{count} courses synced}}",
+  "@syncedCourses": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "courseNotFound": "Course not found"
 }

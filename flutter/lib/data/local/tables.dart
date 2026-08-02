@@ -116,3 +116,59 @@ class MyLibraryTable extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/MyCourse.kt` (`@Entity(tableName = "courses")`).
+@DataClassName('CourseRow')
+class Courses extends Table {
+  @override
+  String get tableName => 'courses';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get courseId => text().nullable()();
+
+  /// Shelf membership — the users who have added this course. Queried with
+  /// `LIKE` on the JSON column, as `MyCourseDao` does.
+  TextColumn get userId => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+
+  TextColumn get courseTitle => text().nullable()();
+
+  /// Diacritic-folded, lower-cased `courseTitle`; what search filters on.
+  TextColumn get courseTitleNormal => text().nullable()();
+
+  TextColumn get description => text().nullable()();
+  TextColumn get languageOfInstruction => text().nullable()();
+  TextColumn get method => text().nullable()();
+  TextColumn get gradeLevel => text().nullable()();
+  TextColumn get subjectLevel => text().nullable()();
+  IntColumn get memberLimit => integer().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  TextColumn get coverFileName => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/CourseStep.kt` (`@Entity(tableName = "course_steps")`).
+@DataClassName('CourseStepRow')
+class CourseSteps extends Table {
+  @override
+  String get tableName => 'course_steps';
+
+  TextColumn get id => text()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get stepTitle => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get noOfResources => integer().withDefault(const Constant(0))();
+
+  /// Not in the Kotlin entity, which relies on insertion order. Drift makes no
+  /// ordering promise without an ORDER BY, so the position within the course is
+  /// stored explicitly.
+  IntColumn get stepIndex => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

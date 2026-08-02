@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/session_provider.dart';
+import 'courses/course_detail_screen.dart';
+import 'courses/courses_screen.dart';
+import 'dashboard/dashboard_shell.dart';
 import 'resources/resources_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
@@ -14,17 +17,22 @@ import 'sync/server_config_screen.dart';
 ///
 /// The gating those activities do imperatively (each one checking prefs in
 /// `onCreate` and finishing itself) becomes one declarative [GoRouter.redirect]:
-/// no server configured -> `/server`, no session -> `/login`, otherwise the app.
+/// no server configured -> `/server`, no session -> `/login`, otherwise the
+/// dashboard shell.
 class Routes {
   const Routes._();
 
   static const String server = '/server';
   static const String login = '/login';
-  static const String resources = '/';
+  static const String resources = '/resources';
+  static const String courses = '/courses';
 }
+
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
+    navigatorKey: _rootNavigatorKey,
     initialLocation: Routes.resources,
     refreshListenable: _RouterRefresh(ref),
     redirect: (context, state) {
@@ -57,9 +65,35 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
       ),
-      GoRoute(
-        path: Routes.resources,
-        builder: (context, state) => const ResourcesScreen(),
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            DashboardShell(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.resources,
+                builder: (context, state) => const ResourcesScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.courses,
+                builder: (context, state) => const CoursesScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':courseId',
+                    builder: (context, state) => CourseDetailScreen(
+                      courseId: state.pathParameters['courseId']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );

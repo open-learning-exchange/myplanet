@@ -5,9 +5,11 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 1 complete — skeleton plus one end-to-end vertical slice.** The Flutter app builds,
-analyzes clean, and passes its test suite. It is *not* yet a replacement for the Kotlin app: one
-of 28 UI packages is ported.
+**Phase 2 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
+test suite. It is *not* yet a replacement for the Kotlin app: **2 of 28 UI packages** are ported.
+
+- **Phase 1** — skeleton plus the server configuration → login → resources slice.
+- **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
 
 ## Strategy
 
@@ -17,7 +19,6 @@ of 28 UI packages is ported.
   `flutter/**` so neither pipeline slows the other down.
 - **Port by vertical slice, not by layer.** Each slice carries a feature from UI to network to
   disk, so every increment is a runnable, testable app rather than an unusable pile of models.
-  Slice 1 is server configuration → login → resources list.
 - **The Kotlin stays the specification.** Every ported file names its Kotlin counterpart in a
   doc comment, and behaviour is replicated including quirks (see *Faithful quirks* below).
   Deviations are called out explicitly rather than silently improved.
@@ -25,7 +26,7 @@ of 28 UI packages is ported.
   cache of CouchDB, so the Flutter app starts with an empty database and re-pulls from the
   server. There is no Room → Drift data migration path, and none is planned.
 
-## What Phase 1 covers
+## What is ported
 
 | Slice | Kotlin source | Flutter destination |
 |---|---|---|
@@ -38,6 +39,9 @@ of 28 UI packages is ported.
 | Adaptive batch sizing | `services/sync/AdaptiveBatchProcessor.kt` | `core/sync/adaptive_batch_processor.dart` |
 | JSON coercion | `utils/JsonUtils.kt` | `core/utils/json_utils.dart` |
 | Version comparison | `utils/VersionUtils.kt` (partial) | `core/utils/version_utils.dart` |
+| Dashboard navigation host | `ui/dashboard/DashboardActivity.kt` | `ui/dashboard/dashboard_shell.dart` |
+| Courses list, search, filters | `CoursesRepositoryImpl`, `CoursesFragment` | `repository/courses_repository.dart`, `ui/courses/courses_screen.dart` |
+| Course detail and steps | `CourseDetailFragment`, `MyCourse`/`CourseStep` | `ui/courses/course_detail_screen.dart`, `data/local/course_mapper.dart` |
 
 ## Technology mapping
 
@@ -67,6 +71,16 @@ existing users and servers:
    image name, not the user id.
 4. **Partial syncs are not rolled back.** A page failure mid-walk leaves earlier pages persisted,
    matching `SyncManager`.
+5. **Course step ids are content-derived.** Embedded steps carry no `_id`, so the Kotlin uses
+   `Base64(stepJson.toString())`. The port does the same with `base64(jsonEncode(step))`. The bytes
+   need not match the Kotlin's — under drop-and-resync the id only has to be stable *within* this
+   app — but editing a step's content still changes its id, exactly as in the Kotlin.
+
+One **known incompleteness**, flagged in code: `CoursesRepository.setShelfMembership` (join/leave a
+course) writes to SQLite but does **not** push the shelf document back to CouchDB, because the
+upload framework is not ported. A join made in the Flutter app is lost on the next full resync.
+This is the first place the missing upload path bites, and it will keep biting until item 3 below
+is resolved.
 
 Two deliberate *deviations*, both flagged in code:
 
@@ -88,8 +102,11 @@ Ordered by risk, highest first.
    `ServerReachabilityWorker`, `HeavyTableSyncWorker` rely on guaranteed, constraint-aware,
    OS-scheduled execution that survives process death. Flutter has no first-party answer;
    `workmanager` / `flutter_background_service` are thin platform-channel wrappers, and the
-   Android side would remain Kotlin. **Decide this before Phase 2** — it may argue for keeping a
-   Kotlin platform layer permanently rather than a pure-Dart app.
+   Android side would remain Kotlin. It may argue for keeping a Kotlin platform layer permanently
+   rather than a pure-Dart app. **Still unresolved, and now blocking:** the courses slice already
+   hits it — joining a course cannot reach the server without the upload path, which in turn wants
+   background retry. This needs a decision before the `teams`, `voices` or `submissions` packages,
+   all of which write back.
 2. **`TeamsRepositoryImpl` (~1785 lines).** The largest file in the codebase, spanning team
    creation, tasks, membership roles and reactive queries. Should be split by responsibility
    *during* the port, not carried over whole.
@@ -108,15 +125,17 @@ Ordered by risk, highest first.
    `app_en.arb` in full and `app_es.arb` populated **only** from strings that already exist in
    `values-es/strings.xml` — nothing was machine-translated. Arabic also needs an RTL pass.
 
-## Remaining UI packages (27 of 28)
+## Remaining UI packages (26 of 28)
 
-`calendar`, `chat`, `community`, `components`, `courses`, `dashboard`, `dictionary`,
-`enterprises`, `events`, `exam`, `feedback`, `health`, `life`, `maps`, `notifications`,
-`onboarding`, `personals`, `ratings`, `references`, `settings`, `submissions`, `surveys`,
-`teams`, `user`, `viewer`, `voices` — plus the rest of `sync`.
+`calendar`, `chat`, `community`, `components`, `dictionary`, `enterprises`, `events`, `exam`,
+`feedback`, `health`, `life`, `maps`, `notifications`, `onboarding`, `personals`, `ratings`,
+`references`, `settings`, `submissions`, `surveys`, `teams`, `user`, `viewer`, `voices` — plus the
+rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
+are not ported; only the navigation host is).
 
-Suggested order, dependency-first: `dashboard` → `courses` → `teams` → `voices` → `submissions`
-→ `surveys`/`exam` → the rest.
+Suggested order, dependency-first: `teams` → `voices` → `submissions` → `surveys`/`exam` → the
+rest. Course progress, exams and certification are deliberately deferred with their own packages
+rather than bundled into the courses slice.
 
 ## Working on the Flutter app
 
@@ -151,4 +170,4 @@ flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clon
 ---
 
 **Last updated**: 2026-08-02
-**Phase**: 1 of N (skeleton + first vertical slice)
+**Phase**: 2 of N (dashboard shell + courses)

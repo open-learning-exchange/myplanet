@@ -15,5 +15,9 @@
   "sync": "Sincronizar",
   "cancel": "Cancelar",
   "settings": "Configuraciones",
-  "noDataAvailable": "No hay datos disponibles."
+  "noDataAvailable": "No hay datos disponibles.",
+
+  "courses": "Cursos",
+  "myCourses": "misCursos",
+  "gradeLevel": "Nivel de grado"
 }

@@ -6,6 +6,7 @@ import '../core/sync/server_url_mapper.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../repository/configurations_repository.dart';
+import '../repository/courses_repository.dart';
 import '../repository/resources_repository.dart';
 import '../repository/user_repository.dart';
 
@@ -38,6 +39,10 @@ final myLibraryDaoProvider = Provider<MyLibraryDao>(
   (ref) => ref.watch(appDatabaseProvider).myLibraryDao,
 );
 
+final courseDaoProvider = Provider<CourseDao>(
+  (ref) => ref.watch(appDatabaseProvider).courseDao,
+);
+
 /// Replaces `NetworkModule`.
 final planetApiProvider = Provider<PlanetApi>(
   (ref) => PlanetApi.withDefaults(),
@@ -64,6 +69,13 @@ final resourcesRepositoryProvider = Provider<ResourcesRepository>(
   (ref) => ResourcesRepository(
     ref.watch(planetApiProvider),
     ref.watch(myLibraryDaoProvider),
+  ),
+);
+
+final coursesRepositoryProvider = Provider<CoursesRepository>(
+  (ref) => CoursesRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(courseDaoProvider),
   ),
 );
 
