@@ -8,6 +8,7 @@ import '../data/local/app_database.dart';
 import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
 import '../repository/resources_repository.dart';
+import '../repository/shelf_repository.dart';
 import '../repository/user_repository.dart';
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
@@ -43,6 +44,10 @@ final courseDaoProvider = Provider<CourseDao>(
   (ref) => ref.watch(appDatabaseProvider).courseDao,
 );
 
+final removedLogDaoProvider = Provider<RemovedLogDao>(
+  (ref) => ref.watch(appDatabaseProvider).removedLogDao,
+);
+
 /// Replaces `NetworkModule`.
 final planetApiProvider = Provider<PlanetApi>(
   (ref) => PlanetApi.withDefaults(),
@@ -76,6 +81,16 @@ final coursesRepositoryProvider = Provider<CoursesRepository>(
   (ref) => CoursesRepository(
     ref.watch(planetApiProvider),
     ref.watch(courseDaoProvider),
+    ref.watch(removedLogDaoProvider),
+  ),
+);
+
+final shelfRepositoryProvider = Provider<ShelfRepository>(
+  (ref) => ShelfRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(courseDaoProvider),
+    ref.watch(myLibraryDaoProvider),
+    ref.watch(removedLogDaoProvider),
   ),
 );
 
