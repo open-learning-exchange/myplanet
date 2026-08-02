@@ -23,9 +23,8 @@ class NotificationsScreen extends ConsumerWidget {
         actions: [
           if (unread > 0)
             TextButton(
-              onPressed: () => ref
-                  .read(notificationActionsProvider)
-                  .markAllAsRead(),
+              onPressed: () =>
+                  ref.read(notificationActionsProvider).markAllAsRead(),
               child: Text(l10n.markAllRead),
             ),
         ],
@@ -60,17 +59,15 @@ class NotificationsScreen extends ConsumerWidget {
           Expanded(
             child: notifications.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => Center(
-                child: Text(l10n.notificationsUnavailable),
-              ),
+              error: (_, _) =>
+                  Center(child: Text(l10n.notificationsUnavailable)),
               data: (items) => items.isEmpty
                   ? _EmptyNotifications(filter: filter)
                   : ListView.builder(
                       padding: const EdgeInsets.only(bottom: 24),
                       itemCount: items.length,
-                      itemBuilder: (context, index) => _NotificationTile(
-                        notification: items[index],
-                      ),
+                      itemBuilder: (context, index) =>
+                          _NotificationTile(notification: items[index]),
                     ),
             ),
           ),

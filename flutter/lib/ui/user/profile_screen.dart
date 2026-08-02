@@ -44,11 +44,8 @@ class ProfileScreen extends ConsumerWidget {
           if (session.valueOrNull != null)
             IconButton(
               tooltip: l10n.editProfile,
-              onPressed: () => _showProfileEditor(
-                context,
-                ref,
-                session.valueOrNull!,
-              ),
+              onPressed: () =>
+                  _showProfileEditor(context, ref, session.valueOrNull!),
               icon: const Icon(Icons.edit_outlined),
             ),
           const LogoutAction(),
@@ -76,17 +73,19 @@ Future<void> _showProfileEditor(
   );
   if (result == null || !context.mounted) return;
 
-  await ref.read(sessionProvider.notifier).updateProfile(
-    firstName: result.firstName,
-    middleName: result.middleName,
-    lastName: result.lastName,
-    email: result.email,
-    phoneNumber: result.phoneNumber,
-    level: result.level,
-    language: result.language,
-    gender: result.gender,
-    dateOfBirth: result.dateOfBirth,
-  );
+  await ref
+      .read(sessionProvider.notifier)
+      .updateProfile(
+        firstName: result.firstName,
+        middleName: result.middleName,
+        lastName: result.lastName,
+        email: result.email,
+        phoneNumber: result.phoneNumber,
+        level: result.level,
+        language: result.language,
+        gender: result.gender,
+        dateOfBirth: result.dateOfBirth,
+      );
   if (context.mounted) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(AppLocalizations.of(context).profileSaved)),
@@ -154,11 +153,7 @@ class _EditProfileDialogState extends State<_EditProfileDialog> {
                   keyboardType: TextInputType.emailAddress,
                   validator: _validateEmail,
                 ),
-                _field(
-                  'phone',
-                  l10n.phone,
-                  keyboardType: TextInputType.phone,
-                ),
+                _field('phone', l10n.phone, keyboardType: TextInputType.phone),
                 _field('level', l10n.level),
                 _field('language', l10n.language),
                 _field('gender', l10n.gender),

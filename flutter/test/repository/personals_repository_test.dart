@@ -56,18 +56,10 @@ void main() {
     await repository.create(userId: 'user-1', userName: null, title: 'Journal');
 
     await expectLater(
-      repository.create(
-        userId: 'user-1',
-        userName: null,
-        title: ' journal ',
-      ),
+      repository.create(userId: 'user-1', userName: null, title: ' journal '),
       throwsA(isA<DuplicatePersonalTitle>()),
     );
-    await repository.create(
-      userId: 'user-2',
-      userName: null,
-      title: 'Journal',
-    );
+    await repository.create(userId: 'user-2', userName: null, title: 'Journal');
     expect(await repository.watch('user-2').first, hasLength(1));
   });
 }

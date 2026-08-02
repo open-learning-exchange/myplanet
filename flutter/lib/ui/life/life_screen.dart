@@ -17,10 +17,7 @@ class LifeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final items = ref.watch(lifeItemsProvider);
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.myLife),
-        actions: const [LogoutAction()],
-      ),
+      appBar: AppBar(title: Text(l10n.myLife), actions: const [LogoutAction()]),
       body: items.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(child: Text(l10n.myLifeUnavailable)),
@@ -30,8 +27,7 @@ class LifeScreen extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 buildDefaultDragHandles: false,
                 itemCount: rows.length,
-                onReorder: (oldIndex, newIndex) {
-                  if (newIndex > oldIndex) newIndex--;
+                onReorderItem: (oldIndex, newIndex) {
                   final reordered = rows.toList();
                   final moved = reordered.removeAt(oldIndex);
                   reordered.insert(newIndex, moved);
@@ -98,7 +94,6 @@ class _LifeTile extends ConsumerWidget {
       ),
     );
   }
-
 }
 
 void _openFeature(BuildContext context, String feature) {
@@ -131,17 +126,14 @@ IconData _featureIcon(String feature) => switch (feature) {
   _ => Icons.apps,
 };
 
-String _featureTitle(
-  AppLocalizations l10n,
-  String feature,
-  String? fallback,
-) => switch (feature) {
-  'health' => l10n.myHealth,
-  'achievements' => l10n.achievements,
-  'submissions' => l10n.submissions,
-  'surveys' => l10n.mySurveys,
-  'references' => l10n.references,
-  'calendar' => l10n.calendar,
-  'personals' => l10n.myPersonals,
-  _ => fallback ?? feature,
-};
+String _featureTitle(AppLocalizations l10n, String feature, String? fallback) =>
+    switch (feature) {
+      'health' => l10n.myHealth,
+      'achievements' => l10n.achievements,
+      'submissions' => l10n.submissions,
+      'surveys' => l10n.mySurveys,
+      'references' => l10n.references,
+      'calendar' => l10n.calendar,
+      'personals' => l10n.myPersonals,
+      _ => fallback ?? feature,
+    };

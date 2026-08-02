@@ -62,7 +62,10 @@ class SessionNotifier extends AsyncNotifier<UserRow?> {
       gender: Value(_nullableText(gender)),
       dob: Value(_nullableText(dateOfBirth)),
     );
-    await ref.read(userDaoProvider).upsert(updated.toCompanion(true));
+    // Every column, not `nullToAbsent`: clearing a field (blanking a phone
+    // number, say) has to null the column, and an absent value would leave the
+    // old text in place.
+    await ref.read(userDaoProvider).upsert(updated.toCompanion(false));
     state = AsyncData(updated);
   }
 }

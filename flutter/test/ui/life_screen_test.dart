@@ -27,7 +27,7 @@ void main() {
     expect(find.text('Calendar'), findsOneWidget);
     expect(find.text('My health'), findsOneWidget);
     expect(find.text('References'), findsOneWidget);
-    expect(find.text('Hidden from the dashboard'), findsOneWidget);
+    expect(find.text('Hidden'), findsOneWidget);
     expect(find.byIcon(Icons.drag_handle), findsNWidgets(3));
   });
 

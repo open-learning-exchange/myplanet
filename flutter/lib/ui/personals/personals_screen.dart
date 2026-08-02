@@ -53,16 +53,17 @@ class PersonalsScreen extends ConsumerWidget {
     if (value == null || !context.mounted) return;
     try {
       if (personal == null) {
-        await ref.read(personalActionsProvider).create(
-          title: value.title,
-          description: value.description,
-        );
+        await ref
+            .read(personalActionsProvider)
+            .create(title: value.title, description: value.description);
       } else {
-        await ref.read(personalActionsProvider).update(
-          id: personal.id,
-          title: value.title,
-          description: value.description,
-        );
+        await ref
+            .read(personalActionsProvider)
+            .update(
+              id: personal.id,
+              title: value.title,
+              description: value.description,
+            );
       }
     } on DuplicatePersonalTitle {
       if (context.mounted) {

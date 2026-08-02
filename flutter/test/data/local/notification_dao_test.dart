@@ -34,8 +34,9 @@ void main() {
     );
 
     expect(
-      (await database.notificationDao.watchForUser('user-1').first)
-          .map((row) => row.id),
+      (await database.notificationDao.watchForUser('user-1').first).map(
+        (row) => row.id,
+      ),
       ['newer', 'older'],
     );
     expect(await database.notificationDao.watchUnreadCount('user-1').first, 2);

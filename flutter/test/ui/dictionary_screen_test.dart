@@ -35,13 +35,20 @@ void main() {
 
     expect(find.text('1 downloaded word'), findsOneWidget);
     await tester.enterText(find.byType(TextField), 'pLaNeT');
-    await tester.tap(find.widgetWithText(FilledButton, 'Search'));
+    await tester.tap(find.widgetWithText(FilledButton, 'search'));
     await tester.pump();
 
     expect(notifier.lastQuery, 'pLaNeT');
     expect(find.text('Planet'), findsOneWidget);
     expect(find.text('A world orbiting a star.'), findsOneWidget);
-    expect(find.textContaining('world'), findsOneWidget);
+    // The synonym renders as a `Text.rich` label/value pair, which `find.text`
+    // only reaches with `findRichText`. Matching the whole line also keeps this
+    // from colliding with the 'world' inside the definition above.
+    expect(find.text('Synonyms: world', findRichText: true), findsOneWidget);
+    expect(
+      find.text('Meaning: A celestial body', findRichText: true),
+      findsOneWidget,
+    );
   });
 
   testWidgets('offers a download when the offline dictionary is empty', (

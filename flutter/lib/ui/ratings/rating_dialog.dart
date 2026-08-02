@@ -5,11 +5,7 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/ratings_provider.dart';
 
 class RatingDialog extends ConsumerStatefulWidget {
-  const RatingDialog({
-    required this.target,
-    required this.title,
-    super.key,
-  });
+  const RatingDialog({required this.target, required this.title, super.key});
   final RatingTarget target;
   final String title;
 
@@ -111,12 +107,14 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    await ref.read(ratingActionsProvider).submit(
-      target: widget.target,
-      title: widget.title,
-      rate: _rating,
-      comment: _comment.text,
-    );
+    await ref
+        .read(ratingActionsProvider)
+        .submit(
+          target: widget.target,
+          title: widget.title,
+          rate: _rating,
+          comment: _comment.text,
+        );
     if (mounted) Navigator.pop(context, true);
   }
 }
