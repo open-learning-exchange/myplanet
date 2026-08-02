@@ -35,7 +35,7 @@ void main() {
     }
 
     expect(find.text('Unleash Learning Power'), findsOneWidget);
-    expect(find.widgetWithText(FilledButton, 'Get started'), findsOneWidget);
+    expect(find.widgetWithText(FilledButton, 'GET STARTED'), findsOneWidget);
     expect(find.textContaining('Planet server address'), findsOneWidget);
   });
 

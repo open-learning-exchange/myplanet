@@ -30,10 +30,9 @@
 ### Flutter port (in progress)
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
 is unchanged and remains the shipping app. Two vertical slices are done — server configuration →
-login → resources list, then the dashboard shell and courses — so **2 of 28 UI packages** are
-ported, plus calendar, onboarding, and the first write-back path (shelf upload), for **4 of 28 UI packages**
-in total. Everything below in this document describes
-the Kotlin app and still applies to it.
+login → resources list, then the dashboard shell and courses, then calendar and first-launch
+onboarding — **4 of 28 UI packages**, plus the first write-back path (shelf upload). Everything
+below in this document describes the Kotlin app and still applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
 Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems — chiefly that `WorkManager`
