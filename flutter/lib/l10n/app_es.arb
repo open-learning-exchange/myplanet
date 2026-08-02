@@ -1,0 +1,19 @@
+{
+  "@@locale": "es",
+
+  "serverUrlNotConfigured": "URL del servidor no configurada",
+  "deviceCouldNotReachLocalServer": "El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a la red Wi-Fi correcta para el servidor local (comunidad).",
+  "deviceCouldNotReachNationServer": "El dispositivo no pudo alcanzar el servidor. Verifique si está conectado a Internet e inténtelo de nuevo.",
+  "connectionFailed": "¡Conexión fallida!",
+
+  "login": "Iniciar sesión",
+  "name": "Nombre",
+  "password": "Contraseña",
+
+  "resources": "Recursos",
+  "search": "Buscar",
+  "sync": "Sincronizar",
+  "cancel": "Cancelar",
+  "settings": "Configuraciones",
+  "noDataAvailable": "No hay datos disponibles."
+}

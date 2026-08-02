@@ -1,0 +1,7 @@
+# Replaces the res/values-{lang}/strings.xml mechanism. Crowdin syncs the .arb
+# files here the same way it synced strings.xml (see ../crowdin.yml).
+arb-dir: lib/l10n
+template-arb-file: app_en.arb
+output-localization-file: app_localizations.dart
+output-class: AppLocalizations
+nullable-getter: false
