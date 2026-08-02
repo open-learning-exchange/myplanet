@@ -152,6 +152,27 @@ class Courses extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Port of `model/RemovedLog.kt` (`@Entity(tableName = "removed_log")`).
+///
+/// Records that a user deliberately dropped a document from their shelf. The
+/// shelf upload merges local ids with whatever the server already holds, so
+/// without this a "leave" would be silently re-added by the next merge.
+@DataClassName('RemovedLogRow')
+class RemovedLogs extends Table {
+  @override
+  String get tableName => 'removed_log';
+
+  TextColumn get id => text()();
+
+  /// `courses`, `resources`, … — matches the CouchDB table the doc belongs to.
+  TextColumn get type => text()();
+  TextColumn get docId => text()();
+  TextColumn get userId => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Port of `model/CourseStep.kt` (`@Entity(tableName = "course_steps")`).
 @DataClassName('CourseStepRow')
 class CourseSteps extends Table {

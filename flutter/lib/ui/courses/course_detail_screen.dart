@@ -57,6 +57,29 @@ class _CourseBody extends ConsumerWidget {
   final List<CourseStepRow> steps;
   final String? userId;
 
+  /// Writes membership locally, then pushes the shelf.
+  ///
+  /// The local write is what the UI reflects, so this works offline. The push
+  /// is best-effort: if it fails the local state stands and the next successful
+  /// shelf upload carries it, because the payload is recomputed from the
+  /// database rather than queued.
+  Future<void> _toggleMembership(WidgetRef ref, {required bool joined}) async {
+    final id = userId;
+    if (id == null) return;
+
+    await ref
+        .read(coursesRepositoryProvider)
+        .setShelfMembership(course.id, id, joined: joined);
+
+    final config = ref.read(serverConfigProvider);
+    final session = ref.read(sessionProvider).valueOrNull;
+    if (config == null || session?.couchId == null) return;
+
+    await ref
+        .read(shelfRepositoryProvider)
+        .upload(config: config, userId: id, shelfDocId: session!.couchId!);
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
@@ -88,9 +111,7 @@ class _CourseBody extends ConsumerWidget {
         const SizedBox(height: 16),
         if (userId != null)
           FilledButton.tonalIcon(
-            onPressed: () => ref
-                .read(coursesRepositoryProvider)
-                .setShelfMembership(course.id, userId!, joined: !isMyCourse),
+            onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
             icon: Icon(isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add),
             label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
           ),

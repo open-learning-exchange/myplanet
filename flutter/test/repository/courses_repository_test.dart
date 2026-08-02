@@ -25,7 +25,7 @@ void main() {
   setUp(() {
     db = AppDatabase.memory();
     api = MockPlanetApi();
-    repository = CoursesRepository(api, db.courseDao);
+    repository = CoursesRepository(api, db.courseDao, db.removedLogDao);
   });
 
   tearDown(() => db.close());

@@ -21,8 +21,8 @@ part 'app_database.g.dart';
 /// [_migration] keeps that policy so a schema bump re-pulls from the server
 /// rather than needing a hand-written migration.
 @DriftDatabase(
-  tables: [Users, MyLibraryTable, Courses, CourseSteps],
-  daos: [UserDao, MyLibraryDao, CourseDao],
+  tables: [Users, MyLibraryTable, Courses, CourseSteps, RemovedLogs],
+  daos: [UserDao, MyLibraryDao, CourseDao, RemovedLogDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -34,7 +34,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -338,5 +338,50 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
         await (delete(courses)..where((c) => c.id.isIn(chunk))).go();
       }
     });
+  }
+}
+
+/// Port of `data/room/dao/RemovedLogDao.kt`.
+@DriftAccessor(tables: [RemovedLogs])
+class RemovedLogDao extends DatabaseAccessor<AppDatabase>
+    with _$RemovedLogDaoMixin {
+  RemovedLogDao(super.db);
+
+  /// Keyed on type+user+doc so recording the same removal twice is a no-op.
+  static String keyFor(String type, String userId, String docId) =>
+      '$type:$userId:$docId';
+
+  Future<void> record({
+    required String type,
+    required String userId,
+    required String docId,
+  }) {
+    return into(removedLogs).insertOnConflictUpdate(
+      RemovedLogsCompanion.insert(
+        id: keyFor(type, userId, docId),
+        type: type,
+        docId: docId,
+        userId: userId,
+      ),
+    );
+  }
+
+  /// Called when the user re-adds something they had removed.
+  Future<void> clear({
+    required String type,
+    required String userId,
+    required String docId,
+  }) {
+    return (delete(
+      removedLogs,
+    )..where((r) => r.id.equals(keyFor(type, userId, docId)))).go();
+  }
+
+  /// Port of `RemovedLogDao.getRemovedDocIds`.
+  Future<List<String>> removedDocIds(String type, String userId) async {
+    final rows = await (select(
+      removedLogs,
+    )..where((r) => r.type.equals(type) & r.userId.equals(userId))).get();
+    return rows.map((r) => r.docId).toList(growable: false);
   }
 }

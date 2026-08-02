@@ -54,6 +54,26 @@ class PlanetApi {
   Future<NetworkResult<Map<String, dynamic>>> getConfiguration(String url) =>
       getJsonObject(url);
 
+  /// Port of `ApiInterface.putDoc` — creates or updates a CouchDB document.
+  ///
+  /// The body must carry `_rev` for an update, or CouchDB answers 409.
+  Future<NetworkResult<Map<String, dynamic>>> putJsonObject(
+    String url,
+    Map<String, dynamic> body, {
+    String? authHeader,
+  }) {
+    return _request<Map<String, dynamic>>(
+      url,
+      method: 'PUT',
+      body: body,
+      authHeader: authHeader,
+      responseType: ResponseType.json,
+      convert: (data) => data is Map<String, dynamic>
+          ? data
+          : throw const FormatException('Expected a JSON object'),
+    );
+  }
+
   /// Port of `ApiInterface.getApkVersion` / `getChecksum` — raw text bodies.
   Future<NetworkResult<String>> getRaw(String url, {String? authHeader}) {
     return _request<String>(
@@ -68,18 +88,25 @@ class PlanetApi {
     String url, {
     required ResponseType responseType,
     required T Function(dynamic data) convert,
+    String method = 'GET',
+    Object? body,
     String? authHeader,
   }) async {
     try {
-      final response = await _dio.get<dynamic>(
+      final response = await _dio.request<dynamic>(
         url,
+        data: body,
         options: Options(
+          method: method,
           responseType: responseType,
           // Set per request, not only in `withDefaults`: the public constructor
           // accepts any Dio, and with a default one a 401 would throw and be
           // reported as unreachable rather than as an authentication failure.
           validateStatus: (_) => true,
-          headers: {'Authorization': ?authHeader},
+          headers: {
+            'Authorization': ?authHeader,
+            if (body != null) 'Content-Type': 'application/json',
+          },
         ),
       );
 
