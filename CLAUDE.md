@@ -16,6 +16,16 @@
 - **default**: Full-featured version
 - **lite**: Lightweight version with reduced features
 
+### Flutter port (in progress)
+A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
+is unchanged and remains the shipping app. Phase 1 covers one vertical slice (server
+configuration → login → resources list); 1 of 28 UI packages is ported. Everything below in this
+document describes the Kotlin app and still applies to it.
+
+See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,
+Room→Drift, Retrofit→Dio, strings.xml→.arb), and the open problems — chiefly that `WorkManager`
+has no Flutter equivalent, which is unresolved and gates Phase 2.
+
 ---
 
 ## Codebase Structure
