@@ -23,21 +23,14 @@
   "calendar": "Calendario",
   "skip": "Omitir",
   "next": "Siguiente",
-  "getStarted": "Comenzar",
+  "getStarted": "EMPEZAR",
   "welcomeToMyPlanet": "Bienvenido a myPlanet",
   "learnOffline": "Aprende sin conexión",
   "openLearning": "Aprendizaje abierto",
   "unleashLearningPower": "Libera el poder del aprendizaje",
-  "onboardingWelcomeDescription": "Tu puerta de entrada al aprendizaje ilimitado.",
+  "onboardingWelcomeDescription": "Tu puerta de entrada al aprendizaje ilimitado",
   "onboardingOfflineDescription": "Descarga recursos para el aprendizaje sin conexión.\nAccede al conocimiento sobre la marcha.",
   "onboardingOpenDescription": "Elige tus intereses y sumérgete en contenido interactivo.\nDiseña tu viaje de aprendizaje único.",
-  "onboardingPowerDescription": "Explora un mundo de conocimiento al alcance de tu mano.\n\n🌍 Acceso sin conexión: Aprende sin fronteras, en cualquier momento.\n🎯 Personalizado: Adapta tu camino de aprendizaje.\n📚 Interactivo: Involúcrate con vídeos, libros y juegos.\n\n¡Comienza tu viaje de aprendizaje ilimitado con myPlanet!",
-  "onboardingServerPrepHint": "Antes de iniciar sesión, necesitarás la dirección del servidor de Planet y el PIN. Pregunta a tu administrador comunitario si aún no los tienes.",
-  "pageProgress": "Página {current} de {total}",
-  "@pageProgress": {
-    "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
-    }
-  }
+  "onboardingPowerDescription": "Explora un mundo de conocimiento al alcance de tu mano.\n\n🌍 Acceso sin conexión: Aprende sin fronteras, en cualquier momento.\n🎯 Personalizado: Adapta tu camino de aprendizaje.\n📚 Interactivo: Involúcrate con vídeos, libros, juegos.\n\n¡Comienza tu viaje de aprendizaje ilimitado con myPlanet!",
+  "onboardingServerPrepHint": "Antes de iniciar sesión, necesitarás la dirección del servidor de Planet y el PIN. Pregunta a tu administrador comunitario si aún no los tienes."
 }
