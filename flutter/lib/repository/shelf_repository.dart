@@ -144,16 +144,21 @@ class ShelfRepository {
     List<String> removed,
   ) {
     final merged = <String>[...local];
+    // Sets for the lookups: a shelf with thousands of resource ids would make
+    // repeated `contains` scans quadratic.
+    final seen = merged.toSet();
+    final removedSet = removed.toSet();
     for (final id in fromServer) {
-      if (!merged.contains(id) && !removed.contains(id)) {
+      if (!seen.contains(id) && !removedSet.contains(id)) {
         merged.add(id);
+        seen.add(id);
       }
     }
     return merged;
   }
 
   Future<List<String>> _localCourseIds(String userId) async {
-    final courses = await _courseDao.watchCourses(shelfUserId: userId).first;
+    final courses = await _courseDao.coursesOnShelf(userId);
     return courses
         .map((c) => c.courseId ?? c.id)
         .where((id) => id.isNotEmpty)
@@ -161,9 +166,7 @@ class ShelfRepository {
   }
 
   Future<List<String>> _localResourceIds(String userId) async {
-    final resources = await _libraryDao
-        .watchResources(shelfUserId: userId)
-        .first;
+    final resources = await _libraryDao.resourcesOnShelf(userId);
     return resources
         .map((r) => r.resourceId ?? r.id)
         .where((id) => id.isNotEmpty)

@@ -105,8 +105,17 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     await batch((b) => b.insertAllOnConflictUpdate(myLibraryTable, rows));
   }
 
-  Future<List<MyLibraryRow>> getByIds(List<String> ids) =>
-      (select(myLibraryTable)..where((r) => r.id.isIn(ids))).get();
+  /// Chunked for the same reason as [deleteNotIn]: a caller can pass more ids
+  /// than SQLite will bind in one statement.
+  Future<List<MyLibraryRow>> getByIds(List<String> ids) async {
+    final rows = <MyLibraryRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(myLibraryTable)..where((r) => r.id.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
 
   Future<int> count() async {
     final query = selectOnly(myLibraryTable)
@@ -147,6 +156,12 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
 
     return statement.watch();
   }
+
+  /// The user's shelf, read once. [watchResources] would set up and tear down a
+  /// query stream for a single value.
+  Future<List<MyLibraryRow>> resourcesOnShelf(String userId) => (select(
+    myLibraryTable,
+  )..where((r) => r.userId.like('%"$userId"%'))).get();
 
   /// Port of `ResourcesRepositoryImpl.removeDeletedResources` — drops local rows
   /// the server no longer lists.
@@ -204,14 +219,44 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
         b.insertAllOnConflictUpdate(courses, courseRows);
         b.insertAllOnConflictUpdate(courseSteps, stepRows);
       });
+
+      // Upserting alone cannot shrink a course: if it drops from five steps to
+      // three, steps 3 and 4 are simply never written again and would linger.
+      // Step ids are position-derived, so anything past the new length is stale.
+      final keptByCourse = <String, Set<String>>{};
+      for (final step in stepRows) {
+        final courseId = step.courseId.value;
+        if (courseId == null) continue;
+        keptByCourse.putIfAbsent(courseId, () => <String>{}).add(step.id.value);
+      }
+
+      for (final course in courseRows) {
+        final courseId = course.id.value;
+        final kept = keptByCourse[courseId];
+        final statement = delete(courseSteps)
+          ..where((s) => s.courseId.equals(courseId));
+        if (kept != null && kept.isNotEmpty) {
+          // Step counts per course are small, so no chunking is needed here.
+          statement.where((s) => s.id.isNotIn(kept.toList()));
+        }
+        await statement.go();
+      }
     });
   }
 
   Future<CourseRow?> getById(String courseId) =>
       (select(courses)..where((c) => c.id.equals(courseId))).getSingleOrNull();
 
-  Future<List<CourseRow>> getByIds(List<String> ids) =>
-      (select(courses)..where((c) => c.id.isIn(ids))).get();
+  /// Chunked for the same reason as [deleteNotIn].
+  Future<List<CourseRow>> getByIds(List<String> ids) async {
+    final rows = <CourseRow>[];
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(courses)..where((c) => c.id.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
 
   Future<int> count() async {
     final query = selectOnly(courses)..addColumns([courses.id.count()]);
@@ -277,17 +322,44 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
   Future<List<String>> distinctSubjectLevels() =>
       _distinct(courses.subjectLevel);
 
-  Future<List<String>> _distinct(GeneratedColumn<String> column) async {
-    final query = selectOnly(courses, distinct: true)
+  /// Reactive variants. The filter dropdowns watch these rather than deriving
+  /// their options from the *filtered* course list — that would make selecting
+  /// a level invalidate the very options it was chosen from.
+  Stream<List<String>> watchDistinctGradeLevels() =>
+      _watchDistinct(courses.gradeLevel);
+
+  Stream<List<String>> watchDistinctSubjectLevels() =>
+      _watchDistinct(courses.subjectLevel);
+
+  Stream<List<String>> _watchDistinct(GeneratedColumn<String> column) {
+    return (_distinctQuery(column)).watch().map(
+      (rows) => rows
+          .map((row) => row.read(column))
+          .whereType<String>()
+          .toList(growable: false),
+    );
+  }
+
+  JoinedSelectStatement<HasResultSet, dynamic> _distinctQuery(
+    GeneratedColumn<String> column,
+  ) {
+    return selectOnly(courses, distinct: true)
       ..addColumns([column])
       ..where(column.isNotNull() & column.equals('').not())
       ..orderBy([OrderingTerm(expression: column)]);
-    final rows = await query.get();
+  }
+
+  Future<List<String>> _distinct(GeneratedColumn<String> column) async {
+    final rows = await _distinctQuery(column).get();
     return rows
         .map((row) => row.read(column))
         .whereType<String>()
         .toList(growable: false);
   }
+
+  /// The user's shelf, read once — see [MyLibraryDao.resourcesOnShelf].
+  Future<List<CourseRow>> coursesOnShelf(String userId) =>
+      (select(courses)..where((c) => c.userId.like('%"$userId"%'))).get();
 
   /// Port of `CoursesRepositoryImpl.isMyCourse`.
   Future<bool> isMyCourse(String courseId, String userId) async {
@@ -348,8 +420,14 @@ class RemovedLogDao extends DatabaseAccessor<AppDatabase>
   RemovedLogDao(super.db);
 
   /// Keyed on type+user+doc so recording the same removal twice is a no-op.
+  ///
+  /// Components are percent-encoded before joining: CouchDB user ids contain a
+  /// colon (`org.couchdb.user:name`), so a raw join would let two different
+  /// tuples produce the same key and overwrite each other's removal record.
   static String keyFor(String type, String userId, String docId) =>
-      '$type:$userId:$docId';
+      '${Uri.encodeComponent(type)}:'
+      '${Uri.encodeComponent(userId)}:'
+      '${Uri.encodeComponent(docId)}';
 
   Future<void> record({
     required String type,

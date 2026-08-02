@@ -99,6 +99,11 @@ class PlanetApi {
         options: Options(
           method: method,
           responseType: responseType,
+          // Per request for the same reason as validateStatus below: an
+          // injected Dio may carry no BaseOptions timeouts. connectTimeout is
+          // connection-scoped and stays in BaseOptions.
+          receiveTimeout: defaultTimeout,
+          sendTimeout: defaultTimeout,
           // Set per request, not only in `withDefaults`: the public constructor
           // accepts any Dio, and with a default one a 401 would throw and be
           // reported as unreachable rather than as an authentication failure.

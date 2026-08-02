@@ -30,8 +30,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   Future<void> _finish() async {
     if (_finishing) return;
     setState(() => _finishing = true);
-    await ref.read(onboardingProvider.notifier).complete();
-    if (mounted) widget.onFinished?.call();
+    try {
+      await ref.read(onboardingProvider.notifier).complete();
+      if (mounted) widget.onFinished?.call();
+    } finally {
+      // Persistence can throw; leaving _finishing set would disable both Skip
+      // and Get started and strand the user on onboarding.
+      if (mounted) setState(() => _finishing = false);
+    }
   }
 
   @override
@@ -70,9 +76,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               child: AnimatedOpacity(
                 opacity: lastPage ? 0 : 1,
                 duration: const Duration(milliseconds: 200),
-                child: TextButton(
-                  onPressed: lastPage || _finishing ? null : _finish,
-                  child: Text(l10n.skip),
+                // Opacity 0 still leaves the button in the semantics tree, so
+                // a screen reader would announce a dead "Skip" on the last page.
+                child: ExcludeSemantics(
+                  excluding: lastPage,
+                  child: TextButton(
+                    onPressed: lastPage || _finishing ? null : _finish,
+                    child: Text(l10n.skip),
+                  ),
                 ),
               ),
             ),
