@@ -5,13 +5,14 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 2 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
-test suite. It is *not* yet a replacement for the Kotlin app: **2 of 28 UI packages** are ported.
+**Phase 4 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
+test suite. It is *not* yet a replacement for the Kotlin app: **3 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
 - **Phase 3** — the first write-back path: shelf upload, so joining or leaving a course reaches
   the server.
+- **Phase 4** — the calendar package and its dashboard destination.
 
 ## Strategy
 
@@ -45,6 +46,7 @@ test suite. It is *not* yet a replacement for the Kotlin app: **2 of 28 UI packa
 | Courses list, search, filters | `CoursesRepositoryImpl`, `CoursesFragment` | `repository/courses_repository.dart`, `ui/courses/courses_screen.dart` |
 | Course detail and steps | `CourseDetailFragment`, `MyCourse`/`CourseStep` | `ui/courses/course_detail_screen.dart`, `data/local/course_mapper.dart` |
 | Shelf write-back | `UserRepositoryImpl.uploadShelfData`, `UploadToShelfService`, `RemovedLog` | `repository/shelf_repository.dart`, `removed_log` table |
+| Calendar | `CalendarFragment` | `ui/calendar/calendar_screen.dart` |
 
 ## Technology mapping
 
@@ -164,9 +166,9 @@ Ordered by risk, highest first.
    `app_en.arb` in full and `app_es.arb` populated **only** from strings that already exist in
    `values-es/strings.xml` — nothing was machine-translated. Arabic also needs an RTL pass.
 
-## Remaining UI packages (26 of 28)
+## Remaining UI packages (25 of 28)
 
-`calendar`, `chat`, `community`, `components`, `dictionary`, `enterprises`, `events`, `exam`,
+`chat`, `community`, `components`, `dictionary`, `enterprises`, `events`, `exam`,
 `feedback`, `health`, `life`, `maps`, `notifications`, `onboarding`, `personals`, `ratings`,
 `references`, `settings`, `submissions`, `surveys`, `teams`, `user`, `viewer`, `voices` — plus the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
@@ -209,4 +211,4 @@ flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clon
 ---
 
 **Last updated**: 2026-08-02
-**Phase**: 3 of N (shelf write-back)
+**Phase**: 4 of N (calendar)

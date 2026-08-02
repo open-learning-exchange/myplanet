@@ -42,6 +42,11 @@ class DashboardShell extends StatelessWidget {
             selectedIcon: const Icon(Icons.school),
             label: l10n.courses,
           ),
+          NavigationDestination(
+            icon: const Icon(Icons.calendar_month_outlined),
+            selectedIcon: const Icon(Icons.calendar_month),
+            label: l10n.calendar,
+          ),
         ],
       ),
     );
