@@ -1,10 +1,21 @@
+import 'package:drift/drift.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/providers/notifications_provider.dart';
 import 'package:myplanet/providers/session_provider.dart';
 import 'package:myplanet/ui/user/profile_screen.dart';
 
 import '../support/widget_harness.dart';
+
+/// The screen's app-bar badge watches the notification DAO, so every test has
+/// to stub it — otherwise it opens a drift stream against the harness fallback
+/// database and leaves a timer pending past teardown.
+List<Override> profileOverrides(SessionNotifier notifier) => [
+  sessionProvider.overrideWith(() => notifier),
+  unreadNotificationCountProvider.overrideWith((ref) => Stream.value(0)),
+];
 
 void main() {
   testWidgets('shows the cached user profile and omits empty fields', (
@@ -27,9 +38,7 @@ void main() {
     await tester.pumpWidget(
       wrapScreen(
         const ProfileScreen(),
-        overrides: [
-          sessionProvider.overrideWith(() => _TestSessionNotifier(user)),
-        ],
+        overrides: profileOverrides(_TestSessionNotifier(user)),
       ),
     );
     await tester.pumpAndSettle();
@@ -52,9 +61,7 @@ void main() {
     await tester.pumpWidget(
       wrapScreen(
         const ProfileScreen(),
-        overrides: [
-          sessionProvider.overrideWith(() => _TestSessionNotifier(null)),
-        ],
+        overrides: profileOverrides(_TestSessionNotifier(null)),
       ),
     );
     await tester.pumpAndSettle();
@@ -76,10 +83,7 @@ void main() {
       ),
     );
     await tester.pumpWidget(
-      wrapScreen(
-        const ProfileScreen(),
-        overrides: [sessionProvider.overrideWith(() => notifier)],
-      ),
+      wrapScreen(const ProfileScreen(), overrides: profileOverrides(notifier)),
     );
     await tester.pumpAndSettle();
 
@@ -110,6 +114,38 @@ void main() {
     expect(find.text('Augusta'), findsOneWidget);
     expect(find.text('augusta@example.org'), findsOneWidget);
     expect(find.text('Profile saved on this device'), findsOneWidget);
+  });
+
+  testWidgets('renders the Spanish strings carried over from values-es', (
+    tester,
+  ) async {
+    final user = UserRow(
+      id: 'user-1',
+      name: 'ada',
+      rolesList: const [],
+      userAdmin: false,
+      joinDate: 0,
+      firstName: 'Ada',
+      email: 'ada@example.org',
+      phoneNumber: '+1 555 0100',
+      isArchived: false,
+    );
+
+    await tester.pumpWidget(
+      wrapScreen(
+        const ProfileScreen(),
+        overrides: profileOverrides(_TestSessionNotifier(user)),
+        locale: const Locale('es'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Each of these comes from `res/values-es/strings.xml`, not a machine
+    // translation — see docs/kotlin-to-flutter-migration.md.
+    expect(find.text('Perfil'), findsOneWidget);
+    expect(find.text('Nombre'), findsOneWidget);
+    expect(find.text('Correo electrónico'), findsOneWidget);
+    expect(find.text('Número de teléfono'), findsOneWidget);
   });
 }
 
@@ -143,5 +179,3 @@ class _TestSessionNotifier extends SessionNotifier {
     );
   }
 }
-import 'package:drift/drift.dart';
-import 'package:flutter/material.dart';

@@ -1,6 +1,8 @@
 import 'package:drift/drift.dart';
 
-import 'tables.dart';
+// Companions are generated into app_database.g.dart, which is part of
+// app_database.dart — not tables.dart.
+import 'app_database.dart';
 
 /// Port of the JSON mapping in `ui/dictionary/DictionaryActivity.kt`.
 class DictionaryMapper {

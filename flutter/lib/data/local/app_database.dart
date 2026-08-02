@@ -557,9 +557,9 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
   Future<void> upsert(NotificationsCompanion notification) =>
       into(notifications).insertOnConflictUpdate(notification);
 
-  Future<NotificationRow?> getById(String id) =>
-      (select(notifications)..where((row) => row.id.equals(id)))
-          .getSingleOrNull();
+  Future<NotificationRow?> getById(String id) => (select(
+    notifications,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
 
   Future<int> markAsRead(Iterable<String> ids) {
     final values = ids.toList(growable: false);
@@ -570,9 +570,9 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<int> markAllAsRead(String userId) {
-    return (update(notifications)..where(
-          (row) => row.userId.equals(userId) & row.isRead.equals(false),
-        ))
+    return (update(
+          notifications,
+        )..where((row) => row.userId.equals(userId) & row.isRead.equals(false)))
         .write(const NotificationsCompanion(isRead: Value(true)));
   }
 
@@ -633,10 +633,8 @@ class PersonalDao extends DatabaseAccessor<AppDatabase>
       (select(personalEntries)
             ..where((row) => row.userId.equals(userId))
             ..orderBy([
-              (row) => OrderingTerm(
-                expression: row.date,
-                mode: OrderingMode.desc,
-              ),
+              (row) =>
+                  OrderingTerm(expression: row.date, mode: OrderingMode.desc),
             ]))
           .watch();
 
@@ -660,9 +658,9 @@ class PersonalDao extends DatabaseAccessor<AppDatabase>
   Future<void> upsert(PersonalEntriesCompanion row) =>
       into(personalEntries).insertOnConflictUpdate(row);
 
-  Future<PersonalRow?> getById(String id) =>
-      (select(personalEntries)..where((row) => row.id.equals(id)))
-          .getSingleOrNull();
+  Future<PersonalRow?> getById(String id) => (select(
+    personalEntries,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
 
   Future<int> deleteById(String id) =>
       (delete(personalEntries)..where((row) => row.id.equals(id))).go();
@@ -679,25 +677,24 @@ class PersonalDao extends DatabaseAccessor<AppDatabase>
 class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
   RatingDao(super.db);
 
-  Stream<List<RatingRow>> watchForItem(String type, String itemId) =>
-      (select(ratings)..where(
-            (row) => row.type.equals(type) & row.item.equals(itemId),
-          ))
-          .watch();
+  Stream<List<RatingRow>> watchForItem(String type, String itemId) => (select(
+    ratings,
+  )..where((row) => row.type.equals(type) & row.item.equals(itemId))).watch();
 
   Future<RatingRow?> findUserRating(
     String type,
     String itemId,
     String userId,
-  ) => (select(ratings)
-        ..where(
-          (row) =>
-              row.type.equals(type) &
-              row.item.equals(itemId) &
-              row.userId.equals(userId),
-        )
-        ..limit(1))
-      .getSingleOrNull();
+  ) =>
+      (select(ratings)
+            ..where(
+              (row) =>
+                  row.type.equals(type) &
+                  row.item.equals(itemId) &
+                  row.userId.equals(userId),
+            )
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<void> upsert(RatingsCompanion rating) =>
       into(ratings).insertOnConflictUpdate(rating);

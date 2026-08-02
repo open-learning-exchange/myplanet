@@ -22,10 +22,15 @@
 myPlanet is being migrated from its legacy Kotlin/Android implementation to Flutter and Dart.
 New cross-platform application work lives in [`flutter/`](flutter/); the Kotlin application in
 [`app/`](app/) remains available while feature parity is completed. The Flutter application
-currently includes server configuration, online and offline login, resources, courses, shelf
-write-back, calendar, onboarding, an offline-editable user profile, and persisted appearance
-settings, a downloadable offline dictionary, reactive notifications, and personalized My life
-navigation, private offline personal items, and offline course ratings.
+currently covers:
+
+- server configuration, and online and offline login
+- resources and courses, with shelf write-back to CouchDB
+- the calendar, first-launch onboarding, and references
+- an offline-editable user profile and persisted appearance settings
+- a downloadable offline dictionary
+- reactive notifications and personalized My life navigation
+- private offline personal items and offline course ratings
 
 To run the Flutter application:
 

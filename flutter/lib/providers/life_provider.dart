@@ -19,9 +19,8 @@ class LifeActions {
   const LifeActions(this.ref);
   final Ref ref;
 
-  Future<void> setVisibility(MyLifeRow row, {required bool visible}) => ref
-      .read(lifeRepositoryProvider)
-      .setVisibility(row.id, visible: visible);
+  Future<void> setVisibility(MyLifeRow row, {required bool visible}) =>
+      ref.read(lifeRepositoryProvider).setVisibility(row.id, visible: visible);
 
   Future<void> reorder(List<MyLifeRow> rows) =>
       ref.read(lifeRepositoryProvider).reorder(rows);

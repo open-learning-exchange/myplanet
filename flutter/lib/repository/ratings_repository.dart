@@ -73,7 +73,7 @@ class RatingsRepository {
         title: Value(title),
         userId: userId,
         isUpdated: const Value(true),
-        rate: rate.clamp(1, 5) as int,
+        rate: rate.clamp(1, 5),
         item: itemId,
         comment: Value(_nullable(comment)),
         parentCode: Value(parentCode),

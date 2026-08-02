@@ -60,13 +60,13 @@ class PersonalsRepository {
     if (current == null) return;
     final trimmedTitle = title.trim();
     final normalized = trimmedTitle.toLowerCase();
-    if (await _dao.titleExists(
-      current.userId,
-      normalized,
-      excludingId: id,
-    )) {
+    if (await _dao.titleExists(current.userId, normalized, excludingId: id)) {
       throw const DuplicatePersonalTitle();
     }
+    // `toCompanion(false)` writes every column, matching Room's `@Update` in
+    // `PersonalDao`. With `nullToAbsent: true` a cleared description would be
+    // dropped from the statement instead of nulling the column, so editing a
+    // note could never remove its description.
     await _dao.upsert(
       current
           .copyWith(
@@ -75,7 +75,7 @@ class PersonalsRepository {
             description: Value(_nullable(description)),
             isUploaded: false,
           )
-          .toCompanion(true),
+          .toCompanion(false),
     );
   }
 

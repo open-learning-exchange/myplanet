@@ -189,9 +189,23 @@ Ordered by risk, highest first.
    scriptable, but `crowdin.yml` must be repointed at `flutter/lib/l10n/*.arb`. Phase 1 ships
    `app_en.arb` in full and `app_es.arb` populated **only** from strings that already exist in
    `values-es/strings.xml` — nothing was machine-translated. Where a screen needs a string the
-   Kotlin never had (currently only `pageProgress`, the onboarding page-indicator's screen-reader
-   label), the English is authored and the other locales are left absent so `gen-l10n` falls back
-   and Crowdin can translate it properly. Arabic also needs an RTL pass.
+   Kotlin never had, the English is authored and the other locales are left absent so `gen-l10n`
+   falls back and Crowdin can translate it properly. Arabic also needs an RTL pass.
+
+   As of the ratings/personals/notifications batch, `app_en.arb` holds 166 keys and `app_es.arb`
+   64. A key is carried into Spanish only when a `values-es` counterpart is unambiguous — the
+   Kotlin string name normalises to the ARB key *and* its English text matches, or the English
+   text matches exactly and every candidate shares one translation. That leaves **102 keys
+   English-only**, and they are genuinely new phrasings (`profileUnavailable`,
+   `dictionaryDownloadFailed`, `savedOffline`, the rating messages), not an unfinished pass.
+   `gen-l10n` reports them on every build; they are Crowdin's to fill.
+
+   Two quirks are reproduced rather than corrected, because they are what Spanish users see in
+   the shipping app today: `myCourses`/`myLife`/`myHealth`/`myPersonals`/`achievements` resolve to
+   `misCursos`/`miVida`/`miSalud`/`misPersonales`/`misLogros` — untranslated camelCase in
+   `values-es` — and `search` is lower-case in English but `Buscar` in Spanish. Both are upstream
+   defects in `strings.xml`; fixing them in Crowdin corrects the Kotlin and Flutter apps together,
+   whereas diverging here would make the two apps disagree.
 
 ## Remaining UI packages (16 of 28)
 
@@ -236,6 +250,27 @@ flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clon
 - Security-critical code is tested against **published or independently generated vectors**
   (RFC 6070 for PBKDF2; Python `hashlib` digests for the credential check), never against the
   implementation itself.
+
+### Two drift traps that silently lose writes
+
+Both cost a debugging round in the ratings/personals batch, and both fail *quietly* — the write
+succeeds, it just doesn't do what the Kotlin did.
+
+- **`insertOnConflictUpdate` only writes the columns the companion carries.** Room's `@Update`
+  writes the whole row. So a `Companion.insert(...)` that omits a field leaves the existing value
+  in place instead of resetting it, and `row.toCompanion(true)` (`nullToAbsent`) drops every
+  field you just set to `null`, so a cleared description or phone number can never be cleared.
+  Port an `@Update` with `toCompanion(false)`, and name the columns a partial upsert must reset —
+  `NotificationsRepository` has to pass `isRead: const Value(false)` explicitly to match
+  `NotificationsRepositoryImpl`.
+- **Widget tests fall through to the real database.** `wrapScreen` redirects
+  `appDatabaseProvider` to `AppDatabase.memory()` ahead of the caller's overrides. Without it a
+  screen that reads an un-overridden DAO — an unread badge, a rating summary, a filter list —
+  reaches `AppDatabase.open()`, whose `path_provider` lookup has no platform channel under
+  `flutter test`; screens read those through `.valueOrNull ?? <default>`, so the error is
+  swallowed and the test passes while asserting against nothing. The backstop turns that into a
+  "Timer is still pending" failure at teardown: when you see it, override the provider the screen
+  actually reads.
 
 ---
 
