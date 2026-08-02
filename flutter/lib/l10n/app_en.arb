@@ -101,18 +101,19 @@
   "calendar": "Calendar",
   "skip": "Skip",
   "next": "Next",
-  "getStarted": "Get started",
+  "getStarted": "GET STARTED",
   "welcomeToMyPlanet": "Welcome to myPlanet",
   "learnOffline": "Learn Offline",
   "openLearning": "Open Learning",
   "unleashLearningPower": "Unleash Learning Power",
-  "onboardingWelcomeDescription": "Your gateway to limitless learning.",
+  "onboardingWelcomeDescription": "Your gateway to limitless Learning",
   "onboardingOfflineDescription": "Download resources for offline learning.\nAccess knowledge on the go.",
   "onboardingOpenDescription": "Choose your interests and dive into interactive content.\nCraft your unique learning journey.",
-  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n🌍 Offline access: Learn without borders, anytime.\n🎯 Personalized: Tailor your learning path.\n📚 Interactive: Engage with videos, books, and games.\n\nBegin your limitless learning journey with myPlanet!",
+  "onboardingPowerDescription": "Explore a world of knowledge at your fingertips.\n\n🌍 Offline Access: Learn without borders, anytime.\n🎯 Personalized: Tailor your learning path.\n📚 Interactive: Engage with videos, books, games.\n\nBegin your limitless learning journey with myPlanet!",
   "onboardingServerPrepHint": "Before you sign in, you'll need your Planet server address and PIN. Ask your community administrator if you don't have them yet.",
   "pageProgress": "Page {current} of {total}",
   "@pageProgress": {
+    "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations — Crowdin must supply them.",
     "placeholders": {
       "current": { "type": "int" },
       "total": { "type": "int" }

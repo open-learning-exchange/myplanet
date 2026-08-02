@@ -50,6 +50,10 @@ test suite. It is *not* yet a replacement for the Kotlin app: **4 of 28 UI packa
 | Calendar | `CalendarFragment` | `ui/calendar/calendar_screen.dart` |
 | Onboarding | `OnboardingActivity`, `OnboardingAdapter` | `ui/onboarding/onboarding_screen.dart` |
 
+`SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
+`true` once onboarding finishes, so it actually means "onboarding already done". The port stores
+the same polarity under the clearer name `onboardingComplete`.
+
 ## Technology mapping
 
 | Concern | Kotlin/Android | Flutter/Dart | Notes |
@@ -166,7 +170,10 @@ Ordered by risk, highest first.
 6. **The 5 existing locales.** `values-{ar,es,fr,ne,so}/strings.xml` → `.arb` is mechanical and
    scriptable, but `crowdin.yml` must be repointed at `flutter/lib/l10n/*.arb`. Phase 1 ships
    `app_en.arb` in full and `app_es.arb` populated **only** from strings that already exist in
-   `values-es/strings.xml` — nothing was machine-translated. Arabic also needs an RTL pass.
+   `values-es/strings.xml` — nothing was machine-translated. Where a screen needs a string the
+   Kotlin never had (currently only `pageProgress`, the onboarding page-indicator's screen-reader
+   label), the English is authored and the other locales are left absent so `gen-l10n` falls back
+   and Crowdin can translate it properly. Arabic also needs an RTL pass.
 
 ## Remaining UI packages (24 of 28)
 
