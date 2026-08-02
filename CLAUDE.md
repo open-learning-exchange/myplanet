@@ -20,7 +20,8 @@
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
 is unchanged and remains the shipping app. Two vertical slices are done — server configuration →
 login → resources list, then the dashboard shell and courses — so **2 of 28 UI packages** are
-ported, plus the first write-back path (shelf upload). Everything below in this document describes
+ported, plus calendar and the first write-back path (shelf upload), for **3 of 28 UI packages**
+in total. Everything below in this document describes
 the Kotlin app and still applies to it.
 
 See **`docs/kotlin-to-flutter-migration.md`** for scope, the technology mapping (Hilt→Riverpod,

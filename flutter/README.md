@@ -8,8 +8,9 @@ it covers scope, the technology mapping, what is deliberately not improved, and 
 
 ## Status
 
-Phase 1: skeleton plus one end-to-end vertical slice — **server configuration → login →
-resources list**, offline-first, against the real CouchDB API. 1 of 28 UI packages ported.
+Phases 1–4 provide server configuration, online/offline login, resources, courses, shelf
+write-back, the dashboard shell, and calendar. **3 of 28 UI packages are ported**, offline-first,
+against the real CouchDB API.
 
 ## Getting started
 
