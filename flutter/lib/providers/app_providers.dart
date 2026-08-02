@@ -7,6 +7,11 @@ import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
+import '../repository/dictionary_repository.dart';
+import '../repository/notifications_repository.dart';
+import '../repository/personals_repository.dart';
+import '../repository/ratings_repository.dart';
+import '../repository/life_repository.dart';
 import '../repository/resources_repository.dart';
 import '../repository/shelf_repository.dart';
 import '../repository/user_repository.dart';
@@ -48,6 +53,26 @@ final removedLogDaoProvider = Provider<RemovedLogDao>(
   (ref) => ref.watch(appDatabaseProvider).removedLogDao,
 );
 
+final dictionaryDaoProvider = Provider<DictionaryDao>(
+  (ref) => ref.watch(appDatabaseProvider).dictionaryDao,
+);
+
+final notificationDaoProvider = Provider<NotificationDao>(
+  (ref) => ref.watch(appDatabaseProvider).notificationDao,
+);
+
+final myLifeDaoProvider = Provider<MyLifeDao>(
+  (ref) => ref.watch(appDatabaseProvider).myLifeDao,
+);
+
+final personalDaoProvider = Provider<PersonalDao>(
+  (ref) => ref.watch(appDatabaseProvider).personalDao,
+);
+
+final ratingDaoProvider = Provider<RatingDao>(
+  (ref) => ref.watch(appDatabaseProvider).ratingDao,
+);
+
 /// Replaces `NetworkModule`.
 final planetApiProvider = Provider<PlanetApi>(
   (ref) => PlanetApi.withDefaults(),
@@ -75,6 +100,29 @@ final resourcesRepositoryProvider = Provider<ResourcesRepository>(
     ref.watch(planetApiProvider),
     ref.watch(myLibraryDaoProvider),
   ),
+);
+
+final dictionaryRepositoryProvider = Provider<DictionaryRepository>(
+  (ref) => DictionaryRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(dictionaryDaoProvider),
+  ),
+);
+
+final notificationsRepositoryProvider = Provider<NotificationsRepository>(
+  (ref) => NotificationsRepository(ref.watch(notificationDaoProvider)),
+);
+
+final lifeRepositoryProvider = Provider<LifeRepository>(
+  (ref) => LifeRepository(ref.watch(myLifeDaoProvider)),
+);
+
+final personalsRepositoryProvider = Provider<PersonalsRepository>(
+  (ref) => PersonalsRepository(ref.watch(personalDaoProvider)),
+);
+
+final ratingsRepositoryProvider = Provider<RatingsRepository>(
+  (ref) => RatingsRepository(ref.watch(ratingDaoProvider)),
 );
 
 final coursesRepositoryProvider = Provider<CoursesRepository>(

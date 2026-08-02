@@ -54,6 +54,17 @@ class PlanetApi {
   Future<NetworkResult<Map<String, dynamic>>> getConfiguration(String url) =>
       getJsonObject(url);
 
+  /// JSON-array variant used by the legacy dictionary download.
+  Future<NetworkResult<List<dynamic>>> getJsonList(String url) {
+    return _request<List<dynamic>>(
+      url,
+      responseType: ResponseType.json,
+      convert: (data) => data is List
+          ? data
+          : throw const FormatException('Expected a JSON array'),
+    );
+  }
+
   /// Port of `ApiInterface.putDoc` — creates or updates a CouchDB document.
   ///
   /// The body must carry `_rev` for an update, or CouchDB answers 409.

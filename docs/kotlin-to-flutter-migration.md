@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 5 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
-test suite. It is *not* yet a replacement for the Kotlin app: **4 of 28 UI packages** are ported.
+**Phase 12 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
+test suite. It is *not* yet a replacement for the Kotlin app: **12 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -14,6 +14,13 @@ test suite. It is *not* yet a replacement for the Kotlin app: **4 of 28 UI packa
   the server.
 - **Phase 4** — the calendar package and its dashboard destination.
 - **Phase 5** — localized, persisted first-launch onboarding and router gating.
+- **Phase 6** — offline user profile, editable account metadata, and dashboard destination.
+- **Phase 7** — persisted system/light/dark appearance settings and safe server details.
+- **Phase 8** — downloadable, SQLite-backed offline dictionary and search experience.
+- **Phase 9** — reactive notifications, filters, unread badges, read actions, and deletion.
+- **Phase 10** — personalized My life ordering/visibility and the references launcher.
+- **Phase 11** — offline personal-item creation, editing, deletion, and pending-upload tracking.
+- **Phase 12** — offline course ratings, comments, aggregates, edits, and upload tracking.
 
 ## Strategy
 
@@ -49,6 +56,14 @@ test suite. It is *not* yet a replacement for the Kotlin app: **4 of 28 UI packa
 | Shelf write-back | `UserRepositoryImpl.uploadShelfData`, `UploadToShelfService`, `RemovedLog` | `repository/shelf_repository.dart`, `removed_log` table |
 | Calendar | `CalendarFragment` | `ui/calendar/calendar_screen.dart` |
 | Onboarding | `OnboardingActivity`, `OnboardingAdapter` | `ui/onboarding/onboarding_screen.dart` |
+| User profile (offline view/edit) | `UserProfileFragment`, `UserProfileViewModel` | `ui/user/profile_screen.dart`, `providers/session_provider.dart` |
+| Settings (appearance/server details) | `SettingsActivity`, `ThemeManager` | `ui/settings/settings_screen.dart`, `providers/settings_provider.dart` |
+| Dictionary | `DictionaryActivity`, `DictionaryDao` | `ui/dictionary/dictionary_screen.dart`, `repository/dictionary_repository.dart` |
+| Notifications | `NotificationsFragment`, `NotificationsRepositoryImpl` | `ui/notifications/notifications_screen.dart`, `repository/notifications_repository.dart` |
+| My life | `LifeFragment`, `LifeRepositoryImpl` | `ui/life/life_screen.dart`, `repository/life_repository.dart` |
+| References | `ReferencesFragment`, `ReferencesAdapter` | `ui/references/references_screen.dart` |
+| Personals (offline CRUD) | `PersonalsFragment`, `PersonalsRepositoryImpl` | `ui/personals/personals_screen.dart`, `repository/personals_repository.dart` |
+| Ratings (course UI/offline data) | `RatingsFragment`, `RatingsRepositoryImpl` | `ui/ratings/rating_dialog.dart`, `repository/ratings_repository.dart` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -178,11 +193,13 @@ Ordered by risk, highest first.
    label), the English is authored and the other locales are left absent so `gen-l10n` falls back
    and Crowdin can translate it properly. Arabic also needs an RTL pass.
 
-## Remaining UI packages (24 of 28)
+## Remaining UI packages (16 of 28)
 
-`chat`, `community`, `components`, `dictionary`, `enterprises`, `events`, `exam`,
-`feedback`, `health`, `life`, `maps`, `notifications`, `personals`, `ratings`,
-`references`, `settings`, `submissions`, `surveys`, `teams`, `user`, `viewer`, `voices` — plus the
+`chat`, `community`, `components`, `enterprises`, `events`, `exam`,
+`feedback`, `health`, `maps`,
+`submissions`, `surveys`, `teams`, `viewer`, `voices` — plus personal attachments/upload,
+rating upload/sync, storage/retry, and the
+rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
@@ -223,4 +240,4 @@ flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clon
 ---
 
 **Last updated**: 2026-08-02
-**Phase**: 5 of N (onboarding)
+**Phase**: 12 of N (ratings)

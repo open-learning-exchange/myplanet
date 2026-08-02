@@ -6,6 +6,8 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/courses_providers.dart';
 import '../../providers/session_provider.dart';
+import '../../providers/ratings_provider.dart';
+import '../ratings/rating_dialog.dart';
 
 /// Port of `ui/courses/CourseDetailFragment.kt`.
 ///
@@ -85,6 +87,8 @@ class _CourseBody extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final theme = Theme.of(context);
     final isMyCourse = userId != null && course.userId.contains(userId);
+    final target = (type: 'course', itemId: course.id);
+    final rating = ref.watch(ratingSummaryProvider(target)).valueOrNull;
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -110,10 +114,35 @@ class _CourseBody extends ConsumerWidget {
         ],
         const SizedBox(height: 16),
         if (userId != null)
-          FilledButton.tonalIcon(
-            onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
-            icon: Icon(isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add),
-            label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: () => _toggleMembership(ref, joined: !isMyCourse),
+                icon: Icon(
+                  isMyCourse ? Icons.bookmark_remove : Icons.bookmark_add,
+                ),
+                label: Text(isMyCourse ? l10n.leaveCourse : l10n.joinCourse),
+              ),
+              OutlinedButton.icon(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (context) => RatingDialog(
+                    target: target,
+                    title: course.courseTitle ?? l10n.courses,
+                  ),
+                ),
+                icon: Icon(
+                  rating?.userRating == null ? Icons.star_border : Icons.star,
+                ),
+                label: Text(
+                  rating == null || rating.total == 0
+                      ? l10n.rateCourse
+                      : l10n.ratingCompact(rating.average, rating.total),
+                ),
+              ),
+            ],
           ),
         const SizedBox(height: 24),
         Text(
