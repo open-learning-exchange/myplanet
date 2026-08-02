@@ -19,5 +19,6 @@
 
   "courses": "Cursos",
   "myCourses": "misCursos",
-  "gradeLevel": "Nivel de grado"
+  "gradeLevel": "Nivel de grado",
+  "calendar": "Calendario"
 }

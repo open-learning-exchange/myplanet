@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../providers/app_providers.dart';
 import '../providers/session_provider.dart';
+import 'calendar/calendar_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
@@ -26,6 +27,7 @@ class Routes {
   static const String login = '/login';
   static const String resources = '/resources';
   static const String courses = '/courses';
+  static const String calendar = '/calendar';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -90,6 +92,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ),
                   ),
                 ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.calendar,
+                builder: (context, state) => const CalendarScreen(),
               ),
             ],
           ),

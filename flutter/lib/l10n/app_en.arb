@@ -97,5 +97,6 @@
       "count": { "type": "int" }
     }
   },
-  "courseNotFound": "Course not found"
+  "courseNotFound": "Course not found",
+  "calendar": "Calendar"
 }
