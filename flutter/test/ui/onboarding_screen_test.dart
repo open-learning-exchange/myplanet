@@ -39,7 +39,9 @@ void main() {
     expect(find.textContaining('Planet server address'), findsOneWidget);
   });
 
-  testWidgets('skip persists completion and invokes the callback', (
+  // The notifier is stubbed here, so this covers the callback and in-memory
+  // state only; PlanetPrefs persistence is covered in planet_prefs_test.dart.
+  testWidgets('skip completes onboarding and invokes the callback', (
     tester,
   ) async {
     var finished = false;

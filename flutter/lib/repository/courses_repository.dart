@@ -64,6 +64,12 @@ class CoursesRepository {
 
   Future<List<String>> subjectLevels() => _dao.distinctSubjectLevels();
 
+  /// Reactive filter options, independent of the active filter.
+  Stream<List<String>> watchGradeLevels() => _dao.watchDistinctGradeLevels();
+
+  Stream<List<String>> watchSubjectLevels() =>
+      _dao.watchDistinctSubjectLevels();
+
   /// Port of `CoursesRepositoryImpl.isMyCourse`.
   Future<bool> isMyCourse(String courseId, String userId) =>
       _dao.isMyCourse(courseId, userId);
@@ -79,21 +85,25 @@ class CoursesRepository {
     String userId, {
     required bool joined,
   }) async {
-    await _dao.setShelfMembership(courseId, userId, joined: joined);
+    // Both writes together: if only one landed, the local shelf and the removal
+    // log would disagree and the next upload would push the wrong document.
+    await _dao.transaction(() async {
+      await _dao.setShelfMembership(courseId, userId, joined: joined);
 
-    if (joined) {
-      await _removedLogDao.clear(
-        type: ShelfRepository.coursesType,
-        userId: userId,
-        docId: courseId,
-      );
-    } else {
-      await _removedLogDao.record(
-        type: ShelfRepository.coursesType,
-        userId: userId,
-        docId: courseId,
-      );
-    }
+      if (joined) {
+        await _removedLogDao.clear(
+          type: ShelfRepository.coursesType,
+          userId: userId,
+          docId: courseId,
+        );
+      } else {
+        await _removedLogDao.record(
+          type: ShelfRepository.coursesType,
+          userId: userId,
+          docId: courseId,
+        );
+      }
+    });
   }
 
   /// Port of the `courses` table pull.
@@ -157,14 +167,26 @@ class CoursesRepository {
       final courseRows = <CoursesCompanion>[];
       final stepRows = <CourseStepsCompanion>[];
 
-      for (final row in rows) {
-        if (row is! Map<String, dynamic>) continue;
-        final doc = JsonUtils.getObject('doc', row);
-        if (doc == null) continue;
+      // Preserve shelf membership already recorded for these courses. Fetched
+      // once per page rather than once per row — a large sync would otherwise
+      // issue thousands of single-row reads.
+      final docs = <Map<String, dynamic>>[
+        for (final row in rows)
+          if (row is Map<String, dynamic>) ?JsonUtils.getObject('doc', row),
+      ];
+      final existingById = {
+        for (final course in await _dao.getByIds([
+          for (final doc in docs)
+            if (JsonUtils.getString('_id', doc) case final id
+                when id.isNotEmpty)
+              id,
+        ]))
+          course.id: course,
+      };
 
+      for (final doc in docs) {
         final courseId = JsonUtils.getString('_id', doc);
-        // Preserve shelf membership already recorded for this course.
-        final existing = courseId.isEmpty ? null : await _dao.getById(courseId);
+        final existing = existingById[courseId];
 
         final parsed = CourseMapper.fromDoc(
           doc,

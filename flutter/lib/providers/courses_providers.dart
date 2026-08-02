@@ -99,16 +99,18 @@ final courseStepsProvider = StreamProvider.family<List<CourseStepRow>, String>((
 });
 
 /// Distinct grade levels present locally, for the filter spinner.
-final gradeLevelsProvider = FutureProvider<List<String>>((ref) {
-  // Re-read whenever the course table changes so the spinner stays in step.
-  ref.watch(coursesStreamProvider);
-  return ref.watch(coursesRepositoryProvider).gradeLevels();
+///
+/// Deliberately *not* derived from [coursesStreamProvider]: that watches
+/// [courseFilterProvider], so choosing a grade would invalidate the option list
+/// it was chosen from. While it reloaded the dropdown would briefly see an empty
+/// item list with a non-null selection, which trips a `DropdownButton` assert.
+final gradeLevelsProvider = StreamProvider<List<String>>((ref) {
+  return ref.watch(coursesRepositoryProvider).watchGradeLevels();
 });
 
 /// Distinct subject levels present locally, for the filter spinner.
-final subjectLevelsProvider = FutureProvider<List<String>>((ref) {
-  ref.watch(coursesStreamProvider);
-  return ref.watch(coursesRepositoryProvider).subjectLevels();
+final subjectLevelsProvider = StreamProvider<List<String>>((ref) {
+  return ref.watch(coursesRepositoryProvider).watchSubjectLevels();
 });
 
 class CourseSyncNotifier extends SyncNotifier {

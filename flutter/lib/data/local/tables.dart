@@ -175,6 +175,7 @@ class RemovedLogs extends Table {
 
 /// Port of `model/CourseStep.kt` (`@Entity(tableName = "course_steps")`).
 @DataClassName('CourseStepRow')
+@TableIndex(name: 'course_steps_course_id', columns: {#courseId})
 class CourseSteps extends Table {
   @override
   String get tableName => 'course_steps';

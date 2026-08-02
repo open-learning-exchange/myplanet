@@ -98,34 +98,70 @@ void main() {
       );
     });
 
-    /// Embedded steps have no `_id`, so the Kotlin derives one from the step's
-    /// content. The id must therefore be stable across syncs of unchanged
-    /// content, and distinct for different content.
-    test('derives a stable, content-distinct step id', () {
+    /// Embedded steps have no `_id`, so the id is derived from the course and
+    /// the step's position: bounded in length, and unique within a course.
+    test('derives a stable id from the course and position', () {
       final first = CourseMapper.fromDoc(courseDoc(steps: steps))!;
       final second = CourseMapper.fromDoc(courseDoc(steps: steps))!;
 
-      expect(first.steps[0].id.value, second.steps[0].id.value);
-      expect(first.steps[0].id.value, isNot(first.steps[1].id.value));
+      expect(first.steps[0].id.value, 'course-1:0');
+      expect(first.steps[1].id.value, 'course-1:1');
+      // Re-syncing unchanged content yields the same ids.
+      expect(
+        second.steps.map((s) => s.id.value),
+        first.steps.map((s) => s.id.value),
+      );
     });
 
-    test('changes the step id when the step content changes', () {
-      final before = CourseMapper.fromDoc(
+    /// The Kotlin keys steps on `Base64(stepJson)`, so two steps with identical
+    /// content collide and the upsert silently drops one.
+    test('keeps two identical steps distinct', () {
+      final parsed = CourseMapper.fromDoc(
         courseDoc(
           steps: [
-            {'stepTitle': 'Original'},
-          ],
-        ),
-      )!;
-      final after = CourseMapper.fromDoc(
-        courseDoc(
-          steps: [
-            {'stepTitle': 'Renamed'},
+            {'stepTitle': 'Practice', 'description': 'Repeat'},
+            {'stepTitle': 'Practice', 'description': 'Repeat'},
           ],
         ),
       )!;
 
-      expect(before.steps.single.id.value, isNot(after.steps.single.id.value));
+      expect(parsed.steps.length, 2);
+      expect(parsed.steps[0].id.value, isNot(parsed.steps[1].id.value));
+    });
+
+    test('keeps identical steps in different courses distinct', () {
+      final a = CourseMapper.fromDoc(
+        courseDoc(
+          id: 'course-a',
+          steps: [
+            {'stepTitle': 'Intro'},
+          ],
+        ),
+      )!;
+      final b = CourseMapper.fromDoc(
+        courseDoc(
+          id: 'course-b',
+          steps: [
+            {'stepTitle': 'Intro'},
+          ],
+        ),
+      )!;
+
+      expect(a.steps.single.id.value, isNot(b.steps.single.id.value));
+    });
+
+    /// Base64 of the step JSON grows with the content; a position-derived id
+    /// stays short no matter how long the description is.
+    test('keeps the id bounded regardless of step size', () {
+      final parsed = CourseMapper.fromDoc(
+        courseDoc(
+          steps: [
+            {'stepTitle': 'Long', 'description': 'x' * 5000},
+          ],
+        ),
+      )!;
+
+      expect(parsed.steps.single.id.value.length, lessThan(64));
     });
 
     test('skips malformed step entries', () {

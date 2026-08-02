@@ -18,8 +18,8 @@ void main() {
   }) {
     return [
       coursesStreamProvider.overrideWith((ref) => Stream.value(rows)),
-      gradeLevelsProvider.overrideWith((ref) async => grades),
-      subjectLevelsProvider.overrideWith((ref) async => subjects),
+      gradeLevelsProvider.overrideWith((ref) => Stream.value(grades)),
+      subjectLevelsProvider.overrideWith((ref) => Stream.value(subjects)),
     ];
   }
 
@@ -57,66 +57,45 @@ void main() {
     });
 
     testWidgets('typing in the search box updates the filter', (tester) async {
-      late WidgetRef capturedRef;
-
       await tester.pumpWidget(
-        wrapScreen(
-          Consumer(
-            builder: (context, ref, _) {
-              capturedRef = ref;
-              return const CoursesScreen();
-            },
-          ),
-          overrides: courseOverrides(const []),
-        ),
+        wrapScreen(const CoursesScreen(), overrides: courseOverrides(const [])),
       );
       await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CoursesScreen)),
+      );
 
       await tester.enterText(find.byType(SearchBar), 'algebra');
       await tester.pump();
 
-      expect(capturedRef.read(courseFilterProvider).query, 'algebra');
+      expect(container.read(courseFilterProvider).query, 'algebra');
     });
 
     testWidgets('the my-courses chip toggles the filter', (tester) async {
-      late WidgetRef capturedRef;
-
       await tester.pumpWidget(
-        wrapScreen(
-          Consumer(
-            builder: (context, ref, _) {
-              capturedRef = ref;
-              return const CoursesScreen();
-            },
-          ),
-          overrides: courseOverrides(const []),
-        ),
+        wrapScreen(const CoursesScreen(), overrides: courseOverrides(const [])),
       );
       await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CoursesScreen)),
+      );
 
-      expect(capturedRef.read(courseFilterProvider).myCoursesOnly, isFalse);
+      expect(container.read(courseFilterProvider).myCoursesOnly, isFalse);
 
       await tester.tap(find.widgetWithText(FilterChip, 'My courses'));
       await tester.pumpAndSettle();
 
-      expect(capturedRef.read(courseFilterProvider).myCoursesOnly, isTrue);
+      expect(container.read(courseFilterProvider).myCoursesOnly, isTrue);
     });
 
     testWidgets('clear filters resets the filter state', (tester) async {
-      late WidgetRef capturedRef;
-
       await tester.pumpWidget(
-        wrapScreen(
-          Consumer(
-            builder: (context, ref, _) {
-              capturedRef = ref;
-              return const CoursesScreen();
-            },
-          ),
-          overrides: courseOverrides(const []),
-        ),
+        wrapScreen(const CoursesScreen(), overrides: courseOverrides(const [])),
       );
       await tester.pumpAndSettle();
+      final container = ProviderScope.containerOf(
+        tester.element(find.byType(CoursesScreen)),
+      );
 
       await tester.tap(find.widgetWithText(FilterChip, 'My courses'));
       await tester.pumpAndSettle();
@@ -124,7 +103,7 @@ void main() {
       await tester.tap(find.widgetWithText(ActionChip, 'Clear filters'));
       await tester.pumpAndSettle();
 
-      expect(capturedRef.read(courseFilterProvider).myCoursesOnly, isFalse);
+      expect(container.read(courseFilterProvider).myCoursesOnly, isFalse);
     });
 
     testWidgets('renders Spanish strings under the es locale', (tester) async {

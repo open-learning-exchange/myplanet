@@ -238,6 +238,62 @@ void main() {
     );
   });
 
+  group('sync — partial page walk', () {
+    test('keeps local rows when the walk ends early', () async {
+      stubCount(75);
+      stubPage(0, 50, List.generate(50, (i) => row('c$i', 'T')));
+      stubPage(50, 50, List.generate(25, (i) => row('c${50 + i}', 'T')));
+      await repository.sync(config: config);
+      expect(await repository.localCount(), 75);
+
+      // The server truncates mid-walk: savedIds holds only a prefix, so the
+      // cleanup must be skipped rather than deleting the rest.
+      stubCount(75);
+      stubPage(0, 50, List.generate(25, (i) => row('c$i', 'T')));
+      stubPage(25, 50, const []);
+      await repository.sync(config: config);
+
+      expect(await repository.localCount(), 75);
+    });
+  });
+
+  group('sync — course steps', () {
+    test('drops steps that disappear when a course shrinks', () async {
+      stubCount(1);
+      stubPage(0, 50, [
+        row(
+          'c1',
+          'Algebra',
+          steps: [
+            {'stepTitle': 'One'},
+            {'stepTitle': 'Two'},
+            {'stepTitle': 'Three'},
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+      expect((await repository.getCourseSteps('c1')).length, 3);
+
+      // Upserting alone would leave the third step behind.
+      stubCount(1);
+      stubPage(0, 50, [
+        row(
+          'c1',
+          'Algebra',
+          steps: [
+            {'stepTitle': 'One'},
+            {'stepTitle': 'Two'},
+          ],
+        ),
+      ]);
+      await repository.sync(config: config);
+
+      final steps = await repository.getCourseSteps('c1');
+      expect(steps.length, 2);
+      expect(steps.map((s) => s.stepTitle), ['One', 'Two']);
+    });
+  });
+
   group('watchCourses', () {
     Future<void> seed() async {
       stubCount(3);
@@ -340,6 +396,34 @@ void main() {
 
       final course = await repository.getCourseById('c1');
       expect(course!.userId, ['user-1']);
+    });
+
+    /// The removal log is what stops the shelf merge re-adding a course the
+    /// user just left, so a regression here silently pushes the wrong shelf.
+    test('leaving records a removal and joining clears it', () async {
+      expect(
+        await db.removedLogDao.removedDocIds('courses', 'user-1'),
+        isEmpty,
+      );
+
+      await repository.setShelfMembership('c1', 'user-1', joined: false);
+      expect(await db.removedLogDao.removedDocIds('courses', 'user-1'), ['c1']);
+
+      await repository.setShelfMembership('c1', 'user-1', joined: true);
+      expect(
+        await db.removedLogDao.removedDocIds('courses', 'user-1'),
+        isEmpty,
+      );
+    });
+
+    test('one user removal does not leak into another user', () async {
+      await repository.setShelfMembership('c1', 'user-1', joined: false);
+
+      expect(await db.removedLogDao.removedDocIds('courses', 'user-1'), ['c1']);
+      expect(
+        await db.removedLogDao.removedDocIds('courses', 'user-2'),
+        isEmpty,
+      );
     });
 
     test('is a no-op for an unknown course', () async {

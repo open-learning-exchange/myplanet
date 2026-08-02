@@ -55,14 +55,21 @@ abstract class SyncNotifier extends Notifier<SyncUiState> {
 
     state = const SyncRunning(SyncProgress(completed: 0, total: 0));
 
-    final result = await runSync(
-      config,
-      (progress) => state = SyncRunning(progress),
-    );
+    try {
+      final result = await runSync(
+        config,
+        (progress) => state = SyncRunning(progress),
+      );
 
-    state = switch (result) {
-      SyncComplete(:final savedCount) => SyncSucceeded(savedCount),
-      SyncFailed(:final message) => SyncErrored(message),
-    };
+      state = switch (result) {
+        SyncComplete(:final savedCount) => SyncSucceeded(savedCount),
+        SyncFailed(:final message) => SyncErrored(message),
+      };
+    } catch (error) {
+      // Repositories return SyncFailed for network problems, but a database or
+      // parsing fault still throws. Without this the state would stay
+      // SyncRunning and the sync button would never re-enable.
+      state = SyncErrored('$error');
+    }
   }
 }

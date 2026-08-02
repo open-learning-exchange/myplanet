@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:drift/drift.dart';
 
 import '../../core/utils/json_utils.dart';
@@ -69,11 +67,21 @@ class CourseMapper {
 
   /// Port of the `steps` loop in `parseCourseDocument`.
   ///
-  /// The Kotlin derives each step id as `Base64(stepJson.toString())` — a
-  /// content hash, since embedded steps carry no `_id` of their own. That is
-  /// replicated here with `base64(jsonEncode(step))`. The bytes need not match
-  /// the Kotlin's: under the drop-and-resync policy the id only has to be
-  /// stable across syncs *within* this app, which content-derivation gives.
+  /// **Deviation from the Kotlin.** Embedded steps carry no `_id`, and the
+  /// Kotlin derives one as `Base64(stepJson.toString())` — the step's content.
+  /// That is unsafe as a primary key, in two ways the Kotlin also suffers:
+  ///
+  /// * Two steps with identical content collide. Within one course the upsert
+  ///   silently drops the second; across courses the surviving row keeps
+  ///   whichever `courseId` was written last, so the step vanishes from the
+  ///   other course.
+  /// * Base64 is an encoding, not a digest, so a step with a long description
+  ///   stores a multi-kilobyte primary key in the row and in the index.
+  ///
+  /// The id is derived from the course and the step's position instead:
+  /// bounded, unique, and stable across syncs. This is safe to diverge on
+  /// because the id is local — the Kotlin's is locally derived too, never a
+  /// server value.
   static List<CourseStepsCompanion> _parseSteps(
     Map<String, dynamic> doc,
     String courseId,
@@ -89,7 +97,7 @@ class CourseMapper {
       final resources = step['resources'];
       steps.add(
         CourseStepsCompanion(
-          id: Value(stepIdFor(step)),
+          id: Value(stepIdFor(courseId, i)),
           courseId: Value(courseId),
           stepTitle: Value(JsonUtils.getStringOrNull('stepTitle', step)),
           description: Value(JsonUtils.getStringOrNull('description', step)),
@@ -101,6 +109,7 @@ class CourseMapper {
     return steps;
   }
 
-  static String stepIdFor(Map<String, dynamic> step) =>
-      base64.encode(utf8.encode(jsonEncode(step)));
+  /// Local step id: `<courseId>:<position>`.
+  static String stepIdFor(String courseId, int stepIndex) =>
+      '$courseId:$stepIndex';
 }
