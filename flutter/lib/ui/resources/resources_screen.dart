@@ -4,7 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/resources_providers.dart';
-import '../../providers/session_provider.dart';
+import '../../providers/sync_state.dart';
+import '../dashboard/dashboard_shell.dart';
 
 /// Port of `ui/resources/ResourcesFragment.kt`.
 ///
@@ -21,19 +22,19 @@ class ResourcesScreen extends ConsumerWidget {
     final resources = ref.watch(resourcesStreamProvider);
     final syncState = ref.watch(resourceSyncProvider);
 
-    ref.listen<ResourceSyncState>(resourceSyncProvider, (previous, next) {
+    ref.listen<SyncUiState>(resourceSyncProvider, (previous, next) {
       final messenger = ScaffoldMessenger.of(context);
       switch (next) {
         case SyncSucceeded(:final savedCount):
           messenger.showSnackBar(
             SnackBar(content: Text(l10n.syncedResources(savedCount))),
           );
-        case SyncError(:final message):
+        case SyncErrored(:final message):
           messenger.showSnackBar(
             SnackBar(content: Text(l10n.syncFailed(message))),
           );
         case SyncIdle():
-        case Syncing():
+        case SyncRunning():
           break;
       }
     });
@@ -44,19 +45,15 @@ class ResourcesScreen extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: l10n.sync,
-            onPressed: syncState is Syncing
+            onPressed: syncState is SyncRunning
                 ? null
                 : () => ref.read(resourceSyncProvider.notifier).sync(),
             icon: const Icon(Icons.sync),
           ),
-          IconButton(
-            tooltip: l10n.logOut,
-            onPressed: () => ref.read(sessionProvider.notifier).signOut(),
-            icon: const Icon(Icons.logout),
-          ),
+          const LogoutAction(),
         ],
         bottom: PreferredSize(
-          preferredSize: Size.fromHeight(syncState is Syncing ? 68 : 64),
+          preferredSize: Size.fromHeight(syncState is SyncRunning ? 68 : 64),
           child: Column(
             children: [
               Padding(
@@ -69,7 +66,7 @@ class ResourcesScreen extends ConsumerWidget {
                           value,
                 ),
               ),
-              if (syncState is Syncing)
+              if (syncState is SyncRunning)
                 LinearProgressIndicator(
                   value: syncState.progress.total == 0
                       ? null

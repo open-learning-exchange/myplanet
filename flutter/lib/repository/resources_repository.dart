@@ -1,41 +1,12 @@
-import 'package:meta/meta.dart';
-
 import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
 import '../core/sync/adaptive_batch_processor.dart';
+import '../core/sync/sync_result.dart';
 import '../core/utils/json_utils.dart';
 import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/my_library_mapper.dart';
-
-/// Progress of a resources pull, for the sync indicator.
-@immutable
-class SyncProgress {
-  const SyncProgress({required this.completed, required this.total});
-
-  final int completed;
-  final int total;
-
-  double get fraction => total == 0 ? 0 : completed / total;
-}
-
-@immutable
-sealed class SyncResult {
-  const SyncResult();
-}
-
-class SyncComplete extends SyncResult {
-  const SyncComplete(this.savedCount);
-
-  final int savedCount;
-}
-
-class SyncFailed extends SyncResult {
-  const SyncFailed(this.message);
-
-  final String message;
-}
 
 /// Port of the resources phase of `services/sync/SyncManager.kt` (phase 2) plus
 /// the read side of `repository/ResourcesRepositoryImpl.kt`.
@@ -77,7 +48,7 @@ class ResourcesRepository {
       authHeader: authHeader,
     );
     if (countResult is! NetworkSuccess<Map<String, dynamic>>) {
-      return SyncFailed(_describe(countResult));
+      return SyncFailed(describeNetworkFailure(countResult));
     }
 
     final totalRows = JsonUtils.getInt('total_rows', countResult.data);
@@ -103,7 +74,7 @@ class ResourcesRepository {
 
       if (pageResult is! NetworkSuccess<Map<String, dynamic>>) {
         batchSizer.recordFailure();
-        return SyncFailed(_describe(pageResult));
+        return SyncFailed(describeNetworkFailure(pageResult));
       }
       batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
 
@@ -145,14 +116,5 @@ class ResourcesRepository {
     }
 
     return SyncComplete(savedIds.length);
-  }
-
-  static String _describe(NetworkResult<Object?> result) {
-    return switch (result) {
-      NetworkError(:final code, :final message) =>
-        'Server responded ${code ?? '?'}${message == null ? '' : ': $message'}',
-      NetworkException(:final error) => error.toString(),
-      NetworkSuccess() => '',
-    };
   }
 }
