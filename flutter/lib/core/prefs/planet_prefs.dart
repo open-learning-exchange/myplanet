@@ -39,6 +39,7 @@ class PlanetPrefs {
   static const String _keyParentCode = 'parentCode';
   static const String _keyLoggedInUserId = 'loggedInUserId';
   static const String _keyOnboardingComplete = 'onboardingComplete';
+  static const String _keyThemeMode = 'themeMode';
 
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
@@ -134,6 +135,13 @@ class PlanetPrefs {
 
   Future<void> setOnboardingComplete() =>
       _prefs.setBool(_keyOnboardingComplete, true);
+
+  /// Persisted theme name. Kept as a string so `lib/core/` remains pure Dart
+  /// and does not import Flutter's `ThemeMode`.
+  String get themeModeName => _prefs.getString(_keyThemeMode) ?? 'system';
+
+  Future<void> setThemeModeName(String value) =>
+      _prefs.setString(_keyThemeMode, value);
 
   Future<void> setLoggedInUserId(String? userId) async {
     if (userId == null) {

@@ -99,6 +99,157 @@
   },
   "courseNotFound": "Course not found",
   "calendar": "Calendar",
+  "profile": "Profile",
+  "profileUnavailable": "Profile unavailable",
+  "username": "Username",
+  "email": "Email",
+  "phone": "Phone",
+  "level": "Level",
+  "language": "Language",
+  "gender": "Gender",
+  "dateOfBirth": "Date of birth",
+  "planetCode": "Planet code",
+  "accountDetails": "Account details",
+  "noProfileDetails": "No profile details are available.",
+  "profilePhotoFor": "Profile photo for {name}",
+  "@profilePhotoFor": {
+    "placeholders": {
+      "name": { "type": "String" }
+    }
+  },
+  "editProfile": "Edit profile",
+  "firstName": "First name",
+  "middleName": "Middle name",
+  "lastName": "Last name",
+  "save": "Save",
+  "profileSaved": "Profile saved on this device",
+  "invalidEmail": "Enter a valid email address",
+  "appearance": "Appearance",
+  "systemTheme": "Use device theme",
+  "lightTheme": "Light",
+  "darkTheme": "Dark",
+  "server": "Server",
+  "serverUrl": "Server URL",
+  "notConfigured": "Not configured",
+  "communityCode": "Community code",
+  "about": "About",
+  "offlineLearningApp": "Offline learning with Planet",
+  "learningTools": "Learning tools",
+  "dictionary": "Dictionary",
+  "dictionaryDescription": "Search downloaded definitions offline",
+  "dictionaryUnavailable": "Dictionary unavailable",
+  "searchDictionary": "Search for a word",
+  "dictionaryWordCount": "{count, plural, =0{No downloaded words} =1{1 downloaded word} other{{count} downloaded words}}",
+  "@dictionaryWordCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "downloadDictionary": "Download dictionary",
+  "retryDownload": "Retry download",
+  "dictionaryDownloadFailed": "The dictionary could not be downloaded. Your existing offline data was not changed.",
+  "wordNotFound": "Word not available in the offline dictionary",
+  "meaning": "Meaning",
+  "synonyms": "Synonyms",
+  "antonyms": "Antonyms",
+  "notifications": "Notifications",
+  "notification": "Notification",
+  "notificationsUnavailable": "Notifications unavailable",
+  "markAllRead": "Mark all read",
+  "all": "All",
+  "read": "Read",
+  "unreadCount": "Unread ({count})",
+  "@unreadCount": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "noNotifications": "No notifications",
+  "noUnreadNotifications": "No unread notifications",
+  "noReadNotifications": "No read notifications",
+  "delete": "Delete",
+  "deleteNotification": "Delete notification?",
+  "deleteNotificationConfirmation": "This notification will be removed from this device.",
+  "taskNotification": "Task",
+  "chatNotification": "Chat",
+  "replyNotification": "New reply",
+  "resourceNotification": "Resources",
+  "storageNotification": "Storage warning",
+  "joinRequestNotification": "Join request",
+  "teamNotification": "Team update",
+  "myLife": "My life",
+  "myLifeUnavailable": "My life is unavailable",
+  "noLifeItems": "No My life items",
+  "shownOnDashboard": "Shown",
+  "hiddenFromDashboard": "Hidden",
+  "hideItem": "Hide {title}",
+  "@hideItem": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "showItem": "Show {title}",
+  "@showItem": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "reorderItem": "Reorder {title}",
+  "@reorderItem": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "myHealth": "My health",
+  "achievements": "Achievements",
+  "submissions": "Submissions",
+  "mySurveys": "My surveys",
+  "references": "References",
+  "myPersonals": "My personals",
+  "featureComingSoon": "This feature is not ported yet",
+  "maps": "Maps",
+  "englishDictionary": "English dictionary",
+  "offlineMapsComingSoon": "Offline maps are not ported yet",
+  "addPersonal": "Add personal item",
+  "editPersonal": "Edit personal item",
+  "deletePersonal": "Delete personal item?",
+  "deletePersonalConfirmation": "Delete “{title}” from this device?",
+  "@deletePersonalConfirmation": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "personalsUnavailable": "Personal items are unavailable",
+  "noPersonals": "No personal items yet. Add a private note to get started.",
+  "duplicateTitle": "A personal item with this title already exists",
+  "savedOffline": "Saved offline — pending upload",
+  "edit": "Edit",
+  "title": "Title",
+  "description": "Description",
+  "titleRequired": "Enter a title",
+  "rateCourse": "Rate course",
+  "rateTitle": "Rate {title}",
+  "@rateTitle": {
+    "placeholders": { "title": { "type": "String" } }
+  },
+  "ratingsUnavailable": "Ratings are unavailable",
+  "ratingSummary": "{average} from {count, plural, =1{1 rating} other{{count} ratings}}",
+  "@ratingSummary": {
+    "placeholders": {
+      "average": { "type": "double", "format": "compact" },
+      "count": { "type": "int" }
+    }
+  },
+  "ratingCompact": "{average} ({count})",
+  "@ratingCompact": {
+    "placeholders": {
+      "average": { "type": "double", "format": "compact" },
+      "count": { "type": "int" }
+    }
+  },
+  "ratingOutOfFive": "Rating: {rating} out of 5",
+  "@ratingOutOfFive": {
+    "placeholders": { "rating": { "type": "int" } }
+  },
+  "setRating": "Set rating to {rating}",
+  "@setRating": {
+    "placeholders": { "rating": { "type": "int" } }
+  },
+  "ratingRequired": "Choose a rating",
+  "commentOptional": "Comment (optional)",
+  "submitRating": "Submit rating",
   "skip": "Skip",
   "next": "Next",
   "getStarted": "GET STARTED",

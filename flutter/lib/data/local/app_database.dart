@@ -21,8 +21,29 @@ part 'app_database.g.dart';
 /// [_migration] keeps that policy so a schema bump re-pulls from the server
 /// rather than needing a hand-written migration.
 @DriftDatabase(
-  tables: [Users, MyLibraryTable, Courses, CourseSteps, RemovedLogs],
-  daos: [UserDao, MyLibraryDao, CourseDao, RemovedLogDao],
+  tables: [
+    Users,
+    MyLibraryTable,
+    Courses,
+    CourseSteps,
+    RemovedLogs,
+    DictionaryEntries,
+    Notifications,
+    MyLifeEntries,
+    PersonalEntries,
+    Ratings,
+  ],
+  daos: [
+    UserDao,
+    MyLibraryDao,
+    CourseDao,
+    RemovedLogDao,
+    DictionaryDao,
+    NotificationDao,
+    MyLifeDao,
+    PersonalDao,
+    RatingDao,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -34,7 +55,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 8;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -462,4 +483,234 @@ class RemovedLogDao extends DatabaseAccessor<AppDatabase>
     )..where((r) => r.type.equals(type) & r.userId.equals(userId))).get();
     return rows.map((r) => r.docId).toList(growable: false);
   }
+}
+
+/// Port of `data/room/dao/DictionaryDao.kt`.
+@DriftAccessor(tables: [DictionaryEntries])
+class DictionaryDao extends DatabaseAccessor<AppDatabase>
+    with _$DictionaryDaoMixin {
+  DictionaryDao(super.db);
+
+  Future<int> count() async {
+    final query = selectOnly(dictionaryEntries)
+      ..addColumns([dictionaryEntries.id.count()]);
+    final row = await query.getSingle();
+    return row.read(dictionaryEntries.id.count()) ?? 0;
+  }
+
+  Future<void> replaceAll(List<DictionaryEntriesCompanion> entries) {
+    return transaction(() async {
+      await delete(dictionaryEntries).go();
+      await batch((batch) {
+        batch.insertAll(dictionaryEntries, entries);
+      });
+    });
+  }
+
+  Future<DictionaryRow?> findByWord(String word) {
+    final normalized = word.trim().toLowerCase();
+    if (normalized.isEmpty) return Future.value(null);
+    return (select(dictionaryEntries)
+          ..where((entry) => entry.wordNormalized.equals(normalized))
+          ..limit(1))
+        .getSingleOrNull();
+  }
+}
+
+/// Port of `data/room/dao/NotificationDao.kt`.
+@DriftAccessor(tables: [Notifications])
+class NotificationDao extends DatabaseAccessor<AppDatabase>
+    with _$NotificationDaoMixin {
+  NotificationDao(super.db);
+
+  Stream<List<NotificationRow>> watchForUser(
+    String userId, {
+    String filter = 'all',
+  }) {
+    final query = select(notifications)
+      ..where((notification) => notification.userId.equals(userId));
+    if (filter == 'read') {
+      query.where((notification) => notification.isRead.equals(true));
+    } else if (filter == 'unread') {
+      query.where((notification) => notification.isRead.equals(false));
+    }
+    query.orderBy([
+      (notification) => OrderingTerm(
+        expression: notification.createdAt,
+        mode: OrderingMode.desc,
+      ),
+    ]);
+    return query.watch();
+  }
+
+  Stream<int> watchUnreadCount(String userId) {
+    final count = notifications.id.count();
+    final query = selectOnly(notifications)
+      ..addColumns([count])
+      ..where(
+        notifications.userId.equals(userId) &
+            notifications.isRead.equals(false),
+      );
+    return query.watchSingle().map((row) => row.read(count) ?? 0);
+  }
+
+  Future<void> upsert(NotificationsCompanion notification) =>
+      into(notifications).insertOnConflictUpdate(notification);
+
+  Future<NotificationRow?> getById(String id) =>
+      (select(notifications)..where((row) => row.id.equals(id)))
+          .getSingleOrNull();
+
+  Future<int> markAsRead(Iterable<String> ids) {
+    final values = ids.toList(growable: false);
+    if (values.isEmpty) return Future.value(0);
+    return (update(notifications)..where((row) => row.id.isIn(values))).write(
+      const NotificationsCompanion(isRead: Value(true)),
+    );
+  }
+
+  Future<int> markAllAsRead(String userId) {
+    return (update(notifications)..where(
+          (row) => row.userId.equals(userId) & row.isRead.equals(false),
+        ))
+        .write(const NotificationsCompanion(isRead: Value(true)));
+  }
+
+  Future<int> deleteById(String id) =>
+      (delete(notifications)..where((row) => row.id.equals(id))).go();
+}
+
+/// Port of `data/room/dao/MyLifeDao.kt`.
+@DriftAccessor(tables: [MyLifeEntries])
+class MyLifeDao extends DatabaseAccessor<AppDatabase> with _$MyLifeDaoMixin {
+  MyLifeDao(super.db);
+
+  Stream<List<MyLifeRow>> watchForUser(String userId) =>
+      (select(myLifeEntries)
+            ..where((row) => row.userId.equals(userId))
+            ..orderBy([(row) => OrderingTerm(expression: row.weight)]))
+          .watch();
+
+  Future<void> seedIfEmpty(
+    String userId,
+    List<MyLifeEntriesCompanion> entries,
+  ) async {
+    await transaction(() async {
+      final countColumn = myLifeEntries.id.count();
+      final countQuery = selectOnly(myLifeEntries)
+        ..addColumns([countColumn])
+        ..where(myLifeEntries.userId.equals(userId));
+      final count = (await countQuery.getSingle()).read(countColumn) ?? 0;
+      if (count == 0) {
+        await batch((batch) => batch.insertAll(myLifeEntries, entries));
+      }
+    });
+  }
+
+  Future<void> setVisibility(String id, {required bool visible}) =>
+      (update(myLifeEntries)..where((row) => row.id.equals(id))).write(
+        MyLifeEntriesCompanion(isVisible: Value(visible)),
+      );
+
+  Future<void> reorder(List<String> orderedIds) async {
+    await transaction(() async {
+      for (var index = 0; index < orderedIds.length; index++) {
+        await (update(myLifeEntries)
+              ..where((row) => row.id.equals(orderedIds[index])))
+            .write(MyLifeEntriesCompanion(weight: Value(index)));
+      }
+    });
+  }
+}
+
+/// Port of `data/room/dao/PersonalDao.kt`.
+@DriftAccessor(tables: [PersonalEntries])
+class PersonalDao extends DatabaseAccessor<AppDatabase>
+    with _$PersonalDaoMixin {
+  PersonalDao(super.db);
+
+  Stream<List<PersonalRow>> watchForUser(String userId) =>
+      (select(personalEntries)
+            ..where((row) => row.userId.equals(userId))
+            ..orderBy([
+              (row) => OrderingTerm(
+                expression: row.date,
+                mode: OrderingMode.desc,
+              ),
+            ]))
+          .watch();
+
+  Future<bool> titleExists(
+    String userId,
+    String normalizedTitle, {
+    String? excludingId,
+  }) async {
+    final query = select(personalEntries)
+      ..where(
+        (row) =>
+            row.userId.equals(userId) &
+            row.titleNormalized.equals(normalizedTitle),
+      );
+    if (excludingId != null) {
+      query.where((row) => row.id.equals(excludingId).not());
+    }
+    return (await query.get()).isNotEmpty;
+  }
+
+  Future<void> upsert(PersonalEntriesCompanion row) =>
+      into(personalEntries).insertOnConflictUpdate(row);
+
+  Future<PersonalRow?> getById(String id) =>
+      (select(personalEntries)..where((row) => row.id.equals(id)))
+          .getSingleOrNull();
+
+  Future<int> deleteById(String id) =>
+      (delete(personalEntries)..where((row) => row.id.equals(id))).go();
+
+  Future<List<PersonalRow>> pendingUploads(String userId) =>
+      (select(personalEntries)..where(
+            (row) => row.userId.equals(userId) & row.isUploaded.equals(false),
+          ))
+          .get();
+}
+
+/// Port of `data/room/dao/RatingDao.kt`.
+@DriftAccessor(tables: [Ratings])
+class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
+  RatingDao(super.db);
+
+  Stream<List<RatingRow>> watchForItem(String type, String itemId) =>
+      (select(ratings)..where(
+            (row) => row.type.equals(type) & row.item.equals(itemId),
+          ))
+          .watch();
+
+  Future<RatingRow?> findUserRating(
+    String type,
+    String itemId,
+    String userId,
+  ) => (select(ratings)
+        ..where(
+          (row) =>
+              row.type.equals(type) &
+              row.item.equals(itemId) &
+              row.userId.equals(userId),
+        )
+        ..limit(1))
+      .getSingleOrNull();
+
+  Future<void> upsert(RatingsCompanion rating) =>
+      into(ratings).insertOnConflictUpdate(rating);
+
+  Future<List<RatingRow>> pendingUploads() =>
+      (select(ratings)..where(
+            (row) =>
+                row.isUpdated.equals(true) & row.userId.like('guest%').not(),
+          ))
+          .get();
+
+  Future<int> markUploaded(String id) =>
+      (update(ratings)..where((row) => row.id.equals(id))).write(
+        const RatingsCompanion(isUpdated: Value(false)),
+      );
 }
