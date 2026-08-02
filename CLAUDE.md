@@ -10,7 +10,7 @@
 - **Target SDK**: 36 (Android 16); **Compile SDK**: 37
 - **Current Version**: 0.62.97 (versionCode: 6297)
 - **Build System**: Gradle 9.6.1 with Android Gradle Plugin 9.3.1
-- **Local Database**: Room 2.8.4 — **the app has fully migrated off Realm** (no Realm code, plugin, or dependency remains)
+- **Local Database**: Room (AndroidX) 2.8.4 — the only local persistence store
 - **License**: AGPL v3
 
 ### Build Flavors
@@ -155,7 +155,7 @@ myplanet/
 | **Build System** | Gradle | 9.6.1 | Build automation |
 | **Build Plugin** | Android Gradle Plugin | 9.3.1 | Android build tooling |
 | **DI Framework** | Dagger Hilt | 2.60.1 | Dependency injection |
-| **Database** | Room (AndroidX) | 2.8.4 | Local SQLite object database (replaced Realm) |
+| **Database** | Room (AndroidX) | 2.8.4 | Local SQLite object database |
 | **Networking** | Retrofit | 3.0.0 | REST API client |
 | **HTTP Client** | OkHttp | 5.4.0 | HTTP communication |
 | **JSON** | Gson | 2.14.0 | JSON serialization |
@@ -178,8 +178,6 @@ myplanet/
 - `kotlin-kapt` (legacy annotation processing — still used by Hilt's `kapt` block)
 - `com.google.devtools.ksp` (Symbol processing — used by **Room**, Glide, and Hilt compilers)
 - `com.google.dagger.hilt.android`
-
-> The `realm-android` Gradle plugin has been **removed** — the app no longer depends on Realm.
 
 **Compiler Settings:**
 - Java Compatibility: 17
@@ -234,7 +232,7 @@ Activities, Chat, Community, Configurations, Courses, Download, Events, Feedback
 - `SyncRepository`, `TeamsSyncRepository`, `UserSyncRepository` - narrow interfaces the sync managers depend on
 - `SubmissionsRepositoryExporter` - Export utilities
 
-> Note: the old Realm-era `RealmRepository` generic base class has been **removed**; repositories now talk to Room DAOs directly.
+There is no generic base repository; each implementation talks to its Room DAO(s) directly.
 
 **Location**: `app/src/main/java/org/ole/planet/myplanet/repository/`
 
@@ -328,7 +326,7 @@ interface CoreDependenciesEntryPoint {
 - `UploadCoordinator` - Central orchestration for all upload operations with batch processing and retry
 - `UploadConfigs` - Configuration objects for different upload types (NewsActivities, Submissions, Photos, etc.)
 - `UploadConfig` - Generic configuration template with batch size and model binding
-- `RoomUploadConfig` - Room-DAO-backed upload configuration (replaces the old Realm-model binding)
+- `RoomUploadConfig` - Room-DAO-backed upload configuration
 - `UploadResult` - Result wrapper with success/failure/empty states
 - `UploadConstants` - Shared upload constants
 - `PhotoUploader`, `AchievementUploader` - Type-specific uploaders
@@ -495,7 +493,7 @@ git push -u origin claude/feature-name-sessionid
 - ViewHolders: `*ViewHolder.kt`
 - Repositories: `*Repository.kt` and `*RepositoryImpl.kt`
 - Room DAOs: `*Dao.kt` in `data/room/dao/` (e.g., `CourseDao.kt`)
-- Models/Entities: plain names in `model/` (e.g., `MyCourse.kt`, `Submission.kt`) — no `Realm*` prefix
+- Models/Entities: plain names in `model/` (e.g., `MyCourse.kt`, `Submission.kt`)
 - Workers: `*Worker.kt` (e.g., `AutoSyncWorker.kt`)
 
 **Layout Naming:**
@@ -506,7 +504,7 @@ git push -u origin claude/feature-name-sessionid
 
 ### Room Database Conventions
 
-> **The app has fully migrated from Realm to Room.** There is no Realm code, plugin, or dependency left. All persistence goes through the Room `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). If you see `RealmObject`, `RealmList`, `mRealm`, `copyFromRealm`, `withRealmAsync`, or `executeTransactionAsync` anywhere, it is stale documentation — those APIs no longer exist.
+> All local persistence goes through Room — the `AppDatabase` (`data/room/AppDatabase.kt`), its DAOs (`data/room/dao/`), and `Converters` (`data/room/Converters.kt`). There is no other local store, so reach for DAOs (or `DatabaseService`), never a raw SQLite or third-party-DB API.
 
 **Entity (model) Classes:**
 ```kotlin
@@ -529,7 +527,7 @@ open class MyCourse(
 ```
 
 **Key Points:**
-- Entities live in `model/` and are annotated with `@Entity(tableName = "...")`; there is **no** `Realm` name prefix (e.g. `MyCourse`, `MyLibrary`, `News`, `Submission`, `UserEntity`, `TeamTask`).
+- Entities live in `model/` and are annotated with `@Entity(tableName = "...")` (e.g. `MyCourse`, `MyLibrary`, `News`, `Submission`, `UserEntity`, `TeamTask`).
 - Use `@PrimaryKey` for the key; add `@Index`/`indices` for frequently queried columns.
 - `@ColumnInfo(name = "_id")` maps the CouchDB `_id`/`_rev` fields to Kotlin-friendly property names.
 - Non-persisted, computed, or in-memory-only fields use `@Ignore` (and often `@Transient`).
@@ -568,7 +566,7 @@ databaseService.executeRoomTransactionAsync { db ->
 **Rules:**
 - Prefer injecting the specific DAO into a repository; reach for `DatabaseService.withRoomAsync` / `executeRoomTransactionAsync` only when you need the whole `AppDatabase` or a multi-DAO transaction.
 - DAO methods are `suspend` and confined to IO — do not block the main thread. `DictionaryActivity` also uses a DAO (`DictionaryDao`) now; there is no raw-DB escape hatch.
-- Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (mirrors Realm's old `equalTo(null)` semantics).
+- Use `IS` (not `=`) in DAO `@Query` predicates when a `null` argument should match `NULL` rows (`=` never matches `NULL` in SQL).
 - **Migration strategy is drop-and-resync**: `RoomModule` builds the DB with `fallbackToDestructiveMigration(true)`. On any schema change bump `version` in `AppDatabase`; there are **no** hand-written `Migration` objects — data is re-pulled from the Planet/CouchDB server on first launch.
 - Inject `DispatcherProvider` (don't hard-code `Dispatchers.IO`) so tests can substitute deterministic dispatchers.
 
