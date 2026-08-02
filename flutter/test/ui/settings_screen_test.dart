@@ -5,7 +5,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:myplanet/core/config/server_config.dart';
 import 'package:myplanet/core/prefs/planet_prefs.dart';
 import 'package:myplanet/providers/app_providers.dart';
-import 'package:myplanet/providers/settings_provider.dart';
 import 'package:myplanet/ui/settings/settings_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 

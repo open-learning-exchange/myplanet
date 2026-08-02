@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/providers/courses_providers.dart';
+import 'package:myplanet/providers/ratings_provider.dart';
+import 'package:myplanet/repository/ratings_repository.dart';
 import 'package:myplanet/ui/courses/course_detail_screen.dart';
 import 'package:myplanet/ui/courses/courses_screen.dart';
 
@@ -144,6 +146,16 @@ void main() {
                 buildStepRow(id: 's1', stepTitle: 'First', noOfResources: 2),
                 buildStepRow(id: 's2', stepTitle: 'Second', stepIndex: 1),
               ]),
+            ),
+            // The rate button watches the ratings DAO; without this it opens a
+            // drift stream against the harness fallback database.
+            ratingSummaryProvider((
+              type: 'course',
+              itemId: 'course-1',
+            )).overrideWith(
+              (ref) => Stream.value(
+                const RatingSummary(average: 0, total: 0, userRating: null),
+              ),
             ),
           ],
         ),

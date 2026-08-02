@@ -17,23 +17,23 @@ class PersonalActions {
   Future<void> create({required String title, String? description}) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return;
-    await ref.read(personalsRepositoryProvider).create(
-      userId: user.id,
-      userName: user.name,
-      title: title,
-      description: description,
-    );
+    await ref
+        .read(personalsRepositoryProvider)
+        .create(
+          userId: user.id,
+          userName: user.name,
+          title: title,
+          description: description,
+        );
   }
 
   Future<void> update({
     required String id,
     required String title,
     String? description,
-  }) => ref.read(personalsRepositoryProvider).update(
-    id: id,
-    title: title,
-    description: description,
-  );
+  }) => ref
+      .read(personalsRepositoryProvider)
+      .update(id: id, title: title, description: description);
 
   Future<void> delete(String id) async {
     await ref.read(personalsRepositoryProvider).delete(id);

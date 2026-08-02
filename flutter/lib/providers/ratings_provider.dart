@@ -26,16 +26,18 @@ class RatingActions {
   }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return;
-    await ref.read(ratingsRepositoryProvider).submit(
-      type: target.type,
-      itemId: target.itemId,
-      title: title,
-      userId: user.id,
-      rate: rate,
-      comment: comment,
-      parentCode: user.parentCode,
-      planetCode: user.planetCode,
-    );
+    await ref
+        .read(ratingsRepositoryProvider)
+        .submit(
+          type: target.type,
+          itemId: target.itemId,
+          title: title,
+          userId: user.id,
+          rate: rate,
+          comment: comment,
+          parentCode: user.parentCode,
+          planetCode: user.planetCode,
+        );
   }
 }
 

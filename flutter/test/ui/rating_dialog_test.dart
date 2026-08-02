@@ -43,9 +43,7 @@ void main() {
         const RatingDialog(target: target, title: 'Course'),
         overrides: [
           ratingSummaryProvider(target).overrideWith(
-            (ref) => Stream.value(
-              const RatingSummary(average: 0, total: 0),
-            ),
+            (ref) => Stream.value(const RatingSummary(average: 0, total: 0)),
           ),
         ],
       ),

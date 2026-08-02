@@ -32,5 +32,46 @@
   "onboardingOfflineDescription": "Descarga recursos para el aprendizaje sin conexión.\nAccede al conocimiento sobre la marcha.",
   "onboardingOpenDescription": "Elige tus intereses y sumérgete en contenido interactivo.\nDiseña tu viaje de aprendizaje único.",
   "onboardingPowerDescription": "Explora un mundo de conocimiento al alcance de tu mano.\n\n🌍 Acceso sin conexión: Aprende sin fronteras, en cualquier momento.\n🎯 Personalizado: Adapta tu camino de aprendizaje.\n📚 Interactivo: Involúcrate con vídeos, libros, juegos.\n\n¡Comienza tu viaje de aprendizaje ilimitado con myPlanet!",
-  "onboardingServerPrepHint": "Antes de iniciar sesión, necesitarás la dirección del servidor de Planet y el PIN. Pregunta a tu administrador comunitario si aún no los tienes."
+  "onboardingServerPrepHint": "Antes de iniciar sesión, necesitarás la dirección del servidor de Planet y el PIN. Pregunta a tu administrador comunitario si aún no los tienes.",
+
+  "serverPinLabel": "pin del servidor",
+  "username": "Nombre",
+  "logOut": "Cerrar sesión",
+  "about": "Acerca de",
+  "lightTheme": "Claro",
+  "darkTheme": "Oscuro",
+
+  "profile": "Perfil",
+  "editProfile": "Editar perfil",
+  "firstName": "Nombre de Pila",
+  "middleName": "Segundo nombre",
+  "lastName": "Apellido",
+  "email": "Correo electrónico",
+  "phone": "Número de teléfono",
+  "dateOfBirth": "Fecha de nacimiento",
+  "gender": "Género",
+  "language": "Idioma",
+  "level": "Nivel",
+
+  "title": "Título",
+  "description": "Descripción",
+  "save": "Guardar",
+  "edit": "Editar",
+  "delete": "Eliminar",
+
+  "dictionary": "Diccionario",
+  "englishDictionary": "Diccionario inglés",
+  "references": "Referencias",
+  "maps": "Mapas",
+
+  "noNotifications": "Sin notificaciones",
+  "noUnreadNotifications": "Sin notificaciones no leídas",
+  "noReadNotifications": "Sin notificaciones leídas",
+  "markAllRead": "Marcar todo como leído",
+  "resourceNotification": "Recursos",
+
+  "myLife": "miVida",
+  "myHealth": "miSalud",
+  "myPersonals": "misPersonales",
+  "achievements": "misLogros"
 }
