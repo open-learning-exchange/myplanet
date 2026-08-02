@@ -117,3 +117,19 @@ final serverConfigProvider =
     NotifierProvider<ServerConfigNotifier, ServerConfig?>(
       ServerConfigNotifier.new,
     );
+
+/// First-launch gate used by the declarative router instead of launching and
+/// finishing `OnboardingActivity` imperatively.
+class OnboardingNotifier extends Notifier<bool> {
+  @override
+  bool build() => ref.watch(planetPrefsProvider).onboardingComplete;
+
+  Future<void> complete() async {
+    await ref.read(planetPrefsProvider).setOnboardingComplete();
+    state = true;
+  }
+}
+
+final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
+  OnboardingNotifier.new,
+);
