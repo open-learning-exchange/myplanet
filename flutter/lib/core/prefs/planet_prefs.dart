@@ -30,6 +30,7 @@ class PlanetPrefs {
   static const String _keyCommunityCode = 'communityCode';
   static const String _keyParentCode = 'parentCode';
   static const String _keyLoggedInUserId = 'loggedInUserId';
+  static const String _keyOnboardingComplete = 'onboardingComplete';
 
   static const String _secureKeyServerPin = 'serverPin';
   static const String _secureKeyCouchDbUrl = 'couchdbURL';
@@ -117,6 +118,14 @@ class PlanetPrefs {
   }
 
   String? get loggedInUserId => _prefs.getString(_keyLoggedInUserId);
+
+  /// Whether the first-launch introduction has been completed or skipped.
+  /// Port of `SharedPrefManager.getFirstLaunch` / `setFirstLaunch`.
+  bool get onboardingComplete =>
+      _prefs.getBool(_keyOnboardingComplete) ?? false;
+
+  Future<void> setOnboardingComplete() =>
+      _prefs.setBool(_keyOnboardingComplete, true);
 
   Future<void> setLoggedInUserId(String? userId) async {
     if (userId == null) {
