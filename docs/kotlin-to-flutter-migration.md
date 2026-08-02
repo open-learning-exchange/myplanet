@@ -82,7 +82,7 @@ upload framework is not ported. A join made in the Flutter app is lost on the ne
 This is the first place the missing upload path bites, and it will keep biting until item 3 below
 is resolved.
 
-Two deliberate *deviations*, both flagged in code:
+Deliberate *deviations*, all flagged in code:
 
 - **`ServerUrlMapper` no longer reads `BuildConfig.PLANET_*`.** Those come from the tracked
   `gradle.properties` — the committed-secrets problem `CLAUDE.md` documents. The Dart version takes
@@ -92,6 +92,30 @@ Two deliberate *deviations*, both flagged in code:
   literals and `ConfigurationsRepositoryImpl` calls `context.getString(...)` inside the repository.
   The Dart repositories return `LoginFailureReason` / `ConfigurationFailureReason` and the UI
   localises, which keeps `BuildContext` out of the data layer.
+- **The PIN and the credentialed CouchDB URL live in secure storage.** `SharedPrefManager` keeps
+  `serverPin` and `couchdbURL` in plain `SharedPreferences`, which is world-readable by root and
+  is swept up by Android auto-backup. `PlanetPrefs` puts both in `flutter_secure_storage` and
+  caches them in memory at startup so the config getter stays synchronous.
+- **`resourceRemoteAddress` is credential-free.** `MyLibrary.insertMyLibrary` writes
+  `scheme://satellite:<pin>@host/resources/...` into every resource row, putting the PIN in the
+  database thousands of times over. The port strips the userinfo and attaches credentials at
+  request time. An empty CouchDB URL yields `null` rather than the Kotlin's unusable
+  `http:///resources/...`.
+- **URL components are percent-encoded.** `buildCouchDbUrl` encodes the PIN, `userDocUrl` encodes
+  the login name (keeping the `org.couchdb.user:` colon literal, which CouchDB requires), and
+  `resourceUrl` returns `null` instead of interpolating the literal text `null`. All are no-ops
+  for well-formed input; the Kotlin is simply wrong when a value contains `@`, `/` or a space.
+
+## Platform policy
+
+Both platforms must permit cleartext, because the primary myPlanet deployment is a local community
+server on plain HTTP (`http://<ip>:5000`):
+
+- **Android** — `INTERNET` is declared in the *main* manifest (the Flutter template only declares
+  it for debug/profile, so release builds would have had no network at all), plus
+  `usesCleartextTraffic` and a `network_security_config.xml` mirroring the Kotlin app's.
+- **iOS** — `NSAppTransportSecurity` / `NSAllowsArbitraryLoads` in `Info.plist`. Narrow this to
+  specific domains if the deployment ever standardises on HTTPS.
 
 ## The hard part: what does not port mechanically
 

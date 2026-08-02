@@ -292,6 +292,28 @@ void main() {
       );
     });
 
+    /// `name` has no unique constraint, and two planets can hold accounts with
+    /// the same name. This used to throw StateError and take down login.
+    test('does not crash when two users share a name', () async {
+      await seedSyncedUser();
+      await db.userDao.upsert(
+        UsersCompanion.insert(
+          id: 'org.couchdb.user:ada-other',
+          couchId: const Value('org.couchdb.user:ada-other'),
+          name: const Value('ada'),
+          derivedKey: const Value(_derivedKey),
+          salt: const Value(_salt),
+        ),
+      );
+
+      final result = await repository.loginOffline(
+        username: 'ada',
+        password: _password,
+      );
+
+      expect(result, isA<LoginSuccess>());
+    });
+
     test('reports an unknown user', () async {
       final result = await repository.loginOffline(
         username: 'nobody',

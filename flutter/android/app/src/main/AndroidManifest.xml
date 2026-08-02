@@ -1,8 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The whole app is a CouchDB client; without this, release builds have no
+         network at all (the Flutter template only declares it for debug/profile). -->
+    <uses-permission android:name="android.permission.INTERNET"/>
+
     <application
         android:label="myplanet"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:usesCleartextTraffic="true"
+        android:networkSecurityConfig="@xml/network_security_config">
         <activity
             android:name=".MainActivity"
             android:exported="true"

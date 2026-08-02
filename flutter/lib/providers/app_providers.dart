@@ -91,6 +91,9 @@ class ServerConfigNotifier extends Notifier<ServerConfig?> {
   }
 
   Future<void> clear() async {
+    // Must reach storage, not just state: `build()` reads the persisted config
+    // back on the next cold start.
+    await ref.read(planetPrefsProvider).clearServerConfig();
     state = null;
   }
 }

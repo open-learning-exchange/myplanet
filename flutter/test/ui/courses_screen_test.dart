@@ -9,25 +9,34 @@ import 'package:myplanet/ui/courses/courses_screen.dart';
 import '../support/widget_harness.dart';
 
 void main() {
-  Override coursesStream(List<CourseRow> rows) =>
-      coursesStreamProvider.overrideWith((ref) => Stream.value(rows));
+  /// The filter bar reads the level providers, which otherwise reach for the
+  /// real on-device database. Stubbing them keeps these tests hermetic.
+  List<Override> courseOverrides(
+    List<CourseRow> rows, {
+    List<String> grades = const [],
+    List<String> subjects = const [],
+  }) {
+    return [
+      coursesStreamProvider.overrideWith((ref) => Stream.value(rows)),
+      gradeLevelsProvider.overrideWith((ref) async => grades),
+      subjectLevelsProvider.overrideWith((ref) async => subjects),
+    ];
+  }
 
   group('CoursesScreen', () {
     testWidgets('renders the courses returned by the stream', (tester) async {
       await tester.pumpWidget(
         wrapScreen(
           const CoursesScreen(),
-          overrides: [
-            coursesStream([
-              buildCourseRow(
-                id: 'c1',
-                courseTitle: 'Álgebra Básica',
-                gradeLevel: 'Primary',
-                subjectLevel: 'Mathematics',
-              ),
-              buildCourseRow(id: 'c2', courseTitle: 'Biology'),
-            ]),
-          ],
+          overrides: courseOverrides([
+            buildCourseRow(
+              id: 'c1',
+              courseTitle: 'Álgebra Básica',
+              gradeLevel: 'Primary',
+              subjectLevel: 'Mathematics',
+            ),
+            buildCourseRow(id: 'c2', courseTitle: 'Biology'),
+          ]),
         ),
       );
       await tester.pumpAndSettle();
@@ -40,7 +49,7 @@ void main() {
 
     testWidgets('shows the empty state when nothing is synced', (tester) async {
       await tester.pumpWidget(
-        wrapScreen(const CoursesScreen(), overrides: [coursesStream(const [])]),
+        wrapScreen(const CoursesScreen(), overrides: courseOverrides(const [])),
       );
       await tester.pumpAndSettle();
 
@@ -58,7 +67,7 @@ void main() {
               return const CoursesScreen();
             },
           ),
-          overrides: [coursesStream(const [])],
+          overrides: courseOverrides(const []),
         ),
       );
       await tester.pumpAndSettle();
@@ -80,7 +89,7 @@ void main() {
               return const CoursesScreen();
             },
           ),
-          overrides: [coursesStream(const [])],
+          overrides: courseOverrides(const []),
         ),
       );
       await tester.pumpAndSettle();
@@ -104,7 +113,7 @@ void main() {
               return const CoursesScreen();
             },
           ),
-          overrides: [coursesStream(const [])],
+          overrides: courseOverrides(const []),
         ),
       );
       await tester.pumpAndSettle();
@@ -122,7 +131,7 @@ void main() {
       await tester.pumpWidget(
         wrapScreen(
           const CoursesScreen(),
-          overrides: [coursesStream(const [])],
+          overrides: courseOverrides(const []),
           locale: const Locale('es'),
         ),
       );

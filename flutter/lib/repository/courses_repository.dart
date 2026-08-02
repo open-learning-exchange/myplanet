@@ -111,6 +111,10 @@ class CoursesRepository {
     final batchSizer = AdaptiveBatchProcessor(initialSize: initialBatchSize);
     final savedIds = <String>[];
     var skip = 0;
+    // A short page means the server changed under us mid-walk. `savedIds` is
+    // then only a prefix of what exists, so the cleanup below must not run —
+    // it would delete local rows the server still has.
+    var walkedEveryPage = true;
 
     while (skip < totalRows) {
       final batchSize = batchSizer.currentSize;
@@ -129,7 +133,10 @@ class CoursesRepository {
       batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
 
       final rows = pageResult.data['rows'];
-      if (rows is! List || rows.isEmpty) break;
+      if (rows is! List || rows.isEmpty) {
+        walkedEveryPage = false;
+        break;
+      }
 
       final courseRows = <CoursesCompanion>[];
       final stepRows = <CourseStepsCompanion>[];
@@ -168,7 +175,7 @@ class CoursesRepository {
       );
     }
 
-    if (savedIds.isNotEmpty) {
+    if (walkedEveryPage && savedIds.isNotEmpty) {
       await _dao.deleteNotIn(savedIds);
     }
 

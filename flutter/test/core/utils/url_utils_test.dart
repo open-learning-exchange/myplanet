@@ -105,6 +105,29 @@ void main() {
         '${UrlUtils.dbUrl(config)}/resources/res-1/chapter.pdf',
       );
     });
+
+    test('resourceUrl encodes both segments', () {
+      expect(
+        UrlUtils.resourceUrl(config, 'res 1', 'a/b.pdf'),
+        '${UrlUtils.dbUrl(config)}/resources/res%201/a%2Fb.pdf',
+      );
+    });
+
+    /// The Kotlin interpolates nulls and builds a URL containing the literal
+    /// text "null", which can only 404.
+    test('resourceUrl returns null instead of embedding "null"', () {
+      expect(UrlUtils.resourceUrl(config, null, 'a.pdf'), isNull);
+      expect(UrlUtils.resourceUrl(config, 'res-1', null), isNull);
+      expect(UrlUtils.resourceUrl(config, '', 'a.pdf'), isNull);
+    });
+
+    test('userDocUrl encodes the name but keeps the CouchDB colon literal', () {
+      final url = UrlUtils.userDocUrl(config, 'ada lovelace');
+      expect(url, endsWith('/_users/org.couchdb.user:ada%20lovelace'));
+      // CouchDB requires the colon unencoded in the document id.
+      expect(url, contains('org.couchdb.user:'));
+      expect(url, isNot(contains('org.couchdb.user%3A')));
+    });
   });
 
   group('image URLs', () {

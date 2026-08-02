@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- myPlanet community servers are commonly reached over plain HTTP on a
+	     local network (http://<ip>:5000), so ATS must allow cleartext. This
+	     mirrors android:usesCleartextTraffic / network_security_config.xml on
+	     the Android side and the Kotlin app's existing policy. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
