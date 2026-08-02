@@ -4,6 +4,11 @@ import '../repository/ratings_repository.dart';
 import 'app_providers.dart';
 import 'session_provider.dart';
 
+/// Port of `ui/ratings/RatingsViewModel.kt`.
+///
+/// [RatingTarget] is the `(type, item)` pair the Kotlin passes around as two
+/// loose strings; making it a record keeps the family key from being ordered
+/// wrongly at a call site.
 typedef RatingTarget = ({String type, String itemId});
 
 final ratingSummaryProvider =
