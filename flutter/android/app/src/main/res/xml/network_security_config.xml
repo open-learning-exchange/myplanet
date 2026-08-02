@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Mirrors app/src/main/res/xml/network_security_config.xml in the Kotlin app.
+
+  Cleartext is permitted because the primary myPlanet deployment is a local
+  community server reached over plain HTTP (http://<ip>:5000). Android 9+
+  blocks cleartext by default, so without this every local-server install would
+  fail at the configuration step.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+
+    <debug-overrides>
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </debug-overrides>
+</network-security-config>

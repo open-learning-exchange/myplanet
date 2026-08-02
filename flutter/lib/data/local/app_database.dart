@@ -67,8 +67,15 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
       into(users).insertOnConflictUpdate(user);
 
   /// Port of `UserRepositoryImpl.getUserByName`.
+  ///
+  /// `name` carries no unique constraint — two planets can legitimately hold
+  /// accounts with the same name and different `_id`s — so this limits to one
+  /// row rather than letting `getSingleOrNull` throw and take down login.
   Future<UserRow?> getByName(String name) =>
-      (select(users)..where((u) => u.name.equals(name))).getSingleOrNull();
+      (select(users)
+            ..where((u) => u.name.equals(name))
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<UserRow?> getById(String id) =>
       (select(users)..where((u) => u.id.equals(id))).getSingleOrNull();
@@ -143,9 +150,40 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
 
   /// Port of `ResourcesRepositoryImpl.removeDeletedResources` — drops local rows
   /// the server no longer lists.
-  Future<int> deleteNotIn(List<String> keepIds) {
+  ///
+  /// The stale set is computed in Dart and deleted in chunks rather than
+  /// binding every kept id into one `NOT IN`: SQLite caps bound variables at
+  /// `SQLITE_MAX_VARIABLE_NUMBER` (999 on older builds), and a library easily
+  /// exceeds that, which would fail the whole sync.
+  Future<int> deleteNotIn(List<String> keepIds) async {
     if (keepIds.isEmpty) return delete(myLibraryTable).go();
-    return (delete(myLibraryTable)..where((r) => r.id.isNotIn(keepIds))).go();
+
+    return transaction(() async {
+      final localIds =
+          await (selectOnly(myLibraryTable)..addColumns([myLibraryTable.id]))
+              .map((row) => row.read(myLibraryTable.id)!)
+              .get();
+
+      final keep = keepIds.toSet();
+      final stale = localIds.where((id) => !keep.contains(id)).toList();
+
+      var deleted = 0;
+      for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+        deleted += await (delete(
+          myLibraryTable,
+        )..where((r) => r.id.isIn(chunk))).go();
+      }
+      return deleted;
+    });
+  }
+}
+
+/// Comfortably under SQLite's 999-variable floor.
+const int _sqliteVariableChunk = 500;
+
+Iterable<List<T>> _chunked<T>(List<T> items, int size) sync* {
+  for (var i = 0; i < items.length; i += size) {
+    yield items.sublist(i, i + size > items.length ? items.length : i + size);
   }
 }
 
@@ -278,6 +316,8 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
   }
 
   /// Drops local courses (and their steps) the server no longer lists.
+  ///
+  /// Chunked for the same reason as [MyLibraryDao.deleteNotIn].
   Future<void> deleteNotIn(List<String> keepIds) async {
     await transaction(() async {
       if (keepIds.isEmpty) {
@@ -285,10 +325,18 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
         await delete(courses).go();
         return;
       }
-      await (delete(
-        courseSteps,
-      )..where((s) => s.courseId.isNotIn(keepIds))).go();
-      await (delete(courses)..where((c) => c.id.isNotIn(keepIds))).go();
+
+      final localIds = await (selectOnly(
+        courses,
+      )..addColumns([courses.id])).map((row) => row.read(courses.id)!).get();
+
+      final keep = keepIds.toSet();
+      final stale = localIds.where((id) => !keep.contains(id)).toList();
+
+      for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+        await (delete(courseSteps)..where((s) => s.courseId.isIn(chunk))).go();
+        await (delete(courses)..where((c) => c.id.isIn(chunk))).go();
+      }
     });
   }
 }

@@ -48,10 +48,13 @@ void main() {
         },
       }, couchDbUrl: couchDbUrl);
 
+      // The stored URL must not carry the satellite PIN.
       expect(
         row!.resourceRemoteAddress.value,
-        '$couchDbUrl/resources/res-1/chapter one.pdf',
+        'https://planet.example.org/resources/res-1/chapter one.pdf',
       );
+      expect(row.resourceRemoteAddress.value, isNot(contains('1234')));
+      expect(row.resourceRemoteAddress.value, isNot(contains('satellite')));
       expect(row.resourceLocalAddress.value, 'chapter one.pdf');
     });
 
@@ -109,6 +112,20 @@ void main() {
       expect(row.resourceRemoteAddress.value, isNull);
     });
 
+    test('has no attachment address when the CouchDB URL is unknown', () {
+      final row = MyLibraryMapper.fromDoc({
+        '_id': 'res-1',
+        'title': 'Doc',
+        '_attachments': {
+          'main.epub': {'content_type': 'application/epub+zip'},
+        },
+      }, couchDbUrl: '');
+
+      // Better an absent URL than the unusable 'http:///resources/...'.
+      expect(row!.resourceRemoteAddress.value, isNull);
+      expect(row.resourceLocalAddress.value, isNull);
+    });
+
     test('returns null for empty, design and id-less documents', () {
       expect(MyLibraryMapper.fromDoc(const {}, couchDbUrl: couchDbUrl), isNull);
       expect(
@@ -123,6 +140,37 @@ void main() {
         }, couchDbUrl: couchDbUrl),
         isNull,
       );
+    });
+  });
+
+  group('credentialFreeBase', () {
+    test('strips the satellite credentials', () {
+      // The default :443 normalizes away; the non-default case is covered below.
+      expect(
+        MyLibraryMapper.credentialFreeBase(couchDbUrl),
+        'https://planet.example.org',
+      );
+    });
+
+    test('trims trailing slashes', () {
+      expect(
+        MyLibraryMapper.credentialFreeBase('https://host/'),
+        'https://host',
+      );
+    });
+
+    test('keeps a non-default port, as local community servers use', () {
+      expect(
+        MyLibraryMapper.credentialFreeBase(
+          'http://satellite:0000@10.0.0.5:5000',
+        ),
+        'http://10.0.0.5:5000',
+      );
+    });
+
+    test('returns null for empty or hostless input', () {
+      expect(MyLibraryMapper.credentialFreeBase(''), isNull);
+      expect(MyLibraryMapper.credentialFreeBase('not a url'), isNull);
     });
   });
 }

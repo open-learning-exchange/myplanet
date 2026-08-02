@@ -54,8 +54,15 @@ class UrlUtils {
 
   /// Port of `UrlUtils.getUrl(id, file)` — the download URL for a resource
   /// attachment.
-  static String resourceUrl(ServerConfig config, String? id, String? file) =>
-      '${dbUrl(config)}/resources/$id/$file';
+  ///
+  /// Returns `null` for a missing id or filename. The Kotlin interpolates the
+  /// nulls and produces a URL containing the literal text `null`, which can only
+  /// 404; refusing to build it lets the caller handle the gap instead.
+  static String? resourceUrl(ServerConfig config, String? id, String? file) {
+    if (id == null || id.isEmpty || file == null || file.isEmpty) return null;
+    return '${dbUrl(config)}/resources'
+        '/${Uri.encodeComponent(id)}/${Uri.encodeComponent(file)}';
+  }
 
   /// Port of `UrlUtils.getUserImageUrl`.
   ///
@@ -97,6 +104,11 @@ class UrlUtils {
 
   /// The CouchDB `_users` document URL for a login name, as built by
   /// `LoginSyncManager.login`.
+  ///
+  /// The `org.couchdb.user:` prefix stays literal — CouchDB requires the
+  /// unencoded colon in the document id — but the name itself is encoded, so a
+  /// login containing a space or `/` addresses the right document.
   static String userDocUrl(ServerConfig config, String userName) =>
-      '${dbUrl(config)}/_users/org.couchdb.user:$userName';
+      '${dbUrl(config)}/_users/org.couchdb.user:'
+      '${Uri.encodeComponent(userName)}';
 }
