@@ -8,6 +8,7 @@ import 'calendar/calendar_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
+import 'onboarding/onboarding_screen.dart';
 import 'resources/resources_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
@@ -24,6 +25,7 @@ class Routes {
   const Routes._();
 
   static const String server = '/server';
+  static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String resources = '/resources';
   static const String courses = '/courses';
@@ -39,13 +41,23 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: _RouterRefresh(ref),
     redirect: (context, state) {
       final hasServer = ref.read(serverConfigProvider) != null;
+      final onboardingComplete = ref.read(onboardingProvider);
       final session = ref.read(sessionProvider);
+      final location = state.matchedLocation;
+
+      // Onboarding does not depend on the asynchronous session restoration.
+      // Gate it first to avoid flashing the resources screen on a fresh install.
+      if (!onboardingComplete) {
+        return location == Routes.onboarding ? null : Routes.onboarding;
+      }
 
       // Hold position until the persisted session has been read back.
       if (session.isLoading) return null;
 
       final isSignedIn = session.valueOrNull != null;
-      final location = state.matchedLocation;
+      if (location == Routes.onboarding) {
+        return hasServer ? Routes.login : Routes.server;
+      }
 
       if (!hasServer) {
         return location == Routes.server ? null : Routes.server;
@@ -59,6 +71,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
+      GoRoute(
+        path: Routes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
+      ),
       GoRoute(
         path: Routes.server,
         builder: (context, state) => const ServerConfigScreen(),
@@ -114,6 +130,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 class _RouterRefresh extends ChangeNotifier {
   _RouterRefresh(Ref ref) {
     ref.listen(serverConfigProvider, (_, _) => notifyListeners());
+    ref.listen(onboardingProvider, (_, _) => notifyListeners());
     ref.listen(sessionProvider, (_, _) => notifyListeners());
   }
 }
