@@ -194,3 +194,110 @@ class CourseSteps extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `data/room/entity/DictionaryEntity.kt`.
+@DataClassName('DictionaryRow')
+@TableIndex(name: 'dictionary_word_normalized', columns: {#wordNormalized})
+class DictionaryEntries extends Table {
+  @override
+  String get tableName => 'dictionary';
+
+  TextColumn get id => text()();
+  TextColumn get code => text().withDefault(const Constant(''))();
+  TextColumn get language => text().withDefault(const Constant(''))();
+  TextColumn get advanceCode => text().withDefault(const Constant(''))();
+  TextColumn get word => text().withDefault(const Constant(''))();
+  TextColumn get wordNormalized => text()();
+  TextColumn get meaning => text().withDefault(const Constant(''))();
+  TextColumn get definition => text().withDefault(const Constant(''))();
+  TextColumn get synonym => text().withDefault(const Constant(''))();
+  TextColumn get antonym => text().withDefault(const Constant(''))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/AppNotification.kt` / `data/room/entity/NotificationEntity`.
+@DataClassName('NotificationRow')
+@TableIndex(name: 'notifications_user_created', columns: {#userId, #createdAt})
+class Notifications extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text()();
+  TextColumn get message => text().withDefault(const Constant(''))();
+  TextColumn get type => text().withDefault(const Constant('notification'))();
+  TextColumn get relatedId => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get link => text().nullable()();
+  BoolColumn get isRead => boolean().withDefault(const Constant(false))();
+  IntColumn get createdAt => integer()();
+  IntColumn get priority => integer().withDefault(const Constant(0))();
+  BoolColumn get isFromServer => boolean().withDefault(const Constant(false))();
+  BoolColumn get needsSync => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/MyLife.kt`.
+@DataClassName('MyLifeRow')
+@TableIndex(name: 'my_life_user_weight', columns: {#userId, #weight})
+class MyLifeEntries extends Table {
+  @override
+  String get tableName => 'my_life';
+
+  TextColumn get id => text().named('_id')();
+  TextColumn get feature => text()();
+  TextColumn get userId => text()();
+  TextColumn get title => text().nullable()();
+  BoolColumn get isVisible => boolean().withDefault(const Constant(true))();
+  IntColumn get weight => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/Personal.kt`.
+@DataClassName('PersonalRow')
+@TableIndex(name: 'my_personal_user', columns: {#userId})
+class PersonalEntries extends Table {
+  @override
+  String get tableName => 'my_personal';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  BoolColumn get isUploaded => boolean().withDefault(const Constant(false))();
+  TextColumn get title => text()();
+  TextColumn get titleNormalized => text()();
+  TextColumn get description => text().nullable()();
+  IntColumn get date => integer()();
+  TextColumn get userId => text()();
+  TextColumn get userName => text().nullable()();
+  TextColumn get path => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/Rating.kt`.
+@DataClassName('RatingRow')
+@TableIndex(name: 'rating_item_type', columns: {#item, #type})
+@TableIndex(name: 'rating_user', columns: {#userId})
+class Ratings extends Table {
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  IntColumn get time => integer()();
+  TextColumn get title => text().nullable()();
+  TextColumn get userId => text()();
+  BoolColumn get isUpdated => boolean().withDefault(const Constant(true))();
+  IntColumn get rate => integer()();
+  TextColumn get item => text()();
+  TextColumn get comment => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+  TextColumn get planetCode => text().nullable()();
+  TextColumn get type => text()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
+import 'providers/settings_provider.dart';
 import 'ui/router.dart';
 
 /// Port of `MainApplication.kt`'s theme and locale setup.
@@ -15,6 +16,7 @@ class MyPlanetApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
@@ -35,8 +37,7 @@ class MyPlanetApp extends ConsumerWidget {
           brightness: Brightness.dark,
         ),
       ),
-      // Follows the system setting, as ThemeManager does.
-      themeMode: ThemeMode.system,
+      themeMode: themeMode,
     );
   }
 }

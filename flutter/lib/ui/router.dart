@@ -8,10 +8,17 @@ import 'calendar/calendar_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
+import 'dictionary/dictionary_screen.dart';
+import 'life/life_screen.dart';
 import 'onboarding/onboarding_screen.dart';
+import 'notifications/notifications_screen.dart';
+import 'personals/personals_screen.dart';
 import 'resources/resources_screen.dart';
+import 'references/references_screen.dart';
+import 'settings/settings_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
+import 'user/profile_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
 /// and the manual `Intent` hops between `SyncActivity` -> `LoginActivity` ->
@@ -30,6 +37,13 @@ class Routes {
   static const String resources = '/resources';
   static const String courses = '/courses';
   static const String calendar = '/calendar';
+  static const String profile = '/profile';
+  static const String settings = '/profile/settings';
+  static const String dictionary = '/profile/settings/dictionary';
+  static const String notifications = '/profile/notifications';
+  static const String life = '/life';
+  static const String references = '/life/references';
+  static const String personals = '/life/personals';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -116,6 +130,48 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.calendar,
                 builder: (context, state) => const CalendarScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.profile,
+                builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'notifications',
+                    builder: (context, state) => const NotificationsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'settings',
+                    builder: (context, state) => const SettingsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'dictionary',
+                        builder: (context, state) => const DictionaryScreen(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: Routes.life,
+                builder: (context, state) => const LifeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'references',
+                    builder: (context, state) => const ReferencesScreen(),
+                  ),
+                  GoRoute(
+                    path: 'personals',
+                    builder: (context, state) => const PersonalsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

@@ -24,4 +24,20 @@ void main() {
     expect(prefs.onboardingComplete, isTrue);
     expect(sharedPreferences.getBool('onboardingComplete'), isTrue);
   });
+
+  test('theme defaults to system and persists a user selection', () async {
+    SharedPreferences.setMockInitialValues({});
+    final sharedPreferences = await SharedPreferences.getInstance();
+    final prefs = PlanetPrefs(
+      sharedPreferences,
+      secureStorage: _MockSecureStorage(),
+    );
+
+    expect(prefs.themeModeName, 'system');
+
+    await prefs.setThemeModeName('dark');
+
+    expect(prefs.themeModeName, 'dark');
+    expect(sharedPreferences.getString('themeMode'), 'dark');
+  });
 }
