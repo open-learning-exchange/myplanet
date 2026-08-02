@@ -4,6 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/ratings_provider.dart';
 
+/// Port of the rating dialog `ui/ratings/RatingsFragment.kt` inflates.
+///
+/// Kotlin builds this from `alert_rating.xml` inside an `AlertDialog.Builder`;
+/// the layout and its wiring collapse into this one widget.
 class RatingDialog extends ConsumerStatefulWidget {
   const RatingDialog({required this.target, required this.title, super.key});
   final RatingTarget target;

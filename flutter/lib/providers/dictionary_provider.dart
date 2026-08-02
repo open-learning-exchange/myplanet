@@ -4,6 +4,12 @@ import '../data/local/app_database.dart';
 import '../repository/dictionary_repository.dart';
 import 'app_providers.dart';
 
+/// The state `ui/dictionary/DictionaryActivity.kt` keeps in fields.
+///
+/// The Activity queries Realm directly — it is the last raw-Realm caller in the
+/// Kotlin app. Here the lookup goes through `DictionaryRepository`, so the
+/// download-and-import path can report failure ([DictionaryState.importFailed])
+/// instead of leaving a half-populated table behind.
 class DictionaryState {
   const DictionaryState({
     this.count = 0,
