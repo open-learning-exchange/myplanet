@@ -461,3 +461,48 @@ class Meetups extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of survey-shaped rows from `model/StepExam.kt` (`exams` database).
+@DataClassName('SurveyRow')
+@TableIndex(name: 'surveys_created_date', columns: {#createdDate})
+class Surveys extends Table {
+  TextColumn get id => text()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get name => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get updatedDate => integer().withDefault(const Constant(0))();
+  IntColumn get adoptionDate => integer().withDefault(const Constant(0))();
+  TextColumn get createdBy => text().nullable()();
+  IntColumn get totalMarks => integer().withDefault(const Constant(0))();
+  TextColumn get passingPercentage => text().nullable()();
+  TextColumn get sourcePlanet => text().nullable()();
+  BoolColumn get isFromNation => boolean().withDefault(const Constant(false))();
+  TextColumn get teamId => text().nullable()();
+  BoolColumn get teamShareAllowed =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get sourceSurveyId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Questions embedded in an `exams` CouchDB survey document.
+@DataClassName('SurveyQuestionRow')
+@TableIndex(name: 'survey_questions_survey', columns: {#surveyId, #position})
+class SurveyQuestions extends Table {
+  TextColumn get id => text()();
+  TextColumn get surveyId => text()();
+  TextColumn get questionId => text().nullable()();
+  TextColumn get header => text().nullable()();
+  TextColumn get body => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get choices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  BoolColumn get required => boolean().withDefault(const Constant(false))();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

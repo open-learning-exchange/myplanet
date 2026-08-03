@@ -343,5 +343,16 @@
   "titleDescending": "Title Z–A",
   "startDate": "Start date",
   "endDate": "End date",
-  "timeNotSet": "Time not set"
+  "timeNotSet": "Time not set",
+  "syncSurveys": "Sync surveys",
+  "searchSurveys": "Search surveys",
+  "sortSurveys": "Sort surveys",
+  "surveysUnavailable": "Surveys are unavailable",
+  "noSurveys": "No surveys available",
+  "untitledSurvey": "Untitled survey",
+  "takeSurvey": "Take survey",
+  "surveyLoadFailed": "Survey could not be loaded",
+  "surveyHasNoQuestions": "This survey has no questions",
+  "submitSurvey": "Submit survey",
+  "answerRequiredQuestions": "Answer all required questions"
 }
