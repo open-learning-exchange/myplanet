@@ -41,6 +41,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   durable CouchDB writes. Leaders can now mutate embedded team courses through the offline course
   cache with durable full-team updates. Enterprise financial reports now support offline create/edit,
   computed totals, archive, and durable writes; attachments and the remaining team pages remain.
+  Team documents authored offline now survive both the stale-row cleanup and a schema upgrade, and
+  clear their local-edit flag once uploaded.
 
 ## Strategy
 
@@ -367,6 +369,47 @@ Two divergences went the other way, where faithfulness would corrupt data:
 `MeetupDao.getByUserId`'s `AND userId != ''` guard is load-bearing and is reproduced:
 `toggleAttendance` writes an empty string when a user *leaves* a meetup, so without it a blank
 user id would select precisely the meetups the user has left and push them back onto the shelf.
+
+## A cache table that is also a system of record
+
+The `teams` database is the first ported table where CouchDB is authoritative for
+*some rows* and the device is authoritative for others. A team, an enterprise, a
+membership, a join request, a resource link and a financial report all live in
+`teams`, separated only by `docType` — and the ones the user authors offline are
+written with device-generated ids.
+
+That combination broke the two policies this port applies to every cache:
+
+- **Stale-row cleanup.** `sync()` ends by deleting everything absent from the
+  synced id set. A locally-authored document is absent *by construction*, so the
+  first sync after writing a financial report deleted it. Nothing could bring it
+  back: the report existed only on that device.
+- **Schema-upgrade drop.** Same shape one layer down. `teams` was not in
+  `localAuthorityTables`, so an upgrade dropped the offline documents with the
+  catalog.
+
+Both now key off a `Teams.isUpdated` flag set by every local write, mirroring
+`Meetups.updated` and `TeamTasks.isUpdated`. Three consequences worth stating,
+because the flag is load-bearing in more places than it looks:
+
+1. `TeamMapper.fromDoc` takes the stored row and, when it is flagged, keeps the
+   local values and adopts only the server `_rev`. Without this a refresh
+   overwrote the edit it was supposed to preserve.
+2. `TeamDao.deleteNotIn` skips flagged rows — and computes the difference in
+   Dart rather than issuing `NOT IN`, which `teams` would overflow on any real
+   planet since it holds a row per membership and per report.
+3. **The flag has to be cleared, or the fix becomes the next bug.** The enqueue
+   side lived in `teams_provider.dart` with no handler registered, so the
+   drainer's generic fallback posted the payload and recorded nothing. A row
+   that stayed flagged after a successful upload would outrank the server
+   forever and never be evicted. `TeamsUploader` closes the loop for all four
+   team upload types.
+
+The related `getById` bug came from the same conflation: it matched `_id | teamId`,
+and every membership, report and resource link carries the team's id in `teamId`.
+`getById(teamId)` could return one of those instead of the team, chosen by scan
+order, and `addCourses` bails on any row with a `docType` — so adding a course to
+a team silently did nothing, intermittently.
 
 ## Remaining UI packages (10 of 28)
 
