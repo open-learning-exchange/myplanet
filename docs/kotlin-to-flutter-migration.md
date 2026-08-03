@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 16 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 18 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **18 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
@@ -33,6 +33,14 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   forms for text and single/multiple choice, required-answer validation, and durable submission.
 - **Phase 17** — the voices/discussion feed: community visibility filtering, threaded replies,
   compose/edit/delete, labels, paginated sync, and durable outbox upload.
+- **Phase 18** — teams (in progress): the paginated offline team/enterprise catalog, search,
+  membership and leader badges, member counts, embedded courses, detail metadata, and safe CouchDB
+  refresh are ported. Offline task create/edit/complete/delete and durable CouchDB write-back are also
+  available. Join/leave requests, leader accept/decline, the member directory, and durable membership
+  write-back are now included. Leaders can also browse, add, and remove team resource links with
+  durable CouchDB writes. Leaders can now mutate embedded team courses through the offline course
+  cache with durable full-team updates. Enterprise financial reports now support offline create/edit,
+  computed totals, archive, and durable writes; attachments and the remaining team pages remain.
 
 ## Strategy
 
@@ -90,6 +98,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 | Events/meetups | `Meetup`, `MeetupDao`, `EventsRepositoryImpl`, `EventsDetailFragment`, meetup upload config | `data/local/meetup_mapper.dart`, `repository/events_repository.dart`, `repository/events_uploader.dart`, `ui/events/` |
 | Individual surveys | `StepExam`, `ExamQuestion`, `SurveysRepositoryImpl`, `SurveyFragment`, survey mode of `ExamTakingFragment` | `data/local/survey_mapper.dart`, `repository/surveys_repository.dart`, `ui/surveys/` |
 | Voices / discussions | `News`, `NewsDao`, `VoicesRepositoryImpl`, `VoicesFragment`, `VoicesAdapter`, `ReplyActivity` | `data/local/news_mapper.dart`, `repository/voices_repository.dart`, `repository/voices_uploader.dart`, `ui/voices/` |
+| Teams catalog and tasks (partial) | `MyTeam`, `TeamsRepositoryImpl`, `TeamFragment`, `TeamDetailFragment` | `data/local/team_mapper.dart`, `repository/teams_repository.dart`, `ui/teams/` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -363,7 +372,7 @@ user id would select precisely the meetups the user has left and push them back 
 
 `chat`, `community`, `components`, `enterprises`, `exam`,
 `feedback`, `health`, `maps`,
-`teams`, `viewer` — plus team voices, team/public survey sharing, personal attachments/upload,
+`teams` (catalog/detail started), `viewer` — plus team voices, team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
 rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
@@ -437,4 +446,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-03
-**Phase**: 17 of N (voices/discussions)
+**Phase**: 18 of N (teams in progress)

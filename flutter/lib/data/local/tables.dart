@@ -568,3 +568,65 @@ class NewsEntries extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/MyTeam.kt` for the team catalog vertical slice.
+@DataClassName('TeamRow')
+@TableIndex(name: 'teams_team_id', columns: {#teamId})
+@TableIndex(name: 'teams_type', columns: {#type, #docType})
+class Teams extends Table {
+  TextColumn get id => text().named('_id')();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get teamId => text().nullable()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get name => text().nullable()();
+  TextColumn get description => text().nullable()();
+  TextColumn get resourceId => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get docType => text().nullable()();
+  TextColumn get teamType => text().nullable()();
+  TextColumn get status => text().nullable()();
+  TextColumn get services => text().nullable()();
+  TextColumn get rules => text().nullable()();
+  TextColumn get createdBy => text().nullable()();
+  TextColumn get courses => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get limit => integer().withDefault(const Constant(0))();
+  BoolColumn get isPublic => boolean().withDefault(const Constant(false))();
+  BoolColumn get isLeader => boolean().withDefault(const Constant(false))();
+  IntColumn get beginningBalance => integer().withDefault(const Constant(0))();
+  IntColumn get sales => integer().withDefault(const Constant(0))();
+  IntColumn get otherIncome => integer().withDefault(const Constant(0))();
+  IntColumn get wages => integer().withDefault(const Constant(0))();
+  IntColumn get otherExpenses => integer().withDefault(const Constant(0))();
+  IntColumn get startDate => integer().withDefault(const Constant(0))();
+  IntColumn get endDate => integer().withDefault(const Constant(0))();
+  IntColumn get updatedDate => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/TeamTask.kt`. Locally-created rows remain authoritative until
+/// the durable outbox adopts the CouchDB id/revision.
+@DataClassName('TeamTaskRow')
+@TableIndex(name: 'team_tasks_team_id', columns: {#teamId})
+class TeamTasks extends Table {
+  TextColumn get id => text()();
+  TextColumn get docId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get description => text().nullable()();
+  TextColumn get teamId => text()();
+  TextColumn get assignee => text().nullable()();
+  IntColumn get deadline => integer().withDefault(const Constant(0))();
+  IntColumn get completedTime => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().withDefault(const Constant('active'))();
+  BoolColumn get completed => boolean().withDefault(const Constant(false))();
+  BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

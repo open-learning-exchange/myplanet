@@ -113,6 +113,22 @@ void main() {
     expect(survivor?.message, 'Written offline');
   });
 
+  test('an offline team task survives a schema upgrade', () async {
+    await database.teamTaskDao.upsert(
+      TeamTasksCompanion.insert(
+        id: 'task-1',
+        teamId: 'team-1',
+        title: const Value('Offline task'),
+        isUpdated: const Value(true),
+      ),
+    );
+    await runUpgrade();
+    expect(
+      (await database.teamTaskDao.getById('task-1'))?.title,
+      'Offline task',
+    );
+  });
+
   test('a My life ordering choice survives', () async {
     await database.myLifeDao.seedIfEmpty('user-1', [
       MyLifeEntriesCompanion.insert(
@@ -190,6 +206,7 @@ void main() {
       'submission_questions',
       'meetups',
       'news',
+      'team_tasks',
     };
     expect(
       AppDatabase.localAuthorityTables,
