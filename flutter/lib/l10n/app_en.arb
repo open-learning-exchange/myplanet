@@ -1,11 +1,9 @@
 {
   "@@locale": "en",
-
   "appTitle": "myPlanet",
   "@appTitle": {
     "description": "Application name, shown in the app bar and launcher."
   },
-
   "serverConfigurationTitle": "Connect to a Planet server",
   "serverUrlLabel": "Server URL",
   "serverUrlHint": "https://planet.example.org",
@@ -18,11 +16,12 @@
   "connectedToCommunity": "Connected to {code}",
   "@connectedToCommunity": {
     "placeholders": {
-      "code": { "type": "String" }
+      "code": {
+        "type": "String"
+      }
     }
   },
   "changeServer": "Change server",
-
   "login": "Login",
   "name": "Name",
   "password": "password",
@@ -35,7 +34,6 @@
   "emptyCredentials": "Username and password are required.",
   "notAManager": "This account is not a manager.",
   "savedAccounts": "Saved accounts",
-
   "resources": "Resources",
   "search": "search",
   "sync": "sync",
@@ -46,43 +44,56 @@
   "syncingResources": "Syncing resources… {completed} of {total}",
   "@syncingResources": {
     "placeholders": {
-      "completed": { "type": "int" },
-      "total": { "type": "int" }
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "syncedResources": "{count, plural, =0{No resources synced} =1{1 resource synced} other{{count} resources synced}}",
   "@syncedResources": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "syncFailed": "Sync failed: {message}",
   "@syncFailed": {
     "placeholders": {
-      "message": { "type": "String" }
+      "message": {
+        "type": "String"
+      }
     }
   },
   "availableOffline": "Available offline",
-
   "courses": "Courses",
   "myCourses": "My courses",
   "allCourses": "All courses",
   "courseSteps": "{count, plural, =0{No steps} =1{1 step} other{{count} steps}}",
   "@courseSteps": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "stepNumber": "Step {number}",
   "@stepNumber": {
     "placeholders": {
-      "number": { "type": "int" }
+      "number": {
+        "type": "int"
+      }
     }
   },
   "resourcesInStep": "{count, plural, =0{No resources} =1{1 resource} other{{count} resources}}",
   "@resourcesInStep": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "gradeLevel": "Grade level",
@@ -94,7 +105,9 @@
   "syncedCourses": "{count, plural, =0{No courses synced} =1{1 course synced} other{{count} courses synced}}",
   "@syncedCourses": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "courseNotFound": "Course not found",
@@ -114,7 +127,9 @@
   "profilePhotoFor": "Profile photo for {name}",
   "@profilePhotoFor": {
     "placeholders": {
-      "name": { "type": "String" }
+      "name": {
+        "type": "String"
+      }
     }
   },
   "editProfile": "Edit profile",
@@ -142,7 +157,9 @@
   "dictionaryWordCount": "{count, plural, =0{No downloaded words} =1{1 downloaded word} other{{count} downloaded words}}",
   "@dictionaryWordCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "downloadDictionary": "Download dictionary",
@@ -161,7 +178,9 @@
   "unreadCount": "Unread ({count})",
   "@unreadCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "noNotifications": "No notifications",
@@ -184,15 +203,27 @@
   "hiddenFromDashboard": "Hidden",
   "hideItem": "Hide {title}",
   "@hideItem": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "showItem": "Show {title}",
   "@showItem": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "reorderItem": "Reorder {title}",
   "@reorderItem": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "myHealth": "My health",
   "achievements": "Achievements",
@@ -203,14 +234,22 @@
   "pending": "Pending",
   "submissionGrade": "Grade: {grade}",
   "@submissionGrade": {
-    "placeholders": { "grade": { "type": "int" } }
+    "placeholders": {
+      "grade": {
+        "type": "int"
+      }
+    }
   },
   "refresh": "Refresh",
   "complete": "Complete",
   "noMatchingSubmissions": "No submissions match this filter",
   "submissionsSynced": "{count, plural, =0{Submissions are up to date} =1{1 submission synced} other{{count} submissions synced}}",
   "@submissionsSynced": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "submissionDetails": "Submission details",
   "submissionNotFound": "Submission not found",
@@ -228,7 +267,11 @@
   "noAnswer": "No answer",
   "questionNumber": "Question {number}",
   "@questionNumber": {
-    "placeholders": { "number": { "type": "int" } }
+    "placeholders": {
+      "number": {
+        "type": "int"
+      }
+    }
   },
   "newSubmission": "New submission",
   "answer": "Answer",
@@ -237,7 +280,11 @@
   "pdfExportFailed": "The PDF could not be created",
   "pdfSaved": "PDF saved to {path}",
   "@pdfSaved": {
-    "placeholders": { "path": { "type": "String" } }
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
   },
   "mySurveys": "My surveys",
   "references": "References",
@@ -251,7 +298,11 @@
   "deletePersonal": "Delete personal item?",
   "deletePersonalConfirmation": "Delete “{title}” from this device?",
   "@deletePersonalConfirmation": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "personalsUnavailable": "Personal items are unavailable",
   "noPersonals": "No personal items yet. Add a private note to get started.",
@@ -263,30 +314,52 @@
   "rateCourse": "Rate course",
   "rateTitle": "Rate {title}",
   "@rateTitle": {
-    "placeholders": { "title": { "type": "String" } }
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
   },
   "ratingsUnavailable": "Ratings are unavailable",
   "ratingSummary": "{average} from {count, plural, =1{1 rating} other{{count} ratings}}",
   "@ratingSummary": {
     "placeholders": {
-      "average": { "type": "double", "format": "compact" },
-      "count": { "type": "int" }
+      "average": {
+        "type": "double",
+        "format": "compact"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ratingCompact": "{average} ({count})",
   "@ratingCompact": {
     "placeholders": {
-      "average": { "type": "double", "format": "compact" },
-      "count": { "type": "int" }
+      "average": {
+        "type": "double",
+        "format": "compact"
+      },
+      "count": {
+        "type": "int"
+      }
     }
   },
   "ratingOutOfFive": "Rating: {rating} out of 5",
   "@ratingOutOfFive": {
-    "placeholders": { "rating": { "type": "int" } }
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
   },
   "setRating": "Set rating to {rating}",
   "@setRating": {
-    "placeholders": { "rating": { "type": "int" } }
+    "placeholders": {
+      "rating": {
+        "type": "int"
+      }
+    }
   },
   "ratingRequired": "Choose a rating",
   "commentOptional": "Comment (optional)",
@@ -307,8 +380,12 @@
   "@pageProgress": {
     "description": "Screen-reader label for the onboarding page indicator. New string with no strings.xml counterpart, so it has no existing translations — Crowdin must supply them.",
     "placeholders": {
-      "current": { "type": "int" },
-      "total": { "type": "int" }
+      "current": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "meetups": "Meetups",
@@ -354,5 +431,29 @@
   "surveyLoadFailed": "Survey could not be loaded",
   "surveyHasNoQuestions": "This survey has no questions",
   "submitSurvey": "Submit survey",
-  "answerRequiredQuestions": "Answer all required questions"
+  "answerRequiredQuestions": "Answer all required questions",
+  "voices": "Voices",
+  "searchVoices": "Search voices",
+  "syncVoices": "Sync voices",
+  "noVoices": "No voices yet",
+  "voicesUnavailable": "Voices are unavailable",
+  "shareYourVoice": "Share your voice",
+  "postVoice": "Post",
+  "replyToVoice": "Reply",
+  "writeAReply": "Write a reply",
+  "repliesCount": "{count, plural, =0{No replies} =1{1 reply} other{{count} replies}}",
+  "@repliesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "edited": "Edited",
+  "editVoice": "Edit",
+  "deleteVoice": "Delete",
+  "deleteVoiceConfirm": "Delete this post and all of its replies?",
+  "voiceDeleted": "Post deleted",
+  "emptyMessageNotAllowed": "Write something first",
+  "thread": "Thread"
 }

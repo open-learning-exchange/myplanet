@@ -98,6 +98,21 @@ void main() {
     expect(survivors.map((row) => row.id), contains('local-1'));
   });
 
+  test('a voices post that has not reached the server survives', () async {
+    await database.newsDao.upsert(
+      NewsEntriesCompanion.insert(
+        id: 'local-1',
+        message: const Value('Written offline'),
+        userId: const Value('user-1'),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.newsDao.getById('local-1');
+    expect(survivor?.message, 'Written offline');
+  });
+
   test('a survey cache is dropped, carrying no local writes', () async {
     await database.surveyDao.upsertAll([
       SurveysCompanion.insert(id: 'survey-1', name: const Value('Survey')),

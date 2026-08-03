@@ -506,3 +506,65 @@ class SurveyQuestions extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/News.kt` — voices/discussion posts, stored in the CouchDB
+/// `news` database.
+///
+/// A reply is an ordinary row whose [replyTo] points at its parent, so a thread
+/// is a self-join rather than a nested structure — matching the Kotlin, where
+/// `deleteNews` has to walk replies recursively to remove a post.
+///
+/// [imageUrls] holds *local* attachment paths awaiting upload, while [images]
+/// caches the server's `images` array as raw JSON; `markNewsUploaded` clears
+/// the former and fills the latter, which is what moves an attachment from
+/// "pending" to "on the server".
+@DataClassName('NewsRow')
+@TableIndex(name: 'news_reply_to', columns: {#replyTo})
+@TableIndex(name: 'news_user_id', columns: {#userId})
+@TableIndex(name: 'news_time', columns: {#time})
+class NewsEntries extends Table {
+  @override
+  String get tableName => 'news';
+
+  TextColumn get id => text()();
+  TextColumn get docId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get user => text().nullable()();
+  TextColumn get message => text().nullable()();
+  TextColumn get docType => text().nullable()();
+  TextColumn get viewableBy => text().nullable()();
+  TextColumn get viewableId => text().nullable()();
+  TextColumn get avatar => text().nullable()();
+  TextColumn get replyTo => text().nullable()();
+  TextColumn get userName => text().nullable()();
+  TextColumn get messagePlanetCode => text().nullable()();
+  TextColumn get messageType => text().nullable()();
+  IntColumn get updatedDate => integer().withDefault(const Constant(0))();
+  IntColumn get time => integer().withDefault(const Constant(0))();
+  TextColumn get createdOn => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+  TextColumn get imageUrls => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  TextColumn get images => text().nullable()();
+  TextColumn get labels => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  TextColumn get viewIn => text().nullable()();
+  TextColumn get newsId => text().nullable()();
+  TextColumn get newsRev => text().nullable()();
+  TextColumn get newsUser => text().nullable()();
+  TextColumn get aiProvider => text().nullable()();
+  TextColumn get newsTitle => text().nullable()();
+  TextColumn get conversations => text().nullable()();
+  IntColumn get newsCreatedDate => integer().withDefault(const Constant(0))();
+  IntColumn get newsUpdatedDate => integer().withDefault(const Constant(0))();
+  BoolColumn get chat => boolean().withDefault(const Constant(false))();
+  BoolColumn get isEdited => boolean().withDefault(const Constant(false))();
+  IntColumn get editedTime => integer().withDefault(const Constant(0))();
+  TextColumn get sharedBy => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

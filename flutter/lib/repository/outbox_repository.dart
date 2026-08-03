@@ -101,6 +101,24 @@ class OutboxRepository {
 
   Future<List<OutboxRow>> due() => _dao.due(_now().millisecondsSinceEpoch);
 
+  /// Withdraws a queued operation whose subject no longer exists.
+  ///
+  /// The Kotlin upload path has no equivalent because it reads the live table
+  /// at send time — a record deleted before the upload runs is simply not in
+  /// the list. A durable queue outlives its subject, so deleting a locally
+  /// composed post that is already queued would otherwise still POST it and
+  /// resurrect it on the server. Returns whether anything was withdrawn.
+  Future<bool> cancel(String uploadType, String itemId) async {
+    final open = await _dao.findOpen(uploadType, itemId);
+    if (open == null) return false;
+    // An operation mid-flight is left alone: the request may already have
+    // reached the server, and the drainer still needs the row to record the
+    // outcome against.
+    if (open.status == OutboxDao.statusInProgress) return false;
+    await _dao.deleteById(open.id);
+    return true;
+  }
+
   Future<void> markInProgress(String id) =>
       _dao.setStatus(id, OutboxDao.statusInProgress);
 

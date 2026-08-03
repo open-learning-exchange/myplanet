@@ -18,7 +18,7 @@
 
 ### Flutter port (in progress)
 A Flutter/Dart port lives in **`flutter/`**, alongside — not replacing — the Kotlin app. `app/`
-is unchanged and remains the shipping app. **17 of 28 UI packages** are ported, plus a durable
+is unchanged and remains the shipping app. **18 of 28 UI packages** are ported, plus a durable
 write-back path. The first vertical slice ran server configuration → login → resources list;
 since then the dashboard shell, courses, calendar, first-launch onboarding, the offline user
 profile, appearance settings, the dictionary, notifications, My life, references, personals, and

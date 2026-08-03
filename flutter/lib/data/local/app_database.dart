@@ -39,6 +39,7 @@ part 'app_database.g.dart';
     Meetups,
     Surveys,
     SurveyQuestions,
+    NewsEntries,
   ],
   daos: [
     UserDao,
@@ -51,6 +52,7 @@ part 'app_database.g.dart';
     PersonalDao,
     RatingDao,
     OutboxDao,
+    NewsDao,
     SubmissionDao,
     MeetupDao,
     SurveyDao,
@@ -66,7 +68,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 14;
+  int get schemaVersion => 15;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -84,6 +86,11 @@ class AppDatabase extends _$AppDatabase {
   /// rows behind, which the next sync prunes through `deleteNotIn` — a cost
   /// worth paying to keep un-uploaded meetups. [Surveys] and [SurveyQuestions]
   /// carry no local writes at all and are dropped with the rest.
+  ///
+  /// [NewsEntries] is the same hybrid: a post or reply composed offline exists
+  /// only in this table until the outbox delivers it and it adopts a CouchDB
+  /// `_id`. `deleteNotIn` prunes the stale server rows on the next sync and
+  /// deliberately spares rows that still have no `_id`.
   static const Set<String> _localAuthorityTables = {
     'outbox',
     'my_personal',
@@ -93,6 +100,7 @@ class AppDatabase extends _$AppDatabase {
     'submission_answers',
     'submission_questions',
     'meetups',
+    'news',
   };
 
   @override
@@ -1115,4 +1123,106 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
     }
     return (delete(surveys)..where((row) => row.id.isIn(stale))).go();
   });
+}
+
+/// Port of `data/room/dao/NewsDao.kt`.
+@DriftAccessor(tables: [NewsEntries])
+class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
+  NewsDao(super.db);
+
+  Future<void> upsert(NewsEntriesCompanion row) =>
+      into(newsEntries).insertOnConflictUpdate(row);
+
+  Future<void> upsertAll(List<NewsEntriesCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(newsEntries, rows));
+  }
+
+  Future<NewsRow?> getById(String id) =>
+      (select(newsEntries)..where((r) => r.id.equals(id))).getSingleOrNull();
+
+  Future<NewsRow?> getByDocId(String docId) => (select(
+    newsEntries,
+  )..where((r) => r.docId.equals(docId))).getSingleOrNull();
+
+  Future<List<NewsRow>> getByDocIds(List<String> docIds) async {
+    final rows = <NewsRow>[];
+    for (final chunk in _chunked(docIds, _sqliteVariableChunk)) {
+      rows.addAll(
+        await (select(newsEntries)..where((r) => r.docId.isIn(chunk))).get(),
+      );
+    }
+    return rows;
+  }
+
+  Future<List<NewsRow>> getAll() => select(newsEntries).get();
+
+  /// `replyTo IS NULL OR replyTo = ''` — the Kotlin's definition of a top-level
+  /// post, kept verbatim because a reply written by this app stores `''` while
+  /// one synced from a server that omitted the field stores null.
+  Expression<bool> _isTopLevel($NewsEntriesTable r) =>
+      r.replyTo.isNull() | r.replyTo.equals('');
+
+  /// Port of `getTopLevelMessagesFlow`, the community feed's source. Visibility
+  /// is *not* filtered here: `VoicesRepositoryImpl` does it in memory because
+  /// the rule reads inside the `viewIn` JSON.
+  Stream<List<NewsRow>> watchTopLevelMessages() =>
+      (select(newsEntries)
+            ..where((r) => _isTopLevel(r) & r.docType.lower().equals('message'))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .watch();
+
+  Stream<List<NewsRow>> watchReplies(String newsId) =>
+      (select(newsEntries)
+            ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .watch();
+
+  Future<List<NewsRow>> replies(String newsId) =>
+      (select(newsEntries)
+            ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .get();
+
+  /// Case-sensitive, unlike [replies] — `getDirectReplies` omits the
+  /// `COLLATE NOCASE` that `getReplies` applies. Only the recursive delete
+  /// walk uses it.
+  Future<List<NewsRow>> directReplies(String newsId) =>
+      (select(newsEntries)..where((r) => r.replyTo.equals(newsId))).get();
+
+  Future<int> replyCount(String newsId) async {
+    final count = newsEntries.id.count();
+    final row =
+        await (selectOnly(newsEntries)
+              ..addColumns([count])
+              ..where(newsEntries.replyTo.lower().equals(newsId.toLowerCase())))
+            .getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  Future<void> deleteByIds(List<String> ids) async {
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      await (delete(newsEntries)..where((r) => r.id.isIn(chunk))).go();
+    }
+  }
+
+  /// Drops server rows that no longer exist, leaving anything still local-only
+  /// (`_id IS NULL`) alone — that is a post the outbox has not delivered yet.
+  Future<void> deleteNotIn(List<String> docIds) async {
+    if (docIds.isEmpty) {
+      await (delete(newsEntries)..where((r) => r.docId.isNotNull())).go();
+      return;
+    }
+    await (delete(
+      newsEntries,
+    )..where((r) => r.docId.isNotNull() & r.docId.isNotIn(docIds))).go();
+  }
+
+  Future<int> count() async {
+    final count = newsEntries.id.count();
+    final row = await (selectOnly(
+      newsEntries,
+    )..addColumns([count])).getSingle();
+    return row.read(count) ?? 0;
+  }
 }
