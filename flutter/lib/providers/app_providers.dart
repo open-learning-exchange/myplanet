@@ -153,14 +153,8 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   final api = ref.watch(planetApiProvider);
   final dao = ref.watch(chatDaoProvider);
   final config = ref.watch(serverConfigProvider);
-  final serverUrl = config == null
-      ? ''
-      : UrlUtils.credentialFreeDbUrl(config);
-  return ChatRepositoryImpl(
-    planetApi: api,
-    chatDao: dao,
-    serverUrl: serverUrl,
-  );
+  final serverUrl = config == null ? '' : UrlUtils.credentialFreeDbUrl(config);
+  return ChatRepositoryImpl(planetApi: api, chatDao: dao, serverUrl: serverUrl);
 });
 
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(

@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:intl/intl.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
@@ -59,6 +60,29 @@ class SubmissionsExporter {
       ),
     );
     return document.save();
+  }
+
+  /// The question/answer pairs the PDF renders, as plain text.
+  ///
+  /// A generated PDF compresses its content streams, so a test cannot search
+  /// the bytes for an answer. This exposes the pairing itself — which is where
+  /// the composite-row-id bug lived — without asserting on layout.
+  @visibleForTesting
+  Future<List<String>> renderedAnswerLines(String submissionId) async {
+    final submission = await _repository.getById(submissionId);
+    if (submission == null) return const [];
+    final answers = await _repository.watchAnswers(submission.id).first;
+    final questions = await _repository.watchQuestions(submission.id).first;
+    final answersByQuestion = {
+      for (final answer in answers) answer.questionId: answer,
+    };
+    return [
+      for (final question in questions)
+        () {
+          final answer = answersByQuestion[_rawQuestionId(question)];
+          return 'A: ${answer == null ? 'No answer' : _answerValue(answer)}';
+        }(),
+    ];
   }
 
   Future<File?> generateFile(

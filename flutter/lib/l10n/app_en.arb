@@ -537,6 +537,8 @@
   "chat": "Chat",
   "newChat": "New chat",
   "searchChats": "Search chats",
+  "unavailable": "unavailable",
+  "chatsUnavailable": "Chats could not be loaded",
   "noChats": "No chats yet",
   "noSearchResults": "No matching chats",
   "untitledChat": "Untitled chat",

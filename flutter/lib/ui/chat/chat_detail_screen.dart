@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../data/local/chat_mapper.dart';
 import '../../providers/chat_provider.dart';
 import '../../providers/session_provider.dart';
 
@@ -49,30 +49,37 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(chatState.id.isEmpty ? l10n.newChat : l10n.chatConversation),
+        title: Text(
+          chatState.id.isEmpty ? l10n.newChat : l10n.chatConversation,
+        ),
         actions: [
           if (aiProviders.valueOrNull?.isNotEmpty == true)
             PopupMenuButton<String>(
               icon: const Icon(Icons.psychology),
               tooltip: l10n.selectAiProvider,
-              onSelected: (provider) {
-                final parts = provider.split(':');
-                if (parts.length == 2) {
-                  ref.read(chatConversationProvider.notifier).setAiProvider(
-                        AiProviderConfig(name: parts[0], model: parts[1]),
-                      );
-                }
-              },
+              // `aiProvidersProvider` is a name -> available map; it carries no
+              // model, so the menu selects a provider by name and leaves the
+              // model empty, as the default config does. Encoding `name:model`
+              // in the value packed the name in twice and set the model to it.
+              onSelected: (provider) => ref
+                  .read(chatConversationProvider.notifier)
+                  .setAiProvider(AiProviderConfig(name: provider, model: '')),
               itemBuilder: (context) {
                 final providers = aiProviders.valueOrNull ?? {};
-                return providers.entries
-                    .map(
-                      (e) => PopupMenuItem(
-                        value: '${e.key}:${e.key}',
-                        child: Text('${e.key} (${e.value ? 'available' : 'unavailable'})'),
+                return [
+                  for (final entry in providers.entries)
+                    PopupMenuItem(
+                      value: entry.key,
+                      // An unavailable provider stays visible but unselectable,
+                      // rather than sending a request that cannot be served.
+                      enabled: entry.value,
+                      child: Text(
+                        entry.value
+                            ? entry.key
+                            : '${entry.key} (${l10n.unavailable})',
                       ),
-                    )
-                    .toList();
+                    ),
+                ];
               },
             ),
         ],
@@ -112,8 +119,9 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                       final isUser = message.isUser;
 
                       return Align(
-                        alignment:
-                            isUser ? Alignment.centerRight : Alignment.centerLeft,
+                        alignment: isUser
+                            ? Alignment.centerRight
+                            : Alignment.centerLeft,
                         child: Container(
                           constraints: BoxConstraints(
                             maxWidth: MediaQuery.of(context).size.width * 0.75,
@@ -126,14 +134,18 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
                           decoration: BoxDecoration(
                             color: isUser
                                 ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.surfaceContainerHighest,
+                                : Theme.of(
+                                    context,
+                                  ).colorScheme.surfaceContainerHighest,
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(16),
                               topRight: const Radius.circular(16),
-                              bottomLeft:
-                                  isUser ? const Radius.circular(16) : Radius.zero,
-                              bottomRight:
-                                  isUser ? Radius.zero : const Radius.circular(16),
+                              bottomLeft: isUser
+                                  ? const Radius.circular(16)
+                                  : Radius.zero,
+                              bottomRight: isUser
+                                  ? Radius.zero
+                                  : const Radius.circular(16),
                             ),
                           ),
                           child: Text(
@@ -160,7 +172,7 @@ class _ChatDetailScreenState extends ConsumerState<ChatDetailScreen> {
               color: Theme.of(context).colorScheme.surface,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),
