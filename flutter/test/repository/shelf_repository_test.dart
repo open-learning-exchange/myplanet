@@ -36,6 +36,7 @@ void main() {
       db.courseDao,
       db.myLibraryDao,
       db.removedLogDao,
+      db.meetupDao,
     );
   });
 
@@ -200,8 +201,14 @@ void main() {
       expect(doc['courseIds'], ['course-1']);
     });
 
-    /// Meetups are not ported; dropping the key would delete them server-side.
-    test('passes meetupIds through untouched', () async {
+    test('merges locally joined meetups with the server shelf', () async {
+      await db.meetupDao.upsert(
+        MeetupsCompanion.insert(
+          id: 'local-meetup',
+          meetupId: const Value('meetup-local'),
+          userId: const Value('user-1'),
+        ),
+      );
       final doc = await repository.buildShelfDocument(
         userId: 'user-1',
         shelfDocId: 'org.couchdb.user:ada',
@@ -210,7 +217,7 @@ void main() {
         },
       );
 
-      expect(doc['meetupIds'], ['meetup-1', 'meetup-2']);
+      expect(doc['meetupIds'], ['meetup-local', 'meetup-1', 'meetup-2']);
     });
   });
 

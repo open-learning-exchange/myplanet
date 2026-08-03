@@ -9,6 +9,8 @@ import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dictionary/dictionary_screen.dart';
+import 'events/event_detail_screen.dart';
+import 'events/events_screen.dart';
 import 'life/life_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
@@ -47,6 +49,7 @@ class Routes {
   static const String references = '/life/references';
   static const String personals = '/life/personals';
   static const String submissions = '/life/submissions';
+  static const String events = '/calendar/events';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -133,6 +136,24 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.calendar,
                 builder: (context, state) => const CalendarScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'events',
+                    builder: (context, state) => const EventsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const NewMeetupScreen(),
+                      ),
+                      GoRoute(
+                        path: ':meetupId',
+                        builder: (context, state) => EventDetailScreen(
+                          meetupId: state.pathParameters['meetupId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

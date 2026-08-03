@@ -259,7 +259,6 @@
   "savedOffline": "Saved offline — pending upload",
   "edit": "Edit",
   "title": "Title",
-  "description": "Description",
   "titleRequired": "Enter a title",
   "rateCourse": "Rate course",
   "rateTitle": "Rate {title}",
@@ -311,5 +310,28 @@
       "current": { "type": "int" },
       "total": { "type": "int" }
     }
-  }
+  },
+  "meetups": "Meetups",
+  "syncPendingMeetups": "Sync pending meetups",
+  "meetupsUnavailable": "Meetups are unavailable",
+  "noMeetups": "No meetups yet",
+  "dateNotSet": "Date not set",
+  "untitledMeetup": "Untitled meetup",
+  "addMeetup": "Add meetup",
+  "meetupDetails": "Meetup details",
+  "meetupNotFound": "Meetup not found",
+  "createdBy": "Created by",
+  "category": "Category",
+  "location": "Location",
+  "link": "Link",
+  "recurring": "Recurring",
+  "description": "Description",
+  "leaveMeetup": "Leave meetup",
+  "joinMeetup": "Join meetup",
+  "editMeetup": "Edit meetup",
+  "startTime": "Start time",
+  "endTime": "End time",
+  "none": "None",
+  "daily": "Daily",
+  "weekly": "Weekly"
 }

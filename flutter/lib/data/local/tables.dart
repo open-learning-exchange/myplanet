@@ -425,3 +425,39 @@ class SubmissionQuestions extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/Meetup.kt`. Meetups are server-cached documents that may
+/// also carry local edits until the generic meetup uploader is ported.
+@DataClassName('MeetupRow')
+@TableIndex(name: 'meetup_remote_id', columns: {#meetupId})
+@TableIndex(name: 'meetup_team_id', columns: {#teamId})
+@TableIndex(name: 'meetup_user_id', columns: {#userId})
+class Meetups extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get meetupId => text().nullable()();
+  TextColumn get meetupIdRev => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get startDate => integer().withDefault(const Constant(0))();
+  IntColumn get endDate => integer().withDefault(const Constant(0))();
+  TextColumn get recurring =>
+      text().nullable().withDefault(const Constant('none'))();
+  TextColumn get day => text().nullable()();
+  TextColumn get startTime => text().nullable()();
+  TextColumn get endTime => text().nullable()();
+  TextColumn get category => text().nullable()();
+  TextColumn get meetupLocation => text().nullable()();
+  TextColumn get meetupLink => text().nullable()();
+  TextColumn get creator => text().nullable()();
+  TextColumn get link => text().nullable()();
+  TextColumn get teamId => text().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get recurringNumber => integer().withDefault(const Constant(10))();
+  TextColumn get sync => text().nullable()();
+  TextColumn get sourcePlanet => text().nullable()();
+  BoolColumn get updated => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
