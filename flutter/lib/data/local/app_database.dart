@@ -843,6 +843,21 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
         OutboxEntriesCompanion(status: Value(status)),
       );
 
+  /// Status-scoped delete, so a cancel cannot race a drain.
+  ///
+  /// Checking the status and deleting in two statements leaves a window: the
+  /// drainer interleaves at every `await`, so it can flip the row to
+  /// `in_progress` between them, and the row would then be deleted while its
+  /// request is on the wire — leaving the drainer's `markCompleted` with
+  /// nothing to write to.
+  Future<int> deletePending(String uploadType, String itemId) =>
+      (delete(outboxEntries)..where(
+            (row) =>
+                row.uploadType.equals(uploadType) &
+                row.itemId.equals(itemId) &
+                row.status.equals(statusPending),
+          ))
+          .go();
   Future<int> deleteById(String id) =>
       (delete(outboxEntries)..where((row) => row.id.equals(id))).go();
 
@@ -1055,9 +1070,27 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
   }
 
   /// Removes stale server rows without discarding locally edited meetups.
-  Future<int> deleteNotIn(List<String> keepIds) => (delete(
-    meetups,
-  )..where((row) => row.updated.equals(false) & row.id.isNotIn(keepIds))).go();
+  /// Drops stale server rows, sparing anything locally edited.
+  ///
+  /// The set difference is computed in Dart rather than with `isNotIn`: that
+  /// would bind one variable per synced id in one statement and fail past
+  /// `SQLITE_MAX_VARIABLE_NUMBER`. A `NOT IN` also cannot be chunked directly,
+  /// since each chunk would match rows the other chunks keep.
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    final keep = keepIds.toSet();
+    final rows = await (select(
+      meetups,
+    )..where((row) => row.updated.equals(false))).get();
+    final stale = rows
+        .map((row) => row.id)
+        .where((id) => !keep.contains(id))
+        .toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      deleted += await (delete(meetups)..where((r) => r.id.isIn(chunk))).go();
+    }
+    return deleted;
+  }
 
   Future<int> markUploaded(String id, String remoteId, String remoteRev) =>
       (update(meetups)..where((row) => row.id.equals(id))).write(
@@ -1109,19 +1142,24 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
     }
   });
 
+  /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
+  /// the deletes are chunked.
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
-    final stale =
-        await (selectOnly(surveys)
-              ..addColumns([surveys.id])
-              ..where(surveys.id.isNotIn(ids)))
-            .map((row) => row.read(surveys.id)!)
-            .get();
-    if (stale.isNotEmpty) {
+    final keep = ids.toSet();
+    final all = await (selectOnly(
+      surveys,
+    )..addColumns([surveys.id])).map((row) => row.read(surveys.id)!).get();
+    final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
       await (delete(
         surveyQuestions,
-      )..where((row) => row.surveyId.isIn(stale))).go();
+      )..where((row) => row.surveyId.isIn(chunk))).go();
+      deleted += await (delete(
+        surveys,
+      )..where((row) => row.id.isIn(chunk))).go();
     }
-    return (delete(surveys)..where((row) => row.id.isIn(stale))).go();
+    return deleted;
   });
 }
 
@@ -1213,9 +1251,21 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
       await (delete(newsEntries)..where((r) => r.docId.isNotNull())).go();
       return;
     }
-    await (delete(
+    // `isNotIn` would bind one variable per synced id in a single statement,
+    // which SQLite rejects past `SQLITE_MAX_VARIABLE_NUMBER` — 999 on older
+    // builds — and a busy `news` database passes that easily. Unlike `isIn`,
+    // a `NOT IN` cannot simply be chunked: each chunk would match rows the
+    // other chunks keep. So the set difference is computed in Dart and the
+    // deletion goes through the already-chunked [deleteByIds].
+    final keep = docIds.toSet();
+    final rows = await (select(
       newsEntries,
-    )..where((r) => r.docId.isNotNull() & r.docId.isNotIn(docIds))).go();
+    )..where((r) => r.docId.isNotNull())).get();
+    final stale = rows
+        .where((row) => !keep.contains(row.docId))
+        .map((row) => row.id)
+        .toList(growable: false);
+    await deleteByIds(stale);
   }
 
   Future<int> count() async {

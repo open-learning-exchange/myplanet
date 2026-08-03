@@ -157,6 +157,21 @@ void main() {
       expect(await outbox.cancel(VoicesUploader.type, id), isFalse);
     });
 
+    test('cancel excludes in-flight rows in the delete itself', () async {
+      // Checking the status and deleting in two statements leaves a window:
+      // the drainer interleaves at every await, so it can claim the row in
+      // between and the delete would then remove a request already on the
+      // wire. The exclusion has to be part of the delete.
+      final id = await seedPost();
+      await uploader.queuePending(config: config, userId: 'user-1');
+      final operation = (await outbox.due()).single;
+      await outbox.markInProgress(operation.id);
+
+      expect(await outbox.cancel(VoicesUploader.type, id), isFalse);
+      // The row must still be there for the drainer to record against.
+      expect(await database.outboxDao.getById(operation.id), isNotNull);
+    });
+
     test('cancelling an unqueued item is a no-op', () async {
       expect(await outbox.cancel(VoicesUploader.type, 'never-queued'), isFalse);
     });
