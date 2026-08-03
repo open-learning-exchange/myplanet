@@ -45,6 +45,8 @@ dependencies:
   # Diacritic folding for titleNormal — stands in for java.text.Normalizer NFD,
   # which has no dart:core equivalent.
   diacritic: ^0.1.6
+  # Submission report generation — replaces Android PdfDocument.
+  pdf: ^3.11.3
 
 dev_dependencies:
   flutter_test:

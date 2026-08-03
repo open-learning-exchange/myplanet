@@ -8,11 +8,12 @@ it covers scope, the technology mapping, what is deliberately not improved, and 
 
 ## Status
 
-Phases 1–13 provide server configuration, online/offline login, resources, courses, shelf
+Phases 1–14 provide server configuration, online/offline login, resources, courses, shelf
 write-back, the dashboard shell, calendar, first-launch onboarding, an offline-editable user
 profile, persisted appearance settings, safe server details, an offline dictionary, reactive
 notifications, personalized My life/reference navigation, offline personal items, and course
-ratings. **12 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
+ratings, and offline submission creation/durable upload/list/detail/question-aware answer review/PDF export with paginated refresh and status filters.
+**13 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
 
 Phase 13 added the durable write-back path — an `outbox` table replacing `RetryQueue`, drained
 on app resume by `OutboxDrainer` instead of by `WorkManager`. Writes made offline survive

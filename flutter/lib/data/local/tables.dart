@@ -352,3 +352,76 @@ class Ratings extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/Submission.kt`.
+@DataClassName('SubmissionRow')
+@TableIndex(
+  name: 'submissions_user_updated',
+  columns: {#userId, #lastUpdateTime},
+)
+class Submissions extends Table {
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get parentId => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get user => text().nullable()();
+  IntColumn get startTime => integer().withDefault(const Constant(0))();
+  IntColumn get lastUpdateTime => integer().withDefault(const Constant(0))();
+  IntColumn get grade => integer().withDefault(const Constant(0))();
+  TextColumn get status => text().nullable()();
+  BoolColumn get uploaded => boolean().withDefault(const Constant(false))();
+  TextColumn get sender => text().nullable()();
+  TextColumn get source => text().nullable()();
+  TextColumn get parentCode => text().nullable()();
+  TextColumn get parent => text().nullable()();
+  TextColumn get teamId => text().nullable()();
+  BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/Answer.kt`. Answers are authored with a submission and are
+/// cached separately, matching Room's `answers` table in the Kotlin app.
+@DataClassName('SubmissionAnswerRow')
+@TableIndex(name: 'submission_answers_submission', columns: {#submissionId})
+class SubmissionAnswers extends Table {
+  TextColumn get id => text()();
+  TextColumn get submissionId => text()();
+  TextColumn get examId => text().nullable()();
+  TextColumn get questionId => text().nullable()();
+  TextColumn get value => text().nullable()();
+  TextColumn get valueChoices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  IntColumn get mistakes => integer().withDefault(const Constant(0))();
+  BoolColumn get isPassed => boolean().withDefault(const Constant(false))();
+  IntColumn get grade => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Embedded exam/survey question metadata from `model/ExamQuestion.kt`.
+@DataClassName('SubmissionQuestionRow')
+@TableIndex(name: 'submission_questions_submission', columns: {#submissionId})
+class SubmissionQuestions extends Table {
+  TextColumn get id => text()();
+  TextColumn get submissionId => text()();
+  TextColumn get header => text().nullable()();
+  TextColumn get body => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get correctChoices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  TextColumn get choices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  TextColumn get marks => text().nullable()();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

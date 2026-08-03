@@ -18,6 +18,9 @@ import '../repository/life_repository.dart';
 import '../repository/resources_repository.dart';
 import '../repository/shelf_repository.dart';
 import '../repository/user_repository.dart';
+import '../repository/submissions_repository.dart';
+import '../repository/submissions_uploader.dart';
+import '../repository/submissions_exporter.dart';
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
 ///
@@ -74,6 +77,29 @@ final personalDaoProvider = Provider<PersonalDao>(
 
 final ratingDaoProvider = Provider<RatingDao>(
   (ref) => ref.watch(appDatabaseProvider).ratingDao,
+);
+
+final submissionDaoProvider = Provider<SubmissionDao>(
+  (ref) => ref.watch(appDatabaseProvider).submissionDao,
+);
+
+final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
+  (ref) => SubmissionsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(submissionDaoProvider),
+  ),
+);
+
+final submissionsUploaderProvider = Provider<SubmissionsUploader>(
+  (ref) => SubmissionsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(submissionsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+final submissionsExporterProvider = Provider<SubmissionsExporter>(
+  (ref) => SubmissionsExporter(ref.watch(submissionsRepositoryProvider)),
 );
 
 /// Replaces `NetworkModule`.
@@ -158,14 +184,19 @@ final personalsUploaderProvider = Provider<PersonalsUploader>(
 /// verbatim from the stored payload.
 final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
   final uploader = ref.watch(personalsUploaderProvider);
+  final submissionsUploader = ref.watch(submissionsUploaderProvider);
   final config = ref.watch(serverConfigProvider);
   if (config != null) {
     uploader.authHeader = PersonalsUploader.authHeaderFor(config);
+    submissionsUploader.authHeader = PersonalsUploader.authHeaderFor(config);
   }
   return OutboxDrainer(
     ref.watch(planetApiProvider),
     ref.watch(outboxRepositoryProvider),
-    handlers: {PersonalsUploader.type: uploader.handler},
+    handlers: {
+      PersonalsUploader.type: uploader.handler,
+      SubmissionsUploader.type: submissionsUploader.handler,
+    },
   );
 });
 
