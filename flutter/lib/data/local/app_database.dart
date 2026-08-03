@@ -33,6 +33,9 @@ part 'app_database.g.dart';
     PersonalEntries,
     Ratings,
     OutboxEntries,
+    Submissions,
+    SubmissionAnswers,
+    SubmissionQuestions,
   ],
   daos: [
     UserDao,
@@ -45,6 +48,7 @@ part 'app_database.g.dart';
     PersonalDao,
     RatingDao,
     OutboxDao,
+    SubmissionDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -57,7 +61,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 9;
+  int get schemaVersion => 12;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -72,6 +76,9 @@ class AppDatabase extends _$AppDatabase {
     'my_personal',
     'removed_log',
     'my_life',
+    'submissions',
+    'submission_answers',
+    'submission_questions',
   };
 
   @override
@@ -831,4 +838,131 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   Future<int> cleanup() => (delete(
     outboxEntries,
   )..where((row) => row.status.isIn([statusCompleted, statusAbandoned]))).go();
+}
+
+/// Port of `data/room/dao/SubmissionDao.kt` for the offline submissions list.
+@DriftAccessor(tables: [Submissions, SubmissionAnswers, SubmissionQuestions])
+class SubmissionDao extends DatabaseAccessor<AppDatabase>
+    with _$SubmissionDaoMixin {
+  SubmissionDao(super.db);
+
+  Stream<List<SubmissionRow>> watchForUser(String userId) =>
+      (select(submissions)
+            ..where((row) => row.userId.equals(userId))
+            ..orderBy([
+              (row) => OrderingTerm(
+                expression: row.lastUpdateTime,
+                mode: OrderingMode.desc,
+              ),
+            ]))
+          .watch();
+
+  Future<void> upsertAll(
+    List<SubmissionsCompanion> rows, {
+    Map<String, List<SubmissionAnswersCompanion>> answers = const {},
+    Map<String, List<SubmissionQuestionsCompanion>> questions = const {},
+  }) async {
+    await transaction(() async {
+      await batch(
+        (batch) => batch.insertAllOnConflictUpdate(submissions, rows),
+      );
+      for (final entry in answers.entries) {
+        await (delete(
+          submissionAnswers,
+        )..where((row) => row.submissionId.equals(entry.key))).go();
+        if (entry.value.isNotEmpty) {
+          await batch(
+            (batch) => batch.insertAll(submissionAnswers, entry.value),
+          );
+        }
+      }
+      for (final entry in questions.entries) {
+        await (delete(
+          submissionQuestions,
+        )..where((row) => row.submissionId.equals(entry.key))).go();
+        if (entry.value.isNotEmpty) {
+          await batch(
+            (batch) => batch.insertAll(submissionQuestions, entry.value),
+          );
+        }
+      }
+    });
+  }
+
+  Future<SubmissionRow?> getById(String id) =>
+      (select(submissions)
+            ..where((row) => row.id.equals(id) | row.couchId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Stream<SubmissionRow?> watchById(String id) =>
+      (select(submissions)
+            ..where((row) => row.id.equals(id) | row.couchId.equals(id))
+            ..limit(1))
+          .watchSingleOrNull();
+
+  Stream<List<SubmissionAnswerRow>> watchAnswers(String submissionId) =>
+      (select(submissionAnswers)
+            ..where((row) => row.submissionId.equals(submissionId))
+            ..orderBy([(row) => OrderingTerm(expression: row.id)]))
+          .watch();
+
+  Stream<List<SubmissionQuestionRow>> watchQuestions(String submissionId) =>
+      (select(submissionQuestions)
+            ..where((row) => row.submissionId.equals(submissionId))
+            ..orderBy([(row) => OrderingTerm(expression: row.position)]))
+          .watch();
+
+  Future<int> count() async {
+    final count = submissions.id.count();
+    final row = await (selectOnly(
+      submissions,
+    )..addColumns([count])).getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  Future<List<SubmissionRow>> pendingUploads(String userId) =>
+      (select(submissions)..where(
+            (row) => row.userId.equals(userId) & row.isUpdated.equals(true),
+          ))
+          .get();
+
+  Future<int> markUploaded(String id, String couchId, String rev) =>
+      (update(submissions)..where((row) => row.id.equals(id))).write(
+        SubmissionsCompanion(
+          couchId: Value(couchId),
+          rev: Value(rev),
+          uploaded: const Value(true),
+          isUpdated: const Value(false),
+        ),
+      );
+
+  /// Removes stale server-cache rows without binding an unbounded `NOT IN`.
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    return transaction(() async {
+      final localIds =
+          await (selectOnly(submissions)
+                ..addColumns([submissions.id])
+                ..where(submissions.isUpdated.equals(false)))
+              .map((row) => row.read(submissions.id)!)
+              .get();
+      final keep = keepIds.toSet();
+      var deleted = 0;
+      for (final chunk in _chunked(
+        localIds.where((id) => !keep.contains(id)).toList(),
+        _sqliteVariableChunk,
+      )) {
+        await (delete(
+          submissionAnswers,
+        )..where((row) => row.submissionId.isIn(chunk))).go();
+        await (delete(
+          submissionQuestions,
+        )..where((row) => row.submissionId.isIn(chunk))).go();
+        deleted += await (delete(
+          submissions,
+        )..where((row) => row.id.isIn(chunk))).go();
+      }
+      return deleted;
+    });
+  }
 }

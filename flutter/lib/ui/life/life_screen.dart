@@ -107,6 +107,9 @@ void _openFeature(BuildContext context, String feature) {
     case 'personals':
       context.push(Routes.personals);
       return;
+    case 'submissions':
+      context.push(Routes.submissions);
+      return;
     default:
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(AppLocalizations.of(context).featureComingSoon)),

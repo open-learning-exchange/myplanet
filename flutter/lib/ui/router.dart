@@ -19,6 +19,8 @@ import 'settings/settings_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
 import 'user/profile_screen.dart';
+import 'submissions/submissions_screen.dart';
+import 'submissions/submission_detail_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
 /// and the manual `Intent` hops between `SyncActivity` -> `LoginActivity` ->
@@ -44,6 +46,7 @@ class Routes {
   static const String life = '/life';
   static const String references = '/life/references';
   static const String personals = '/life/personals';
+  static const String submissions = '/life/submissions';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -170,6 +173,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'personals',
                     builder: (context, state) => const PersonalsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'submissions',
+                    builder: (context, state) => const SubmissionsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':submissionId',
+                        builder: (context, state) => SubmissionDetailScreen(
+                          submissionId: state.pathParameters['submissionId']!,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

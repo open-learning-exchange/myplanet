@@ -197,6 +197,48 @@
   "myHealth": "My health",
   "achievements": "Achievements",
   "submissions": "Submissions",
+  "submission": "Submission",
+  "submissionsUnavailable": "Submissions are unavailable",
+  "noSubmissions": "No submissions yet",
+  "pending": "Pending",
+  "submissionGrade": "Grade: {grade}",
+  "@submissionGrade": {
+    "placeholders": { "grade": { "type": "int" } }
+  },
+  "refresh": "Refresh",
+  "complete": "Complete",
+  "noMatchingSubmissions": "No submissions match this filter",
+  "submissionsSynced": "{count, plural, =0{Submissions are up to date} =1{1 submission synced} other{{count} submissions synced}}",
+  "@submissionsSynced": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "submissionDetails": "Submission details",
+  "submissionNotFound": "Submission not found",
+  "unknown": "Unknown",
+  "status": "Status",
+  "lastUpdated": "Last updated",
+  "grade": "Grade",
+  "submittedBy": "Submitted by",
+  "submissionType": "Type",
+  "uploadStatus": "Upload status",
+  "uploaded": "Uploaded",
+  "answers": "Answers",
+  "answersUnavailable": "Answers are unavailable",
+  "noAnswers": "No answers were saved with this submission",
+  "noAnswer": "No answer",
+  "questionNumber": "Question {number}",
+  "@questionNumber": {
+    "placeholders": { "number": { "type": "int" } }
+  },
+  "newSubmission": "New submission",
+  "answer": "Answer",
+  "availableChoices": "Choices",
+  "exportPdf": "Export PDF",
+  "pdfExportFailed": "The PDF could not be created",
+  "pdfSaved": "PDF saved to {path}",
+  "@pdfSaved": {
+    "placeholders": { "path": { "type": "String" } }
+  },
   "mySurveys": "My surveys",
   "references": "References",
   "myPersonals": "My personals",
