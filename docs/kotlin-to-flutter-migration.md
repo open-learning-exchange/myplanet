@@ -286,7 +286,7 @@ queues only posts that were never delivered or have been edited since. The guest
 kept: a guest account has no CouchDB user document, so the server rejects anything authored under
 it.
 
-## Four defects the outbox and sync paths shared
+## Five defects the outbox and sync paths shared
 
 Found while reconciling the voices and meetups slices; all four are the kind that pass every
 test until real data arrives.
@@ -305,6 +305,14 @@ test until real data arrives.
   in `news`, `meetups` and `surveys` alike. A `NOT IN` cannot simply be chunked, since each chunk
   matches rows the others keep, so the set difference is taken in Dart and the deletes go through
   the chunking this file already had.
+- **An edit racing an in-flight drain was lost.** `findOpen` matches `in_progress` as well as
+  `pending`, so `enqueue` rewrote the payload of a row the drainer had already read; the send then
+  succeeded with the *old* body and `markCompleted` deleted the row. For voices that is a silent
+  loss rather than a delay, because `markUploaded` clears `isEdited` and the post drops out of
+  `pendingUploads` too. Patching an `in_progress` row now also returns it to `pending`, and
+  `markCompleted` deletes only rows still `in_progress`. `nextAttemptAt` is made due *only* on that
+  transition — resetting it for a merely backing-off row would defeat the backoff, since
+  `queuePending` re-enqueues everything pending after each user write.
 - **`OutboxRepository.cancel` had a check-then-delete window.** It read the status, then deleted in
   a second statement; the drainer interleaves at every `await` and could claim the row in between,
   so the delete would remove a request already on the wire and leave `markCompleted` with nothing
