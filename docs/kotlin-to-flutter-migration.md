@@ -441,6 +441,10 @@ flutter analyze
 flutter test
 flutter build apk --debug
 
+# CI gate. `flutter analyze` passes on unformatted code, so this is a separate
+# check and the one most easily missed before pushing.
+dart format --output=none --set-exit-if-changed lib test
+
 # Point at mirrored community servers without committing their addresses:
 flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clone.example
 ```
