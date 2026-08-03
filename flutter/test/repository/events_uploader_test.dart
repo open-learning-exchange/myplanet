@@ -25,7 +25,11 @@ void main() {
   setUp(() {
     database = AppDatabase.memory();
     api = MockPlanetApi();
-    events = EventsRepository(database.meetupDao, createId: () => 'local-1');
+    events = EventsRepository(
+      api,
+      database.meetupDao,
+      createId: () => 'local-1',
+    );
     outbox = OutboxRepository(database.outboxDao);
     uploader = EventsUploader(api, events, outbox);
   });

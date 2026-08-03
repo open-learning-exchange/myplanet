@@ -49,6 +49,14 @@ class _Details extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
         _Value(label: l10n.createdBy, value: row.creator),
+        _Value(
+          label: l10n.startDate,
+          value: _dateTime(context, row.startDate, row.startTime),
+        ),
+        _Value(
+          label: l10n.endDate,
+          value: _dateTime(context, row.endDate, row.endTime),
+        ),
         _Value(label: l10n.category, value: row.category),
         _Value(label: l10n.location, value: row.meetupLocation),
         _Value(label: l10n.link, value: row.meetupLink),
@@ -66,13 +74,29 @@ class _Details extends ConsumerWidget {
         OutlinedButton.icon(
           onPressed: () => showDialog<void>(
             context: context,
-            builder: (_) => _MeetupEditor(existing: row),
+            builder: (_) => AlertDialog(
+              title: Text(l10n.editMeetup),
+              content: SizedBox(
+                width: 480,
+                child: _MeetupEditor(existing: row),
+              ),
+            ),
           ),
           icon: const Icon(Icons.edit),
           label: Text(l10n.editMeetup),
         ),
       ],
     );
+  }
+
+  String? _dateTime(BuildContext context, int millis, String? time) {
+    if (millis == 0 && (time == null || time.isEmpty)) return null;
+    final date = millis == 0
+        ? ''
+        : MaterialLocalizations.of(
+            context,
+          ).formatMediumDate(DateTime.fromMillisecondsSinceEpoch(millis));
+    return [date, time].where((value) => value?.isNotEmpty == true).join(' · ');
   }
 }
 
@@ -162,13 +186,43 @@ class _MeetupEditorState extends ConsumerState<_MeetupEditor> {
             controller: link,
             decoration: InputDecoration(labelText: l10n.link),
           ),
-          TextField(
-            controller: startTime,
-            decoration: InputDecoration(labelText: l10n.startTime),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.startDate),
+            subtitle: Text(_dateLabel(context, startDate)),
+            trailing: const Icon(Icons.calendar_month),
+            onTap: () => _pickDate(start: true),
           ),
-          TextField(
-            controller: endTime,
-            decoration: InputDecoration(labelText: l10n.endTime),
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(l10n.endDate),
+            subtitle: Text(_dateLabel(context, endDate)),
+            trailing: const Icon(Icons.event),
+            onTap: () => _pickDate(start: false),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.startTime),
+                  subtitle: Text(
+                    startTime.text.isEmpty ? l10n.timeNotSet : startTime.text,
+                  ),
+                  onTap: () => _pickTime(startTime),
+                ),
+              ),
+              Expanded(
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.endTime),
+                  subtitle: Text(
+                    endTime.text.isEmpty ? l10n.timeNotSet : endTime.text,
+                  ),
+                  onTap: () => _pickTime(endTime),
+                ),
+              ),
+            ],
           ),
           DropdownButtonFormField<String>(
             initialValue: recurring,
@@ -211,5 +265,50 @@ class _MeetupEditorState extends ConsumerState<_MeetupEditor> {
         ],
       ),
     );
+  }
+
+  String _dateLabel(BuildContext context, int millis) => millis == 0
+      ? AppLocalizations.of(context).dateNotSet
+      : MaterialLocalizations.of(
+          context,
+        ).formatMediumDate(DateTime.fromMillisecondsSinceEpoch(millis));
+
+  Future<void> _pickDate({required bool start}) async {
+    final current = start ? startDate : endDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: current == 0
+          ? DateTime.now()
+          : DateTime.fromMillisecondsSinceEpoch(current),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      final value = DateUtils.dateOnly(picked).millisecondsSinceEpoch;
+      if (start) {
+        startDate = value;
+        if (endDate != 0 && endDate < value) endDate = value;
+      } else {
+        endDate = value;
+      }
+    });
+  }
+
+  Future<void> _pickTime(TextEditingController controller) async {
+    final parts = controller.text.split(':');
+    final initial = parts.length == 2
+        ? TimeOfDay(
+            hour: int.tryParse(parts[0]) ?? 0,
+            minute: int.tryParse(parts[1]) ?? 0,
+          )
+        : TimeOfDay.now();
+    final picked = await showTimePicker(context: context, initialTime: initial);
+    if (picked == null || !mounted) return;
+    setState(() {
+      controller.text =
+          '${picked.hour.toString().padLeft(2, '0')}:'
+          '${picked.minute.toString().padLeft(2, '0')}';
+    });
   }
 }

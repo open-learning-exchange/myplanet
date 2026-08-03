@@ -26,8 +26,9 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 14** — offline submission creation, durable upload, list, question-aware answer review, PDF export, and detail metadata, backed by a paginated,
   reactive Drift cache with pull-to-refresh, status filters, progress reporting, and safe stale
   cleanup.
-- **Phase 15** — offline meetups list/detail/create/edit, join/leave shelf state, CouchDB mapping,
-  reactive Drift persistence, and durable outbox upload.
+- **Phase 15** — offline meetups list/detail/create/edit, date/time and recurrence editing,
+  search/sort, paginated pull-to-refresh, join/leave shelf write-back, CouchDB mapping, reactive
+  Drift persistence, and durable outbox upload.
 
 ## Strategy
 
