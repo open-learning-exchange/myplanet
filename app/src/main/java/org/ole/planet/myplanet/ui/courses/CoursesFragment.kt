@@ -84,7 +84,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val userId = userModel?.id ?: return
         val snapshot = selectedItems?.filterNotNull() ?: return
         if (snapshot.isEmpty()) return
-        val courseIds = snapshot.mapNotNull { it.courseId }
+        val courseIds = snapshot.mapNotNull { it.courseId.takeIf { id -> !id.isNullOrBlank() } ?: it.id.takeIf { id -> !id.isNullOrBlank() } ?: it._id }
         viewModel.removeCourses(courseIds, userId, deleteProgress) {
             if (isAdded) {
                 selectedItems?.clear()
@@ -323,6 +323,8 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         val myCourses = list.mapNotNull { course ->
             course?.let {
                 MyCourse().apply {
+                    id = it.courseId
+                    _id = it.courseId
                     courseId = it.courseId
                     courseTitle = it.courseTitle
                     isMyCourse = it.isMyCourse
