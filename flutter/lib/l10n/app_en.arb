@@ -333,5 +333,15 @@
   "endTime": "End time",
   "none": "None",
   "daily": "Daily",
-  "weekly": "Weekly"
+  "weekly": "Weekly",
+  "syncMeetups": "Sync meetups",
+  "searchMeetups": "Search meetups",
+  "sortMeetups": "Sort meetups",
+  "newestFirst": "Newest first",
+  "oldestFirst": "Oldest first",
+  "titleAscending": "Title A–Z",
+  "titleDescending": "Title Z–A",
+  "startDate": "Start date",
+  "endDate": "End date",
+  "timeNotSet": "Time not set"
 }

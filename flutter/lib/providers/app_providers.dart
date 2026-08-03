@@ -74,7 +74,10 @@ final meetupDaoProvider = Provider<MeetupDao>(
 );
 
 final eventsRepositoryProvider = Provider<EventsRepository>(
-  (ref) => EventsRepository(ref.watch(meetupDaoProvider)),
+  (ref) => EventsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(meetupDaoProvider),
+  ),
 );
 
 final eventsUploaderProvider = Provider<EventsUploader>(

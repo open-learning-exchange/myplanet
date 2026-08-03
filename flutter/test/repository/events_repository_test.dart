@@ -1,14 +1,22 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:myplanet/core/config/server_config.dart';
+import 'package:myplanet/core/network/network_result.dart';
+import 'package:myplanet/core/sync/sync_result.dart';
+import 'package:myplanet/data/api/planet_api.dart';
 import 'package:myplanet/data/local/app_database.dart';
 import 'package:myplanet/repository/events_repository.dart';
 
 void main() {
   late AppDatabase database;
   late EventsRepository repository;
+  late MockPlanetApi api;
 
   setUp(() {
     database = AppDatabase.memory();
+    api = MockPlanetApi();
     repository = EventsRepository(
+      api,
       database.meetupDao,
       now: () => DateTime.fromMillisecondsSinceEpoch(1234),
       createId: () => 'local-meetup',
@@ -121,4 +129,39 @@ void main() {
     expect(payload['link'], {'teams': 'team-1'});
     expect(payload['sync'], {'type': 'local', 'planetCode': 'earth'});
   });
+
+  test('sync walks CouchDB pages and removes stale server rows', () async {
+    await repository.cacheDocuments([
+      {'_id': 'stale', 'title': 'Old'},
+    ]);
+    when(
+      () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+    ).thenAnswer((invocation) async {
+      final url = invocation.positionalArguments.single as String;
+      if (url.endsWith('limit=0')) {
+        return NetworkSuccess<Map<String, dynamic>>({'total_rows': 1});
+      }
+      return NetworkSuccess<Map<String, dynamic>>({
+        'rows': [
+          {
+            'doc': {'_id': 'fresh', 'title': 'Fresh meetup'},
+          },
+        ],
+      });
+    });
+    const config = ServerConfig(
+      serverUrl: 'https://planet.example',
+      couchDbUrl: 'https://satellite:1234@planet.example:443',
+      pin: '1234',
+    );
+
+    final result = await repository.sync(config: config);
+
+    expect(result, isA<SyncComplete>());
+    expect((result as SyncComplete).savedCount, 1);
+    expect(await repository.getById('stale'), isNull);
+    expect((await repository.getById('fresh'))?.title, 'Fresh meetup');
+  });
 }
+
+class MockPlanetApi extends Mock implements PlanetApi {}

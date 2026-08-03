@@ -1019,6 +1019,17 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
   Future<List<MeetupRow>> pendingUploads() =>
       (select(meetups)..where((row) => row.updated.equals(true))).get();
 
+  Future<int> count() async {
+    final count = meetups.id.count();
+    final row = await (selectOnly(meetups)..addColumns([count])).getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Removes stale server rows without discarding locally edited meetups.
+  Future<int> deleteNotIn(List<String> keepIds) => (delete(
+    meetups,
+  )..where((row) => row.updated.equals(false) & row.id.isNotIn(keepIds))).go();
+
   Future<int> markUploaded(String id, String remoteId, String remoteRev) =>
       (update(meetups)..where((row) => row.id.equals(id))).write(
         MeetupsCompanion(
