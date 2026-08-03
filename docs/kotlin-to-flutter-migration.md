@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 12 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
+**Phase 13 complete.** The Flutter app builds (debug APK verified), analyzes clean, and passes its
 test suite. It is *not* yet a replacement for the Kotlin app: **12 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
@@ -21,6 +21,8 @@ test suite. It is *not* yet a replacement for the Kotlin app: **12 of 28 UI pack
 - **Phase 10** — personalized My life ordering/visibility and the references launcher.
 - **Phase 11** — offline personal-item creation, editing, deletion, and pending-upload tracking.
 - **Phase 12** — offline course ratings, comments, aggregates, edits, and upload tracking.
+- **Phase 13** — durable write-back: an outbox replacing `RetryQueue`/`RetryQueueWorker`, drained
+  on app resume, with personal-note upload as its first append-style path.
 
 ## Strategy
 
@@ -36,6 +38,14 @@ test suite. It is *not* yet a replacement for the Kotlin app: **12 of 28 UI pack
 - **Drop-and-resync, no data copy.** Same policy as the Realm → Room migration: local rows are a
   cache of CouchDB, so the Flutter app starts with an empty database and re-pulls from the
   server. There is no Room → Drift data migration path, and none is planned.
+
+  **Except where the row is not a cache.** `AppDatabase._localAuthorityTables` exempts `outbox`,
+  `my_personal`, `removed_log` and `my_life` from the drop: they hold un-pushed writes, private
+  notes that may never have been uploaded, the "leave" records that keep the shelf merge from
+  re-adding something, and the user's own ordering. No sync can give any of that back, so
+  dropping it would silently discard work done offline. The exemption has a cost worth knowing:
+  `createAll` will not *alter* a preserved table, so changing one of their shapes needs a
+  hand-written migration step.
 
 ## What is ported
 
@@ -64,6 +74,8 @@ test suite. It is *not* yet a replacement for the Kotlin app: **12 of 28 UI pack
 | References | `ReferencesFragment`, `ReferencesAdapter` | `ui/references/references_screen.dart` |
 | Personals (offline CRUD) | `PersonalsFragment`, `PersonalsRepositoryImpl` | `ui/personals/personals_screen.dart`, `repository/personals_repository.dart` |
 | Ratings (course UI/offline data) | `RatingsFragment`, `RatingsRepositoryImpl` | `ui/ratings/rating_dialog.dart`, `repository/ratings_repository.dart` |
+| Durable write-back queue | `services/retry/RetryQueue.kt`, `RetryQueueWorker`, `model/RetryOperation.kt` | `repository/outbox_repository.dart`, `repository/outbox_drainer.dart`, `ui/outbox_drain_scope.dart` |
+| Personal-note upload | `PersonalsRepositoryImpl.uploadPersonalDocument`, `Personal.serialize` | `repository/personals_uploader.dart` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -82,7 +94,7 @@ the same polarity under the clearer name `onboardingComplete`.
 | Prefs | `SharedPrefManager` | `shared_preferences` | |
 | Secure storage | `SecurePrefs` (Tink `EncryptedSharedPreferences`) | `flutter_secure_storage` | Keystore-backed on Android either way. |
 | Localization | `res/values-{lang}/strings.xml` | `.arb` + `gen-l10n` | Mechanical key-by-key transform; see below. |
-| Background work | AndroidX `WorkManager` | **Not yet ported** | The biggest open gap — see *Hard subsystems*. |
+| Background work | AndroidX `WorkManager` | Outbox + lifecycle drain | Durable write-back ported; timed/no-user work still open — see *Hard subsystems*. |
 
 ## Faithful quirks (deliberate non-improvements)
 
@@ -161,17 +173,32 @@ server on plain HTTP (`http://<ip>:5000`):
 
 Ordered by risk, highest first.
 
-1. **`WorkManager` → no equivalent.** `AutoSyncWorker`, `TaskNotificationWorker`,
-   `NetworkMonitorWorker`, `RetryQueueWorker`, `DownloadWorker`, `FreeSpaceWorker`,
-   `ServerReachabilityWorker`, `HeavyTableSyncWorker` rely on guaranteed, constraint-aware,
-   OS-scheduled execution that survives process death. Flutter has no first-party answer;
-   `workmanager` / `flutter_background_service` are thin platform-channel wrappers, and the
-   Android side would remain Kotlin. It may argue for keeping a Kotlin platform layer permanently
-   rather than a pure-Dart app. **Still unresolved.** Phase 3 works around it for the shelf by
-   making the payload derived rather than queued, so an opportunistic in-app push is enough. That
-   trick does not generalise: a survey submission or a news post is an *append*, not an overwrite,
-   and losing one is not recoverable by recomputation. A decision is needed before `submissions`,
-   `voices` or `teams`.
+1. **`WorkManager` → no equivalent. Resolved for write-back; still open for the rest.**
+   `AutoSyncWorker`, `TaskNotificationWorker`, `NetworkMonitorWorker`, `RetryQueueWorker`,
+   `DownloadWorker`, `FreeSpaceWorker`, `ServerReachabilityWorker` and `HeavyTableSyncWorker` rely
+   on guaranteed, constraint-aware, OS-scheduled execution that survives process death. Flutter
+   has no first-party answer; `workmanager` / `flutter_background_service` are thin
+   platform-channel wrappers whose Android side would remain Kotlin.
+
+   The unblocking observation is that `RetryQueue` and `RetryQueueWorker` do two separable jobs.
+   The queue is a SQLite table — it is what actually survives process death — and the worker only
+   decides *when* to drain it. So durability ports directly and only the trigger needs replacing.
+   `OutboxRepository` is that table (a faithful port of `RetryOperation`, including the
+   `min(30s · 2^attempt, 30min)` backoff and the `code >= 500` retryable rule from
+   `UploadCoordinator`), `OutboxDrainer` replaces the worker, and `OutboxDrainScope` triggers it
+   at startup and on every app resume.
+
+   **The residual gap is scheduling, not durability**: a write made offline is sent the next time
+   the app is opened with connectivity, not while it is closed. For an app users open regularly
+   that is a latency cost rather than a correctness one, and it is bounded — the operation sits in
+   SQLite until it succeeds or exhausts its attempts.
+
+   This unblocks the *append* write-backs (`submissions`, `voices`, personal notes) that the
+   shelf's derived-payload trick could not cover, because an append lost to a dead network is not
+   recoverable by recomputation. `PersonalsUploader` is the first one built on it. What is still
+   unresolved is periodic background work with no user present — `AutoSyncWorker`'s timed sync and
+   `TaskNotificationWorker`'s deadline notifications genuinely need OS scheduling, and those are
+   the cases that may still argue for a permanent Kotlin platform layer.
 2. **`TeamsRepositoryImpl` (~1785 lines).** The largest file in the codebase, spanning team
    creation, tasks, membership roles and reactive queries. Should be split by responsibility
    *during* the port, not carried over whole.
@@ -274,5 +301,5 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-02
-**Phase**: 12 of N (ratings)
+**Last updated**: 2026-08-03
+**Phase**: 13 of N (durable write-back)

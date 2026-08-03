@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'l10n/app_localizations.dart';
 import 'providers/settings_provider.dart';
+import 'ui/outbox_drain_scope.dart';
 import 'ui/router.dart';
 
 /// Port of `MainApplication.kt`'s theme and locale setup.
@@ -38,6 +39,10 @@ class MyPlanetApp extends ConsumerWidget {
         ),
       ),
       themeMode: themeMode,
+      // Wraps the whole navigator so the drain follows the app's lifecycle
+      // rather than any one screen's.
+      builder: (context, child) =>
+          OutboxDrainScope(child: child ?? const SizedBox.shrink()),
     );
   }
 }

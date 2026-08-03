@@ -30,6 +30,7 @@ currently covers:
 - a downloadable offline dictionary
 - reactive notifications and personalized My life navigation
 - private offline personal items and offline course ratings
+- a durable upload queue that survives restarts and retries with backoff
 
 To run the Flutter application:
 
