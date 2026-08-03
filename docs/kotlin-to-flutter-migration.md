@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 14 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**13 of 28 UI packages** are ported.
+**Phase 15 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**14 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -26,6 +26,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 14** — offline submission creation, durable upload, list, question-aware answer review, PDF export, and detail metadata, backed by a paginated,
   reactive Drift cache with pull-to-refresh, status filters, progress reporting, and safe stale
   cleanup.
+- **Phase 15** — offline meetups list/detail/create/edit, join/leave shelf state, CouchDB mapping,
+  reactive Drift persistence, and durable outbox upload.
 
 ## Strategy
 
@@ -80,6 +82,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 | Durable write-back queue | `services/retry/RetryQueue.kt`, `RetryQueueWorker`, `model/RetryOperation.kt` | `repository/outbox_repository.dart`, `repository/outbox_drainer.dart`, `ui/outbox_drain_scope.dart` |
 | Personal-note upload | `PersonalsRepositoryImpl.uploadPersonalDocument`, `Personal.serialize` | `repository/personals_uploader.dart` |
 | Submissions create/upload/list/detail/answers | `Submission`, `Answer`, `SubmissionDao`, `UploadConfigs.Submissions`, `SubmissionsFragment`, `SubmissionDetailFragment` | `repository/submissions_repository.dart`, `repository/submissions_uploader.dart`, `ui/submissions/submissions_screen.dart`, `ui/submissions/submission_detail_screen.dart` |
+| Events/meetups | `Meetup`, `MeetupDao`, `EventsRepositoryImpl`, `EventsDetailFragment`, meetup upload config | `data/local/meetup_mapper.dart`, `repository/events_repository.dart`, `repository/events_uploader.dart`, `ui/events/` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -238,9 +241,9 @@ Ordered by risk, highest first.
    defects in `strings.xml`; fixing them in Crowdin corrects the Kotlin and Flutter apps together,
    whereas diverging here would make the two apps disagree.
 
-## Remaining UI packages (16 of 28)
+## Remaining UI packages (14 of 28)
 
-`chat`, `community`, `components`, `enterprises`, `events`, `exam`,
+`chat`, `community`, `components`, `enterprises`, `exam`,
 `feedback`, `health`, `maps`,
 `surveys`, `teams`, `viewer`, `voices` — plus submission answers/create/export, personal attachments/upload,
 rating upload/sync, storage/retry, and the
@@ -315,4 +318,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-03
-**Phase**: 14 of N (offline submissions list)
+**Phase**: 15 of N (offline events/meetups)
