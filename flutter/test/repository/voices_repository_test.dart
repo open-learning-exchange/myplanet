@@ -148,6 +148,49 @@ void main() {
     },
   );
 
+  test('a reply cycle terminates instead of overflowing the stack', () async {
+    // `replyTo` is server data and nothing guarantees it is acyclic. Two rows
+    // pointing at each other used to recurse forever, because the visited
+    // guard was rebuilt in each frame.
+    await repository.cacheDocuments([
+      {'_id': 'a', 'docType': 'message', 'message': 'A', 'replyTo': 'b'},
+      {'_id': 'b', 'docType': 'message', 'message': 'B', 'replyTo': 'a'},
+    ]);
+
+    final ids = await repository.collectThreadIds('a');
+
+    expect(ids.toSet(), {'a', 'b'});
+    expect(ids.length, 2, reason: 'each row is collected exactly once');
+  });
+
+  test('a post that replies to itself terminates', () async {
+    await repository.cacheDocuments([
+      {'_id': 'self', 'docType': 'message', 'message': 'S', 'replyTo': 'self'},
+    ]);
+    expect(await repository.collectThreadIds('self'), ['self']);
+  });
+
+  test('sync cleanup handles more ids than SQLite will bind', () async {
+    // `deleteNotIn` used to bind one variable per synced id in a single
+    // statement, which SQLite rejects past SQLITE_MAX_VARIABLE_NUMBER.
+    final docs = [
+      for (var i = 0; i < 1200; i++)
+        {'_id': 'post-$i', 'docType': 'message', 'message': 'm$i'},
+    ];
+    await repository.cacheDocuments(docs);
+    await repository.cacheDocuments([
+      {'_id': 'stale', 'docType': 'message', 'message': 'gone'},
+    ]);
+    expect(await database.newsDao.count(), 1201);
+
+    await database.newsDao.deleteNotIn(
+      docs.map((doc) => doc['_id']!).toList(growable: false),
+    );
+
+    expect(await database.newsDao.count(), 1200);
+    expect(await repository.getById('stale'), equals(null));
+  });
+
   test('deleting a post takes its whole reply subtree', () async {
     final rootId = await repository.createPost(
       message: 'Root',

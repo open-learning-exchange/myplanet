@@ -104,6 +104,41 @@ void main() {
     );
   });
 
+  test('a server refresh does not un-join the user', () async {
+    // The `meetups` document says nothing about whether *this* user joined,
+    // so a sync that writes `userId` from it wipes the attendance marker —
+    // and `meetupsOnShelf` then drops the meetup from the shelf push.
+    await repository.cacheDocuments([
+      {'_id': 'meetup-1', 'title': 'Study group'},
+    ]);
+    await repository.toggleAttendance('meetup-1', 'user-1');
+    expect((await repository.getById('meetup-1'))?.userId, 'user-1');
+
+    await repository.cacheDocuments([
+      {'_id': 'meetup-1', 'title': 'Study group renamed'},
+    ]);
+
+    final row = await repository.getById('meetup-1');
+    expect(row?.title, 'Study group renamed');
+    expect(row?.userId, 'user-1', reason: 'attendance is local, not server');
+  });
+
+  test('a refresh preserves the empty marker that means "left"', () async {
+    await repository.cacheDocuments([
+      {'_id': 'meetup-1', 'title': 'Study group'},
+    ]);
+    await repository.toggleAttendance('meetup-1', 'user-1');
+    await repository.toggleAttendance('meetup-1', 'user-1');
+    expect((await repository.getById('meetup-1'))?.userId, '');
+
+    await repository.cacheDocuments([
+      {'_id': 'meetup-1', 'title': 'Study group'},
+    ]);
+
+    // '' is distinct from null: it means left, not never-joined.
+    expect((await repository.getById('meetup-1'))?.userId, '');
+  });
+
   test('creates and serializes a pending offline meetup', () async {
     final id = await repository.create(
       title: ' Community lesson ',
