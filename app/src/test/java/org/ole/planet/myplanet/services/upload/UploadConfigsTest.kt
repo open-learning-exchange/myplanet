@@ -20,10 +20,9 @@ import org.ole.planet.myplanet.model.CourseActivity
 import org.ole.planet.myplanet.model.NewsLog
 import org.ole.planet.myplanet.model.ResourceActivity
 import org.ole.planet.myplanet.model.SearchActivity
+import org.ole.planet.myplanet.repository.ActivitiesRepository
 import org.ole.planet.myplanet.repository.TeamsSyncRepository
 import org.ole.planet.myplanet.repository.UploadedItemResult
-
-import org.ole.planet.myplanet.repository.ActivitiesRepository
 
 class UploadConfigsTest {
     private val activitiesRepository: ActivitiesRepository = mockk(relaxed = true)
