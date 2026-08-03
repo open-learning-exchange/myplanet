@@ -562,5 +562,21 @@
         "type": "String"
       }
     }
-  }
+  },
+  "feedback": "Feedback",
+  "feedbackNotFound": "Feedback not found",
+  "feedbackSaved": "Feedback saved",
+  "isUrgent": "Is this urgent?",
+  "feedbackType": "Feedback type",
+  "feedbackTypeRequired": "Please select a feedback type",
+  "yourFeedback": "Your feedback",
+  "pleaseEnterFeedback": "Please enter your feedback",
+  "question": "Question",
+  "bug": "Bug",
+  "suggestion": "Suggestion",
+  "priority": "Priority",
+  "openDate": "Open date",
+  "replies": "Replies",
+  "pleaseEnterReply": "Please enter reply",
+  "untitledFeedback": "Untitled feedback"
 }
