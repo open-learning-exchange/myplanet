@@ -43,7 +43,7 @@ class LifeAdapter(
     private val drawableCache = mutableMapOf<String, Int>()
     private var workingList: MutableList<MyLife> = mutableListOf()
 
-    override fun onCurrentListChanged(previousList: MutableList<MyLife>, currentList: MutableList<MyLife>) {
+    override fun onCurrentListChanged(previousList: List<MyLife>, currentList: List<MyLife>) {
         super.onCurrentListChanged(previousList, currentList)
         workingList = currentList.toMutableList()
     }
