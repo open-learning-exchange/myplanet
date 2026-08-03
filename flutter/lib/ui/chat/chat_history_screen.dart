@@ -1,10 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/chat_provider.dart';
-import '../../providers/session_provider.dart';
 import '../router.dart';
 
 /// Port of `ui/chat/ChatHistoryFragment.kt`.
@@ -18,7 +19,6 @@ class ChatHistoryScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final history = ref.watch(filteredChatHistoryProvider);
     final searchQuery = ref.watch(chatSearchQueryProvider);
-    final session = ref.watch(sessionProvider).valueOrNull;
 
     return Scaffold(
       appBar: AppBar(
@@ -48,7 +48,7 @@ class ChatHistoryScreen extends ConsumerWidget {
           Expanded(
             child: history.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) => Center(child: Text('${l10n.error}: $e')),
+              error: (_, _) => Center(child: Text(l10n.chatsUnavailable)),
               data: (chats) {
                 if (chats.isEmpty) {
                   return Center(
@@ -70,12 +70,12 @@ class ChatHistoryScreen extends ConsumerWidget {
                 return ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   itemCount: chats.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, _) => const SizedBox(height: 8),
                   itemBuilder: (context, index) {
                     final chat = chats[index];
                     final conversations = chat.conversations;
                     final lastMessage = _extractLastMessage(conversations);
-                    final timestamp = _formatTimestamp(chat.updatedDate);
+                    final timestamp = _formatTimestamp(chat.updatedDate, l10n);
 
                     return Card(
                       child: ListTile(
@@ -125,15 +125,32 @@ class ChatHistoryScreen extends ConsumerWidget {
     );
   }
 
+  /// Last turn of the stored conversation, for the list subtitle.
+  ///
+  /// `ChatEntries.conversations` holds a JSON array of `{query, response}`
+  /// objects. The response is preferred because the list reads as the
+  /// assistant's side of the thread; a turn still awaiting one falls back to
+  /// the query. Malformed JSON yields no subtitle rather than throwing —
+  /// this is decoration, and one bad row should not blank the whole list.
   String? _extractLastMessage(String? conversationsJson) {
-    if (conversationsJson == null || conversationsJson.isEmpty) {
+    if (conversationsJson == null || conversationsJson.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(conversationsJson);
+      if (decoded is! List) return null;
+      for (final turn in decoded.reversed) {
+        if (turn is! Map) continue;
+        for (final key in const ['response', 'query']) {
+          final value = turn[key];
+          if (value is String && value.trim().isNotEmpty) return value.trim();
+        }
+      }
+      return null;
+    } catch (_) {
       return null;
     }
-    // Simple extraction - in production would use proper JSON parsing
-    return null;
   }
 
-  String? _formatTimestamp(String? dateStr) {
+  String? _formatTimestamp(String? dateStr, AppLocalizations l10n) {
     if (dateStr == null || dateStr.isEmpty) return null;
     try {
       final timestamp = int.tryParse(dateStr);

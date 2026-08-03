@@ -31,7 +31,9 @@ class ChatMapper {
       title: Value(doc['title'] as String?),
       createdDate: Value(createdDate?.toString()),
       updatedDate: Value(updatedDate?.toString()),
-      conversations: Value(conversations != null ? jsonEncode(conversations) : null),
+      conversations: Value(
+        conversations != null ? jsonEncode(conversations) : null,
+      ),
       lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
     );
   }
@@ -62,10 +64,16 @@ class ChatMapper {
 
   /// Encodes a list of conversations to JSON for storage.
   static String encodeConversations(List<ChatConversation> conversations) {
-    return jsonEncode(conversations.map((c) => {
-      if (c.query != null) 'query': c.query,
-      if (c.response != null) 'response': c.response,
-    }).toList());
+    return jsonEncode(
+      conversations
+          .map(
+            (c) => {
+              if (c.query != null) 'query': c.query,
+              if (c.response != null) 'response': c.response,
+            },
+          )
+          .toList(),
+    );
   }
 
   /// Builds the initial chat document for a new conversation.
@@ -104,10 +112,12 @@ class ChatMapper {
   }) {
     final now = DateTime.now().millisecondsSinceEpoch;
     final newConversations = [
-      ...existingConversations.map((c) => {
-        if (c.query != null) 'query': c.query,
-        if (c.response != null) 'response': c.response,
-      }),
+      ...existingConversations.map(
+        (c) => {
+          if (c.query != null) 'query': c.query,
+          if (c.response != null) 'response': c.response,
+        },
+      ),
       {'query': query, 'response': response},
     ];
     return {
