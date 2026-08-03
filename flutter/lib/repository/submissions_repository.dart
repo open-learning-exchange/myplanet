@@ -79,9 +79,25 @@ class SubmissionsRepository {
     await _dao.markUploaded(id, couchId, rev);
   }
 
+  /// Port of `SubmissionsRepositoryImpl.serializeSubmission`.
+  ///
+  /// `_id`/`_rev` are included whenever the row already exists on the server,
+  /// exactly as the Kotlin does. Without them CouchDB treats the POST as a new
+  /// document, so re-uploading an existing submission would create a duplicate
+  /// and [markUploaded] would then point the local row at the copy, orphaning
+  /// the original. This is reachable: [upsertDocuments] takes `isUpdated`
+  /// straight from the server document, and [pendingUploads] selects on it.
+  ///
+  /// The `androidId`/`deviceName`/`customDeviceName` telemetry and the
+  /// `source`/`parentCode` planet identifiers that Kotlin also sends are absent
+  /// — the first is device metadata the server does not key on, the second
+  /// belongs with the community-code slice. Both are noted in the migration
+  /// doc rather than guessed at.
   Future<Map<String, dynamic>> serialize(SubmissionRow row) async {
-    final answers = await _dao.watchAnswers(row.id).first;
+    final answers = await _dao.answersFor(row.id);
     return {
+      if (row.couchId != null && row.couchId!.isNotEmpty) '_id': row.couchId,
+      if (row.rev != null && row.rev!.isNotEmpty) '_rev': row.rev,
       'type': row.type,
       'userId': row.userId,
       'user': row.user,

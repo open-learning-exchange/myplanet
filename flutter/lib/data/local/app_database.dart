@@ -907,6 +907,15 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
             ..orderBy([(row) => OrderingTerm(expression: row.id)]))
           .watch();
 
+  /// The same rows, read once. Serializing for upload wants a value, not a
+  /// subscription; `watchAnswers(...).first` would build and tear down a query
+  /// stream to get it.
+  Future<List<SubmissionAnswerRow>> answersFor(String submissionId) =>
+      (select(submissionAnswers)
+            ..where((row) => row.submissionId.equals(submissionId))
+            ..orderBy([(row) => OrderingTerm(expression: row.id)]))
+          .get();
+
   Stream<List<SubmissionQuestionRow>> watchQuestions(String submissionId) =>
       (select(submissionQuestions)
             ..where((row) => row.submissionId.equals(submissionId))
