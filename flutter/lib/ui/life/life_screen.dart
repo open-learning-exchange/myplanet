@@ -20,6 +20,11 @@ class LifeScreen extends ConsumerWidget {
       appBar: AppBar(
         title: Text(l10n.myLife),
         actions: [
+          IconButton(
+            tooltip: l10n.teams,
+            onPressed: () => context.push(Routes.teams),
+            icon: const Icon(Icons.groups_outlined),
+          ),
           // Voices belongs to the Community tab (`CommunityPagerAdapter`),
           // which is not ported yet. Parked here so the feed is reachable,
           // rather than added to the My Life list — that list is seeded,

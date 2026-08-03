@@ -27,6 +27,12 @@ import 'surveys/surveys_screen.dart';
 import 'voices/voice_thread_screen.dart';
 import 'voices/voices_screen.dart';
 import 'surveys/take_survey_screen.dart';
+import 'teams/teams_screen.dart';
+import 'teams/team_tasks_screen.dart';
+import 'teams/team_members_screen.dart';
+import 'teams/team_resources_screen.dart';
+import 'teams/team_courses_screen.dart';
+import 'teams/team_reports_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
 /// and the manual `Intent` hops between `SyncActivity` -> `LoginActivity` ->
@@ -56,6 +62,7 @@ class Routes {
   static const String events = '/calendar/events';
   static const String surveys = '/life/surveys';
   static const String voices = '/life/voices';
+  static const String teams = '/life/teams';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -234,6 +241,50 @@ final routerProvider = Provider<GoRouter>((ref) {
                         builder: (context, state) => VoiceThreadScreen(
                           newsId: state.pathParameters['newsId']!,
                         ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'teams',
+                    builder: (context, state) => const TeamsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':teamId',
+                        builder: (context, state) => TeamDetailScreen(
+                          teamId: state.pathParameters['teamId']!,
+                        ),
+                        routes: [
+                          GoRoute(
+                            path: 'tasks',
+                            builder: (context, state) => TeamTasksScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'members',
+                            builder: (context, state) => TeamMembersScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'resources',
+                            builder: (context, state) => TeamResourcesScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'courses',
+                            builder: (context, state) => TeamCoursesScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'reports',
+                            builder: (context, state) => TeamReportsScreen(
+                              teamId: state.pathParameters['teamId']!,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

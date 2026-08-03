@@ -41,6 +41,8 @@ part 'app_database.g.dart';
     Surveys,
     SurveyQuestions,
     NewsEntries,
+    Teams,
+    TeamTasks,
   ],
   daos: [
     UserDao,
@@ -54,6 +56,8 @@ part 'app_database.g.dart';
     RatingDao,
     OutboxDao,
     NewsDao,
+    TeamDao,
+    TeamTaskDao,
     SubmissionDao,
     MeetupDao,
     SurveyDao,
@@ -69,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 15;
+  int get schemaVersion => 20;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -108,6 +112,7 @@ class AppDatabase extends _$AppDatabase {
     'submission_questions',
     'meetups',
     'news',
+    'team_tasks',
   };
 
   @override
@@ -144,6 +149,129 @@ class AppDatabase extends _$AppDatabase {
         File(p.join(dir.path, 'myplanet.sqlite')),
       );
     });
+  }
+}
+
+@DriftAccessor(tables: [TeamTasks])
+class TeamTaskDao extends DatabaseAccessor<AppDatabase>
+    with _$TeamTaskDaoMixin {
+  TeamTaskDao(super.db);
+
+  Stream<List<TeamTaskRow>> watchForTeam(String teamId) =>
+      (select(teamTasks)
+            ..where((t) => t.teamId.equals(teamId) & t.status.equals('active'))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.completed),
+              (t) => OrderingTerm.asc(t.deadline),
+            ]))
+          .watch();
+  Future<TeamTaskRow?> getById(String id) =>
+      (select(teamTasks)..where((t) => t.id.equals(id))).getSingleOrNull();
+  Future<void> upsert(TeamTasksCompanion row) =>
+      into(teamTasks).insertOnConflictUpdate(row);
+  Future<void> upsertAll(List<TeamTasksCompanion> rows) async =>
+      batch((b) => b.insertAllOnConflictUpdate(teamTasks, rows));
+  Future<List<TeamTaskRow>> pending() =>
+      (select(teamTasks)..where((t) => t.isUpdated.equals(true))).get();
+  Future<void> markUploaded(String id, String docId, String rev) =>
+      (update(teamTasks)..where((t) => t.id.equals(id))).write(
+        TeamTasksCompanion(
+          docId: Value(docId),
+          rev: Value(rev),
+          isUpdated: const Value(false),
+        ),
+      );
+  Future<void> deleteById(String id) =>
+      (delete(teamTasks)..where((t) => t.id.equals(id))).go();
+}
+
+/// Port of the team catalog queries in `data/room/dao/MyTeamDao.kt`.
+@DriftAccessor(tables: [Teams])
+class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
+  TeamDao(super.db);
+
+  Future<void> upsertAll(List<TeamsCompanion> rows) async =>
+      batch((b) => b.insertAllOnConflictUpdate(teams, rows));
+
+  Stream<List<TeamRow>> watchCatalog({String type = 'team'}) {
+    final query = select(teams)
+      ..where(
+        (t) =>
+            t.type.equals(type) &
+            t.docType.isNull() &
+            (t.status.isNull() | t.status.equals('archived').not()),
+      )
+      ..orderBy([(t) => OrderingTerm.asc(t.name)]);
+    return query.watch();
+  }
+
+  Future<TeamRow?> getById(String id) =>
+      (select(teams)
+            ..where((t) => t.id.equals(id) | t.teamId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Stream<List<TeamRow>> watchMemberships(String userId) =>
+      (select(teams)..where(
+            (t) => t.docType.equals('membership') & t.userId.equals(userId),
+          ))
+          .watch();
+
+  Stream<int> watchMemberCount(String teamId) {
+    final count = teams.id.count();
+    final query = selectOnly(teams)
+      ..addColumns([count])
+      ..where(teams.docType.equals('membership') & teams.teamId.equals(teamId));
+    return query.watchSingle().map((row) => row.read(count) ?? 0);
+  }
+
+  Stream<List<TeamRow>> watchTeamDocuments(String teamId, String docType) =>
+      (select(teams)
+            ..where((t) => t.teamId.equals(teamId) & t.docType.equals(docType))
+            ..orderBy([(t) => OrderingTerm.asc(t.userId)]))
+          .watch();
+
+  Stream<List<TeamRow>> watchResourceLinks(String teamId) =>
+      watchTeamDocuments(teamId, 'resourceLink');
+
+  Stream<List<TeamRow>> watchReports(String teamId) =>
+      (select(teams)
+            ..where(
+              (t) =>
+                  t.teamId.equals(teamId) &
+                  t.docType.equals('report') &
+                  (t.status.isNull() | t.status.equals('archived').not()),
+            )
+            ..orderBy([(t) => OrderingTerm.desc(t.createdDate)]))
+          .watch();
+
+  Future<TeamRow?> getTeamDocument(
+    String teamId,
+    String userId,
+    String docType,
+  ) =>
+      (select(teams)
+            ..where(
+              (t) =>
+                  t.teamId.equals(teamId) &
+                  t.userId.equals(userId) &
+                  t.docType.equals(docType),
+            )
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<void> upsert(TeamsCompanion row) =>
+      into(teams).insertOnConflictUpdate(row);
+
+  Future<void> deleteById(String id) =>
+      (delete(teams)..where((t) => t.id.equals(id))).go();
+
+  Future<void> deleteNotIn(List<String> ids) async {
+    if (ids.isEmpty) {
+      await delete(teams).go();
+      return;
+    }
+    await (delete(teams)..where((t) => t.id.isNotIn(ids))).go();
   }
 }
 
