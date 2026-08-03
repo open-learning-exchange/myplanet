@@ -1284,6 +1284,8 @@
     <string name="storage_unknown_resource">अज्ञात स्रोत</string>
     <string name="file_count_one">१ फाइल</string>
     <string name="file_count_many">%1$d फाइलहरू</string>
+    <string name="storage_deleting_progress">फाइलहरू मेटाउँदै... %1$d मेटाइयो (%2$s)</string>
+    <string name="storage_freed_summary">%1$s खाली भयो (%2$d फाइलहरू)</string>
     <string name="skip">छोड्नुहोस्</string>
     <string name="add_meetup">भेटघाट थप्नुहोस्</string>
     <string name="download_report">रिपोर्ट डाउनलोड गर्नुहोस्</string>
