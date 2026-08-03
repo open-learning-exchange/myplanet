@@ -172,7 +172,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         val oleDir = File(FileUtils.getOlePath(requireContext()))
         if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
 
-        // Build a map of resourceId → title from Realm (one query)
+        // Build a map of resourceId → title from Room database (one query)
         val titleMap = resourcesRepository.getResourceTitlesMap()
 
         // Group files by resourceId directory
@@ -240,7 +240,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                     }
                 }
 
-                // Sync Realm: mark deleted resources as not offline
+                // Sync database: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
                 resourcesRepository.markResourcesAsNotOffline(deletedIds)
             }
