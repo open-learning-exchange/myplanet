@@ -55,7 +55,7 @@ void main() {
       }),
     );
 
-    final result = await uploader.handler(operation, const {});
+    final result = await uploader.handler(operation, const {}, 'Basic test');
 
     expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
     expect(await repository.pendingUploads('user-1'), isEmpty);

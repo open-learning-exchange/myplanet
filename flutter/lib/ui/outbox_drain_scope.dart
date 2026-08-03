@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/app_providers.dart';
+import '../repository/personals_uploader.dart';
 
 /// Replaces the `WorkManager` registration `MainApplication.kt` performs for
 /// `RetryQueueWorker`.
@@ -50,15 +51,29 @@ class _OutboxDrainScopeState extends ConsumerState<OutboxDrainScope>
 
   Future<void> _startupDrain() async {
     if (!mounted) return;
-    await ref.read(outboxDrainerProvider).recoverStuck();
-    await _drain();
+    // Runs from a post-frame callback, so an escaping error would surface as
+    // an unhandled async exception during startup rather than a failed drain.
+    try {
+      await ref.read(outboxDrainerProvider).recoverStuck();
+      await _drain();
+    } catch (error, stack) {
+      FlutterError.reportError(
+        FlutterErrorDetails(exception: error, stack: stack, library: 'outbox'),
+      );
+    }
   }
 
   Future<void> _drain() async {
     if (!mounted) return;
     // Nothing to send to before the server handshake; the operations keep.
-    if (ref.read(serverConfigProvider) == null) return;
-    await ref.read(outboxDrainerProvider).drain();
+    final config = ref.read(serverConfigProvider);
+    if (config == null) return;
+    // The credential must travel as a header: `endpointFor` deliberately
+    // stores a credential-free URL, so without this every send is
+    // unauthenticated and CouchDB's 401 is classified as permanent.
+    await ref
+        .read(outboxDrainerProvider)
+        .drain(authHeader: PersonalsUploader.authHeaderFor(config));
   }
 
   @override

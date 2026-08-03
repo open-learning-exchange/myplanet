@@ -14,12 +14,10 @@ class SubmissionsUploader {
   final PlanetApi _api;
   final SubmissionsRepository _submissions;
   final OutboxRepository _outbox;
-  String? _authHeader;
 
+  /// Credential-free — see [PersonalsUploader.endpointFor].
   static String endpointFor(ServerConfig config) =>
-      '${UrlUtils.dbUrl(config)}/submissions';
-
-  set authHeader(String? value) => _authHeader = value;
+      '${UrlUtils.credentialFreeDbUrl(config)}/submissions';
 
   Future<int> queuePending({
     required ServerConfig config,
@@ -38,11 +36,11 @@ class SubmissionsUploader {
     return rows.length;
   }
 
-  OutboxHandler get handler => (row, payload) async {
+  OutboxHandler get handler => (row, payload, authHeader) async {
     final result = await _api.postJsonObject(
       row.endpoint,
       payload,
-      authHeader: _authHeader,
+      authHeader: authHeader,
     );
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       if (data case {'id': final String id, 'rev': final String rev}) {
