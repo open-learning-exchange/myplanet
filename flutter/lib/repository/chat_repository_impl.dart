@@ -1,6 +1,5 @@
 import 'dart:convert';
-
-import 'package:dio/dio.dart';
+import 'dart:math';
 
 import '../core/network/network_result.dart';
 import '../data/api/planet_api.dart';
@@ -141,10 +140,19 @@ class ChatRepositoryImpl implements ChatRepository {
   @override
   Future<String?> getLatestRev(String id) async {
     final rows = await chatDao.getByDocId(id);
-    return rows
-        .map((r) => r.rev)
-        .whereType<String>()
-        .maxBy((rev) => int.tryParse(rev.split('-').firstOrNull ?? '0') ?? 0);
+    // Highest CouchDB generation wins. `_rev` is `<generation>-<hash>`, and the
+    // hash is not ordered, so comparing the strings would pick the wrong
+    // revision as soon as the generation reached two digits.
+    String? latest;
+    var highest = -1;
+    for (final rev in rows.map((row) => row.rev).whereType<String>()) {
+      final generation = int.tryParse(rev.split('-').first) ?? 0;
+      if (generation > highest) {
+        highest = generation;
+        latest = rev;
+      }
+    }
+    return latest;
   }
 
   @override
@@ -153,11 +161,16 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   @override
-  Future<void> insertChatHistoryFromSync(List<Map<String, dynamic>> docs) async {
-    final unwrapped = docs.where((doc) {
-      final id = doc['_id'] as String?;
-      return id != null && !id.startsWith('_design');
-    }).map((doc) => doc['doc'] as Map<String, dynamic>? ?? doc).toList();
+  Future<void> insertChatHistoryFromSync(
+    List<Map<String, dynamic>> docs,
+  ) async {
+    final unwrapped = docs
+        .where((doc) {
+          final id = doc['_id'] as String?;
+          return id != null && !id.startsWith('_design');
+        })
+        .map((doc) => doc['doc'] as Map<String, dynamic>? ?? doc)
+        .toList();
     await _insertChatsInternal(unwrapped);
   }
 
@@ -213,19 +226,12 @@ class ChatRepositoryImpl implements ChatRepository {
   }
 
   String _generateId() {
-    // Generate a unique id similar to UUID but CouchDB-compatible
+    // The suffix has to be independent of the timestamp: deriving it from
+    // `now` made it a second copy of the same value, so two chats started in
+    // the same millisecond collided on the primary key and the second
+    // overwrote the first.
     final now = DateTime.now().millisecondsSinceEpoch;
-    final random = (now % 0xFFFFFFFF).toRadixString(16).padLeft(8, '0');
-    return 'chat_$now$random';
-  }
-}
-
-extension<T> on List<T> {
-  T? maxBy(int Function(T) selector) {
-    if (isEmpty) return null;
-    return fold(null as T?, (best, current) {
-      if (best == null) return current;
-      return selector(current) > selector(best) ? current : best;
-    });
+    final random = Random.secure().nextInt(1 << 32).toRadixString(16);
+    return 'chat_$now-$random';
   }
 }

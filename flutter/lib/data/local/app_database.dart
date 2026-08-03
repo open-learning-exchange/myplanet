@@ -1506,13 +1506,12 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
     String conversationsJson,
     String updatedDate,
     String rev,
-  ) =>
-      (update(chatEntries)..where((c) => c.docId.equals(docId))).write(
-        ChatEntriesCompanion(
-          conversations: Value(conversationsJson),
-          updatedDate: Value(updatedDate),
-          rev: Value(rev),
-          lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
-        ),
-      );
+  ) => (update(chatEntries)..where((c) => c.docId.equals(docId))).write(
+    ChatEntriesCompanion(
+      conversations: Value(conversationsJson),
+      updatedDate: Value(updatedDate),
+      rev: Value(rev),
+      lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+    ),
+  );
 }

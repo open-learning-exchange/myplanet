@@ -64,6 +64,32 @@ void main() {
     expect(file.path, contains('submission_report_unsafe_'));
   });
 
+  test('resolves answers when the submission id contains a colon', () async {
+    // A question row id is `submissionId:rawQuestionId`, so recovering the raw
+    // id by splitting at the first colon truncates it here and the answer
+    // lookup misses — every answer would export as "No answer".
+    await repository.upsertDocuments([
+      {
+        '_id': 'exam:2026:q1',
+        'userId': 'ada',
+        'status': 'graded',
+        'answers': [
+          {'questionId': 'q-1', 'value': 'Reykjavik'},
+        ],
+        'parent': {
+          'name': 'Geography exam',
+          'questions': [
+            {'id': 'q-1', 'title': 'Capital city', 'marks': '10'},
+          ],
+        },
+      },
+    ]);
+
+    final lines = await exporter.renderedAnswerLines('exam:2026:q1');
+
+    expect(lines, ['A: Reykjavik']);
+  });
+
   test('returns null for an unknown submission', () async {
     expect(await exporter.generateBytes('missing'), isNull);
   });
