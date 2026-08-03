@@ -23,6 +23,7 @@ import '../repository/user_repository.dart';
 import '../repository/submissions_repository.dart';
 import '../repository/submissions_uploader.dart';
 import '../repository/submissions_exporter.dart';
+import '../repository/surveys_repository.dart';
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
 ///
@@ -104,10 +105,22 @@ final submissionDaoProvider = Provider<SubmissionDao>(
   (ref) => ref.watch(appDatabaseProvider).submissionDao,
 );
 
+final surveyDaoProvider = Provider<SurveyDao>(
+  (ref) => ref.watch(appDatabaseProvider).surveyDao,
+);
+
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
   (ref) => SubmissionsRepository(
     ref.watch(planetApiProvider),
     ref.watch(submissionDaoProvider),
+  ),
+);
+
+final surveysRepositoryProvider = Provider<SurveysRepository>(
+  (ref) => SurveysRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(surveyDaoProvider),
+    ref.watch(submissionsRepositoryProvider),
   ),
 );
 

@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 15 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**14 of 28 UI packages** are ported.
+**Phase 16 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**15 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -29,6 +29,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 15** — offline meetups list/detail/create/edit, date/time and recurrence editing,
   search/sort, paginated pull-to-refresh, join/leave shelf write-back, CouchDB mapping, reactive
   Drift persistence, and durable outbox upload.
+- **Phase 16** — offline individual-survey catalog, search/sort and paginated sync, question
+  forms for text and single/multiple choice, required-answer validation, and durable submission.
 
 ## Strategy
 
@@ -84,6 +86,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 | Personal-note upload | `PersonalsRepositoryImpl.uploadPersonalDocument`, `Personal.serialize` | `repository/personals_uploader.dart` |
 | Submissions create/upload/list/detail/answers | `Submission`, `Answer`, `SubmissionDao`, `UploadConfigs.Submissions`, `SubmissionsFragment`, `SubmissionDetailFragment` | `repository/submissions_repository.dart`, `repository/submissions_uploader.dart`, `ui/submissions/submissions_screen.dart`, `ui/submissions/submission_detail_screen.dart` |
 | Events/meetups | `Meetup`, `MeetupDao`, `EventsRepositoryImpl`, `EventsDetailFragment`, meetup upload config | `data/local/meetup_mapper.dart`, `repository/events_repository.dart`, `repository/events_uploader.dart`, `ui/events/` |
+| Individual surveys | `StepExam`, `ExamQuestion`, `SurveysRepositoryImpl`, `SurveyFragment`, survey mode of `ExamTakingFragment` | `data/local/survey_mapper.dart`, `repository/surveys_repository.dart`, `ui/surveys/` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -242,11 +245,11 @@ Ordered by risk, highest first.
    defects in `strings.xml`; fixing them in Crowdin corrects the Kotlin and Flutter apps together,
    whereas diverging here would make the two apps disagree.
 
-## Remaining UI packages (14 of 28)
+## Remaining UI packages (13 of 28)
 
 `chat`, `community`, `components`, `enterprises`, `exam`,
 `feedback`, `health`, `maps`,
-`surveys`, `teams`, `viewer`, `voices` — plus submission answers/create/export, personal attachments/upload,
+`teams`, `viewer`, `voices` — plus team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
 rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
@@ -319,4 +322,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-03
-**Phase**: 15 of N (offline events/meetups)
+**Phase**: 16 of N (offline individual surveys)

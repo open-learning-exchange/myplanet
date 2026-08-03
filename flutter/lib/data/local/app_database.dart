@@ -37,6 +37,8 @@ part 'app_database.g.dart';
     SubmissionAnswers,
     SubmissionQuestions,
     Meetups,
+    Surveys,
+    SurveyQuestions,
   ],
   daos: [
     UserDao,
@@ -51,6 +53,7 @@ part 'app_database.g.dart';
     OutboxDao,
     SubmissionDao,
     MeetupDao,
+    SurveyDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -63,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -1038,4 +1041,60 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
           updated: const Value(false),
         ),
       );
+}
+
+/// Port of the survey subset of `ExamDao` and `QuestionDao`.
+@DriftAccessor(tables: [Surveys, SurveyQuestions])
+class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
+  SurveyDao(super.db);
+
+  Stream<List<SurveyRow>> watchAll() =>
+      (select(surveys)..orderBy([
+            (row) => OrderingTerm(
+              expression: row.createdDate,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+          .watch();
+
+  Future<SurveyRow?> getById(String id) =>
+      (select(surveys)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<List<SurveyQuestionRow>> questionsFor(String surveyId) =>
+      (select(surveyQuestions)
+            ..where((row) => row.surveyId.equals(surveyId))
+            ..orderBy([(row) => OrderingTerm(expression: row.position)]))
+          .get();
+
+  Future<void> upsertAll(
+    List<SurveysCompanion> rows,
+    Map<String, List<SurveyQuestionsCompanion>> questions,
+  ) => transaction(() async {
+    if (rows.isNotEmpty) {
+      await batch((batch) => batch.insertAllOnConflictUpdate(surveys, rows));
+    }
+    for (final entry in questions.entries) {
+      await (delete(
+        surveyQuestions,
+      )..where((row) => row.surveyId.equals(entry.key))).go();
+      if (entry.value.isNotEmpty) {
+        await batch((batch) => batch.insertAll(surveyQuestions, entry.value));
+      }
+    }
+  });
+
+  Future<int> deleteNotIn(List<String> ids) => transaction(() async {
+    final stale =
+        await (selectOnly(surveys)
+              ..addColumns([surveys.id])
+              ..where(surveys.id.isNotIn(ids)))
+            .map((row) => row.read(surveys.id)!)
+            .get();
+    if (stale.isNotEmpty) {
+      await (delete(
+        surveyQuestions,
+      )..where((row) => row.surveyId.isIn(stale))).go();
+    }
+    return (delete(surveys)..where((row) => row.id.isIn(stale))).go();
+  });
 }
