@@ -99,11 +99,28 @@ void main() {
     expect(await outbox.due(), hasLength(2));
   });
 
-  test('endpoint is the CouchDB resources database', () {
+  test('the endpoint carries no credentials', () {
     expect(
       PersonalsUploader.endpointFor(config),
-      'https://satellite:1234@planet.example.org:443/db/resources',
+      // `Uri.replace(userInfo: '')` also normalizes away :443, the default
+      // port for https — same normalization as `credentialFreeBase`.
+      'https://planet.example.org/db/resources',
+      reason:
+          'outbox.endpoint is persisted and survives schema upgrades, so '
+          'a satellite:PIN@ userinfo would leave the server PIN in plaintext '
+          'SQLite until the upload succeeds',
     );
+    expect(PersonalsUploader.endpointFor(config), isNot(contains(config.pin)));
+    expect(PersonalsUploader.endpointFor(config), isNot(contains('@')));
+  });
+
+  test('the queued row stores no credentials either', () async {
+    await personals.create(userId: 'user-1', userName: 'ada', title: 'One');
+    await uploader.queuePending(config: config, userId: 'user-1');
+
+    final row = (await outbox.due()).single;
+    expect(row.endpoint, isNot(contains(config.pin)));
+    expect(row.payload, isNot(contains(config.pin)));
   });
 
   test('a successful upload adopts the ids CouchDB assigned', () async {

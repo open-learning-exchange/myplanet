@@ -31,6 +31,7 @@ typedef OutboxHandler =
     Future<NetworkResult<Map<String, dynamic>>> Function(
       OutboxRow row,
       Map<String, dynamic> payload,
+      String? authHeader,
     );
 
 /// Replaces `services/retry/RetryQueueWorker.kt`.
@@ -119,14 +120,24 @@ class OutboxDrainer {
     await _outbox.markInProgress(row.id);
 
     final handler = _handlers[row.uploadType];
-    final result = handler != null
-        ? await handler(row, payload)
-        : await _api.sendJsonObject(
-            row.endpoint,
-            body: payload,
-            method: row.httpMethod,
-            authHeader: authHeader,
-          );
+    final NetworkResult<Map<String, dynamic>> result;
+    try {
+      result = handler != null
+          ? await handler(row, payload, authHeader)
+          : await _api.sendJsonObject(
+              row.endpoint,
+              body: payload,
+              method: row.httpMethod,
+              authHeader: authHeader,
+            );
+    } catch (e) {
+      // A handler runs repository and database code, so it can throw outside
+      // NetworkResult. Left unguarded the row stays `in_progress` until the
+      // next startup and the exception aborts the rest of the pass. A throw is
+      // not evidence the server rejected the write, so it is retryable.
+      final abandoned = await _outbox.markFailed(row.id, errorMessage: '$e');
+      return abandoned ? OutboxOutcome.abandoned : OutboxOutcome.retryScheduled;
+    }
 
     switch (result) {
       case NetworkSuccess<Map<String, dynamic>>():
