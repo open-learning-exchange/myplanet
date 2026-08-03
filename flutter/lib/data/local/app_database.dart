@@ -73,7 +73,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 20;
+  int get schemaVersion => 21;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -113,6 +113,12 @@ class AppDatabase extends _$AppDatabase {
     'meetups',
     'news',
     'team_tasks',
+    // Mixed: mostly the CouchDB team catalog, but the same table stores the
+    // documents the user authors offline (join requests, memberships,
+    // financial reports, resource links). Preserving the whole table and
+    // letting the next sync's `deleteNotIn` evict the stale cache rows keeps
+    // the drop-and-resync policy without discarding the local writes.
+    'teams',
   };
 
   @override
@@ -205,11 +211,13 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
     return query.watch();
   }
 
+  /// Strictly the document's own `_id`. Matching `teamId` as well made this
+  /// ambiguous: every membership, request, report and resource link carries
+  /// the team's id in that column, so `getById(teamId)` could return one of
+  /// them instead of the team, picked by scan order. `addCourses` guards on
+  /// `docType`, so the result was an intermittent silent no-op.
   Future<TeamRow?> getById(String id) =>
-      (select(teams)
-            ..where((t) => t.id.equals(id) | t.teamId.equals(id))
-            ..limit(1))
-          .getSingleOrNull();
+      (select(teams)..where((t) => t.id.equals(id))).getSingleOrNull();
 
   Stream<List<TeamRow>> watchMemberships(String userId) =>
       (select(teams)..where(
@@ -263,15 +271,54 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   Future<void> upsert(TeamsCompanion row) =>
       into(teams).insertOnConflictUpdate(row);
 
+  /// Chunked so a full sync page cannot exceed SQLite's variable limit.
+  Future<Map<String, TeamRow>> byIds(List<String> ids) async {
+    final found = <String, TeamRow>{};
+    for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
+      final rows = await (select(
+        teams,
+      )..where((t) => t.id.isIn(chunk))).get();
+      for (final row in rows) {
+        found[row.id] = row;
+      }
+    }
+    return found;
+  }
+
   Future<void> deleteById(String id) =>
       (delete(teams)..where((t) => t.id.equals(id))).go();
 
-  Future<void> deleteNotIn(List<String> ids) async {
-    if (ids.isEmpty) {
-      await delete(teams).go();
-      return;
+  /// Hands the row back to the server: it adopts the new revision and stops
+  /// being treated as a local edit, so later refreshes and the stale-row
+  /// cleanup apply to it again.
+  Future<int> markUploaded(String id, String rev) =>
+      (update(teams)..where((t) => t.id.equals(id))).write(
+        TeamsCompanion(rev: Value(rev), isUpdated: const Value(false)),
+      );
+
+  /// Stale-row cleanup, restricted to rows the server is authoritative for.
+  ///
+  /// Locally-authored documents are skipped: their ids were generated on the
+  /// device, so they are *always* absent from the synced set, and the previous
+  /// unfiltered `isNotIn` deleted every one of them on the next sync — a
+  /// financial report or an offline join request has no second copy to
+  /// recover from. The `NOT IN` is also replaced by a difference computed in
+  /// Dart, because `teams` holds a row per membership and per report and the
+  /// id list runs well past SQLite's variable limit.
+  Future<int> deleteNotIn(List<String> keepIds) async {
+    final keep = keepIds.toSet();
+    final rows = await (select(
+      teams,
+    )..where((t) => t.isUpdated.equals(false))).get();
+    final stale = rows
+        .map((row) => row.id)
+        .where((id) => !keep.contains(id))
+        .toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      deleted += await (delete(teams)..where((t) => t.id.isIn(chunk))).go();
     }
-    await (delete(teams)..where((t) => t.id.isNotIn(ids))).go();
+    return deleted;
   }
 }
 

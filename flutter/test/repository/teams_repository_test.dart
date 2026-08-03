@@ -263,6 +263,176 @@ void main() {
       expect(await repository.watchCatalog().first, hasLength(101));
     },
   );
+
+
+  /// The `teams` database is not a pure cache: the user authors documents into
+  /// it offline, and those ids never appear in a server page.
+  group('stale cleanup spares local work', () {
+    Future<void> stubServerReturning(List<Map<String, dynamic>> docs) async {
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer((invocation) async {
+        final url = invocation.positionalArguments.single as String;
+        if (url.endsWith('limit=0')) {
+          return NetworkSuccess<Map<String, dynamic>>({
+            'total_rows': docs.length,
+          });
+        }
+        return NetworkSuccess<Map<String, dynamic>>({
+          'rows': [
+            for (final doc in docs) {'doc': doc},
+          ],
+        });
+      });
+    }
+
+    test('a financial report written offline outlives a sync', () async {
+      await database.teamDao.upsertAll([
+        TeamMapper.fromDoc({'_id': 'team-1', 'type': 'team'})!,
+      ]);
+      final report = await repository.saveReport(
+        teamId: 'team-1',
+        description: 'Q1',
+        startDate: 1,
+        endDate: 2,
+        beginningBalance: 100,
+        sales: 50,
+        otherIncome: 0,
+        wages: 20,
+        otherExpenses: 0,
+      );
+      expect(report, isNotNull);
+
+      await stubServerReturning([
+        {'_id': 'team-1', 'type': 'team'},
+      ]);
+      expect(await repository.sync(config: config), isA<SyncComplete>());
+
+      // The report has a device-generated id, so it is "not in" every synced
+      // page by construction — and nothing uploads it, so a delete is final.
+      expect((await repository.watchReports('team-1').first).single.id,
+          report!.id);
+    });
+
+    test('an offline join request and its membership outlive a sync', () async {
+      await repository.createJoinRequest(teamId: 'team-1', userId: 'user-1');
+      final accepted = await repository.respondToRequest(
+        (await repository.request('team-1', 'user-1'))!.id,
+        accept: true,
+      );
+      expect(accepted?.docType, 'membership');
+
+      await stubServerReturning([
+        {'_id': 'team-1', 'type': 'team'},
+      ]);
+      await repository.sync(config: config);
+
+      expect(await repository.membership('team-1', 'user-1'), isNotNull);
+    });
+
+    test('a resource link added offline outlives a sync', () async {
+      await repository.addResourceLink(
+        teamId: 'team-1',
+        resourceId: 'res-1',
+        title: 'Handbook',
+      );
+
+      await stubServerReturning([
+        {'_id': 'team-1', 'type': 'team'},
+      ]);
+      await repository.sync(config: config);
+
+      expect(
+        (await repository.watchResourceLinks('team-1').first).single.resourceId,
+        'res-1',
+      );
+    });
+
+    test('a server row the sync no longer returns is still evicted', () async {
+      await database.teamDao.upsertAll([
+        TeamMapper.fromDoc({'_id': 'gone', 'type': 'team'})!,
+        TeamMapper.fromDoc({'_id': 'kept', 'type': 'team'})!,
+      ]);
+
+      await stubServerReturning([
+        {'_id': 'kept', 'type': 'team'},
+      ]);
+      await repository.sync(config: config);
+
+      expect((await repository.watchCatalog().first).map((row) => row.id), [
+        'kept',
+      ]);
+    });
+
+    test('an empty server does not wipe local documents', () async {
+      await database.teamDao.upsertAll([
+        TeamMapper.fromDoc({'_id': 'cached', 'type': 'team'})!,
+      ]);
+      await repository.createJoinRequest(teamId: 'team-1', userId: 'user-1');
+      when(
+        () => api.getJsonObject(any(), authHeader: any(named: 'authHeader')),
+      ).thenAnswer(
+        (_) async => NetworkSuccess<Map<String, dynamic>>({'total_rows': 0}),
+      );
+
+      expect(await repository.sync(config: config), isA<SyncComplete>());
+
+      expect(await repository.getById('cached'), isNull);
+      expect(await repository.request('team-1', 'user-1'), isNotNull);
+    });
+  });
+
+  test('cleanup chunks past SQLite\'s variable limit', () async {
+    await database.teamDao.upsertAll([
+      for (var i = 0; i < 1200; i++)
+        TeamMapper.fromDoc({'_id': 'team-$i', 'type': 'team'})!,
+    ]);
+
+    // A `NOT IN` over 1200 ids would exceed SQLITE_MAX_VARIABLE_NUMBER, and it
+    // cannot simply be chunked: each chunk matches the rows the others keep.
+    final deleted = await database.teamDao.deleteNotIn(['team-7']);
+
+    expect(deleted, 1199);
+    expect((await repository.watchCatalog().first).single.id, 'team-7');
+  });
+
+  test('a refresh does not discard an edit made offline', () async {
+    await database.teamDao.upsertAll([
+      TeamMapper.fromDoc({'_id': 'team-1', 'type': 'team', 'name': 'Old'})!,
+    ]);
+    await repository.addCourses('team-1', ['course-1']);
+
+    final merged = TeamMapper.fromDoc(
+      {'_id': 'team-1', 'type': 'team', 'name': 'Server name', '_rev': '2-b'},
+      existing: await repository.getById('team-1'),
+    );
+    await database.teamDao.upsertAll([merged!]);
+
+    final row = await repository.getById('team-1');
+    expect(row?.courses, ['course-1'], reason: 'the local edit is authoritative');
+    // The revision still advances, so the eventual upload is not stale.
+    expect(row?.rev, '2-b');
+  });
+
+  test('getById does not resolve a team id to one of its documents', () async {
+    await database.teamDao.upsertAll([
+      TeamMapper.fromDoc({
+        '_id': 'membership-1',
+        'teamId': 'team-1',
+        'userId': 'u',
+        'docType': 'membership',
+      })!,
+      TeamMapper.fromDoc({'_id': 'team-1', 'type': 'team'})!,
+    ]);
+
+    // Matching `teamId` too made this ambiguous, and `addCourses` bails on any
+    // row with a `docType` — so adding a course intermittently did nothing.
+    expect((await repository.getById('team-1'))?.docType, isNull);
+    expect(
+      (await repository.addCourses('team-1', ['course-1']))?.courses,
+      ['course-1'],
+    );
+  });
 }
 
 class MockPlanetApi extends Mock implements PlanetApi {}

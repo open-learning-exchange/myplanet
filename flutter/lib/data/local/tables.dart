@@ -605,6 +605,13 @@ class Teams extends Table {
   IntColumn get endDate => integer().withDefault(const Constant(0))();
   IntColumn get updatedDate => integer().withDefault(const Constant(0))();
 
+  /// Set by every local write. The `teams` database mixes the server catalog
+  /// with documents the user authors offline — a join request, a membership,
+  /// a financial report, a resource link — and they are otherwise
+  /// indistinguishable from cached rows, which is how the stale-row cleanup
+  /// came to delete all of them.
+  BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
+
   @override
   Set<Column> get primaryKey => {id};
 }

@@ -67,6 +67,7 @@ class TeamsRepository {
         createdDate: Value(existing?.createdDate ?? now),
         updatedDate: Value(now),
         status: const Value('active'),
+        isUpdated: const Value(true),
       ),
     );
     return _dao.getById(existing?.id ?? base.id.value);
@@ -80,6 +81,7 @@ class TeamsRepository {
         .copyWith(
           status: const Value('archived'),
           updatedDate: Value(DateTime.now().millisecondsSinceEpoch),
+          isUpdated: const Value(true),
         );
     await _dao.upsert(updated);
     return _dao.getById(id);
@@ -106,6 +108,7 @@ class TeamsRepository {
         title: Value(title),
         docType: const Value('resourceLink'),
         teamType: const Value('local'),
+        isUpdated: const Value(true),
       ),
     );
     return _dao.getById(id);
@@ -127,7 +130,12 @@ class TeamsRepository {
       ...team.courses,
       ...courseIds.where((id) => id.isNotEmpty),
     }.toList();
-    await _dao.upsert(team.toCompanion(false).copyWith(courses: Value(merged)));
+    await _dao.upsert(
+      team.toCompanion(false).copyWith(
+        courses: Value(merged),
+        isUpdated: const Value(true),
+      ),
+    );
     return _dao.getById(team.id);
   }
 
@@ -139,6 +147,7 @@ class TeamsRepository {
           .toCompanion(false)
           .copyWith(
             courses: Value(team.courses.where((id) => id != courseId).toList()),
+            isUpdated: const Value(true),
           ),
     );
     return _dao.getById(team.id);
@@ -168,6 +177,7 @@ class TeamsRepository {
         docType: const Value('request'),
         teamType: Value(teamType),
         createdDate: Value(DateTime.now().millisecondsSinceEpoch),
+        isUpdated: const Value(true),
       ),
     );
     return _dao.getById(id);
@@ -184,7 +194,10 @@ class TeamsRepository {
       return row;
     }
     await _dao.upsert(
-      row.toCompanion(false).copyWith(docType: const Value('membership')),
+      row.toCompanion(false).copyWith(
+        docType: const Value('membership'),
+        isUpdated: const Value(true),
+      ),
     );
     return _dao.getById(row.id);
   }
@@ -269,11 +282,21 @@ class TeamsRepository {
       if (rawRows is! List || rawRows.isEmpty) {
         return const SyncFailed('Teams sync ended before all rows arrived');
       }
-      final mapped = rawRows
+      final docs = rawRows
           .whereType<Map<String, dynamic>>()
           .map((row) => JsonUtils.getObject('doc', row))
           .whereType<Map<String, dynamic>>()
-          .map(TeamMapper.fromDoc)
+          .toList(growable: false);
+      // Locally-edited rows survive the refresh, so the mapper needs to see
+      // what is already stored rather than overwriting it from the document.
+      final existing = await _dao.byIds(
+        docs.map((doc) => JsonUtils.getString('_id', doc)).toList(),
+      );
+      final mapped = docs
+          .map((doc) => TeamMapper.fromDoc(
+                doc,
+                existing: existing[JsonUtils.getString('_id', doc)],
+              ))
           .whereType<TeamsCompanion>()
           .toList();
       await _dao.upsertAll(mapped);

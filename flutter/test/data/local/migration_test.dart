@@ -129,6 +129,29 @@ void main() {
     );
   });
 
+  test('a team document authored offline survives a schema upgrade', () async {
+    // The `teams` table is a hybrid: dropping it takes the CouchDB catalog,
+    // which the next sync refills, but also the report/request/membership rows
+    // that only exist here. The stale cache rows left behind are pruned by
+    // `deleteNotIn` on that same sync.
+    await database.teamDao.upsert(
+      TeamsCompanion.insert(
+        id: 'report-1',
+        teamId: const Value('team-1'),
+        docType: const Value('report'),
+        description: const Value('Q1 offline'),
+        isUpdated: const Value(true),
+      ),
+    );
+
+    await runUpgrade();
+
+    expect(
+      (await database.teamDao.getById('report-1'))?.description,
+      'Q1 offline',
+    );
+  });
+
   test('a My life ordering choice survives', () async {
     await database.myLifeDao.seedIfEmpty('user-1', [
       MyLifeEntriesCompanion.insert(
@@ -207,6 +230,7 @@ void main() {
       'meetups',
       'news',
       'team_tasks',
+      'teams',
     };
     expect(
       AppDatabase.localAuthorityTables,
