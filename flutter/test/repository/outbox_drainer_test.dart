@@ -135,7 +135,7 @@ void main() {
 
     final outcomes = await drainer(
       handlers: {
-        'personals': (row, payload) async {
+        'personals': (row, payload, authHeader) async {
           handled++;
           expect(payload, {'title': 'A note'});
           expect(row.itemId, 'note-1');
@@ -186,6 +186,63 @@ void main() {
         authHeader: any(named: 'authHeader'),
       ),
     ).called(1);
+  });
+
+  test('the credential reaches the API', () async {
+    await enqueue();
+    stubSend(const NetworkSuccess<Map<String, dynamic>>({'ok': true}));
+
+    await drainer().drain(authHeader: 'Basic c2F0ZWxsaXRlOjEyMzQ=');
+
+    // The stored endpoint is deliberately credential-free, so the header is
+    // the only thing authenticating the request. Matching it with `any` — as
+    // these tests used to — would pass even when it is null.
+    final captured = verify(
+      () => api.sendJsonObject(
+        any(),
+        body: any(named: 'body'),
+        method: any(named: 'method'),
+        authHeader: captureAny(named: 'authHeader'),
+      ),
+    ).captured;
+    expect(captured.single, 'Basic c2F0ZWxsaXRlOjEyMzQ=');
+  });
+
+  test('a handler that throws is retried, not left in progress', () async {
+    await enqueue();
+
+    final outcomes = await drainer(
+      handlers: {
+        'personals': (row, payload, authHeader) async =>
+            throw StateError('database went away'),
+      },
+    ).drain();
+
+    expect(outcomes, [OutboxOutcome.retryScheduled]);
+    clock = clock.add(const Duration(minutes: 1));
+    expect(
+      await outbox.due(),
+      hasLength(1),
+      reason:
+          'an unguarded throw would strand the row in_progress until the '
+          'next startup and abort the rest of the pass',
+    );
+  });
+
+  test('a throw does not stop the remaining operations in the pass', () async {
+    await enqueue(itemId: 'note-1');
+    await enqueue(itemId: 'note-2');
+
+    final outcomes = await drainer(
+      handlers: {
+        'personals': (row, payload, authHeader) async {
+          if (row.itemId == 'note-1') throw StateError('boom');
+          return const NetworkSuccess<Map<String, dynamic>>({'ok': true});
+        },
+      },
+    ).drain();
+
+    expect(outcomes, [OutboxOutcome.retryScheduled, OutboxOutcome.completed]);
   });
 
   test('recoverStuck requeues a drain that was killed mid-flight', () async {

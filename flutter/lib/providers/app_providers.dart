@@ -181,21 +181,16 @@ final personalsUploaderProvider = Provider<PersonalsUploader>(
 /// Replaces `RetryQueueWorker`'s WorkManager registration in `MainApplication`.
 ///
 /// Handlers are registered per `uploadType`; anything without one is replayed
-/// verbatim from the stored payload.
+/// verbatim from the stored payload. The credential is *not* held here — it is
+/// passed to `drain()` per call, so it cannot go stale against the current
+/// [serverConfigProvider] or linger after the config is cleared.
 final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
-  final uploader = ref.watch(personalsUploaderProvider);
-  final submissionsUploader = ref.watch(submissionsUploaderProvider);
-  final config = ref.watch(serverConfigProvider);
-  if (config != null) {
-    uploader.authHeader = PersonalsUploader.authHeaderFor(config);
-    submissionsUploader.authHeader = PersonalsUploader.authHeaderFor(config);
-  }
   return OutboxDrainer(
     ref.watch(planetApiProvider),
     ref.watch(outboxRepositoryProvider),
     handlers: {
-      PersonalsUploader.type: uploader.handler,
-      SubmissionsUploader.type: submissionsUploader.handler,
+      PersonalsUploader.type: ref.watch(personalsUploaderProvider).handler,
+      SubmissionsUploader.type: ref.watch(submissionsUploaderProvider).handler,
     },
   );
 });

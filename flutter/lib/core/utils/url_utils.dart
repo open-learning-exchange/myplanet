@@ -26,6 +26,25 @@ class UrlUtils {
   /// Port of `UrlUtils.dbUrl(spm)`: the CouchDB root for the active server.
   static String dbUrl(ServerConfig config) => dbUrlOf(baseUrl(config));
 
+  /// [dbUrl] with the `satellite:PIN@` userinfo removed.
+  ///
+  /// [dbUrl] embeds the credentials because most callers hand the string
+  /// straight to Dio and never store it. Anything that *persists* a URL must
+  /// use this instead: the outbox keeps `endpoint` in SQLite until the
+  /// operation succeeds, and that table deliberately survives schema upgrades,
+  /// so a credential-bearing endpoint would leave the server PIN sitting in
+  /// plaintext on disk indefinitely. Authentication travels as the
+  /// `Authorization` header from [basicAuthHeader] instead.
+  ///
+  /// Returns [dbUrl] unchanged if the URL cannot be parsed — callers still need
+  /// a usable endpoint, and an unparseable one has no userinfo to leak.
+  static String credentialFreeDbUrl(ServerConfig config) {
+    final url = dbUrl(config);
+    final parsed = Uri.tryParse(url);
+    if (parsed == null || parsed.host.isEmpty) return url;
+    return parsed.replace(userInfo: '').toString();
+  }
+
   /// Port of `UrlUtils.dbUrl(url: String)`.
   static String dbUrlOf(String url) {
     var base = url;

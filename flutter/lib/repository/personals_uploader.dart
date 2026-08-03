@@ -24,8 +24,10 @@ class PersonalsUploader {
   final PersonalsRepository _personals;
   final OutboxRepository _outbox;
 
+  /// Credential-free: this string is persisted in `outbox.endpoint`.
+  /// The PIN travels as the `Authorization` header at send time instead.
   static String endpointFor(ServerConfig config) =>
-      '${UrlUtils.dbUrl(config)}/resources';
+      '${UrlUtils.credentialFreeDbUrl(config)}/resources';
 
   /// Queues every not-yet-uploaded note for [userId].
   ///
@@ -56,31 +58,29 @@ class PersonalsUploader {
   /// the note would stay `isUploaded == false` and be posted again on the next
   /// drain — one duplicate per drain, forever. Adopting `id`/`rev` on success
   /// is what closes the loop.
-  OutboxHandler get handler => (row, payload) async {
+  OutboxHandler get handler => (row, payload, authHeader) async {
     final result = await _api.postJsonObject(
       row.endpoint,
       payload,
-      authHeader: _authHeader,
+      authHeader: authHeader,
     );
 
     if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
       final couchId = data['id'];
       final rev = data['rev'];
-      if (couchId is String && rev is String) {
-        await _personals.markUploaded(row.itemId, couchId, rev);
+      if (couchId is! String || rev is! String) {
+        // Reporting success here would delete the outbox row while the note
+        // stays `isUploaded == false`, so the next `queuePending` would POST
+        // it again — a fresh duplicate document on every drain.
+        return const NetworkError<Map<String, dynamic>>(
+          null,
+          'Upload response carried no id/rev',
+        );
       }
+      await _personals.markUploaded(row.itemId, couchId, rev);
     }
     return result;
   };
-
-  String? _authHeader;
-
-  /// The credentials the next drain should use.
-  ///
-  /// Held separately from [endpointFor] because the endpoint is frozen into the
-  /// operation at enqueue time, whereas the PIN must be whatever is configured
-  /// when the send actually happens — which may be a later session.
-  set authHeader(String? value) => _authHeader = value;
 
   static String authHeaderFor(ServerConfig config) =>
       UrlUtils.basicAuthHeader('satellite', config.pin);
