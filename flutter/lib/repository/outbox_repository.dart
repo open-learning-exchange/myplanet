@@ -66,13 +66,28 @@ class OutboxRepository {
     if (existing != null) {
       // Refresh the payload rather than keeping the first one: the row may have
       // been edited between the failure and this call.
+      final base = OutboxEntriesCompanion(
+        payload: Value(jsonEncode(payload)),
+        endpoint: Value(endpoint),
+        httpMethod: Value(httpMethod),
+      );
+      // A drain may already have claimed this row and read the *old* payload.
+      // Putting it back to `pending` is what stops `markCompleted` deleting it
+      // when that in-flight send succeeds, so the edit still goes out on the
+      // next pass instead of vanishing with the row.
+      //
+      // `nextAttemptAt` is only made due on that transition. Resetting it for a
+      // row that is merely backing off would defeat the backoff outright —
+      // `queuePending` re-enqueues every pending item after each user write, so
+      // a failing operation would be retried on every keystroke-driven save.
       await _dao.patch(
         existing.id,
-        OutboxEntriesCompanion(
-          payload: Value(jsonEncode(payload)),
-          endpoint: Value(endpoint),
-          httpMethod: Value(httpMethod),
-        ),
+        existing.status == OutboxDao.statusInProgress
+            ? base.copyWith(
+                status: const Value(OutboxDao.statusPending),
+                nextAttemptAt: Value(_now().millisecondsSinceEpoch),
+              )
+            : base,
       );
       return existing.id;
     }
@@ -124,7 +139,11 @@ class OutboxRepository {
   /// Kotlin marks completed and sweeps later in `cleanup()`. Deleting here
   /// makes the queue self-trimming, so a long-lived install cannot accumulate
   /// a table of successful uploads it will never read again.
-  Future<void> markCompleted(String id) => _dao.deleteById(id);
+  ///
+  /// Scoped to rows still `in_progress`: if [enqueue] refreshed the payload
+  /// mid-flight it also put the row back to `pending`, and the send that just
+  /// succeeded carried the superseded body.
+  Future<void> markCompleted(String id) => _dao.deleteIfInProgress(id);
 
   /// Records a failed attempt and schedules the next one.
   ///
