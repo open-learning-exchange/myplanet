@@ -73,5 +73,10 @@
   "myLife": "miVida",
   "myHealth": "miSalud",
   "myPersonals": "misPersonales",
-  "achievements": "misLogros"
+  "achievements": "misLogros",
+
+  "status": "Estado",
+  "submittedBy": "Enviado por",
+  "submissionType": "Tipo",
+  "complete": "completa"
 }

@@ -282,6 +282,15 @@ flutter run --dart-define=PLANET_SERVER_MAPPINGS=http://a.example=https://a-clon
   (RFC 6070 for PBKDF2; Python `hashlib` digests for the credential check), never against the
   implementation itself.
 
+### Known gap: PDF export is Latin-only
+
+`SubmissionsExporter` renders through the `pdf` package's built-in Helvetica, which is
+WinAnsi-encoded. Arabic and Nepali are supported app locales, and their glyphs are simply absent
+from that font — a submission with a Devanagari or Arabic title exports without crashing (verified)
+but with those characters missing. Fixing it means embedding a Unicode TTF, a ~1 MB binary asset
+that was deliberately removed from the port. Decide that trade before the export is offered to
+users in an RTL or Devanagari locale.
+
 ### Two drift traps that silently lose writes
 
 Both cost a debugging round in the ratings/personals batch, and both fail *quietly* — the write
