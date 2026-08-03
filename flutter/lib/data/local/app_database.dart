@@ -43,6 +43,7 @@ part 'app_database.g.dart';
     NewsEntries,
     Teams,
     TeamTasks,
+    ChatEntries,
   ],
   daos: [
     UserDao,
@@ -61,6 +62,7 @@ part 'app_database.g.dart';
     SubmissionDao,
     MeetupDao,
     SurveyDao,
+    ChatDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -73,7 +75,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 21;
+  int get schemaVersion => 22;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -1467,4 +1469,50 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
     )..addColumns([count])).getSingle();
     return row.read(count) ?? 0;
   }
+}
+
+/// Port of `data/room/dao/ChatDao.kt`.
+@DriftAccessor(tables: [ChatEntries])
+class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
+  ChatDao(super.db);
+
+  /// Port of `ChatRepositoryImpl.getChatHistoryForUser`.
+  /// Returns all chat history for a user, sorted by id descending.
+  Future<List<ChatRow>> getByUser(String user) =>
+      (select(chatEntries)
+            ..where((c) => c.user.equals(user))
+            ..orderBy([(c) => OrderingTerm.desc(c.id)]))
+          .get();
+
+  /// Port of `ChatDao.getByDocId`.
+  Future<List<ChatRow>> getByDocId(String docId) =>
+      (select(chatEntries)..where((c) => c.docId.equals(docId))).get();
+
+  /// Port of `ChatDao.findByDocId`.
+  Future<ChatRow?> findByDocId(String docId) =>
+      (select(chatEntries)
+            ..where((c) => c.docId.equals(docId))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<void> upsertAll(List<ChatEntriesCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(chatEntries, rows));
+  }
+
+  /// Update a chat row with new conversation data.
+  Future<void> updateConversation(
+    String docId,
+    String conversationsJson,
+    String updatedDate,
+    String rev,
+  ) =>
+      (update(chatEntries)..where((c) => c.docId.equals(docId))).write(
+        ChatEntriesCompanion(
+          conversations: Value(conversationsJson),
+          updatedDate: Value(updatedDate),
+          rev: Value(rev),
+          lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
 }
