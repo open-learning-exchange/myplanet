@@ -182,6 +182,10 @@ void main() {
       endpoint: 'e',
       payload: const {},
     );
+    // The drainer always claims a row before sending, so `markCompleted`
+    // never sees a `pending` row in production — and it must not delete one,
+    // because that is how a mid-flight edit is preserved.
+    await repository.markInProgress(id);
     await repository.markCompleted(id);
 
     expect(await repository.due(), isEmpty);
@@ -216,6 +220,7 @@ void main() {
       endpoint: 'e',
       payload: const {},
     );
+    await repository.markInProgress(first);
     await repository.markCompleted(first);
 
     final second = await repository.enqueue(
@@ -256,6 +261,7 @@ void main() {
       payload: const {},
     );
     expect(await repository.watchPendingCount().first, 1);
+    await repository.markInProgress(id);
     await repository.markCompleted(id);
     expect(await repository.watchPendingCount().first, 0);
   });
@@ -278,5 +284,58 @@ void main() {
     await repository.cleanup();
     expect(await database.outboxDao.getById(abandoned), isNull);
     expect(await repository.due(), hasLength(1));
+  });
+
+  group('an edit racing an in-flight drain', () {
+    Future<String> queue(Map<String, dynamic> payload) => repository.enqueue(
+      uploadType: 'voices',
+      itemId: 'post-1',
+      endpoint: 'https://planet.example/db/news',
+      payload: payload,
+    );
+
+    test('a completing send does not delete a re-queued edit', () async {
+      final id = await queue({'message': 'original'});
+      // The drainer claims the row and has already read the old payload.
+      await repository.markInProgress(id);
+
+      // The user edits; `queuePending` re-enqueues with the new body.
+      expect(await queue({'message': 'edited'}), id);
+
+      // The in-flight send (carrying the OLD body) now succeeds.
+      await repository.markCompleted(id);
+
+      // Deleting here would drop the edit with no operation left to carry it,
+      // and the post's `isEdited` marker is cleared by `markUploaded` — so the
+      // edit would be lost outright rather than merely delayed.
+      final remaining = await repository.due();
+      expect(remaining, hasLength(1));
+      expect(jsonDecode(remaining.single.payload), {'message': 'edited'});
+    });
+
+    test('an uncontested send still trims the row', () async {
+      final id = await queue({'message': 'original'});
+      await repository.markInProgress(id);
+
+      await repository.markCompleted(id);
+
+      expect(await database.outboxDao.getById(id), equals(null));
+    });
+
+    test('re-enqueuing does not reset a backing-off row', () async {
+      final id = await queue({'message': 'original'});
+      await repository.markInProgress(id);
+      await repository.markFailed(id, errorMessage: 'server down');
+      final backedOff = (await database.outboxDao.getById(id))!.nextAttemptAt;
+      expect(await repository.due(), isEmpty);
+
+      // `queuePending` runs after every user write, so this happens constantly.
+      // Making the row due again here would retry a failing server on each
+      // save and defeat the backoff entirely.
+      await queue({'message': 'edited again'});
+
+      expect((await database.outboxDao.getById(id))!.nextAttemptAt, backedOff);
+      expect(await repository.due(), isEmpty);
+    });
   });
 }

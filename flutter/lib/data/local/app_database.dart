@@ -843,6 +843,18 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
         OutboxEntriesCompanion(status: Value(status)),
       );
 
+  /// Deletes only while the row is still claimed by a drain.
+  ///
+  /// A completing drain must not remove a row that [OutboxRepository.enqueue]
+  /// has since handed a fresh payload and put back to `pending` — the send that
+  /// just succeeded carried the *old* body, and deleting would drop the new one
+  /// with no operation left to carry it.
+  Future<int> deleteIfInProgress(String id) =>
+      (delete(outboxEntries)..where(
+            (row) => row.id.equals(id) & row.status.equals(statusInProgress),
+          ))
+          .go();
+
   /// Status-scoped delete, so a cancel cannot race a drain.
   ///
   /// Checking the status and deleting in two statements leaves a window: the
