@@ -8,12 +8,12 @@ it covers scope, the technology mapping, what is deliberately not improved, and 
 
 ## Status
 
-Phases 1–14 provide server configuration, online/offline login, resources, courses, shelf
+Phases 1–16 provide server configuration, online/offline login, resources, courses, shelf
 write-back, the dashboard shell, calendar, first-launch onboarding, an offline-editable user
 profile, persisted appearance settings, safe server details, an offline dictionary, reactive
 notifications, personalized My life/reference navigation, offline personal items, and course
 ratings, and offline submission creation/durable upload/list/detail/question-aware answer review/PDF export with paginated refresh and status filters.
-**14 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
+**15 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
 
 Phase 13 added the durable write-back path — an `outbox` table replacing `RetryQueue`, drained
 on app resume by `OutboxDrainer` instead of by `WorkManager`. Writes made offline survive
@@ -24,6 +24,10 @@ the right one here and what is still open.
 Phase 15 completes offline events: meetup persistence and paginated CouchDB sync,
 list/detail/create/edit and date/time screens, search/sort, join/leave shelf write-back, and
 durable outbox uploads are now Dart/Drift code.
+
+Phase 16 adds individual surveys: the exams catalog and embedded questions sync into Drift,
+users can search, sort, answer text and choice questions offline, and completed responses enter
+the durable submissions outbox.
 
 ## Getting started
 
