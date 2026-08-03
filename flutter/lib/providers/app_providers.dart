@@ -8,6 +8,8 @@ import '../data/local/app_database.dart';
 import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
+import '../repository/events_repository.dart';
+import '../repository/events_uploader.dart';
 import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
@@ -21,6 +23,7 @@ import '../repository/user_repository.dart';
 import '../repository/submissions_repository.dart';
 import '../repository/submissions_uploader.dart';
 import '../repository/submissions_exporter.dart';
+import '../repository/surveys_repository.dart';
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
 ///
@@ -67,6 +70,25 @@ final notificationDaoProvider = Provider<NotificationDao>(
   (ref) => ref.watch(appDatabaseProvider).notificationDao,
 );
 
+final meetupDaoProvider = Provider<MeetupDao>(
+  (ref) => ref.watch(appDatabaseProvider).meetupDao,
+);
+
+final eventsRepositoryProvider = Provider<EventsRepository>(
+  (ref) => EventsRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(meetupDaoProvider),
+  ),
+);
+
+final eventsUploaderProvider = Provider<EventsUploader>(
+  (ref) => EventsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(eventsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
 final myLifeDaoProvider = Provider<MyLifeDao>(
   (ref) => ref.watch(appDatabaseProvider).myLifeDao,
 );
@@ -83,10 +105,22 @@ final submissionDaoProvider = Provider<SubmissionDao>(
   (ref) => ref.watch(appDatabaseProvider).submissionDao,
 );
 
+final surveyDaoProvider = Provider<SurveyDao>(
+  (ref) => ref.watch(appDatabaseProvider).surveyDao,
+);
+
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
   (ref) => SubmissionsRepository(
     ref.watch(planetApiProvider),
     ref.watch(submissionDaoProvider),
+  ),
+);
+
+final surveysRepositoryProvider = Provider<SurveysRepository>(
+  (ref) => SurveysRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(surveyDaoProvider),
+    ref.watch(submissionsRepositoryProvider),
   ),
 );
 
@@ -191,6 +225,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
     handlers: {
       PersonalsUploader.type: ref.watch(personalsUploaderProvider).handler,
       SubmissionsUploader.type: ref.watch(submissionsUploaderProvider).handler,
+      EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
     },
   );
 });
@@ -206,6 +241,7 @@ final shelfRepositoryProvider = Provider<ShelfRepository>(
     ref.watch(courseDaoProvider),
     ref.watch(myLibraryDaoProvider),
     ref.watch(removedLogDaoProvider),
+    ref.watch(meetupDaoProvider),
   ),
 );
 

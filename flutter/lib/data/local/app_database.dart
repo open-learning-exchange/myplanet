@@ -36,6 +36,9 @@ part 'app_database.g.dart';
     Submissions,
     SubmissionAnswers,
     SubmissionQuestions,
+    Meetups,
+    Surveys,
+    SurveyQuestions,
   ],
   daos: [
     UserDao,
@@ -49,6 +52,8 @@ part 'app_database.g.dart';
     RatingDao,
     OutboxDao,
     SubmissionDao,
+    MeetupDao,
+    SurveyDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -61,7 +66,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 14;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -71,6 +76,14 @@ class AppDatabase extends _$AppDatabase {
   /// a "leave" survives the shelf merge, and [MyLifeEntries] carries the user's
   /// own ordering and visibility choices. Dropping any of them on a schema bump
   /// would silently discard work the user did offline.
+  ///
+  /// [Meetups] is a hybrid, like [Submissions]: mostly a mirror of the
+  /// `meetups` database, but `EventsRepository.create` writes meetups that
+  /// exist nowhere else until the outbox drains, and `toggleAttendance` records
+  /// a join the shelf has not yet pushed. Preserving it leaves stale server
+  /// rows behind, which the next sync prunes through `deleteNotIn` — a cost
+  /// worth paying to keep un-uploaded meetups. [Surveys] and [SurveyQuestions]
+  /// carry no local writes at all and are dropped with the rest.
   static const Set<String> _localAuthorityTables = {
     'outbox',
     'my_personal',
@@ -79,6 +92,7 @@ class AppDatabase extends _$AppDatabase {
     'submissions',
     'submission_answers',
     'submission_questions',
+    'meetups',
   };
 
   @override
@@ -974,4 +988,131 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
       return deleted;
     });
   }
+}
+
+/// Port of `data/room/dao/MeetupDao.kt`.
+@DriftAccessor(tables: [Meetups])
+class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
+  MeetupDao(super.db);
+
+  Future<void> upsert(MeetupsCompanion row) =>
+      into(meetups).insertOnConflictUpdate(row);
+
+  Future<void> upsertAll(List<MeetupsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((batch) => batch.insertAllOnConflictUpdate(meetups, rows));
+  }
+
+  Future<MeetupRow?> getById(String id) =>
+      (select(meetups)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<MeetupRow?> getByMeetupId(String id) =>
+      (select(meetups)
+            ..where((row) => row.meetupId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<List<MeetupRow>> getByMeetupIds(List<String> ids) =>
+      (select(meetups)..where((row) => row.meetupId.isIn(ids))).get();
+
+  Stream<List<MeetupRow>> watchForTeam(String teamId) =>
+      (select(meetups)
+            ..where((row) => row.teamId.equals(teamId))
+            ..orderBy([(row) => OrderingTerm(expression: row.startDate)]))
+          .watch();
+
+  Stream<List<MeetupRow>> watchAll() => (select(
+    meetups,
+  )..orderBy([(row) => OrderingTerm(expression: row.startDate)])).watch();
+
+  /// Port of `MeetupDao.getByUserId`, including its `AND userId != ''` guard.
+  ///
+  /// The guard is load-bearing: `EventsRepository.toggleAttendance` writes an
+  /// empty string when a user *leaves* a meetup, so without it a blank
+  /// [userId] would select precisely the meetups the user has left and push
+  /// them back onto their shelf.
+  Future<List<MeetupRow>> meetupsOnShelf(String userId) =>
+      (select(meetups)..where(
+            (row) => row.userId.equals(userId) & row.userId.equals('').not(),
+          ))
+          .get();
+
+  Future<List<MeetupRow>> pendingUploads() =>
+      (select(meetups)..where((row) => row.updated.equals(true))).get();
+
+  Future<int> count() async {
+    final count = meetups.id.count();
+    final row = await (selectOnly(meetups)..addColumns([count])).getSingle();
+    return row.read(count) ?? 0;
+  }
+
+  /// Removes stale server rows without discarding locally edited meetups.
+  Future<int> deleteNotIn(List<String> keepIds) => (delete(
+    meetups,
+  )..where((row) => row.updated.equals(false) & row.id.isNotIn(keepIds))).go();
+
+  Future<int> markUploaded(String id, String remoteId, String remoteRev) =>
+      (update(meetups)..where((row) => row.id.equals(id))).write(
+        MeetupsCompanion(
+          meetupId: Value(remoteId),
+          meetupIdRev: Value(remoteRev),
+          updated: const Value(false),
+        ),
+      );
+}
+
+/// Port of the survey subset of `ExamDao` and `QuestionDao`.
+@DriftAccessor(tables: [Surveys, SurveyQuestions])
+class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
+  SurveyDao(super.db);
+
+  Stream<List<SurveyRow>> watchAll() =>
+      (select(surveys)..orderBy([
+            (row) => OrderingTerm(
+              expression: row.createdDate,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+          .watch();
+
+  Future<SurveyRow?> getById(String id) =>
+      (select(surveys)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<List<SurveyQuestionRow>> questionsFor(String surveyId) =>
+      (select(surveyQuestions)
+            ..where((row) => row.surveyId.equals(surveyId))
+            ..orderBy([(row) => OrderingTerm(expression: row.position)]))
+          .get();
+
+  Future<void> upsertAll(
+    List<SurveysCompanion> rows,
+    Map<String, List<SurveyQuestionsCompanion>> questions,
+  ) => transaction(() async {
+    if (rows.isNotEmpty) {
+      await batch((batch) => batch.insertAllOnConflictUpdate(surveys, rows));
+    }
+    for (final entry in questions.entries) {
+      await (delete(
+        surveyQuestions,
+      )..where((row) => row.surveyId.equals(entry.key))).go();
+      if (entry.value.isNotEmpty) {
+        await batch((batch) => batch.insertAll(surveyQuestions, entry.value));
+      }
+    }
+  });
+
+  Future<int> deleteNotIn(List<String> ids) => transaction(() async {
+    final stale =
+        await (selectOnly(surveys)
+              ..addColumns([surveys.id])
+              ..where(surveys.id.isNotIn(ids)))
+            .map((row) => row.read(surveys.id)!)
+            .get();
+    if (stale.isNotEmpty) {
+      await (delete(
+        surveyQuestions,
+      )..where((row) => row.surveyId.isIn(stale))).go();
+    }
+    return (delete(surveys)..where((row) => row.id.isIn(stale))).go();
+  });
 }

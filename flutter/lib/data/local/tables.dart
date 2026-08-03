@@ -425,3 +425,84 @@ class SubmissionQuestions extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/Meetup.kt`. Meetups are server-cached documents that may
+/// also carry local edits until the generic meetup uploader is ported.
+@DataClassName('MeetupRow')
+@TableIndex(name: 'meetup_remote_id', columns: {#meetupId})
+@TableIndex(name: 'meetup_team_id', columns: {#teamId})
+@TableIndex(name: 'meetup_user_id', columns: {#userId})
+class Meetups extends Table {
+  TextColumn get id => text()();
+  TextColumn get userId => text().nullable()();
+  TextColumn get meetupId => text().nullable()();
+  TextColumn get meetupIdRev => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get startDate => integer().withDefault(const Constant(0))();
+  IntColumn get endDate => integer().withDefault(const Constant(0))();
+  TextColumn get recurring =>
+      text().nullable().withDefault(const Constant('none'))();
+  TextColumn get day => text().nullable()();
+  TextColumn get startTime => text().nullable()();
+  TextColumn get endTime => text().nullable()();
+  TextColumn get category => text().nullable()();
+  TextColumn get meetupLocation => text().nullable()();
+  TextColumn get meetupLink => text().nullable()();
+  TextColumn get creator => text().nullable()();
+  TextColumn get link => text().nullable()();
+  TextColumn get teamId => text().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get recurringNumber => integer().withDefault(const Constant(10))();
+  TextColumn get sync => text().nullable()();
+  TextColumn get sourcePlanet => text().nullable()();
+  BoolColumn get updated => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of survey-shaped rows from `model/StepExam.kt` (`exams` database).
+@DataClassName('SurveyRow')
+@TableIndex(name: 'surveys_created_date', columns: {#createdDate})
+class Surveys extends Table {
+  TextColumn get id => text()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get name => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get updatedDate => integer().withDefault(const Constant(0))();
+  IntColumn get adoptionDate => integer().withDefault(const Constant(0))();
+  TextColumn get createdBy => text().nullable()();
+  IntColumn get totalMarks => integer().withDefault(const Constant(0))();
+  TextColumn get passingPercentage => text().nullable()();
+  TextColumn get sourcePlanet => text().nullable()();
+  BoolColumn get isFromNation => boolean().withDefault(const Constant(false))();
+  TextColumn get teamId => text().nullable()();
+  BoolColumn get teamShareAllowed =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get sourceSurveyId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Questions embedded in an `exams` CouchDB survey document.
+@DataClassName('SurveyQuestionRow')
+@TableIndex(name: 'survey_questions_survey', columns: {#surveyId, #position})
+class SurveyQuestions extends Table {
+  TextColumn get id => text()();
+  TextColumn get surveyId => text()();
+  TextColumn get questionId => text().nullable()();
+  TextColumn get header => text().nullable()();
+  TextColumn get body => text().nullable()();
+  TextColumn get type => text().nullable()();
+  TextColumn get choices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  BoolColumn get required => boolean().withDefault(const Constant(false))();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}

@@ -30,6 +30,7 @@ class ShelfRepository {
     this._courseDao,
     this._libraryDao,
     this._removedLogDao,
+    this._meetupDao,
   );
 
   /// CouchDB table names, used as the `type` in the removed log.
@@ -40,6 +41,7 @@ class ShelfRepository {
   final CourseDao _courseDao;
   final MyLibraryDao _libraryDao;
   final RemovedLogDao _removedLogDao;
+  final MeetupDao _meetupDao;
 
   /// Pushes [userId]'s shelf to the server.
   ///
@@ -92,8 +94,12 @@ class ShelfRepository {
   /// Port of `getShelfData`. Exposed for testing — it is the whole of the merge
   /// logic, and the part worth pinning down.
   ///
-  /// `meetupIds` is passed through from the server untouched: meetups are not
-  /// ported yet, and dropping the key would delete the user's meetups server-side.
+  /// `meetupIds` is merged with an empty removed list. `getShelfData` passes
+  /// `removedResources` there, which is a copy-paste slip rather than intent —
+  /// there is no removed log for meetups — and it is unobservable either way,
+  /// since resource and meetup ids come from different CouchDB databases and
+  /// cannot collide. The consequence both apps share is that a meetup can be
+  /// added to a shelf but never removed from one.
   Future<Map<String, dynamic>> buildShelfDocument({
     required String userId,
     required String shelfDocId,
@@ -101,6 +107,7 @@ class ShelfRepository {
   }) async {
     final localCourseIds = await _localCourseIds(userId);
     final localResourceIds = await _localResourceIds(userId);
+    final localMeetupIds = await _localMeetupIds(userId);
 
     final removedCourses = await _removedLogDao.removedDocIds(
       coursesType,
@@ -123,7 +130,11 @@ class ShelfRepository {
         JsonUtils.getStringList('resourceIds', serverDoc),
         removedResources,
       ),
-      'meetupIds': JsonUtils.getStringList('meetupIds', serverDoc),
+      'meetupIds': mergeIds(
+        localMeetupIds,
+        JsonUtils.getStringList('meetupIds', serverDoc),
+        const [],
+      ),
     };
 
     final rev = JsonUtils.getStringOrNull('_rev', serverDoc);
@@ -169,6 +180,22 @@ class ShelfRepository {
     final resources = await _libraryDao.resourcesOnShelf(userId);
     return resources
         .map((r) => r.resourceId ?? r.id)
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  /// Only meetups that already exist server-side.
+  ///
+  /// A deliberate divergence from `Meetup.getMyMeetUpIds`, which appends
+  /// `meetupId` unconditionally and so writes a JSON `null` into `meetupIds`
+  /// for a meetup that has not been uploaded yet. Falling back to the local row
+  /// id instead would be worse — it writes a plausible-looking id that resolves
+  /// to no document — so an id-less meetup is simply omitted and picked up on
+  /// the next push, once the outbox has given it a CouchDB identity.
+  Future<List<String>> _localMeetupIds(String userId) async {
+    final meetups = await _meetupDao.meetupsOnShelf(userId);
+    return meetups
+        .map((meetup) => meetup.meetupId ?? '')
         .where((id) => id.isNotEmpty)
         .toList(growable: false);
   }

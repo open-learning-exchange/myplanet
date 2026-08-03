@@ -72,6 +72,74 @@ class SubmissionsRepository {
     return id;
   }
 
+  /// Creates the empty answer sheet used when a user starts an offline survey.
+  Future<String> createSurveyDraft({
+    required SurveyRow survey,
+    required List<SurveyQuestionRow> questions,
+    required String userId,
+    Map<String, SubmissionDraftAnswer> answers = const {},
+    DateTime? now,
+  }) async {
+    final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    final id = sha1
+        .convert(utf8.encode('$userId:$timestamp:${survey.id}'))
+        .toString();
+    await _dao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: id,
+          parentId: Value(survey.id),
+          parent: Value(jsonEncode({'_id': survey.id, 'name': survey.name})),
+          userId: Value(userId),
+          type: const Value('survey'),
+          startTime: Value(timestamp),
+          lastUpdateTime: Value(timestamp),
+          status: const Value('complete'),
+          uploaded: const Value(false),
+          isUpdated: const Value(true),
+        ),
+      ],
+      // A submission question row id is `submissionId:rawQuestionId`, and the
+      // exporter recovers `rawQuestionId` by stripping that prefix to look up
+      // the answer. A survey question's own row id is already composite
+      // (`surveyId:questionId`), so it must be reduced to the same raw id used
+      // for the answer's `questionId` — nesting the composite instead yields a
+      // key the answer map has no entry for, and every answer exports blank.
+      questions: {
+        id: [
+          for (final question in questions)
+            SubmissionQuestionsCompanion.insert(
+              id: '$id:${_rawQuestionId(question)}',
+              submissionId: id,
+              header: Value(question.header),
+              body: Value(question.body),
+              type: Value(question.type),
+              choices: Value(question.choices),
+              position: question.position,
+            ),
+        ],
+      },
+      answers: {
+        id: [
+          for (final question in questions)
+            SubmissionAnswersCompanion.insert(
+              id: '$id:${_rawQuestionId(question)}',
+              submissionId: id,
+              questionId: Value(_rawQuestionId(question)),
+              value: Value(answers[question.id]?.value),
+              valueChoices: Value(answers[question.id]?.choices ?? const []),
+            ),
+        ],
+      },
+    );
+    return id;
+  }
+
+  /// The server-assigned question id, or the synthetic `surveyId:index` when
+  /// the document carried none. Either way it is what the answer is keyed by.
+  static String _rawQuestionId(SurveyQuestionRow question) =>
+      question.questionId ?? question.id;
+
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
 

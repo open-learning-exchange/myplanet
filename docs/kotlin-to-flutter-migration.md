@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 14 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**13 of 28 UI packages** are ported.
+**Phase 16 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**17 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -26,6 +26,11 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 14** — offline submission creation, durable upload, list, question-aware answer review, PDF export, and detail metadata, backed by a paginated,
   reactive Drift cache with pull-to-refresh, status filters, progress reporting, and safe stale
   cleanup.
+- **Phase 15** — offline meetups list/detail/create/edit, date/time and recurrence editing,
+  search/sort, paginated pull-to-refresh, join/leave shelf write-back, CouchDB mapping, reactive
+  Drift persistence, and durable outbox upload.
+- **Phase 16** — offline individual-survey catalog, search/sort and paginated sync, question
+  forms for text and single/multiple choice, required-answer validation, and durable submission.
 
 ## Strategy
 
@@ -80,6 +85,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 | Durable write-back queue | `services/retry/RetryQueue.kt`, `RetryQueueWorker`, `model/RetryOperation.kt` | `repository/outbox_repository.dart`, `repository/outbox_drainer.dart`, `ui/outbox_drain_scope.dart` |
 | Personal-note upload | `PersonalsRepositoryImpl.uploadPersonalDocument`, `Personal.serialize` | `repository/personals_uploader.dart` |
 | Submissions create/upload/list/detail/answers | `Submission`, `Answer`, `SubmissionDao`, `UploadConfigs.Submissions`, `SubmissionsFragment`, `SubmissionDetailFragment` | `repository/submissions_repository.dart`, `repository/submissions_uploader.dart`, `ui/submissions/submissions_screen.dart`, `ui/submissions/submission_detail_screen.dart` |
+| Events/meetups | `Meetup`, `MeetupDao`, `EventsRepositoryImpl`, `EventsDetailFragment`, meetup upload config | `data/local/meetup_mapper.dart`, `repository/events_repository.dart`, `repository/events_uploader.dart`, `ui/events/` |
+| Individual surveys | `StepExam`, `ExamQuestion`, `SurveysRepositoryImpl`, `SurveyFragment`, survey mode of `ExamTakingFragment` | `data/local/survey_mapper.dart`, `repository/surveys_repository.dart`, `ui/surveys/` |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -238,19 +245,59 @@ Ordered by risk, highest first.
    defects in `strings.xml`; fixing them in Crowdin corrects the Kotlin and Flutter apps together,
    whereas diverging here would make the two apps disagree.
 
-## Remaining UI packages (16 of 28)
+## Composite row ids, and the answer that exported blank
 
-`chat`, `community`, `components`, `enterprises`, `events`, `exam`,
+`SubmissionQuestions` has no `questionId` column: a row's id is
+`submissionId:rawQuestionId`, and the exporter recovers the raw id by stripping that prefix to
+look up the matching answer. A *survey* question's own row id is already composite
+(`surveyId:questionId`), so nesting it produced a three-part key whose stripped form no longer
+matched the answer's `questionId` — and every answer on an exported survey rendered blank.
+
+Two details made it easy to miss. It only bites when the server supplies question ids; when it
+does not, the synthetic `surveyId:index` fallback happens to line both sides up, so the
+degenerate case passes. And the failure is silent — a missing key is a null answer, which the
+PDF renders as empty rather than as an error. Both cases are pinned in
+`test/repository/survey_export_test.dart`.
+
+The prefix is now stripped by known length rather than by splitting at the first colon, so a
+question id containing a colon no longer truncates.
+
+## Meetup quirks reproduced deliberately
+
+`Meetup.serialize` sends `sync` through `addProperty`, so the JSON the column holds reaches
+CouchDB as a *string* rather than an object — double-encoded. It also omits `link` entirely when
+empty instead of writing null. Neither app reads `sync` back, so the shape is invisible locally,
+but both apps write the same database and a document only one of them can read is worse than an
+odd one both can. Reproduced, and pinned in `events_repository_test.dart`.
+
+Two divergences went the other way, where faithfulness would corrupt data:
+
+- `getShelfData` appends `meetupId` unconditionally, writing a JSON `null` into `meetupIds` for a
+  meetup that has not been uploaded. The port omits it instead — and specifically does *not* fall
+  back to the local row id, which would write a plausible-looking id resolving to no document.
+- `getShelfData` filters `meetupIds` against `removedResources`, the *resources* removed log.
+  That is a copy-paste slip; there is no removed log for meetups. Unobservable either way, since
+  the two id spaces come from different databases and cannot collide. The consequence both apps
+  share is that a meetup can be added to a shelf but never removed from one.
+
+`MeetupDao.getByUserId`'s `AND userId != ''` guard is load-bearing and is reproduced:
+`toggleAttendance` writes an empty string when a user *leaves* a meetup, so without it a blank
+user id would select precisely the meetups the user has left and push them back onto the shelf.
+
+## Remaining UI packages (11 of 28)
+
+`chat`, `community`, `components`, `enterprises`, `exam`,
 `feedback`, `health`, `maps`,
-`surveys`, `teams`, `viewer`, `voices` — plus submission answers/create/export, personal attachments/upload,
+`teams`, `viewer`, `voices` — plus team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
 rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
-Suggested order, dependency-first: `teams` → `voices` → `submissions` → `surveys`/`exam` → the
-rest. Course progress, exams and certification are deliberately deferred with their own packages
-rather than bundled into the courses slice.
+Suggested order, dependency-first: `teams` → `voices` → `exam` → the rest. Course progress and
+certification are deliberately deferred with their own packages rather than bundled into the
+courses slice. `events` and `surveys` are now ported for the individual case; team meetups and
+team/public survey sharing arrive with `teams`.
 
 ## Working on the Flutter app
 
@@ -315,4 +362,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-03
-**Phase**: 14 of N (offline submissions list)
+**Phase**: 16 of N (offline meetups and individual surveys)

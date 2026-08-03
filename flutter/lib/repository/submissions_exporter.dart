@@ -137,6 +137,15 @@ class SubmissionsExporter {
       ? answer.valueChoices.join(', ')
       : answer.value ?? 'No answer';
 
-  String _rawQuestionId(SubmissionQuestionRow question) =>
-      question.id.substring(question.id.indexOf(':') + 1);
+  /// Recovers the raw question id from the `submissionId:rawQuestionId` row id.
+  ///
+  /// Strips the submission-id prefix rather than splitting at the first colon:
+  /// the prefix has a known length, whereas a question id containing a colon
+  /// would silently truncate under the split and stop matching its answer.
+  String _rawQuestionId(SubmissionQuestionRow question) {
+    final prefix = '${question.submissionId}:';
+    return question.id.startsWith(prefix)
+        ? question.id.substring(prefix.length)
+        : question.id;
+  }
 }

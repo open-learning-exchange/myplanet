@@ -9,6 +9,8 @@ import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
 import 'dictionary/dictionary_screen.dart';
+import 'events/event_detail_screen.dart';
+import 'events/events_screen.dart';
 import 'life/life_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
@@ -21,6 +23,8 @@ import 'sync/server_config_screen.dart';
 import 'user/profile_screen.dart';
 import 'submissions/submissions_screen.dart';
 import 'submissions/submission_detail_screen.dart';
+import 'surveys/surveys_screen.dart';
+import 'surveys/take_survey_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
 /// and the manual `Intent` hops between `SyncActivity` -> `LoginActivity` ->
@@ -47,6 +51,8 @@ class Routes {
   static const String references = '/life/references';
   static const String personals = '/life/personals';
   static const String submissions = '/life/submissions';
+  static const String events = '/calendar/events';
+  static const String surveys = '/life/surveys';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -133,6 +139,24 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: Routes.calendar,
                 builder: (context, state) => const CalendarScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'events',
+                    builder: (context, state) => const EventsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const NewMeetupScreen(),
+                      ),
+                      GoRoute(
+                        path: ':meetupId',
+                        builder: (context, state) => EventDetailScreen(
+                          meetupId: state.pathParameters['meetupId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
@@ -182,6 +206,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                         path: ':submissionId',
                         builder: (context, state) => SubmissionDetailScreen(
                           submissionId: state.pathParameters['submissionId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'surveys',
+                    builder: (context, state) => const SurveysScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':surveyId',
+                        builder: (context, state) => TakeSurveyScreen(
+                          surveyId: state.pathParameters['surveyId']!,
                         ),
                       ),
                     ],
