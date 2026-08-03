@@ -82,6 +82,42 @@ class PersonalsRepository {
   Future<int> delete(String id) => _dao.deleteById(id);
   Future<List<PersonalRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
+
+  /// Port of `Personal.serialize`.
+  ///
+  /// Two Kotlin fields are deliberately absent. `filename` comes from
+  /// `FileUtils.getFileNameFromUrl(path)` and belongs with the attachment
+  /// upload, which is not ported; and the `androidId`/`deviceName`/
+  /// `customDeviceName` trio is device telemetry from `NetworkUtils` that the
+  /// server does not key on. Both are noted in the migration doc rather than
+  /// guessed at.
+  static Map<String, dynamic> serialize(
+    PersonalRow row, {
+    DateTime? uploadedAt,
+  }) {
+    return <String, dynamic>{
+      'title': row.title,
+      'uploadDate': (uploadedAt ?? DateTime.now()).millisecondsSinceEpoch,
+      'createdDate': row.date,
+      'author': row.userName,
+      'addedBy': row.userName,
+      'description': row.description,
+      'resourceType': 'Activities',
+      'private': true,
+      'privateFor': {'users': row.userId},
+    };
+  }
+
+  /// Port of `updatePersonalAfterSync` — adopts the ids CouchDB assigned.
+  Future<void> markUploaded(String id, String couchId, String rev) async {
+    final current = await _dao.getById(id);
+    if (current == null) return;
+    await _dao.upsert(
+      current
+          .copyWith(isUploaded: true, couchId: Value(couchId), rev: Value(rev))
+          .toCompanion(false),
+    );
+  }
 }
 
 String? _nullable(String? value) {

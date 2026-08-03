@@ -32,6 +32,7 @@ part 'app_database.g.dart';
     MyLifeEntries,
     PersonalEntries,
     Ratings,
+    OutboxEntries,
   ],
   daos: [
     UserDao,
@@ -43,6 +44,7 @@ part 'app_database.g.dart';
     MyLifeDao,
     PersonalDao,
     RatingDao,
+    OutboxDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -55,16 +57,46 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
+
+  /// Tables holding local intent the server cannot give back.
+  ///
+  /// Everything else is a cache of CouchDB and can be dropped and re-synced.
+  /// These cannot: [OutboxEntries] is the un-pushed write queue, [PersonalEntries]
+  /// holds private notes that may never have been uploaded, [RemovedLogs] is how
+  /// a "leave" survives the shelf merge, and [MyLifeEntries] carries the user's
+  /// own ordering and visibility choices. Dropping any of them on a schema bump
+  /// would silently discard work the user did offline.
+  static const Set<String> _localAuthorityTables = {
+    'outbox',
+    'my_personal',
+    'removed_log',
+    'my_life',
+  };
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onUpgrade: (m, from, to) async {
-      // Drop-and-resync: local rows are a cache of CouchDB, so a schema
-      // change recreates the tables and the next sync refills them.
+      // Drop-and-resync for the CouchDB caches only; the next sync refills
+      // them. Locally-authored tables are stepped over and left in place.
       for (final table in allTables) {
+        if (_localAuthorityTables.contains(table.actualTableName)) continue;
         await m.deleteTable(table.actualTableName);
       }
+
+      // Indexes are dropped first so `createAll` can recreate them. It emits
+      // `CREATE TABLE IF NOT EXISTS` but a bare `CREATE INDEX`, so an index
+      // belonging to a preserved table would collide and abort the upgrade.
+      // They are pure derived data, so dropping and rebuilding costs nothing.
+      for (final entity in allSchemaEntities) {
+        if (entity is Index) {
+          await customStatement('DROP INDEX IF EXISTS ${entity.entityName}');
+        }
+      }
+
+      // Recreates the dropped caches and anything newly added. Note this does
+      // not *alter* a preserved table, so changing the shape of one of
+      // [_localAuthorityTables] needs a hand-written step here.
       await m.createAll();
     },
   );
@@ -710,4 +742,93 @@ class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
       (update(ratings)..where((row) => row.id.equals(id))).write(
         const RatingsCompanion(isUpdated: Value(false)),
       );
+}
+
+/// Port of `data/room/dao/RetryDao.kt`, backing [OutboxEntries].
+///
+/// The status transitions mirror `RetryQueue`: `pending` → `in_progress` while
+/// a drain holds it → `completed`, or back to `pending` with a later
+/// [OutboxEntries.nextAttemptAt], or `abandoned` once the attempts run out.
+@DriftAccessor(tables: [OutboxEntries])
+class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
+  OutboxDao(super.db);
+
+  static const String statusPending = 'pending';
+  static const String statusInProgress = 'in_progress';
+  static const String statusCompleted = 'completed';
+  static const String statusAbandoned = 'abandoned';
+
+  Future<void> upsert(OutboxEntriesCompanion entry) =>
+      into(outboxEntries).insertOnConflictUpdate(entry);
+
+  /// Writes only the fields [values] carries.
+  ///
+  /// Not [upsert]: `insertOnConflictUpdate` validates the companion against the
+  /// *insert* path, so a partial one is rejected for the required columns it
+  /// omits even though the row already exists.
+  Future<int> patch(String id, OutboxEntriesCompanion values) =>
+      (update(outboxEntries)..where((row) => row.id.equals(id))).write(values);
+
+  Future<OutboxRow?> getById(String id) => (select(
+    outboxEntries,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  /// The open operation for an item, if one is already queued.
+  ///
+  /// Kotlin's `getExistingOperation`. Only `pending`/`in_progress` count — a
+  /// completed or abandoned row must not block a fresh enqueue.
+  Future<OutboxRow?> findOpen(String uploadType, String itemId) {
+    return (select(outboxEntries)
+          ..where(
+            (row) =>
+                row.uploadType.equals(uploadType) &
+                row.itemId.equals(itemId) &
+                row.status.isIn([statusPending, statusInProgress]),
+          )
+          ..limit(1))
+        .getSingleOrNull();
+  }
+
+  /// Pending operations whose backoff has elapsed, oldest first.
+  Future<List<OutboxRow>> due(int now) {
+    return (select(outboxEntries)
+          ..where(
+            (row) =>
+                row.status.equals(statusPending) &
+                row.nextAttemptAt.isSmallerOrEqualValue(now),
+          )
+          ..orderBy([(row) => OrderingTerm(expression: row.createdAt)]))
+        .get();
+  }
+
+  Stream<int> watchPendingCount() {
+    final count = outboxEntries.id.count();
+    final query = selectOnly(outboxEntries)
+      ..addColumns([count])
+      ..where(outboxEntries.status.equals(statusPending));
+    return query.watchSingle().map((row) => row.read(count) ?? 0);
+  }
+
+  Future<int> setStatus(String id, String status) =>
+      (update(outboxEntries)..where((row) => row.id.equals(id))).write(
+        OutboxEntriesCompanion(status: Value(status)),
+      );
+
+  Future<int> deleteById(String id) =>
+      (delete(outboxEntries)..where((row) => row.id.equals(id))).go();
+
+  /// Resets rows stranded `in_progress` by a crash or a kill mid-drain.
+  ///
+  /// Kotlin calls this `recoverStuckOperations` and runs it at startup for the
+  /// same reason: without it a killed drain leaves the operation permanently
+  /// invisible to [due].
+  Future<int> recoverStuck() =>
+      (update(outboxEntries)
+            ..where((row) => row.status.equals(statusInProgress)))
+          .write(const OutboxEntriesCompanion(status: Value(statusPending)));
+
+  /// Drops rows that are finished with — completed, or given up on.
+  Future<int> cleanup() => (delete(
+    outboxEntries,
+  )..where((row) => row.status.isIn([statusCompleted, statusAbandoned]))).go();
 }

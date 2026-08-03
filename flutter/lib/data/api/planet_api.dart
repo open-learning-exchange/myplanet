@@ -85,6 +85,38 @@ class PlanetApi {
     );
   }
 
+  /// Port of `ApiInterface.postDoc` — appends a new CouchDB document.
+  ///
+  /// CouchDB assigns the `_id`/`_rev` and returns them, so unlike
+  /// [putJsonObject] the body carries neither.
+  Future<NetworkResult<Map<String, dynamic>>> postJsonObject(
+    String url,
+    Map<String, dynamic> body, {
+    String? authHeader,
+  }) => sendJsonObject(url, body: body, authHeader: authHeader);
+
+  /// [putJsonObject]/[postJsonObject] with the verb chosen at call time.
+  ///
+  /// The outbox stores the method alongside the payload and replays it, so it
+  /// needs one entry point rather than a branch per verb.
+  Future<NetworkResult<Map<String, dynamic>>> sendJsonObject(
+    String url, {
+    required Map<String, dynamic> body,
+    String method = 'POST',
+    String? authHeader,
+  }) {
+    return _request<Map<String, dynamic>>(
+      url,
+      method: method,
+      body: body,
+      authHeader: authHeader,
+      responseType: ResponseType.json,
+      convert: (data) => data is Map<String, dynamic>
+          ? data
+          : throw const FormatException('Expected a JSON object'),
+    );
+  }
+
   /// Port of `ApiInterface.getApkVersion` / `getChecksum` — raw text bodies.
   Future<NetworkResult<String>> getRaw(String url, {String? authHeader}) {
     return _request<String>(
