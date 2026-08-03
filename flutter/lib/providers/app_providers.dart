@@ -26,6 +26,9 @@ import '../repository/submissions_repository.dart';
 import '../repository/submissions_uploader.dart';
 import '../repository/submissions_exporter.dart';
 import '../repository/surveys_repository.dart';
+import '../repository/teams_repository.dart';
+import '../repository/team_tasks_repository.dart';
+import '../repository/team_tasks_uploader.dart';
 
 /// The dependency graph, replacing the Hilt modules in `di/`.
 ///
@@ -74,6 +77,28 @@ final notificationDaoProvider = Provider<NotificationDao>(
 
 final meetupDaoProvider = Provider<MeetupDao>(
   (ref) => ref.watch(appDatabaseProvider).meetupDao,
+);
+
+final teamDaoProvider = Provider<TeamDao>(
+  (ref) => ref.watch(appDatabaseProvider).teamDao,
+);
+
+final teamsRepositoryProvider = Provider<TeamsRepository>(
+  (ref) =>
+      TeamsRepository(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
+);
+final teamTaskDaoProvider = Provider<TeamTaskDao>(
+  (ref) => ref.watch(appDatabaseProvider).teamTaskDao,
+);
+final teamTasksRepositoryProvider = Provider<TeamTasksRepository>(
+  (ref) => TeamTasksRepository(ref.watch(teamTaskDaoProvider)),
+);
+final teamTasksUploaderProvider = Provider<TeamTasksUploader>(
+  (ref) => TeamTasksUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(teamTasksRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
 );
 
 final eventsRepositoryProvider = Provider<EventsRepository>(
@@ -248,6 +273,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       SubmissionsUploader.type: ref.watch(submissionsUploaderProvider).handler,
       EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
       VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
+      TeamTasksUploader.type: ref.watch(teamTasksUploaderProvider).handler,
     },
   );
 });
