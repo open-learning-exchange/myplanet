@@ -29,6 +29,12 @@ class LifeRepositoryImpl @Inject constructor(
 
     override suspend fun updateVisibility(isVisible: Boolean, myLifeId: String) {
         myLifeDao.updateVisibility(myLifeId, isVisible)
+        val item = myLifeDao.getByIds(listOf(myLifeId)).firstOrNull()
+        val userId = item?.userId
+        if (userId != null) {
+            val updatedLives = getMyLifeByUserId(userId, ensureLatest = true)
+            cacheMyLifeItems(userId, updatedLives)
+        }
     }
 
     override suspend fun updateMyLifeListOrder(list: List<MyLife>) {

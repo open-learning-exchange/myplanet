@@ -85,6 +85,11 @@ class LifeFragment : BaseRecyclerFragment<MyLife?>(), OnStartDragListener {
         recyclerView.addItemDecoration(dividerItemDecoration)
     }
 
+    override fun onResume() {
+        super.onResume()
+        refreshList()
+    }
+
     private suspend fun loadMyLifeList(): List<MyLife> {
         val userId = userRepository.getUserModel()?.id
         var myLifeList = lifeRepository.getMyLifeByUserId(userId)

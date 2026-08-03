@@ -396,6 +396,12 @@ class BellDashboardFragment : BaseDashboardFragment() {
                 checkPendingSurveys()
             }
         }
+        val myLifeFlex = view?.findViewById<com.google.android.flexbox.FlexboxLayout>(R.id.flexboxLayoutMyLife)
+        if (myLifeFlex != null) {
+            viewLifecycleOwner.lifecycleScope.launch {
+                myLifeListInit(myLifeFlex)
+            }
+        }
     }
 
     override fun onPause() {

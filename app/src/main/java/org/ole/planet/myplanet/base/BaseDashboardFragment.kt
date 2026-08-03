@@ -251,7 +251,8 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         imgTask.visibility = if (info.hasTask) View.VISIBLE else View.GONE
     }
 
-    private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
+    protected suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
+        flexboxLayout.removeAllViews()
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
         for ((itemCnt, items) in visibleItems.withIndex()) {
