@@ -19,7 +19,12 @@ class MeetupMapper {
     final link = JsonUtils.getObject('link', doc);
     return MeetupsCompanion(
       id: Value(id),
-      userId: Value(userId),
+      // Attendance is local: the `meetups` document says nothing about whether
+      // *this* user joined. Overwriting it from a server refresh un-joins the
+      // user from every meetup, and `meetupsOnShelf` then drops them from the
+      // shelf push. An existing `''` is preserved as-is — it means "left",
+      // which is distinct from "never joined".
+      userId: Value(userId ?? existing?.userId),
       meetupId: Value(id),
       meetupIdRev: Value(JsonUtils.getStringOrNull('_rev', doc)),
       title: Value(JsonUtils.getStringOrNull('title', doc)),

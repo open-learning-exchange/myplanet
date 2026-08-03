@@ -108,16 +108,13 @@ class OutboxRepository {
   /// the list. A durable queue outlives its subject, so deleting a locally
   /// composed post that is already queued would otherwise still POST it and
   /// resurrect it on the server. Returns whether anything was withdrawn.
-  Future<bool> cancel(String uploadType, String itemId) async {
-    final open = await _dao.findOpen(uploadType, itemId);
-    if (open == null) return false;
-    // An operation mid-flight is left alone: the request may already have
-    // reached the server, and the drainer still needs the row to record the
-    // outcome against.
-    if (open.status == OutboxDao.statusInProgress) return false;
-    await _dao.deleteById(open.id);
-    return true;
-  }
+  /// An operation mid-flight is left alone: the request may already have
+  /// reached the server, and the drainer still needs the row to record the
+  /// outcome against. That exclusion is expressed as part of the delete rather
+  /// than checked first — a separate check would let a drain claim the row
+  /// between the two statements.
+  Future<bool> cancel(String uploadType, String itemId) async =>
+      await _dao.deletePending(uploadType, itemId) > 0;
 
   Future<void> markInProgress(String id) =>
       _dao.setStatus(id, OutboxDao.statusInProgress);

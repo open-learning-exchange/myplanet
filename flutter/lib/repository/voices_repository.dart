@@ -251,7 +251,23 @@ class VoicesRepository {
   }
 
   Future<List<String>> _collectWithReplies(String newsId) async {
-    final ids = <String>[newsId];
+    // One set across the whole walk, not one per frame. `replyTo` is server
+    // data and nothing guarantees it is acyclic: two rows pointing at each
+    // other would otherwise recurse until the stack gives out, from an
+    // ordinary "delete post" tap.
+    final seen = <String>{};
+    final ids = <String>[];
+    await _walkReplies(newsId, seen, ids);
+    return ids;
+  }
+
+  Future<void> _walkReplies(
+    String newsId,
+    Set<String> seen,
+    List<String> ids,
+  ) async {
+    if (!seen.add(newsId)) return;
+    ids.add(newsId);
     // Replies key on the parent's server id when it has one, so the walk has
     // to look for both — the Kotlin passes `reply.id` and works only because
     // its rows are keyed by `_id` after a sync.
@@ -259,11 +275,9 @@ class VoicesRepository {
     final keys = <String>{newsId, if (row?.docId != null) row!.docId!};
     for (final key in keys) {
       for (final reply in await _dao.directReplies(key)) {
-        if (ids.contains(reply.id)) continue;
-        ids.addAll(await _collectWithReplies(reply.id));
+        await _walkReplies(reply.id, seen, ids);
       }
     }
-    return ids;
   }
 
   /// Port of `addLabel`.

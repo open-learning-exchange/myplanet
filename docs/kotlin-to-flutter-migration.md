@@ -286,6 +286,30 @@ queues only posts that were never delivered or have been edited since. The guest
 kept: a guest account has no CouchDB user document, so the server rejects anything authored under
 it.
 
+## Four defects the outbox and sync paths shared
+
+Found while reconciling the voices and meetups slices; all four are the kind that pass every
+test until real data arrives.
+
+- **A refresh un-joined the user from every meetup.** `MeetupMapper.fromDoc` wrote `userId` from
+  its (never-supplied) parameter, so each sync nulled the attendance marker — and `meetupsOnShelf`
+  reads exactly that column, so the shelf push then dropped the meetup. Attendance is local: the
+  `meetups` document says nothing about whether *this* user joined. `''` is preserved distinctly
+  from null, because it means "left" rather than "never joined".
+- **The reply walk could recurse forever.** `_collectWithReplies` rebuilt its visited list in each
+  frame, so the guard only saw the current one. `replyTo` is server data with no acyclicity
+  guarantee, and two rows pointing at each other overflow the stack from an ordinary "delete post"
+  tap. One set now threads through the whole walk.
+- **`deleteNotIn` bound one variable per synced id.** SQLite rejects statements past
+  `SQLITE_MAX_VARIABLE_NUMBER` (999 on older builds), so sync cleanup aborted on a large data set —
+  in `news`, `meetups` and `surveys` alike. A `NOT IN` cannot simply be chunked, since each chunk
+  matches rows the others keep, so the set difference is taken in Dart and the deletes go through
+  the chunking this file already had.
+- **`OutboxRepository.cancel` had a check-then-delete window.** It read the status, then deleted in
+  a second statement; the drainer interleaves at every `await` and could claim the row in between,
+  so the delete would remove a request already on the wire and leave `markCompleted` with nothing
+  to write to. The in-flight exclusion is now part of the delete.
+
 ## Voices details worth knowing
 
 - **Visibility fails closed.** `isVisibleToUser` returns false for malformed `viewIn`, and a post
