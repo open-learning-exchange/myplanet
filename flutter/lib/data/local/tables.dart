@@ -279,6 +279,57 @@ class PersonalEntries extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Port of `model/RetryOperation.kt` (`@Entity(tableName = "retry_operation")`).
+///
+/// The durable half of the Kotlin write-back path. `RetryQueue` and
+/// `RetryQueueWorker` split one job in two: this table is what actually
+/// survives process death, and `WorkManager` only decides *when* to drain it.
+/// That split is why the missing `WorkManager` equivalent does not cost
+/// durability here — the queue ports as-is, and only the trigger is replaced
+/// (see [OutboxDrainer]).
+@DataClassName('OutboxRow')
+@TableIndex(
+  name: 'outbox_status_next_attempt',
+  columns: {#status, #nextAttemptAt},
+)
+@TableIndex(name: 'outbox_item', columns: {#uploadType, #itemId})
+class OutboxEntries extends Table {
+  @override
+  String get tableName => 'outbox';
+
+  TextColumn get id => text()();
+
+  /// `shelf`, `personals`, … — the Kotlin `uploadType`.
+  TextColumn get uploadType => text()();
+
+  /// The local row this operation belongs to. Kotlin's `itemId`; combined with
+  /// [uploadType] it is what makes a re-enqueue update rather than duplicate.
+  TextColumn get itemId => text()();
+
+  /// The request body, serialized. Kotlin's `serializedPayload`.
+  TextColumn get payload => text()();
+
+  TextColumn get endpoint => text()();
+  TextColumn get httpMethod => text().withDefault(const Constant('POST'))();
+
+  /// `pending` | `in_progress` | `completed` | `abandoned`.
+  TextColumn get status => text().withDefault(const Constant('pending'))();
+
+  IntColumn get attemptCount => integer().withDefault(const Constant(0))();
+  IntColumn get maxAttempts => integer().withDefault(const Constant(5))();
+
+  IntColumn get createdAt => integer()();
+  IntColumn get lastAttemptAt => integer().withDefault(const Constant(0))();
+  IntColumn get nextAttemptAt => integer().withDefault(const Constant(0))();
+
+  TextColumn get errorMessage => text().nullable()();
+  IntColumn get httpCode => integer().nullable()();
+  TextColumn get userId => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Port of `model/Rating.kt`.
 @DataClassName('RatingRow')
 @TableIndex(name: 'rating_item_type', columns: {#item, #type})

@@ -9,6 +9,9 @@ import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
 import '../repository/notifications_repository.dart';
+import '../repository/outbox_drainer.dart';
+import '../repository/outbox_repository.dart';
+import '../repository/personals_uploader.dart';
 import '../repository/personals_repository.dart';
 import '../repository/ratings_repository.dart';
 import '../repository/life_repository.dart';
@@ -131,6 +134,44 @@ final coursesRepositoryProvider = Provider<CoursesRepository>(
     ref.watch(courseDaoProvider),
     ref.watch(removedLogDaoProvider),
   ),
+);
+
+final outboxDaoProvider = Provider<OutboxDao>(
+  (ref) => ref.watch(appDatabaseProvider).outboxDao,
+);
+
+final outboxRepositoryProvider = Provider<OutboxRepository>(
+  (ref) => OutboxRepository(ref.watch(outboxDaoProvider)),
+);
+
+final personalsUploaderProvider = Provider<PersonalsUploader>(
+  (ref) => PersonalsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(personalsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
+/// Replaces `RetryQueueWorker`'s WorkManager registration in `MainApplication`.
+///
+/// Handlers are registered per `uploadType`; anything without one is replayed
+/// verbatim from the stored payload.
+final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
+  final uploader = ref.watch(personalsUploaderProvider);
+  final config = ref.watch(serverConfigProvider);
+  if (config != null) {
+    uploader.authHeader = PersonalsUploader.authHeaderFor(config);
+  }
+  return OutboxDrainer(
+    ref.watch(planetApiProvider),
+    ref.watch(outboxRepositoryProvider),
+    handlers: {PersonalsUploader.type: uploader.handler},
+  );
+});
+
+/// Number of writes waiting to reach the server, for the UI to surface.
+final pendingUploadCountProvider = StreamProvider<int>(
+  (ref) => ref.watch(outboxRepositoryProvider).watchPendingCount(),
 );
 
 final shelfRepositoryProvider = Provider<ShelfRepository>(

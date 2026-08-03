@@ -4,6 +4,13 @@ on:
   push:
     branches:
       - '**'
+    # See build.yml — the Flutter port and documentation cannot change the
+    # outcome of the Kotlin unit tests.
+    paths-ignore:
+      - 'flutter/**'
+      - 'docs/**'
+      - '**.md'
+      - '.github/workflows/flutter.yml'
   workflow_dispatch:
 
 permissions:
