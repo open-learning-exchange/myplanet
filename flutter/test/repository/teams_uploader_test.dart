@@ -48,7 +48,11 @@ void main() {
   test('a successful upload hands the row back to the server', () async {
     await seedLocalReport();
     when(
-      () => api.postJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
     ).thenAnswer(
       (_) async => NetworkSuccess<Map<String, dynamic>>({
         'id': 'report-1',
@@ -69,8 +73,14 @@ void main() {
   test('a response without a revision is not treated as uploaded', () async {
     await seedLocalReport();
     when(
-      () => api.postJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
-    ).thenAnswer((_) async => NetworkSuccess<Map<String, dynamic>>({'ok': true}));
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'ok': true}),
+    );
 
     final result = await uploader.handler(rowFor('report-1'), {}, 'auth');
 
@@ -81,8 +91,14 @@ void main() {
   test('a failed upload leaves the row local and retryable', () async {
     await seedLocalReport();
     when(
-      () => api.postJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
-    ).thenAnswer((_) async => const NetworkError<Map<String, dynamic>>(500, 'nope'));
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => const NetworkError<Map<String, dynamic>>(500, 'nope'),
+    );
 
     await uploader.handler(rowFor('report-1'), {}, 'auth');
 
@@ -93,14 +109,20 @@ void main() {
     // `leave` removes the membership before the drain runs, so demanding a
     // revision here would fail a delete that CouchDB already accepted.
     when(
-      () => api.postJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
-    ).thenAnswer((_) async => NetworkSuccess<Map<String, dynamic>>({'ok': true}));
-
-    final result = await uploader.handler(
-      rowFor('membership-1'),
-      {'_id': 'membership-1', '_rev': '1-a', '_deleted': true},
-      'auth',
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
+    ).thenAnswer(
+      (_) async => NetworkSuccess<Map<String, dynamic>>({'ok': true}),
     );
+
+    final result = await uploader.handler(rowFor('membership-1'), {
+      '_id': 'membership-1',
+      '_rev': '1-a',
+      '_deleted': true,
+    }, 'auth');
 
     expect(result, isA<NetworkSuccess<Map<String, dynamic>>>());
   });
@@ -108,7 +130,11 @@ void main() {
   test('an uploaded row becomes evictable and takes server updates', () async {
     await seedLocalReport();
     when(
-      () => api.postJsonObject(any(), any(), authHeader: any(named: 'authHeader')),
+      () => api.postJsonObject(
+        any(),
+        any(),
+        authHeader: any(named: 'authHeader'),
+      ),
     ).thenAnswer(
       (_) async => NetworkSuccess<Map<String, dynamic>>({'rev': '2-b'}),
     );
@@ -116,10 +142,11 @@ void main() {
 
     // Both behaviours are gated on `isUpdated`, so this is the round trip that
     // proves the flag is not one-way.
-    final refreshed = TeamMapper.fromDoc(
-      {'_id': 'report-1', 'docType': 'report', 'description': 'Server copy'},
-      existing: await database.teamDao.getById('report-1'),
-    );
+    final refreshed = TeamMapper.fromDoc({
+      '_id': 'report-1',
+      'docType': 'report',
+      'description': 'Server copy',
+    }, existing: await database.teamDao.getById('report-1'));
     await database.teamDao.upsertAll([refreshed!]);
     expect(
       (await database.teamDao.getById('report-1'))?.description,
