@@ -212,7 +212,7 @@ class SharedPrefManager @Inject constructor(
     fun getCommunityLeaders(): String = pref.getString(COMMUNITY_LEADERS, "") ?: ""
     fun setCommunityLeaders(json: String) = pref.edit { putString(COMMUNITY_LEADERS, json) }
 
-    fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, true)
+    fun getAutoSync(): Boolean = pref.getBoolean(AUTO_SYNC, false)
     fun setAutoSync(value: Boolean) = pref.edit { putBoolean(AUTO_SYNC, value) }
 
     fun getAutoSyncInterval(): Int = pref.getInt(AUTO_SYNC_INTERVAL, 60 * 60)
