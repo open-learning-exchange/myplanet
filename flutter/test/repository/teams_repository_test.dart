@@ -264,7 +264,6 @@ void main() {
     },
   );
 
-
   /// The `teams` database is not a pure cache: the user authors documents into
   /// it offline, and those ids never appear in a server page.
   group('stale cleanup spares local work', () {
@@ -310,8 +309,10 @@ void main() {
 
       // The report has a device-generated id, so it is "not in" every synced
       // page by construction — and nothing uploads it, so a delete is final.
-      expect((await repository.watchReports('team-1').first).single.id,
-          report!.id);
+      expect(
+        (await repository.watchReports('team-1').first).single.id,
+        report!.id,
+      );
     });
 
     test('an offline join request and its membership outlive a sync', () async {
@@ -402,14 +403,18 @@ void main() {
     ]);
     await repository.addCourses('team-1', ['course-1']);
 
-    final merged = TeamMapper.fromDoc(
-      {'_id': 'team-1', 'type': 'team', 'name': 'Server name', '_rev': '2-b'},
-      existing: await repository.getById('team-1'),
-    );
+    final merged = TeamMapper.fromDoc({
+      '_id': 'team-1',
+      'type': 'team',
+      'name': 'Server name',
+      '_rev': '2-b',
+    }, existing: await repository.getById('team-1'));
     await database.teamDao.upsertAll([merged!]);
 
     final row = await repository.getById('team-1');
-    expect(row?.courses, ['course-1'], reason: 'the local edit is authoritative');
+    expect(row?.courses, [
+      'course-1',
+    ], reason: 'the local edit is authoritative');
     // The revision still advances, so the eventual upload is not stale.
     expect(row?.rev, '2-b');
   });
@@ -428,10 +433,9 @@ void main() {
     // Matching `teamId` too made this ambiguous, and `addCourses` bails on any
     // row with a `docType` — so adding a course intermittently did nothing.
     expect((await repository.getById('team-1'))?.docType, isNull);
-    expect(
-      (await repository.addCourses('team-1', ['course-1']))?.courses,
-      ['course-1'],
-    );
+    expect((await repository.addCourses('team-1', ['course-1']))?.courses, [
+      'course-1',
+    ]);
   });
 }
 

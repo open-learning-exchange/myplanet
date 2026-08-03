@@ -275,9 +275,7 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   Future<Map<String, TeamRow>> byIds(List<String> ids) async {
     final found = <String, TeamRow>{};
     for (final chunk in _chunked(ids, _sqliteVariableChunk)) {
-      final rows = await (select(
-        teams,
-      )..where((t) => t.id.isIn(chunk))).get();
+      final rows = await (select(teams)..where((t) => t.id.isIn(chunk))).get();
       for (final row in rows) {
         found[row.id] = row;
       }
