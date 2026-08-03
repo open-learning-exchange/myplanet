@@ -30,13 +30,11 @@ import org.ole.planet.myplanet.utils.FileUtils
 
 @AndroidEntryPoint
 class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
-
     private var _binding: FragmentStorageCategoryDetailBinding? = null
     private val binding get() = _binding!!
 
     @Inject
     lateinit var resourcesRepository: ResourcesRepository
-
     @Inject
     lateinit var dispatcherProvider: DispatcherProvider
 
@@ -137,7 +135,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
                 deleteItems(items)
             }
         }
-
         loadResources()
     }
 
@@ -172,10 +169,8 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         val oleDir = File(FileUtils.getOlePath(requireContext()))
         if (!oleDir.exists() || !oleDir.isDirectory) return emptyList()
 
-        // Build a map of resourceId → title from Room database (one query)
         val titleMap = resourcesRepository.getResourceTitlesMap()
 
-        // Group files by resourceId directory
         val grouped = mutableMapOf<String, MutableList<File>>()
         oleDir.walkTopDown().filter { it.isFile }.forEach { file ->
             val ext = file.extension.lowercase()
@@ -233,19 +228,16 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
 
                 toDelete.forEach { item ->
                     item.files.forEach { it.delete() }
-                    // Remove empty parent directory
                     val parentDir = oleDir.resolve(item.resourceId)
                     if (parentDir.exists() && parentDir.list().isNullOrEmpty()) {
                         parentDir.delete()
                     }
                 }
 
-                // Sync database: mark deleted resources as not offline
                 val deletedIds = toDelete.map { it.resourceId }.toSet()
                 resourcesRepository.markResourcesAsNotOffline(deletedIds)
             }
 
-            // Notify parent to refresh, then dismiss
             parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle())
             dismiss()
         }
@@ -295,7 +287,6 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
             }
         }
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()
