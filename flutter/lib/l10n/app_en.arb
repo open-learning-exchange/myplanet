@@ -532,5 +532,35 @@
   "totalIncome": "Total income",
   "totalExpenses": "Total expenses",
   "profitLoss": "Profit / loss",
-  "endingBalance": "Ending balance"
+  "endingBalance": "Ending balance",
+  "chatHistory": "Chat History",
+  "chat": "Chat",
+  "newChat": "New chat",
+  "searchChats": "Search chats",
+  "noChats": "No chats yet",
+  "noSearchResults": "No matching chats",
+  "untitledChat": "Untitled chat",
+  "chatConversation": "Conversation",
+  "newConversation": "New conversation",
+  "startConversation": "Start a new conversation",
+  "typeMessage": "Type a message…",
+  "selectAiProvider": "Select AI provider",
+  "justNow": "Just now",
+  "aiProviders": "AI providers",
+  "aiProviderAvailable": "{name} (available)",
+  "@aiProviderAvailable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderUnavailable": "{name} (unavailable)",
+  "@aiProviderUnavailable": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  }
 }

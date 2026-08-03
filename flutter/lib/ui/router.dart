@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../providers/app_providers.dart';
 import '../providers/session_provider.dart';
 import 'calendar/calendar_screen.dart';
+import 'chat/chat_detail_screen.dart';
+import 'chat/chat_history_screen.dart';
 import 'courses/course_detail_screen.dart';
 import 'courses/courses_screen.dart';
 import 'dashboard/dashboard_shell.dart';
@@ -63,6 +65,8 @@ class Routes {
   static const String surveys = '/life/surveys';
   static const String voices = '/life/voices';
   static const String teams = '/life/teams';
+  static const String chatHistory = '/life/chat';
+  static const String chat = '/life/chat/:chatId';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -285,6 +289,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                             ),
                           ),
                         ],
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'chat',
+                    builder: (context, state) => const ChatHistoryScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':chatId',
+                        builder: (context, state) => ChatDetailScreen(
+                          chatId: state.pathParameters['chatId'],
+                        ),
                       ),
                     ],
                   ),

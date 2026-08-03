@@ -637,3 +637,29 @@ class TeamTasks extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/ChatHistory.kt` — stores chat conversations with the AI
+/// assistant. The embedded conversation list is stored as JSON.
+@DataClassName('ChatRow')
+@TableIndex(name: 'chat_user', columns: {#user})
+class ChatEntries extends Table {
+  @override
+  String get tableName => 'chat_history';
+
+  TextColumn get id => text()();
+  TextColumn get docId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get user => text().nullable()();
+  TextColumn get aiProvider => text().nullable()();
+  TextColumn get title => text().nullable()();
+  TextColumn get createdDate => text().nullable()();
+  TextColumn get updatedDate => text().nullable()();
+  IntColumn get lastUsed => integer().withDefault(const Constant(0))();
+
+  /// Embedded list of conversations, stored as JSON.
+  /// Each conversation has `query` and `response` fields.
+  TextColumn get conversations => text().nullable()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
