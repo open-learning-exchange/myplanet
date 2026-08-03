@@ -24,6 +24,8 @@ import 'user/profile_screen.dart';
 import 'submissions/submissions_screen.dart';
 import 'submissions/submission_detail_screen.dart';
 import 'surveys/surveys_screen.dart';
+import 'voices/voice_thread_screen.dart';
+import 'voices/voices_screen.dart';
 import 'surveys/take_survey_screen.dart';
 
 /// Replaces the Activity/Fragment navigation in `ui/components/FragmentNavigator`
@@ -53,6 +55,7 @@ class Routes {
   static const String submissions = '/life/submissions';
   static const String events = '/calendar/events';
   static const String surveys = '/life/surveys';
+  static const String voices = '/life/voices';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -218,6 +221,18 @@ final routerProvider = Provider<GoRouter>((ref) {
                         path: ':surveyId',
                         builder: (context, state) => TakeSurveyScreen(
                           surveyId: state.pathParameters['surveyId']!,
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'voices',
+                    builder: (context, state) => const VoicesScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':newsId',
+                        builder: (context, state) => VoiceThreadScreen(
+                          newsId: state.pathParameters['newsId']!,
                         ),
                       ),
                     ],

@@ -17,7 +17,22 @@ class LifeScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final items = ref.watch(lifeItemsProvider);
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.myLife), actions: const [LogoutAction()]),
+      appBar: AppBar(
+        title: Text(l10n.myLife),
+        actions: [
+          // Voices belongs to the Community tab (`CommunityPagerAdapter`),
+          // which is not ported yet. Parked here so the feed is reachable,
+          // rather than added to the My Life list — that list is seeded,
+          // user-reorderable data and inserting a non-Kotlin entry into it
+          // would diverge from what the shipping app shows.
+          IconButton(
+            tooltip: l10n.voices,
+            onPressed: () => context.push(Routes.voices),
+            icon: const Icon(Icons.campaign_outlined),
+          ),
+          const LogoutAction(),
+        ],
+      ),
       body: items.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => Center(child: Text(l10n.myLifeUnavailable)),
