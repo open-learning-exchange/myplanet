@@ -21,8 +21,9 @@ process death and go out on the next launch; what they do *not* do is send while
 closed. See [the migration tracker](../docs/kotlin-to-flutter-migration.md) for why that trade is
 the right one here and what is still open.
 
-Phase 15 completes offline events: meetup persistence and CouchDB mapping, list/detail/create/edit
-screens, join/leave shelf state, and durable outbox uploads are now Dart/Drift code.
+Phase 15 completes offline events: meetup persistence and paginated CouchDB sync,
+list/detail/create/edit and date/time screens, search/sort, join/leave shelf write-back, and
+durable outbox uploads are now Dart/Drift code.
 
 ## Getting started
 
