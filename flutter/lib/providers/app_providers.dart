@@ -3,8 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/config/server_config.dart';
 import '../core/prefs/planet_prefs.dart';
 import '../core/sync/server_url_mapper.dart';
+import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
+import '../repository/chat_repository.dart';
+import '../repository/chat_repository_impl.dart';
 import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
@@ -141,6 +144,24 @@ final submissionDaoProvider = Provider<SubmissionDao>(
 final surveyDaoProvider = Provider<SurveyDao>(
   (ref) => ref.watch(appDatabaseProvider).surveyDao,
 );
+
+final chatDaoProvider = Provider<ChatDao>(
+  (ref) => ref.watch(appDatabaseProvider).chatDao,
+);
+
+final chatRepositoryProvider = Provider<ChatRepository>((ref) {
+  final api = ref.watch(planetApiProvider);
+  final dao = ref.watch(chatDaoProvider);
+  final config = ref.watch(serverConfigProvider);
+  final serverUrl = config == null
+      ? ''
+      : UrlUtils.credentialFreeDbUrl(config);
+  return ChatRepositoryImpl(
+    planetApi: api,
+    chatDao: dao,
+    serverUrl: serverUrl,
+  );
+});
 
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
   (ref) => SubmissionsRepository(
