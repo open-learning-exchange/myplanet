@@ -8,6 +8,8 @@ import '../data/local/app_database.dart';
 import '../repository/configurations_repository.dart';
 import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
+import '../repository/events_repository.dart';
+import '../repository/events_uploader.dart';
 import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
@@ -65,6 +67,22 @@ final dictionaryDaoProvider = Provider<DictionaryDao>(
 
 final notificationDaoProvider = Provider<NotificationDao>(
   (ref) => ref.watch(appDatabaseProvider).notificationDao,
+);
+
+final meetupDaoProvider = Provider<MeetupDao>(
+  (ref) => ref.watch(appDatabaseProvider).meetupDao,
+);
+
+final eventsRepositoryProvider = Provider<EventsRepository>(
+  (ref) => EventsRepository(ref.watch(meetupDaoProvider)),
+);
+
+final eventsUploaderProvider = Provider<EventsUploader>(
+  (ref) => EventsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(eventsRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
 );
 
 final myLifeDaoProvider = Provider<MyLifeDao>(
@@ -185,10 +203,12 @@ final personalsUploaderProvider = Provider<PersonalsUploader>(
 final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
   final uploader = ref.watch(personalsUploaderProvider);
   final submissionsUploader = ref.watch(submissionsUploaderProvider);
+  final eventsUploader = ref.watch(eventsUploaderProvider);
   final config = ref.watch(serverConfigProvider);
   if (config != null) {
     uploader.authHeader = PersonalsUploader.authHeaderFor(config);
     submissionsUploader.authHeader = PersonalsUploader.authHeaderFor(config);
+    eventsUploader.authHeader = PersonalsUploader.authHeaderFor(config);
   }
   return OutboxDrainer(
     ref.watch(planetApiProvider),
@@ -196,6 +216,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
     handlers: {
       PersonalsUploader.type: uploader.handler,
       SubmissionsUploader.type: submissionsUploader.handler,
+      EventsUploader.type: eventsUploader.handler,
     },
   );
 });
@@ -211,6 +232,7 @@ final shelfRepositoryProvider = Provider<ShelfRepository>(
     ref.watch(courseDaoProvider),
     ref.watch(myLibraryDaoProvider),
     ref.watch(removedLogDaoProvider),
+    ref.watch(meetupDaoProvider),
   ),
 );
 

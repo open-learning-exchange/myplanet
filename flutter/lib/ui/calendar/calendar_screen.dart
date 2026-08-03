@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../dashboard/dashboard_shell.dart';
+import '../router.dart';
 
 /// Port of `ui/calendar/CalendarFragment.kt` and `fragment_calendar.xml`.
 ///
@@ -34,7 +36,14 @@ class _CalendarScreenState extends State<CalendarScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.calendar),
-        actions: const [LogoutAction()],
+        actions: [
+          IconButton(
+            tooltip: l10n.meetups,
+            onPressed: () => context.push(Routes.events),
+            icon: const Icon(Icons.groups_outlined),
+          ),
+          const LogoutAction(),
+        ],
       ),
       body: SafeArea(
         child: Center(

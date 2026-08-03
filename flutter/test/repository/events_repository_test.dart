@@ -1,0 +1,124 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:myplanet/data/local/app_database.dart';
+import 'package:myplanet/repository/events_repository.dart';
+
+void main() {
+  late AppDatabase database;
+  late EventsRepository repository;
+
+  setUp(() {
+    database = AppDatabase.memory();
+    repository = EventsRepository(
+      database.meetupDao,
+      now: () => DateTime.fromMillisecondsSinceEpoch(1234),
+      createId: () => 'local-meetup',
+    );
+  });
+  tearDown(() => database.close());
+
+  test('maps and watches server meetups for a team', () async {
+    expect(
+      await repository.cacheDocuments([
+        {
+          '_id': 'meetup-1',
+          '_rev': '1-a',
+          'title': 'Study group',
+          'startDate': 20,
+          'endDate': 30,
+          'day': ['Monday'],
+          'link': {'teams': 'team-1'},
+        },
+      ]),
+      1,
+    );
+
+    final rows = await repository.watchForTeam('team-1').first;
+    expect(rows.single.title, 'Study group');
+    expect(rows.single.day, '["Monday"]');
+    expect(rows.single.meetupIdRev, '1-a');
+  });
+
+  test(
+    'preserves local edits during refresh and exposes pending upload',
+    () async {
+      await repository.cacheDocuments([
+        {
+          '_id': 'meetup-1',
+          'title': 'Old',
+          'link': {'teams': 'team-1'},
+        },
+      ]);
+      expect(
+        await repository.update(
+          'meetup-1',
+          title: ' Local title ',
+          description: ' Local description ',
+          startDate: 1,
+          endDate: 2,
+          startTime: '09:00',
+          endTime: '10:00',
+          location: ' Room 1 ',
+          link: ' https://example.test ',
+          recurring: 'weekly',
+        ),
+        isTrue,
+      );
+      await repository.cacheDocuments([
+        {
+          '_id': 'meetup-1',
+          'title': 'Server title',
+          'link': {'teams': 'team-1'},
+        },
+      ]);
+
+      final row = await repository.getById('meetup-1');
+      expect(row?.title, 'Local title');
+      expect(row?.updated, isTrue);
+      expect(await repository.pendingUploads(), hasLength(1));
+    },
+  );
+
+  test('toggles attendance only when a user is available', () async {
+    await repository.cacheDocuments([
+      {'_id': 'meetup-1', 'title': 'Meetup'},
+    ]);
+    expect(
+      (await repository.toggleAttendance('meetup-1', null))?.userId,
+      isNull,
+    );
+    expect(
+      (await repository.toggleAttendance('meetup-1', 'user-1'))?.userId,
+      'user-1',
+    );
+    expect(
+      (await repository.toggleAttendance('meetup-1', 'user-1'))?.userId,
+      '',
+    );
+  });
+
+  test('creates and serializes a pending offline meetup', () async {
+    final id = await repository.create(
+      title: ' Community lesson ',
+      description: 'Bring a book',
+      startDate: 100,
+      endDate: 200,
+      startTime: '09:00',
+      endTime: '10:00',
+      location: 'Library',
+      link: 'https://example.test',
+      recurring: 'weekly',
+      creator: 'Ada',
+      teamId: 'team-1',
+      sourcePlanet: 'earth',
+    );
+
+    expect(id, 'local-meetup');
+    final row = await repository.getById(id!);
+    expect(row?.createdDate, 1234);
+    expect(row?.updated, isTrue);
+    final payload = EventsRepository.serialize(row!);
+    expect(payload.containsKey('_id'), isFalse);
+    expect(payload['link'], {'teams': 'team-1'});
+    expect(payload['sync'], {'type': 'local', 'planetCode': 'earth'});
+  });
+}

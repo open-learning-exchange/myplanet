@@ -36,6 +36,7 @@ part 'app_database.g.dart';
     Submissions,
     SubmissionAnswers,
     SubmissionQuestions,
+    Meetups,
   ],
   daos: [
     UserDao,
@@ -49,6 +50,7 @@ part 'app_database.g.dart';
     RatingDao,
     OutboxDao,
     SubmissionDao,
+    MeetupDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -61,7 +63,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 12;
+  int get schemaVersion => 13;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -974,4 +976,55 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
       return deleted;
     });
   }
+}
+
+/// Port of `data/room/dao/MeetupDao.kt`.
+@DriftAccessor(tables: [Meetups])
+class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
+  MeetupDao(super.db);
+
+  Future<void> upsert(MeetupsCompanion row) =>
+      into(meetups).insertOnConflictUpdate(row);
+
+  Future<void> upsertAll(List<MeetupsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((batch) => batch.insertAllOnConflictUpdate(meetups, rows));
+  }
+
+  Future<MeetupRow?> getById(String id) =>
+      (select(meetups)..where((row) => row.id.equals(id))).getSingleOrNull();
+
+  Future<MeetupRow?> getByMeetupId(String id) =>
+      (select(meetups)
+            ..where((row) => row.meetupId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
+
+  Future<List<MeetupRow>> getByMeetupIds(List<String> ids) =>
+      (select(meetups)..where((row) => row.meetupId.isIn(ids))).get();
+
+  Stream<List<MeetupRow>> watchForTeam(String teamId) =>
+      (select(meetups)
+            ..where((row) => row.teamId.equals(teamId))
+            ..orderBy([(row) => OrderingTerm(expression: row.startDate)]))
+          .watch();
+
+  Stream<List<MeetupRow>> watchAll() => (select(
+    meetups,
+  )..orderBy([(row) => OrderingTerm(expression: row.startDate)])).watch();
+
+  Future<List<MeetupRow>> meetupsOnShelf(String userId) =>
+      (select(meetups)..where((row) => row.userId.equals(userId))).get();
+
+  Future<List<MeetupRow>> pendingUploads() =>
+      (select(meetups)..where((row) => row.updated.equals(true))).get();
+
+  Future<int> markUploaded(String id, String remoteId, String remoteRev) =>
+      (update(meetups)..where((row) => row.id.equals(id))).write(
+        MeetupsCompanion(
+          meetupId: Value(remoteId),
+          meetupIdRev: Value(remoteRev),
+          updated: const Value(false),
+        ),
+      );
 }

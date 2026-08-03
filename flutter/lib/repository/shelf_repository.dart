@@ -30,6 +30,7 @@ class ShelfRepository {
     this._courseDao,
     this._libraryDao,
     this._removedLogDao,
+    this._meetupDao,
   );
 
   /// CouchDB table names, used as the `type` in the removed log.
@@ -40,6 +41,7 @@ class ShelfRepository {
   final CourseDao _courseDao;
   final MyLibraryDao _libraryDao;
   final RemovedLogDao _removedLogDao;
+  final MeetupDao _meetupDao;
 
   /// Pushes [userId]'s shelf to the server.
   ///
@@ -92,8 +94,6 @@ class ShelfRepository {
   /// Port of `getShelfData`. Exposed for testing — it is the whole of the merge
   /// logic, and the part worth pinning down.
   ///
-  /// `meetupIds` is passed through from the server untouched: meetups are not
-  /// ported yet, and dropping the key would delete the user's meetups server-side.
   Future<Map<String, dynamic>> buildShelfDocument({
     required String userId,
     required String shelfDocId,
@@ -101,6 +101,7 @@ class ShelfRepository {
   }) async {
     final localCourseIds = await _localCourseIds(userId);
     final localResourceIds = await _localResourceIds(userId);
+    final localMeetupIds = await _localMeetupIds(userId);
 
     final removedCourses = await _removedLogDao.removedDocIds(
       coursesType,
@@ -123,7 +124,11 @@ class ShelfRepository {
         JsonUtils.getStringList('resourceIds', serverDoc),
         removedResources,
       ),
-      'meetupIds': JsonUtils.getStringList('meetupIds', serverDoc),
+      'meetupIds': mergeIds(
+        localMeetupIds,
+        JsonUtils.getStringList('meetupIds', serverDoc),
+        const [],
+      ),
     };
 
     final rev = JsonUtils.getStringOrNull('_rev', serverDoc);
@@ -169,6 +174,14 @@ class ShelfRepository {
     final resources = await _libraryDao.resourcesOnShelf(userId);
     return resources
         .map((r) => r.resourceId ?? r.id)
+        .where((id) => id.isNotEmpty)
+        .toList(growable: false);
+  }
+
+  Future<List<String>> _localMeetupIds(String userId) async {
+    final meetups = await _meetupDao.meetupsOnShelf(userId);
+    return meetups
+        .map((meetup) => meetup.meetupId ?? meetup.id)
         .where((id) => id.isNotEmpty)
         .toList(growable: false);
   }
