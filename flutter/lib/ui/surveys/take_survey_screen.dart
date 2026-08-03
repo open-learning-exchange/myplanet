@@ -109,14 +109,27 @@ class _TakeSurveyScreenState extends ConsumerState<TakeSurveyScreen> {
           choices: choiceAnswers[question.id]!.toList(growable: false),
         ),
     };
-    final id = await ref
-        .read(surveysRepositoryProvider)
-        .submitResponse(widget.surveyId, user.id, answers);
-    final config = ref.read(serverConfigProvider);
-    if (id != null && config != null) {
-      await ref
-          .read(submissionsUploaderProvider)
-          .queuePending(config: config, userId: user.id);
+    // `submitting` disables the button, so anything that escapes here leaves
+    // the form permanently unusable with no message — the user's answers are
+    // still on screen but there is no way to send them.
+    String? id;
+    try {
+      id = await ref
+          .read(surveysRepositoryProvider)
+          .submitResponse(widget.surveyId, user.id, answers);
+      final config = ref.read(serverConfigProvider);
+      if (id != null && config != null) {
+        await ref
+            .read(submissionsUploaderProvider)
+            .queuePending(config: config, userId: user.id);
+      }
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => submitting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.surveySubmitFailed)));
+      return;
     }
     if (!mounted) return;
     setState(() => submitting = false);

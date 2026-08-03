@@ -113,6 +113,91 @@ void main() {
     expect(survivor?.message, 'Written offline');
   });
 
+  test('a My life ordering choice survives', () async {
+    await database.myLifeDao.seedIfEmpty('user-1', [
+      MyLifeEntriesCompanion.insert(
+        id: 'user-1:health',
+        feature: 'health',
+        userId: 'user-1',
+        weight: 3,
+        isVisible: const Value(false),
+      ),
+    ]);
+
+    await runUpgrade();
+
+    final rows = await database.myLifeDao.watchForUser('user-1').first;
+    expect(rows.single.weight, 3);
+    expect(rows.single.isVisible, isFalse);
+  });
+
+  test('an un-uploaded submission survives with its answers', () async {
+    await database.submissionDao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: 'sub-1',
+          userId: const Value('user-1'),
+          type: const Value('survey'),
+          status: const Value('complete'),
+          uploaded: const Value(false),
+        ),
+      ],
+      questions: {
+        'sub-1': [
+          SubmissionQuestionsCompanion.insert(
+            id: 'sub-1:q1',
+            submissionId: 'sub-1',
+            header: const Value('H'),
+            position: 0,
+          ),
+        ],
+      },
+      answers: {
+        'sub-1': [
+          SubmissionAnswersCompanion.insert(
+            id: 'sub-1:q1',
+            submissionId: 'sub-1',
+            questionId: const Value('q1'),
+            value: const Value('Yes'),
+          ),
+        ],
+      },
+    );
+
+    await runUpgrade();
+
+    // All three tables are preserved together: a submission whose answers were
+    // dropped would upload as an empty response, which is worse than losing it.
+    expect(await database.submissionDao.getById('sub-1'), isA<SubmissionRow>());
+    expect(await database.submissionDao.answersFor('sub-1'), hasLength(1));
+    expect(
+      (await database.submissionDao.watchQuestions('sub-1').first),
+      hasLength(1),
+    );
+  });
+
+  test('every preserved table has a preservation test', () {
+    // `my_life` and the submissions tables were added to the preserved set
+    // without one. This fails the moment another name is added, so the next
+    // slice cannot repeat that quietly.
+    const covered = {
+      'outbox',
+      'my_personal',
+      'removed_log',
+      'my_life',
+      'submissions',
+      'submission_answers',
+      'submission_questions',
+      'meetups',
+      'news',
+    };
+    expect(
+      AppDatabase.localAuthorityTables,
+      covered,
+      reason: 'add a preservation test above, then list the table here',
+    );
+  });
+
   test('a survey cache is dropped, carrying no local writes', () async {
     await database.surveyDao.upsertAll([
       SurveysCompanion.insert(id: 'survey-1', name: const Value('Survey')),

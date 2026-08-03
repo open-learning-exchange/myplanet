@@ -455,5 +455,6 @@
   "deleteVoiceConfirm": "Delete this post and all of its replies?",
   "voiceDeleted": "Post deleted",
   "emptyMessageNotAllowed": "Write something first",
-  "thread": "Thread"
+  "thread": "Thread",
+  "surveySubmitFailed": "Could not save your answers"
 }

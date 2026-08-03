@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:drift/drift.dart';
+import 'package:meta/meta.dart';
 import 'package:drift/native.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -91,6 +92,12 @@ class AppDatabase extends _$AppDatabase {
   /// only in this table until the outbox delivers it and it adopts a CouchDB
   /// `_id`. `deleteNotIn` prunes the stale server rows on the next sync and
   /// deliberately spares rows that still have no `_id`.
+  /// Exposed so `migration_test.dart` can assert that every preserved table
+  /// actually has a preservation test. Adding a name here without one is how
+  /// `my_life` and the submissions tables went uncovered.
+  @visibleForTesting
+  static const Set<String> localAuthorityTables = _localAuthorityTables;
+
   static const Set<String> _localAuthorityTables = {
     'outbox',
     'my_personal',
