@@ -20,6 +20,8 @@ import '../repository/life_repository.dart';
 import '../repository/resources_repository.dart';
 import '../repository/shelf_repository.dart';
 import '../repository/user_repository.dart';
+import '../repository/voices_repository.dart';
+import '../repository/voices_uploader.dart';
 import '../repository/submissions_repository.dart';
 import '../repository/submissions_uploader.dart';
 import '../repository/submissions_exporter.dart';
@@ -196,6 +198,25 @@ final coursesRepositoryProvider = Provider<CoursesRepository>(
   ),
 );
 
+final newsDaoProvider = Provider<NewsDao>(
+  (ref) => ref.watch(appDatabaseProvider).newsDao,
+);
+
+final voicesRepositoryProvider = Provider<VoicesRepository>(
+  (ref) => VoicesRepository(
+    ref.watch(planetApiProvider),
+    ref.watch(newsDaoProvider),
+  ),
+);
+
+final voicesUploaderProvider = Provider<VoicesUploader>(
+  (ref) => VoicesUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(voicesRepositoryProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
+
 final outboxDaoProvider = Provider<OutboxDao>(
   (ref) => ref.watch(appDatabaseProvider).outboxDao,
 );
@@ -226,6 +247,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
       PersonalsUploader.type: ref.watch(personalsUploaderProvider).handler,
       SubmissionsUploader.type: ref.watch(submissionsUploaderProvider).handler,
       EventsUploader.type: ref.watch(eventsUploaderProvider).handler,
+      VoicesUploader.type: ref.watch(voicesUploaderProvider).handler,
     },
   );
 });

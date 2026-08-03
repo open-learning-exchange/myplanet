@@ -81,6 +81,50 @@ void main() {
     );
   });
 
+  test('a meetup that has not reached the server survives', () async {
+    // `EventsRepository.create` writes these before any upload, so a drop
+    // would discard a meetup that exists nowhere else.
+    await database.meetupDao.upsert(
+      MeetupsCompanion.insert(
+        id: 'local-1',
+        title: const Value('Offline meetup'),
+        updated: const Value(true),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivors = await database.meetupDao.pendingUploads();
+    expect(survivors.map((row) => row.id), contains('local-1'));
+  });
+
+  test('a voices post that has not reached the server survives', () async {
+    await database.newsDao.upsert(
+      NewsEntriesCompanion.insert(
+        id: 'local-1',
+        message: const Value('Written offline'),
+        userId: const Value('user-1'),
+      ),
+    );
+
+    await runUpgrade();
+
+    final survivor = await database.newsDao.getById('local-1');
+    expect(survivor?.message, 'Written offline');
+  });
+
+  test('a survey cache is dropped, carrying no local writes', () async {
+    await database.surveyDao.upsertAll([
+      SurveysCompanion.insert(id: 'survey-1', name: const Value('Survey')),
+    ], const {});
+    // `isNull`/`isNotNull` are ambiguous here — drift exports its own.
+    expect(await database.surveyDao.getById('survey-1'), isA<SurveyRow>());
+
+    await runUpgrade();
+
+    expect(await database.surveyDao.getById('survey-1'), equals(null));
+  });
+
   test(
     'a CouchDB cache is still dropped and refilled by the next sync',
     () async {
