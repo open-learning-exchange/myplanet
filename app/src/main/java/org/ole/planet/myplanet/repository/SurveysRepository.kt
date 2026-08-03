@@ -29,7 +29,6 @@ interface SurveysRepository {
 
     suspend fun adoptSurvey(examId: String, userId: String?, teamId: String?, isTeam: Boolean)
     suspend fun getSurvey(id: String): StepExam?
-    suspend fun getSurveys(): List<StepExam>
     suspend fun getSurveys(ascending: Boolean = false): List<StepExam>
     suspend fun bulkInsertExamsFromSync(jsonArray: JsonArray)
     fun dueRemindersFlow(): Flow<List<String>>

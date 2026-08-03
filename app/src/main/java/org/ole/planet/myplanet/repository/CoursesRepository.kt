@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.model.CourseStepData
 import org.ole.planet.myplanet.model.MyCourse
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.TagEntity
+import org.ole.planet.myplanet.model.CourseDetailModel
 
 interface CoursesRepository {
     suspend fun getAllCourses(): List<MyCourse>
@@ -18,6 +19,7 @@ interface CoursesRepository {
     suspend fun getMyCoursesFlow(userId: String): Flow<List<MyCourse>>
     suspend fun getCourseById(courseId: String): MyCourse?
     fun getCourseByCourseIdFlow(courseId: String): Flow<MyCourse?>
+    fun getCourseDetailModel(courseId: String): Flow<CourseDetailModel?>
     suspend fun getCoursesByIds(courseIds: List<String>): List<MyCourse>
     suspend fun getCourseOnlineResources(courseId: String?): List<MyLibrary>
     suspend fun getCourseOfflineResources(courseId: String?): List<MyLibrary>
