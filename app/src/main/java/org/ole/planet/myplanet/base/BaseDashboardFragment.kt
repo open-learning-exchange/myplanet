@@ -59,7 +59,6 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
 
     @Inject
     lateinit var transactionSyncManager: TransactionSyncManager
-
     @Inject
     lateinit var lifeRepository: LifeRepository
 
@@ -223,7 +222,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         }
         setCountText(teams.size, MyTeam::class.java, requireView())
 
-        val userId = profileDbHandler.getUserModel()?.id
+        val userId = userRepository.getUserModel()?.id
         val teamIds = teams.mapNotNull { it._id }
         if (userId != null && teamIds.isNotEmpty()) {
             viewLifecycleOwner.lifecycleScope.launch {
@@ -351,7 +350,7 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
                         val adapter = HealthUsersAdapter { selected ->
                             selected._id?.let { userId ->
                                 viewLifecycleOwner.lifecycleScope.launch {
-                                    val libraryList = viewModel.getLibraryForSelectedUser(userId)
+                                    val libraryList = viewModel.getLibraryListForUser(userId)
                                     showDownloadDialog(libraryList)
                                 }
                             }
@@ -388,5 +387,4 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     override fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
-
 }

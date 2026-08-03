@@ -390,6 +390,15 @@ class SettingsActivity : AppCompatActivity() {
 
                 val dialog = builder.create()
                 dialog.show()
+
+                if (context.resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE) {
+                    val maxHeight = (context.resources.displayMetrics.heightPixels * 0.35).toInt()
+                    dialog.listView?.let { listView ->
+                        val params = listView.layoutParams
+                        params.height = maxHeight
+                        listView.layoutParams = params
+                    }
+                }
             }
 
             fun textSizeChanger(context: Context) {

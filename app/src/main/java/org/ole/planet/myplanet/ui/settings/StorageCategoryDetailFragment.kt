@@ -60,6 +60,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
         private const val ARG_EXTENSIONS = "extensions"
         private const val ARG_ALL_KNOWN = "all_known"
         const val RESULT_KEY = "category_deleted"
+        const val PAYLOAD_CHECKED_CHANGED = "payload_checked_changed"
 
         fun newInstance(
             label: String,
@@ -253,7 +254,7 @@ class StorageCategoryDetailFragment : BottomSheetDialogFragment() {
     private val DIFF_CALLBACK = DiffUtils.itemCallback<ResourceItem>(
         areItemsTheSame = { o, n -> o.resourceId == n.resourceId },
         areContentsTheSame = { o, n -> o == n },
-        getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) true else null }
+        getChangePayload = { o, n -> if (o.copy(isChecked = n.isChecked) == n) PAYLOAD_CHECKED_CHANGED else null }
     )
 
     inner class ResourceAdapter(
