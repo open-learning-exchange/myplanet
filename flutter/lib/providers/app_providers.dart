@@ -103,7 +103,8 @@ final teamTasksUploaderProvider = Provider<TeamTasksUploader>(
 );
 
 final teamsUploaderProvider = Provider<TeamsUploader>(
-  (ref) => TeamsUploader(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
+  (ref) =>
+      TeamsUploader(ref.watch(planetApiProvider), ref.watch(teamDaoProvider)),
 );
 
 final eventsRepositoryProvider = Provider<EventsRepository>(

@@ -7,7 +7,10 @@ import 'app_database.dart';
 class TeamMapper {
   const TeamMapper._();
 
-  static TeamsCompanion? fromDoc(Map<String, dynamic> doc, {TeamRow? existing}) {
+  static TeamsCompanion? fromDoc(
+    Map<String, dynamic> doc, {
+    TeamRow? existing,
+  }) {
     final id = JsonUtils.getString('_id', doc);
     if (id.isEmpty || id.startsWith('_design/')) return null;
     if (existing != null && existing.isUpdated) {
@@ -15,9 +18,9 @@ class TeamMapper {
       // uploads it — overwriting here would silently discard the edit, and
       // there is no second copy of it anywhere. The revision is still adopted
       // so the eventual upload does not conflict on a stale `_rev`.
-      return existing.toCompanion(false).copyWith(
-        rev: Value(JsonUtils.getStringOrNull('_rev', doc)),
-      );
+      return existing
+          .toCompanion(false)
+          .copyWith(rev: Value(JsonUtils.getStringOrNull('_rev', doc)));
     }
     return TeamsCompanion(
       id: Value(id),

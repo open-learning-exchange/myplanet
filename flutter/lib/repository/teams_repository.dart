@@ -131,10 +131,9 @@ class TeamsRepository {
       ...courseIds.where((id) => id.isNotEmpty),
     }.toList();
     await _dao.upsert(
-      team.toCompanion(false).copyWith(
-        courses: Value(merged),
-        isUpdated: const Value(true),
-      ),
+      team
+          .toCompanion(false)
+          .copyWith(courses: Value(merged), isUpdated: const Value(true)),
     );
     return _dao.getById(team.id);
   }
@@ -194,10 +193,12 @@ class TeamsRepository {
       return row;
     }
     await _dao.upsert(
-      row.toCompanion(false).copyWith(
-        docType: const Value('membership'),
-        isUpdated: const Value(true),
-      ),
+      row
+          .toCompanion(false)
+          .copyWith(
+            docType: const Value('membership'),
+            isUpdated: const Value(true),
+          ),
     );
     return _dao.getById(row.id);
   }
@@ -293,10 +294,12 @@ class TeamsRepository {
         docs.map((doc) => JsonUtils.getString('_id', doc)).toList(),
       );
       final mapped = docs
-          .map((doc) => TeamMapper.fromDoc(
-                doc,
-                existing: existing[JsonUtils.getString('_id', doc)],
-              ))
+          .map(
+            (doc) => TeamMapper.fromDoc(
+              doc,
+              existing: existing[JsonUtils.getString('_id', doc)],
+            ),
+          )
           .whereType<TeamsCompanion>()
           .toList();
       await _dao.upsertAll(mapped);
