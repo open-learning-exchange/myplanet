@@ -160,7 +160,7 @@ class PublicSurveyActivity : AppCompatActivity() {
             if (age != null) user.addProperty("age", age) else user.remove("age")
         }
     }
-.
+
     private suspend fun buildPublicAnswers(submission: Submission): JsonArray {
         val questions = surveysRepository.getExamQuestions(surveyId)
         val answersByQuestion = submission.answers?.associateBy { it.questionId }.orEmpty()
