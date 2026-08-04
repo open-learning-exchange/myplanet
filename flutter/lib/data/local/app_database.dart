@@ -47,6 +47,7 @@ part 'app_database.g.dart';
     TeamTasks,
     ChatEntries,
     FeedbackEntries,
+    HealthExaminations,
   ],
   daos: [
     UserDao,
@@ -68,6 +69,7 @@ part 'app_database.g.dart';
     ExamDao,
     ChatDao,
     FeedbackDao,
+    HealthExaminationDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -1731,4 +1733,74 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateRow(FeedbackEntriesCompanion row) => (update(
     feedbackEntries,
   )..where((f) => f.id.equals(row.id.value))).write(row);
+}
+
+/// Port of `data/room/dao/HealthExaminationDao.kt`.
+@DriftAccessor(tables: [HealthExaminations])
+class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
+    with _$HealthExaminationDaoMixin {
+  HealthExaminationDao(super.db);
+
+  /// Get health examination by id or userId.
+  Future<HealthExaminationRow?> getByIdOrUserId(String id) =>
+      (select(healthExaminations)
+            ..where((h) =>
+                h.id.equals(id) | h.userId.equals(id)))
+          .getSingleOrNull();
+
+  /// Get health examination by id.
+  Future<HealthExaminationRow?> getById(String id) =>
+      (select(healthExaminations)..where((h) => h.id.equals(id)))
+          .getSingleOrNull();
+
+  /// Get all updated examinations that need syncing.
+  Future<List<HealthExaminationRow>> getUpdated() =>
+      (select(healthExaminations)
+            ..where((h) => h.isUpdated.equals(true) & h.userId.isNotNull()))
+          .get();
+
+  /// Get updated examinations for a specific user.
+  Future<List<HealthExaminationRow>> getUpdatedForUser(String userId) =>
+      (select(healthExaminations)
+            ..where((h) =>
+                h.isUpdated.equals(true) & h.userId.equals(userId)))
+          .get();
+
+  /// Get examinations by profileId.
+  Future<List<HealthExaminationRow>> getByProfileId(String profileId) =>
+      (select(healthExaminations)
+            ..where((h) => h.profileId.equals(profileId)))
+          .get();
+
+  /// Get examinations for a user, ordered by date descending.
+  Future<List<HealthExaminationRow>> getForUser(String userId) =>
+      (select(healthExaminations)
+            ..where((h) => h.userId.equals(userId))
+            ..orderBy([(h) => OrderingTerm.desc(h.date)]))
+          .get();
+
+  /// Insert or update a health examination.
+  Future<void> upsert(HealthExaminationsCompanion row) =>
+      into(healthExaminations).insertOnConflictUpdate(row);
+
+  /// Insert or update multiple health examinations.
+  Future<void> upsertAll(List<HealthExaminationsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(healthExaminations, rows));
+  }
+
+  /// Mark examination as uploaded with the server revision.
+  Future<int> markUploaded(String id, String? rev) =>
+      (update(healthExaminations)..where((h) => h.id.equals(id))).write(
+        HealthExaminationsCompanion(
+          rev: Value(rev),
+          isUpdated: const Value(false),
+        ),
+      );
+
+  /// Update the userId for an examination.
+  Future<int> updateUserId(String id, String userId) =>
+      (update(healthExaminations)..where((h) => h.id.equals(id))).write(
+        HealthExaminationsCompanion(userId: Value(userId)),
+      );
 }

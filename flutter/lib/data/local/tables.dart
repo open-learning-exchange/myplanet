@@ -761,3 +761,51 @@ class FeedbackEntries extends Table {
   @override
   Set<Column> get primaryKey => {id};
 }
+
+/// Port of `model/HealthExamination.kt` (`@Entity(tableName = "health_examinations")`).
+///
+/// HealthExamination stores health examination records for users.
+@DataClassName('HealthExaminationRow')
+@TableIndex(name: 'health_examinations_user_id', columns: {#userId})
+class HealthExaminations extends Table {
+  @override
+  String get tableName => 'health_examinations';
+
+  TextColumn get id => text()();
+  TextColumn get couchId => text().named('_id').nullable()();
+  TextColumn get rev => text().named('_rev').nullable()();
+
+  /// The user this examination belongs to.
+  TextColumn get userId => text().nullable()();
+
+  /// Vital signs.
+  RealColumn get temperature => real().withDefault(const Constant(0.0))();
+  IntColumn get pulse => integer().withDefault(const Constant(0))();
+  TextColumn get bp => text().nullable()();
+  RealColumn get height => real().withDefault(const Constant(0.0))();
+  RealColumn get weight => real().withDefault(const Constant(0.0))();
+  TextColumn get vision => text().nullable()();
+  TextColumn get hearing => text().nullable()();
+
+  /// Examination details stored as JSON string.
+  TextColumn get conditions => text().nullable()();
+
+  BoolColumn get selfExamination =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get planetCode => text().nullable()();
+  BoolColumn get hasInfo => boolean().withDefault(const Constant(false))();
+  TextColumn get profileId => text().nullable()();
+  TextColumn get creatorId => text().nullable()();
+  TextColumn get gender => text().nullable()();
+  IntColumn get age => integer().withDefault(const Constant(0))();
+  IntColumn get date => integer().withDefault(const Constant(0))();
+
+  /// Encrypted examination data containing notes, diagnosis, medications, etc.
+  TextColumn get data => text().nullable()();
+
+  /// Whether this record has been modified locally and needs syncing.
+  BoolColumn get isUpdated => boolean().withDefault(const Constant(false))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
