@@ -144,31 +144,30 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
-        onUpgrade: (m, from, to) async {
-          // Drop-and-resync for the CouchDB caches only; the next sync refills
-          // them. Locally-authored tables are stepped over and left in place.
-          for (final table in allTables) {
-            if (_localAuthorityTables.contains(table.actualTableName)) continue;
-            await m.deleteTable(table.actualTableName);
-          }
+    onUpgrade: (m, from, to) async {
+      // Drop-and-resync for the CouchDB caches only; the next sync refills
+      // them. Locally-authored tables are stepped over and left in place.
+      for (final table in allTables) {
+        if (_localAuthorityTables.contains(table.actualTableName)) continue;
+        await m.deleteTable(table.actualTableName);
+      }
 
-          // Indexes are dropped first so `createAll` can recreate them. It emits
-          // `CREATE TABLE IF NOT EXISTS` but a bare `CREATE INDEX`, so an index
-          // belonging to a preserved table would collide and abort the upgrade.
-          // They are pure derived data, so dropping and rebuilding costs nothing.
-          for (final entity in allSchemaEntities) {
-            if (entity is Index) {
-              await customStatement(
-                  'DROP INDEX IF EXISTS ${entity.entityName}');
-            }
-          }
+      // Indexes are dropped first so `createAll` can recreate them. It emits
+      // `CREATE TABLE IF NOT EXISTS` but a bare `CREATE INDEX`, so an index
+      // belonging to a preserved table would collide and abort the upgrade.
+      // They are pure derived data, so dropping and rebuilding costs nothing.
+      for (final entity in allSchemaEntities) {
+        if (entity is Index) {
+          await customStatement('DROP INDEX IF EXISTS ${entity.entityName}');
+        }
+      }
 
-          // Recreates the dropped caches and anything newly added. Note this does
-          // not *alter* a preserved table, so changing the shape of one of
-          // [_localAuthorityTables] needs a hand-written step here.
-          await m.createAll();
-        },
-      );
+      // Recreates the dropped caches and anything newly added. Note this does
+      // not *alter* a preserved table, so changing the shape of one of
+      // [_localAuthorityTables] needs a hand-written step here.
+      await m.createAll();
+    },
+  );
 
   static LazyDatabase _openConnection() {
     return LazyDatabase(() async {
@@ -185,13 +184,14 @@ class TeamTaskDao extends DatabaseAccessor<AppDatabase>
     with _$TeamTaskDaoMixin {
   TeamTaskDao(super.db);
 
-  Stream<List<TeamTaskRow>> watchForTeam(String teamId) => (select(teamTasks)
-        ..where((t) => t.teamId.equals(teamId) & t.status.equals('active'))
-        ..orderBy([
-          (t) => OrderingTerm.asc(t.completed),
-          (t) => OrderingTerm.asc(t.deadline),
-        ]))
-      .watch();
+  Stream<List<TeamTaskRow>> watchForTeam(String teamId) =>
+      (select(teamTasks)
+            ..where((t) => t.teamId.equals(teamId) & t.status.equals('active'))
+            ..orderBy([
+              (t) => OrderingTerm.asc(t.completed),
+              (t) => OrderingTerm.asc(t.deadline),
+            ]))
+          .watch();
   Future<TeamTaskRow?> getById(String id) =>
       (select(teamTasks)..where((t) => t.id.equals(id))).getSingleOrNull();
   Future<void> upsert(TeamTasksCompanion row) =>
@@ -240,11 +240,11 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   Future<TeamRow?> getById(String id) =>
       (select(teams)..where((t) => t.id.equals(id))).getSingleOrNull();
 
-  Stream<List<TeamRow>> watchMemberships(String userId) => (select(teams)
-        ..where(
-          (t) => t.docType.equals('membership') & t.userId.equals(userId),
-        ))
-      .watch();
+  Stream<List<TeamRow>> watchMemberships(String userId) =>
+      (select(teams)..where(
+            (t) => t.docType.equals('membership') & t.userId.equals(userId),
+          ))
+          .watch();
 
   Stream<int> watchMemberCount(String teamId) {
     final count = teams.id.count();
@@ -270,15 +270,16 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
             ..orderBy([(t) => OrderingTerm.asc(t.title)]))
           .watch();
 
-  Stream<List<TeamRow>> watchReports(String teamId) => (select(teams)
-        ..where(
-          (t) =>
-              t.teamId.equals(teamId) &
-              t.docType.equals('report') &
-              (t.status.isNull() | t.status.equals('archived').not()),
-        )
-        ..orderBy([(t) => OrderingTerm.desc(t.createdDate)]))
-      .watch();
+  Stream<List<TeamRow>> watchReports(String teamId) =>
+      (select(teams)
+            ..where(
+              (t) =>
+                  t.teamId.equals(teamId) &
+                  t.docType.equals('report') &
+                  (t.status.isNull() | t.status.equals('archived').not()),
+            )
+            ..orderBy([(t) => OrderingTerm.desc(t.createdDate)]))
+          .watch();
 
   Future<TeamRow?> getTeamDocument(
     String teamId,
@@ -334,8 +335,7 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
     final keep = keepIds.toSet();
     final rows = await (select(
       teams,
-    )..where((t) => t.isUpdated.equals(false)))
-        .get();
+    )..where((t) => t.isUpdated.equals(false))).get();
     final stale = rows
         .map((row) => row.id)
         .where((id) => !keep.contains(id))
@@ -361,10 +361,11 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// `name` carries no unique constraint — two planets can legitimately hold
   /// accounts with the same name and different `_id`s — so this limits to one
   /// row rather than letting `getSingleOrNull` throw and take down login.
-  Future<UserRow?> getByName(String name) => (select(users)
-        ..where((u) => u.name.equals(name))
-        ..limit(1))
-      .getSingleOrNull();
+  Future<UserRow?> getByName(String name) =>
+      (select(users)
+            ..where((u) => u.name.equals(name))
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<UserRow?> getById(String id) =>
       (select(users)..where((u) => u.id.equals(id))).getSingleOrNull();
@@ -449,9 +450,8 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
   /// The user's shelf, read once. [watchResources] would set up and tear down a
   /// query stream for a single value.
   Future<List<MyLibraryRow>> resourcesOnShelf(String userId) => (select(
-        myLibraryTable,
-      )..where((r) => r.userId.like('%"$userId"%')))
-          .get();
+    myLibraryTable,
+  )..where((r) => r.userId.like('%"$userId"%'))).get();
 
   /// Port of `ResourcesRepositoryImpl.removeDeletedResources` — drops local rows
   /// the server no longer lists.
@@ -464,10 +464,10 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
     if (keepIds.isEmpty) return delete(myLibraryTable).go();
 
     return transaction(() async {
-      final localIds = await (selectOnly(myLibraryTable)
-            ..addColumns([myLibraryTable.id]))
-          .map((row) => row.read(myLibraryTable.id)!)
-          .get();
+      final localIds =
+          await (selectOnly(myLibraryTable)..addColumns([myLibraryTable.id]))
+              .map((row) => row.read(myLibraryTable.id)!)
+              .get();
 
       final keep = keepIds.toSet();
       final stale = localIds.where((id) => !keep.contains(id)).toList();
@@ -476,8 +476,7 @@ class MyLibraryDao extends DatabaseAccessor<AppDatabase>
       for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
         deleted += await (delete(
           myLibraryTable,
-        )..where((r) => r.id.isIn(chunk)))
-            .go();
+        )..where((r) => r.id.isIn(chunk))).go();
       }
       return deleted;
     });
@@ -591,9 +590,8 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
   }
 
   Stream<CourseRow?> watchCourse(String courseId) => (select(
-        courses,
-      )..where((c) => c.id.equals(courseId)))
-          .watchSingleOrNull();
+    courses,
+  )..where((c) => c.id.equals(courseId))).watchSingleOrNull();
 
   Stream<List<CourseStepRow>> watchSteps(String courseId) {
     return (select(courseSteps)
@@ -651,11 +649,11 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
 
   Stream<List<String>> _watchDistinct(GeneratedColumn<String> column) {
     return (_distinctQuery(column)).watch().map(
-          (rows) => rows
-              .map((row) => row.read(column))
-              .whereType<String>()
-              .toList(growable: false),
-        );
+      (rows) => rows
+          .map((row) => row.read(column))
+          .whereType<String>()
+          .toList(growable: false),
+    );
   }
 
   JoinedSelectStatement<HasResultSet, dynamic> _distinctQuery(
@@ -718,9 +716,7 @@ class CourseDao extends DatabaseAccessor<AppDatabase> with _$CourseDaoMixin {
 
       final localIds = await (selectOnly(
         courses,
-      )..addColumns([courses.id]))
-          .map((row) => row.read(courses.id)!)
-          .get();
+      )..addColumns([courses.id])).map((row) => row.read(courses.id)!).get();
 
       final keep = keepIds.toSet();
       final stale = localIds.where((id) => !keep.contains(id)).toList();
@@ -772,16 +768,14 @@ class RemovedLogDao extends DatabaseAccessor<AppDatabase>
   }) {
     return (delete(
       removedLogs,
-    )..where((r) => r.id.equals(keyFor(type, userId, docId))))
-        .go();
+    )..where((r) => r.id.equals(keyFor(type, userId, docId)))).go();
   }
 
   /// Port of `RemovedLogDao.getRemovedDocIds`.
   Future<List<String>> removedDocIds(String type, String userId) async {
     final rows = await (select(
       removedLogs,
-    )..where((r) => r.type.equals(type) & r.userId.equals(userId)))
-        .get();
+    )..where((r) => r.type.equals(type) & r.userId.equals(userId))).get();
     return rows.map((r) => r.docId).toList(growable: false);
   }
 }
@@ -837,9 +831,9 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
     }
     query.orderBy([
       (notification) => OrderingTerm(
-            expression: notification.createdAt,
-            mode: OrderingMode.desc,
-          ),
+        expression: notification.createdAt,
+        mode: OrderingMode.desc,
+      ),
     ]);
     return query.watch();
   }
@@ -859,9 +853,8 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
       into(notifications).insertOnConflictUpdate(notification);
 
   Future<NotificationRow?> getById(String id) => (select(
-        notifications,
-      )..where((row) => row.id.equals(id)))
-          .getSingleOrNull();
+    notifications,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
 
   Future<int> markAsRead(Iterable<String> ids) {
     final values = ids.toList(growable: false);
@@ -873,8 +866,8 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> markAllAsRead(String userId) {
     return (update(
-      notifications,
-    )..where((row) => row.userId.equals(userId) & row.isRead.equals(false)))
+          notifications,
+        )..where((row) => row.userId.equals(userId) & row.isRead.equals(false)))
         .write(const NotificationsCompanion(isRead: Value(true)));
   }
 
@@ -887,10 +880,11 @@ class NotificationDao extends DatabaseAccessor<AppDatabase>
 class MyLifeDao extends DatabaseAccessor<AppDatabase> with _$MyLifeDaoMixin {
   MyLifeDao(super.db);
 
-  Stream<List<MyLifeRow>> watchForUser(String userId) => (select(myLifeEntries)
-        ..where((row) => row.userId.equals(userId))
-        ..orderBy([(row) => OrderingTerm(expression: row.weight)]))
-      .watch();
+  Stream<List<MyLifeRow>> watchForUser(String userId) =>
+      (select(myLifeEntries)
+            ..where((row) => row.userId.equals(userId))
+            ..orderBy([(row) => OrderingTerm(expression: row.weight)]))
+          .watch();
 
   Future<void> seedIfEmpty(
     String userId,
@@ -960,18 +954,16 @@ class PersonalDao extends DatabaseAccessor<AppDatabase>
       into(personalEntries).insertOnConflictUpdate(row);
 
   Future<PersonalRow?> getById(String id) => (select(
-        personalEntries,
-      )..where((row) => row.id.equals(id)))
-          .getSingleOrNull();
+    personalEntries,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
 
   Future<int> deleteById(String id) =>
       (delete(personalEntries)..where((row) => row.id.equals(id))).go();
 
   Future<List<PersonalRow>> pendingUploads(String userId) =>
-      (select(personalEntries)
-            ..where(
-              (row) => row.userId.equals(userId) & row.isUploaded.equals(false),
-            ))
+      (select(personalEntries)..where(
+            (row) => row.userId.equals(userId) & row.isUploaded.equals(false),
+          ))
           .get();
 }
 
@@ -981,9 +973,8 @@ class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
   RatingDao(super.db);
 
   Stream<List<RatingRow>> watchForItem(String type, String itemId) => (select(
-        ratings,
-      )..where((row) => row.type.equals(type) & row.item.equals(itemId)))
-          .watch();
+    ratings,
+  )..where((row) => row.type.equals(type) & row.item.equals(itemId))).watch();
 
   Future<RatingRow?> findUserRating(
     String type,
@@ -1003,11 +994,12 @@ class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
   Future<void> upsert(RatingsCompanion rating) =>
       into(ratings).insertOnConflictUpdate(rating);
 
-  Future<List<RatingRow>> pendingUploads() => (select(ratings)
-        ..where(
-          (row) => row.isUpdated.equals(true) & row.userId.like('guest%').not(),
-        ))
-      .get();
+  Future<List<RatingRow>> pendingUploads() =>
+      (select(ratings)..where(
+            (row) =>
+                row.isUpdated.equals(true) & row.userId.like('guest%').not(),
+          ))
+          .get();
 
   Future<int> markUploaded(String id) =>
       (update(ratings)..where((row) => row.id.equals(id))).write(
@@ -1041,9 +1033,8 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
       (update(outboxEntries)..where((row) => row.id.equals(id))).write(values);
 
   Future<OutboxRow?> getById(String id) => (select(
-        outboxEntries,
-      )..where((row) => row.id.equals(id)))
-          .getSingleOrNull();
+    outboxEntries,
+  )..where((row) => row.id.equals(id))).getSingleOrNull();
 
   /// The open operation for an item, if one is already queued.
   ///
@@ -1092,11 +1083,11 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   /// has since handed a fresh payload and put back to `pending` — the send that
   /// just succeeded carried the *old* body, and deleting would drop the new one
   /// with no operation left to carry it.
-  Future<int> deleteIfInProgress(String id) => (delete(outboxEntries)
-        ..where(
-          (row) => row.id.equals(id) & row.status.equals(statusInProgress),
-        ))
-      .go();
+  Future<int> deleteIfInProgress(String id) =>
+      (delete(outboxEntries)..where(
+            (row) => row.id.equals(id) & row.status.equals(statusInProgress),
+          ))
+          .go();
 
   /// Status-scoped delete, so a cancel cannot race a drain.
   ///
@@ -1106,13 +1097,12 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   /// request is on the wire — leaving the drainer's `markCompleted` with
   /// nothing to write to.
   Future<int> deletePending(String uploadType, String itemId) =>
-      (delete(outboxEntries)
-            ..where(
-              (row) =>
-                  row.uploadType.equals(uploadType) &
-                  row.itemId.equals(itemId) &
-                  row.status.equals(statusPending),
-            ))
+      (delete(outboxEntries)..where(
+            (row) =>
+                row.uploadType.equals(uploadType) &
+                row.itemId.equals(itemId) &
+                row.status.equals(statusPending),
+          ))
           .go();
   Future<int> deleteById(String id) =>
       (delete(outboxEntries)..where((row) => row.id.equals(id))).go();
@@ -1122,15 +1112,15 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
   /// Kotlin calls this `recoverStuckOperations` and runs it at startup for the
   /// same reason: without it a killed drain leaves the operation permanently
   /// invisible to [due].
-  Future<int> recoverStuck() => (update(outboxEntries)
-        ..where((row) => row.status.equals(statusInProgress)))
-      .write(const OutboxEntriesCompanion(status: Value(statusPending)));
+  Future<int> recoverStuck() =>
+      (update(outboxEntries)
+            ..where((row) => row.status.equals(statusInProgress)))
+          .write(const OutboxEntriesCompanion(status: Value(statusPending)));
 
   /// Drops rows that are finished with — completed, or given up on.
   Future<int> cleanup() => (delete(
-        outboxEntries,
-      )..where((row) => row.status.isIn([statusCompleted, statusAbandoned])))
-          .go();
+    outboxEntries,
+  )..where((row) => row.status.isIn([statusCompleted, statusAbandoned]))).go();
 }
 
 /// Port of `data/room/dao/SubmissionDao.kt` for the offline submissions list.
@@ -1144,9 +1134,9 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
             ..where((row) => row.userId.equals(userId))
             ..orderBy([
               (row) => OrderingTerm(
-                    expression: row.lastUpdateTime,
-                    mode: OrderingMode.desc,
-                  ),
+                expression: row.lastUpdateTime,
+                mode: OrderingMode.desc,
+              ),
             ]))
           .watch();
 
@@ -1162,8 +1152,7 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
       for (final entry in answers.entries) {
         await (delete(
           submissionAnswers,
-        )..where((row) => row.submissionId.equals(entry.key)))
-            .go();
+        )..where((row) => row.submissionId.equals(entry.key))).go();
         if (entry.value.isNotEmpty) {
           await batch(
             (batch) => batch.insertAll(submissionAnswers, entry.value),
@@ -1173,8 +1162,7 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
       for (final entry in questions.entries) {
         await (delete(
           submissionQuestions,
-        )..where((row) => row.submissionId.equals(entry.key)))
-            .go();
+        )..where((row) => row.submissionId.equals(entry.key))).go();
         if (entry.value.isNotEmpty) {
           await batch(
             (batch) => batch.insertAll(submissionQuestions, entry.value),
@@ -1184,15 +1172,17 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
-  Future<SubmissionRow?> getById(String id) => (select(submissions)
-        ..where((row) => row.id.equals(id) | row.couchId.equals(id))
-        ..limit(1))
-      .getSingleOrNull();
+  Future<SubmissionRow?> getById(String id) =>
+      (select(submissions)
+            ..where((row) => row.id.equals(id) | row.couchId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
 
-  Stream<SubmissionRow?> watchById(String id) => (select(submissions)
-        ..where((row) => row.id.equals(id) | row.couchId.equals(id))
-        ..limit(1))
-      .watchSingleOrNull();
+  Stream<SubmissionRow?> watchById(String id) =>
+      (select(submissions)
+            ..where((row) => row.id.equals(id) | row.couchId.equals(id))
+            ..limit(1))
+          .watchSingleOrNull();
 
   Stream<List<SubmissionAnswerRow>> watchAnswers(String submissionId) =>
       (select(submissionAnswers)
@@ -1219,16 +1209,14 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
     final count = submissions.id.count();
     final row = await (selectOnly(
       submissions,
-    )..addColumns([count]))
-        .getSingle();
+    )..addColumns([count])).getSingle();
     return row.read(count) ?? 0;
   }
 
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
-      (select(submissions)
-            ..where(
-              (row) => row.userId.equals(userId) & row.isUpdated.equals(true),
-            ))
+      (select(submissions)..where(
+            (row) => row.userId.equals(userId) & row.isUpdated.equals(true),
+          ))
           .get();
 
   Future<int> markUploaded(String id, String couchId, String rev) =>
@@ -1258,11 +1246,12 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
   /// Removes stale server-cache rows without binding an unbounded `NOT IN`.
   Future<int> deleteNotIn(List<String> keepIds) async {
     return transaction(() async {
-      final localIds = await (selectOnly(submissions)
-            ..addColumns([submissions.id])
-            ..where(submissions.isUpdated.equals(false)))
-          .map((row) => row.read(submissions.id)!)
-          .get();
+      final localIds =
+          await (selectOnly(submissions)
+                ..addColumns([submissions.id])
+                ..where(submissions.isUpdated.equals(false)))
+              .map((row) => row.read(submissions.id)!)
+              .get();
       final keep = keepIds.toSet();
       var deleted = 0;
       for (final chunk in _chunked(
@@ -1271,16 +1260,13 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
       )) {
         await (delete(
           submissionAnswers,
-        )..where((row) => row.submissionId.isIn(chunk)))
-            .go();
+        )..where((row) => row.submissionId.isIn(chunk))).go();
         await (delete(
           submissionQuestions,
-        )..where((row) => row.submissionId.isIn(chunk)))
-            .go();
+        )..where((row) => row.submissionId.isIn(chunk))).go();
         deleted += await (delete(
           submissions,
-        )..where((row) => row.id.isIn(chunk)))
-            .go();
+        )..where((row) => row.id.isIn(chunk))).go();
       }
       return deleted;
     });
@@ -1303,23 +1289,24 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
   Future<MeetupRow?> getById(String id) =>
       (select(meetups)..where((row) => row.id.equals(id))).getSingleOrNull();
 
-  Future<MeetupRow?> getByMeetupId(String id) => (select(meetups)
-        ..where((row) => row.meetupId.equals(id))
-        ..limit(1))
-      .getSingleOrNull();
+  Future<MeetupRow?> getByMeetupId(String id) =>
+      (select(meetups)
+            ..where((row) => row.meetupId.equals(id))
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<List<MeetupRow>> getByMeetupIds(List<String> ids) =>
       (select(meetups)..where((row) => row.meetupId.isIn(ids))).get();
 
-  Stream<List<MeetupRow>> watchForTeam(String teamId) => (select(meetups)
-        ..where((row) => row.teamId.equals(teamId))
-        ..orderBy([(row) => OrderingTerm(expression: row.startDate)]))
-      .watch();
+  Stream<List<MeetupRow>> watchForTeam(String teamId) =>
+      (select(meetups)
+            ..where((row) => row.teamId.equals(teamId))
+            ..orderBy([(row) => OrderingTerm(expression: row.startDate)]))
+          .watch();
 
   Stream<List<MeetupRow>> watchAll() => (select(
-        meetups,
-      )..orderBy([(row) => OrderingTerm(expression: row.startDate)]))
-          .watch();
+    meetups,
+  )..orderBy([(row) => OrderingTerm(expression: row.startDate)])).watch();
 
   /// Port of `MeetupDao.getByUserId`, including its `AND userId != ''` guard.
   ///
@@ -1327,11 +1314,11 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
   /// empty string when a user *leaves* a meetup, so without it a blank
   /// [userId] would select precisely the meetups the user has left and push
   /// them back onto their shelf.
-  Future<List<MeetupRow>> meetupsOnShelf(String userId) => (select(meetups)
-        ..where(
-          (row) => row.userId.equals(userId) & row.userId.equals('').not(),
-        ))
-      .get();
+  Future<List<MeetupRow>> meetupsOnShelf(String userId) =>
+      (select(meetups)..where(
+            (row) => row.userId.equals(userId) & row.userId.equals('').not(),
+          ))
+          .get();
 
   Future<List<MeetupRow>> pendingUploads() =>
       (select(meetups)..where((row) => row.updated.equals(true))).get();
@@ -1353,8 +1340,7 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
     final keep = keepIds.toSet();
     final rows = await (select(
       meetups,
-    )..where((row) => row.updated.equals(false)))
-        .get();
+    )..where((row) => row.updated.equals(false))).get();
     final stale = rows
         .map((row) => row.id)
         .where((id) => !keep.contains(id))
@@ -1381,14 +1367,14 @@ class MeetupDao extends DatabaseAccessor<AppDatabase> with _$MeetupDaoMixin {
 class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
   SurveyDao(super.db);
 
-  Stream<List<SurveyRow>> watchAll() => (select(surveys)
-        ..orderBy([
-          (row) => OrderingTerm(
-                expression: row.createdDate,
-                mode: OrderingMode.desc,
-              ),
-        ]))
-      .watch();
+  Stream<List<SurveyRow>> watchAll() =>
+      (select(surveys)..orderBy([
+            (row) => OrderingTerm(
+              expression: row.createdDate,
+              mode: OrderingMode.desc,
+            ),
+          ]))
+          .watch();
 
   Future<SurveyRow?> getById(String id) =>
       (select(surveys)..where((row) => row.id.equals(id))).getSingleOrNull();
@@ -1402,48 +1388,39 @@ class SurveyDao extends DatabaseAccessor<AppDatabase> with _$SurveyDaoMixin {
   Future<void> upsertAll(
     List<SurveysCompanion> rows,
     Map<String, List<SurveyQuestionsCompanion>> questions,
-  ) =>
-      transaction(() async {
-        if (rows.isNotEmpty) {
-          await batch(
-              (batch) => batch.insertAllOnConflictUpdate(surveys, rows));
-        }
-        for (final entry in questions.entries) {
-          await (delete(
-            surveyQuestions,
-          )..where((row) => row.surveyId.equals(entry.key)))
-              .go();
-          if (entry.value.isNotEmpty) {
-            await batch(
-                (batch) => batch.insertAll(surveyQuestions, entry.value));
-          }
-        }
-      });
+  ) => transaction(() async {
+    if (rows.isNotEmpty) {
+      await batch((batch) => batch.insertAllOnConflictUpdate(surveys, rows));
+    }
+    for (final entry in questions.entries) {
+      await (delete(
+        surveyQuestions,
+      )..where((row) => row.surveyId.equals(entry.key))).go();
+      if (entry.value.isNotEmpty) {
+        await batch((batch) => batch.insertAll(surveyQuestions, entry.value));
+      }
+    }
+  });
 
   /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
   /// the deletes are chunked.
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
-        final keep = ids.toSet();
-        final all = await (selectOnly(
-          surveys,
-        )..addColumns([surveys.id]))
-            .map((row) => row.read(surveys.id)!)
-            .get();
-        final stale =
-            all.where((id) => !keep.contains(id)).toList(growable: false);
-        var deleted = 0;
-        for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
-          await (delete(
-            surveyQuestions,
-          )..where((row) => row.surveyId.isIn(chunk)))
-              .go();
-          deleted += await (delete(
-            surveys,
-          )..where((row) => row.id.isIn(chunk)))
-              .go();
-        }
-        return deleted;
-      });
+    final keep = ids.toSet();
+    final all = await (selectOnly(
+      surveys,
+    )..addColumns([surveys.id])).map((row) => row.read(surveys.id)!).get();
+    final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      await (delete(
+        surveyQuestions,
+      )..where((row) => row.surveyId.isIn(chunk))).go();
+      deleted += await (delete(
+        surveys,
+      )..where((row) => row.id.isIn(chunk))).go();
+    }
+    return deleted;
+  });
 }
 
 /// Port of exam queries for graded course exams.
@@ -1455,9 +1432,8 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
       (select(exams)..where((row) => row.id.equals(id))).getSingleOrNull();
 
   Future<ExamRow?> getByStepId(String stepId) => (select(
-        exams,
-      )..where((row) => row.stepId.equals(stepId)))
-          .getSingleOrNull();
+    exams,
+  )..where((row) => row.stepId.equals(stepId))).getSingleOrNull();
 
   Future<List<ExamRow>> getByCourseId(String courseId) =>
       (select(exams)..where((row) => row.courseId.equals(courseId))).get();
@@ -1487,44 +1463,37 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
   /// the deletes are chunked. Exams are a pure server cache — every row is
   /// restorable by the next sync — so nothing here needs sparing.
   Future<int> deleteNotIn(List<String> ids) => transaction(() async {
-        final keep = ids.toSet();
-        final all = await (selectOnly(
-          exams,
-        )..addColumns([exams.id]))
-            .map((row) => row.read(exams.id)!)
-            .get();
-        final stale =
-            all.where((id) => !keep.contains(id)).toList(growable: false);
-        var deleted = 0;
-        for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
-          await (delete(
-            examQuestions,
-          )..where((row) => row.examId.isIn(chunk)))
-              .go();
-          deleted +=
-              await (delete(exams)..where((row) => row.id.isIn(chunk))).go();
-        }
-        return deleted;
-      });
+    final keep = ids.toSet();
+    final all = await (selectOnly(
+      exams,
+    )..addColumns([exams.id])).map((row) => row.read(exams.id)!).get();
+    final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      await (delete(
+        examQuestions,
+      )..where((row) => row.examId.isIn(chunk))).go();
+      deleted += await (delete(exams)..where((row) => row.id.isIn(chunk))).go();
+    }
+    return deleted;
+  });
 
   Future<void> upsertAll(
     List<ExamsCompanion> rows,
     Map<String, List<ExamQuestionsCompanion>> questions,
-  ) =>
-      transaction(() async {
-        if (rows.isNotEmpty) {
-          await batch((batch) => batch.insertAllOnConflictUpdate(exams, rows));
-        }
-        for (final entry in questions.entries) {
-          await (delete(
-            examQuestions,
-          )..where((row) => row.examId.equals(entry.key)))
-              .go();
-          if (entry.value.isNotEmpty) {
-            await batch((batch) => batch.insertAll(examQuestions, entry.value));
-          }
-        }
-      });
+  ) => transaction(() async {
+    if (rows.isNotEmpty) {
+      await batch((batch) => batch.insertAllOnConflictUpdate(exams, rows));
+    }
+    for (final entry in questions.entries) {
+      await (delete(
+        examQuestions,
+      )..where((row) => row.examId.equals(entry.key))).go();
+      if (entry.value.isNotEmpty) {
+        await batch((batch) => batch.insertAll(examQuestions, entry.value));
+      }
+    }
+  });
 }
 
 /// Port of `data/room/dao/NewsDao.kt`.
@@ -1544,9 +1513,8 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
       (select(newsEntries)..where((r) => r.id.equals(id))).getSingleOrNull();
 
   Future<NewsRow?> getByDocId(String docId) => (select(
-        newsEntries,
-      )..where((r) => r.docId.equals(docId)))
-          .getSingleOrNull();
+    newsEntries,
+  )..where((r) => r.docId.equals(docId))).getSingleOrNull();
 
   Future<List<NewsRow>> getByDocIds(List<String> docIds) async {
     final rows = <NewsRow>[];
@@ -1569,20 +1537,23 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
   /// Port of `getTopLevelMessagesFlow`, the community feed's source. Visibility
   /// is *not* filtered here: `VoicesRepositoryImpl` does it in memory because
   /// the rule reads inside the `viewIn` JSON.
-  Stream<List<NewsRow>> watchTopLevelMessages() => (select(newsEntries)
-        ..where((r) => _isTopLevel(r) & r.docType.lower().equals('message'))
-        ..orderBy([(r) => OrderingTerm.desc(r.time)]))
-      .watch();
+  Stream<List<NewsRow>> watchTopLevelMessages() =>
+      (select(newsEntries)
+            ..where((r) => _isTopLevel(r) & r.docType.lower().equals('message'))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .watch();
 
-  Stream<List<NewsRow>> watchReplies(String newsId) => (select(newsEntries)
-        ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
-        ..orderBy([(r) => OrderingTerm.desc(r.time)]))
-      .watch();
+  Stream<List<NewsRow>> watchReplies(String newsId) =>
+      (select(newsEntries)
+            ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .watch();
 
-  Future<List<NewsRow>> replies(String newsId) => (select(newsEntries)
-        ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
-        ..orderBy([(r) => OrderingTerm.desc(r.time)]))
-      .get();
+  Future<List<NewsRow>> replies(String newsId) =>
+      (select(newsEntries)
+            ..where((r) => r.replyTo.lower().equals(newsId.toLowerCase()))
+            ..orderBy([(r) => OrderingTerm.desc(r.time)]))
+          .get();
 
   /// Case-sensitive, unlike [replies] — `getDirectReplies` omits the
   /// `COLLATE NOCASE` that `getReplies` applies. Only the recursive delete
@@ -1592,10 +1563,11 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
 
   Future<int> replyCount(String newsId) async {
     final count = newsEntries.id.count();
-    final row = await (selectOnly(newsEntries)
-          ..addColumns([count])
-          ..where(newsEntries.replyTo.lower().equals(newsId.toLowerCase())))
-        .getSingle();
+    final row =
+        await (selectOnly(newsEntries)
+              ..addColumns([count])
+              ..where(newsEntries.replyTo.lower().equals(newsId.toLowerCase())))
+            .getSingle();
     return row.read(count) ?? 0;
   }
 
@@ -1621,8 +1593,7 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
     final keep = docIds.toSet();
     final rows = await (select(
       newsEntries,
-    )..where((r) => r.docId.isNotNull()))
-        .get();
+    )..where((r) => r.docId.isNotNull())).get();
     final stale = rows
         .where((row) => !keep.contains(row.docId))
         .map((row) => row.id)
@@ -1634,8 +1605,7 @@ class NewsDao extends DatabaseAccessor<AppDatabase> with _$NewsDaoMixin {
     final count = newsEntries.id.count();
     final row = await (selectOnly(
       newsEntries,
-    )..addColumns([count]))
-        .getSingle();
+    )..addColumns([count])).getSingle();
     return row.read(count) ?? 0;
   }
 }
@@ -1647,20 +1617,22 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
 
   /// Port of `ChatRepositoryImpl.getChatHistoryForUser`.
   /// Returns all chat history for a user, sorted by id descending.
-  Future<List<ChatRow>> getByUser(String user) => (select(chatEntries)
-        ..where((c) => c.user.equals(user))
-        ..orderBy([(c) => OrderingTerm.desc(c.id)]))
-      .get();
+  Future<List<ChatRow>> getByUser(String user) =>
+      (select(chatEntries)
+            ..where((c) => c.user.equals(user))
+            ..orderBy([(c) => OrderingTerm.desc(c.id)]))
+          .get();
 
   /// Port of `ChatDao.getByDocId`.
   Future<List<ChatRow>> getByDocId(String docId) =>
       (select(chatEntries)..where((c) => c.docId.equals(docId))).get();
 
   /// Port of `ChatDao.findByDocId`.
-  Future<ChatRow?> findByDocId(String docId) => (select(chatEntries)
-        ..where((c) => c.docId.equals(docId))
-        ..limit(1))
-      .getSingleOrNull();
+  Future<ChatRow?> findByDocId(String docId) =>
+      (select(chatEntries)
+            ..where((c) => c.docId.equals(docId))
+            ..limit(1))
+          .getSingleOrNull();
 
   Future<void> upsertAll(List<ChatEntriesCompanion> rows) async {
     if (rows.isEmpty) return;
@@ -1673,15 +1645,14 @@ class ChatDao extends DatabaseAccessor<AppDatabase> with _$ChatDaoMixin {
     String conversationsJson,
     String updatedDate,
     String rev,
-  ) =>
-      (update(chatEntries)..where((c) => c.docId.equals(docId))).write(
-        ChatEntriesCompanion(
-          conversations: Value(conversationsJson),
-          updatedDate: Value(updatedDate),
-          rev: Value(rev),
-          lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
-        ),
-      );
+  ) => (update(chatEntries)..where((c) => c.docId.equals(docId))).write(
+    ChatEntriesCompanion(
+      conversations: Value(conversationsJson),
+      updatedDate: Value(updatedDate),
+      rev: Value(rev),
+      lastUsed: Value(DateTime.now().millisecondsSinceEpoch),
+    ),
+  );
 }
 
 /// Port of `data/room/dao/FeedbackDao.kt`.
@@ -1692,9 +1663,8 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
 
   /// Returns all feedback sorted by open time descending.
   Stream<List<FeedbackRow>> watchAllSorted() => (select(
-        feedbackEntries,
-      )..orderBy([(f) => OrderingTerm.desc(f.openTime)]))
-          .watch();
+    feedbackEntries,
+  )..orderBy([(f) => OrderingTerm.desc(f.openTime)])).watch();
 
   /// Returns feedback for a specific owner.
   Stream<List<FeedbackRow>> watchByOwner(String? owner) =>
@@ -1708,9 +1678,8 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
       (select(feedbackEntries)..where((f) => f.isUploaded.equals(false))).get();
 
   Future<FeedbackRow?> getById(String id) => (select(
-        feedbackEntries,
-      )..where((f) => f.id.equals(id)))
-          .getSingleOrNull();
+    feedbackEntries,
+  )..where((f) => f.id.equals(id))).getSingleOrNull();
 
   /// Close feedback by setting status to 'Closed'.
   Future<int> closeById(String id) =>
@@ -1738,8 +1707,7 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
     final keep = keepIds.toSet();
     final rows = await (select(
       feedbackEntries,
-    )..where((f) => f.isUploaded.equals(true)))
-        .get();
+    )..where((f) => f.isUploaded.equals(true))).get();
     final stale = rows
         .map((row) => row.id)
         .where((id) => !keep.contains(id))
@@ -1748,8 +1716,7 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
     for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
       deleted += await (delete(
         feedbackEntries,
-      )..where((f) => f.id.isIn(chunk)))
-          .go();
+      )..where((f) => f.id.isIn(chunk))).go();
     }
     return deleted;
   }
@@ -1764,9 +1731,8 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
 
   /// Update a feedback row (e.g., adding a reply).
   Future<void> updateRow(FeedbackEntriesCompanion row) => (update(
-        feedbackEntries,
-      )..where((f) => f.id.equals(row.id.value)))
-          .write(row);
+    feedbackEntries,
+  )..where((f) => f.id.equals(row.id.value))).write(row);
 }
 
 /// Port of `data/room/dao/HealthExaminationDao.kt`.
@@ -1776,20 +1742,19 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
   HealthExaminationDao(super.db);
 
   /// Get health examination by id or userId.
-  Future<HealthExaminationRow?> getByIdOrUserId(String id) =>
-      (select(healthExaminations)
-            ..where((h) => h.id.equals(id) | h.userId.equals(id)))
-          .getSingleOrNull();
+  Future<HealthExaminationRow?> getByIdOrUserId(String id) => (select(
+    healthExaminations,
+  )..where((h) => h.id.equals(id) | h.userId.equals(id))).getSingleOrNull();
 
   /// Get health examination by id.
-  Future<HealthExaminationRow?> getById(String id) =>
-      (select(healthExaminations)..where((h) => h.id.equals(id)))
-          .getSingleOrNull();
+  Future<HealthExaminationRow?> getById(String id) => (select(
+    healthExaminations,
+  )..where((h) => h.id.equals(id))).getSingleOrNull();
 
   /// Get all updated examinations that need syncing.
-  Future<List<HealthExaminationRow>> getUpdated() => (select(healthExaminations)
-        ..where((h) => h.isUpdated.equals(true) & h.userId.isNotNull()))
-      .get();
+  Future<List<HealthExaminationRow>> getUpdated() => (select(
+    healthExaminations,
+  )..where((h) => h.isUpdated.equals(true) & h.userId.isNotNull())).get();
 
   /// Get updated examinations for a specific user.
   Future<List<HealthExaminationRow>> getUpdatedForUser(String userId) =>
@@ -1799,8 +1764,9 @@ class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
 
   /// Get examinations by profileId.
   Future<List<HealthExaminationRow>> getByProfileId(String profileId) =>
-      (select(healthExaminations)..where((h) => h.profileId.equals(profileId)))
-          .get();
+      (select(
+        healthExaminations,
+      )..where((h) => h.profileId.equals(profileId))).get();
 
   /// Get examinations for a user, ordered by date descending.
   Future<List<HealthExaminationRow>> getForUser(String userId) =>

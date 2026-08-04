@@ -59,11 +59,7 @@ void main() {
       pulse: 72,
     );
 
-    await repository.updateExamination(
-      id,
-      temperature: 37.0,
-      pulse: 80,
-    );
+    await repository.updateExamination(id, temperature: 37.0, pulse: 80);
 
     final row = await repository.getById(id);
     expect(row!.temperature, 37.0);
@@ -72,10 +68,10 @@ void main() {
   });
 
   test('parses conditions from JSON', () {
-    expect(
-      repository.parseConditions('{"Fever": true, "Cough": false}'),
-      {'Fever': true, 'Cough': false},
-    );
+    expect(repository.parseConditions('{"Fever": true, "Cough": false}'), {
+      'Fever': true,
+      'Cough': false,
+    });
 
     expect(repository.parseConditions(null), isEmpty);
     expect(repository.parseConditions(''), isEmpty);
@@ -129,11 +125,7 @@ void main() {
 
   test('preserves local edits during cache', () async {
     await repository.cacheDocuments([
-      {
-        '_id': 'health-1',
-        'temperature': 36.5,
-        'pulse': 70,
-      },
+      {'_id': 'health-1', 'temperature': 36.5, 'pulse': 70},
     ]);
 
     // Create a local edit
@@ -145,11 +137,7 @@ void main() {
 
     // Server sends an update
     await repository.cacheDocuments([
-      {
-        '_id': 'health-1',
-        'temperature': 36.0,
-        'pulse': 60,
-      },
+      {'_id': 'health-1', 'temperature': 36.0, 'pulse': 60},
     ]);
 
     // Local edit should be preserved
@@ -186,18 +174,9 @@ void main() {
 
   test('gets examinations by user id', () async {
     // Create examinations directly via repository
-    await repository.createExamination(
-      userId: 'user-1',
-      temperature: 36.5,
-    );
-    await repository.createExamination(
-      userId: 'user-1',
-      temperature: 36.6,
-    );
-    await repository.createExamination(
-      userId: 'user-2',
-      temperature: 36.7,
-    );
+    await repository.createExamination(userId: 'user-1', temperature: 36.5);
+    await repository.createExamination(userId: 'user-1', temperature: 36.6);
+    await repository.createExamination(userId: 'user-2', temperature: 36.7);
 
     final rows = await repository.getForUser('user-1');
     expect(rows.length, 2);
@@ -206,17 +185,11 @@ void main() {
 
   test('gets updated examinations for sync', () async {
     await repository.cacheDocuments([
-      {
-        '_id': 'health-1',
-        'temperature': 36.5,
-      },
+      {'_id': 'health-1', 'temperature': 36.5},
     ]);
 
     // Create a local edit
-    await repository.updateExamination(
-      'health-1',
-      temperature: 37.0,
-    );
+    await repository.updateExamination('health-1', temperature: 37.0);
 
     final updated = await repository.getUpdated();
     expect(updated.length, 1);
@@ -225,16 +198,10 @@ void main() {
 
   test('marks examination as uploaded', () async {
     await repository.cacheDocuments([
-      {
-        '_id': 'health-1',
-        'temperature': 36.5,
-      },
+      {'_id': 'health-1', 'temperature': 36.5},
     ]);
 
-    await repository.updateExamination(
-      'health-1',
-      temperature: 37.0,
-    );
+    await repository.updateExamination('health-1', temperature: 37.0);
 
     await repository.markUploaded('health-1', '2-b');
 
@@ -254,10 +221,10 @@ void main() {
       return NetworkSuccess<Map<String, dynamic>>({
         'rows': [
           {
-            'doc': {'_id': 'health-1', 'temperature': 36.5}
+            'doc': {'_id': 'health-1', 'temperature': 36.5},
           },
           {
-            'doc': {'_id': 'health-2', 'temperature': 36.6}
+            'doc': {'_id': 'health-2', 'temperature': 36.6},
           },
         ],
       });

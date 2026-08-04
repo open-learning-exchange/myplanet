@@ -107,7 +107,7 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
   final String? _examinationId;
 
   ExaminationNotifier(this._repo, this._userId, this._examinationId)
-      : super(ExaminationState()) {
+    : super(ExaminationState()) {
     _loadData();
   }
 
@@ -197,7 +197,8 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
       );
       final data = jsonEncode(examData.toJson());
 
-      final hasInfo = allergies?.isNotEmpty == true ||
+      final hasInfo =
+          allergies?.isNotEmpty == true ||
           diagnosis?.isNotEmpty == true ||
           medications?.isNotEmpty == true ||
           immunizations?.isNotEmpty == true ||
@@ -245,10 +246,12 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
 }
 
 /// Provider for examination form state.
-final examinationNotifierProvider = StateNotifierProvider.autoDispose.family<
-    ExaminationNotifier, ExaminationState, ({String? userId, String? examId})>(
-  (ref, params) {
-    final repo = ref.watch(healthRepositoryProvider);
-    return ExaminationNotifier(repo, params.userId, params.examId);
-  },
-);
+final examinationNotifierProvider = StateNotifierProvider.autoDispose
+    .family<
+      ExaminationNotifier,
+      ExaminationState,
+      ({String? userId, String? examId})
+    >((ref, params) {
+      final repo = ref.watch(healthRepositoryProvider);
+      return ExaminationNotifier(repo, params.userId, params.examId);
+    });

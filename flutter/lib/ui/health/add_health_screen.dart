@@ -83,9 +83,7 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.updateHealth),
-      ),
+      appBar: AppBar(title: Text(l10n.updateHealth)),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : Form(
@@ -296,8 +294,8 @@ class _SectionHeader extends StatelessWidget {
     return Text(
       title,
       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: Theme.of(context).colorScheme.primary,
-          ),
+        color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
