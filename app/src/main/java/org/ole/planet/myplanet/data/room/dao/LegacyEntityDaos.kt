@@ -18,6 +18,22 @@ interface UserDao {
     @Query("SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1")
     suspend fun getById(id: String): UserEntity?
     @Query("SELECT * FROM users") suspend fun getAll(): List<UserEntity>
+    @Query("SELECT * FROM users WHERE id IN (:ids) OR _id IN (:ids)")
+    suspend fun getByIdsOr_Ids(ids: List<String>): List<UserEntity>
+    @Query("SELECT * FROM users WHERE _id IS NOT NULL AND _id != '' AND id NOT LIKE 'guest%'")
+    suspend fun getSyncedUsers(): List<UserEntity>
+    @Query("SELECT * FROM users WHERE _id IS NOT NULL AND _id != ''")
+    suspend fun getUsersWith_Id(): List<UserEntity>
+    @Query("SELECT * FROM users WHERE _id IS NULL OR _id = '' OR isUpdated = 1 LIMIT :limit")
+    suspend fun getPendingSyncUsers(limit: Int): List<UserEntity>
+    @Query("SELECT * FROM users WHERE id IN (:ids)")
+    suspend fun getByIds(ids: List<String>): List<UserEntity>
+    @Query("SELECT * FROM users WHERE name IN (SELECT name FROM users GROUP BY name HAVING COUNT(*) > 1)")
+    suspend fun getDuplicateUsers(): List<UserEntity>
+    @Query("SELECT * FROM users WHERE id IN (:ids) OR _id IN (:ids) OR name IN (:names)")
+    suspend fun getByIdsOr_IdsOrNames(ids: List<String>, names: List<String>): List<UserEntity>
+    @Query("SELECT * FROM users WHERE id = :id OR _id = :id LIMIT 1")
+    suspend fun getByIdOr_Id(id: String): UserEntity?
     @Query("SELECT * FROM users WHERE name = :name LIMIT 1") suspend fun getByName(name: String): UserEntity?
     @Query("SELECT * FROM users WHERE name = :name COLLATE NOCASE LIMIT 1") suspend fun getByNameIgnoreCase(name: String): UserEntity?
     @Query("SELECT * FROM users WHERE name LIKE '%' || :query || '%' OR firstName LIKE '%' || :query || '%' OR lastName LIKE '%' || :query || '%'") suspend fun search(query: String): List<UserEntity>
