@@ -23,15 +23,19 @@ import 'health/my_health_screen.dart';
 import 'health/add_health_screen.dart';
 import 'health/add_examination_screen.dart';
 import 'life/life_screen.dart';
+import 'maps/offline_maps_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
 import 'personals/personals_screen.dart';
 import 'resources/resources_screen.dart';
 import 'references/references_screen.dart';
 import 'settings/settings_screen.dart';
+import 'settings/storage_breakdown_screen.dart';
+import 'settings/storage_category_detail_screen.dart';
 import 'sync/login_screen.dart';
 import 'sync/server_config_screen.dart';
 import 'user/profile_screen.dart';
+import 'user/become_member_screen.dart';
 import 'submissions/submissions_screen.dart';
 import 'submissions/submission_detail_screen.dart';
 import 'surveys/surveys_screen.dart';
@@ -60,6 +64,8 @@ class Routes {
   static const String server = '/server';
   static const String onboarding = '/onboarding';
   static const String login = '/login';
+  static const String becomeMember = '/become-member';
+  static const String offlineMaps = '/life/references/maps';
   static const String resources = '/resources';
   static const String resourceViewer = '/resources/viewer/:resourceId';
   static const String courses = '/courses';
@@ -67,6 +73,8 @@ class Routes {
   static const String profile = '/profile';
   static const String settings = '/profile/settings';
   static const String dictionary = '/profile/settings/dictionary';
+  static const String storageManagement = '/profile/settings/storage';
+  static const String storageCategory = '/profile/settings/storage/category';
   static const String notifications = '/profile/notifications';
   static const String life = '/life';
   static const String references = '/life/references';
@@ -139,6 +147,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: Routes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: Routes.becomeMember,
+        builder: (context, state) => const BecomeMemberScreen(),
+      ),
+      GoRoute(
+        path: Routes.offlineMaps,
+        builder: (context, state) => const OfflineMapsScreen(),
       ),
       GoRoute(
         path: Routes.resourceViewer,
@@ -236,6 +252,20 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'dictionary',
                         builder: (context, state) => const DictionaryScreen(),
+                      ),
+                      GoRoute(
+                        path: 'storage',
+                        builder: (context, state) =>
+                            const StorageBreakdownScreen(),
+                        routes: [
+                          GoRoute(
+                            path: 'category',
+                            builder: (context, state) =>
+                                StorageCategoryDetailScreen(
+                                  extra: state.extra as StorageCategoryExtra,
+                                ),
+                          ),
+                        ],
                       ),
                     ],
                   ),

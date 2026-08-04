@@ -1040,6 +1040,9 @@ class RatingDao extends DatabaseAccessor<AppDatabase> with _$RatingDaoMixin {
       (update(ratings)..where((row) => row.id.equals(id))).write(
         const RatingsCompanion(isUpdated: Value(false)),
       );
+
+  Future<RatingRow?> findById(String id) =>
+      (select(ratings)..where((row) => row.id.equals(id))).getSingleOrNull();
 }
 
 /// Port of `data/room/dao/RetryDao.kt`, backing [OutboxEntries].

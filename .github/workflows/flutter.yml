@@ -42,7 +42,8 @@ jobs:
       # anything reads them.
       - name: Generate code
         run: |
-          dart run build_runner build
+          rm -rf .dart_tool/build
+          dart run build_runner build --delete-conflicting-outputs
           flutter gen-l10n
 
       - name: Verify formatting
@@ -78,7 +79,8 @@ jobs:
 
       - name: Generate code
         run: |
-          dart run build_runner build
+          rm -rf .dart_tool/build
+          dart run build_runner build --delete-conflicting-outputs
           flutter gen-l10n
 
       - name: Build debug APK

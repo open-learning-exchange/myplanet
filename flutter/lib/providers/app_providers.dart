@@ -17,6 +17,7 @@ import '../repository/feedback_repository.dart';
 import '../repository/feedback_repository_impl.dart';
 import '../repository/health_repository.dart';
 import '../repository/health_uploader.dart';
+import '../repository/ratings_uploader.dart';
 import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
@@ -335,6 +336,7 @@ final outboxDrainerProvider = Provider<OutboxDrainer>((ref) {
         type: ref.watch(teamsUploaderProvider).handler,
       FeedbackUploader.type: ref.watch(feedbackUploaderProvider).handler,
       HealthUploader.type: ref.watch(healthUploaderProvider).handler,
+      RatingsUploader.type: ref.watch(ratingsUploaderProvider).handler,
     },
   );
 });
@@ -406,6 +408,16 @@ final healthRepositoryProvider = Provider<HealthRepository>((ref) {
   final config = ref.watch(serverConfigProvider);
   return HealthRepository(api, dao, ref.watch(userDaoProvider), config: config);
 });
+
+final ratingsUploaderProvider = Provider<RatingsUploader>(
+  (ref) => RatingsUploader(
+    ref.watch(planetApiProvider),
+    ref.watch(ratingsRepositoryProvider),
+    ref.watch(appDatabaseProvider).ratingDao,
+    ref.watch(userDaoProvider),
+    ref.watch(outboxRepositoryProvider),
+  ),
+);
 
 final healthUploaderProvider = Provider<HealthUploader>(
   (ref) => HealthUploader(

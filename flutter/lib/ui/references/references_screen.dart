@@ -22,9 +22,7 @@ class ReferencesScreen extends StatelessWidget {
           _ReferenceCard(
             icon: Icons.map_outlined,
             title: l10n.maps,
-            onTap: () => ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(l10n.offlineMapsComingSoon))),
+            onTap: () => context.push(Routes.offlineMaps),
           ),
           _ReferenceCard(
             icon: Icons.menu_book_outlined,

@@ -8,14 +8,15 @@ it covers scope, the technology mapping, what is deliberately not improved, and 
 
 ## Status
 
-Phases 1–20 provide server configuration, online/offline login, resources, courses, shelf
+Phases 1–27 provide server configuration, online/offline login, resources, courses, shelf
 write-back, the dashboard shell, calendar, first-launch onboarding, an offline-editable user
 profile, persisted appearance settings, safe server details, an offline dictionary, reactive
 notifications, personalized My life/reference navigation, offline personal items, course
-ratings, offline submission creation/durable upload/list/detail/question-aware answer review/PDF export,
+ratings with upload, offline submission creation/durable upload/list/detail/question-aware answer review/PDF export,
 offline events/meetups, individual surveys, voices/discussions, teams/enterprises management,
-AI chat conversations, and user feedback/review system.
-**20 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
+AI chat conversations, user feedback/review system, community/nation tabs, graded course exams,
+resource viewer with download path, My health with AES-256-CBC encryption, and offline maps.
+**26 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
 
 Phase 13 added the durable write-back path — an `outbox` table replacing `RetryQueue`, drained
 on app resume by `OutboxDrainer` instead of by `WorkManager`. Writes made offline survive
@@ -30,6 +31,16 @@ durable outbox uploads are now Dart/Drift code.
 Phase 16 adds individual surveys: the exams catalog and embedded questions sync into Drift,
 users can search, sort, answer text and choice questions offline, and completed responses enter
 the durable submissions outbox.
+
+Phase 24 adds My health: the health profile form and examination form with AES-256-CBC
+encryption matching the Kotlin's `AndroidDecrypter` scheme, preserving `users.key`/`users.iv`
+across schema upgrades.
+
+Phase 26 adds ratings upload: `RatingsUploader` queues pending ratings to the durable outbox,
+completing the ratings write-back path that existed in Kotlin but had no Flutter caller.
+
+Phase 27 adds offline maps: `OfflineMapsScreen` using `flutter_map` with OpenStreetMap tiles,
+porting the Kotlin's OSMDroid-based `OfflineMapsActivity`.
 
 ## Getting started
 

@@ -83,5 +83,7 @@
   "audioPlayer": "Reproductor de audio",
   "fileNotFound": "Archivo no encontrado localmente",
   "loadingMedia": "Cargando...",
-  "resourceUnavailable": "Este recurso no está disponible para visualización sin conexión"
+  "resourceUnavailable": "Este recurso no está disponible para visualización sin conexión",
+  "offlineMaps": "Mapas sin conexión",
+  "centerOnDefault": "Centrar en ubicación predeterminada"
 }

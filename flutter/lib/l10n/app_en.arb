@@ -714,5 +714,101 @@
   "gender": "Gender",
   "temp": "Temp",
   "bp": "BP",
-  "unknown": "Unknown"
+  "unknown": "Unknown",
+  "offlineMaps": "Offline Maps",
+  "centerOnDefault": "Center on default location",
+  "storage": "Storage",
+  "storageManagement": "Storage Management",
+  "storageTotalDownloaded": "Total Downloaded",
+  "storageVideos": "Videos",
+  "storageAudio": "Audio",
+  "storagePdfs": "PDFs",
+  "storageImages": "Images",
+  "storageOther": "Other",
+  "fileCountOne": "1 file",
+  "fileCountMany": "{count} files",
+  "@fileCountMany": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageUnknownResource": "Unknown resource",
+  "storageDeleteSelectedConfirm": "Delete {count} selected items?",
+  "@storageDeleteSelectedConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "storageDeleteConfirm": "Delete all {category} files?",
+  "@storageDeleteConfirm": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "storageSelectedCount": "{count} selected",
+  "@storageSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "deleteSelected": "Delete Selected",
+  "deleteAll": "Delete All",
+  "selectAll": "Select All",
+  "noStorageUsed": "No downloaded files found",
+  "enterUsername": "Enter username",
+  "enterPassword": "Enter password",
+  "retypePassword": "Retype password",
+  "firstName": "First name",
+  "middleName": "Middle name",
+  "lastName": "Last name",
+  "phoneNumber": "Phone number",
+  "birthDate": "Birth date",
+  "selectDate": "Select date",
+  "becomeMember": "Become a member",
+  "creatingMember": "Creating member account...",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "pleaseSelectGender": "Please select gender",
+  "pleaseEnterPassword": "Please enter a password",
+  "usernameAlreadyExists": "Username already exists",
+  "memberCreatedOffline": "Member account created offline",
+  "communityEarnings": "Community total earnings: **$%1$d** / 500",
+  "@communityEarnings": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
+  "yourEarnings": "Your total earnings: **$%1$d** / 11",
+  "@yourEarnings": {
+    "placeholders": {
+      "amount": {
+        "type": "int"
+      }
+    }
+  },
+  "congratulations": "Congratulations! Challenge Completed",
+  "dailyVoices": "of 5 Daily Voices",
+  "rememberSync": "Remember to sync the mobile app.",
+  "perSurvey": "%1$s per survey",
+  "@perSurvey": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "challengeDialogTitle": "Daily Challenge",
+  "start": "Start",
+  "continuation": "Continue",
+  "next": "Next",
+  "close": "Close"
 }
