@@ -187,10 +187,10 @@ class FeedbackListScreen extends ConsumerWidget {
                           s == 'all'
                               ? l10n.all
                               : s == 'question'
-                                  ? l10n.question
-                                  : s == 'bug'
-                                      ? l10n.bug
-                                      : l10n.suggestion,
+                              ? l10n.question
+                              : s == 'bug'
+                              ? l10n.bug
+                              : l10n.suggestion,
                         ),
                         selected: filter.type == s,
                         onSelected: (selected) {

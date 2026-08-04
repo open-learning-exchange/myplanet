@@ -111,7 +111,9 @@ class _RatingDialogState extends ConsumerState<RatingDialog> {
 
   Future<void> _submit() async {
     setState(() => _submitting = true);
-    await ref.read(ratingActionsProvider).submit(
+    await ref
+        .read(ratingActionsProvider)
+        .submit(
           target: widget.target,
           title: widget.title,
           rate: _rating,

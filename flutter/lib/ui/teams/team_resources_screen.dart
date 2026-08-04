@@ -16,7 +16,7 @@ class TeamResourcesScreen extends ConsumerWidget {
     final resources = ref.watch(teamResourcesProvider(teamId));
     final canManage =
         ref.watch(teamMembershipsProvider).valueOrNull?[teamId]?.isLeader ??
-            false;
+        false;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamResources)),
       body: resources.when(
@@ -65,8 +65,9 @@ class TeamResourcesScreen extends ConsumerWidget {
         ref.read(teamResourcesProvider(teamId)).valueOrNull ?? const [];
     final linkedIds = linked.map((row) => row.resourceId).toSet();
     final all = ref.read(resourcesStreamProvider).valueOrNull ?? const [];
-    final available =
-        all.where((row) => !linkedIds.contains(row.resourceId)).toList();
+    final available = all
+        .where((row) => !linkedIds.contains(row.resourceId))
+        .toList();
     final selected = await showDialog<MyLibraryRow>(
       context: context,
       builder: (context) => AlertDialog(

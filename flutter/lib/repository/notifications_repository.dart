@@ -5,7 +5,7 @@ import '../data/local/app_database.dart';
 /// Offline notification read/actions from `NotificationsRepositoryImpl`.
 class NotificationsRepository {
   NotificationsRepository(this._dao, {DateTime Function()? now})
-      : _now = now ?? DateTime.now;
+    : _now = now ?? DateTime.now;
 
   static const int storageWarningPercent = 10;
 

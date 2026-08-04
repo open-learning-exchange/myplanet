@@ -29,9 +29,7 @@ class TeamVoicesScreen extends ConsumerWidget {
     final membership = memberships[teamId];
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.teamDiscussions),
-      ),
+      appBar: AppBar(title: Text(l10n.teamDiscussions)),
       floatingActionButton: membership != null
           ? FloatingActionButton.extended(
               onPressed: () => _compose(context, ref, team),
@@ -65,10 +63,8 @@ class TeamVoicesScreen extends ConsumerWidget {
                   padding: const EdgeInsets.fromLTRB(12, 8, 12, 88),
                   itemCount: rows.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 8),
-                  itemBuilder: (context, index) => _TeamVoiceCard(
-                    row: rows[index],
-                    teamId: teamId,
-                  ),
+                  itemBuilder: (context, index) =>
+                      _TeamVoiceCard(row: rows[index], teamId: teamId),
                 ),
               ),
       ),
@@ -82,7 +78,9 @@ class TeamVoicesScreen extends ConsumerWidget {
   ) async {
     final message = await showVoiceComposer(context);
     if (message == null || message.isEmpty) return;
-    await ref.read(voicesActionsProvider).createTeamPost(
+    await ref
+        .read(voicesActionsProvider)
+        .createTeamPost(
           teamId: teamId,
           teamName: team?.name ?? '',
           message: message,
@@ -128,9 +126,7 @@ class _VoiceCardContent extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  CircleAvatar(
-                    child: Text(_initial(row.userName)),
-                  ),
+                  CircleAvatar(child: Text(_initial(row.userName))),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(

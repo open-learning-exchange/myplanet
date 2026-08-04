@@ -13,11 +13,11 @@ typedef RatingTarget = ({String type, String itemId});
 
 final ratingSummaryProvider =
     StreamProvider.family<RatingSummary, RatingTarget>((ref, target) {
-  final userId = ref.watch(sessionProvider).valueOrNull?.id;
-  return ref
-      .watch(ratingsRepositoryProvider)
-      .watchSummary(target.type, target.itemId, userId);
-});
+      final userId = ref.watch(sessionProvider).valueOrNull?.id;
+      return ref
+          .watch(ratingsRepositoryProvider)
+          .watchSummary(target.type, target.itemId, userId);
+    });
 
 class RatingActions {
   const RatingActions(this.ref);
@@ -31,7 +31,9 @@ class RatingActions {
   }) async {
     final user = ref.read(sessionProvider).valueOrNull;
     if (user == null) return;
-    await ref.read(ratingsRepositoryProvider).submit(
+    await ref
+        .read(ratingsRepositoryProvider)
+        .submit(
           type: target.type,
           itemId: target.itemId,
           title: title,

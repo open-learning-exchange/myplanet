@@ -27,11 +27,12 @@ enum OutboxOutcome {
 /// is whatever the database says at send time; those register a handler that
 /// rebuilds instead of replaying. Conflating the two is how a stale merge
 /// silently reverts a change the user made after the failure.
-typedef OutboxHandler = Future<NetworkResult<Map<String, dynamic>>> Function(
-  OutboxRow row,
-  Map<String, dynamic> payload,
-  String? authHeader,
-);
+typedef OutboxHandler =
+    Future<NetworkResult<Map<String, dynamic>>> Function(
+      OutboxRow row,
+      Map<String, dynamic> payload,
+      String? authHeader,
+    );
 
 /// Replaces `services/retry/RetryQueueWorker.kt`.
 ///
@@ -47,7 +48,7 @@ typedef OutboxHandler = Future<NetworkResult<Map<String, dynamic>>> Function(
 /// time the app is opened with connectivity, not while it is closed.
 class OutboxDrainer {
   OutboxDrainer(this._api, this._outbox, {Map<String, OutboxHandler>? handlers})
-      : _handlers = handlers ?? const {};
+    : _handlers = handlers ?? const {};
 
   final PlanetApi _api;
   final OutboxRepository _outbox;
@@ -82,10 +83,11 @@ class OutboxDrainer {
       _drain(authHeader: authHeader)
           .then(completer.complete)
           .catchError((Object e, StackTrace s) {
-        completer.completeError(e, s);
-      }).whenComplete(() {
-        _inFlight = null;
-      }),
+            completer.completeError(e, s);
+          })
+          .whenComplete(() {
+            _inFlight = null;
+          }),
     );
     return completer.future;
   }

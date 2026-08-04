@@ -13,10 +13,7 @@ import 'feedback_repository.dart';
 
 /// Port of `repository/FeedbackRepositoryImpl.kt`.
 class FeedbackRepositoryImpl implements FeedbackRepository {
-  FeedbackRepositoryImpl({
-    required this.feedbackDao,
-    required this.planetApi,
-  });
+  FeedbackRepositoryImpl({required this.feedbackDao, required this.planetApi});
 
   final FeedbackDao feedbackDao;
   final PlanetApi planetApi;

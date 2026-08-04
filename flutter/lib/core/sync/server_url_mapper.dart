@@ -26,7 +26,7 @@ class UrlMapping {
 
 class ServerUrlMapper {
   ServerUrlMapper({Map<String, String>? mappings})
-      : _mappings = mappings ?? parseMappings(_mappingsFromEnvironment);
+    : _mappings = mappings ?? parseMappings(_mappingsFromEnvironment);
 
   static const String _mappingsFromEnvironment = String.fromEnvironment(
     'PLANET_SERVER_MAPPINGS',
@@ -42,8 +42,9 @@ class ServerUrlMapper {
       if (trimmed.isEmpty) continue;
       final separator = trimmed.indexOf('=');
       if (separator <= 0 || separator == trimmed.length - 1) continue;
-      result[trimmed.substring(0, separator).trim()] =
-          trimmed.substring(separator + 1).trim();
+      result[trimmed.substring(0, separator).trim()] = trimmed
+          .substring(separator + 1)
+          .trim();
     }
     return result;
   }
@@ -54,7 +55,8 @@ class ServerUrlMapper {
     try {
       final uri = Uri.parse(url);
       if (uri.scheme.isEmpty || uri.host.isEmpty) return null;
-      final isDefaultPort = (uri.scheme == 'http' && uri.port == 80) ||
+      final isDefaultPort =
+          (uri.scheme == 'http' && uri.port == 80) ||
           (uri.scheme == 'https' && uri.port == 443);
       return uri.hasPort && !isDefaultPort
           ? '${uri.scheme}://${uri.host}:${uri.port}'

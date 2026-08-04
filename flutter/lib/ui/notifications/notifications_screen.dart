@@ -139,8 +139,9 @@ class _NotificationTile extends ConsumerWidget {
               ? notification.title!
               : _titleFor(l10n, notification.type),
           style: TextStyle(
-            fontWeight:
-                notification.isRead ? FontWeight.normal : FontWeight.bold,
+            fontWeight: notification.isRead
+                ? FontWeight.normal
+                : FontWeight.bold,
           ),
         ),
         subtitle: Column(
@@ -150,8 +151,8 @@ class _NotificationTile extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               DateFormat.yMMMd().add_jm().format(
-                    DateTime.fromMillisecondsSinceEpoch(notification.createdAt),
-                  ),
+                DateTime.fromMillisecondsSinceEpoch(notification.createdAt),
+              ),
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -159,8 +160,8 @@ class _NotificationTile extends ConsumerWidget {
         onTap: notification.isRead
             ? null
             : () => ref
-                .read(notificationActionsProvider)
-                .markAsRead(notification.id),
+                  .read(notificationActionsProvider)
+                  .markAsRead(notification.id),
       ),
     );
   }
@@ -189,13 +190,13 @@ class _NotificationTile extends ConsumerWidget {
 }
 
 IconData _iconFor(String type) => switch (type.toLowerCase()) {
-      'task' => Icons.event_available_outlined,
-      'chat' || 'voice_reply' => Icons.chat_bubble_outline,
-      'resource' => Icons.folder_outlined,
-      'storage' => Icons.storage_outlined,
-      'join_request' || 'team_join' => Icons.group_add_outlined,
-      _ => Icons.notifications_outlined,
-    };
+  'task' => Icons.event_available_outlined,
+  'chat' || 'voice_reply' => Icons.chat_bubble_outline,
+  'resource' => Icons.folder_outlined,
+  'storage' => Icons.storage_outlined,
+  'join_request' || 'team_join' => Icons.group_add_outlined,
+  _ => Icons.notifications_outlined,
+};
 
 String _titleFor(AppLocalizations l10n, String type) =>
     switch (type.toLowerCase()) {

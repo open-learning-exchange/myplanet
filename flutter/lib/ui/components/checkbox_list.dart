@@ -23,7 +23,7 @@ class CheckboxList<T> extends StatefulWidget {
 
   /// Optional custom item builder
   final Widget Function(BuildContext context, T item, bool isSelected)?
-      itemBuilder;
+  itemBuilder;
 
   /// Fixed height for the list (optional)
   final double? height;

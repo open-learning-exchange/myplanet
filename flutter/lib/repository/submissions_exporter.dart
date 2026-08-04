@@ -106,62 +106,60 @@ class SubmissionsExporter {
   }
 
   pw.Widget _metadata(SubmissionRow row) => pw.Table(
-        columnWidths: const {0: pw.FixedColumnWidth(90)},
-        children: [
-          _metadataRow('Status', row.status ?? 'Pending'),
-          _metadataRow('Submitted by', row.user ?? row.userId ?? 'Unknown'),
-          _metadataRow('Grade', '${row.grade}'),
-          _metadataRow(
-            'Updated',
-            row.lastUpdateTime == 0
-                ? 'Unknown'
-                : DateFormat.yMMMd().add_jm().format(
-                      DateTime.fromMillisecondsSinceEpoch(row.lastUpdateTime),
-                    ),
-          ),
-        ],
-      );
+    columnWidths: const {0: pw.FixedColumnWidth(90)},
+    children: [
+      _metadataRow('Status', row.status ?? 'Pending'),
+      _metadataRow('Submitted by', row.user ?? row.userId ?? 'Unknown'),
+      _metadataRow('Grade', '${row.grade}'),
+      _metadataRow(
+        'Updated',
+        row.lastUpdateTime == 0
+            ? 'Unknown'
+            : DateFormat.yMMMd().add_jm().format(
+                DateTime.fromMillisecondsSinceEpoch(row.lastUpdateTime),
+              ),
+      ),
+    ],
+  );
 
   pw.TableRow _metadataRow(String label, String value) => pw.TableRow(
-        children: [
-          pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-          pw.Text(value),
-        ],
-      );
+    children: [
+      pw.Text(label, style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+      pw.Text(value),
+    ],
+  );
 
   pw.Widget _question(
     int index,
     SubmissionQuestionRow question,
     SubmissionAnswerRow? answer,
-  ) =>
-      pw.Container(
-        margin: const pw.EdgeInsets.only(bottom: 16),
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Text(
-              'Q${index + 1}: ${question.header ?? question.body ?? ''}',
-              style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-            ),
-            if (question.body != null && question.header != null)
-              pw.Text(question.body!),
-            pw.SizedBox(height: 4),
-            pw.Text(
-                'A: ${answer == null ? 'No answer' : _answerValue(answer)}'),
-            if (question.marks != null) pw.Text('Marks: ${question.marks}'),
-          ],
+  ) => pw.Container(
+    margin: const pw.EdgeInsets.only(bottom: 16),
+    child: pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          'Q${index + 1}: ${question.header ?? question.body ?? ''}',
+          style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
         ),
-      );
+        if (question.body != null && question.header != null)
+          pw.Text(question.body!),
+        pw.SizedBox(height: 4),
+        pw.Text('A: ${answer == null ? 'No answer' : _answerValue(answer)}'),
+        if (question.marks != null) pw.Text('Marks: ${question.marks}'),
+      ],
+    ),
+  );
 
   pw.Widget _answerOnly(int index, SubmissionAnswerRow answer) => pw.Paragraph(
-        text:
-            'Q${index + 1}: ${answer.questionId ?? ''}\nA: ${_answerValue(answer)}',
-      );
+    text:
+        'Q${index + 1}: ${answer.questionId ?? ''}\nA: ${_answerValue(answer)}',
+  );
 
   String _answerValue(SubmissionAnswerRow answer) =>
       answer.valueChoices.isNotEmpty
-          ? answer.valueChoices.join(', ')
-          : answer.value ?? 'No answer';
+      ? answer.valueChoices.join(', ')
+      : answer.value ?? 'No answer';
 
   /// Recovers the raw question id from the `submissionId:rawQuestionId` row id.
   ///

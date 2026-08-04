@@ -76,7 +76,9 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      ...messages.skip(1).map(
+                      ...messages
+                          .skip(1)
+                          .map(
                             (m) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: _MessageCard(
@@ -134,9 +136,9 @@ class _FeedbackDetailScreenState extends ConsumerState<FeedbackDetailScreen> {
                           onPressed: _isSubmitting || session == null
                               ? null
                               : () => _submitReply(
-                                    feedback.id,
-                                    session.name ?? '',
-                                  ),
+                                  feedback.id,
+                                  session.name ?? '',
+                                ),
                           icon: _isSubmitting
                               ? const SizedBox.square(
                                   dimension: 20,

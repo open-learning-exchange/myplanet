@@ -55,31 +55,31 @@ class VoicesUploader {
   /// Adopting `id`/`rev` on success is what stops the next [queuePending] from
   /// posting the same message again.
   OutboxHandler get handler => (row, payload, authHeader) async {
-        final result = await _api.postJsonObject(
-          row.endpoint,
-          payload,
-          authHeader: authHeader,
-        );
+    final result = await _api.postJsonObject(
+      row.endpoint,
+      payload,
+      authHeader: authHeader,
+    );
 
-        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-          final couchId = data['id'];
-          final rev = data['rev'];
-          if (couchId is! String || rev is! String) {
-            // Reporting success would drop the outbox row while the post stays
-            // undelivered, so the next `queuePending` would post a duplicate.
-            return const NetworkError<Map<String, dynamic>>(
-              null,
-              'Upload response carried no id/rev',
-            );
-          }
-          final images = payload['images'];
-          await _voices.markUploaded(
-            row.itemId,
-            couchId,
-            rev,
-            images: images is List ? images : const [],
-          );
-        }
-        return result;
-      };
+    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+      final couchId = data['id'];
+      final rev = data['rev'];
+      if (couchId is! String || rev is! String) {
+        // Reporting success would drop the outbox row while the post stays
+        // undelivered, so the next `queuePending` would post a duplicate.
+        return const NetworkError<Map<String, dynamic>>(
+          null,
+          'Upload response carried no id/rev',
+        );
+      }
+      final images = payload['images'];
+      await _voices.markUploaded(
+        row.itemId,
+        couchId,
+        rev,
+        images: images is List ? images : const [],
+      );
+    }
+    return result;
+  };
 }

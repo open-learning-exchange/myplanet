@@ -19,8 +19,8 @@ class EventsRepository {
     this._dao, {
     DateTime Function()? now,
     String Function()? createId,
-  })  : _now = now ?? DateTime.now,
-        _createId = createId ?? _defaultId;
+  }) : _now = now ?? DateTime.now,
+       _createId = createId ?? _defaultId;
 
   final MeetupDao _dao;
   final PlanetApi _api;
@@ -77,7 +77,9 @@ class EventsRepository {
     final row = await _dao.getById(id);
     if (row == null || title.trim().isEmpty) return false;
     await _dao.upsert(
-      row.toCompanion(false).copyWith(
+      row
+          .toCompanion(false)
+          .copyWith(
             title: Value(title.trim()),
             description: Value(description.trim()),
             startDate: Value(startDate),
@@ -238,26 +240,26 @@ class EventsRepository {
   /// - `link` is omitted entirely when empty rather than sent as null, matching
   ///   the `if (!meetup.link.isNullOrEmpty())` guard.
   static Map<String, dynamic> serialize(MeetupRow row) => {
-        if (row.meetupId?.isNotEmpty == true) '_id': row.meetupId,
-        if (row.meetupIdRev?.isNotEmpty == true) '_rev': row.meetupIdRev,
-        'title': row.title,
-        'description': row.description,
-        'startDate': row.startDate,
-        'endDate': row.endDate,
-        'startTime': row.startTime,
-        'endTime': row.endTime,
-        'recurring': row.recurring,
-        'meetupLocation': row.meetupLocation,
-        'meetupLink': row.meetupLink,
-        'createdBy': row.creator,
-        'teamId': row.teamId,
-        'category': row.category,
-        'createdDate': row.createdDate,
-        'recurringNumber': row.recurringNumber,
-        'sourcePlanet': row.sourcePlanet,
-        'sync': row.sync,
-        if (row.link?.isNotEmpty == true) 'link': _jsonObject(row.link),
-      };
+    if (row.meetupId?.isNotEmpty == true) '_id': row.meetupId,
+    if (row.meetupIdRev?.isNotEmpty == true) '_rev': row.meetupIdRev,
+    'title': row.title,
+    'description': row.description,
+    'startDate': row.startDate,
+    'endDate': row.endDate,
+    'startTime': row.startTime,
+    'endTime': row.endTime,
+    'recurring': row.recurring,
+    'meetupLocation': row.meetupLocation,
+    'meetupLink': row.meetupLink,
+    'createdBy': row.creator,
+    'teamId': row.teamId,
+    'category': row.category,
+    'createdDate': row.createdDate,
+    'recurringNumber': row.recurringNumber,
+    'sourcePlanet': row.sourcePlanet,
+    'sync': row.sync,
+    if (row.link?.isNotEmpty == true) 'link': _jsonObject(row.link),
+  };
 
   static Map<String, dynamic>? _jsonObject(String? value) {
     if (value == null || value.isEmpty) return null;

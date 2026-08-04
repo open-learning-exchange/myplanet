@@ -19,8 +19,8 @@ class VoicesRepository {
     this._dao, {
     DateTime Function()? now,
     String Function()? createId,
-  })  : _now = now ?? DateTime.now,
-        _createId = createId ?? _defaultId;
+  }) : _now = now ?? DateTime.now,
+       _createId = createId ?? _defaultId;
 
   final PlanetApi _api;
   final NewsDao _dao;
@@ -41,10 +41,10 @@ class VoicesRepository {
   /// allowed to see, newest first.
   Stream<List<NewsRow>> watchCommunityFeed(String userIdentifier) {
     return _dao.watchTopLevelMessages().map(
-          (rows) => rows
-              .where((row) => isVisibleToUser(row, userIdentifier))
-              .toList(growable: false),
-        );
+      (rows) => rows
+          .where((row) => isVisibleToUser(row, userIdentifier))
+          .toList(growable: false),
+    );
   }
 
   /// Port of `isVisibleToUser`.
@@ -207,23 +207,27 @@ class VoicesRepository {
 
     var urls = row.imageUrls;
     if (imagesToRemove.isNotEmpty) {
-      urls = urls.where((entry) {
-        try {
-          final decoded = jsonDecode(entry);
-          if (decoded is! Map<String, dynamic>) return true;
-          return !imagesToRemove.contains(
-            JsonUtils.getString('imageUrl', decoded),
-          );
-        } catch (_) {
-          // An entry that is not JSON is kept, matching the Kotlin's
-          // `catch { true }` — removal only applies to what it can parse.
-          return true;
-        }
-      }).toList(growable: false);
+      urls = urls
+          .where((entry) {
+            try {
+              final decoded = jsonDecode(entry);
+              if (decoded is! Map<String, dynamic>) return true;
+              return !imagesToRemove.contains(
+                JsonUtils.getString('imageUrl', decoded),
+              );
+            } catch (_) {
+              // An entry that is not JSON is kept, matching the Kotlin's
+              // `catch { true }` — removal only applies to what it can parse.
+              return true;
+            }
+          })
+          .toList(growable: false);
     }
 
     await _dao.upsert(
-      row.toCompanion(false).copyWith(
+      row
+          .toCompanion(false)
+          .copyWith(
             imageUrls: Value([...urls, ...newImages]),
             message: Value(message),
             isEdited: const Value(true),
@@ -294,7 +298,9 @@ class VoicesRepository {
     final row = await _dao.getById(newsId);
     if (row == null) return;
     await _dao.upsert(
-      row.toCompanion(false).copyWith(
+      row
+          .toCompanion(false)
+          .copyWith(
             labels: Value(
               row.labels
                   .where((entry) => entry != label)
@@ -357,7 +363,9 @@ class VoicesRepository {
     final row = await _dao.getById(id);
     if (row == null) return;
     await _dao.upsert(
-      row.toCompanion(false).copyWith(
+      row
+          .toCompanion(false)
+          .copyWith(
             docId: Value(docId),
             rev: Value(rev),
             images: Value(jsonEncode(images)),

@@ -62,9 +62,9 @@ class ResourcesScreen extends ConsumerWidget {
                 child: SearchBar(
                   hintText: l10n.search,
                   leading: const Icon(Icons.search),
-                  onChanged: (value) => ref
-                      .read(resourceSearchQueryProvider.notifier)
-                      .state = value,
+                  onChanged: (value) =>
+                      ref.read(resourceSearchQueryProvider.notifier).state =
+                          value,
                 ),
               ),
               if (syncState is SyncRunning)

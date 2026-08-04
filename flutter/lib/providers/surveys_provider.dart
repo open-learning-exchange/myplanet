@@ -31,11 +31,11 @@ final surveysProvider = StreamProvider<List<SurveyRow>>((ref) async* {
       SurveySort.newest => (a, b) => b.createdDate.compareTo(a.createdDate),
       SurveySort.oldest => (a, b) => a.createdDate.compareTo(b.createdDate),
       SurveySort.titleAscending => (a, b) => (a.name ?? '').compareTo(
-            b.name ?? '',
-          ),
+        b.name ?? '',
+      ),
       SurveySort.titleDescending => (a, b) => (b.name ?? '').compareTo(
-            a.name ?? '',
-          ),
+        a.name ?? '',
+      ),
     });
     yield rows;
   }
@@ -46,18 +46,17 @@ final surveyProvider = FutureProvider.family<SurveyRow?, String>(
 );
 final surveyQuestionsProvider =
     FutureProvider.family<List<SurveyQuestionRow>, String>(
-  (ref, id) => ref.watch(surveysRepositoryProvider).questionsFor(id),
-);
+      (ref, id) => ref.watch(surveysRepositoryProvider).questionsFor(id),
+    );
 
 class SurveysSyncNotifier extends SyncNotifier {
   @override
   Future<SyncResult> runSync(
     ServerConfig config,
     void Function(SyncProgress) onProgress,
-  ) =>
-      ref
-          .read(surveysRepositoryProvider)
-          .sync(config: config, onProgress: onProgress);
+  ) => ref
+      .read(surveysRepositoryProvider)
+      .sync(config: config, onProgress: onProgress);
 }
 
 final surveysSyncProvider = NotifierProvider<SurveysSyncNotifier, SyncUiState>(

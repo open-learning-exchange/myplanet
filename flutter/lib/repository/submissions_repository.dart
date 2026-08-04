@@ -39,8 +39,9 @@ class SubmissionsRepository {
     DateTime? now,
   }) async {
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
-    final id =
-        sha1.convert(utf8.encode('$userId:$timestamp:$title')).toString();
+    final id = sha1
+        .convert(utf8.encode('$userId:$timestamp:$title'))
+        .toString();
     await _dao.upsertAll(
       [
         SubmissionsCompanion.insert(
@@ -80,8 +81,9 @@ class SubmissionsRepository {
     DateTime? now,
   }) async {
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
-    final id =
-        sha1.convert(utf8.encode('$userId:$timestamp:${survey.id}')).toString();
+    final id = sha1
+        .convert(utf8.encode('$userId:$timestamp:${survey.id}'))
+        .toString();
     await _dao.upsertAll(
       [
         SubmissionsCompanion.insert(
@@ -154,8 +156,9 @@ class SubmissionsRepository {
     DateTime? now,
   }) async {
     final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
-    final id =
-        sha1.convert(utf8.encode('$userId:$timestamp:${exam.id}')).toString();
+    final id = sha1
+        .convert(utf8.encode('$userId:$timestamp:${exam.id}'))
+        .toString();
     final correct = questions
         .where((question) => answers[question.id]?.isCorrect ?? false)
         .length;
@@ -283,7 +286,8 @@ class SubmissionsRepository {
     final answers = <String, List<SubmissionAnswersCompanion>>{};
     final questions = <String, List<SubmissionQuestionsCompanion>>{};
     for (final json in documents) {
-      final id = JsonUtils.getStringOrNull('id', json) ??
+      final id =
+          JsonUtils.getStringOrNull('id', json) ??
           JsonUtils.getStringOrNull('_id', json);
       if (id == null || id.isEmpty) {
         throw const FormatException('Submission is missing an id');
@@ -326,8 +330,9 @@ class SubmissionsRepository {
               ),
       ];
       final parent = json['parent'];
-      final rawQuestions =
-          parent is Map<String, dynamic> ? parent['questions'] : null;
+      final rawQuestions = parent is Map<String, dynamic>
+          ? parent['questions']
+          : null;
       questions[id] = [
         if (rawQuestions is List)
           for (var index = 0; index < rawQuestions.length; index++)
