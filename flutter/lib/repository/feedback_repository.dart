@@ -1,3 +1,5 @@
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
 import '../data/local/app_database.dart';
 
 /// Port of `repository/FeedbackRepository.kt` interface.
@@ -38,4 +40,13 @@ abstract class FeedbackRepository {
 
   /// Marks feedback as uploaded.
   Future<void> markUploaded(String id, String rev);
+
+  /// Syncs feedback from CouchDB.
+  ///
+  /// Counts with `?limit=0`, then walks pages, upserting each feedback document.
+  /// Port of the `feedback` table pull in `TransactionSyncManager.kt`.
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  });
 }

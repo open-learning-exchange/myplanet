@@ -1,6 +1,11 @@
 import 'dart:convert';
 
+import '../core/config/server_config.dart';
 import '../core/network/network_result.dart';
+import '../core/sync/adaptive_batch_processor.dart';
+import '../core/sync/sync_result.dart';
+import '../core/utils/json_utils.dart';
+import '../core/utils/url_utils.dart';
 import '../data/api/planet_api.dart';
 import '../data/local/app_database.dart';
 import '../data/local/chat_mapper.dart';
@@ -19,6 +24,10 @@ class ChatRepositoryImpl implements ChatRepository {
   final ChatDao chatDao;
   final String serverUrl;
   final Duration timeout;
+
+  /// Chat documents are smaller than courses/resources, so a standard starting
+  /// page size works well.
+  static const int initialBatchSize = 100;
 
   @override
   Future<Map<String, bool>?> fetchAiProviders() async {
@@ -233,5 +242,86 @@ class ChatRepositoryImpl implements ChatRepository {
       case NetworkException():
         return null;
     }
+  }
+
+  @override
+  Future<SyncResult> sync({
+    required ServerConfig config,
+    void Function(SyncProgress)? onProgress,
+  }) async {
+    final dbUrl = UrlUtils.dbUrl(config);
+    final authHeader = UrlUtils.basicAuthHeader('satellite', config.pin);
+
+    final countResult = await planetApi.getJsonObject(
+      '$dbUrl/chat_history/_all_docs?limit=0',
+      authHeader: authHeader,
+    );
+    if (countResult is! NetworkSuccess<Map<String, dynamic>>) {
+      return SyncFailed(describeNetworkFailure(countResult));
+    }
+
+    final totalRows = JsonUtils.getInt('total_rows', countResult.data);
+    if (totalRows == 0) {
+      onProgress?.call(const SyncProgress(completed: 0, total: 0));
+      return const SyncComplete(0);
+    }
+
+    final batchSizer = AdaptiveBatchProcessor(initialSize: initialBatchSize);
+    final savedIds = <String>[];
+    var skip = 0;
+    var walkedEveryPage = true;
+
+    while (skip < totalRows) {
+      final batchSize = batchSizer.currentSize;
+      final stopwatch = Stopwatch()..start();
+
+      final pageResult = await planetApi.getJsonObject(
+        '$dbUrl/chat_history/_all_docs?include_docs=true&limit=$batchSize&skip=$skip',
+        authHeader: authHeader,
+      );
+      stopwatch.stop();
+
+      if (pageResult is! NetworkSuccess<Map<String, dynamic>>) {
+        batchSizer.recordFailure();
+        return SyncFailed(describeNetworkFailure(pageResult));
+      }
+      batchSizer.recordSuccess(stopwatch.elapsedMilliseconds);
+
+      final rows = pageResult.data['rows'];
+      if (rows is! List || rows.isEmpty) {
+        walkedEveryPage = false;
+        break;
+      }
+
+      final docs = <Map<String, dynamic>>[];
+      for (final row in rows) {
+        if (row is! Map<String, dynamic>) continue;
+        final doc = JsonUtils.getObject('doc', row);
+        if (doc != null) {
+          docs.add(doc);
+          final id = JsonUtils.getString('_id', doc);
+          if (id.isNotEmpty) savedIds.add(id);
+        }
+      }
+
+      if (docs.isNotEmpty) {
+        await insertChatHistoryFromSync(docs);
+      }
+
+      skip += rows.length;
+      onProgress?.call(
+        SyncProgress(
+          completed: skip > totalRows ? totalRows : skip,
+          total: totalRows,
+        ),
+      );
+    }
+
+    // Clean up local rows not present on server if we walked all pages.
+    if (walkedEveryPage && savedIds.isNotEmpty) {
+      await chatDao.deleteNotIn(savedIds);
+    }
+
+    return SyncComplete(savedIds.length);
   }
 }
