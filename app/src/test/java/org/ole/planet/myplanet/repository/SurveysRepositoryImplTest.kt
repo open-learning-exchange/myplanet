@@ -110,10 +110,7 @@ class SurveysRepositoryImplTest {
 
     @Test
     fun `getSurveySubmissionCount uses pending surveys dao query`() = runTest {
-        coEvery { submissionDao.getPendingSurveys("user1") } returns listOf(
-            Submission(id = "sub1"),
-            Submission(id = "sub2")
-        )
+        coEvery { submissionDao.countPendingSurveys("user1") } returns 2
 
         val count = repository.getSurveySubmissionCount("user1")
 

@@ -69,6 +69,7 @@ interface ExamDao {
     @Query("SELECT * FROM exams WHERE type = :type") fun observeByType(type: String): Flow<List<StepExam>>
     @Query("SELECT * FROM exams WHERE teamId = :teamId") suspend fun getByTeamId(teamId: String): List<StepExam>
     @Query("SELECT * FROM exams WHERE teamId = :teamId AND type = :type") suspend fun getByTeamIdAndType(teamId: String, type: String): List<StepExam>
+    @Query("SELECT COUNT(*) FROM exams WHERE courseId = :courseId AND type = :type") suspend fun countByCourseIdAndType(courseId: String, type: String): Int
     @Query("DELETE FROM exams WHERE id = :id") suspend fun deleteById(id: String): Int
     @Upsert suspend fun upsert(item: StepExam)
     @Upsert suspend fun upsertAll(items: List<StepExam>)
@@ -95,6 +96,7 @@ interface SubmissionDao {
     @Query("SELECT * FROM submissions WHERE userId = :userId AND type = 'exam'") suspend fun getExamSubmissionsByUser(userId: String?): List<Submission>
     @Query("SELECT * FROM submissions WHERE userId = :userId") fun observeByUserId(userId: String): Flow<List<Submission>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun getPendingSurveys(userId: String): List<Submission>
+    @Query("SELECT COUNT(*) FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey'") suspend fun countPendingSurveys(userId: String): Int
     @Query("SELECT * FROM submissions WHERE userId = :userId AND LOWER(status) = 'pending' AND type = 'survey'") fun observePendingSurveys(userId: String?): Flow<List<Submission>>
     @Query("SELECT * FROM submissions WHERE userId = :userId AND status = 'pending' AND type = 'survey' AND teamId IS NULL") suspend fun getUniquePendingSurveyCandidates(userId: String): List<Submission>
     @Query("SELECT COUNT(*) FROM submissions WHERE (isUpdated = 1 OR _id = '')") suspend fun countPendingOfflineSubmissions(): Int
