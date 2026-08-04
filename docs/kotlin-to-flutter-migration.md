@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 20 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**20 of 28 UI packages** are ported.
+**Phase 21 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**21 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -48,6 +48,9 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 20** — feedback: the user feedback/review system with list view, detail view with replies,
   create feedback dialog, priority/type selection, close feedback action for managers, and
   reactive Drift persistence.
+- **Phase 21** — community: the community/nation tab with voices, leaders, calendar, services tabs.
+  Leaders are parsed from the JSON stored in preferences. Services display team links/routes
+  from the community. Community/nation info (name, type) is persisted in preferences.
 
 ## Strategy
 
@@ -108,6 +111,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 | Teams catalog and tasks (partial) | `MyTeam`, `TeamsRepositoryImpl`, `TeamFragment`, `TeamDetailFragment` | `data/local/team_mapper.dart`, `repository/teams_repository.dart`, `ui/teams/` |
 | Chat history and conversations | `ChatHistory`, `ChatDao`, `ChatRepositoryImpl`, `ChatHistoryFragment`, `ChatDetailFragment`, `ChatViewModel` | `data/local/chat_mapper.dart`, `repository/chat_repository.dart`, `repository/chat_repository_impl.dart`, `ui/chat/` |
 | Feedback | `Feedback`, `FeedbackReply`, `FeedbackDao`, `FeedbackRepositoryImpl`, `FeedbackListFragment`, `FeedbackFragment`, `FeedbackDetailActivity` | `data/local/feedback_mapper.dart`, `repository/feedback_repository.dart`, `repository/feedback_repository_impl.dart`, `ui/feedback/` |
+| Community (leaders, services, bottom sheet) | `CommunityTabFragment`, `LeadersFragment`, `CommunityServicesFragment`, `HomeCommunityDialogFragment`, `CommunityLeadersAdapter`, `CommunityPagerAdapter` | `ui/community/`, `core/prefs/planet_prefs.dart` (communityLeaders, communityName, planetType) |
 
 `SharedPrefManager.getFirstLaunch()` is misleadingly named: it defaults to `false` and is set to
 `true` once onboarding finishes, so it actually means "onboarding already done". The port stores
@@ -449,9 +453,9 @@ Three related defects clustered around the same code, all from copy-paste:
   into a duplicate thread rather than an update, and `markUploaded` recorded no
   revision, so the update would have conflicted anyway.
 
-## Remaining UI packages (8 of 28)
+## Remaining UI packages (7 of 28)
 
-`community`, `components`, `enterprises`, `exam`,
+`components`, `enterprises`, `exam`,
 `health`, `maps`,
 `viewer` — plus team voices, team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
@@ -459,7 +463,7 @@ rest of `settings`, plus profile photo/upload, membership, and the rest of `user
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
-Suggested order, dependency-first: `community` → `exam` → the rest. Course progress and
+Suggested order, dependency-first: `exam` → the rest. Course progress and
 certification are deliberately deferred with their own packages rather than bundled into the
 courses slice. `events` and `surveys` are now ported for the individual case; team meetups and
 team/public survey sharing arrive with `teams`.
@@ -530,5 +534,5 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-03
-**Phase**: 20 of N (feedback done)
+**Last updated**: 2026-08-04
+**Phase**: 21 of N (community done)

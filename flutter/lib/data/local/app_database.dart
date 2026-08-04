@@ -258,6 +258,13 @@ class TeamDao extends DatabaseAccessor<AppDatabase> with _$TeamDaoMixin {
   Stream<List<TeamRow>> watchResourceLinks(String teamId) =>
       watchTeamDocuments(teamId, 'resourceLink');
 
+  /// Watch all documents of a specific docType (e.g., 'service').
+  Stream<List<TeamRow>> watchTeamDocumentsByType(String docType) =>
+      (select(teams)
+            ..where((t) => t.docType.equals(docType))
+            ..orderBy([(t) => OrderingTerm.asc(t.title)]))
+          .watch();
+
   Stream<List<TeamRow>> watchReports(String teamId) =>
       (select(teams)
             ..where(
