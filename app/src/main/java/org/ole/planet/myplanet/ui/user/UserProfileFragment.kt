@@ -140,19 +140,16 @@ class UserProfileFragment : Fragment() {
         viewModel.loadCurrentUserProfile()
         viewModel.getOfflineVisits()
 
-        viewLifecycleOwner.lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                combine(
-                    viewModel.offlineVisits,
-                    viewModel.maxOpenedResource,
-                    viewModel.lastVisit,
-                    viewModel.numberOfResourceOpen
-                ) { _, _, _, _ -> Unit }
-                    .collect {
-                        if (isAdded) {
-                            setupStatsRecycler()
-                        }
-                    }
+        val combinedFlow = combine(
+            viewModel.offlineVisits,
+            viewModel.maxOpenedResource,
+            viewModel.lastVisit,
+            viewModel.numberOfResourceOpen
+        ) { _, _, _, _ -> Unit }
+
+        collectWhenStarted(combinedFlow) {
+            if (isAdded) {
+                setupStatsRecycler()
             }
         }
     }
