@@ -13,6 +13,9 @@ import 'dashboard/dashboard_shell.dart';
 import 'dictionary/dictionary_screen.dart';
 import 'events/event_detail_screen.dart';
 import 'events/events_screen.dart';
+import 'feedback/feedback_create_screen.dart';
+import 'feedback/feedback_detail_screen.dart';
+import 'feedback/feedback_list_screen.dart';
 import 'life/life_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
@@ -67,6 +70,9 @@ class Routes {
   static const String teams = '/life/teams';
   static const String chatHistory = '/life/chat';
   static const String chat = '/life/chat/:chatId';
+  static const String feedback = '/life/feedback';
+  static const String feedbackDetail = '/life/feedback/:feedbackId';
+  static const String feedbackCreate = '/life/feedback/create';
 }
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -300,6 +306,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                         path: ':chatId',
                         builder: (context, state) => ChatDetailScreen(
                           chatId: state.pathParameters['chatId'],
+                        ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'feedback',
+                    builder: (context, state) => const FeedbackListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: ':feedbackId',
+                        builder: (context, state) => FeedbackDetailScreen(
+                          feedbackId: state.pathParameters['feedbackId']!,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'create',
+                        builder: (context, state) => FeedbackCreateScreen(
+                          item: state.uri.queryParameters['item'],
+                          state: state.uri.queryParameters['state'],
                         ),
                       ),
                     ],

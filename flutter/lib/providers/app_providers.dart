@@ -13,6 +13,8 @@ import '../repository/courses_repository.dart';
 import '../repository/dictionary_repository.dart';
 import '../repository/events_repository.dart';
 import '../repository/events_uploader.dart';
+import '../repository/feedback_repository.dart';
+import '../repository/feedback_repository_impl.dart';
 import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
@@ -155,6 +157,15 @@ final chatRepositoryProvider = Provider<ChatRepository>((ref) {
   final config = ref.watch(serverConfigProvider);
   final serverUrl = config == null ? '' : UrlUtils.credentialFreeDbUrl(config);
   return ChatRepositoryImpl(planetApi: api, chatDao: dao, serverUrl: serverUrl);
+});
+
+final feedbackDaoProvider = Provider<FeedbackDao>(
+  (ref) => ref.watch(appDatabaseProvider).feedbackDao,
+);
+
+final feedbackRepositoryProvider = Provider<FeedbackRepository>((ref) {
+  final dao = ref.watch(feedbackDaoProvider);
+  return FeedbackRepositoryImpl(feedbackDao: dao);
 });
 
 final submissionsRepositoryProvider = Provider<SubmissionsRepository>(
