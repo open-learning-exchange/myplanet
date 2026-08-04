@@ -64,20 +64,7 @@ class ChallengeDialog extends ConsumerStatefulWidget {
 }
 
 class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
-  bool _hasShownCongrats = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadCongratsState();
-  }
-
-  Future<void> _loadCongratsState() async {
-    // Load from SharedPreferences
-    // final prefs = await SharedPreferences.getInstance();
-    // _hasShownCongrats = prefs.getBool('hasShownCongrats') ?? false;
-    setState(() {});
-  }
+  final bool _hasShownCongrats = false;
 
   @override
   Widget build(BuildContext context) {
