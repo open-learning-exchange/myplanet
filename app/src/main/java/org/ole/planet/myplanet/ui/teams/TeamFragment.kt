@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.databinding.AlertCreateTeamBinding
 import org.ole.planet.myplanet.databinding.FragmentTeamBinding
@@ -51,6 +52,7 @@ class TeamFragment : Fragment() {
     var user: UserEntity? = null
     private lateinit var teamListAdapter: TeamsAdapter
     private var conditionApplied: Boolean = false
+    private var searchJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -320,7 +322,12 @@ class TeamFragment : Fragment() {
     private fun setupTextWatcher() {
         binding.etSearch.textChanges()
             .debounce(300)
-            .onEach { text -> viewModel.searchTeams(text?.toString() ?: "") }
+            .onEach { text ->
+                searchJob?.cancel()
+                searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                    viewModel.searchTeams(text?.toString() ?: "")
+                }
+            }
             .launchIn(viewLifecycleOwner.lifecycleScope)
     }
 
