@@ -33,6 +33,7 @@ class ResourcesRepositoryBenchmarkTest {
     private val userRepository: UserRepository = mockk(relaxed = true)
     private val teamDao: TeamDao = mockk(relaxed = true)
     private val userSessionManager: UserSessionManager = mockk(relaxed = true)
+    private val dispatcherProvider: org.ole.planet.myplanet.utils.DispatcherProvider = mockk(relaxed = true)
 
     @Before
     fun setup() {
@@ -49,7 +50,8 @@ class ResourcesRepositoryBenchmarkTest {
             myLibraryDao,
             userRepository,
             teamDao,
-            userSessionManager
+            userSessionManager,
+            dispatcherProvider
         )
     }
 
