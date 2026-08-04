@@ -307,8 +307,8 @@ class _InfoRow extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.outline,
-              ),
+                    color: Theme.of(context).colorScheme.outline,
+                  ),
             ),
           ),
           Expanded(child: Text(value)),
@@ -366,9 +366,8 @@ class _ExaminationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
-    final date = exam.date > 0
-        ? DateTime.fromMillisecondsSinceEpoch(exam.date)
-        : null;
+    final date =
+        exam.date > 0 ? DateTime.fromMillisecondsSinceEpoch(exam.date) : null;
 
     return Container(
       width: 140,

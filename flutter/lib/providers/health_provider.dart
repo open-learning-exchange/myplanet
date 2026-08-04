@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../core/config/server_config.dart';
+import '../core/sync/sync_result.dart';
+import 'sync_state.dart';
 import '../data/local/app_database.dart';
 import '../data/local/health_models.dart';
 import '../repository/health_repository.dart';
@@ -36,20 +39,12 @@ final healthDataProvider = FutureProvider<HealthData?>((ref) async {
   final examination = await repo.getByIdOrUserId(userId);
   final examinations = await repo.getForUser(userId);
 
-  MyHealth? myHealth;
-  if (examination?.data != null && examination!.data!.isNotEmpty) {
-    try {
-      // The examination data contains encrypted JSON with the MyHealth object
-      // For now, we'll try to parse it directly
-      final decoded = jsonDecode(examination.data!);
-      if (decoded is Map<String, dynamic>) {
-        myHealth = MyHealth.fromJson(decoded);
-      }
-    } catch (e) {
-      // Data might be encrypted or in a different format
-      myHealth = null;
-    }
-  }
+  // `data` is AES ciphertext, exactly as `HealthExaminationActivity` writes
+  // it. Parsing it as JSON — which is what this did — always threw, and the
+  // catch turned every health record into a blank screen.
+  final myHealth = _decodeHealth(
+    await repo.decryptData(userId, examination?.data),
+  );
 
   return HealthData(
     user: user,
@@ -58,6 +53,28 @@ final healthDataProvider = FutureProvider<HealthData?>((ref) async {
     examinations: examinations,
   );
 });
+
+MyHealth? _decodeHealth(String? plainJson) {
+  if (plainJson == null || plainJson.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(plainJson);
+    return decoded is Map<String, dynamic> ? MyHealth.fromJson(decoded) : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+Examination? _decodeExamination(String? plainJson) {
+  if (plainJson == null || plainJson.isEmpty) return null;
+  try {
+    final decoded = jsonDecode(plainJson);
+    return decoded is Map<String, dynamic>
+        ? Examination.fromJson(decoded)
+        : null;
+  } catch (_) {
+    return null;
+  }
+}
 
 /// State for health examination form.
 class ExaminationState {
@@ -100,14 +117,58 @@ class ExaminationState {
   }
 }
 
+/// Hands every un-uploaded examination to the durable outbox.
+///
+/// The uploader queues by `isUpdated`, so this covers a new examination and an
+/// edit to an old one alike. Nothing else in the app calls it — without this
+/// the records stay on the handset that recorded them.
+class HealthQueue {
+  const HealthQueue(this._ref);
+
+  final Ref _ref;
+
+  Future<int> queuePending() async {
+    final config = _ref.read(serverConfigProvider);
+    if (config == null) return 0;
+    return _ref.read(healthUploaderProvider).queuePending(
+          config: config,
+          userId: _ref.read(sessionProvider).valueOrNull?.id,
+        );
+  }
+}
+
+final healthQueueProvider = Provider<HealthQueue>(HealthQueue.new);
+
+/// Pull of the `health` database, giving `HealthRepository.sync` its first
+/// caller — it was written and never invoked, so a device that had not
+/// recorded its own examinations showed an empty screen forever.
+class HealthSyncNotifier extends SyncNotifier {
+  @override
+  Future<SyncResult> runSync(
+    ServerConfig config,
+    void Function(SyncProgress) onProgress,
+  ) =>
+      ref.read(healthRepositoryProvider).sync(onProgress: onProgress);
+}
+
+final healthSyncProvider = NotifierProvider<HealthSyncNotifier, SyncUiState>(
+  HealthSyncNotifier.new,
+);
+
 /// Notifier for managing examination form state.
 class ExaminationNotifier extends StateNotifier<ExaminationState> {
   final HealthRepository _repo;
   final String? _userId;
   final String? _examinationId;
+  final Future<void> Function()? _onSaved;
 
-  ExaminationNotifier(this._repo, this._userId, this._examinationId)
-    : super(ExaminationState()) {
+  ExaminationNotifier(
+    this._repo,
+    this._userId,
+    this._examinationId, {
+    Future<void> Function()? onSaved,
+  })  : _onSaved = onSaved,
+        super(ExaminationState()) {
     _loadData();
   }
 
@@ -117,17 +178,7 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
       if (_examinationId != null) {
         final exam = await _repo.getById(_examinationId);
         final conditions = _repo.parseConditions(exam?.conditions);
-        Examination? examData;
-        if (exam?.data != null) {
-          try {
-            final decoded = jsonDecode(exam!.data!);
-            if (decoded is Map<String, dynamic>) {
-              examData = Examination.fromJson(decoded);
-            }
-          } catch (e) {
-            // Encrypted or invalid data
-          }
-        }
+        final examData = await _decryptExamination(exam);
         state = state.copyWith(
           isLoading: false,
           examination: exam,
@@ -137,17 +188,7 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
       } else if (_userId != null) {
         final exam = await _repo.getByIdOrUserId(_userId);
         final conditions = _repo.parseConditions(exam?.conditions);
-        Examination? examData;
-        if (exam?.data != null) {
-          try {
-            final decoded = jsonDecode(exam!.data!);
-            if (decoded is Map<String, dynamic>) {
-              examData = Examination.fromJson(decoded);
-            }
-          } catch (e) {
-            // Encrypted or invalid data
-          }
-        }
+        final examData = await _decryptExamination(exam);
         state = state.copyWith(
           isLoading: false,
           examination: exam,
@@ -160,6 +201,13 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
     } catch (e) {
       state = state.copyWith(isLoading: false, error: e.toString());
     }
+  }
+
+  Future<Examination?> _decryptExamination(HealthExaminationRow? exam) async {
+    if (exam == null) return null;
+    final owner = exam.userId ?? _userId;
+    if (owner == null) return null;
+    return _decodeExamination(await _repo.decryptData(owner, exam.data));
   }
 
   Future<void> save({
@@ -195,10 +243,15 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         tests: tests,
         xrays: xrays,
       );
-      final data = jsonEncode(examData.toJson());
+      // Encrypted before it reaches the database, so the plaintext never
+      // touches SQLite and the upload carries ciphertext to CouchDB — the
+      // property Kotlin has and the port was about to lose.
+      final owner = state.examination?.userId ?? _userId;
+      final data = owner == null
+          ? null
+          : await _repo.encryptData(owner, jsonEncode(examData.toJson()));
 
-      final hasInfo =
-          allergies?.isNotEmpty == true ||
+      final hasInfo = allergies?.isNotEmpty == true ||
           diagnosis?.isNotEmpty == true ||
           medications?.isNotEmpty == true ||
           immunizations?.isNotEmpty == true ||
@@ -238,6 +291,11 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         );
       }
 
+      // Queued from inside `save` rather than from each screen: an
+      // examination that reaches the database and not the outbox is the
+      // failure this whole path exists to prevent.
+      await _onSaved?.call();
+
       state = state.copyWith(isSaving: false, saved: true);
     } catch (e) {
       state = state.copyWith(isSaving: false, error: e.toString());
@@ -246,12 +304,15 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
 }
 
 /// Provider for examination form state.
-final examinationNotifierProvider = StateNotifierProvider.autoDispose
-    .family<
-      ExaminationNotifier,
-      ExaminationState,
-      ({String? userId, String? examId})
-    >((ref, params) {
-      final repo = ref.watch(healthRepositoryProvider);
-      return ExaminationNotifier(repo, params.userId, params.examId);
-    });
+final examinationNotifierProvider = StateNotifierProvider.autoDispose.family<
+    ExaminationNotifier,
+    ExaminationState,
+    ({String? userId, String? examId})>((ref, params) {
+  final repo = ref.watch(healthRepositoryProvider);
+  return ExaminationNotifier(
+    repo,
+    params.userId,
+    params.examId,
+    onSaved: ref.read(healthQueueProvider).queuePending,
+  );
+});

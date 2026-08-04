@@ -35,25 +35,25 @@ class TeamsUploader {
       '${UrlUtils.credentialFreeDbUrl(config)}/teams';
 
   OutboxHandler get handler => (row, payload, authHeader) async {
-    final result = await _api.postJsonObject(
-      row.endpoint,
-      payload,
-      authHeader: authHeader,
-    );
-    if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
-      // A tombstone's subject was already deleted locally; there is no row
-      // left to stamp, and treating the missing revision as a failure would
-      // retry a delete that already succeeded.
-      if (payload['_deleted'] == true) return result;
-      final rev = data['rev'];
-      if (rev is! String) {
-        return const NetworkError<Map<String, dynamic>>(
-          null,
-          'Upload response carried no rev',
+        final result = await _api.postJsonObject(
+          row.endpoint,
+          payload,
+          authHeader: authHeader,
         );
-      }
-      await _dao.markUploaded(row.itemId, rev);
-    }
-    return result;
-  };
+        if (result case NetworkSuccess<Map<String, dynamic>>(:final data)) {
+          // A tombstone's subject was already deleted locally; there is no row
+          // left to stamp, and treating the missing revision as a failure would
+          // retry a delete that already succeeded.
+          if (payload['_deleted'] == true) return result;
+          final rev = data['rev'];
+          if (rev is! String) {
+            return const NetworkError<Map<String, dynamic>>(
+              null,
+              'Upload response carried no rev',
+            );
+          }
+          await _dao.markUploaded(row.itemId, rev);
+        }
+        return result;
+      };
 }

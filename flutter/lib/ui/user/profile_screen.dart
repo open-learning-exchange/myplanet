@@ -73,9 +73,7 @@ Future<void> _showProfileEditor(
   );
   if (result == null || !context.mounted) return;
 
-  await ref
-      .read(sessionProvider.notifier)
-      .updateProfile(
+  await ref.read(sessionProvider.notifier).updateProfile(
         firstName: result.firstName,
         middleName: result.middleName,
         lastName: result.lastName,
@@ -305,9 +303,8 @@ class _ProfileBody extends StatelessWidget {
             alignment: WrapAlignment.center,
             spacing: 8,
             runSpacing: 4,
-            children: user.rolesList
-                .map((role) => Chip(label: Text(role)))
-                .toList(),
+            children:
+                user.rolesList.map((role) => Chip(label: Text(role))).toList(),
           ),
         ],
         const SizedBox(height: 28),

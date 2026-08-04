@@ -40,9 +40,9 @@ class SurveysScreen extends ConsumerWidget {
                       child: SearchBar(
                         hintText: l10n.searchSurveys,
                         leading: const Icon(Icons.search),
-                        onChanged: (value) =>
-                            ref.read(surveySearchProvider.notifier).state =
-                                value,
+                        onChanged: (value) => ref
+                            .read(surveySearchProvider.notifier)
+                            .state = value,
                       ),
                     ),
                     PopupMenuButton<SurveySort>(
@@ -73,9 +73,8 @@ class SurveysScreen extends ConsumerWidget {
               ),
               if (sync is SyncRunning)
                 LinearProgressIndicator(
-                  value: sync.progress.total == 0
-                      ? null
-                      : sync.progress.fraction,
+                  value:
+                      sync.progress.total == 0 ? null : sync.progress.fraction,
                 ),
             ],
           ),

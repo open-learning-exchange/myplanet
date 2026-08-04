@@ -15,9 +15,8 @@ class VersionUtils {
     final parts1 = _split(_stripSuffix(version1, '-lite'));
     final parts2 = _split(version2);
 
-    final shared = parts1.length < parts2.length
-        ? parts1.length
-        : parts2.length;
+    final shared =
+        parts1.length < parts2.length ? parts1.length : parts2.length;
     for (var i = 0; i < shared; i++) {
       if (parts1[i] != parts2[i]) {
         return parts1[i].compareTo(parts2[i]);
@@ -39,8 +38,8 @@ class VersionUtils {
 
   static String _stripSuffix(String value, String suffix) =>
       value.endsWith(suffix)
-      ? value.substring(0, value.length - suffix.length)
-      : value;
+          ? value.substring(0, value.length - suffix.length)
+          : value;
 
   /// The Kotlin uses `it.toInt()`, which throws on a malformed segment. Dart's
   /// `int.tryParse` lets a malformed segment sort as 0 rather than crashing the

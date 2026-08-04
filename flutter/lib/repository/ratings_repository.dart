@@ -21,8 +21,8 @@ class RatingsRepository {
     this._dao, {
     DateTime Function()? now,
     String Function()? createId,
-  }) : _now = now ?? DateTime.now,
-       _createId = createId ?? _defaultId;
+  })  : _now = now ?? DateTime.now,
+        _createId = createId ?? _defaultId;
 
   final RatingDao _dao;
   final DateTime Function() _now;
@@ -32,27 +32,28 @@ class RatingsRepository {
     String type,
     String itemId,
     String? userId,
-  ) => _dao.watchForItem(type, itemId).map((rows) {
-    RatingRow? user;
-    if (userId != null) {
-      for (final row in rows) {
-        if (row.userId == userId) {
-          user = row;
-          break;
+  ) =>
+      _dao.watchForItem(type, itemId).map((rows) {
+        RatingRow? user;
+        if (userId != null) {
+          for (final row in rows) {
+            if (row.userId == userId) {
+              user = row;
+              break;
+            }
+          }
         }
-      }
-    }
-    final total = rows.length;
-    final average = total == 0
-        ? 0.0
-        : rows.fold<int>(0, (sum, row) => sum + row.rate) / total;
-    return RatingSummary(
-      average: average,
-      total: total,
-      userRating: user?.rate,
-      userComment: user?.comment,
-    );
-  });
+        final total = rows.length;
+        final average = total == 0
+            ? 0.0
+            : rows.fold<int>(0, (sum, row) => sum + row.rate) / total;
+        return RatingSummary(
+          average: average,
+          total: total,
+          userRating: user?.rate,
+          userComment: user?.comment,
+        );
+      });
 
   Future<void> submit({
     required String type,

@@ -125,8 +125,7 @@ class MyLibraryMapper {
       return _Attachment(
         // Encoded to match UrlUtils.resourceUrl — both build the same download
         // path, and server-supplied filenames can contain spaces, '#' or '?'.
-        remoteAddress:
-            '$base/resources'
+        remoteAddress: '$base/resources'
             '/${Uri.encodeComponent(resourceId)}/${Uri.encodeComponent(key)}',
         localAddress: key,
       );

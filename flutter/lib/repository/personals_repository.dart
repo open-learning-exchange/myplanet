@@ -14,8 +14,8 @@ class PersonalsRepository {
     this._dao, {
     DateTime Function()? now,
     String Function()? createId,
-  }) : _now = now ?? DateTime.now,
-       _createId = createId ?? _randomId;
+  })  : _now = now ?? DateTime.now,
+        _createId = createId ?? _randomId;
 
   final PersonalDao _dao;
   final DateTime Function() _now;
