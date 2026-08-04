@@ -227,21 +227,56 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     }
 
     private fun confirmDeleteMeetup(meetup: Meetup) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setMessage(R.string.confirm_delete_meetup)
-            .setPositiveButton(R.string.ok) { _, _ ->
-                val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
-                viewModel.deleteMeetup(targetId) { success ->
-                    if (success) {
-                        Toast.makeText(requireContext(), getString(R.string.meetup_deleted), Toast.LENGTH_SHORT).show()
-                        parentFragmentManager.popBackStack()
-                    } else {
-                        Toast.makeText(requireContext(), getString(R.string.meetup_not_deleted), Toast.LENGTH_SHORT).show()
+        val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
+        val isRecurring = meetup.recurring.equals("daily", ignoreCase = true) || meetup.recurring.equals("weekly", ignoreCase = true)
+
+        if (isRecurring && editStartDate != 0L) {
+            val startDateStr = java.time.Instant.ofEpochMilli(editStartDate)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+                .toString()
+
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setTitle(R.string.confirm_delete_meetup)
+                .setMessage("This is a recurring event. Do you want to delete only this event or all recurring events?")
+                .setPositiveButton("This Event Only") { _, _ ->
+                    viewModel.excludeDateFromMeetup(targetId, startDateStr) { success ->
+                        if (success) {
+                            Toast.makeText(requireContext(), getString(R.string.meetup_deleted), Toast.LENGTH_SHORT).show()
+                            parentFragmentManager.popBackStack()
+                        } else {
+                            Toast.makeText(requireContext(), getString(R.string.meetup_not_deleted), Toast.LENGTH_SHORT).show()
+                        }
                     }
                 }
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+                .setNeutralButton("All Events") { _, _ ->
+                    viewModel.deleteMeetup(targetId) { success ->
+                        if (success) {
+                            Toast.makeText(requireContext(), getString(R.string.meetup_deleted), Toast.LENGTH_SHORT).show()
+                            parentFragmentManager.popBackStack()
+                        } else {
+                            Toast.makeText(requireContext(), getString(R.string.meetup_not_deleted), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        } else {
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setMessage(R.string.confirm_delete_meetup)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    viewModel.deleteMeetup(targetId) { success ->
+                        if (success) {
+                            Toast.makeText(requireContext(), getString(R.string.meetup_deleted), Toast.LENGTH_SHORT).show()
+                            parentFragmentManager.popBackStack()
+                        } else {
+                            Toast.makeText(requireContext(), getString(R.string.meetup_not_deleted), Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
     }
 
     private fun pickDate(onPicked: (Long) -> Unit) {

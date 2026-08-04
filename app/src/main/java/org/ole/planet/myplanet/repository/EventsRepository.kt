@@ -21,4 +21,5 @@ interface EventsRepository {
     suspend fun getPendingMeetupUploads(): List<Meetup>
     suspend fun markMeetupUploaded(localId: String, remoteId: String, remoteRev: String): Boolean
     suspend fun deleteMeetup(meetupId: String): Boolean
+    suspend fun excludeDateFromMeetup(meetupId: String, dateString: String): Boolean
 }

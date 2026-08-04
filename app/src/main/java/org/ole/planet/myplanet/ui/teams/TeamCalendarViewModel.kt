@@ -71,4 +71,12 @@ class TeamCalendarViewModel @Inject constructor(
         }
         return success
     }
+
+    suspend fun excludeDateFromMeetup(meetupId: String, dateString: String, teamId: String): Boolean {
+        val success = eventsRepository.excludeDateFromMeetup(meetupId, dateString)
+        if (success && teamId.isNotEmpty()) {
+            fetchMeetups(teamId)
+        }
+        return success
+    }
 }

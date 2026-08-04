@@ -400,22 +400,59 @@ class TeamCalendarFragment : BaseTeamFragment() {
     }
 
     private fun confirmDeleteMeetup(meetup: Meetup) {
-        AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
-            .setMessage(R.string.confirm_delete_meetup)
-            .setPositiveButton(R.string.ok) { _, _ ->
-                lifecycleScope.launch {
-                    val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
-                    val success = viewModel.deleteMeetup(targetId, teamId)
-                    if (success) {
-                        Utilities.toast(activity, getString(R.string.meetup_deleted))
-                        meetupDialog?.dismiss()
-                    } else {
-                        Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+        val targetId = meetup.id.ifEmpty { meetup.meetupId ?: "" }
+        val isRecurring = meetup.recurring.equals("daily", ignoreCase = true) || meetup.recurring.equals("weekly", ignoreCase = true)
+
+        if (isRecurring && ::clickedCalendar.isInitialized) {
+            val clickedDate = Instant.ofEpochMilli(clickedCalendar.timeInMillis)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+                .toString()
+
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setTitle(R.string.confirm_delete_meetup)
+                .setMessage("This is a recurring event. Do you want to delete only this event or all recurring events?")
+                .setPositiveButton("This Event Only") { _, _ ->
+                    lifecycleScope.launch {
+                        val success = viewModel.excludeDateFromMeetup(targetId, clickedDate, teamId)
+                        if (success) {
+                            Utilities.toast(activity, getString(R.string.meetup_deleted))
+                            meetupDialog?.dismiss()
+                        } else {
+                            Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                        }
                     }
                 }
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .show()
+                .setNeutralButton("All Events") { _, _ ->
+                    lifecycleScope.launch {
+                        val success = viewModel.deleteMeetup(targetId, teamId)
+                        if (success) {
+                            Utilities.toast(activity, getString(R.string.meetup_deleted))
+                            meetupDialog?.dismiss()
+                        } else {
+                            Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        } else {
+            AlertDialog.Builder(requireContext(), R.style.AlertDialogTheme)
+                .setMessage(R.string.confirm_delete_meetup)
+                .setPositiveButton(R.string.ok) { _, _ ->
+                    lifecycleScope.launch {
+                        val success = viewModel.deleteMeetup(targetId, teamId)
+                        if (success) {
+                            Utilities.toast(activity, getString(R.string.meetup_deleted))
+                            meetupDialog?.dismiss()
+                        } else {
+                            Utilities.toast(activity, getString(R.string.meetup_not_deleted))
+                        }
+                    }
+                }
+                .setNegativeButton(R.string.cancel, null)
+                .show()
+        }
     }
 
     override fun onDestroyView() {

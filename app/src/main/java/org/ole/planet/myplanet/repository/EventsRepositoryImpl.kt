@@ -248,4 +248,19 @@ class EventsRepositoryImpl @Inject constructor(
             false
         }
     }
+
+    override suspend fun excludeDateFromMeetup(meetupId: String, dateString: String): Boolean {
+        if (meetupId.isBlank() || dateString.isBlank()) return false
+        return try {
+            val meetup = meetupDao.getAnyById(meetupId) ?: meetupDao.getById(meetupId) ?: meetupDao.getByMeetupId(meetupId) ?: return false
+            meetup.addExcludedDate(dateString)
+            meetup.updated = true
+            meetupDao.upsert(meetup)
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("meetups", 0, 1))
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            false
+        }
+    }
 }

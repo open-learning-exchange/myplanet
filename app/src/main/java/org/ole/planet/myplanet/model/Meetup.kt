@@ -47,6 +47,25 @@ open class Meetup {
     var sourcePlanet: String? = null
     var updated: Boolean = false
     var isDeletePending: Boolean = false
+    var excludedDates: String? = null
+
+    fun getExcludedDatesList(): List<String> {
+        val raw = excludedDates ?: return emptyList()
+        return try {
+            val jsonArray = JsonUtils.gson.fromJson(raw, com.google.gson.JsonArray::class.java)
+            jsonArray.map { it.asString }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    fun addExcludedDate(dateString: String) {
+        val currentList = getExcludedDatesList().toMutableSet()
+        currentList.add(dateString)
+        val jsonArray = com.google.gson.JsonArray()
+        currentList.forEach { jsonArray.add(it) }
+        excludedDates = jsonArray.toString()
+    }
 
     fun getAllEventDates(): List<Calendar> {
         if (startDate == 0L) return emptyList()
@@ -66,6 +85,7 @@ open class Meetup {
         val result = mutableListOf<Calendar>()
         val recurringType = recurring?.lowercase(Locale.ROOT) ?: "none"
         val hasExplicitEndDate = endDate > startDate
+        val excludedSet = getExcludedDatesList().toSet()
 
         when (recurringType) {
             "daily" -> {
@@ -73,11 +93,13 @@ open class Meetup {
                 var currDate = startLocalDate
                 var count = 0
                 while (if (hasExplicitEndDate) currDate <= endLocalDate else count < maxOccurrences) {
-                    val cal = Calendar.getInstance().apply {
-                        set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
-                        set(Calendar.MILLISECOND, 0)
+                    if (!excludedSet.contains(currDate.toString())) {
+                        val cal = Calendar.getInstance().apply {
+                            set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        result.add(cal)
                     }
-                    result.add(cal)
                     currDate = currDate.plusDays(1)
                     count++
                 }
@@ -87,11 +109,13 @@ open class Meetup {
                 var currDate = startLocalDate
                 var count = 0
                 while (if (hasExplicitEndDate) currDate <= endLocalDate else count < maxOccurrences) {
-                    val cal = Calendar.getInstance().apply {
-                        set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
-                        set(Calendar.MILLISECOND, 0)
+                    if (!excludedSet.contains(currDate.toString())) {
+                        val cal = Calendar.getInstance().apply {
+                            set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        result.add(cal)
                     }
-                    result.add(cal)
                     currDate = currDate.plusWeeks(1)
                     count++
                 }
@@ -99,11 +123,13 @@ open class Meetup {
             else -> {
                 var currDate = startLocalDate
                 while (currDate <= endLocalDate) {
-                    val cal = Calendar.getInstance().apply {
-                        set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
-                        set(Calendar.MILLISECOND, 0)
+                    if (!excludedSet.contains(currDate.toString())) {
+                        val cal = Calendar.getInstance().apply {
+                            set(currDate.year, currDate.monthValue - 1, currDate.dayOfMonth, 0, 0, 0)
+                            set(Calendar.MILLISECOND, 0)
+                        }
+                        result.add(cal)
                     }
-                    result.add(cal)
                     currDate = currDate.plusDays(1)
                 }
             }
@@ -120,6 +146,7 @@ open class Meetup {
             .toLocalDate()
 
         if (targetDate < startLocalDate) return false
+        if (getExcludedDatesList().contains(targetDate.toString())) return false
 
         val endLocalDate = if (endDate > startDate) {
             Instant.ofEpochMilli(endDate)
@@ -181,12 +208,16 @@ open class Meetup {
             meetup.category = JsonUtils.getString("category", meetupDoc)
             meetup.meetupLocation = JsonUtils.getString("meetupLocation", meetupDoc)
             meetup.meetupLink = JsonUtils.getString("meetupLink", meetupDoc)
+            meetup.excludedDates = JsonUtils.getString("excludedDates", meetupDoc)
             meetup.creator = JsonUtils.getString("createdBy", meetupDoc)
             meetup.day = JsonUtils.getJsonArray("day", meetupDoc).toString()
             meetup.link = JsonUtils.getJsonObject("link", meetupDoc).toString()
             meetup.teamId = JsonUtils.getString("teams", JsonUtils.getJsonObject("link", meetupDoc))
 
             if (existingMeetup != null) {
+                if (meetup.excludedDates.isNullOrEmpty()) {
+                    meetup.excludedDates = existingMeetup.excludedDates
+                }
                 meetup.createdDate = existingMeetup.createdDate
                 meetup.recurringNumber = existingMeetup.recurringNumber
                 meetup.sync = existingMeetup.sync
@@ -262,6 +293,7 @@ open class Meetup {
             `object`.addProperty("recurringNumber", meetup.recurringNumber)
             `object`.addProperty("sourcePlanet", meetup.sourcePlanet)
             `object`.addProperty("sync", meetup.sync)
+            if (!meetup.excludedDates.isNullOrEmpty()) `object`.addProperty("excludedDates", meetup.excludedDates)
 
             if (!meetup.link.isNullOrEmpty()) {
                 val linksJson = JsonUtils.gson.fromJson(meetup.link, JsonObject::class.java)

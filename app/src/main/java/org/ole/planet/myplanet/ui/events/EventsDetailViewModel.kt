@@ -96,4 +96,11 @@ class EventsDetailViewModel @Inject constructor(
             onResult(success)
         }
     }
+
+    fun excludeDateFromMeetup(meetupId: String, dateString: String, onResult: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            val success = eventsRepository.excludeDateFromMeetup(meetupId, dateString)
+            onResult(success)
+        }
+    }
 }
