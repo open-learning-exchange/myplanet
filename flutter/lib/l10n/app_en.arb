@@ -599,5 +599,51 @@
   "reports": "Reports",
   "noLeadersAvailable": "No leaders available",
   "noServicesAvailable": "No services available",
-  "noDescriptionAvailable": "No description available"
+  "noDescriptionAvailable": "No description available",
+  "takeExam": "Take exam",
+  "examLoadFailed": "Exam could not be loaded",
+  "examHasNoQuestions": "This exam has no questions",
+  "examComplete": "Exam Complete",
+  "examUnavailable": "Exam is unavailable",
+  "submitExam": "Submit exam",
+  "incorrectAnswer": "Incorrect answer",
+  "correctAnswers": "Correct",
+  "yourAnswer": "Your answer",
+  "previous": "Previous",
+  "next": "Next",
+  "finish": "Finish",
+  "exitExam": "Exit exam?",
+  "exitExamMessage": "Your progress will be lost.",
+  "exit": "Exit",
+  "yourInformation": "Your information",
+  "showAdditionalFields": "Show additional fields",
+  "hideAdditionalFields": "Hide additional fields",
+  "firstName": "First name",
+  "middleName": "Middle name",
+  "lastName": "Last name",
+  "email": "Email",
+  "phoneNumber": "Phone number",
+  "birthDate": "Birth date",
+  "selectDate": "Select date",
+  "gender": "Gender",
+  "male": "Male",
+  "female": "Female",
+  "language": "Language",
+  "level": "Level",
+  "yearOfBirth": "Year of birth",
+  "yearOfBirthRequired": "Year of birth is required",
+  "invalidYear": "Please enter a valid year",
+  "yearBetween": "Year must be between {min} and {max}",
+  "@yearBetween": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "thankYouForTakingSurvey": "Thank you for taking this survey",
+  "errorSavingProfile": "Error saving profile"
 }
