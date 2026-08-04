@@ -25,7 +25,8 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.R
-import org.ole.planet.myplanet.callback.OnSyncListener
+import org.ole.planet.myplanet.repository.SyncUiState
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.databinding.AlertHealthListBinding
 import org.ole.planet.myplanet.databinding.ItemLibraryHomeBinding
 import org.ole.planet.myplanet.model.MyCourse
@@ -33,7 +34,6 @@ import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.model.MyTeam
 import org.ole.planet.myplanet.model.TeamNotificationInfo
 import org.ole.planet.myplanet.repository.LifeRepository
-import org.ole.planet.myplanet.services.sync.TransactionSyncManager
 import org.ole.planet.myplanet.ui.dashboard.DashboardItem
 import org.ole.planet.myplanet.ui.dashboard.DashboardPluginFragment
 import org.ole.planet.myplanet.ui.dashboard.DashboardViewModel
@@ -50,15 +50,14 @@ import org.ole.planet.myplanet.utils.ImageUtils
 import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
-open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
+open class BaseDashboardFragment : DashboardPluginFragment() {
     private val viewModel: DashboardViewModel by viewModels()
     private val newsViewModel: NewsViewModel by viewModels()
     private var fullName: String? = null
     private var params = LinearLayout.LayoutParams(250, 100)
     private var di: DialogUtils.CustomProgressDialog? = null
 
-    @Inject
-    lateinit var transactionSyncManager: TransactionSyncManager
+
     @Inject
     lateinit var lifeRepository: LifeRepository
 
@@ -313,6 +312,15 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
         viewLifecycleOwner.lifecycleScope.launch {
             myLifeListInit(myLifeFlex)
         }
+
+        collectWhenStarted(viewModel.syncKeyIdEvent) { state ->
+            when (state) {
+                is SyncUiState.Loading -> onSyncStarted()
+                is SyncUiState.Success -> onSyncComplete()
+                is SyncUiState.Error -> onSyncFailed(state.message)
+                else -> {}
+            }
+        }
     }
 
     fun showResourceDownloadDialog() {
@@ -373,18 +381,18 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     }
 
     fun syncKeyId() {
-        transactionSyncManager.syncDashboardKeyId(model?.getRoleAsString(), this)
+        viewModel.syncKeyId(model?.getRoleAsString())
     }
 
-    override fun onSyncStarted() {
+    fun onSyncStarted() {
         di?.show()
     }
 
-    override fun onSyncComplete() {
+    fun onSyncComplete() {
         di?.dismiss()
     }
 
-    override fun onSyncFailed(msg: String?) {
+    fun onSyncFailed(msg: String?) {
         di?.dismiss()
     }
 }

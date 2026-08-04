@@ -37,6 +37,9 @@ import org.ole.planet.myplanet.repository.SurveysRepository
 import org.ole.planet.myplanet.repository.TeamsRepository
 import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.repository.VoicesRepository
+import org.ole.planet.myplanet.repository.SyncUiState
+import org.ole.planet.myplanet.repository.SyncRepository
+
 import org.ole.planet.myplanet.utils.DispatcherProvider
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.NotificationConfig
@@ -74,6 +77,7 @@ class DashboardViewModel @Inject constructor(
     private val progressRepository: ProgressRepository,
     private val voicesRepository: VoicesRepository,
     private val dispatcherProvider: DispatcherProvider,
+    private val syncRepository: SyncRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(DashboardUiState())
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
@@ -83,6 +87,20 @@ class DashboardViewModel @Inject constructor(
 
     private val _taskNavigationEvent = MutableSharedFlow<Triple<String, String, String>>(extraBufferCapacity = 1)
     val taskNavigationEvent: SharedFlow<Triple<String, String, String>> = _taskNavigationEvent.asSharedFlow()
+
+    private val _syncKeyIdEvent = MutableSharedFlow<SyncUiState>(extraBufferCapacity = 1)
+    val syncKeyIdEvent: SharedFlow<SyncUiState> = _syncKeyIdEvent.asSharedFlow()
+
+    private var syncJob: Job? = null
+
+    fun syncKeyId(role: String?) {
+        if (syncJob?.isActive == true) return
+        syncJob = viewModelScope.launch {
+            _syncKeyIdEvent.emit(SyncUiState.Loading)
+            val result = syncRepository.syncDashboardKeyId(role)
+            _syncKeyIdEvent.emit(result)
+        }
+    }
 
     private val _joinRequestNavigationEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val joinRequestNavigationEvent: SharedFlow<String> = _joinRequestNavigationEvent.asSharedFlow()
