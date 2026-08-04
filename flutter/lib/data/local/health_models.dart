@@ -66,7 +66,8 @@ class HealthExamination {
       vision: json['vision']?.toString(),
       hearing: json['hearing']?.toString(),
       conditions: json['conditions']?.toString(),
-      selfExamination: json['selfExamination'] == true || json['selfExamination'] == 'true',
+      selfExamination:
+          json['selfExamination'] == true || json['selfExamination'] == 'true',
       planetCode: json['planetCode']?.toString(),
       hasInfo: json['hasInfo'] == true || json['hasInfo'] == 'true',
       profileId: json['profileId']?.toString(),
