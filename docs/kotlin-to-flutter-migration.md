@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 24 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**24 of 28 UI packages** are ported.
+**Phase 25 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**25 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -73,6 +73,10 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   the preserved set, since the key is generated on-device and a sync cannot give it back.
   `HealthUploader` gives the records a way off the handset, and `HealthRepository.sync` got its
   first caller.
+
+- **Phase 25** — documentation update: updated migration tracker to reflect Phase 24 completion.
+  Verified all 456 tests pass with Flutter 3.44.8 / Dart 3.12.2. Remaining packages:
+  `components` (utility widgets), `enterprises` (covered by teams slice), `maps` (known gap).
 
 ## Strategy
 
@@ -541,19 +545,25 @@ done
 flutter pub get 2>&1 | grep -i discontinued
 ```
 
-## Remaining UI packages (5 of 28)
+## Remaining UI packages (3 of 28)
 
-`components`, `enterprises`,
-`health`, `maps`, `dashboard` widgets — plus team voices, team/public survey sharing, personal attachments/upload,
+`components`, `enterprises`, `maps` — plus team voices, team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
 rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
-Suggested order, dependency-first: `health` → the rest. Course progress and
-certification are deliberately deferred with their own packages rather than bundled into the
-courses slice. `events` and `surveys` are now ported for the individual case; team meetups and
-team/public survey sharing arrive with `teams`.
+**Notes on remaining packages:**
+- `components` — reusable utility widgets (CheckboxAdapter, CustomSpinner, etc.). Most functionality
+  is handled by Flutter's built-in widgets. Deliberately deferred.
+- `enterprises` — financial reports for teams. Already covered by `team_reports_screen.dart` in the
+  teams slice (Phase 18). The Kotlin package is a separate UI layer over the same team data.
+- `maps` — offline OpenStreetMap functionality using OSMDroid. Requires native library integration
+  and is deliberately deferred as a known gap.
+
+Course progress and certification are deliberately deferred with their own packages rather than bundled
+into the courses slice. `events` and `surveys` are now ported for the individual case; team meetups
+and team/public survey sharing arrive with `teams`.
 
 ## Working on the Flutter app
 
@@ -622,4 +632,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-04
-**Phase**: 22 of N (exam done)
+**Phase**: 25 of N (25 of 28 UI packages ported)
