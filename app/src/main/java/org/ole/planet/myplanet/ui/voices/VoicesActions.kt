@@ -182,6 +182,7 @@ object VoicesActions {
         val news = id?.let { repository.getNewsById(it) }
 
         if (isEdit) {
+            listener?.clearImages()
             components.editText.setText(context.getString(R.string.message_placeholder, news?.message))
             loadExistingImages(context, news, components.imageLayout, imagesToRemove)
         }
