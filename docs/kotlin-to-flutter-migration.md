@@ -5,18 +5,24 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 30 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**All 28 UI packages are ported.**
+**Phase 25 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**27 of 28 UI packages** have a screen, and a screen existing is not the same as the feature
+working. Counted honestly:
 
-The `components` package is now complete with:
-- `ChallengeDialog` - Daily challenge progress dialog with markdown support
-- `CheckboxList` / `CheckboxStringList` - Reusable checkbox list widgets
-- `CustomDropdownButton` / `AlwaysNotifyDropdown` - Dropdown widgets with same-item selection support
+- `enterprises` has no screens of its own; the teams slice (Phase 18) covers what it did.
+- `components`: `CheckboxList` is used by four screens. `ChallengeDialog` and `CustomDropdown`
+  are built and called from nowhere — they are library code waiting for a caller, not features.
+- `user`: `BecomeMemberScreen` is reachable from login, but only Kotlin's *offline* fallback is
+  ported. It writes the account to SQLite and stops, so a member created in this app exists on
+  that handset alone. Kotlin POSTs a `_users` document and PUTs the shelf when the server is
+  reachable; that path is missing.
 
 Known gaps:
-- `enterprises` package is covered by the teams slice (Phase 18)
-- Background work scheduling (`WorkManager`) is not ported - `DownloadWorker`'s background queue still needs OS scheduling
-- Full offline functionality for all features needs testing
+- Background work with no user present (`AutoSyncWorker`'s timed sync,
+  `TaskNotificationWorker`'s deadline notifications, `DownloadWorker`'s background queue) needs
+  OS scheduling and is not ported.
+- ~~Chat and feedback have no *sync-in* direction~~ — now implemented (Phase 26).
+- Team attachments, team voices and team/public survey sharing are unported.
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -84,40 +90,29 @@ Known gaps:
   `HealthUploader` gives the records a way off the handset, and `HealthRepository.sync` got its
   first caller.
 
-- **Phase 25** -- documentation update: updated migration tracker to reflect Phase 24 completion.
-  Verified all 456 tests pass with Flutter 3.44.8 / Dart 3.12.2. Remaining packages:
-  `components` (utility widgets), `enterprises` (covered by teams slice), `maps` (known gap).
+- **Phase 25** — offline maps, storage management, become-a-member, shared components, and the
+  ratings upload path. Notes on what each of those does and does not do:
+  - **maps**: `OfflineMapsScreen` on `flutter_map` with the same OpenStreetMap/Mapnik tile
+    source `OfflineMapsActivity` uses — so, like the Kotlin, "offline" means cached tiles, not a
+    bundled archive. Reached from the references tile that until now said "not ported yet".
+  - **storage**: `StorageBreakdownScreen` and `StorageCategoryDetailScreen`, reached from
+    settings; per-category file sizes and deletion.
+  - **user**: `BecomeMemberScreen`, reached from login. Only the offline half is ported — see
+    Status; the account never reaches the server.
+  - **ratings**: `RatingsUploader` arrived with no caller on either side. Registered on the
+    outbox drain and queued from `RatingActions.submit`; its payload gained the `user` object
+    Kotlin sends, without which Planet cannot attribute a rating to its author; and a response
+    carrying no `_rev` is now an error rather than a success, which had been retiring the outbox
+    entry while the row stayed pending — the next queue posted a duplicate document.
+  - **components**: `CheckboxList` is used by four screens. `ChallengeDialog` and
+    `CustomDropdown` are built and called from nowhere.
 
-- **Phase 26** -- ratings upload: Added `RatingsUploader` to complete the ratings write-back path.
-  The offline storage for ratings existed but nothing called it to upload to the server. The uploader
-  queues pending ratings via the durable outbox, matching the Kotlin's `UploadManager.uploadRating`.
-  Also added `findById` method to `RatingDao` for testability.
-
-- **Phase 27** -- maps: Ported `OfflineMapsActivity.kt` to `OfflineMapsScreen` using `flutter_map`
-  with OpenStreetMap tiles. Added `flutter_map` and `latlong2` dependencies. Added localization
-  strings for `offlineMaps` and `centerOnDefault`.
-
-**Phase 28** -- storage: Ported `StorageBreakdownFragment.kt` and `StorageCategoryDetailFragment.kt`
-  to `StorageBreakdownScreen` and `StorageCategoryDetailScreen`. These screens show a breakdown of
-  downloaded files by category (videos, audio, PDFs, images, other) and allow users to delete
-  files by category or selection. Added localization strings for storage management, file counts,
-  and deletion confirmations. Linked from the Settings screen.
-
-**Phase 29** -- membership: Ported `BecomeMemberActivity.kt` to `BecomeMemberScreen`. This screen
-  handles new member registration with a form for username, password, name, email, phone, language,
-  level, birth date, and gender. Creates a local user account and queues it for sync to the server.
-  Added localization strings for registration form fields.
-
-**Phase 30** -- components: Ported utility widgets from the `components` package:
-  - `ChallengeDialog` - Flutter equivalent of `MarkdownDialogFragment` for displaying daily challenge
-    progress with markdown content, progress bar, and action buttons. Integrates with the dashboard
-    to show campaign challenge status.
-  - `CheckboxList` and `CheckboxStringList` - Reusable checkbox list widgets similar to Android's
-    `CheckboxAdapter` for multi-selection lists.
-  - `CustomDropdownButton` and `AlwaysNotifyDropdown` - Dropdown widgets that support same-item
-    selection callbacks like Android's `CustomSpinner`.
-  Added localization strings for challenge dialog: community/your earnings, congratulations,
-  daily voices, sync reminder, and action buttons.
+- **Phase 26** — chat and feedback sync-in. `ChatRepository.sync()` and
+  `FeedbackRepository.sync()` now fetch `chat_history` and `feedback` from CouchDB,
+  calling the previously uncalled `insertChatHistoryFromSync` and `insertFromJson`. Both
+  use the same paginated pull pattern as other repositories: count with `?limit=0`, then
+  walk `?include_docs=true&limit&skip` pages, upserting each document and pruning stale
+  local rows on completion.
 
 ## Strategy
 
@@ -594,16 +589,14 @@ and the rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, s
 are not ported; only the navigation host is).
 
 **Notes on remaining packages:**
-- `components` -- reusable utility widgets (CheckboxAdapter, CustomSpinner, etc.). Most functionality
-  is handled by Flutter's built-in widgets. Deliberately deferred.
+- `components` -- reusable utility widgets. `CheckboxList` is in use; `ChallengeDialog` and
+  `CustomDropdown` exist with no callers. Most of what the Kotlin package did is handled by
+  Flutter's built-in widgets.
 - `enterprises` -- financial reports for teams. Already covered by `team_reports_screen.dart` in the
   teams slice (Phase 18). The Kotlin package is a separate UI layer over the same team data.
 
-**Completed infrastructure:**
-- Rating upload/sync is now implemented via `RatingsUploader` (Phase 26).
-- Maps: `OfflineMapsScreen` using `flutter_map` package with OpenStreetMap tiles (Phase 27).
-- Storage: `StorageBreakdownScreen` and `StorageCategoryDetailScreen` for viewing and deleting
-  downloaded files by category (Phase 28).
+**Completed infrastructure:** ratings upload (`RatingsUploader`), offline maps, and storage
+management all landed in Phase 25.
 
 Course progress and certification are deliberately deferred with their own packages rather than bundled
 into the courses slice. `events` and `surveys` are now ported for the individual case; team meetups
@@ -675,5 +668,6 @@ succeeds, it just doesn't do what the Kotlin did.
 
 ---
 
-**Last updated**: 2026-08-04
-**Phase**: 28 of N (26 of 28 UI packages ported; storage management complete)
+**Last updated**: 2026-08-04 (Phase 26 complete)
+**Phase**: 26 of N (27 of 28 UI packages have a screen — see Status for what that does and does
+not mean)
