@@ -243,13 +243,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                       ),
                       GoRoute(
                         path: 'storage',
-                        builder: (context, state) => const StorageBreakdownScreen(),
+                        builder: (context, state) =>
+                            const StorageBreakdownScreen(),
                         routes: [
                           GoRoute(
                             path: 'category',
-                            builder: (context, state) => StorageCategoryDetailScreen(
-                              extra: state.extra as StorageCategoryExtra,
-                            ),
+                            builder: (context, state) =>
+                                StorageCategoryDetailScreen(
+                                  extra: state.extra as StorageCategoryExtra,
+                                ),
                           ),
                         ],
                       ),
