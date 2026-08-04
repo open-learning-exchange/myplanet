@@ -4,9 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/app_providers.dart';
 import '../../providers/health_provider.dart';
-import '../../providers/session_provider.dart';
 import '../router.dart';
 
 /// Port of `ui/health/MyHealthFragment.kt`.
@@ -19,7 +17,6 @@ class MyHealthScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
-    final session = ref.watch(sessionProvider);
     final healthData = ref.watch(healthDataProvider);
 
     return Scaffold(
@@ -254,7 +251,8 @@ class _HealthContent extends StatelessWidget {
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: examinations.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 8),
                         itemBuilder: (context, index) {
                           final exam = examinations[index];
                           return _ExaminationCard(exam: exam);
