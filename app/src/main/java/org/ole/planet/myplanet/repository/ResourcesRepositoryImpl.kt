@@ -11,6 +11,7 @@ import java.util.UUID
 import javax.inject.Inject
 import kotlin.math.ceil
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import org.ole.planet.myplanet.data.room.dao.MyLibraryDao
@@ -27,6 +28,7 @@ import org.ole.planet.myplanet.model.TagEntity
 import org.ole.planet.myplanet.model.TagItem
 import org.ole.planet.myplanet.services.SharedPrefManager
 import org.ole.planet.myplanet.services.UserSessionManager
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.DownloadUtils
 import org.ole.planet.myplanet.utils.FileUtils
 import org.ole.planet.myplanet.utils.JsonUtils
@@ -46,7 +48,8 @@ class ResourcesRepositoryImpl @Inject constructor(
     private val myLibraryDao: MyLibraryDao,
     private val userRepository: UserRepository,
     private val teamDao: TeamDao,
-    private val userSessionManager: UserSessionManager
+    private val userSessionManager: UserSessionManager,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : ResourcesRepository {
 
     // Shelf membership is stored as a JSON userId list; match a single entry with LIKE %"id"%.
@@ -667,5 +670,9 @@ class ResourcesRepositoryImpl @Inject constructor(
 
     override suspend fun trackResourceOpen(item: MyLibrary) {
         userSessionManager.setResourceOpenCount(item, UserSessionManager.KEY_RESOURCE_OPEN)
+    }
+
+    override fun observeTableUpdates(tableNames: List<String>): Flow<org.ole.planet.myplanet.model.TableDataUpdate> {
+        return realtimeSyncManager.dataUpdateFlow.filter { tableNames.contains(it.table) }
     }
 }

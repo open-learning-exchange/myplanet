@@ -102,6 +102,7 @@ interface ResourcesRepository {
     suspend fun getPendingResourceUploads(): List<MyLibrary>
     suspend fun markResourceUploaded(localId: String, remoteId: String, remoteRev: String, planetCode: String?): Boolean
     suspend fun trackResourceOpen(item: MyLibrary)
+    fun observeTableUpdates(tableNames: List<String>): Flow<org.ole.planet.myplanet.model.TableDataUpdate>
 }
 
 sealed class ResourceUrlsResponse {

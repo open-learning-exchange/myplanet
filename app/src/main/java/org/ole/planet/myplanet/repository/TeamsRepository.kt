@@ -152,4 +152,5 @@ interface TeamsRepository {
     suspend fun getAvailableResourcesToAdd(teamId: String): List<MyLibrary>
 
     suspend fun getLastVisit(userName: String?, teamId: String?): Long?
+    fun observeTableUpdates(tableNames: List<String>): Flow<org.ole.planet.myplanet.model.TableDataUpdate>
 }

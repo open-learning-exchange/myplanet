@@ -103,6 +103,7 @@ class TeamsRepositoryImplTest {
             courseDao,
             courseStepDao,
             appDatabase,
+            mockk(relaxed = true)
         )
     }
 
