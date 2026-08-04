@@ -30,7 +30,6 @@ import javax.inject.Inject
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -61,6 +60,7 @@ import org.ole.planet.myplanet.utils.SecurePrefs
 import org.ole.planet.myplanet.utils.UrlUtils.getUrl
 import org.ole.planet.myplanet.utils.Utilities.toast
 import org.ole.planet.myplanet.utils.collectLatestWhenStarted
+import org.ole.planet.myplanet.utils.collectWhenStarted
 import org.ole.planet.myplanet.utils.textChanges
 
 @OptIn(FlowPreview::class)
@@ -373,7 +373,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
             }
         }
-        binding.inputName.textChanges()
+        val usernameFlow = binding.inputName.textChanges()
             .onEach { s ->
                 val input = s?.toString() ?: ""
                 val lowercaseText = input.lowercase()
@@ -392,14 +392,15 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
                 updateSignInButtonState()
             }
-            .launchIn(lifecycleScope)
+        collectWhenStarted(usernameFlow) {}
+
         if (getUrl().isNotEmpty()) {
             loadTeamsAsync()
         }
     }
 
     private fun setupFormValidation() {
-        binding.inputPassword.textChanges()
+        val passwordFlow = binding.inputPassword.textChanges()
             .debounce(300)
             .onEach { s ->
                 val input = s?.toString() ?: ""
@@ -410,7 +411,7 @@ class LoginActivity : SyncActivity(), OnUserProfileClickListener {
                 }
                 updateSignInButtonState()
             }
-            .launchIn(lifecycleScope)
+        collectWhenStarted(passwordFlow) {}
     }
 
     private fun validateUsernameInput(username: String): String? {
