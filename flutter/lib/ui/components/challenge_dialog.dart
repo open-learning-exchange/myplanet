@@ -2,9 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
-import '../../providers/user_provider.dart';
 
 /// Data class holding challenge dialog state
 class ChallengeDialogData {
@@ -45,6 +43,7 @@ class ChallengeDialog extends ConsumerStatefulWidget {
     required this.voiceCount,
     required this.allVoiceCount,
     required this.hasUnfinishedSurvey,
+    required this.hasValidSync,
     required this.courseStatus,
     required this.onStartCourse,
     required this.onNext,
@@ -54,6 +53,7 @@ class ChallengeDialog extends ConsumerStatefulWidget {
   final int voiceCount;
   final int allVoiceCount;
   final bool hasUnfinishedSurvey;
+  final bool hasValidSync;
   final String courseStatus;
   final VoidCallback onStartCourse;
   final VoidCallback onNext;
@@ -307,6 +307,7 @@ Future<void> showChallengeDialog({
       voiceCount: voiceCount,
       allVoiceCount: allVoiceCount,
       hasUnfinishedSurvey: hasUnfinishedSurvey,
+      hasValidSync: hasValidSync,
       courseStatus: courseStatus,
       onStartCourse: onStartCourse,
       onNext: onNext,
