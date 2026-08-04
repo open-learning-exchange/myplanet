@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.fragment.app.Fragment
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import org.ole.planet.myplanet.MainApplication
+import org.ole.planet.myplanet.utils.DiffUtils
 import org.ole.planet.myplanet.callback.OnMemberChangeListener
 import org.ole.planet.myplanet.callback.OnTeamUpdateListener
 import org.ole.planet.myplanet.ui.teams.TeamPageConfig.ApplicantsPage
@@ -19,6 +20,8 @@ import org.ole.planet.myplanet.ui.teams.members.MembersFragment
 import org.ole.planet.myplanet.ui.teams.members.RequestsFragment
 import org.ole.planet.myplanet.ui.teams.resources.TeamResourcesFragment
 
+import androidx.recyclerview.widget.RecyclerView
+
 class TeamPagerAdapter(
     private val parentFragment: Fragment,
     private var pages: List<TeamPageConfig>,
@@ -26,10 +29,31 @@ class TeamPagerAdapter(
     private val onMemberChangeListener: OnMemberChangeListener,
     private val teamUpdateListener: OnTeamUpdateListener
 ) : FragmentStateAdapter(parentFragment) {
+    private val itemIds = mutableMapOf<String, Long>()
+    private var nextId = 1L
+
+    init {
+        pages.forEach { page ->
+            if (!itemIds.containsKey(page.id)) {
+                itemIds[page.id] = nextId++
+            }
+        }
+    }
 
     fun updatePages(newPages: List<TeamPageConfig>) {
+        newPages.forEach { page ->
+            if (!itemIds.containsKey(page.id)) {
+                itemIds[page.id] = nextId++
+            }
+        }
+        val diffResult = DiffUtils.calculateDiff(
+            oldList = pages,
+            newList = newPages,
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
         pages = newPages.toList()
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun getItemCount(): Int = pages.size
@@ -39,9 +63,13 @@ class TeamPagerAdapter(
 
     fun getPageConfig(position: Int): TeamPageConfig? = pages.getOrNull(position)
 
-    override fun getItemId(position: Int) = pages[position].id.hashCode().toLong()
+    override fun getItemId(position: Int): Long {
+        return itemIds[pages[position].id] ?: RecyclerView.NO_ID
+    }
 
-    override fun containsItem(itemId: Long) = pages.any { it.id.hashCode().toLong() == itemId }
+    override fun containsItem(itemId: Long): Boolean {
+        return pages.any { itemIds[it.id] == itemId }
+    }
 
     override fun createFragment(position: Int): Fragment {
         val page = pages[position]
