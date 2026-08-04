@@ -328,7 +328,10 @@ class TeamCalendarFragment : BaseTeamFragment() {
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.btnDelete.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            val allowed = canDeleteMeetup(meetup)
+            dialogBinding.btnDelete.visibility = if (allowed) View.VISIBLE else View.GONE
+        }
         dialogBinding.btnDelete.setOnClickListener {
             dialog.dismiss()
             confirmDeleteMeetup(meetup)
@@ -375,6 +378,25 @@ class TeamCalendarFragment : BaseTeamFragment() {
             }
         }
         dialog.show()
+    }
+
+    private suspend fun canDeleteMeetup(meetup: Meetup): Boolean {
+        val currentUser = user ?: userRepository.getUserModel()
+        val currentUserId = currentUser?.id
+        val currentUserName = currentUser?.name
+        if (currentUserId.isNullOrBlank()) return false
+
+        val isCreator = (!meetup.creator.isNullOrBlank() && (meetup.creator == currentUserId || meetup.creator == currentUserName)) ||
+                (!meetup.userId.isNullOrBlank() && meetup.userId == currentUserId)
+        if (isCreator) return true
+
+        val currentTeamId = teamId.ifBlank { meetup.teamId.orEmpty() }
+        if (currentTeamId.isNotBlank()) {
+            val isLeader = teamsRepository.isTeamLeader(currentTeamId, currentUserId)
+            if (isLeader) return true
+        }
+
+        return false
     }
 
     private fun confirmDeleteMeetup(meetup: Meetup) {

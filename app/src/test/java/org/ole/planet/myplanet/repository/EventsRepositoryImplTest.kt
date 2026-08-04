@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.data.room.dao.RemovedLogDao
 import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.SystemTimeProvider
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -27,6 +28,7 @@ class EventsRepositoryImplTest {
     private lateinit var meetupDao: MeetupDao
     private lateinit var userRepository: UserRepository
     private lateinit var removedLogDao: RemovedLogDao
+    private lateinit var realtimeSyncManager: RealtimeSyncManager
     private lateinit var repository: EventsRepositoryImpl
 
     class SilentException(message: String) : Exception(message) {
@@ -38,7 +40,8 @@ class EventsRepositoryImplTest {
         meetupDao = mockk(relaxed = true)
         userRepository = mockk(relaxed = true)
         removedLogDao = mockk(relaxed = true)
-        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, removedLogDao)
+        realtimeSyncManager = mockk(relaxed = true)
+        repository = EventsRepositoryImpl(SystemTimeProvider(), meetupDao, userRepository, removedLogDao, realtimeSyncManager)
     }
 
     @Test

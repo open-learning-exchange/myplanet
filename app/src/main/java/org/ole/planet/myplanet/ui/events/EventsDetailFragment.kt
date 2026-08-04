@@ -27,6 +27,11 @@ import org.ole.planet.myplanet.model.UserEntity
 import org.ole.planet.myplanet.utils.Constants
 import org.ole.planet.myplanet.utils.Constants.showBetaFeature
 import org.ole.planet.myplanet.utils.TimeUtils
+import androidx.lifecycle.lifecycleScope
+import javax.inject.Inject
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.repository.TeamsRepository
+import org.ole.planet.myplanet.repository.UserRepository
 import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
@@ -38,6 +43,11 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
     private var listUsers: ListView? = null
     private var listDesc: RecyclerView? = null
     private var tvJoined: TextView? = null
+
+    @Inject
+    lateinit var userRepository: UserRepository
+    @Inject
+    lateinit var teamsRepository: TeamsRepository
 
     private var editStartDate: Long = 0
     private var editEndDate: Long = 0
@@ -152,7 +162,10 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
             .setView(dialogBinding.root)
             .create()
 
-        dialogBinding.btnDelete.visibility = View.VISIBLE
+        lifecycleScope.launch {
+            val allowed = canDeleteMeetup(meetup)
+            dialogBinding.btnDelete.visibility = if (allowed) View.VISIBLE else View.GONE
+        }
         dialogBinding.btnDelete.setOnClickListener {
             dialog.dismiss()
             confirmDeleteMeetup(meetup)
@@ -192,6 +205,25 @@ class EventsDetailFragment : Fragment(), View.OnClickListener {
         }
 
         dialog.show()
+    }
+
+    private suspend fun canDeleteMeetup(meetup: Meetup): Boolean {
+        val currentUser = userRepository.getUserModel()
+        val currentUserId = currentUser?.id
+        val currentUserName = currentUser?.name
+        if (currentUserId.isNullOrBlank()) return false
+
+        val isCreator = (!meetup.creator.isNullOrBlank() && (meetup.creator == currentUserId || meetup.creator == currentUserName)) ||
+                (!meetup.userId.isNullOrBlank() && meetup.userId == currentUserId)
+        if (isCreator) return true
+
+        val meetupTeamId = meetup.teamId
+        if (!meetupTeamId.isNullOrBlank()) {
+            val isLeader = teamsRepository.isTeamLeader(meetupTeamId, currentUserId)
+            if (isLeader) return true
+        }
+
+        return false
     }
 
     private fun confirmDeleteMeetup(meetup: Meetup) {

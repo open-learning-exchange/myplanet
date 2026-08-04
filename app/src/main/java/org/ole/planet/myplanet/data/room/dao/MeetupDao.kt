@@ -26,9 +26,8 @@ interface MeetupDao {
     @Query("SELECT * FROM meetup WHERE meetupId IN (:meetupIds)")
     suspend fun getByMeetupIds(meetupIds: List<String>): List<Meetup>
 
-    // Pending uploads: meetup was created locally (no server id yet) or was edited locally.
     @Query(
-        "SELECT * FROM meetup WHERE meetupId IS NULL OR meetupId = '' OR updated = 1"
+        "SELECT * FROM meetup WHERE meetupId IS NULL OR meetupId = '' OR updated = 1 OR isDeletePending = 1"
     )
     suspend fun getPendingUploads(): List<Meetup>
 

@@ -10,6 +10,8 @@ import org.ole.planet.myplanet.model.Meetup
 import org.ole.planet.myplanet.model.MeetupCreationParams
 import org.ole.planet.myplanet.model.RemovedLog
 import org.ole.planet.myplanet.model.UserEntity
+import org.ole.planet.myplanet.model.TableDataUpdate
+import org.ole.planet.myplanet.services.sync.RealtimeSyncManager
 import org.ole.planet.myplanet.utils.JsonUtils
 import org.ole.planet.myplanet.utils.TimeProvider
 
@@ -17,7 +19,8 @@ class EventsRepositoryImpl @Inject constructor(
     private val timeProvider: TimeProvider,
     private val meetupDao: MeetupDao,
     private val userRepository: UserRepository,
-    private val removedLogDao: RemovedLogDao
+    private val removedLogDao: RemovedLogDao,
+    private val realtimeSyncManager: RealtimeSyncManager
 ) : EventsRepository {
 
     override suspend fun getMeetupsForTeam(teamId: String): List<Meetup> {
@@ -183,7 +186,12 @@ class EventsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun markMeetupUploaded(localId: String, remoteId: String, remoteRev: String): Boolean {
-        val meetup = meetupDao.getById(localId) ?: return false
+        val meetup = meetupDao.getById(localId) ?: meetupDao.getByMeetupId(localId) ?: return false
+        if (meetup.isDeletePending) {
+            meetupDao.deleteById(localId)
+            meetup.meetupId?.let { if (it.isNotBlank()) meetupDao.deleteById(it) }
+            return true
+        }
         meetup.meetupId = remoteId
         meetup.meetupIdRev = remoteRev
         meetup.updated = false
@@ -223,9 +231,17 @@ class EventsRepositoryImpl @Inject constructor(
                 }
             }
 
-            meetupDao.deleteById(meetupId)
-            meetup?.id?.let { meetupDao.deleteById(it) }
-            meetup?.meetupId?.let { meetupDao.deleteById(it) }
+            if (meetup != null && (!meetup.meetupId.isNullOrEmpty() || !meetup.meetupIdRev.isNullOrEmpty())) {
+                meetup.isDeletePending = true
+                meetup.updated = true
+                meetupDao.upsert(meetup)
+            } else {
+                meetupDao.deleteById(meetupId)
+                meetup?.id?.let { if (it.isNotBlank()) meetupDao.deleteById(it) }
+                meetup?.meetupId?.let { if (it.isNotBlank()) meetupDao.deleteById(it) }
+            }
+
+            realtimeSyncManager.notifyTableUpdated(TableDataUpdate("meetups", 0, 1))
             true
         } catch (e: Exception) {
             e.printStackTrace()

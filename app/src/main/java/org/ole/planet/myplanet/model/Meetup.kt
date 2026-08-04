@@ -46,6 +46,7 @@ open class Meetup {
     var sync: String? = null
     var sourcePlanet: String? = null
     var updated: Boolean = false
+    var isDeletePending: Boolean = false
 
     fun getAllEventDates(): List<Calendar> {
         if (startDate == 0L) return emptyList()
@@ -241,6 +242,10 @@ open class Meetup {
             val `object` = JsonObject()
             if (!meetup.meetupId.isNullOrEmpty()) `object`.addProperty("_id", meetup.meetupId)
             if (!meetup.meetupIdRev.isNullOrEmpty()) `object`.addProperty("_rev", meetup.meetupIdRev)
+            if (meetup.isDeletePending) {
+                `object`.addProperty("_deleted", true)
+                return `object`
+            }
             `object`.addProperty("title", meetup.title)
             `object`.addProperty("description", meetup.description)
             `object`.addProperty("startDate", meetup.startDate)
