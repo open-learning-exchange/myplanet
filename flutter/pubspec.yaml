@@ -40,6 +40,9 @@ dependencies:
 
   # HMAC-SHA1 primitive used by the PBKDF2 port of AndroidDecrypter.
   crypto: ^3.0.6
+  # AES-CBC for the other half of AndroidDecrypter — health records are
+  # encrypted at rest and on the server, and `package:crypto` is digests only.
+  pointycastle: ^4.0.0
   # @immutable on the pure-Dart core, which must not import package:flutter.
   meta: ^1.15.0
   # Diacritic folding for titleNormal — stands in for java.text.Normalizer NFD,

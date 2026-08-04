@@ -39,14 +39,14 @@ void main() {
         const LifeScreen(),
         overrides: [
           lifeItemsProvider.overrideWith(
-            (ref) => Stream.value([_row('health')]),
+            (ref) => Stream.value([_row('unknown_feature')]),
           ),
         ],
       ),
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('My health'));
+    await tester.tap(find.text('unknown_feature'));
     await tester.pump();
     expect(find.text('This feature is not ported yet'), findsOneWidget);
   });

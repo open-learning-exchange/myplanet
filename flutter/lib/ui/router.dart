@@ -19,6 +19,9 @@ import 'events/events_screen.dart';
 import 'feedback/feedback_create_screen.dart';
 import 'feedback/feedback_detail_screen.dart';
 import 'feedback/feedback_list_screen.dart';
+import 'health/my_health_screen.dart';
+import 'health/add_health_screen.dart';
+import 'health/add_examination_screen.dart';
 import 'life/life_screen.dart';
 import 'onboarding/onboarding_screen.dart';
 import 'notifications/notifications_screen.dart';
@@ -69,6 +72,9 @@ class Routes {
   static const String references = '/life/references';
   static const String personals = '/life/personals';
   static const String submissions = '/life/submissions';
+  static const String health = '/life/health';
+  static const String addHealth = '/life/health/add';
+  static const String addExamination = '/life/health/examination';
   static const String events = '/calendar/events';
   static const String surveys = '/life/surveys';
   static const String voices = '/life/voices';
@@ -359,6 +365,21 @@ final routerProvider = Provider<GoRouter>((ref) {
                           item: state.uri.queryParameters['item'],
                           state: state.uri.queryParameters['state'],
                         ),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'health',
+                    builder: (context, state) => const MyHealthScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'add',
+                        builder: (context, state) => const AddHealthScreen(),
+                      ),
+                      GoRoute(
+                        path: 'examination',
+                        builder: (context, state) =>
+                            const AddExaminationScreen(),
                       ),
                     ],
                   ),

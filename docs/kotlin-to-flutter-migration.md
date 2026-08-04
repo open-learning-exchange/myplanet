@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 23 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**23 of 28 UI packages** are ported.
+**Phase 24 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**24 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
 - **Phase 2** — dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -64,6 +64,15 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   (`ResourceDownloader` + `ResourceFiles`) — the port synced resource *metadata* only, so before
   this every resource reported itself as not downloaded and there was no way to get the file.
   `DownloadWorker`'s background queue still needs OS scheduling and is not ported.
+- **Phase 24** — health: My health, the health profile form and the examination form, reached
+  from My life. Three things had to be added around the screens for them to be safe. The
+  examination `data` blob is AES-256-CBC encrypted with the user's key exactly as
+  `AndroidDecrypter` does it (`HealthCipher`) — the port was about to write diagnoses and
+  medications to SQLite and to CouchDB in plaintext, and could not have read anything Kotlin
+  wrote. `users.key`/`users.iv` carry that key; both `users` and `health_examinations` joined
+  the preserved set, since the key is generated on-device and a sync cannot give it back.
+  `HealthUploader` gives the records a way off the handset, and `HealthRepository.sync` got its
+  first caller.
 
 ## Strategy
 

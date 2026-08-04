@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 // Imported for the generated part file, which constructs the type converters
 // declared on the table columns.
 import 'converters.dart';
+import '../../core/crypto/health_cipher.dart';
 import 'tables.dart';
 
 part 'app_database.g.dart';
@@ -47,6 +48,7 @@ part 'app_database.g.dart';
     TeamTasks,
     ChatEntries,
     FeedbackEntries,
+    HealthExaminations,
   ],
   daos: [
     UserDao,
@@ -68,6 +70,7 @@ part 'app_database.g.dart';
     ExamDao,
     ChatDao,
     FeedbackDao,
+    HealthExaminationDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -80,7 +83,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.memory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 23;
+  int get schemaVersion => 24;
 
   /// Tables holding local intent the server cannot give back.
   ///
@@ -138,6 +141,17 @@ class AppDatabase extends _$AppDatabase {
     // row exists only here, so a schema bump would discard a report the user
     // wrote — and there is no feedback sync to bring it back either.
     'feedback',
+    // Health examinations are recorded on the device — a clinician entering a
+    // reading offline is the whole point of the screen. There is no health
+    // sync running yet either, so the drop-and-resync premise fails twice
+    // over: dropping this table destroys a medical record outright.
+    'health_examinations',
+    // Not a CouchDB cache in the part that matters. `key`/`iv` are generated
+    // on this device and never sent anywhere, so a sync cannot give them back
+    // — and losing them makes every health record already encrypted with them
+    // permanently unreadable. Dropping this table also signs the user out,
+    // since the session restores by looking their id up here.
+    'users',
   };
 
   @override
@@ -372,6 +386,29 @@ class UserDao extends DatabaseAccessor<AppDatabase> with _$UserDaoMixin {
   /// login screen.
   Future<List<UserRow>> getSavedUsers() =>
       (select(users)..where((u) => u.isArchived.equals(false))).get();
+
+  /// Port of `UserRepositoryImpl.ensureUserSecurityKeys`.
+  ///
+  /// The health screens call this before encrypting. Generating lazily rather
+  /// than at sign-in means users synced before health was ported still get a
+  /// key, and re-using the stored one is what keeps yesterday's records
+  /// readable.
+  Future<UserRow?> ensureSecurityKeys(
+    String id, {
+    String Function()? createKey,
+    String Function()? createIv,
+  }) async {
+    final user = await getById(id);
+    if (user == null) return null;
+    if (user.key != null && user.iv != null) return user;
+    await (update(users)..where((u) => u.id.equals(id))).write(
+      UsersCompanion(
+        key: Value(user.key ?? (createKey ?? HealthCipher.generateKey)()),
+        iv: Value(user.iv ?? (createIv ?? HealthCipher.generateIv)()),
+      ),
+    );
+    return getById(id);
+  }
 
   Future<int> count() async {
     final query = selectOnly(users)..addColumns([users.id.count()]);
@@ -1731,4 +1768,70 @@ class FeedbackDao extends DatabaseAccessor<AppDatabase>
   Future<void> updateRow(FeedbackEntriesCompanion row) => (update(
     feedbackEntries,
   )..where((f) => f.id.equals(row.id.value))).write(row);
+}
+
+/// Port of `data/room/dao/HealthExaminationDao.kt`.
+@DriftAccessor(tables: [HealthExaminations])
+class HealthExaminationDao extends DatabaseAccessor<AppDatabase>
+    with _$HealthExaminationDaoMixin {
+  HealthExaminationDao(super.db);
+
+  /// Get health examination by id or userId.
+  Future<HealthExaminationRow?> getByIdOrUserId(String id) => (select(
+    healthExaminations,
+  )..where((h) => h.id.equals(id) | h.userId.equals(id))).getSingleOrNull();
+
+  /// Get health examination by id.
+  Future<HealthExaminationRow?> getById(String id) => (select(
+    healthExaminations,
+  )..where((h) => h.id.equals(id))).getSingleOrNull();
+
+  /// Get all updated examinations that need syncing.
+  Future<List<HealthExaminationRow>> getUpdated() => (select(
+    healthExaminations,
+  )..where((h) => h.isUpdated.equals(true) & h.userId.isNotNull())).get();
+
+  /// Get updated examinations for a specific user.
+  Future<List<HealthExaminationRow>> getUpdatedForUser(String userId) =>
+      (select(healthExaminations)
+            ..where((h) => h.isUpdated.equals(true) & h.userId.equals(userId)))
+          .get();
+
+  /// Get examinations by profileId.
+  Future<List<HealthExaminationRow>> getByProfileId(String profileId) =>
+      (select(
+        healthExaminations,
+      )..where((h) => h.profileId.equals(profileId))).get();
+
+  /// Get examinations for a user, ordered by date descending.
+  Future<List<HealthExaminationRow>> getForUser(String userId) =>
+      (select(healthExaminations)
+            ..where((h) => h.userId.equals(userId))
+            ..orderBy([(h) => OrderingTerm.desc(h.date)]))
+          .get();
+
+  /// Insert or update a health examination.
+  Future<void> upsert(HealthExaminationsCompanion row) =>
+      into(healthExaminations).insertOnConflictUpdate(row);
+
+  /// Insert or update multiple health examinations.
+  Future<void> upsertAll(List<HealthExaminationsCompanion> rows) async {
+    if (rows.isEmpty) return;
+    await batch((b) => b.insertAllOnConflictUpdate(healthExaminations, rows));
+  }
+
+  /// Mark examination as uploaded with the server revision.
+  Future<int> markUploaded(String id, String? rev) =>
+      (update(healthExaminations)..where((h) => h.id.equals(id))).write(
+        HealthExaminationsCompanion(
+          rev: Value(rev),
+          isUpdated: const Value(false),
+        ),
+      );
+
+  /// Update the userId for an examination.
+  Future<int> updateUserId(String id, String userId) =>
+      (update(healthExaminations)..where((h) => h.id.equals(id))).write(
+        HealthExaminationsCompanion(userId: Value(userId)),
+      );
 }
