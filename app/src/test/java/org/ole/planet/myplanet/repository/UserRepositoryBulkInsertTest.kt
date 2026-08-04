@@ -31,7 +31,8 @@ class UserRepositoryBulkInsertTest {
             mockk(relaxed = true),
             mockk(relaxed = true),
             mockk(relaxed = true),
-            userDao
+            userDao,
+            mockk(relaxed = true)
         )
         coEvery { userDao.getAll() } returns emptyList()
 
