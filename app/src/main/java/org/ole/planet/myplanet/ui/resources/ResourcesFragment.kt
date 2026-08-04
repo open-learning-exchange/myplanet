@@ -719,9 +719,7 @@ class ResourcesFragment : BaseRecyclerFragment<MyLibrary?>(), OnLibraryItemSelec
 
         if (userId != null && itemsToDelete.isNotEmpty()) {
             lifecycleScope.launch(dispatcherProvider.io) {
-                itemsToDelete.forEach { resourceId ->
-                    resourcesRepository.removeResourceFromShelf(resourceId, userId)
-                }
+                resourcesRepository.removeResourcesFromShelf(itemsToDelete, userId)
                 withContext(dispatcherProvider.main) {
                     _binding ?: return@withContext
                     Utilities.toast(activity, getString(R.string.removed_from_mylibrary))
