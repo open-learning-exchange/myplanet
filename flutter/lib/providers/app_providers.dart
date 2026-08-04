@@ -15,6 +15,7 @@ import '../repository/events_repository.dart';
 import '../repository/events_uploader.dart';
 import '../repository/feedback_repository.dart';
 import '../repository/feedback_repository_impl.dart';
+import '../repository/health_repository.dart';
 import '../repository/notifications_repository.dart';
 import '../repository/outbox_drainer.dart';
 import '../repository/outbox_repository.dart';
@@ -390,3 +391,16 @@ class OnboardingNotifier extends Notifier<bool> {
 final onboardingProvider = NotifierProvider<OnboardingNotifier, bool>(
   OnboardingNotifier.new,
 );
+
+/// Health examination DAO provider.
+final healthExaminationDaoProvider = Provider<HealthExaminationDao>(
+  (ref) => ref.watch(appDatabaseProvider).healthExaminationDao,
+);
+
+/// Health repository provider.
+final healthRepositoryProvider = Provider<HealthRepository>((ref) {
+  final api = ref.watch(planetApiProvider);
+  final dao = ref.watch(healthExaminationDaoProvider);
+  final config = ref.watch(serverConfigProvider);
+  return HealthRepository(api, dao, config: config);
+});
