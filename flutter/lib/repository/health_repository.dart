@@ -234,8 +234,9 @@ class HealthRepository {
   Future<SyncResult> sync({void Function(SyncProgress)? onProgress}) async {
     if (_config == null) return const SyncFailed('No server config');
 
-    final dbUrl = UrlUtils.dbUrl(_config!);
-    final auth = UrlUtils.basicAuthHeader('satellite', _config!.pin);
+    final config = _config;
+    final dbUrl = UrlUtils.dbUrl(config);
+    final auth = UrlUtils.basicAuthHeader('satellite', config.pin);
 
     final countResult = await _api.getJsonObject(
       '$dbUrl/health/_all_docs?limit=0',

@@ -135,7 +135,7 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
           examData: examData,
         );
       } else if (_userId != null) {
-        final exam = await _repo.getByIdOrUserId(_userId!);
+        final exam = await _repo.getByIdOrUserId(_userId);
         final conditions = _repo.parseConditions(exam?.conditions);
         Examination? examData;
         if (exam?.data != null) {
@@ -224,7 +224,7 @@ class ExaminationNotifier extends StateNotifier<ExaminationState> {
         );
       } else if (_userId != null) {
         await _repo.createExamination(
-          userId: _userId!,
+          userId: _userId,
           temperature: temperature,
           pulse: pulse,
           bp: bp,

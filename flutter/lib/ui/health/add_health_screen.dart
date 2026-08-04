@@ -220,7 +220,7 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: DropdownButtonFormField<int>(
-        value: value,
+        initialValue: value,
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
@@ -237,7 +237,6 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
-    final l10n = AppLocalizations.of(context);
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
