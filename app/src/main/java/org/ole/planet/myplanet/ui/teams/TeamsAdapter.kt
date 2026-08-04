@@ -142,7 +142,13 @@ class TeamsAdapter(
     companion object {
         private val DIFF_CALLBACK = DiffUtils.itemCallback<TeamDetails>(
             areItemsTheSame = { oldItem, newItem -> oldItem._id == newItem._id },
-            areContentsTheSame = { oldItem, newItem -> oldItem == newItem }
+            areContentsTheSame = { oldItem, newItem ->
+                oldItem.createdDate == newItem.createdDate &&
+                        oldItem.teamType == newItem.teamType &&
+                        oldItem.name == newItem.name &&
+                        oldItem.visitCount == newItem.visitCount &&
+                        oldItem.teamStatus == newItem.teamStatus
+            }
         )
     }
 }

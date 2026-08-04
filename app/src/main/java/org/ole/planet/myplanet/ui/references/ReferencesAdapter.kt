@@ -14,7 +14,7 @@ import org.ole.planet.myplanet.utils.DiffUtils
 class ReferencesAdapter : ListAdapter<Reference, ViewHolderReference>(
     DiffUtils.itemCallback<Reference>(
         { oldItem, newItem -> oldItem.title == newItem.title },
-        { oldItem, newItem -> oldItem == newItem }
+        { oldItem, newItem -> oldItem.title == newItem.title && oldItem.icon == newItem.icon }
     )
 ) {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolderReference {
