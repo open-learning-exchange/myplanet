@@ -254,15 +254,11 @@ open class BaseDashboardFragment : DashboardPluginFragment(), OnSyncListener {
     private suspend fun myLifeListInit(flexboxLayout: FlexboxLayout) {
         val userId = prefData.getUserId().ifEmpty { "--" }
         val visibleItems = lifeRepository.getMyLifeForDashboard(userId, getMyLifeListBase(userId))
+        val surveyCount = viewModel.getAssignedSurveyCount(userId)
         for ((itemCnt, items) in visibleItems.withIndex()) {
             val dashboardItem = DashboardItem(items._id, items.title, items.imageId, ItemType.LIFE)
-            flexboxLayout.addView(getLayout(itemCnt, dashboardItem, 0), params)
+            flexboxLayout.addView(getLayout(itemCnt, dashboardItem, surveyCount), params)
         }
-        updateMyLifeSurveyCount()
-    }
-
-    private fun updateMyLifeSurveyCount() {
-        // Update views with survey count if needed
     }
 
     private fun myLibraryItemClickAction(textView: TextView, items: MyLibrary?) {

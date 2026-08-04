@@ -22,6 +22,7 @@ import org.ole.planet.myplanet.data.room.dao.ExamDao
 import org.ole.planet.myplanet.data.room.dao.QuestionDao
 import org.ole.planet.myplanet.data.room.dao.SubmissionDao
 import org.ole.planet.myplanet.data.room.dao.TeamDao
+import org.ole.planet.myplanet.model.AssignedSurvey
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.Submission
@@ -275,6 +276,21 @@ class SurveysRepositoryImpl @Inject constructor(
         return examDao.getByType("surveys")
             .filter { !it.isTeamShareAllowed && it.teamId.isNullOrEmpty() }
             .map { it }
+    }
+
+    override suspend fun getAssignedSurveys(userId: String): List<AssignedSurvey> {
+        val individual = getIndividualSurveys().map { AssignedSurvey(it, false, null) }
+
+        val teamIds = teamDao.getByUserId(userId)
+            .filter { it.docType == "membership" && !it.isDeletePending }
+            .mapNotNull { it.teamId }
+            .distinct()
+
+        val team = teamIds.flatMap { teamId ->
+            getTeamOwnedSurveys(teamId).map { AssignedSurvey(it, true, teamId) }
+        }
+
+        return (individual + team).distinctBy { it.exam.id }
     }
 
     private suspend fun getTeamSubmissionExamIds(teamId: String): Set<String> {

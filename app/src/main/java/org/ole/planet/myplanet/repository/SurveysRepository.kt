@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.flow.Flow
+import org.ole.planet.myplanet.model.AssignedSurvey
 import org.ole.planet.myplanet.model.ExamQuestion
 import org.ole.planet.myplanet.model.StepExam
 import org.ole.planet.myplanet.model.SurveyFormState
@@ -15,6 +16,7 @@ interface SurveysRepository {
     suspend fun getTeamOwnedSurveys(teamId: String?): List<StepExam>
     suspend fun getAdoptableTeamSurveys(teamId: String?): List<StepExam>
     suspend fun getIndividualSurveys(): List<StepExam>
+    suspend fun getAssignedSurveys(userId: String): List<AssignedSurvey>
     suspend fun getSurveyInfos(
         isTeam: Boolean,
         teamId: String?,

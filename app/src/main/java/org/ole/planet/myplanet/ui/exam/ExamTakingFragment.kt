@@ -154,7 +154,7 @@ class ExamTakingFragment : BaseExamFragment(), View.OnClickListener, CompoundBut
                 } else {
                     val currentExam = exam
                     if (currentExam != null) {
-                        if (sub == null || isTeam) {
+                        if (sub == null || isTeam || (type == "survey" && (sub?.status == "complete" || sub?.status == "requires grading"))) {
                             sub = submissionsRepository.createExamSubmission(
                                 CreateExamSubmissionRequest(
                                     user?.id, user?.dob, user?.gender, currentExam, type, if (isTeam) teamId else null
