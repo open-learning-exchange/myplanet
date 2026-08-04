@@ -29,7 +29,7 @@ void main() {
     outbox = OutboxRepository(database.outboxDao);
     uploader = FeedbackUploader(
       api,
-      FeedbackRepositoryImpl(feedbackDao: database.feedbackDao),
+      FeedbackRepositoryImpl(feedbackDao: database.feedbackDao, planetApi: api),
       database.feedbackDao,
       outbox,
     );
@@ -145,6 +145,7 @@ void main() {
 
     final repository = FeedbackRepositoryImpl(
       feedbackDao: database.feedbackDao,
+      planetApi: api,
     );
     await repository.addReply('feedback-1', 'Still broken', 'ada');
 
