@@ -77,10 +77,17 @@ class EventsRepositoryImpl @Inject constructor(
             .map { it }
     }
 
-    override suspend fun toggleAttendance(meetupId: String, currentUserId: String?): Meetup? {
+    override suspend fun getCurrentUser(): UserEntity? {
+        return userRepository.getUserModel()
+    }
+
+    override suspend fun toggleCurrentUserAttendance(meetupId: String): Meetup? {
         if (meetupId.isBlank()) {
             return null
         }
+
+        val currentUser = getCurrentUser()
+        val currentUserId = currentUser?.id
 
         val meetup = meetupDao.getByMeetupId(meetupId) ?: return null
         val isJoined = !meetup.userId.isNullOrEmpty()
