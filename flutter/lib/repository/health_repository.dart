@@ -116,9 +116,7 @@ class HealthRepository {
     if (existing == null) return;
 
     await _dao.upsert(
-      existing
-          .toCompanion(false)
-          .copyWith(
+      existing.toCompanion(false).copyWith(
             temperature: Value(temperature ?? existing.temperature),
             pulse: Value(pulse ?? existing.pulse),
             bp: Value(bp ?? existing.bp),
@@ -135,8 +133,7 @@ class HealthRepository {
   }
 
   /// Insert or update a health examination row.
-  Future<void> upsert(HealthExaminationsCompanion row) =>
-      _dao.upsert(row);
+  Future<void> upsert(HealthExaminationsCompanion row) => _dao.upsert(row);
 
   /// Insert or update multiple health examinations.
   Future<void> upsertAll(List<HealthExaminationsCompanion> rows) =>
