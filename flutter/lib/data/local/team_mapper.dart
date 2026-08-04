@@ -52,6 +52,8 @@ class TeamMapper {
       startDate: Value(JsonUtils.getLong('startDate', doc)),
       endDate: Value(JsonUtils.getLong('endDate', doc)),
       updatedDate: Value(JsonUtils.getLong('updatedDate', doc)),
+      date: Value(JsonUtils.getLong('date', doc)),
+      amount: Value(JsonUtils.getInt('amount', doc)),
     );
   }
 

@@ -6,6 +6,8 @@ import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../router.dart';
 import '../calendar/calendar_screen.dart';
+import '../teams/team_finances_screen.dart';
+import '../teams/team_reports_screen.dart';
 import '../voices/voices_screen.dart';
 import 'leaders_screen.dart';
 import 'services_screen.dart';
@@ -78,8 +80,8 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen>
       const CalendarScreen(),
       if (!widget.fromLogin) ...[
         const ServicesScreen(),
-        _PlaceholderTab(label: l10n.finances),
-        _PlaceholderTab(label: l10n.reports),
+        TeamFinancesScreen(teamId: widget.communityId ?? ''),
+        TeamReportsScreen(teamId: widget.communityId ?? ''),
       ],
     ];
 
@@ -93,34 +95,6 @@ class _CommunityScreenState extends ConsumerState<CommunityScreen>
         ),
       ),
       body: TabBarView(controller: _tabController, children: tabViews),
-    );
-  }
-}
-
-/// Placeholder for tabs not yet fully implemented.
-class _PlaceholderTab extends ConsumerWidget {
-  const _PlaceholderTab({required this.label});
-
-  final String label;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.construction_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            '$label ${AppLocalizations.of(context).unavailable}',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-        ],
-      ),
     );
   }
 }
