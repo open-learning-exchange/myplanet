@@ -24,7 +24,6 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
   final _dobController = TextEditingController();
-  final _birthplaceController = TextEditingController();
   final _emergencyNameController = TextEditingController();
   final _emergencyContactController = TextEditingController();
   final _specialNeedsController = TextEditingController();
@@ -61,7 +60,6 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
       _emailController.text = user.email ?? '';
       _phoneController.text = user.phoneNumber ?? '';
       _dobController.text = user.dob ?? '';
-      _birthplaceController.text = user.birthPlace ?? '';
     });
   }
 
@@ -73,7 +71,6 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
     _emailController.dispose();
     _phoneController.dispose();
     _dobController.dispose();
-    _birthplaceController.dispose();
     _emergencyNameController.dispose();
     _emergencyContactController.dispose();
     _specialNeedsController.dispose();
@@ -135,10 +132,6 @@ class _AddHealthScreenState extends ConsumerState<AddHealthScreen> {
                       icon: const Icon(Icons.calendar_today),
                       onPressed: () => _selectDate(context),
                     ),
-                  ),
-                  _buildTextField(
-                    controller: _birthplaceController,
-                    label: l10n.birthPlace,
                   ),
 
                   const SizedBox(height: 24),
