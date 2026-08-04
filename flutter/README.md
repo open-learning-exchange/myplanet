@@ -8,11 +8,11 @@ it covers scope, the technology mapping, what is deliberately not improved, and 
 
 ## Status
 
-Phases 1–24 provide server configuration, online/offline login, resources, courses, shelf
+Phases 1–26 provide server configuration, online/offline login, resources, courses, shelf
 write-back, the dashboard shell, calendar, first-launch onboarding, an offline-editable user
 profile, persisted appearance settings, safe server details, an offline dictionary, reactive
 notifications, personalized My life/reference navigation, offline personal items, course
-ratings, offline submission creation/durable upload/list/detail/question-aware answer review/PDF export,
+ratings with upload, offline submission creation/durable upload/list/detail/question-aware answer review/PDF export,
 offline events/meetups, individual surveys, voices/discussions, teams/enterprises management,
 AI chat conversations, user feedback/review system, community/nation tabs, graded course exams,
 resource viewer with download path, and My health with AES-256-CBC encryption.
@@ -35,6 +35,9 @@ the durable submissions outbox.
 Phase 24 adds My health: the health profile form and examination form with AES-256-CBC
 encryption matching the Kotlin's `AndroidDecrypter` scheme, preserving `users.key`/`users.iv`
 across schema upgrades.
+
+Phase 26 adds ratings upload: `RatingsUploader` queues pending ratings to the durable outbox,
+completing the ratings write-back path that existed in Kotlin but had no Flutter caller.
 
 ## Getting started
 
