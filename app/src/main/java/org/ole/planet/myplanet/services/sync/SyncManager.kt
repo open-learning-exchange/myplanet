@@ -76,7 +76,8 @@ class SyncManager @Inject constructor(
     private val teamsSyncRepository: TeamsSyncRepository,
     private val coursesRepository: CoursesRepository,
     private val eventsRepository: EventsRepository,
-    private val userSyncRepository: UserSyncRepository
+    private val userSyncRepository: UserSyncRepository,
+    private val syncRepository: org.ole.planet.myplanet.repository.SyncRepository
 ) {
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
@@ -522,7 +523,7 @@ class SyncManager @Inject constructor(
                     async(dispatcherProvider.io) {
                         semaphore.withPermit {
                             val shelfStartTime = SystemClock.elapsedRealtime()
-                            val items = processShelfParallel(shelfId, apiInterface)
+                            val items = syncRepository.processShelfParallel(shelfId, apiInterface)
                             val shelfDuration = SystemClock.elapsedRealtime() - shelfStartTime
                             if (items > 0) {
                                 logger.logDetail("library_sync", "Shelf ${index + 1}/${shelvesWithData.size} ($shelfId): $items items in ${shelfDuration}ms")
@@ -554,138 +555,5 @@ class SyncManager @Inject constructor(
             val failDuration = SystemClock.elapsedRealtime() - librarySyncStartTime
             Log.d("SyncPerf", "  ✗ Library sync failed after ${failDuration}ms: ${e.message}")
         }
-    }
-
-    private suspend fun processShelfParallel(shelfId: String, apiInterface: ApiInterface): Int {
-        var processedItems = 0
-
-        try {
-            val shelfDoc: JsonObject? = withContext(dispatcherProvider.io) {
-                var doc: JsonObject? = null
-                ApiClient.executeWithRetryAndWrap {
-                    apiInterface.getJsonObject(
-                        UrlUtils.header,
-                        "${UrlUtils.getUrl()}/shelf/$shelfId"
-                    )
-                }?.let {
-                    doc = it.body()
-                }
-                coroutineContext.ensureActive()
-                doc
-            }
-
-            if (shelfDoc == null) {
-                return 0
-            }
-
-            coroutineScope {
-                val dataJobs = Constants.shelfDataList.mapNotNull { shelfData ->
-                    val array = getJsonArray(shelfData.key, shelfDoc)
-                    if (array.size() > 0) {
-                        async(dispatcherProvider.io) {
-                            processShelfDataOptimizedSync(shelfId, shelfData, shelfDoc, apiInterface)
-                        }
-                    } else null
-                }
-
-                processedItems = dataJobs.awaitAll().sum()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-
-        return processedItems
-    }
-
-    private suspend fun processShelfDataOptimizedSync(shelfId: String?, shelfData: Constants.ShelfData, shelfDoc: JsonObject?, apiInterface: ApiInterface): Int {
-        var processedCount = 0
-        val logger = SyncTimeLogger
-
-        try {
-            val array = getJsonArray(shelfData.key, shelfDoc)
-            if (array.size() == 0) return 0
-
-            stringArray[0] = shelfId
-            stringArray[1] = shelfData.categoryKey
-            stringArray[2] = shelfData.type
-
-            val validIds = mutableListOf<String>()
-            for (i in 0 until array.size()) {
-                if (array[i] !is JsonNull) {
-                    validIds.add(array[i].asString)
-                }
-            }
-
-            if (validIds.isEmpty()) return 0
-
-            val batchSizer = AdaptiveBatchProcessor(initialSize = 50)
-            var i = 0
-            var batchNum = 0
-
-            while (i < validIds.size) {
-                batchNum++
-                val batchStartTime = SystemClock.elapsedRealtime()
-
-                val end = minOf(i + batchSizer.currentSize, validIds.size)
-                val batch = validIds.subList(i, end)
-                i = end
-
-                val keysObject = JsonObject()
-                keysObject.add("keys", gson.fromJson(gson.toJson(batch), JsonArray::class.java))
-
-                // API call
-                val apiStartTime = SystemClock.elapsedRealtime()
-                var response: JsonObject? = null
-                ApiClient.executeWithRetryAndWrap {
-                    apiInterface.postDoc(UrlUtils.header, "application/json", "${UrlUtils.getUrl()}/${shelfData.type}/_all_docs?include_docs=true", keysObject)
-                }?.let {
-                    response = it.body()
-                }
-                val apiDuration = SystemClock.elapsedRealtime() - apiStartTime
-
-                if (response == null) {
-                    batchSizer.recordFailure()
-                    logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, false, 0)
-                    continue
-                }
-                batchSizer.recordSuccess(apiDuration)
-
-                val responseRows = getJsonArray("rows", response)
-                logger.logApiCall("${UrlUtils.getUrl()}/${shelfData.type}/_all_docs (shelf batch $batchNum)", apiDuration, true, responseRows.size())
-
-                if (responseRows.size() == 0) continue
-
-                val documentsToProcess = mutableListOf<JsonObject>()
-                for (j in 0 until responseRows.size()) {
-                    val rowObj = responseRows[j].asJsonObject
-                    if (rowObj.has("doc")) {
-                        val doc = getJsonObject("doc", rowObj)
-                        documentsToProcess.add(doc)
-                    }
-                }
-
-                if (documentsToProcess.isNotEmpty()) {
-                    val realmStartTime = SystemClock.elapsedRealtime()
-                    when (shelfData.type) {
-                        "resources" -> processedCount += resourcesRepository.batchInsertMyLibrary(shelfId, documentsToProcess)
-                        "courses" -> processedCount += coursesRepository.batchInsertMyCourses(shelfId, documentsToProcess)
-                        "meetups" -> processedCount += eventsRepository.batchInsertMeetups(documentsToProcess)
-                        "teams" -> processedCount += teamsSyncRepository.batchInsertMyTeams(documentsToProcess)
-                    }
-                    val realmDuration = SystemClock.elapsedRealtime() - realmStartTime
-                    logger.logRealmOperation("shelf_insert", shelfData.type, realmDuration, documentsToProcess.size)
-                }
-
-                val batchDuration = SystemClock.elapsedRealtime() - batchStartTime
-                if (batchDuration > 1000) {
-                    logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} batch $batchNum ($end/${validIds.size} ids): ${batchDuration}ms for ${documentsToProcess.size} docs")
-                }
-            }
-
-        } catch (e: Exception) {
-            e.printStackTrace()
-            logger.logDetail("shelf_sync", "Shelf $shelfId ${shelfData.type} failed: ${e.message}")
-        }
-        return processedCount
     }
 }

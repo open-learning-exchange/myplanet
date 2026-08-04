@@ -82,9 +82,10 @@ object ServiceModule {
         teamsSyncRepository: TeamsSyncRepository,
         coursesRepository: CoursesRepository,
         eventsRepository: EventsRepository,
-        userSyncRepository: UserSyncRepository
+        userSyncRepository: UserSyncRepository,
+        syncRepository: org.ole.planet.myplanet.repository.SyncRepository
     ): SyncManager {
-        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository, userSyncRepository)
+        return SyncManager(context, sharedPrefManager, apiInterface, transactionSyncManager, resourcesRepository, loginSyncManager, scope, activitiesRepository, dispatcherProvider, timeProvider, teamsRepository, teamsSyncRepository, coursesRepository, eventsRepository, userSyncRepository, syncRepository)
     }
 
     @Provides
