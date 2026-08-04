@@ -779,7 +779,7 @@
   "pleaseEnterPassword": "Please enter a password",
   "usernameAlreadyExists": "Username already exists",
   "memberCreatedOffline": "Member account created offline",
-  "communityEarnings": "Community total earnings: **${"$"}%1$d** / $500",
+  "communityEarnings": "Community total earnings: **$%1$d** / 500",
   "@communityEarnings": {
     "placeholders": {
       "amount": {
@@ -787,7 +787,7 @@
       }
     }
   },
-  "yourEarnings": "Your total earnings: **${"$"}%1$d** / $11",
+  "yourEarnings": "Your total earnings: **$%1$d** / 11",
   "@yourEarnings": {
     "placeholders": {
       "amount": {
