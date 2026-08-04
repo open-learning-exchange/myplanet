@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.R
 import org.ole.planet.myplanet.callback.OnAudioRecordListener
-import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
+import org.ole.planet.myplanet.domain.usecase.UpdateViewerSessionUseCase
 import org.ole.planet.myplanet.databinding.FragmentResourceViewerBinding
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.services.AudioRecorder
@@ -71,9 +71,10 @@ import org.ole.planet.myplanet.utils.NotificationUtils
 import org.ole.planet.myplanet.utils.TTSManager
 import org.ole.planet.myplanet.utils.UrlUtils
 import org.ole.planet.myplanet.utils.Utilities
+import org.ole.planet.myplanet.utils.collectWhenStarted
 
 @AndroidEntryPoint
-class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
+class ResourceViewerFragment : Fragment() {
 
     enum class ResourceType {
         VIDEO, AUDIO, PDF, IMAGE, TEXT, MARKDOWN, CSV, UNKNOWN
@@ -105,7 +106,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
 
     @Inject lateinit var dispatcherProvider: DispatcherProvider
     @Inject lateinit var ttsManager: TTSManager
-    private var authSessionUpdater: AuthSessionUpdater? = null
 
     private val audioRecordListener = object : OnAudioRecordListener {
         override fun onRecordStarted() {
@@ -168,6 +168,23 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         audioRecorder = AudioRecorder().setAudioRecordListener(audioRecordListener)
         audioRecorder.setCaller(requireActivity(), requireContext())
 
+        collectWhenStarted(viewModel.viewerSessionState) { state ->
+            when (state) {
+                is UpdateViewerSessionUseCase.ViewerSessionResult.CheckingServer -> {
+                    showVideoLoading(getString(R.string.video_loading_checking_server))
+                }
+                is UpdateViewerSessionUseCase.ViewerSessionResult.Connecting -> {
+                    showVideoLoading(getString(R.string.video_loading_connecting))
+                }
+                is UpdateViewerSessionUseCase.ViewerSessionResult.Success -> {
+                    handleAuthSessionSuccess(state.responseHeader)
+                }
+                is UpdateViewerSessionUseCase.ViewerSessionResult.Error -> {
+                    navigateBackWithError(getString(R.string.video_unavailable))
+                }
+            }
+        }
+
         viewLifecycleOwner.lifecycleScope.launch {
             externalFilesDir = withContext(dispatcherProvider.io) {
                 requireContext().getExternalFilesDir(null)
@@ -217,11 +234,8 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
             navigateBackWithError(getString(R.string.video_unavailable))
             return
         }
-        showVideoLoading(getString(R.string.video_loading_checking_server))
-        viewModel.ensureServerUrlUpdated()
         filePath = UrlUtils.getUrl(library)
-        showVideoLoading(getString(R.string.video_loading_connecting))
-        authSessionUpdater = viewModel.getAuthSessionUpdater(this)
+        viewModel.startAuthSession()
     }
 
     private suspend fun setupVideoViewer() {
@@ -230,13 +244,10 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         videoLoadingText = binding.root.findViewById(R.id.video_loading_text)
 
         if (isOnline) {
-            showVideoLoading(getString(R.string.video_loading_checking_server))
-            viewModel.ensureServerUrlUpdated()
             if (::library.isInitialized) {
                 filePath = UrlUtils.getUrl(library)
             }
-            showVideoLoading(getString(R.string.video_loading_connecting))
-            authSessionUpdater = viewModel.getAuthSessionUpdater(this)
+            viewModel.startAuthSession()
         } else {
             val resolvedPath = filePath?.let { resolveVideoPath(it) }
             val localFile = resolvedPath?.let { File(it) }
@@ -486,7 +497,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
         }
     }
 
-    override fun setAuthSession(responseHeader: Map<String, List<String>>) {
+    private fun handleAuthSessionSuccess(responseHeader: Map<String, List<String>>) {
         val cookieHeader = responseHeader["Set-Cookie"]?.get(0)
         val headerAuth = cookieHeader?.split(";") ?: run {
             return
@@ -509,10 +520,6 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
                 }
             }
         }
-    }
-
-    override fun onError(s: String) {
-        navigateBackWithError(getString(R.string.video_unavailable))
     }
 
     private fun setupDragToPipGesture(playerView: PlayerView) {
@@ -573,7 +580,7 @@ class ResourceViewerFragment : Fragment(), AuthSessionUpdater.AuthCallback {
     }
 
     override fun onDestroyView() {
-        authSessionUpdater?.stop()
+        viewModel.stopAuthSession()
         exoPlayer?.release()
         exoPlayer = null
         streamingHttpDataSourceFactory = null

@@ -1,36 +1,40 @@
 package org.ole.planet.myplanet.ui.viewer
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
-import org.ole.planet.myplanet.data.auth.AuthSessionUpdater
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.domain.usecase.UpdateViewerSessionUseCase
 import org.ole.planet.myplanet.model.MyLibrary
 import org.ole.planet.myplanet.repository.ResourcesRepository
-import org.ole.planet.myplanet.services.SharedPrefManager
-import org.ole.planet.myplanet.services.sync.ServerUrlMapper
-import org.ole.planet.myplanet.utils.DispatcherProvider
 
 @HiltViewModel
 class ResourceViewerViewModel @Inject constructor(
     private val resourcesRepository: ResourcesRepository,
-    private val authSessionUpdaterFactory: AuthSessionUpdater.Factory,
-    private val serverUrlMapper: ServerUrlMapper,
-    private val sharedPrefManager: SharedPrefManager,
-    private val dispatcherProvider: DispatcherProvider
+    private val updateViewerSessionUseCase: UpdateViewerSessionUseCase
 ) : ViewModel() {
 
-    suspend fun ensureServerUrlUpdated() {
-        val serverUrl = sharedPrefManager.getServerUrl()
-        val mapping = serverUrlMapper.processUrl(serverUrl)
-        if (mapping.alternativeUrl != null) {
-            serverUrlMapper.updateServerIfNecessary(mapping, sharedPrefManager.rawPreferences) { url ->
-                serverUrlMapper.isUrlDirectlyReachable(url)
+    private val _viewerSessionState = MutableSharedFlow<UpdateViewerSessionUseCase.ViewerSessionResult>()
+    val viewerSessionState = _viewerSessionState.asSharedFlow()
+
+    private var authSessionJob: Job? = null
+
+    fun startAuthSession() {
+        authSessionJob?.cancel()
+        authSessionJob = viewModelScope.launch {
+            updateViewerSessionUseCase().collect { result ->
+                _viewerSessionState.emit(result)
             }
         }
     }
 
-    fun getAuthSessionUpdater(callback: AuthSessionUpdater.AuthCallback): AuthSessionUpdater {
-        return authSessionUpdaterFactory.create(callback)
+    fun stopAuthSession() {
+        authSessionJob?.cancel()
+        authSessionJob = null
     }
 
     suspend fun getLibraryItemById(id: String): MyLibrary? {
