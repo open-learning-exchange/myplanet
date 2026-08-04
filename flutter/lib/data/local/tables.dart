@@ -507,6 +507,61 @@ class SurveyQuestions extends Table {
   Set<Column> get primaryKey => {id};
 }
 
+/// Port of `model/StepExam.kt` - graded course exams with correct answers.
+@DataClassName('ExamRow')
+@TableIndex(name: 'exams_step_id', columns: {#stepId})
+@TableIndex(name: 'exams_course_id', columns: {#courseId})
+class Exams extends Table {
+  TextColumn get id => text()();
+  TextColumn get rev => text().named('_rev').nullable()();
+  TextColumn get stepId => text().nullable()();
+  TextColumn get courseId => text().nullable()();
+  TextColumn get name => text().nullable()();
+  TextColumn get description => text().nullable()();
+  IntColumn get createdDate => integer().withDefault(const Constant(0))();
+  IntColumn get updatedDate => integer().withDefault(const Constant(0))();
+  IntColumn get adoptionDate => integer().withDefault(const Constant(0))();
+  TextColumn get createdBy => text().nullable()();
+  IntColumn get totalMarks => integer().withDefault(const Constant(0))();
+  TextColumn get passingPercentage => text().nullable()();
+  TextColumn get sourcePlanet => text().nullable()();
+  BoolColumn get isFromNation => boolean().withDefault(const Constant(false))();
+  TextColumn get teamId => text().nullable()();
+  BoolColumn get teamShareAllowed =>
+      boolean().withDefault(const Constant(false))();
+  TextColumn get sourceSurveyId => text().nullable()();
+  IntColumn get noOfQuestions => integer().withDefault(const Constant(0))();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
+/// Port of `model/ExamQuestion.kt` - exam questions with correct answers for grading.
+@DataClassName('ExamQuestionRow')
+@TableIndex(name: 'exam_questions_exam', columns: {#examId, #position})
+class ExamQuestions extends Table {
+  TextColumn get id => text()();
+  TextColumn get examId => text()();
+  TextColumn get header => text().nullable()();
+  TextColumn get body => text().nullable()();
+  TextColumn get type => text().nullable()();
+  /// Correct answers for grading (stored as JSON list of strings).
+  TextColumn get correctChoices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  TextColumn get marks => text().nullable()();
+  TextColumn get choices => text()
+      .map(const StringListConverter())
+      .withDefault(const Constant('[]'))();
+  BoolColumn get hasOtherOption =>
+      boolean().withDefault(const Constant(false))();
+  IntColumn get scaleMax => integer().withDefault(const Constant(9))();
+  IntColumn get position => integer()();
+
+  @override
+  Set<Column> get primaryKey => {id};
+}
+
 /// Port of `model/News.kt` — voices/discussion posts, stored in the CouchDB
 /// `news` database.
 ///
