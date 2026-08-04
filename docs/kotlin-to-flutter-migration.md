@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 29 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**26 of 28 UI packages** are ported (membership completes the user package portion).
+**Phase 30 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**27 of 28 UI packages** are ported (components package now complete).
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -97,6 +97,17 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   handles new member registration with a form for username, password, name, email, phone, language,
   level, birth date, and gender. Creates a local user account and queues it for sync to the server.
   Added localization strings for registration form fields.
+
+**Phase 30** -- components: Ported utility widgets from the `components` package:
+  - `ChallengeDialog` - Flutter equivalent of `MarkdownDialogFragment` for displaying daily challenge
+    progress with markdown content, progress bar, and action buttons. Integrates with the dashboard
+    to show campaign challenge status.
+  - `CheckboxList` and `CheckboxStringList` - Reusable checkbox list widgets similar to Android's
+    `CheckboxAdapter` for multi-selection lists.
+  - `CustomDropdownButton` and `AlwaysNotifyDropdown` - Dropdown widgets that support same-item
+    selection callbacks like Android's `CustomSpinner`.
+  Added localization strings for challenge dialog: community/your earnings, congratulations,
+  daily voices, sync reminder, and action buttons.
 
 ## Strategy
 
