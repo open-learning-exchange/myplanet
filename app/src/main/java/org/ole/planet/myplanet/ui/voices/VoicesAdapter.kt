@@ -118,10 +118,7 @@ class VoicesAdapter(
         )
     }
 
-    private var originalList: List<News> = emptyList()
-
     private fun prepareSubmitList(list: List<News>?): List<News> {
-        originalList = list ?: emptyList()
         val finalList = mutableListOf<News>()
         parentNews?.let {
             preParseNews(it)
@@ -306,41 +303,7 @@ class VoicesAdapter(
     }
 
     fun removePost(newsId: String) {
-        val isParent = parentNews?.id == newsId
-        val posInCurrent = currentList.indexOfFirst { it.id == newsId }
-
-        if (posInCurrent == -1 && !isParent) {
-            return
-        }
-
-        if (isParent) {
-            submitList(emptyList())
-        } else {
-            val updatedOriginalList = originalList.toMutableList()
-            val posInOriginal = updatedOriginalList.indexOfFirst { it.id == newsId }
-            if (posInOriginal != -1) {
-                updatedOriginalList.removeAt(posInOriginal)
-                originalList = updatedOriginalList.toList()
-            }
-
-            val updatedCurrentList = currentList.toMutableList()
-            if (posInCurrent != -1) {
-                updatedCurrentList.removeAt(posInCurrent)
-            }
-            val listToSubmit = if (parentNews != null && updatedCurrentList.isNotEmpty() && updatedCurrentList[0].id == parentNews?.id) {
-                updatedCurrentList.drop(1)
-            } else {
-                updatedCurrentList
-            }
-            submitList(listToSubmit)
-        }
-
-        parentNews?.id?.let { pid ->
-            val current = replyCountCache[pid]
-            replyCountCache[pid] = if (current != null) maxOf(0, current - 1) else 0
-            notifyItemChanged(0, PAYLOAD_REPLY_COUNT)
-        }
-        listener?.onDataChanged()
+        // Handled by upstream reloading data in ViewModel and submitting it here.
     }
 
     fun updateReplyBadge(newsId: String?) {
@@ -520,7 +483,12 @@ class VoicesAdapter(
     fun updateParentNews(news: News?) {
         parentNews = news
         preParseNews(parentNews)
-        submitList(originalList)
+        val children = if (currentList.isNotEmpty() && currentList[0].id == parentNews?.id) {
+            currentList.drop(1)
+        } else {
+            currentList
+        }
+        super.submitList(prepareSubmitList(children))
     }
 
     private fun parseViewIn(viewIn: String?): JsonArray? {

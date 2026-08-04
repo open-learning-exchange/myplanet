@@ -135,7 +135,6 @@ open class ReplyActivity : AppCompatActivity(), OnNewsItemClickListener {
                     },
                     deletePostFn = { newsId ->
                         voicesViewModel.deletePost(newsId, "") {
-                            newsAdapter.removePost(newsId)
                         }
                     },
                     shareNewsFn = { newsId, userId, planetCode, parentCode, teamName ->

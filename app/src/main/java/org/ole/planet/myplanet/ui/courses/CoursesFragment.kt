@@ -89,6 +89,7 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
             if (isAdded) {
                 selectedItems?.clear()
                 Utilities.toast(activity, getString(R.string.removed_from_mycourse))
+                viewModel.loadCourses(isMyCourseLib, model?.id)
             }
         }
     }
@@ -216,13 +217,11 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
             },
             onArchiveConfirmed = {
                 val courseIds = selectedItems?.mapNotNull { it?.courseId } ?: emptyList()
                 deleteSelected(true)
                 selectionController.clearAll(adapterCourses)
-                adapterCourses.removeCourses(courseIds)
             },
             onAddToLib = {
                 if ((selectedItems?.size ?: 0) > 0) {
@@ -287,11 +286,13 @@ class CoursesFragment : BaseRecyclerFragment<MyCourse?>(), OnCourseItemSelectedL
         orderByTitle.isEnabled = false
         orderByDate.setOnClickListener {
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleSortOrder { scrollToTop() }
+            viewModel.toggleDateSort()
+            scrollToTop()
         }
         orderByTitle.setOnClickListener {
             if (!::adapterCourses.isInitialized) return@setOnClickListener
-            adapterCourses.toggleTitleSortOrder { scrollToTop() }
+            viewModel.toggleTitleSort()
+            scrollToTop()
         }
     }
 
