@@ -5,8 +5,8 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 26 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
-**25 of 28 UI packages** are ported (rating upload/sync is infrastructure, not a UI package).
+**Phase 27 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**26 of 28 UI packages** are ported (maps is the new package in this phase).
 
 - **Phase 1** -- skeleton plus the server configuration → login → resources slice.
 - **Phase 2** -- dashboard shell (bottom-tab navigation) plus the courses list and detail.
@@ -82,6 +82,10 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
   The offline storage for ratings existed but nothing called it to upload to the server. The uploader
   queues pending ratings via the durable outbox, matching the Kotlin's `UploadManager.uploadRating`.
   Also added `findById` method to `RatingDao` for testability.
+
+- **Phase 27** -- maps: Ported `OfflineMapsActivity.kt` to `OfflineMapsScreen` using `flutter_map`
+  with OpenStreetMap tiles. Added `flutter_map` and `latlong2` dependencies. Added localization
+  strings for `offlineMaps` and `centerOnDefault`.
 
 ## Strategy
 
@@ -550,9 +554,9 @@ done
 flutter pub get 2>&1 | grep -i discontinued
 ```
 
-## Remaining UI packages (3 of 28)
+## Remaining UI packages (2 of 28)
 
-`components`, `enterprises`, `maps` -- plus team voices, team/public survey sharing, personal attachments/upload,
+`components`, `enterprises` -- plus team voices, team/public survey sharing, personal attachments/upload,
 storage/retry, and the
 rest of `settings`, plus profile photo/upload, membership, and the rest of `user`, and the
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
@@ -563,11 +567,10 @@ are not ported; only the navigation host is).
   is handled by Flutter's built-in widgets. Deliberately deferred.
 - `enterprises` -- financial reports for teams. Already covered by `team_reports_screen.dart` in the
   teams slice (Phase 18). The Kotlin package is a separate UI layer over the same team data.
-- `maps` -- offline OpenStreetMap functionality using OSMDroid. Requires native library integration
-  and is deliberately deferred as a known gap.
 
 **Completed infrastructure:**
 - Rating upload/sync is now implemented via `RatingsUploader` (Phase 26).
+- Maps: `OfflineMapsScreen` using `flutter_map` package with OpenStreetMap tiles (Phase 27).
 
 Course progress and certification are deliberately deferred with their own packages rather than bundled
 into the courses slice. `events` and `surveys` are now ported for the individual case; team meetups
@@ -640,4 +643,4 @@ succeeds, it just doesn't do what the Kotlin did.
 ---
 
 **Last updated**: 2026-08-04
-**Phase**: 26 of N (25 of 28 UI packages ported; ratings upload complete)
+**Phase**: 27 of N (26 of 28 UI packages ported; maps complete)

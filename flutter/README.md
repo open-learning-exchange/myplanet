@@ -8,15 +8,15 @@ it covers scope, the technology mapping, what is deliberately not improved, and 
 
 ## Status
 
-Phases 1–26 provide server configuration, online/offline login, resources, courses, shelf
+Phases 1–27 provide server configuration, online/offline login, resources, courses, shelf
 write-back, the dashboard shell, calendar, first-launch onboarding, an offline-editable user
 profile, persisted appearance settings, safe server details, an offline dictionary, reactive
 notifications, personalized My life/reference navigation, offline personal items, course
 ratings with upload, offline submission creation/durable upload/list/detail/question-aware answer review/PDF export,
 offline events/meetups, individual surveys, voices/discussions, teams/enterprises management,
 AI chat conversations, user feedback/review system, community/nation tabs, graded course exams,
-resource viewer with download path, and My health with AES-256-CBC encryption.
-**25 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
+resource viewer with download path, My health with AES-256-CBC encryption, and offline maps.
+**26 of 28 UI packages are ported**, offline-first, against the real CouchDB API.
 
 Phase 13 added the durable write-back path — an `outbox` table replacing `RetryQueue`, drained
 on app resume by `OutboxDrainer` instead of by `WorkManager`. Writes made offline survive
@@ -38,6 +38,9 @@ across schema upgrades.
 
 Phase 26 adds ratings upload: `RatingsUploader` queues pending ratings to the durable outbox,
 completing the ratings write-back path that existed in Kotlin but had no Flutter caller.
+
+Phase 27 adds offline maps: `OfflineMapsScreen` using `flutter_map` with OpenStreetMap tiles,
+porting the Kotlin's OSMDroid-based `OfflineMapsActivity`.
 
 ## Getting started
 
