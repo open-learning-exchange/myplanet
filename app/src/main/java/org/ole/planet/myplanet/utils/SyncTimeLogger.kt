@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.utils
 
 import android.util.Log
+import org.ole.planet.myplanet.BuildConfig
 import androidx.core.net.toUri
 import dagger.hilt.android.EntryPointAccessors
 import java.text.SimpleDateFormat
@@ -61,9 +62,9 @@ object SyncTimeLogger {
         detailedLogs.clear()
         apiCallCounter.set(0)
         realmOpCounter.set(0)
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "SYNC STARTED at ${formatTimestamp(startTime)}")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
     }
 
     fun stopLogging(uploadManager: UploadManager? = null) {
@@ -74,10 +75,10 @@ object SyncTimeLogger {
         val summary = generateSummary()
         saveSummaryToRealm(summary, uploadManager)
 
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "SYNC COMPLETED at ${formatTimestamp(endTime)}")
-        Log.d("SyncPerf", "TOTAL DURATION: ${formatTime(endTime - startTime)}")
-        Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "SYNC COMPLETED at ${formatTimestamp(endTime)}")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "TOTAL DURATION: ${formatTime(endTime - startTime)}")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
     }
 
     private fun saveSummaryToRealm(summary: String, uploadManager: UploadManager? = null) {
@@ -139,9 +140,9 @@ object SyncTimeLogger {
 
         val elapsed = endTime - this.startTime
         if (itemCount > 0) {
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}, $itemCount items")
+            if (BuildConfig.DEBUG) Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}, $itemCount items")
         } else {
-            Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}")
+            if (BuildConfig.DEBUG) Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ✓ $processName completed: ${formatTime(duration)}")
         }
     }
 
@@ -158,7 +159,7 @@ object SyncTimeLogger {
 
         val statusIcon = if (success) "✓" else "✗"
         val itemInfo = if (itemsReturned > 0) ", $itemsReturned items" else ""
-        Log.d("SyncPerf", "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "[${formatElapsed(elapsed)}] $statusIcon API #$callNum: ${shortenEndpoint(endpoint)} - ${formatTime(duration)}$itemInfo")
     }
 
     fun logRealmOperation(operation: String, model: String, duration: Long, itemCount: Int) {
@@ -171,7 +172,7 @@ object SyncTimeLogger {
         val log = RealmOperationLog(operation, model, duration, itemCount, timestamp)
         realmOperationTimes.getOrPut(model) { mutableListOf() }.add(log)
 
-        Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "[${formatElapsed(elapsed)}] 💾 DB #$opNum: $operation $model - ${formatTime(duration)}, $itemCount items")
     }
 
     fun logDetail(context: String, message: String) {
@@ -181,7 +182,7 @@ object SyncTimeLogger {
         val elapsed = timestamp - startTime
         detailedLogs.getOrPut(context) { mutableListOf() }.add(message)
 
-        Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
+        if (BuildConfig.DEBUG) Log.d("SyncPerf", "[${formatElapsed(elapsed)}] ℹ $context: $message")
     }
 
     internal fun extractProcessName(endpoint: String): String {
