@@ -88,9 +88,7 @@ class _ResourceViewerScreenState extends ConsumerState<ResourceViewerScreen> {
     if (filename.endsWith('.csv')) {
       return ResourceType.csv;
     }
-    if (mediaType == 'text' ||
-        resourceType == 'text' ||
-        filename.isNotEmpty) {
+    if (mediaType == 'text' || resourceType == 'text' || filename.isNotEmpty) {
       return ResourceType.text;
     }
     return ResourceType.unknown;
@@ -439,7 +437,9 @@ class _AudioViewerState extends State<_AudioViewer> {
           IconButton(
             iconSize: 64,
             icon: Icon(
-              _controller!.value.isPlaying ? Icons.pause_circle : Icons.play_circle,
+              _controller!.value.isPlaying
+                  ? Icons.pause_circle
+                  : Icons.play_circle,
             ),
             onPressed: () {
               if (_controller!.value.isPlaying) {
@@ -662,7 +662,8 @@ class _TextViewerState extends State<_TextViewer> {
       return Center(child: Text(_error!));
     }
 
-    final isCsv = widget.resource.filename?.toLowerCase().endsWith('.csv') ?? false;
+    final isCsv =
+        widget.resource.filename?.toLowerCase().endsWith('.csv') ?? false;
 
     return Column(
       children: [
@@ -705,10 +706,8 @@ class _CsvContent extends StatelessWidget {
       child: SingleChildScrollView(
         child: DataTable(
           columns: headers.map((h) => DataColumn(label: Text(h))).toList(),
-          rows: lines
-              .skip(1)
-              .where((line) => line.trim().isNotEmpty)
-              .map((line) {
+          rows:
+              lines.skip(1).where((line) => line.trim().isNotEmpty).map((line) {
             final values = line.split(',').map((v) => v.trim()).toList();
             return DataRow(
               cells: List.generate(
