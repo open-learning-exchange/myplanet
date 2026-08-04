@@ -215,6 +215,26 @@ void main() {
     );
   });
 
+  test('a chat conversation survives a schema upgrade', () async {
+    // There is no chat sync, so a drop here is permanent even though CouchDB
+    // still holds the document.
+    await database.chatDao.upsertAll([
+      ChatEntriesCompanion.insert(
+        id: 'chat-1',
+        docId: const Value('chat-1'),
+        user: const Value('ada'),
+        title: const Value('Capital of Iceland?'),
+      ),
+    ]);
+
+    await runUpgrade();
+
+    expect(
+      (await database.chatDao.getByUser('ada')).single.title,
+      'Capital of Iceland?',
+    );
+  });
+
   test('every preserved table has a preservation test', () {
     // `my_life` and the submissions tables were added to the preserved set
     // without one. This fails the moment another name is added, so the next
@@ -231,6 +251,7 @@ void main() {
       'news',
       'team_tasks',
       'teams',
+      'chat_history',
     };
     expect(
       AppDatabase.localAuthorityTables,
