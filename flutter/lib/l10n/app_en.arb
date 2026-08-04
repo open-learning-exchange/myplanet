@@ -647,5 +647,10 @@
     }
   },
   "thankYouForTakingSurvey": "Thank you for taking this survey",
-  "errorSavingProfile": "Error saving profile"
+  "errorSavingProfile": "Error saving profile",
+  "videoPlayer": "Video player",
+  "audioPlayer": "Audio player",
+  "fileNotFound": "File not found locally",
+  "loadingMedia": "Loading...",
+  "resourceUnavailable": "This resource is not available for offline viewing"
 }
