@@ -24,16 +24,16 @@ class ChallengeDialogData {
 /// Provider for challenge dialog data
 final challengeDialogDataProvider =
     FutureProvider.autoDispose<ChallengeDialogData?>((ref) async {
-  // This would integrate with the actual data sources
-  // For now, return mock data structure
-  return const ChallengeDialogData(
-    voiceCount: 0,
-    allVoiceCount: 0,
-    hasUnfinishedSurvey: false,
-    hasValidSync: false,
-    courseStatus: '',
-  );
-});
+      // This would integrate with the actual data sources
+      // For now, return mock data structure
+      return const ChallengeDialogData(
+        voiceCount: 0,
+        allVoiceCount: 0,
+        hasUnfinishedSurvey: false,
+        hasValidSync: false,
+        courseStatus: '',
+      );
+    });
 
 /// Challenge Dialog - shows user's daily challenge progress
 /// This is the Flutter port of the Kotlin MarkdownDialogFragment
@@ -126,8 +126,8 @@ class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
   Widget _buildTasksSection(BuildContext context) {
     final voiceTaskDone = widget.voiceCount >= 5;
     final courseTaskDone = widget.courseStatus.toLowerCase().contains(
-          'terminado',
-        );
+      'terminado',
+    );
     final syncTaskDone = _isSyncTaskDone();
 
     return Column(
@@ -228,7 +228,7 @@ ${l10n.yourEarnings(userEarnings)}
   bool _isSyncTaskDone() {
     final prereqsMet =
         widget.courseStatus.toLowerCase().contains('terminado') &&
-            widget.voiceCount >= 5;
+        widget.voiceCount >= 5;
     return prereqsMet && widget.hasValidSync;
   }
 }

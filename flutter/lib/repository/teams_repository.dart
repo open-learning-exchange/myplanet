@@ -14,7 +14,7 @@ import 'package:drift/drift.dart';
 /// team/enterprise catalog and its CouchDB refresh.
 class TeamsRepository {
   TeamsRepository(this._api, this._dao, {String Function()? createId})
-      : _createId = createId ?? _randomId;
+    : _createId = createId ?? _randomId;
 
   final PlanetApi _api;
   final TeamDao _dao;
@@ -76,7 +76,9 @@ class TeamsRepository {
   Future<TeamRow?> archiveReport(String id) async {
     final report = await _dao.getById(id);
     if (report == null || report.docType != 'report') return null;
-    final updated = report.toCompanion(false).copyWith(
+    final updated = report
+        .toCompanion(false)
+        .copyWith(
           status: const Value('archived'),
           updatedDate: Value(DateTime.now().millisecondsSinceEpoch),
           isUpdated: const Value(true),
@@ -93,8 +95,9 @@ class TeamsRepository {
   }) async {
     if (teamId.isEmpty || resourceId.isEmpty) return null;
     final existing = await _dao.watchResourceLinks(teamId).first;
-    final duplicate =
-        existing.where((row) => row.resourceId == resourceId).firstOrNull;
+    final duplicate = existing
+        .where((row) => row.resourceId == resourceId)
+        .firstOrNull;
     if (duplicate != null) return duplicate;
     final id = _createId();
     await _dao.upsert(
@@ -113,8 +116,9 @@ class TeamsRepository {
 
   Future<TeamRow?> removeResourceLink(String teamId, String resourceId) async {
     final links = await _dao.watchResourceLinks(teamId).first;
-    final row =
-        links.where((item) => item.resourceId == resourceId).firstOrNull;
+    final row = links
+        .where((item) => item.resourceId == resourceId)
+        .firstOrNull;
     if (row != null) await _dao.deleteById(row.id);
     return row;
   }
@@ -138,7 +142,9 @@ class TeamsRepository {
     final team = await _dao.getById(teamId);
     if (team == null || team.docType != null) return null;
     await _dao.upsert(
-      team.toCompanion(false).copyWith(
+      team
+          .toCompanion(false)
+          .copyWith(
             courses: Value(team.courses.where((id) => id != courseId).toList()),
             isUpdated: const Value(true),
           ),
@@ -199,7 +205,9 @@ class TeamsRepository {
       return row;
     }
     await _dao.upsert(
-      row.toCompanion(false).copyWith(
+      row
+          .toCompanion(false)
+          .copyWith(
             docType: const Value('membership'),
             isUpdated: const Value(true),
           ),
@@ -214,37 +222,37 @@ class TeamsRepository {
   }
 
   static Map<String, dynamic> serializeTeamDocument(TeamRow row) => {
-        '_id': row.id,
-        if (row.rev?.isNotEmpty == true) '_rev': row.rev,
-        'teamId': row.teamId,
-        'userId': row.userId,
-        'docType': row.docType,
-        'teamType': row.teamType,
-        'createdDate': row.createdDate,
-        'isLeader': row.isLeader,
-        if (row.name != null) 'name': row.name,
-        if (row.description != null) 'description': row.description,
-        if (row.type != null) 'type': row.type,
-        if (row.status != null) 'status': row.status,
-        if (row.services != null) 'services': row.services,
-        if (row.rules != null) 'rules': row.rules,
-        if (row.createdBy != null) 'createdBy': row.createdBy,
-        if (row.route != null) 'route': row.route,
-        'public': row.isPublic,
-        if (row.courses.isNotEmpty) 'courses': row.courses,
-        if (row.resourceId != null) 'resourceId': row.resourceId,
-        if (row.title != null) 'title': row.title,
-        if (row.docType == 'report') ...{
-          'beginningBalance': row.beginningBalance,
-          'sales': row.sales,
-          'otherIncome': row.otherIncome,
-          'wages': row.wages,
-          'otherExpenses': row.otherExpenses,
-          'startDate': row.startDate,
-          'endDate': row.endDate,
-          'updatedDate': row.updatedDate,
-        },
-      };
+    '_id': row.id,
+    if (row.rev?.isNotEmpty == true) '_rev': row.rev,
+    'teamId': row.teamId,
+    'userId': row.userId,
+    'docType': row.docType,
+    'teamType': row.teamType,
+    'createdDate': row.createdDate,
+    'isLeader': row.isLeader,
+    if (row.name != null) 'name': row.name,
+    if (row.description != null) 'description': row.description,
+    if (row.type != null) 'type': row.type,
+    if (row.status != null) 'status': row.status,
+    if (row.services != null) 'services': row.services,
+    if (row.rules != null) 'rules': row.rules,
+    if (row.createdBy != null) 'createdBy': row.createdBy,
+    if (row.route != null) 'route': row.route,
+    'public': row.isPublic,
+    if (row.courses.isNotEmpty) 'courses': row.courses,
+    if (row.resourceId != null) 'resourceId': row.resourceId,
+    if (row.title != null) 'title': row.title,
+    if (row.docType == 'report') ...{
+      'beginningBalance': row.beginningBalance,
+      'sales': row.sales,
+      'otherIncome': row.otherIncome,
+      'wages': row.wages,
+      'otherExpenses': row.otherExpenses,
+      'startDate': row.startDate,
+      'endDate': row.endDate,
+      'updatedDate': row.updatedDate,
+    },
+  };
 
   Future<SyncResult> sync({
     required ServerConfig config,

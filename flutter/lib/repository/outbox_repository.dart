@@ -17,8 +17,8 @@ class OutboxRepository {
     this._dao, {
     DateTime Function()? now,
     String Function()? createId,
-  })  : _now = now ?? DateTime.now,
-        _createId = createId ?? _randomId;
+  }) : _now = now ?? DateTime.now,
+       _createId = createId ?? _randomId;
 
   /// `RetryOperation.BASE_DELAY_MS`.
   static const Duration baseDelay = Duration(seconds: 30);

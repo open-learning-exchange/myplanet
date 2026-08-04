@@ -374,8 +374,8 @@ class ServerConfigNotifier extends Notifier<ServerConfig?> {
 
 final serverConfigProvider =
     NotifierProvider<ServerConfigNotifier, ServerConfig?>(
-  ServerConfigNotifier.new,
-);
+      ServerConfigNotifier.new,
+    );
 
 /// First-launch gate used by the declarative router instead of launching and
 /// finishing `OnboardingActivity` imperatively.

@@ -47,7 +47,8 @@ class LeadersScreen extends ConsumerWidget {
       return docs.map((d) {
         final map = d as Map<String, dynamic>;
         return LeaderInfo(
-          id: (map['_id'] as String?) ??
+          id:
+              (map['_id'] as String?) ??
               'org.couchdb.user:${map['name'] ?? ''}',
           name: map['name'] as String? ?? '',
           firstName: map['firstName'] as String?,

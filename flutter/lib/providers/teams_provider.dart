@@ -14,7 +14,10 @@ final teamsTypeProvider = StateProvider<String>((ref) => 'team');
 final teamMembershipsProvider = StreamProvider<Map<String, TeamRow>>((ref) {
   final userId = ref.watch(sessionProvider).valueOrNull?.id;
   if (userId == null || userId.isEmpty) return Stream.value(const {});
-  return ref.watch(teamsRepositoryProvider).watchMemberships(userId).map(
+  return ref
+      .watch(teamsRepositoryProvider)
+      .watchMemberships(userId)
+      .map(
         (rows) => {
           for (final row in rows)
             if (row.teamId?.isNotEmpty == true) row.teamId!: row,
@@ -40,8 +43,10 @@ final teamResourcesProvider = StreamProvider.family<List<MyLibraryRow>, String>(
   (ref, teamId) async* {
     await for (final links
         in ref.watch(teamsRepositoryProvider).watchResourceLinks(teamId)) {
-      final ids =
-          links.map((row) => row.resourceId).whereType<String>().toList();
+      final ids = links
+          .map((row) => row.resourceId)
+          .whereType<String>()
+          .toList();
       yield ids.isEmpty
           ? const []
           : await ref.watch(myLibraryDaoProvider).getByIds(ids);
@@ -76,14 +81,18 @@ class TeamMembershipActions {
     final user = ref.read(sessionProvider).valueOrNull;
     final endpoint = _endpoint;
     if (user == null || endpoint == null) return false;
-    final row = await ref.read(teamsRepositoryProvider).createJoinRequest(
+    final row = await ref
+        .read(teamsRepositoryProvider)
+        .createJoinRequest(
           teamId: team.id,
           userId: user.id,
           teamType: team.teamType,
           planetCode: user.planetCode,
         );
     if (row == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamMembership',
           itemId: row.id,
           endpoint: endpoint,
@@ -99,7 +108,9 @@ class TeamMembershipActions {
     if (user == null || endpoint == null) return false;
     final row = await ref.read(teamsRepositoryProvider).leave(teamId, user.id);
     if (row == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamMembership',
           itemId: row.id,
           endpoint: endpoint,
@@ -118,7 +129,9 @@ class TeamMembershipActions {
         .read(teamsRepositoryProvider)
         .respondToRequest(requestId, accept: accept);
     if (updated == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamMembership',
           itemId: original.id,
           endpoint: endpoint,
@@ -138,14 +151,18 @@ class TeamResourceActions {
   Future<bool> add(String teamId, MyLibraryRow resource) async {
     final config = ref.read(serverConfigProvider);
     if (config == null || resource.resourceId?.isNotEmpty != true) return false;
-    final row = await ref.read(teamsRepositoryProvider).addResourceLink(
+    final row = await ref
+        .read(teamsRepositoryProvider)
+        .addResourceLink(
           teamId: teamId,
           resourceId: resource.resourceId!,
           title: resource.title ?? '',
           planetCode: ref.read(sessionProvider).valueOrNull?.planetCode,
         );
     if (row == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamResource',
           itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
@@ -162,7 +179,9 @@ class TeamResourceActions {
         .read(teamsRepositoryProvider)
         .removeResourceLink(teamId, resource.resourceId!);
     if (row == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamResource',
           itemId: row.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
@@ -184,7 +203,9 @@ class TeamCourseActions {
   Future<bool> _queue(TeamRow? team) async {
     final config = ref.read(serverConfigProvider);
     if (team == null || config == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamCourses',
           itemId: team.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
@@ -197,12 +218,12 @@ class TeamCourseActions {
   }
 
   Future<bool> add(String teamId, Iterable<String> courseIds) async => _queue(
-        await ref.read(teamsRepositoryProvider).addCourses(teamId, courseIds),
-      );
+    await ref.read(teamsRepositoryProvider).addCourses(teamId, courseIds),
+  );
 
   Future<bool> remove(String teamId, String courseId) async => _queue(
-        await ref.read(teamsRepositoryProvider).removeCourse(teamId, courseId),
-      );
+    await ref.read(teamsRepositoryProvider).removeCourse(teamId, courseId),
+  );
 }
 
 final teamCourseActionsProvider = Provider<TeamCourseActions>(
@@ -216,7 +237,9 @@ class TeamReportActions {
   Future<bool> _queue(TeamRow? report) async {
     final config = ref.read(serverConfigProvider);
     if (report == null || config == null) return false;
-    await ref.read(outboxRepositoryProvider).enqueue(
+    await ref
+        .read(outboxRepositoryProvider)
+        .enqueue(
           uploadType: 'teamReports',
           itemId: report.id,
           endpoint: '${UrlUtils.credentialFreeDbUrl(config)}/teams',
@@ -237,21 +260,22 @@ class TeamReportActions {
     required int otherIncome,
     required int wages,
     required int otherExpenses,
-  }) async =>
-      _queue(
-        await ref.read(teamsRepositoryProvider).saveReport(
-              id: id,
-              teamId: teamId,
-              description: description,
-              startDate: startDate,
-              endDate: endDate,
-              beginningBalance: beginningBalance,
-              sales: sales,
-              otherIncome: otherIncome,
-              wages: wages,
-              otherExpenses: otherExpenses,
-            ),
-      );
+  }) async => _queue(
+    await ref
+        .read(teamsRepositoryProvider)
+        .saveReport(
+          id: id,
+          teamId: teamId,
+          description: description,
+          startDate: startDate,
+          endDate: endDate,
+          beginningBalance: beginningBalance,
+          sales: sales,
+          otherIncome: otherIncome,
+          wages: wages,
+          otherExpenses: otherExpenses,
+        ),
+  );
 
   Future<bool> archive(String id) async =>
       _queue(await ref.read(teamsRepositoryProvider).archiveReport(id));

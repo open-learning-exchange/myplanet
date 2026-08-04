@@ -98,7 +98,8 @@ class TeamsScreen extends ConsumerWidget {
                         separatorBuilder: (_, _) => const SizedBox(height: 6),
                         itemBuilder: (context, index) {
                           final team = teams[index];
-                          final membership = memberships[team.id] ??
+                          final membership =
+                              memberships[team.id] ??
                               (team.teamId == null
                                   ? null
                                   : memberships[team.teamId]);
@@ -159,12 +160,15 @@ class TeamDetailScreen extends ConsumerWidget {
     final currentUserId = ref.watch(sessionProvider).valueOrNull?.id;
     return Scaffold(
       appBar: AppBar(title: Text(l10n.teamDetails)),
-      body: ref.watch(teamProvider(teamId)).when(
+      body: ref
+          .watch(teamProvider(teamId))
+          .when(
             loading: () => const Center(child: CircularProgressIndicator()),
             error: (_, _) => Center(child: Text(l10n.teamsUnavailable)),
             data: (team) {
               if (team == null) return Center(child: Text(l10n.teamNotFound));
-              final membership = memberships[team.id] ??
+              final membership =
+                  memberships[team.id] ??
                   (team.teamId == null ? null : memberships[team.teamId]);
               final hasPendingRequest = requests.any(
                 (row) => row.userId == currentUserId,
@@ -201,8 +205,8 @@ class TeamDetailScreen extends ConsumerWidget {
                       onPressed: membership.isLeader
                           ? null
                           : () => ref
-                              .read(teamMembershipActionsProvider)
-                              .leave(team.id),
+                                .read(teamMembershipActionsProvider)
+                                .leave(team.id),
                       icon: const Icon(Icons.exit_to_app),
                       label: Text(l10n.leaveTeam),
                     ),
@@ -307,14 +311,14 @@ class _DetailSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(title, style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 4),
-            Text(body),
-          ],
-        ),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 8),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.titleMedium),
+        const SizedBox(height: 4),
+        Text(body),
+      ],
+    ),
+  );
 }

@@ -153,8 +153,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       const SizedBox(height: 16),
                     ],
                     FilledButton(
-                      onPressed:
-                          _isSubmitting ? null : () => _submit(offline: false),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => _submit(offline: false),
                       child: _isSubmitting
                           ? const SizedBox.square(
                               dimension: 20,
@@ -164,8 +165,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 8),
                     TextButton(
-                      onPressed:
-                          _isSubmitting ? null : () => _submit(offline: true),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => _submit(offline: true),
                       child: Text(l10n.signInOffline),
                     ),
                   ],

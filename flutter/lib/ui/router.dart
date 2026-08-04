@@ -257,8 +257,8 @@ final routerProvider = Provider<GoRouter>((ref) {
                             path: 'category',
                             builder: (context, state) =>
                                 StorageCategoryDetailScreen(
-                              extra: state.extra as StorageCategoryExtra,
-                            ),
+                                  extra: state.extra as StorageCategoryExtra,
+                                ),
                           ),
                         ],
                       ),

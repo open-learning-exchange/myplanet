@@ -24,13 +24,13 @@ class TeamTaskActions {
     final repository = ref.read(teamTasksRepositoryProvider);
     final ok = id == null
         ? await repository.create(
-              teamId: teamId,
-              title: title,
-              description: description,
-              deadline: deadline,
-              assignee: assignee,
-            ) !=
-            null
+                teamId: teamId,
+                title: title,
+                description: description,
+                deadline: deadline,
+                assignee: assignee,
+              ) !=
+              null
         : await repository.update(
             id,
             title: title,
@@ -55,7 +55,9 @@ class TeamTaskActions {
     await ref.read(outboxRepositoryProvider).cancel(TeamTasksUploader.type, id);
     final config = ref.read(serverConfigProvider);
     if (config != null && row.docId?.isNotEmpty == true) {
-      await ref.read(outboxRepositoryProvider).enqueue(
+      await ref
+          .read(outboxRepositoryProvider)
+          .enqueue(
             uploadType: TeamTasksUploader.type,
             itemId: id,
             endpoint: TeamTasksUploader.endpointFor(config),
@@ -70,7 +72,9 @@ class TeamTaskActions {
     final config = ref.read(serverConfigProvider);
     final user = ref.read(sessionProvider).valueOrNull;
     if (config == null) return 0;
-    return ref.read(teamTasksUploaderProvider).queuePending(
+    return ref
+        .read(teamTasksUploaderProvider)
+        .queuePending(
           config: config,
           userId: user?.id,
           planetCode: user?.planetCode,

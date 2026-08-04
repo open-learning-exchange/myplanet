@@ -35,8 +35,9 @@ class CourseFilter {
     return CourseFilter(
       query: query ?? this.query,
       gradeLevel: clearGradeLevel ? null : (gradeLevel ?? this.gradeLevel),
-      subjectLevel:
-          clearSubjectLevel ? null : (subjectLevel ?? this.subjectLevel),
+      subjectLevel: clearSubjectLevel
+          ? null
+          : (subjectLevel ?? this.subjectLevel),
       myCoursesOnly: myCoursesOnly ?? this.myCoursesOnly,
     );
   }
@@ -49,14 +50,14 @@ class CourseFilterNotifier extends Notifier<CourseFilter> {
   void setQuery(String query) => state = state.copyWith(query: query);
 
   void setGradeLevel(String? gradeLevel) => state = state.copyWith(
-        gradeLevel: gradeLevel,
-        clearGradeLevel: gradeLevel == null,
-      );
+    gradeLevel: gradeLevel,
+    clearGradeLevel: gradeLevel == null,
+  );
 
   void setSubjectLevel(String? subjectLevel) => state = state.copyWith(
-        subjectLevel: subjectLevel,
-        clearSubjectLevel: subjectLevel == null,
-      );
+    subjectLevel: subjectLevel,
+    clearSubjectLevel: subjectLevel == null,
+  );
 
   void setMyCoursesOnly(bool value) =>
       state = state.copyWith(myCoursesOnly: value);
@@ -66,15 +67,17 @@ class CourseFilterNotifier extends Notifier<CourseFilter> {
 
 final courseFilterProvider =
     NotifierProvider<CourseFilterNotifier, CourseFilter>(
-  CourseFilterNotifier.new,
-);
+      CourseFilterNotifier.new,
+    );
 
 /// Offline-first course list, filtered by [courseFilterProvider].
 final coursesStreamProvider = StreamProvider<List<CourseRow>>((ref) {
   final filter = ref.watch(courseFilterProvider);
   final userId = ref.watch(sessionProvider).valueOrNull?.id;
 
-  return ref.watch(coursesRepositoryProvider).watchCourses(
+  return ref
+      .watch(coursesRepositoryProvider)
+      .watchCourses(
         query: filter.query,
         shelfUserId: filter.myCoursesOnly ? userId : null,
         gradeLevel: filter.gradeLevel,

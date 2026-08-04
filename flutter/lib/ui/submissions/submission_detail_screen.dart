@@ -43,8 +43,9 @@ class SubmissionDetailScreen extends ConsumerWidget {
   Future<void> _export(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
     final messenger = ScaffoldMessenger.of(context);
-    final file =
-        await ref.read(submissionsExporterProvider).generateFile(submissionId);
+    final file = await ref
+        .read(submissionsExporterProvider)
+        .generateFile(submissionId);
     if (!context.mounted) return;
     messenger.showSnackBar(
       SnackBar(
@@ -68,8 +69,8 @@ class _Details extends StatelessWidget {
     final updated = row.lastUpdateTime == 0
         ? l10n.unknown
         : DateFormat.yMMMMd().add_jm().format(
-              DateTime.fromMillisecondsSinceEpoch(row.lastUpdateTime),
-            );
+            DateTime.fromMillisecondsSinceEpoch(row.lastUpdateTime),
+          );
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -129,13 +130,14 @@ class _AnswerTile extends StatelessWidget {
     final value = answer.value?.trim().isNotEmpty == true
         ? answer.value!
         : answer.valueChoices.isNotEmpty
-            ? answer.valueChoices.join(', ')
-            : l10n.noAnswer;
+        ? answer.valueChoices.join(', ')
+        : l10n.noAnswer;
     final normalized = [
       answer.value,
       ...answer.valueChoices,
     ].whereType<String>().map((value) => value.toLowerCase()).toSet();
-    final correct = question != null &&
+    final correct =
+        question != null &&
         question!.correctChoices.isNotEmpty &&
         question!.correctChoices.every(normalized.contains);
     return Card(
@@ -168,8 +170,8 @@ class _Detail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ListTile(
-        contentPadding: EdgeInsets.zero,
-        title: Text(label),
-        subtitle: Text(value),
-      );
+    contentPadding: EdgeInsets.zero,
+    title: Text(label),
+    subtitle: Text(value),
+  );
 }
