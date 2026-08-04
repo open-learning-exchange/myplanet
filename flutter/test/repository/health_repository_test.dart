@@ -19,12 +19,12 @@ void main() {
 
   tearDown(() => database.close());
 
-  HealthRepository createRepository({ServerConfig? config}) {
+  HealthRepository createRepository({ServerConfig? config, int counter = 0}) {
     return HealthRepository(
       api,
       database.healthExaminationDao,
       config: config,
-      createId: () => 'health-local-1',
+      createId: () => 'health-local-${++counter}',
     );
   }
 
