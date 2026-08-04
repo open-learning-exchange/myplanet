@@ -13,9 +13,6 @@ interface MyLifeDao {
     @Query("SELECT * FROM my_life WHERE userId IS :userId ORDER BY weight")
     suspend fun getByUserId(userId: String?): List<MyLife>
 
-    @Query("SELECT * FROM my_life WHERE userId IS :userId AND isVisible = 1 ORDER BY weight")
-    suspend fun getVisibleByUserId(userId: String?): List<MyLife>
-
     @Query("SELECT COUNT(*) FROM my_life WHERE userId IS :userId")
     suspend fun countByUserId(userId: String?): Int
 

@@ -567,7 +567,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
+    private suspend fun attachTeamImage(teamId: String, imageName: String, imageData: ByteArray) {
         if (teamId.isBlank()) return
         val destFile = MyTeam.getAttachmentFile(MainApplication.context, teamId, imageName) ?: return
         withContext(dispatcherProvider.io) {
@@ -999,7 +999,7 @@ class TeamsRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun getResourceIds(teamId: String): List<String> {
+    private suspend fun getResourceIds(teamId: String): List<String> {
         return teamDao.getAll().filter {
             it.teamId == teamId &&
                 it.resourceId?.isNotBlank() == true &&
