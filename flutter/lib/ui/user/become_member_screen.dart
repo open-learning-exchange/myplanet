@@ -434,7 +434,8 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
                       children: [
                         Expanded(
                           child: InkWell(
-                            onTap: () => setState(() => _selectedGender = 'male'),
+                            onTap: () =>
+                                setState(() => _selectedGender = 'male'),
                             child: Row(
                               children: [
                                 Radio<String>(
@@ -451,7 +452,8 @@ class _BecomeMemberScreenState extends ConsumerState<BecomeMemberScreen> {
                         ),
                         Expanded(
                           child: InkWell(
-                            onTap: () => setState(() => _selectedGender = 'female'),
+                            onTap: () =>
+                                setState(() => _selectedGender = 'female'),
                             child: Row(
                               children: [
                                 Radio<String>(
