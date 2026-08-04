@@ -1,0 +1,316 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../data/local/app_database.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/user_provider.dart';
+
+/// Data class holding challenge dialog state
+class ChallengeDialogData {
+  final int voiceCount;
+  final int allVoiceCount;
+  final bool hasUnfinishedSurvey;
+  final bool hasValidSync;
+  final String courseStatus;
+
+  const ChallengeDialogData({
+    required this.voiceCount,
+    required this.allVoiceCount,
+    required this.hasUnfinishedSurvey,
+    required this.hasValidSync,
+    required this.courseStatus,
+  });
+}
+
+/// Provider for challenge dialog data
+final challengeDialogDataProvider =
+    FutureProvider.autoDispose<ChallengeDialogData?>((ref) async {
+      // This would integrate with the actual data sources
+      // For now, return mock data structure
+      return const ChallengeDialogData(
+        voiceCount: 0,
+        allVoiceCount: 0,
+        hasUnfinishedSurvey: false,
+        hasValidSync: false,
+        courseStatus: '',
+      );
+    });
+
+/// Challenge Dialog - shows user's daily challenge progress
+/// This is the Flutter port of the Kotlin MarkdownDialogFragment
+class ChallengeDialog extends ConsumerStatefulWidget {
+  const ChallengeDialog({
+    super.key,
+    required this.voiceCount,
+    required this.allVoiceCount,
+    required this.hasUnfinishedSurvey,
+    required this.courseStatus,
+    required this.onStartCourse,
+    required this.onNext,
+    required this.onSync,
+  });
+
+  final int voiceCount;
+  final int allVoiceCount;
+  final bool hasUnfinishedSurvey;
+  final String courseStatus;
+  final VoidCallback onStartCourse;
+  final VoidCallback onNext;
+  final VoidCallback onSync;
+
+  @override
+  ConsumerState<ChallengeDialog> createState() => _ChallengeDialogState();
+}
+
+class _ChallengeDialogState extends ConsumerState<ChallengeDialog> {
+  bool _hasShownCongrats = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCongratsState();
+  }
+
+  Future<void> _loadCongratsState() async {
+    // Load from SharedPreferences
+    // final prefs = await SharedPreferences.getInstance();
+    // _hasShownCongrats = prefs.getBool('hasShownCongrats') ?? false;
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+    final isCompleted = _isChallengeCompleted();
+
+    if (isCompleted && _hasShownCongrats) {
+      return const SizedBox.shrink();
+    }
+
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.emoji_events, color: Colors.amber),
+          const SizedBox(width: 8),
+          Text(l10n.challengeDialogTitle),
+        ],
+      ),
+      content: SizedBox(
+        width: 400,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildProgressSection(context),
+            const SizedBox(height: 16),
+            _buildTasksSection(context),
+            const SizedBox(height: 16),
+            _buildMarkdownContent(context, isCompleted),
+          ],
+        ),
+      ),
+      actions: _buildActions(context, isCompleted),
+    );
+  }
+
+  Widget _buildProgressSection(BuildContext context) {
+    final communityEarnings = widget.allVoiceCount * 2;
+    final userEarnings =
+        widget.voiceCount * 2 + (widget.hasUnfinishedSurvey ? 0 : 1);
+    final progress = ((userEarnings / 11) * 100).clamp(0, 100);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        LinearProgressIndicator(
+          value: progress / 100,
+          backgroundColor: Colors.grey[300],
+          valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Progress: ${progress.toInt()}%',
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTasksSection(BuildContext context) {
+    final voiceTaskDone = widget.voiceCount >= 5;
+    final courseTaskDone = widget.courseStatus.toLowerCase().contains(
+      'terminado',
+    );
+    final syncTaskDone = _isSyncTaskDone();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _TaskRow(
+          done: courseTaskDone,
+          text: widget.courseStatus.isNotEmpty
+              ? widget.courseStatus
+              : 'Course: Not started',
+        ),
+        _TaskRow(
+          done: voiceTaskDone,
+          text: '${widget.voiceCount.clamp(0, 5)} of 5 Daily Voices',
+        ),
+        _TaskRow(done: syncTaskDone, text: 'Sync completed'),
+      ],
+    );
+  }
+
+  Widget _buildMarkdownContent(BuildContext context, bool isCompleted) {
+    final l10n = AppLocalizations.of(context);
+    final communityEarnings = widget.allVoiceCount * 2;
+    final userEarnings =
+        widget.voiceCount * 2 + (widget.hasUnfinishedSurvey ? 0 : 1);
+
+    final content = isCompleted
+        ? '''
+### ${l10n.congratulations}
+
+${l10n.communityEarnings(communityEarnings)}
+${l10n.yourEarnings(userEarnings)}
+'''
+        : '''
+${l10n.communityEarnings(communityEarnings)}
+${l10n.yourEarnings(userEarnings)}
+''';
+
+    return MarkdownBody(
+      data: content,
+      styleSheet: MarkdownStyleSheet(
+        h3: Theme.of(context).textTheme.titleMedium,
+        p: Theme.of(context).textTheme.bodyMedium,
+      ),
+    );
+  }
+
+  List<Widget> _buildActions(BuildContext context, bool isCompleted) {
+    final l10n = AppLocalizations.of(context);
+
+    if (isCompleted) {
+      return [
+        TextButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+          child: Text(l10n.close),
+        ),
+      ];
+    }
+
+    final courseStatus = widget.courseStatus.toLowerCase();
+    String buttonText;
+    VoidCallback? onPressed;
+
+    if (courseStatus.isEmpty || courseStatus == 'not started') {
+      buttonText = l10n.start;
+      onPressed = widget.onStartCourse;
+    } else if (courseStatus.contains('terminado')) {
+      if (widget.voiceCount >= 5) {
+        buttonText = l10n.sync;
+        onPressed = widget.onSync;
+      } else {
+        buttonText = l10n.next;
+        onPressed = widget.onNext;
+      }
+    } else {
+      buttonText = l10n.continuation;
+      onPressed = widget.onStartCourse;
+    }
+
+    return [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: Text(l10n.close),
+      ),
+      FilledButton(onPressed: onPressed, child: Text(buttonText)),
+    ];
+  }
+
+  bool _isChallengeCompleted() {
+    final voiceDone = widget.voiceCount >= 5;
+    final courseDone = widget.courseStatus.toLowerCase().contains('terminado');
+    final syncDone = _isSyncTaskDone();
+    return voiceDone && courseDone && syncDone;
+  }
+
+  bool _isSyncTaskDone() {
+    final prereqsMet =
+        widget.courseStatus.toLowerCase().contains('terminado') &&
+        widget.voiceCount >= 5;
+    return prereqsMet && widget.hasValidSync;
+  }
+}
+
+class _TaskRow extends StatelessWidget {
+  const _TaskRow({required this.done, required this.text});
+
+  final bool done;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Icon(
+            done ? Icons.check_box : Icons.check_box_outline_blank,
+            color: done ? Colors.green : Colors.grey,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                decoration: done ? TextDecoration.lineThrough : null,
+                color: done ? Colors.grey : null,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Shows the challenge dialog if conditions are met
+Future<void> showChallengeDialog({
+  required BuildContext context,
+  required int voiceCount,
+  required int allVoiceCount,
+  required bool hasUnfinishedSurvey,
+  required bool hasValidSync,
+  required String courseStatus,
+  required VoidCallback onStartCourse,
+  required VoidCallback onNext,
+  required VoidCallback onSync,
+}) async {
+  final voiceTaskDone = voiceCount >= 5;
+  final prereqsMet =
+      courseStatus.toLowerCase().contains('terminado') && voiceCount >= 5;
+  final syncTaskDone = prereqsMet && hasValidSync;
+  final isCompleted = syncTaskDone && voiceTaskDone;
+
+  // TODO: Check if congratulations was already shown
+  // if (isCompleted && hasShownCongrats) return;
+
+  return showDialog<void>(
+    context: context,
+    builder: (context) => ChallengeDialog(
+      voiceCount: voiceCount,
+      allVoiceCount: allVoiceCount,
+      hasUnfinishedSurvey: hasUnfinishedSurvey,
+      courseStatus: courseStatus,
+      onStartCourse: onStartCourse,
+      onNext: onNext,
+      onSync: onSync,
+    ),
+  );
+}
