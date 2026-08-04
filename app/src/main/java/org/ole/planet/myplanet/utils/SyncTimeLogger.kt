@@ -16,6 +16,12 @@ import org.ole.planet.myplanet.di.CoreDependenciesEntryPoint
 import org.ole.planet.myplanet.services.UploadManager
 
 object SyncTimeLogger {
+    private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
+        override fun initialValue(): java.text.SimpleDateFormat {
+            return java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.US)
+        }
+    }
+
     private val timeProvider by lazy {
         coreEntryPoint.timeProvider()
     }
@@ -215,8 +221,8 @@ object SyncTimeLogger {
     }
 
     private fun formatTimestamp(timestamp: Long): String {
-        val sdf = SimpleDateFormat("HH:mm:ss.SSS", Locale.US)
-        return sdf.format(Date(timestamp))
+
+        return dateFormatter.get()?.format(Date(timestamp)) ?: ""
     }
 
     private fun generateSummary(): String {

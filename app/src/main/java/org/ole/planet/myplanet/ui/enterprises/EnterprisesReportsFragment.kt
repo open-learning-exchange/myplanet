@@ -42,6 +42,7 @@ import org.ole.planet.myplanet.utils.Utilities
 
 @AndroidEntryPoint
 class EnterprisesReportsFragment : BaseTeamFragment() {
+    private val dateFormatter by lazy { java.text.SimpleDateFormat("EEE_MMM_dd_yyyy", java.util.Locale.US) }
     private var _binding: FragmentReportsBinding? = null
     private val binding get() = _binding!!
     private var reports: List<MyTeam> = emptyList()
@@ -68,8 +69,8 @@ class EnterprisesReportsFragment : BaseTeamFragment() {
 
         binding.exportCSV.setOnClickListener {
             val currentDate = Date()
-            val dateFormat = SimpleDateFormat("EEE_MMM_dd_yyyy", Locale.US)
-            val formattedDate = dateFormat.format(currentDate)
+
+            val formattedDate = dateFormatter.format(currentDate)
             val teamName = prefData.getTeamName()?.replace(" ", "_")
 
             val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {

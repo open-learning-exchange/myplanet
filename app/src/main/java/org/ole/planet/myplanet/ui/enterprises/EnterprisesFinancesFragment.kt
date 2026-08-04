@@ -38,7 +38,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
     private val viewModel: EnterprisesFinancesViewModel by viewModels()
     private var _binding: FragmentFinanceBinding? = null
     private val binding get() = _binding!!
-    private val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val formatters = mutableMapOf<String, java.text.SimpleDateFormat>()
     private lateinit var addTransactionBinding: AddTransactionBinding
     private lateinit var financeAdapter: EnterprisesFinancesAdapter
     var date: Calendar? = null
@@ -167,7 +167,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
 
     private fun Calendar.formatToString(pattern: String): String {
-        val dateFormat = if (pattern == "yyyy-MM-dd") dateFormatter else SimpleDateFormat(pattern, Locale.getDefault())
+        val dateFormat = formatters.getOrPut(pattern) { java.text.SimpleDateFormat(pattern, java.util.Locale.getDefault()) }
         return dateFormat.format(this.time)
     }
 
@@ -180,7 +180,7 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun parseDate(dateString: String): Calendar? {
         return try {
-            val date = dateFormatter.parse(dateString)
+            val date = formatters.getOrPut("yyyy-MM-dd") { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()) }.parse(dateString)
             if (date != null) {
                 Calendar.getInstance().apply {
                     time = date
@@ -205,8 +205,8 @@ class EnterprisesFinancesFragment : BaseTeamFragment() {
 
     private fun filterDataByDateRange(fromDate: String, toDate: String) {
         try {
-            val start = dateFormatter.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
-            val end = dateFormatter.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
+            val start = formatters.getOrPut("yyyy-MM-dd") { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()) }.parse(fromDate)?.time ?: throw IllegalArgumentException("Invalid fromDate format")
+            val end = formatters.getOrPut("yyyy-MM-dd") { java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()) }.parse(toDate)?.time ?: throw IllegalArgumentException("Invalid toDate format")
             currentStartDate = start
             currentEndDate = end
             observeTransactions()

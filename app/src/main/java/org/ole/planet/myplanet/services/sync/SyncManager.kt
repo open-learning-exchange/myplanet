@@ -78,6 +78,12 @@ class SyncManager @Inject constructor(
     private val eventsRepository: EventsRepository,
     private val userSyncRepository: UserSyncRepository
 ) {
+    private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
+        override fun initialValue(): java.text.SimpleDateFormat {
+            return java.text.SimpleDateFormat("HH:mm:ss.SSS", java.util.Locale.getDefault())
+        }
+    }
+
     private val isSyncing = AtomicBoolean(false)
     private val stringArray = arrayOfNulls<String>(4)
     private var listener: OnSyncListener? = null
@@ -142,7 +148,7 @@ class SyncManager @Inject constructor(
         val logger = SyncTimeLogger
         logger.startLogging()
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-        Log.d("SyncPerf", "FULL SYNC STARTED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
+        Log.d("SyncPerf", "FULL SYNC STARTED at ${dateFormatter.get()?.format(Date())}")
         Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         try {
 
@@ -211,7 +217,7 @@ class SyncManager @Inject constructor(
             val minutes = totalSyncTime / 60000
             val seconds = (totalSyncTime % 60000) / 1000
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
-            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${java.text.SimpleDateFormat("HH:mm:ss.SSS").format(Date())}")
+            Log.d("SyncPerf", "FULL SYNC COMPLETED at ${dateFormatter.get()?.format(Date())}")
             Log.d("SyncPerf", "TOTAL SYNC TIME: ${minutes}m ${seconds}s (${totalSyncTime}ms)")
             Log.d("SyncPerf", "═══════════════════════════════════════════════════════════════")
         } catch (err: Exception) {

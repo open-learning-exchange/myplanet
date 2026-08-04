@@ -73,6 +73,12 @@ class TeamsRepositoryImpl @Inject constructor(
     private val courseStepDao: CourseStepDao,
     private val appDatabase: AppDatabase,
 ) : TeamsRepository, TeamsSyncRepository {
+    private val dateFormatter = object : ThreadLocal<java.text.SimpleDateFormat>() {
+        override fun initialValue(): java.text.SimpleDateFormat {
+            return java.text.SimpleDateFormat("MMMM dd, yyyy hh:mm a", java.util.Locale.getDefault())
+        }
+    }
+
     override fun getTasksFlow(userId: String?): Flow<List<TeamTask>> {
         return teamTaskDao.getOpenTasksForUser(userId)
     }
@@ -1091,14 +1097,14 @@ class TeamsRepositoryImpl @Inject constructor(
 
         val visitCounts = logs.groupingBy { it.user }.eachCount()
         val lastVisits = logs.groupBy { it.user }.mapValues { (_, userLogs) -> userLogs.maxOfOrNull { it.time ?: 0 } }
-        val formatter = SimpleDateFormat("MMMM dd, yyyy hh:mm a", Locale.getDefault())
+
 
         return orderedMembers.map { member ->
             val visitCount = visitCounts[member.name]?.toLong() ?: 0L
             val lastVisitTimestamp = lastVisits[member.name]
             val lastLogoutTimestamp = activitiesRepository.getLastVisit(member.name ?: "")
             val profileLastVisit = if (lastLogoutTimestamp != null) {
-                formatter.format(Date(lastLogoutTimestamp))
+                dateFormatter.get()?.format(Date(lastLogoutTimestamp)) ?: ""
             } else {
                 "No logout record found"
             }
