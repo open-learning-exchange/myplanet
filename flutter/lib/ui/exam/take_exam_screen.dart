@@ -6,11 +6,11 @@ import '../../data/local/app_database.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/app_providers.dart';
 import '../../providers/session_provider.dart';
+import '../../repository/exam_grading.dart';
 import '../../repository/submissions_repository.dart';
-import '../router.dart';
 
 /// Port of `ExamTakingFragment.kt` for course exams with grading.
-/// 
+///
 /// Supports multiple question types:
 /// - `select`: Single choice (radio buttons)
 /// - `selectMultiple`: Multiple choice (checkboxes)
@@ -35,13 +35,18 @@ class TakeExamScreen extends ConsumerStatefulWidget {
 
 class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
   int _currentIndex = 0;
-  String _singleAnswer = '';
-  final Map<String, String> _multipleAnswers = {};
-  String _textAnswer = '';
+
+  /// Answers keyed by question id.
+  ///
+  /// This was previously a single `_singleAnswer`/`_selectedRating`/
+  /// `_multipleAnswers` shared by every question, cleared on each navigation.
+  /// That lost an answer as soon as you moved off its question, and graded all
+  /// questions against whatever the last one happened to hold.
+  final Map<String, ExamDraftAnswer> _answers = {};
   final Map<String, TextEditingController> _controllers = {};
-  int? _selectedRating;
+
   bool _isSubmitting = false;
-  List<ExamQuestionRow> _questions = [];
+  List<ExamQuestionRow> _questions = const [];
 
   @override
   void dispose() {
@@ -69,7 +74,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
       ),
       body: questions.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, __) => Center(child: Text(l10n.examLoadFailed)),
+        error: (_, _) => Center(child: Text(l10n.examLoadFailed)),
         data: (rows) {
           if (rows.isEmpty) {
             return Center(child: Text(l10n.examHasNoQuestions));
@@ -90,14 +95,11 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     int totalQuestions,
   ) {
     final l10n = AppLocalizations.of(context);
-    final progress = ((_currentIndex + 1) / totalQuestions);
+    final progress = (_currentIndex + 1) / totalQuestions;
 
     return Column(
       children: [
-        // Progress bar
         LinearProgressIndicator(value: progress),
-
-        // Question counter
         Padding(
           padding: const EdgeInsets.all(16),
           child: Text(
@@ -105,8 +107,6 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
         ),
-
-        // Question content
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(16),
@@ -129,137 +129,113 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   ),
-
-                // Answer input based on question type
                 _buildAnswerInput(context, question),
               ],
             ),
           ),
         ),
-
-        // Navigation buttons
-        _buildNavigationButtons(context, question, totalQuestions),
+        _buildNavigationButtons(context, totalQuestions),
       ],
     );
   }
 
   Widget _buildAnswerInput(BuildContext context, ExamQuestionRow question) {
-    final type = question.type ?? 'input';
-
-    switch (type) {
+    switch (question.type ?? 'input') {
       case 'select':
-        return _buildRadioGroup(context, question);
+        return _buildRadioGroup(question);
       case 'selectMultiple':
-        return _buildCheckboxGroup(context, question);
+        return _buildCheckboxGroup(question);
       case 'ratingScale':
-        return _buildRatingScale(context, question);
-      case 'input':
-        final controller = _controllers.putIfAbsent(
-          question.id,
-          () => TextEditingController(text: _textAnswer),
-        );
-        return TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.of(context).yourAnswer,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) => _textAnswer = value,
-        );
+        return _buildRatingScale(question);
       case 'textarea':
-        final controller = _controllers.putIfAbsent(
-          question.id,
-          () => TextEditingController(text: _textAnswer),
-        );
-        return TextField(
-          controller: controller,
-          maxLines: 5,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.of(context).yourAnswer,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) => _textAnswer = value,
-        );
+        return _buildTextField(context, question, maxLines: 5);
       default:
-        final controller = _controllers.putIfAbsent(
-          question.id,
-          () => TextEditingController(text: _textAnswer),
-        );
-        return TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            labelText: AppLocalizations.of(context).yourAnswer,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: (value) => _textAnswer = value,
-        );
+        return _buildTextField(context, question, maxLines: 1);
     }
   }
 
-  Widget _buildRadioGroup(BuildContext context, ExamQuestionRow question) {
-    return Column(
-      children: [
-        for (final choice in question.choices)
-          RadioListTile<String>(
-            title: Text(choice),
-            value: choice,
-            groupValue: _singleAnswer.isEmpty ? null : _singleAnswer,
-            onChanged: (value) {
-              setState(() {
-                _singleAnswer = value ?? '';
-              });
-            },
-          ),
-      ],
+  Widget _buildTextField(
+    BuildContext context,
+    ExamQuestionRow question, {
+    required int maxLines,
+  }) {
+    // Seeded from this question's own answer. Seeding from a shared field
+    // pre-filled each new question with the previous question's text.
+    final controller = _controllers.putIfAbsent(
+      question.id,
+      () => TextEditingController(text: _answers[question.id]?.value ?? ''),
+    );
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: AppLocalizations.of(context).yourAnswer,
+        border: const OutlineInputBorder(),
+      ),
+      onChanged: (value) => _recordText(question, value),
     );
   }
 
-  Widget _buildCheckboxGroup(BuildContext context, ExamQuestionRow question) {
+  Widget _buildRadioGroup(ExamQuestionRow question) {
+    final selected = _answers[question.id]?.choiceIds;
+    return RadioGroup<String>(
+      groupValue: (selected == null || selected.isEmpty)
+          ? null
+          : selected.first,
+      onChanged: (value) {
+        if (value == null) return;
+        setState(() => _recordChoices(question, [value]));
+      },
+      child: Column(
+        children: [
+          for (final choice in question.choices)
+            RadioListTile<String>(title: Text(choice.text), value: choice.id),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCheckboxGroup(ExamQuestionRow question) {
+    final selected = _answers[question.id]?.choiceIds ?? const <String>[];
     return Column(
       children: [
         for (final choice in question.choices)
           CheckboxListTile(
-            title: Text(choice),
-            value: _multipleAnswers.containsKey(choice),
+            title: Text(choice.text),
+            value: selected.contains(choice.id),
             onChanged: (checked) {
-              setState(() {
-                if (checked == true) {
-                  _multipleAnswers[choice] = choice;
-                } else {
-                  _multipleAnswers.remove(choice);
-                }
-              });
+              final next = selected.toList();
+              if (checked == true) {
+                if (!next.contains(choice.id)) next.add(choice.id);
+              } else {
+                next.remove(choice.id);
+              }
+              setState(() => _recordChoices(question, next));
             },
           ),
       ],
     );
   }
 
-  Widget _buildRatingScale(BuildContext context, ExamQuestionRow question) {
+  Widget _buildRatingScale(ExamQuestionRow question) {
     final max = question.scaleMax > 0 ? question.scaleMax : 9;
+    final current = _answers[question.id]?.value;
     return Wrap(
       spacing: 8,
       children: List.generate(max, (index) {
-        final value = index + 1;
-        final isSelected = _selectedRating == value;
+        final value = '${index + 1}';
         return ChoiceChip(
-          label: Text('$value'),
-          selected: isSelected,
-          onSelected: (selected) {
-            setState(() {
-              _selectedRating = selected ? value : null;
-            });
+          label: Text(value),
+          selected: current == value,
+          onSelected: (isSelected) {
+            setState(() => _recordText(question, isSelected ? value : ''));
           },
         );
       }),
     );
   }
 
-  Widget _buildNavigationButtons(
-    BuildContext context,
-    ExamQuestionRow question,
-    int totalQuestions,
-  ) {
+  Widget _buildNavigationButtons(BuildContext context, int totalQuestions) {
     final l10n = AppLocalizations.of(context);
     final isLast = _currentIndex >= totalQuestions - 1;
 
@@ -270,7 +246,7 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
         children: [
           if (_currentIndex > 0)
             OutlinedButton.icon(
-              onPressed: _saveAndGoPrevious,
+              onPressed: () => setState(() => _currentIndex--),
               icon: const Icon(Icons.arrow_back),
               label: Text(l10n.previous),
             )
@@ -280,13 +256,16 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
             FilledButton.icon(
               onPressed: _isSubmitting ? null : () => _submitExam(context),
               icon: _isSubmitting
-                  ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.check),
               label: Text(l10n.submitExam),
             )
           else
             FilledButton.icon(
-              onPressed: _saveAndGoNext,
+              onPressed: () => setState(() => _currentIndex++),
               icon: const Icon(Icons.arrow_forward),
               label: Text(l10n.next),
             ),
@@ -295,175 +274,115 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
     );
   }
 
-  void _saveAndGoPrevious() {
-    _saveCurrentAnswer();
-    setState(() {
-      _currentIndex--;
-      _loadAnswerForCurrentQuestion();
-    });
+  void _recordChoices(ExamQuestionRow question, List<String> choiceIds) {
+    _answers[question.id] = ExamDraftAnswer(
+      choiceIds: List.unmodifiable(choiceIds),
+      isCorrect: ExamGrading.isSelectionCorrect(question, choiceIds),
+    );
   }
 
-  void _saveAndGoNext() {
-    _saveCurrentAnswer();
-    setState(() {
-      _currentIndex++;
-      _loadAnswerForCurrentQuestion();
-    });
-  }
-
-  void _saveCurrentAnswer() {
-    if (_currentIndex >= _questions.length) return;
-    final question = _questions[_currentIndex];
-    final type = question.type ?? 'input';
-
-    switch (type) {
-      case 'select':
-        // Already saved in _singleAnswer
-        break;
-      case 'selectMultiple':
-        // Already saved in _multipleAnswers
-        break;
-      case 'ratingScale':
-        // Already saved in _selectedRating
-        break;
-      case 'input':
-      case 'textarea':
-        final controller = _controllers[question.id];
-        _textAnswer = controller?.text ?? '';
-        break;
-    }
-  }
-
-  void _loadAnswerForCurrentQuestion() {
-    if (_currentIndex >= _questions.length) return;
-    final question = _questions[_currentIndex];
-    final type = question.type ?? 'input';
-
-    // Reset for new question
-    _singleAnswer = '';
-    _multipleAnswers.clear();
-    _selectedRating = null;
-
-    switch (type) {
-      case 'select':
-        // Will be set by RadioListTile
-        break;
-      case 'selectMultiple':
-        // Will be set by CheckboxListTile
-        break;
-      case 'ratingScale':
-        // Will be set by ChoiceChip
-        break;
-      case 'input':
-      case 'textarea':
-        final controller = _controllers[question.id];
-        _textAnswer = controller?.text ?? '';
-        break;
-    }
+  void _recordText(ExamQuestionRow question, String value) {
+    _answers[question.id] = ExamDraftAnswer(
+      value: value,
+      isCorrect: ExamGrading.isTextCorrect(question, value),
+    );
   }
 
   Future<void> _submitExam(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+    final user = ref.read(sessionProvider).valueOrNull;
+    final exam = ref.read(examProvider(widget.examId)).valueOrNull;
+    if (user == null || exam == null) return;
+
     setState(() => _isSubmitting = true);
 
-    // Save current answer
-    _saveCurrentAnswer();
-
-    // Calculate score
-    int correctCount = 0;
-    for (final question in _questions) {
-      if (_isAnswerCorrect(question)) {
-        correctCount++;
+    // Persist before showing anything. The attempt is the deliverable — a
+    // dialog the user dismisses is not a record of it.
+    try {
+      await ref
+          .read(submissionsRepositoryProvider)
+          .createExamDraft(
+            exam: exam,
+            questions: _questions,
+            userId: user.id,
+            answers: _answers,
+            courseId: widget.courseId,
+          );
+      final config = ref.read(serverConfigProvider);
+      if (config != null) {
+        await ref
+            .read(submissionsUploaderProvider)
+            .queuePending(config: config, userId: user.id);
       }
+      if (!mounted) return;
+      await _showResult(exam);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      messenger.showSnackBar(SnackBar(content: Text(l10n.examSubmitFailed)));
+      return;
     }
+    if (mounted) setState(() => _isSubmitting = false);
+  }
 
-    final totalQuestions = _questions.length;
-    final score = totalQuestions > 0 ? (correctCount * 100) ~/ totalQuestions : 0;
+  Future<void> _showResult(ExamRow exam) async {
+    final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
+    final correctCount = _questions
+        .where((question) => _answers[question.id]?.isCorrect ?? false)
+        .length;
+    final total = _questions.length;
+    final score = total > 0 ? (correctCount * 100) ~/ total : 0;
+    // The exam carries its own bar; only fall back to 70 when it names none.
+    final passMark = int.tryParse(exam.passingPercentage ?? '') ?? 70;
+    final passed = score >= passMark;
 
-    // Show result dialog
-    if (!mounted) return;
-    
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.examComplete),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              score >= 70 ? Icons.celebration : Icons.emoji_events,
+              passed ? Icons.celebration : Icons.emoji_events,
               size: 64,
-              color: score >= 70 ? Colors.green : Colors.orange,
+              color: passed ? Colors.green : Colors.orange,
             ),
             const SizedBox(height: 16),
-            Text(
-              '$score%',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-            Text(
-              '${l10n.correctAnswers}: $correctCount / $totalQuestions',
-            ),
+            Text('$score%', style: theme.textTheme.headlineLarge),
+            Text('${l10n.correctAnswers}: $correctCount / $total'),
+            const SizedBox(height: 8),
+            Text(l10n.savedOffline, style: theme.textTheme.bodySmall),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.pop();
-            },
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: Text(l10n.finish),
           ),
         ],
       ),
     );
-
-    if (mounted) {
-      setState(() => _isSubmitting = false);
-    }
-  }
-
-  bool _isAnswerCorrect(ExamQuestionRow question) {
-    final type = question.type ?? 'input';
-    final correctChoices = question.correctChoices
-        .map((s) => s.toLowerCase())
-        .toSet();
-
-    switch (type) {
-      case 'select':
-        return correctChoices.contains(_singleAnswer.toLowerCase());
-      case 'selectMultiple':
-        final userAnswers = _multipleAnswers.values
-            .map((s) => s.toLowerCase())
-            .toSet();
-        return userAnswers.containsAll(correctChoices) &&
-            correctChoices.containsAll(userAnswers);
-      case 'ratingScale':
-        return _selectedRating != null &&
-            correctChoices.contains(_selectedRating.toString().toLowerCase());
-      case 'input':
-      case 'textarea':
-        final text = _controllers[question.id]?.text.trim().toLowerCase() ?? '';
-        return correctChoices.contains(text);
-      default:
-        return false;
-    }
+    if (mounted) context.pop();
   }
 
   Future<void> _confirmExit(BuildContext context) async {
     final l10n = AppLocalizations.of(context);
     final shouldExit = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text(l10n.exitExam),
         content: Text(l10n.exitExamMessage),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(l10n.buttonCancel),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.cancel),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             child: Text(l10n.exit),
           ),
         ],
@@ -477,13 +396,15 @@ class _TakeExamScreenState extends ConsumerState<TakeExamScreen> {
 }
 
 /// Provider for a single exam by ID.
-final examProvider = FutureProvider.family<ExamRow?, String>((ref, examId) async {
-  final db = ref.watch(appDatabaseProvider);
-  return db.examDao.getById(examId);
+final examProvider = FutureProvider.family<ExamRow?, String>((
+  ref,
+  examId,
+) async {
+  return ref.watch(examDaoProvider).getById(examId);
 });
 
 /// Provider for exam questions by exam ID.
-final examQuestionsProvider = FutureProvider.family<List<ExamQuestionRow>, String>((ref, examId) async {
-  final db = ref.watch(appDatabaseProvider);
-  return db.examDao.questionsFor(examId);
-});
+final examQuestionsProvider =
+    FutureProvider.family<List<ExamQuestionRow>, String>((ref, examId) async {
+      return ref.watch(examDaoProvider).questionsFor(examId);
+    });

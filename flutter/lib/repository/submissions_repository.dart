@@ -140,6 +140,96 @@ class SubmissionsRepository {
   static String _rawQuestionId(SurveyQuestionRow question) =>
       question.questionId ?? question.id;
 
+  /// Records a completed exam attempt, with its grade, as an uploadable
+  /// submission.
+  ///
+  /// Kotlin's `ExamTakingFragment` writes a `RealmSubmission` per attempt and
+  /// `UploadManager` sends it. Without this the port graded an exam into a
+  /// dialog and dropped the result when the dialog closed — the attempt never
+  /// reached the device, let alone the server.
+  Future<String> createExamDraft({
+    required ExamRow exam,
+    required List<ExamQuestionRow> questions,
+    required String userId,
+    required Map<String, ExamDraftAnswer> answers,
+    String? courseId,
+    DateTime? now,
+  }) async {
+    final timestamp = (now ?? DateTime.now()).millisecondsSinceEpoch;
+    final id = sha1
+        .convert(utf8.encode('$userId:$timestamp:${exam.id}'))
+        .toString();
+    final correct = questions
+        .where((question) => answers[question.id]?.isCorrect ?? false)
+        .length;
+    final grade = questions.isEmpty ? 0 : (correct * 100) ~/ questions.length;
+    await _dao.upsertAll(
+      [
+        SubmissionsCompanion.insert(
+          id: id,
+          parentId: Value(courseId ?? exam.courseId),
+          parent: Value(
+            jsonEncode({
+              '_id': exam.id,
+              '_rev': exam.rev,
+              'name': exam.name,
+              'courseId': exam.courseId,
+              'totalMarks': exam.totalMarks,
+            }),
+          ),
+          userId: Value(userId),
+          type: const Value('exam'),
+          startTime: Value(timestamp),
+          lastUpdateTime: Value(timestamp),
+          grade: Value(grade),
+          status: const Value('complete'),
+          uploaded: const Value(false),
+          isUpdated: const Value(true),
+        ),
+      ],
+      questions: {
+        id: [
+          for (final question in questions)
+            SubmissionQuestionsCompanion.insert(
+              id: '$id:${question.id}',
+              submissionId: id,
+              header: Value(question.header),
+              body: Value(question.body),
+              type: Value(question.type),
+              choices: Value(
+                question.choices.map((choice) => choice.text).toList(),
+              ),
+              position: question.position,
+            ),
+        ],
+      },
+      answers: {
+        id: [
+          for (final question in questions)
+            SubmissionAnswersCompanion.insert(
+              id: '$id:${question.id}',
+              submissionId: id,
+              examId: Value(exam.id),
+              questionId: Value(question.id),
+              value: Value(answers[question.id]?.value),
+              valueChoices: Value(answers[question.id]?.choiceIds ?? const []),
+              isPassed: Value(answers[question.id]?.isCorrect ?? false),
+              grade: Value((answers[question.id]?.isCorrect ?? false) ? 1 : 0),
+            ),
+        ],
+      },
+    );
+    return id;
+  }
+
+  /// Attaches the profile collected by `UserInformationFragment` to an attempt.
+  Future<void> markSubmissionComplete(
+    String id,
+    Map<String, dynamic> user,
+  ) async {
+    await _dao.markComplete(id, jsonEncode(user));
+  }
+
   Future<List<SubmissionRow>> pendingUploads(String userId) =>
       _dao.pendingUploads(userId);
 
@@ -396,4 +486,27 @@ class SubmissionDraftAnswer {
   final String? questionId;
   final String? value;
   final List<String> choices;
+}
+
+/// One question's answer on an exam attempt.
+///
+/// Unlike a survey answer this carries a verdict: exams are graded on the
+/// device against the correct-choice ids that came down with the question.
+class ExamDraftAnswer {
+  const ExamDraftAnswer({
+    this.value,
+    this.choiceIds = const [],
+    this.isCorrect = false,
+  });
+
+  /// Free text, or the selected rating rendered as a string.
+  final String? value;
+
+  /// Ids of the selected choices — ids, not labels, because that is what
+  /// `correctChoices` holds and what the server's answer documents store.
+  final List<String> choiceIds;
+
+  final bool isCorrect;
+
+  bool get isEmpty => (value == null || value!.isEmpty) && choiceIds.isEmpty;
 }

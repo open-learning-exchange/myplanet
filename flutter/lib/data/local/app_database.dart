@@ -1201,6 +1201,20 @@ class SubmissionDao extends DatabaseAccessor<AppDatabase>
         ),
       );
 
+  /// Attaches the demographic profile collected after an attempt and marks it
+  /// complete — the port of `markSubmissionComplete`. Clearing `uploaded`
+  /// puts the row back in `pendingUploads` so the edit is actually sent.
+  Future<int> markComplete(String id, String userJson) =>
+      (update(submissions)..where((row) => row.id.equals(id))).write(
+        SubmissionsCompanion(
+          user: Value(userJson),
+          status: const Value('complete'),
+          uploaded: const Value(false),
+          isUpdated: const Value(true),
+          lastUpdateTime: Value(DateTime.now().millisecondsSinceEpoch),
+        ),
+      );
+
   /// Removes stale server-cache rows without binding an unbounded `NOT IN`.
   Future<int> deleteNotIn(List<String> keepIds) async {
     return transaction(() async {
@@ -1389,8 +1403,9 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
   Future<ExamRow?> getById(String id) =>
       (select(exams)..where((row) => row.id.equals(id))).getSingleOrNull();
 
-  Future<ExamRow?> getByStepId(String stepId) =>
-      (select(exams)..where((row) => row.stepId.equals(stepId))).getSingleOrNull();
+  Future<ExamRow?> getByStepId(String stepId) => (select(
+    exams,
+  )..where((row) => row.stepId.equals(stepId))).getSingleOrNull();
 
   Future<List<ExamRow>> getByCourseId(String courseId) =>
       (select(exams)..where((row) => row.courseId.equals(courseId))).get();
@@ -1415,6 +1430,25 @@ class ExamDao extends DatabaseAccessor<AppDatabase> with _$ExamDaoMixin {
 
   Future<void> upsertQuestion(ExamQuestionsCompanion row) =>
       into(examQuestions).insertOnConflictUpdate(row);
+
+  /// See [MeetupDao.deleteNotIn] for why the difference is taken in Dart and
+  /// the deletes are chunked. Exams are a pure server cache — every row is
+  /// restorable by the next sync — so nothing here needs sparing.
+  Future<int> deleteNotIn(List<String> ids) => transaction(() async {
+    final keep = ids.toSet();
+    final all = await (selectOnly(
+      exams,
+    )..addColumns([exams.id])).map((row) => row.read(exams.id)!).get();
+    final stale = all.where((id) => !keep.contains(id)).toList(growable: false);
+    var deleted = 0;
+    for (final chunk in _chunked(stale, _sqliteVariableChunk)) {
+      await (delete(
+        examQuestions,
+      )..where((row) => row.examId.isIn(chunk))).go();
+      deleted += await (delete(exams)..where((row) => row.id.isIn(chunk))).go();
+    }
+    return deleted;
+  });
 
   Future<void> upsertAll(
     List<ExamsCompanion> rows,

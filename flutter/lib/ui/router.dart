@@ -134,9 +134,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: Routes.community,
-        builder: (context, state) => const CommunityScreen(
-          fromLogin: false,
-        ),
+        builder: (context, state) => const CommunityScreen(fromLogin: false),
       ),
       GoRoute(
         path: Routes.exam,

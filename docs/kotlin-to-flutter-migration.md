@@ -5,7 +5,7 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 
 ## Status
 
-**Phase 22 in progress.** The Flutter app is *not* yet a replacement for the Kotlin app:
+**Phase 22 complete.** The Flutter app is *not* yet a replacement for the Kotlin app:
 **22 of 28 UI packages** are ported.
 
 - **Phase 1** — skeleton plus the server configuration → login → resources slice.
@@ -54,6 +54,11 @@ Tracking document for migrating myPlanet from the **Kotlin/Android** app in `app
 - **Phase 22** — exam: graded course exams with question navigation, answer types (select,
   selectMultiple, ratingScale, input, textarea), automatic grading, and score display. User
   information collection for team surveys. Exams and ExamQuestions tables with Drift persistence.
+  The exam documents are pulled by the existing `exams`-database sync (which already downloaded
+  and discarded them — surveys and exams share that CouchDB database and are told apart by
+  `type`), reached from a course step's *Take exam* action, and each attempt is written as a
+  graded `exam` submission that the outbox uploads. `UserInformationScreen` attaches its profile
+  to that submission via `markSubmissionComplete`.
 
 ## Strategy
 
@@ -457,9 +462,54 @@ Three related defects clustered around the same code, all from copy-paste:
   into a duplicate thread rather than an update, and `markUploaded` recorded no
   revision, so the update would have conflicted anyway.
 
-## Remaining UI packages (6 of 28)
+## A screen is not ported until something fills it and something leaves it
 
-`components`, `enterprises`, `exam`,
+The three preceding rounds each shipped a table the user wrote to that nothing
+uploaded. The exam round inverted it: a screen nothing could reach, reading
+tables nothing populated, discarding the only result it produced.
+
+Every piece looked done in isolation. `ExamMapper` was complete and correct in
+outline; `ExamDao` had `getById`, `getByStepId`, `questionsFor`; the routes were
+registered; the widget rendered five question types. But `ExamMapper.fromDoc`
+had **no caller**, so `exams` was always empty; nothing pushed `Routes.exam`, so
+the screen was unreachable; and `_submitExam` computed a score into an
+`AlertDialog` and dropped it when the dialog closed.
+
+The cheap check that finds all three is a grep for callers, in both directions:
+
+```bash
+# Does anything write this table? (mapper with no caller ⇒ table never fills)
+grep -rn "ExamMapper\|examDao" lib/ --include=*.dart | grep -v '\.g\.dart'
+# Does anything navigate here? (route with no pusher ⇒ screen unreachable)
+grep -rn "Routes.exam" lib/ --include=*.dart | grep -v router.dart
+```
+
+Neither is caught by `flutter analyze` — an uncalled public function is not a
+warning — and neither is caught by a test that constructs the mapper directly.
+The test that catches it drives the real path: sync a document, then read the
+row back through the DAO the screen uses.
+
+Two shape bugs hid behind the same emptiness, and both would have surfaced the
+first time a real document arrived:
+
+- **Choices were flattened to `List<String>` by `JsonUtils.getStringList`**,
+  which calls `toString()` on each element. CouchDB stores `{"id","text"}`
+  objects, so every radio button would have been labelled `{id: c1, text: Paris}`
+  while the id — the thing an answer records and grading compares — was thrown
+  away. Fixed with an `ExamChoice` type and its own converter.
+- **The question label was read from `header`**; the Kotlin reads `title`
+  (`ExamQuestion.insertExamQuestions`). No document has a `header` key, so every
+  question would have rendered unlabelled.
+
+One deliberate divergence: Kotlin's single-`correctChoice` branch stores the
+choice's `"res"` field, but choice objects carry the label under `"text"` (see
+`ExamTakingFragment.addCompoundButton`), so that lookup yields `""` and the
+question cannot be graded. The port records the choice **id** in both branches,
+which is what an answer stores and what the multi-select branch already used.
+
+## Remaining UI packages (5 of 28)
+
+`components`, `enterprises`,
 `health`, `maps`,
 `viewer` — plus team voices, team/public survey sharing, personal attachments/upload,
 rating upload/sync, storage/retry, and the
@@ -467,7 +517,7 @@ rest of `settings`, plus profile photo/upload, membership, and the rest of `user
 rest of `sync` and `dashboard` (the Kotlin dashboard's activity cards, surveys widget and drawer
 are not ported; only the navigation host is).
 
-Suggested order, dependency-first: `exam` → the rest. Course progress and
+Suggested order, dependency-first: `viewer` → the rest. Course progress and
 certification are deliberately deferred with their own packages rather than bundled into the
 courses slice. `events` and `surveys` are now ported for the individual case; team meetups and
 team/public survey sharing arrive with `teams`.

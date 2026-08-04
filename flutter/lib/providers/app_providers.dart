@@ -148,6 +148,10 @@ final surveyDaoProvider = Provider<SurveyDao>(
   (ref) => ref.watch(appDatabaseProvider).surveyDao,
 );
 
+final examDaoProvider = Provider<ExamDao>(
+  (ref) => ref.watch(appDatabaseProvider).examDao,
+);
+
 final chatDaoProvider = Provider<ChatDao>(
   (ref) => ref.watch(appDatabaseProvider).chatDao,
 );
@@ -189,6 +193,7 @@ final surveysRepositoryProvider = Provider<SurveysRepository>(
   (ref) => SurveysRepository(
     ref.watch(planetApiProvider),
     ref.watch(surveyDaoProvider),
+    ref.watch(examDaoProvider),
     ref.watch(submissionsRepositoryProvider),
   ),
 );
